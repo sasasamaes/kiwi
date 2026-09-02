@@ -1,0 +1,227 @@
+'use client';
+
+import Link from 'next/link';
+import { motion } from 'framer-motion';
+import { AnimatedButton, StaggerContainer, StaggerItem, AnimatedCounter } from '@kiwi/ui';
+
+export default function Profile() {
+  return (
+    <main className="min-h-screen flex flex-col">
+      {/* Header */}
+      <motion.header 
+        className="sticky top-0 z-50 border-b border-surface-200/50 bg-white/70 backdrop-blur-xl"
+        initial={{ y: -100 }}
+        animate={{ y: 0 }}
+      >
+        <div className="mx-auto max-w-lg px-4 py-4">
+          <div className="flex items-center justify-between">
+            <Link href="/" className="flex items-center gap-2 text-surface-600 hover:text-surface-800">
+              <span>←</span>
+              <span className="text-sm font-medium">Volver</span>
+            </Link>
+            <h1 className="font-display font-semibold text-surface-800">Mi Perfil</h1>
+            <div className="w-16" />
+          </div>
+        </div>
+      </motion.header>
+
+      <main className="flex-1 mx-auto w-full max-w-lg px-4 py-6">
+        {/* Profile Card */}
+        <motion.div 
+          className="mb-6 rounded-2xl bg-kiwi-gradient p-6 text-white shadow-kiwi-lg text-center relative overflow-hidden"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          {/* Background decoration */}
+          <motion.div 
+            className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/10"
+            animate={{ scale: [1, 1.2, 1] }}
+            transition={{ duration: 4, repeat: Infinity }}
+          />
+          
+          <motion.div 
+            className="relative mb-4 inline-flex h-24 w-24 items-center justify-center rounded-full bg-white text-4xl font-bold text-kiwi-600 shadow-lg"
+            whileHover={{ scale: 1.05 }}
+          >
+            JC
+          </motion.div>
+          <h2 className="relative text-xl font-display font-bold">Juan Carlos</h2>
+          <p className="relative text-white/80">Repartidor desde Enero 2026</p>
+          
+          <div className="relative mt-4 flex justify-center gap-6">
+            <div className="text-center">
+              <AnimatedCounter value={4.9} decimals={1} prefix="⭐" className="text-2xl font-bold" />
+              <p className="text-xs text-white/70">Rating</p>
+            </div>
+            <div className="text-center">
+              <AnimatedCounter value={156} className="text-2xl font-bold" />
+              <p className="text-xs text-white/70">Viajes</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold">🥇</p>
+              <p className="text-xs text-white/70">Nivel Oro</p>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Progress to Next Level */}
+        <motion.div 
+          className="mb-6 rounded-2xl bg-white p-5 shadow-soft"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-display font-semibold text-surface-800">Próximo nivel</h3>
+            <span className="text-sm text-kiwi-600 font-medium">💎 Diamante</span>
+          </div>
+          <div className="mb-2 flex items-center justify-between text-sm">
+            <span className="text-surface-500">Progreso</span>
+            <span className="font-medium text-surface-700">344/500 viajes</span>
+          </div>
+          <div className="h-3 rounded-full bg-surface-100 overflow-hidden">
+            <motion.div 
+              className="h-3 rounded-full bg-kiwi-gradient"
+              initial={{ width: 0 }}
+              animate={{ width: '69%' }}
+              transition={{ duration: 1, delay: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+            />
+          </div>
+          <p className="mt-2 text-xs text-surface-400">Te faltan 156 viajes para Diamante</p>
+        </motion.div>
+
+        {/* Stats Grid */}
+        <StaggerContainer className="mb-6 grid grid-cols-2 gap-3">
+          <StaggerItem>
+            <div className="rounded-xl bg-white p-4 shadow-soft text-center">
+              <span className="text-2xl">📅</span>
+              <p className="mt-2 text-xl font-bold text-surface-800">45</p>
+              <p className="text-xs text-surface-500">Días activos</p>
+            </div>
+          </StaggerItem>
+          <StaggerItem>
+            <div className="rounded-xl bg-white p-4 shadow-soft text-center">
+              <span className="text-2xl">⏱️</span>
+              <p className="mt-2 text-xl font-bold text-surface-800">120h</p>
+              <p className="text-xs text-surface-500">Horas trabajadas</p>
+            </div>
+          </StaggerItem>
+          <StaggerItem>
+            <div className="rounded-xl bg-white p-4 shadow-soft text-center">
+              <span className="text-2xl">💰</span>
+              <p className="mt-2 text-xl font-bold text-kiwi-600">₡468k</p>
+              <p className="text-xs text-surface-500">Ganancias totales</p>
+            </div>
+          </StaggerItem>
+          <StaggerItem>
+            <div className="rounded-xl bg-white p-4 shadow-soft text-center">
+              <span className="text-2xl">🎯</span>
+              <p className="mt-2 text-xl font-bold text-surface-800">98%</p>
+              <p className="text-xs text-surface-500">Tasa de aceptación</p>
+            </div>
+          </StaggerItem>
+        </StaggerContainer>
+
+        {/* Incentives */}
+        <motion.div 
+          className="mb-6 rounded-2xl bg-white p-5 shadow-soft"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <h3 className="mb-4 font-display font-semibold text-surface-800">🎁 Mis Incentivos</h3>
+          <div className="space-y-3">
+            {[
+              { icon: '🎒', name: 'Bolso térmico', status: 'active', date: 'Mar 2026' },
+              { icon: '🧥', name: 'Capa de lluvia', status: 'active', date: 'Jun 2026' },
+              { icon: '📦', name: 'Cajón container', status: 'locked', date: 'Requiere 7 meses' },
+              { icon: '🔧', name: 'Mantenimiento moto', status: 'locked', date: 'Requiere 10 meses' },
+              { icon: '🏍️', name: 'Pago de marchamo', status: 'locked', date: 'Requiere 12 meses' },
+            ].map((incentive, i) => (
+              <motion.div 
+                key={i}
+                className={`flex items-center justify-between rounded-xl p-3 ${
+                  incentive.status === 'active' ? 'bg-kiwi-50' : 'bg-surface-50'
+                }`}
+                whileHover={{ x: 4 }}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">{incentive.icon}</span>
+                  <div>
+                    <p className={`text-sm font-medium ${incentive.status === 'active' ? 'text-kiwi-700' : 'text-surface-600'}`}>
+                      {incentive.name}
+                    </p>
+                    <p className="text-xs text-surface-400">{incentive.date}</p>
+                  </div>
+                </div>
+                <span className={`text-sm font-medium ${
+                  incentive.status === 'active' ? 'text-kiwi-600' : 'text-surface-400'
+                }`}>
+                  {incentive.status === 'active' ? '✅ Activo' : '🔒 Bloqueado'}
+                </span>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Settings Menu */}
+        <div className="rounded-2xl bg-white shadow-soft overflow-hidden">
+          <h3 className="p-4 pb-2 font-display font-semibold text-surface-800">Configuración</h3>
+          {[
+            { icon: '👤', label: 'Editar perfil', href: '#' },
+            { icon: '🔔', label: 'Notificaciones', href: '#' },
+            { icon: '💳', label: 'Método de pago', href: '#' },
+            { icon: '🛡️', label: 'Seguridad', href: '#' },
+            { icon: '❓', label: 'Ayuda', href: '#' },
+          ].map((item, i) => (
+            <Link key={i} href={item.href}>
+              <motion.div 
+                className="flex items-center justify-between border-b border-surface-100 px-4 py-3 hover:bg-surface-50 transition-colors"
+                whileHover={{ x: 4 }}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-xl">{item.icon}</span>
+                  <span className="text-sm font-medium text-surface-700">{item.label}</span>
+                </div>
+                <span className="text-surface-400">→</span>
+              </motion.div>
+            </Link>
+          ))}
+        </div>
+
+        {/* Logout */}
+        <div className="mt-6">
+          <AnimatedButton variant="ghost" className="w-full text-red-500 hover:bg-red-50">
+            Cerrar sesión
+          </AnimatedButton>
+        </div>
+      </main>
+
+      {/* Bottom Navigation */}
+      <nav className="sticky bottom-0 border-t border-surface-200/50 bg-white/80 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-lg items-center justify-around py-2">
+          {[
+            { href: '/', icon: '🏠', label: 'Inicio', active: false },
+            { href: '/active', icon: '📦', label: 'Activos', active: false },
+            { href: '/earnings', icon: '💰', label: 'Ganancias', active: false },
+            { href: '/schedule', icon: '📅', label: 'Horario', active: false },
+            { href: '/profile', icon: '👤', label: 'Perfil', active: true },
+          ].map((item) => (
+            <Link key={item.href} href={item.href}>
+              <motion.div 
+                className={`flex flex-col items-center gap-1 px-4 py-2 ${
+                  item.active ? 'text-kiwi-600' : 'text-surface-400 hover:text-surface-600'
+                }`}
+                whileHover={{ y: -2 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                <span className="text-xl">{item.icon}</span>
+                <span className="text-xs font-medium">{item.label}</span>
+              </motion.div>
+            </Link>
+          ))}
+        </div>
+      </nav>
+    </main>
+  );
+}
