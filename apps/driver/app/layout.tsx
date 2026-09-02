@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter, Poppins } from 'next/font/google';
 import './globals.css';
-import { ThemeProvider, AuthProvider } from '@kiwi/ui';
+import { ThemeProvider, AuthProvider, NotificationProvider } from '@kiwi/ui';
 import { OfflineBanner } from './offline-banner';
 
 const inter = Inter({ 
@@ -43,8 +43,10 @@ export default function RootLayout({
       <body className="font-sans antialiased bg-bg-light min-h-screen dark:bg-surface-950 dark:text-surface-100">
         <ThemeProvider>
           <AuthProvider>
-            {children}
-            <OfflineBanner />
+            <NotificationProvider>
+              {children}
+              <OfflineBanner />
+            </NotificationProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

@@ -1,109 +1,139 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, createContext, useContext, ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Notification {
   id: string;
-  type: 'success' | 'error' | 'info' | 'warning';
-  message: string;
-  duration?: number;
+  title: string;
+  body: string;
+  type: string;
+  data?: Record<string, any>;
+  timestamp: Date;
 }
 
-interface NotificationToastProps {
+interface NotificationContextType {
   notifications: Notification[];
-  onDismiss: (id: string) => void;
+  addNotification: (notification: Omit<Notification, 'id' | 'timestamp'>) => void;
+  removeNotification: (id: string) => void;
+  clearNotifications: () => void;
 }
 
-export function NotificationToast({ notifications, onDismiss }: NotificationToastProps) {
+const NotificationContext = createContext<NotificationContextType | null>(null);
+
+export function useNotifications() {
+  const context = useContext(NotificationContext);
+  if (!context) {
+    throw new Error('useNotifications must be used within NotificationProvider');
+  }
+  return context;
+}
+
+export function NotificationProvider({ children }: { children: ReactNode }) {
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+
+  const addNotification = useCallback((notification: Omit<Notification, 'id' | 'timestamp'>) => {
+    const newNotification: Notification = {
+      ...notification,
+      id: Math.random().toString(36).substring(7),
+      timestamp: new Date(),
+    };
+
+    setNotifications(prev => [newNotification, ...prev].slice(0, 10)); // Keep last 10
+
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+      removeNotification(newNotification.id);
+    }, 5000);
+  }, []);
+
+  const removeNotification = useCallback((id: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  }, []);
+
+  const clearNotifications = useCallback(() => {
+    setNotifications([]);
+  }, []);
+
   return (
-    <div className="fixed top-4 right-4 z-50 max-w-sm">
+    <NotificationContext.Provider value={{ notifications, addNotification, removeNotification, clearNotifications }}>
+      {children}
+      <NotificationToast />
+    </NotificationContext.Provider>
+  );
+}
+
+function NotificationToast() {
+  const { notifications, removeNotification } = useNotifications();
+
+  const getIcon = (type: string) => {
+    switch (type) {
+      case 'new_order': return '📦';
+      case 'order_accepted': return '✅';
+      case 'order_status': return '📍';
+      case 'payment_received': return '💰';
+      case 'new_rating': return '⭐';
+      case 'withdrawal': return '💳';
+      case 'kyc': return '🪪';
+      default: return '🔔';
+    }
+  };
+
+  const getColor = (type: string) => {
+    switch (type) {
+      case 'new_order': return 'bg-blue-500';
+      case 'order_accepted': return 'bg-green-500';
+      case 'order_status': return 'bg-kiwi-500';
+      case 'payment_received': return 'bg-yellow-500';
+      case 'new_rating': return 'bg-purple-500';
+      case 'withdrawal': return 'bg-cyan-500';
+      case 'kyc': return 'bg-indigo-500';
+      default: return 'bg-surface-500';
+    }
+  };
+
+  return (
+    <div className="fixed top-4 right-4 z-50 space-y-2 max-w-sm">
       <AnimatePresence>
         {notifications.map((notification) => (
-          <ToastItem 
-            key={notification.id} 
-            notification={notification} 
-            onDismiss={onDismiss} 
-          />
+          <motion.div
+            key={notification.id}
+            initial={{ opacity: 0, x: 100, scale: 0.8 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            exit={{ opacity: 0, x: 100, scale: 0.8 }}
+            className="bg-white dark:bg-surface-800 rounded-2xl shadow-2xl overflow-hidden border border-surface-200 dark:border-surface-700"
+          >
+            <div className="flex items-start gap-3 p-4">
+              <div className={`flex-shrink-0 w-10 h-10 rounded-full ${getColor(notification.type)} flex items-center justify-center text-white text-lg`}>
+                {getIcon(notification.type)}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-surface-800 dark:text-surface-100 text-sm">
+                  {notification.title}
+                </p>
+                <p className="text-surface-500 dark:text-surface-400 text-sm mt-0.5 line-clamp-2">
+                  {notification.body}
+                </p>
+              </div>
+              <button
+                onClick={() => removeNotification(notification.id)}
+                className="flex-shrink-0 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
+              >
+                ✕
+              </button>
+            </div>
+            {/* Progress bar */}
+            <motion.div
+              className={`h-1 ${getColor(notification.type)}`}
+              initial={{ width: '100%' }}
+              animate={{ width: '0%' }}
+              transition={{ duration: 5, ease: 'linear' }}
+            />
+          </motion.div>
         ))}
       </AnimatePresence>
     </div>
   );
 }
 
-function ToastItem({ notification, onDismiss }: { notification: Notification; onDismiss: (id: string) => void }) {
-  const [isExiting, setIsExiting] = useState(false);
-
-  useEffect(() => {
-    const duration = notification.duration || 5000;
-    const timer = setTimeout(() => {
-      setIsExiting(true);
-      setTimeout(() => onDismiss(notification.id), 300);
-    }, duration);
-
-    return () => clearTimeout(timer);
-  }, [notification, onDismiss]);
-
-  const icons = {
-    success: '✅',
-    error: '❌',
-    info: 'ℹ️',
-    warning: '⚠️',
-  };
-
-  const colors = {
-    success: 'bg-kiwi-50 border-kiwi-200 text-kiwi-800',
-    error: 'bg-red-50 border-red-200 text-red-800',
-    info: 'bg-blue-50 border-blue-200 text-blue-800',
-    warning: 'bg-gold-50 border-gold-200 text-gold-800',
-  };
-
-  return (
-    <motion.div
-      className={`mb-2 p-4 rounded-xl border shadow-lg ${colors[notification.type]}`}
-      initial={{ opacity: 0, x: 100, scale: 0.8 }}
-      animate={{ opacity: 1, x: 0, scale: 1 }}
-      exit={{ opacity: 0, x: 100, scale: 0.8 }}
-      transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-    >
-      <div className="flex items-start gap-3">
-        <span className="text-xl">{icons[notification.type]}</span>
-        <p className="flex-1 text-sm font-medium">{notification.message}</p>
-        <motion.button
-          className="text-surface-400 hover:text-surface-600"
-          onClick={() => {
-            setIsExiting(true);
-            setTimeout(() => onDismiss(notification.id), 300);
-          }}
-          whileTap={{ scale: 0.9 }}
-        >
-          ✕
-        </motion.button>
-      </div>
-    </motion.div>
-  );
-}
-
-// Hook to manage notifications
-export function useNotifications() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-
-  const addNotification = (type: Notification['type'], message: string, duration?: number) => {
-    const id = Math.random().toString(36).substr(2, 9);
-    setNotifications(prev => [...prev, { id, type, message, duration }]);
-  };
-
-  const dismissNotification = (id: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
-  };
-
-  return {
-    notifications,
-    addNotification,
-    dismissNotification,
-    success: (message: string) => addNotification('success', message),
-    error: (message: string) => addNotification('error', message),
-    info: (message: string) => addNotification('info', message),
-    warning: (message: string) => addNotification('warning', message),
-  };
-}
+export default NotificationToast;

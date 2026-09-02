@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter, Poppins } from 'next/font/google';
 import './globals.css';
-import { ThemeProvider } from '@kiwi/ui';
+import { ThemeProvider, NotificationProvider } from '@kiwi/ui';
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -36,7 +36,9 @@ export default function RootLayout({
     <html lang="es" className={`${inter.variable} ${poppins.variable}`} suppressHydrationWarning>
       <body className="font-sans antialiased bg-bg-light dark:bg-surface-950 dark:text-surface-100 min-h-screen">
         <ThemeProvider>
-          {children}
+          <NotificationProvider>
+            {children}
+          </NotificationProvider>
         </ThemeProvider>
       </body>
     </html>

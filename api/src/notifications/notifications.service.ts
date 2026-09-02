@@ -19,7 +19,7 @@ interface NotificationPayload {
 @Injectable()
 export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);
-  private fcmInitialized = false;
+  private fcmAdmin: any = null;
 
   constructor(private prisma: PrismaService) {
     this.initializeFCM();
@@ -27,10 +27,25 @@ export class NotificationsService {
 
   private async initializeFCM() {
     try {
-      // Firebase Admin SDK initialization would go here
-      // For now, we'll use a mock implementation
-      this.logger.log('Firebase Cloud Messaging initialized (mock mode)');
-      this.fcmInitialized = true;
+      // Try to import Firebase Admin SDK
+      // In production, set FIREBASE_SERVICE_ACCOUNT env var with the service account JSON
+      const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT;
+      
+      if (serviceAccount) {
+        const admin = await import('firebase-admin');
+        
+        if (!admin.apps.length) {
+          const serviceAccountJson = JSON.parse(serviceAccount);
+          admin.initializeApp({
+            credential: admin.credential.cert(serviceAccountJson),
+          });
+        }
+        
+        this.fcmAdmin = admin.messaging();
+        this.logger.log('Firebase Cloud Messaging initialized successfully');
+      } else {
+        this.logger.warn('FIREBASE_SERVICE_ACCOUNT not set, using in-app notifications only');
+      }
     } catch (error) {
       this.logger.warn('FCM not configured, using in-app notifications only');
     }
@@ -53,7 +68,7 @@ export class NotificationsService {
     });
 
     // Try to send push notification
-    if (this.fcmInitialized) {
+    if (this.fcmAdmin) {
       await this.sendPushNotification(userId, notification);
     }
 
@@ -82,27 +97,44 @@ export class NotificationsService {
 
   private async sendPushNotification(userId: string, notification: PushNotification) {
     try {
-      // Get user's FCM token
-      const user = await this.prisma.user.findUnique({
-        where: { id: userId },
-        select: { id: true },
-      });
-
-      if (!user) {
-        this.logger.warn(`User ${userId} not found for push notification`);
+      // Get user's device tokens from database
+      // In production, you'd have a device_tokens table
+      // For now, we'll use a mock approach
+      
+      if (!this.fcmAdmin) {
+        this.logger.log(`Push notification would be sent to user ${userId}: ${notification.title}`);
         return;
       }
 
-      // In production, this would use Firebase Admin SDK:
-      // await admin.messaging().send({
-      //   token: fcmToken,
-      //   notification: {
-      //     title: notification.title,
-      //     body: notification.body,
-      //     imageUrl: notification.imageUrl,
-      //   },
-      //   data: notification.data,
+      // In production, fetch device tokens from database:
+      // const tokens = await this.prisma.deviceToken.findMany({
+      //   where: { userId },
+      //   select: { token: true, platform: true },
       // });
+
+      // Send to each token
+      // for (const device of tokens) {
+      //   try {
+      //     await this.fcmAdmin.send({
+      //       token: device.token,
+      //       notification: {
+      //         title: notification.title,
+      //         body: notification.body,
+      //         imageUrl: notification.imageUrl,
+      //       },
+      //       data: notification.data,
+      //       webpush: {
+      //         fcmOptions: {
+      //           link: notification.data?.orderId 
+      //             ? `/order/${notification.data.orderId}/tracking`
+      //             : '/',
+      //         },
+      //       },
+      //     });
+      //   } catch (error) {
+      //     this.logger.error(`Failed to send to token ${device.token}:`, error);
+      //   }
+      // }
 
       this.logger.log(`Push notification sent to user ${userId}: ${notification.title}`);
     } catch (error) {
@@ -219,6 +251,22 @@ export class NotificationsService {
     });
   }
 
+  async notifyWithdrawalStatus(userId: string, status: string, amount: number) {
+    const messages: Record<string, { title: string; body: string }> = {
+      pending: { title: '⏳ Retiro solicitado', body: `Solicitaste retirar ₡${amount.toLocaleString()}` },
+      processing: { title: '🔄 Retiro en proceso', body: `Tu retiro de ₡${amount.toLocaleString()} está siendo procesado` },
+      completed: { title: '✅ Retiro completado', body: `Tu retiro de ₡${amount.toLocaleString()} fue completado` },
+      rejected: { title: '❌ Retiro rechazado', body: `Tu retiro de ₡${amount.toLocaleString()} fue rechazado` },
+    };
+
+    const message = messages[status] || { title: 'Retiro', body: `Estado: ${status}` };
+
+    return this.sendToUser(userId, {
+      ...message,
+      data: { type: 'withdrawal', status },
+    });
+  }
+
   // ============================================
   // 📱 DEVICE TOKEN MANAGEMENT
   // ============================================
@@ -227,12 +275,24 @@ export class NotificationsService {
     // Store device token for push notifications
     this.logger.log(`Device token registered for user ${userId}: ${platform}`);
     
-    // In production, store in a device_tokens table
+    // In production, store in a device_tokens table:
+    // await this.prisma.deviceToken.upsert({
+    //   where: { token },
+    //   update: { userId, platform, lastUsedAt: new Date() },
+    //   create: { userId, token, platform },
+    // });
+    
     return { success: true };
   }
 
   async removeDeviceToken(userId: string, token: string) {
     this.logger.log(`Device token removed for user ${userId}`);
+    
+    // In production, remove from device_tokens table:
+    // await this.prisma.deviceToken.deleteMany({
+    //   where: { userId, token },
+    // });
+    
     return { success: true };
   }
 }

@@ -119,7 +119,7 @@ export { useSocket } from './useSocket';
 // ============================================
 // 🔔 NOTIFICATIONS
 // ============================================
-export { NotificationToast, useNotifications } from './NotificationToast';
+export { NotificationToast, NotificationProvider, useNotifications } from './NotificationToast';
 export { NotificationPreferences } from './NotificationPreferences';
 export { NotificationList } from './NotificationList';
 export { usePushNotifications } from './usePushNotifications';
