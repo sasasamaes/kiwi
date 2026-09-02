@@ -38,6 +38,19 @@ export class DriversController {
     return this.driversService.updateStatus(user.sub, status);
   }
 
+  @Get('me/earnings')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('driver')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get driver earnings' })
+  @ApiQuery({ name: 'period', required: false, enum: ['today', 'week', 'month', 'all'] })
+  async getEarnings(
+    @CurrentUser() user: any,
+    @Query('period') period?: string,
+  ) {
+    return this.driversService.getEarnings(user.sub, period || 'all');
+  }
+
   @Get('me/schedule')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('driver')

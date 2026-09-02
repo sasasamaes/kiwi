@@ -222,6 +222,10 @@ class ApiClient {
     });
   }
 
+  async getDriverEarnings(period: string = 'all') {
+    return this.request<any>(`/drivers/me/earnings?period=${period}`);
+  }
+
   async getAvailableDrivers(lat?: number, lng?: number) {
     const params = new URLSearchParams();
     if (lat) params.append('lat', String(lat));

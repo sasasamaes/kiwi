@@ -151,4 +151,98 @@ export class DriversService {
       orderBy: { dayOfWeek: 'asc' },
     });
   }
+
+  async getEarnings(userId: string, period: string = 'all') {
+    const driver = await this.prisma.driverProfile.findUnique({
+      where: { userId },
+    });
+
+    if (!driver) {
+      throw new NotFoundException('Perfil de repartidor no encontrado');
+    }
+
+    // Calculate date range based on period
+    const now = new Date();
+    let startDate: Date | undefined;
+
+    switch (period) {
+      case 'today':
+        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        break;
+      case 'week':
+        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        break;
+      case 'month':
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        break;
+      default:
+        startDate = undefined;
+    }
+
+    const where: any = {
+      driverId: driver.id,
+      status: 'delivered',
+    };
+
+    if (startDate) {
+      where.deliveredAt = { gte: startDate };
+    }
+
+    // Get completed orders
+    const orders = await this.prisma.order.findMany({
+      where,
+      orderBy: { deliveredAt: 'desc' },
+    });
+
+    // Calculate totals
+    const totalEarnings = orders.reduce((sum, order) => sum + Number(order.driverPayout), 0);
+    const totalTrips = orders.length;
+    const averagePerTrip = totalTrips > 0 ? Math.round(totalEarnings / totalTrips) : 0;
+
+    // Calculate hours (estimated 30 min per delivery)
+    const totalHours = totalTrips * 0.5;
+    const earningsPerHour = totalHours > 0 ? Math.round(totalEarnings / totalHours) : 0;
+
+    // Daily breakdown for chart
+    const dailyBreakdown: Record<string, number> = {};
+    orders.forEach((order) => {
+      const date = order.deliveredAt
+        ? new Date(order.deliveredAt).toISOString().split('T')[0]
+        : new Date(order.createdAt).toISOString().split('T')[0];
+      dailyBreakdown[date] = (dailyBreakdown[date] || 0) + Number(order.driverPayout);
+    });
+
+    // Convert to array for chart
+    const dailyData = Object.entries(dailyBreakdown)
+      .map(([date, amount]) => ({ date, amount }))
+      .sort((a, b) => a.date.localeCompare(b.date))
+
+    // Transaction list
+    const transactions = orders.map((order) => ({
+      id: order.id,
+      merchantName: 'Comercio',
+      pickupAddress: order.pickupAddress,
+      deliveryAddress: order.deliveryAddress,
+      amount: Number(order.driverPayout),
+      date: order.deliveredAt || order.createdAt,
+      orderType: order.orderType,
+    }));
+
+    return {
+      period,
+      totalEarnings,
+      totalTrips,
+      averagePerTrip,
+      totalHours,
+      earningsPerHour,
+      daily: dailyData,
+      transactions,
+      summary: {
+        today: 0, // Will be calculated separately if needed
+        thisWeek: 0,
+        thisMonth: 0,
+        allTime: totalEarnings,
+      },
+    };
+  }
 }
