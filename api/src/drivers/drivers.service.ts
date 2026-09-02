@@ -152,6 +152,59 @@ export class DriversService {
     });
   }
 
+  // In-memory location cache (in production, use Redis)
+  private driverLocations: Map<string, { lat: number; lng: number; updatedAt: Date }> = new Map();
+
+  async updateLocation(userId: string, lat: number, lng: number, orderId?: string) {
+    const driver = await this.prisma.driverProfile.findUnique({
+      where: { userId },
+    });
+
+    if (!driver) {
+      throw new NotFoundException('Perfil de repartidor no encontrado');
+    }
+
+    // Store location in memory (in production, use Redis with TTL)
+    this.driverLocations.set(driver.id, {
+      lat,
+      lng,
+      updatedAt: new Date(),
+    });
+
+    return {
+      driverId: driver.id,
+      lat,
+      lng,
+      updatedAt: new Date(),
+    };
+  }
+
+  async getLocation(driverId: string) {
+    const location = this.driverLocations.get(driverId);
+    
+    if (!location) {
+      // Return default location (Nicoya center) if no location stored
+      return {
+        driverId,
+        lat: 10.1483,
+        lng: -85.4527,
+        updatedAt: null,
+        isStale: true,
+      };
+    }
+
+    // Check if location is stale (> 5 minutes old)
+    const isStale = Date.now() - location.updatedAt.getTime() > 5 * 60 * 1000;
+
+    return {
+      driverId,
+      lat: location.lat,
+      lng: location.lng,
+      updatedAt: location.updatedAt,
+      isStale,
+    };
+  }
+
   async getEarnings(userId: string, period: string = 'all') {
     const driver = await this.prisma.driverProfile.findUnique({
       where: { userId },

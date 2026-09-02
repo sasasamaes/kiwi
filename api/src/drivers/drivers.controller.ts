@@ -38,6 +38,26 @@ export class DriversController {
     return this.driversService.updateStatus(user.sub, status);
   }
 
+  @Put('me/location')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('driver')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update driver location' })
+  async updateLocation(
+    @CurrentUser() user: any,
+    @Body() data: { lat: number; lng: number; orderId?: string },
+  ) {
+    return this.driversService.updateLocation(user.sub, data.lat, data.lng, data.orderId);
+  }
+
+  @Get(':id/location')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get driver location' })
+  async getLocation(@Param('id') id: string) {
+    return this.driversService.getLocation(id);
+  }
+
   @Get('me/earnings')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('driver')

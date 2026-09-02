@@ -237,6 +237,17 @@ class ApiClient {
     return this.request<any>(`/drivers/${id}`);
   }
 
+  async updateDriverLocation(lat: number, lng: number, orderId?: string) {
+    return this.request<any>('/drivers/me/location', {
+      method: 'PUT',
+      body: { lat, lng, orderId },
+    });
+  }
+
+  async getDriverLocation(driverId: string) {
+    return this.request<any>(`/drivers/${driverId}/location`);
+  }
+
   // ============================================
   // 📦 ORDERS
   // ============================================

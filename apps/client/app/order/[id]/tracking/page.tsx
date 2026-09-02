@@ -4,19 +4,39 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  AnimatedButton, 
-  Skeleton,
-  useSocket,
-  api,
-  Order,
-  VehicleBadge
-} from '@kiwi/ui';
+import { api, Skeleton } from '@kiwi/ui';
+import dynamic from 'next/dynamic';
 
-interface OrderWithDetails extends Order {
+// Dynamically import TrackingMap to avoid SSR issues with Leaflet
+const TrackingMap = dynamic(() => import('@kiwi/ui').then(mod => mod.TrackingMap), {
+  ssr: false,
+  loading: () => (
+    <div className="h-[300px] bg-surface-100 dark:bg-surface-800 rounded-2xl flex items-center justify-center">
+      <Skeleton className="h-full w-full rounded-2xl" />
+    </div>
+  ),
+});
+
+interface OrderWithDetails {
+  id: string;
+  status: string;
+  orderType: string;
+  pickupAddress: string;
+  pickupLat?: number;
+  pickupLng?: number;
+  deliveryAddress: string;
+  deliveryLat?: number;
+  deliveryLng?: number;
+  totalAmount: number;
+  createdAt: string;
+  deliveredAt?: string;
+  assignedAt?: string;
+  pickedUpAt?: string;
   merchant?: {
     businessName: string;
     address: string;
+    latitude?: number;
+    longitude?: number;
   };
   driver?: {
     id: string;
@@ -30,6 +50,13 @@ interface OrderWithDetails extends Order {
     price: number;
     quantity: number;
   }>;
+}
+
+interface DriverLocation {
+  lat: number;
+  lng: number;
+  updatedAt: string;
+  isStale: boolean;
 }
 
 const STATUS_STEPS = [
@@ -47,14 +74,10 @@ export default function OrderTrackingPage() {
   const orderId = params.id as string;
 
   const [order, setOrder] = useState<OrderWithDetails | null>(null);
+  const [driverLocation, setDriverLocation] = useState<DriverLocation | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
-
-  // Socket for real-time updates
-  const { isConnected, on } = useSocket({
-    onConnect: () => console.log('🟢 Connected for order tracking'),
-  });
 
   // Fetch order details
   const fetchOrder = useCallback(async () => {
@@ -70,21 +93,30 @@ export default function OrderTrackingPage() {
     }
   }, [orderId]);
 
+  // Fetch driver location
+  const fetchDriverLocation = useCallback(async () => {
+    if (!order?.driver?.id) return;
+
+    try {
+      const location = await api.getDriverLocation(order.driver.id);
+      setDriverLocation(location);
+    } catch (err) {
+      console.error('Failed to fetch driver location:', err);
+    }
+  }, [order?.driver?.id]);
+
   useEffect(() => {
     fetchOrder();
   }, [fetchOrder]);
 
-  // Listen for real-time status updates
+  // Poll driver location every 10 seconds
   useEffect(() => {
-    const cleanup = on('order:statusChanged', (data: any) => {
-      if (data.orderId === orderId) {
-        console.log('🔄 Order status changed:', data);
-        fetchOrder();
-      }
-    });
+    if (!order?.driver?.id || ['delivered', 'cancelled'].includes(order.status)) return;
 
-    return cleanup;
-  }, [on, orderId, fetchOrder]);
+    fetchDriverLocation();
+    const interval = setInterval(fetchDriverLocation, 10000);
+    return () => clearInterval(interval);
+  }, [order?.driver?.id, order?.status, fetchDriverLocation]);
 
   // Update time every minute for ETA calculations
   useEffect(() => {
@@ -118,6 +150,33 @@ export default function OrderTrackingPage() {
     return estimated.toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' });
   };
 
+  // Prepare map coordinates
+  const getMapPickup = () => {
+    if (order?.pickupLat && order?.pickupLng) {
+      return { lat: Number(order.pickupLat), lng: Number(order.pickupLng) };
+    }
+    if (order?.merchant?.latitude && order?.merchant?.longitude) {
+      return { lat: Number(order.merchant.latitude), lng: Number(order.merchant.longitude) };
+    }
+    // Default to Nicoya center
+    return { lat: 10.1483, lng: -85.4527 };
+  };
+
+  const getMapDelivery = () => {
+    if (order?.deliveryLat && order?.deliveryLng) {
+      return { lat: Number(order.deliveryLat), lng: Number(order.deliveryLng) };
+    }
+    // Default slightly south of pickup
+    return { lat: 10.1500, lng: -85.4500 };
+  };
+
+  const getMapDriver = () => {
+    if (driverLocation && !driverLocation.isStale) {
+      return { lat: driverLocation.lat, lng: driverLocation.lng };
+    }
+    return undefined;
+  };
+
   if (loading) {
     return (
       <main className="min-h-screen bg-bg-light dark:bg-surface-950">
@@ -127,6 +186,7 @@ export default function OrderTrackingPage() {
           </div>
         </div>
         <div className="mx-auto max-w-lg px-4 py-6 space-y-4">
+          <Skeleton className="h-[300px] w-full rounded-2xl" />
           <Skeleton className="h-40 w-full rounded-2xl" />
           <Skeleton className="h-32 w-full rounded-2xl" />
           <Skeleton className="h-24 w-full rounded-2xl" />
@@ -157,8 +217,18 @@ export default function OrderTrackingPage() {
             {error || 'Pedido no encontrado'}
           </p>
           <div className="flex gap-3 justify-center">
-            <AnimatedButton variant="secondary" onClick={() => router.push('/')}>← Volver</AnimatedButton>
-            <AnimatedButton variant="gradient" onClick={fetchOrder}>🔄 Reintentar</AnimatedButton>
+            <button
+              onClick={() => router.push('/')}
+              className="px-6 py-3 rounded-xl bg-surface-100 dark:bg-surface-800 text-surface-700 dark:text-surface-300 font-medium"
+            >
+              ← Volver
+            </button>
+            <button
+              onClick={fetchOrder}
+              className="px-6 py-3 rounded-xl bg-kiwi-gradient text-white font-medium shadow-kiwi-lg"
+            >
+              🔄 Reintentar
+            </button>
           </div>
         </motion.div>
       </main>
@@ -167,6 +237,7 @@ export default function OrderTrackingPage() {
 
   const isDelivered = order.status === 'delivered';
   const isCancelled = order.status === 'cancelled';
+  const showMap = !isDelivered && !isCancelled && ['assigned', 'in_transit_to_pickup', 'picked_up', 'in_transit_to_delivery'].includes(order.status);
 
   return (
     <main className="min-h-screen bg-bg-light dark:bg-surface-950 pb-8">
@@ -189,6 +260,37 @@ export default function OrderTrackingPage() {
       </motion.header>
 
       <div className="mx-auto max-w-lg px-4 py-6">
+        {/* Live Map */}
+        {showMap && (
+          <motion.div 
+            className="mb-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <TrackingMap
+              pickup={getMapPickup()}
+              delivery={getMapDelivery()}
+              driverLocation={getMapDriver()}
+              height={300}
+              showRoute={true}
+            />
+            {driverLocation && !driverLocation.isStale && (
+              <motion.div
+                className="mt-2 flex items-center justify-center gap-2 text-sm text-surface-500 dark:text-surface-400"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+              >
+                <motion.span
+                  className="w-2 h-2 rounded-full bg-kiwi-500"
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                />
+                <span>Ubicación del repartidor actualizada</span>
+              </motion.div>
+            )}
+          </motion.div>
+        )}
+
         {/* Status Hero */}
         <motion.div 
           className={`mb-6 rounded-3xl p-6 text-white shadow-kiwi-lg overflow-hidden relative ${
@@ -268,7 +370,6 @@ export default function OrderTrackingPage() {
             {STATUS_STEPS.map((step, index) => {
               const isCompleted = index <= currentStepIndex;
               const isCurrent = index === currentStepIndex;
-              const isFuture = index > currentStepIndex;
 
               return (
                 <motion.div 
@@ -361,7 +462,12 @@ export default function OrderTrackingPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 mt-1">
-                  <VehicleBadge type={order.driver.vehicleType || 'motorcycle'} size="sm" />
+                  <span className="px-2 py-1 rounded-full bg-surface-100 dark:bg-surface-700 text-xs font-medium text-surface-600 dark:text-surface-400">
+                    {order.driver.vehicleType === 'motorcycle' ? '🏍️ Moto' :
+                     order.driver.vehicleType === 'car' ? '🚗 Carro' :
+                     order.driver.vehicleType === 'bicycle' ? '🚲 Bici' :
+                     order.driver.vehicleType}
+                  </span>
                 </div>
               </div>
             </div>
@@ -441,26 +547,23 @@ export default function OrderTrackingPage() {
         <div className="space-y-3">
           {isDelivered && (
             <Link href="/">
-              <AnimatedButton variant="gradient" className="w-full">
+              <button className="w-full py-4 rounded-xl bg-kiwi-gradient text-white font-semibold shadow-kiwi-lg">
                 🏠 Volver al inicio
-              </AnimatedButton>
+              </button>
             </Link>
           )}
 
           {!isDelivered && !isCancelled && order.driver?.phone && (
-            <AnimatedButton 
-              variant="secondary" 
-              className="w-full"
+            <button
               onClick={() => window.open(`tel:${order.driver.phone}`)}
+              className="w-full py-4 rounded-xl bg-surface-100 dark:bg-surface-800 text-surface-700 dark:text-surface-300 font-medium"
             >
               📞 Llamar al repartidor
-            </AnimatedButton>
+            </button>
           )}
 
           {!isDelivered && !isCancelled && (
-            <AnimatedButton 
-              variant="ghost" 
-              className="w-full text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+            <button
               onClick={async () => {
                 if (confirm('¿Estás seguro de cancelar el pedido?')) {
                   try {
@@ -471,9 +574,10 @@ export default function OrderTrackingPage() {
                   }
                 }
               }}
+              className="w-full py-4 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-500 font-medium hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
             >
               ❌ Cancelar pedido
-            </AnimatedButton>
+            </button>
           )}
         </div>
       </div>

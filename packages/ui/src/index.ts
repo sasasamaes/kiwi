@@ -161,3 +161,9 @@ export { OfflineIndicator } from './OfflineIndicator';
 // ============================================
 export { QRCodeGenerator, QRScanner } from './QRCodeGenerator';
 export type { QRCodeGeneratorProps, QRScannerProps } from './QRCodeGenerator';
+
+// ============================================
+// 🗺️ TRACKING MAP
+// ============================================
+export { TrackingMap } from './TrackingMap';
+export type { TrackingMapProps } from './TrackingMap';
