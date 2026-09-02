@@ -145,12 +145,52 @@ export default function MenuManagementPage() {
       </motion.header>
 
       <main className="mx-auto max-w-4xl px-4 py-8">
+        {/* QR Code Banner */}
+        {user?.merchantProfile?.id && (
+          <motion.div
+            className="mb-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <Link href={`/merchants/${user.merchantProfile.id}/qr`}>
+              <motion.div
+                className="rounded-2xl bg-kiwi-gradient p-6 text-white shadow-kiwi-lg cursor-pointer overflow-hidden relative"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <motion.div
+                  className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/10"
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ duration: 4, repeat: Infinity }}
+                />
+                <div className="relative flex items-center gap-4">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/20">
+                    <span className="text-3xl">📱</span>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-display font-bold text-lg">Mi Código QR</h3>
+                    <p className="text-white/80 text-sm">Descarga, imprime y ponlo en tu negocio</p>
+                  </div>
+                  <motion.span
+                    className="text-white/60"
+                    animate={{ x: [0, 5, 0] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                  >
+                    →
+                  </motion.span>
+                </div>
+              </motion.div>
+            </Link>
+          </motion.div>
+        )}
+
         {/* Add New Item Button */}
         {!showForm && (
           <motion.div
             className="mb-6"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
           >
             <AnimatedButton
               variant="gradient"
