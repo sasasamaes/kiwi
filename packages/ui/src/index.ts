@@ -197,6 +197,15 @@ export type { UseCacheWarmingOptions, UseCacheWarmingResult } from './useCacheWa
 export { StartupProgress, StartupProgressCompact, StartupSplash } from './StartupProgress';
 
 // ============================================
+// ⚠️ CONFLICT RESOLUTION
+// ============================================
+export { conflictResolution } from './conflict-resolution';
+export type { Conflict, ConflictStrategy, ConflictStatus, MergeAction, VersionedData, ConflictResolutionOptions, ConflictStats } from './conflict-resolution';
+export { useConflictResolution, useConflict } from './useConflictResolution';
+export type { UseConflictResolutionOptions, UseConflictResolutionResult } from './useConflictResolution';
+export { ConflictResolver, ConflictIndicator, ConflictBanner } from './ConflictResolver';
+
+// ============================================
 // 📱 QR CODE
 // ============================================
 export { QRCodeGenerator, QRScanner } from './QRCodeGenerator';
