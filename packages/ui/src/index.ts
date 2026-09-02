@@ -188,6 +188,15 @@ export type { CompressedData, StorageStats, CompressionOptions, CompressionAlgor
 export { StorageManager, StorageWarning, StorageIndicatorCompact } from './StorageManager';
 
 // ============================================
+// 🚀 CACHE WARMING
+// ============================================
+export { cacheWarming } from './cache-warming';
+export type { WarmTask, WarmPriority, WarmStatus, CacheWarmingOptions, WarmProgress } from './cache-warming';
+export { useCacheWarming, useKiwiCacheWarming, useCacheWarmingProgress } from './useCacheWarming';
+export type { UseCacheWarmingOptions, UseCacheWarmingResult } from './useCacheWarming';
+export { StartupProgress, StartupProgressCompact, StartupSplash } from './StartupProgress';
+
+// ============================================
 // 📱 QR CODE
 // ============================================
 export { QRCodeGenerator, QRScanner } from './QRCodeGenerator';
