@@ -154,7 +154,13 @@ export {
 // 📴 OFFLINE SUPPORT
 // ============================================
 export { offlineQueue, offlineFetch } from './offline-queue';
-export { OfflineIndicator } from './OfflineIndicator';
+export { OfflineIndicator, OfflineIndicatorCompact, OfflineBanner } from './OfflineIndicator';
+export { offlineCache, CACHE_EXPIRATION, withOfflineCache } from './offline-cache';
+export type { CacheEntry, CacheStats } from './offline-cache';
+export { useOfflineCache, useTrafficCache, useTrafficPredictionsCache, useTrafficAlertsCache } from './useOfflineCache';
+export type { UseOfflineCacheOptions, UseOfflineCacheResult } from './useOfflineCache';
+export { useNetworkStatus, useIsOffline, useIsOnline, useIsSlowConnection, useJustCameBackOnline, useNetworkQuality } from './useNetworkStatus';
+export type { NetworkStatus, UseNetworkStatusOptions } from './useNetworkStatus';
 
 // ============================================
 // 📱 QR CODE
