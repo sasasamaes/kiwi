@@ -215,6 +215,15 @@ export type { UseSyncProgressOptions, UseSyncProgressResult } from './useSyncPro
 export { SyncProgressBar, SyncIndicator, SyncToast, SyncStatusPage } from './SyncProgressBar';
 
 // ============================================
+// 💳 OFFLINE PAYMENTS
+// ============================================
+export { offlinePayments } from './offline-payments';
+export type { PaymentItem, ReceiptData, OfflinePaymentOptions, PaymentMethod, PaymentStatus, PaymentType } from './offline-payments';
+export { useOfflinePayments, useMerchantPayments, useCustomerPayments } from './useOfflinePayments';
+export type { UseOfflinePaymentsOptions, UseOfflinePaymentsResult, CreatePaymentData } from './useOfflinePayments';
+export { OfflinePaymentForm, PaymentReceipt } from './OfflinePaymentForm';
+
+// ============================================
 // 📱 QR CODE
 // ============================================
 export { QRCodeGenerator, QRScanner } from './QRCodeGenerator';
