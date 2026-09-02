@@ -1,0 +1,142 @@
+'use client';
+
+import { useState } from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ThemeToggle } from '@kiwi/ui';
+
+const menuItems = [
+  { href: '/admin', icon: '📊', label: 'Dashboard', exact: true },
+  { href: '/admin/users', icon: '👥', label: 'Usuarios' },
+  { href: '/admin/orders', icon: '📦', label: 'Pedidos' },
+  { href: '/admin/kyc', icon: '🪪', label: 'Verificaciones KYC' },
+  { href: '/admin/payments', icon: '💰', label: 'Pagos' },
+  { href: '/admin/settings', icon: '⚙️', label: 'Configuración' },
+];
+
+export default function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const pathname = usePathname();
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  const isActive = (href: string, exact?: boolean) => {
+    if (exact) return pathname === href;
+    return pathname.startsWith(href);
+  };
+
+  return (
+    <div className="min-h-screen bg-bg-light dark:bg-surface-950 flex">
+      {/* Sidebar */}
+      <motion.aside
+        className={`fixed left-0 top-0 h-full bg-white dark:bg-surface-900 border-r border-surface-200 dark:border-surface-700 z-50 ${
+          sidebarOpen ? 'w-64' : 'w-20'
+        } transition-all duration-300`}
+        initial={{ x: -100 }}
+        animate={{ x: 0 }}
+      >
+        {/* Logo */}
+        <div className="p-4 border-b border-surface-200 dark:border-surface-700">
+          <Link href="/admin" className="flex items-center gap-3">
+            <motion.span 
+              className="text-3xl"
+              animate={{ rotate: [0, -10, 10, -10, 0] }}
+              transition={{ duration: 0.5, delay: 0.5 }}
+            >
+              🥝
+            </motion.span>
+            {sidebarOpen && (
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+              >
+                <h1 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100">
+                  Kiwi Admin
+                </h1>
+                <p className="text-xs text-surface-500 dark:text-surface-400">
+                  Panel de administración
+                </p>
+              </motion.div>
+            )}
+          </Link>
+        </div>
+
+        {/* Navigation */}
+        <nav className="p-4">
+          <ul className="space-y-2">
+            {menuItems.map((item) => (
+              <li key={item.href}>
+                <Link
+                  href={item.href}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                    isActive(item.href, item.exact)
+                      ? 'bg-kiwi-50 dark:bg-kiwi-900/30 text-kiwi-600 dark:text-kiwi-400 font-medium'
+                      : 'text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800'
+                  }`}
+                >
+                  <span className="text-xl">{item.icon}</span>
+                  {sidebarOpen && (
+                    <motion.span
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="text-sm"
+                    >
+                      {item.label}
+                    </motion.span>
+                  )}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        {/* Toggle Button */}
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="absolute bottom-4 left-1/2 -translate-x-1/2 p-2 rounded-full bg-surface-100 dark:bg-surface-800 hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors"
+        >
+          <motion.span
+            animate={{ rotate: sidebarOpen ? 0 : 180 }}
+            className="text-xl"
+          >
+            ←
+          </motion.span>
+        </button>
+      </motion.aside>
+
+      {/* Main Content */}
+      <div className={`flex-1 ${sidebarOpen ? 'ml-64' : 'ml-20'} transition-all duration-300`}>
+        {/* Top Header */}
+        <header className="sticky top-0 z-40 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl">
+          <div className="flex items-center justify-between px-6 py-4">
+            <div>
+              <h2 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100">
+                {menuItems.find(item => isActive(item.href, item.exact))?.label || 'Admin'}
+              </h2>
+            </div>
+            <div className="flex items-center gap-4">
+              <ThemeToggle />
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-kiwi-gradient flex items-center justify-center text-white font-semibold shadow-kiwi">
+                  A
+                </div>
+                <div className="hidden sm:block">
+                  <p className="text-sm font-medium text-surface-800 dark:text-surface-100">Admin</p>
+                  <p className="text-xs text-surface-500 dark:text-surface-400">Super Admin</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Page Content */}
+        <main className="p-6">
+          {children}
+        </main>
+      </div>
+    </div>
+  );
+}
