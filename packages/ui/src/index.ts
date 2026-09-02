@@ -282,3 +282,12 @@ export type { RouteSuggestion, RouteComparison, RouteSuggestionProps, RouteCardP
 // ============================================
 export { TrafficPredictions } from './TrafficPredictions';
 export type { TrafficPredictionsProps, TrafficPrediction, HourlyForecast, DailyForecast } from './TrafficPredictions';
+
+// ============================================
+// 🗺️ OFFLINE NAVIGATION
+// ============================================
+export { offlineNavigation } from './offline-navigation';
+export type { Route, SavedWaypoint, OfflineNavigationOptions, RouteStep, RoutePoint, TransportMode, Coordinates } from './offline-navigation';
+export { useOfflineNavigation, useDriverNavigation, useCustomerTracking } from './useOfflineNavigation';
+export type { UseOfflineNavigationOptions, UseOfflineNavigationResult } from './useOfflineNavigation';
+export { OfflineNavigation, NavigationButton } from './OfflineNavigation';
