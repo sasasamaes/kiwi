@@ -1,0 +1,14 @@
+[phases.setup]
+nixPkgs = ["nodejs", "openssl"]
+
+[phases.install]
+cmds = ["npm install"]
+
+[phases.build]
+cmds = ["npm run build"]
+
+[phases.start]
+cmd = "npm run start:prod"
+
+[env]
+NODE_ENV = "production"

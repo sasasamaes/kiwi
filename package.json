@@ -13,6 +13,9 @@
     "dev:all": "concurrently \"npm run dev\" \"npm run dev\"",
     "build": "turbo run build",
     "build:api": "cd api && npm run build",
+    "build:web": "cd apps/web && npm run build",
+    "build:driver": "cd apps/driver && npm run build",
+    "build:client": "cd apps/client && npm run build",
     "test": "turbo run test",
     "test:watch": "turbo run test -- --watch",
     "lint": "turbo run lint",
@@ -22,7 +25,14 @@
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "prisma:generate": "cd api && npm run prisma:generate",
     "prisma:migrate": "cd api && npm run prisma:migrate",
-    "prisma:studio": "cd api && npm run prisma:studio"
+    "prisma:studio": "cd api && npm run prisma:studio",
+    "deploy": "./scripts/deploy.sh",
+    "deploy:api": "cd api && railway up",
+    "deploy:web": "cd apps/web && vercel --prod",
+    "deploy:driver": "cd apps/driver && vercel --prod",
+    "deploy:client": "cd apps/client && vercel --prod",
+    "deploy:admin": "cd apps/web && vercel --prod --name kiwi-admin",
+    "preview": "turbo run dev --filter='./apps/*'"
   },
   "devDependencies": {
     "eslint": "^8.0.0",
