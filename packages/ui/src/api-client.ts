@@ -402,6 +402,48 @@ class ApiClient {
   }
 
   // ============================================
+  // 🚦 TRAFFIC NOTIFICATIONS
+  // ============================================
+
+  async getTrafficNotificationHistory(limit?: number) {
+    const params = new URLSearchParams();
+    if (limit) params.append('limit', String(limit));
+    return this.request<any>(`/notifications/traffic/history?${params.toString()}`);
+  }
+
+  async getTrafficNotificationPreferences() {
+    return this.request<any>('/notifications/traffic/preferences');
+  }
+
+  async updateTrafficNotificationPreferences(preferences: {
+    enabled?: boolean;
+    types?: Record<string, boolean>;
+    minConfidence?: number;
+    trafficLevels?: string[];
+    hours?: number[];
+    days?: number[];
+  }) {
+    return this.request<any>('/notifications/traffic/preferences', {
+      method: 'PUT',
+      body: preferences,
+    });
+  }
+
+  async subscribeToTrafficPredictions(lat: number, lng: number) {
+    return this.request<any>('/notifications/traffic/subscribe', {
+      method: 'POST',
+      body: { lat, lng },
+    });
+  }
+
+  async sendTestTrafficNotification(lat: number, lng: number, type: string) {
+    return this.request<any>('/notifications/traffic/test', {
+      method: 'POST',
+      body: { lat, lng, type },
+    });
+  }
+
+  // ============================================
   // 💳 PAYMENTS
   // ============================================
 

@@ -1,13 +1,17 @@
 import { Controller, Get, Put, Delete, Param, Query, UseGuards, Body } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { NotificationsService } from './notifications.service';
+import { TrafficNotificationService } from './traffic-notification.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @ApiTags('Notifications')
 @Controller('notifications')
 export class NotificationsController {
-  constructor(private readonly notificationsService: NotificationsService) {}
+  constructor(
+    private readonly notificationsService: NotificationsService,
+    private readonly trafficNotificationService: TrafficNotificationService,
+  ) {}
 
   @Get()
   @UseGuards(JwtAuthGuard)
@@ -68,5 +72,84 @@ export class NotificationsController {
     @Body() body: { token: string; platform: 'ios' | 'android' | 'web' },
   ) {
     return this.notificationsService.registerDeviceToken(user.sub, body.token, body.platform);
+  }
+
+  // ============================================
+  // 🚦 TRAFFIC NOTIFICATIONS
+  // ============================================
+
+  @Get('traffic/history')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get traffic notification history' })
+  async getTrafficNotificationHistory(
+    @CurrentUser() user: any,
+    @Query('limit') limit?: string,
+  ) {
+    const limitNum = limit ? parseInt(limit) : 20;
+    return this.trafficNotificationService.getNotificationHistory(user.sub, limitNum);
+  }
+
+  @Get('traffic/preferences')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get traffic notification preferences' })
+  async getTrafficPreferences(@CurrentUser() user: any) {
+    return this.trafficNotificationService.getUserPreferences(user.sub);
+  }
+
+  @Put('traffic/preferences')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update traffic notification preferences' })
+  async updateTrafficPreferences(
+    @CurrentUser() user: any,
+    @Body() body: {
+      enabled?: boolean;
+      types?: Record<string, boolean>;
+      minConfidence?: number;
+      trafficLevels?: string[];
+      hours?: number[];
+      days?: number[];
+    },
+  ) {
+    await this.trafficNotificationService.updateUserPreferences(user.sub, body);
+    return { success: true };
+  }
+
+  @Post('traffic/subscribe')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Subscribe to traffic predictions' })
+  async subscribeToTrafficPredictions(
+    @CurrentUser() user: any,
+    @Body() body: { lat: number; lng: number },
+  ) {
+    await this.trafficNotificationService.sendPredictionNotification(user.sub, body.lat, body.lng);
+    return { success: true };
+  }
+
+  @Post('traffic/test')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Send test traffic notification' })
+  async sendTestNotification(
+    @CurrentUser() user: any,
+    @Body() body: { lat: number; lng: number; type: string },
+  ) {
+    switch (body.type) {
+      case 'prediction':
+        await this.trafficNotificationService.sendPredictionNotification(user.sub, body.lat, body.lng);
+        break;
+      case 'bestTime':
+        await this.trafficNotificationService.sendBestTimeNotification(user.sub, body.lat, body.lng);
+        break;
+      case 'peakHour':
+        await this.trafficNotificationService.sendPeakHourWarning(user.sub, body.lat, body.lng);
+        break;
+      default:
+        await this.trafficNotificationService.sendPredictionNotification(user.sub, body.lat, body.lng);
+    }
+    return { success: true };
   }
 }
