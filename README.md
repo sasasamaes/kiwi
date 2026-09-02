@@ -1,66 +1,104 @@
-# 🚀 Delivery App
+# 🥝 Kiwi
 
-Plataforma de repartidores para comerciantes de Nicoya, Costa Rica.
+> Plataforma de repartidores para comerciantes de Nicoya, Costa Rica
 
-## 🏃 Quick Start
+![Kiwi Logo](public/logo.png)
+
+---
+
+## 🎯 Sobre Kiwi
+
+**Kiwi** es la app que conecta comerciantes con repartidores en Nicoya y Guanacaste. Como el kiwi: fresco, rápido, y lleno de energía.
+
+### Características:
+- 📅 **Pedidos programados** a hora específica
+- 🏍️ **Selección por calidad** (no por precio)
+- 📴 **Modo offline** (funciona sin internet)
+- 💳 **Pagos múltiples** (tarjeta, SINPE, crypto)
+- 🎁 **Incentivos** por permanencia
+
+---
+
+## 🚀 Quick Start
 
 ```bash
-# Install dependencies
+# Instalar dependencias
 npm install
 
-# Setup environment
+# Configurar entorno
 cp .env.example .env
-# Edit .env with your values
 
-# Start development
+# Iniciar desarrollo
 npm run dev
 ```
 
+---
+
 ## 📦 Apps
 
-| App | URL | Description |
+| App | URL | Descripción |
 |-----|-----|-------------|
-| `web` | http://localhost:3000 | Dashboard Comerciantes |
-| `driver` | http://localhost:3001 | App Repartidores |
-| `client` | http://localhost:3002 | Menú QR Clientes |
+| 🍃 `web` | http://localhost:3000 | Dashboard Comerciantes |
+| 🛵 `driver` | http://localhost:3001 | App Repartidores |
+| 📱 `client` | http://localhost:3002 | Menú QR Clientes |
+
+---
+
+## 🎨 Branding
+
+### Colores:
+| Color | Hex | Uso |
+|-------|-----|-----|
+| 🟢 Kiwi Green | `#6BB536` | Primario |
+| 🟤 Kiwi Brown | `#8B5A2B` | Secundario |
+| 🟡 Kiwi Yellow | `#FFD700` | Acento |
+| ⚪ Kiwi White | `#FAFAFA` | Background |
+
+### Logo:
+- 🥝 Kiwi fresco como icono
+- Estilo moderno y limpio
+- Funciona en fondo claro y oscuro
+
+---
 
 ## 🛠️ Commands
 
 ```bash
-# Development
-npm run dev                    # All apps
-npm run dev --filter=web       # Dashboard only
-npm run dev --filter=driver    # Driver app only
+# Desarrollo
+npm run dev                    # Todas las apps
+npm run dev --filter=web       # Solo dashboard
+npm run dev --filter=driver    # Solo app repartidor
 
 # Build
-npm run build                  # Build all
+npm run build                  # Build todo
 
-# Test
-npm test                       # Run tests
-npm run test:watch             # Watch mode
+# Tests
+npm test                       # Ejecutar tests
 
 # Lint
-npm run lint                   # Lint all
-npm run lint:fix               # Auto-fix
+npm run lint                   # Lint todo
 ```
+
+---
 
 ## 📁 Structure
 
 ```
-delivery-app/
+kiwi/
 ├── apps/
-│   ├── web/           # Dashboard Comerciantes (Next.js + PWA)
-│   ├── driver/        # App Repartidores (Next.js + PWA)
-│   └── client/        # Menú QR (Next.js)
+│   ├── web/           # Dashboard Comerciantes 🍃
+│   ├── driver/        # App Repartidores 🛵
+│   └── client/        # Menú QR 📱
 ├── packages/
-│   ├── ui/            # Shared UI components
-│   ├── db/            # Prisma schema + client
+│   ├── ui/            # Componentes compartidos
+│   ├── db/            # Prisma schema
 │   ├── types/         # TypeScript types
-│   └── config/        # Shared configs (ESLint, TS)
-├── api/               # Backend (NestJS)
-├── turbo.json
-└── package.json
+│   └── config/        # Configs compartidas
+├── api/               # Backend NestJS
+└── turbo.json
 ```
+
+---
 
 ## 🧪 Testing
 
@@ -70,30 +108,18 @@ npm test
 
 # E2E tests
 npm run test:e2e
-
-# Coverage
-npm run test:coverage
 ```
+
+---
 
 ## 🚀 Deploy
 
-- **Frontend:** Vercel (auto-deploy from GitHub)
-- **Backend:** Railway / AWS ECS
+- **Frontend:** Vercel
+- **Backend:** Railway / AWS
 - **Database:** Supabase / Neon
 
-## 📚 Documentation
-
-- [Development Guide](docs/development.md)
-- [API Documentation](docs/api.md)
-- [Architecture](docs/architecture.md)
-
-## 🤝 Contributing
-
-1. Create feature branch (`git checkout -b feat/amazing-feature`)
-2. Commit changes (`git commit -m 'feat: add amazing feature'`)
-3. Push to branch (`git push origin feat/amazing-feature`)
-4. Open Pull Request
+---
 
 ## 📄 License
 
-MIT © 2026 Delivery App
+MIT © 2026 Kiwi 🥝

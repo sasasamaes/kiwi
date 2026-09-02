@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ['@delivery/ui', '@delivery/types', '@delivery/db'],
+  transpilePackages: ['@kiwi/ui', '@kiwi/types', '@kiwi/db'],
   experimental: {
     optimizePackageImports: ['lucide-react'],
   },

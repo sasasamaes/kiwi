@@ -1,5 +1,5 @@
 {
-  "name": "@delivery/web",
+  "name": "@kiwi/web",
   "version": "1.0.0",
   "private": true,
   "scripts": {
@@ -17,9 +17,9 @@
     "next": "^15.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "@delivery/ui": "*",
-    "@delivery/types": "*",
-    "@delivery/db": "*",
+    "@kiwi/ui": "*",
+    "@kiwi/types": "*",
+    "@kiwi/db": "*",
     "lucide-react": "^0.400.0",
     "clsx": "^2.0.0",
     "tailwind-merge": "^2.0.0"

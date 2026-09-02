@@ -3,43 +3,84 @@
 @tailwind utilities;
 
 :root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 245, 247, 250;
-  --background-end-rgb: 255, 255, 255;
+  /* 🥝 Kiwi Brand Colors */
+  --kiwi-500: #6BB536;
+  --kiwi-600: #5a9e2e;
+  --bark-500: #8B5A2B;
+  --bark-600: #7a4f25;
+  --sunshine-500: #FFD700;
+  --sunshine-600: #e6c200;
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+  font-family: var(--font-inter), system-ui, sans-serif;
+  background: linear-gradient(135deg, #f0fdf4 0%, #FAFAFA 100%);
+  min-height: 100vh;
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
+/* 🥝 Kiwi Gradient Background */
+.bg-kiwi-gradient {
+  background: linear-gradient(135deg, #6BB536 0%, #4a8726 100%);
 }
 
-/* Custom scrollbar */
+/* 🥝 Kiwi Card Hover Effect */
+.card-kiwi:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 40px 0 rgba(107, 181, 54, 0.3);
+}
+
+/* 🥝 Kiwi Button Glow */
+.btn-kiwi-glow {
+  box-shadow: 0 0 20px rgba(107, 181, 54, 0.4);
+}
+
+.btn-kiwi-glow:hover {
+  box-shadow: 0 0 30px rgba(107, 181, 54, 0.6);
+}
+
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: #f0fdf4;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
+  background: #6BB536;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #a1a1a1;
+  background: #5a9e2e;
+}
+
+/* 🥝 Kiwi Animations */
+@keyframes kiwi-bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.animate-kiwi-bounce {
+  animation: kiwi-bounce 2s ease-in-out infinite;
+}
+
+@keyframes kiwi-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-kiwi-pulse {
+  animation: kiwi-pulse 2s ease-in-out infinite;
 }
