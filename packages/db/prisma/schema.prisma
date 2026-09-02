@@ -96,6 +96,7 @@ model DriverProfile {
   favoriteDrivers FavoriteDriver[]
   ratings        Rating[]
   incentives     DriverIncentive[]
+  withdrawals    Withdrawal[]
 
   @@map("driver_profiles")
 }
@@ -384,6 +385,53 @@ enum IncentiveType {
 enum IncentiveStatus {
   pending
   delivered
+}
+
+// Withdrawals
+model Withdrawal {
+  id              String           @id @default(uuid())
+  driverId        String           @map("driver_id")
+  amount          Decimal          @db.Decimal(10, 2)
+  currency        String           @default("CRC")
+  status          WithdrawalStatus @default(pending)
+  paymentMethod   WithdrawalMethod @map("payment_method")
+  
+  // SINPE details
+  sinpePhone      String?          @map("sinpe_phone")
+  sinpeName       String?          @map("sinpe_name")
+  
+  // Bank transfer details
+  bankName        String?          @map("bank_name")
+  accountNumber   String?          @map("account_number")
+  accountHolder   String?          @map("account_holder")
+  
+  // Processing
+  processedAt     DateTime?        @map("processed_at")
+  processedBy     String?          @map("processed_by")
+  rejectionReason String?          @map("rejection_reason")
+  transactionId   String?          @map("transaction_id")
+  
+  // Timestamps
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+
+  // Relations
+  driver DriverProfile @relation(fields: [driverId], references: [id])
+
+  @@map("withdrawals")
+}
+
+enum WithdrawalStatus {
+  pending
+  processing
+  completed
+  failed
+  rejected
+}
+
+enum WithdrawalMethod {
+  sinpe
+  bank_transfer
 }
 
 // Menu Items

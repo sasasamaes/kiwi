@@ -558,6 +558,335 @@ async function main() {
   console.log('  ✅ Order #5 (assigned) - Bowl Proteína');
 
   // ============================================
+  // 📦 MORE COMPLETED ORDERS (for earnings testing)
+  // ============================================
+  console.log('\n📦 Creating completed orders for earnings testing...');
+
+  const completedOrders = [
+    // Juan Carlos deliveries
+    {
+      driverId: juanDriver.id,
+      daysAgo: 1,
+      items: [
+        { menuItemIdx: 0, qty: 2 }, // Bowl Tropikal x2
+        { menuItemIdx: 4, qty: 2 }, // Café Americano x2
+      ],
+      address: 'Barrio San José, 100m este del estadio',
+      distance: 1.2,
+    },
+    {
+      driverId: juanDriver.id,
+      daysAgo: 1,
+      items: [
+        { menuItemIdx: 2, qty: 1 }, // Bowl Hawaiian
+        { menuItemIdx: 8, qty: 1 }, // Smoothie Verde
+      ],
+      address: 'Santa Cruz, 500m sur del banco',
+      distance: 3.5,
+    },
+    {
+      driverId: juanDriver.id,
+      daysAgo: 2,
+      items: [
+        { menuItemIdx: 3, qty: 1 }, // Bowl Proteína
+        { menuItemIdx: 11, qty: 1 }, // Patacones
+      ],
+      address: 'Barrio El Carmen, 50m oeste del parque',
+      distance: 0.8,
+    },
+    {
+      driverId: juanDriver.id,
+      daysAgo: 2,
+      items: [
+        { menuItemIdx: 0, qty: 1 }, // Bowl Tropikal
+        { menuItemIdx: 5, qty: 2 }, // Café con Leche x2
+      ],
+      address: 'Frente al hospital de Nicoya',
+      distance: 2.0,
+    },
+    {
+      driverId: juanDriver.id,
+      daysAgo: 3,
+      items: [
+        { menuItemIdx: 1, qty: 1 }, // Bowl Verde
+        { menuItemIdx: 9, qty: 1 }, // Jugo de Guanábana
+      ],
+      address: 'Barrio Los Ángeles, casa azul',
+      distance: 1.5,
+    },
+    {
+      driverId: juanDriver.id,
+      daysAgo: 3,
+      items: [
+        { menuItemIdx: 4, qty: 3 }, // Café Americano x3
+      ],
+      address: 'Oficina municipal de Nicoya',
+      distance: 0.5,
+    },
+    {
+      driverId: juanDriver.id,
+      daysAgo: 4,
+      items: [
+        { menuItemIdx: 0, qty: 1 }, // Bowl Tropikal
+        { menuItemIdx: 10, qty: 1 }, // Agua de Coco
+      ],
+      address: 'Playa Samara, 200m de la playa',
+      distance: 8.5,
+    },
+    {
+      driverId: juanDriver.id,
+      daysAgo: 5,
+      items: [
+        { menuItemIdx: 2, qty: 2 }, // Bowl Hawaiian x2
+        { menuItemIdx: 12, qty: 1 }, // Empanadas
+      ],
+      address: 'Barrio San José, 50m norte del estadio',
+      distance: 1.0,
+    },
+    {
+      driverId: juanDriver.id,
+      daysAgo: 6,
+      items: [
+        { menuItemIdx: 3, qty: 1 }, // Bowl Proteína
+        { menuItemIdx: 6, qty: 1 }, // Latte
+      ],
+      address: 'Santa Cruz, 1km norte del parque',
+      distance: 5.0,
+    },
+    {
+      driverId: juanDriver.id,
+      daysAgo: 7,
+      items: [
+        { menuItemIdx: 0, qty: 1 }, // Bowl Tropikal
+        { menuItemIdx: 4, qty: 1 }, // Café Americano
+        { menuItemIdx: 11, qty: 1 }, // Patacones
+      ],
+      address: 'Barrio El Carmen, frente al parque',
+      distance: 0.3,
+    },
+
+    // Fran deliveries
+    {
+      driverId: franDriver.id,
+      daysAgo: 1,
+      items: [
+        { menuItemIdx: 0, qty: 3 }, // Bowl Tropikal x3
+        { menuItemIdx: 8, qty: 3 }, // Smoothie Verde x3
+      ],
+      address: 'Liberia, 1km sur del hospital',
+      distance: 22.0,
+    },
+    {
+      driverId: franDriver.id,
+      daysAgo: 2,
+      items: [
+        { menuItemIdx: 2, qty: 1 }, // Bowl Hawaiian
+        { menuItemIdx: 7, qty: 1 }, // Cappuccino
+      ],
+      address: 'Playa Hermosa, 100m de la entrada',
+      distance: 12.0,
+    },
+    {
+      driverId: franDriver.id,
+      daysAgo: 3,
+      items: [
+        { menuItemIdx: 3, qty: 2 }, // Bowl Proteína x2
+        { menuItemIdx: 12, qty: 2 }, // Empanadas x2
+      ],
+      address: 'Barrio Los Ángeles, 300m norte del parque',
+      distance: 1.8,
+    },
+    {
+      driverId: franDriver.id,
+      daysAgo: 4,
+      items: [
+        { menuItemIdx: 0, qty: 1 }, // Bowl Tropikal
+        { menuItemIdx: 5, qty: 1 }, // Café con Leche
+      ],
+      address: 'Santa Cruz centro',
+      distance: 4.5,
+    },
+    {
+      driverId: franDriver.id,
+      daysAgo: 5,
+      items: [
+        { menuItemIdx: 1, qty: 2 }, // Bowl Verde x2
+        { menuItemIdx: 9, qty: 2 }, // Jugo de Guanábana x2
+      ],
+      address: 'Barrio San José, 200m sur del estadio',
+      distance: 1.2,
+    },
+    {
+      driverId: franDriver.id,
+      daysAgo: 6,
+      items: [
+        { menuItemIdx: 0, qty: 1 }, // Bowl Tropikal
+        { menuItemIdx: 4, qty: 1 }, // Café Americano
+      ],
+      address: 'Frente al parque central de Nicoya',
+      distance: 0.2,
+    },
+    {
+      driverId: franDriver.id,
+      daysAgo: 7,
+      items: [
+        { menuItemIdx: 2, qty: 1 }, // Bowl Hawaiian
+        { menuItemIdx: 6, qty: 1 }, // Latte
+      ],
+      address: 'Playa Samara, hotel playa',
+      distance: 9.0,
+    },
+
+    // Joel deliveries
+    {
+      driverId: joelDriver.id,
+      daysAgo: 1,
+      items: [
+        { menuItemIdx: 3, qty: 1 }, // Bowl Proteína
+        { menuItemIdx: 10, qty: 1 }, // Agua de Coco
+      ],
+      address: 'Barrio El Carmen, 100m oeste del parque',
+      distance: 0.6,
+    },
+    {
+      driverId: joelDriver.id,
+      daysAgo: 2,
+      items: [
+        { menuItemIdx: 0, qty: 1 }, // Bowl Tropikal
+        { menuItemIdx: 4, qty: 1 }, // Café Americano
+      ],
+      address: 'Santa Cruz, frente al banco',
+      distance: 3.8,
+    },
+    {
+      driverId: joelDriver.id,
+      daysAgo: 3,
+      items: [
+        { menuItemIdx: 1, qty: 1 }, // Bowl Verde
+        { menuItemIdx: 7, qty: 1 }, // Cappuccino
+      ],
+      address: 'Barrio Los Ángeles, casa blanca',
+      distance: 1.5,
+    },
+    {
+      driverId: joelDriver.id,
+      daysAgo: 4,
+      items: [
+        { menuItemIdx: 2, qty: 1 }, // Bowl Hawaiian
+        { menuItemIdx: 8, qty: 1 }, // Smoothie Verde
+      ],
+      address: 'Oficina de turismo de Nicoya',
+      distance: 0.4,
+    },
+    {
+      driverId: joelDriver.id,
+      daysAgo: 5,
+      items: [
+        { menuItemIdx: 0, qty: 2 }, // Bowl Tropikal x2
+        { menuItemIdx: 5, qty: 2 }, // Café con Leche x2
+      ],
+      address: 'Barrio San José, 50m norte del estadio',
+      distance: 1.0,
+    },
+    {
+      driverId: joelDriver.id,
+      daysAgo: 6,
+      items: [
+        { menuItemIdx: 3, qty: 1 }, // Bowl Proteína
+        { menuItemIdx: 11, qty: 1 }, // Patacones
+      ],
+      address: 'Playa Hermosa, frente al hotel',
+      distance: 11.0,
+    },
+    {
+      driverId: joelDriver.id,
+      daysAgo: 7,
+      items: [
+        { menuItemIdx: 0, qty: 1 }, // Bowl Tropikal
+        { menuItemIdx: 4, qty: 1 }, // Café Americano
+      ],
+      address: 'Santa Cruz centro, 200m sur del parque',
+      distance: 4.2,
+    },
+  ];
+
+  for (const orderData of completedOrders) {
+    const daysAgo = orderData.daysAgo;
+    const createdAt = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000);
+    const assignedAt = new Date(createdAt.getTime() + 5 * 60 * 1000);
+    const pickedUpAt = new Date(assignedAt.getTime() + 10 * 60 * 1000);
+    const deliveredAt = new Date(pickedUpAt.getTime() + 20 * 60 * 1000);
+
+    // Calculate pricing based on distance
+    let basePrice = 800;
+    if (orderData.distance > 1) basePrice = 1000;
+    if (orderData.distance > 2) basePrice = 1500;
+    if (orderData.distance > 5) basePrice = 2000;
+    if (orderData.distance > 10) basePrice = 2000 + (orderData.distance - 10) * 350;
+
+    const commission = basePrice * 0.05;
+    const driverPayout = basePrice - commission;
+
+    // Calculate total from items
+    let totalAmount = 0;
+    const orderItems = orderData.items.map((item) => {
+      const menuItem = menuItems[item.menuItemIdx];
+      totalAmount += Number(menuItem.price) * item.qty;
+      return {
+        menuItemId: menuItem.id,
+        name: menuItem.name,
+        price: menuItem.price,
+        quantity: item.qty,
+      };
+    });
+
+    // Add delivery fee to total
+    totalAmount += basePrice;
+
+    const order = await prisma.order.create({
+      data: {
+        merchantId: luisMerchant.id,
+        driverId: orderData.driverId,
+        status: OrderStatus.delivered,
+        orderType: OrderType.immediate,
+        pickupAddress: 'Bowl & Café Luis Alfredo, Nicoya Centro',
+        pickupLat: 10.1483,
+        pickupLng: -85.4527,
+        deliveryAddress: orderData.address,
+        distanceKm: orderData.distance,
+        basePrice,
+        commission,
+        driverPayout,
+        totalAmount,
+        assignedAt,
+        pickedUpAt,
+        deliveredAt,
+        createdAt,
+      },
+    });
+
+    await prisma.orderItem.createMany({
+      data: orderItems.map((item) => ({
+        orderId: order.id,
+        ...item,
+      })),
+    });
+
+    // Create payment for each completed order
+    await prisma.payment.create({
+      data: {
+        orderId: order.id,
+        amount: totalAmount,
+        currency: 'CRC',
+        method: PaymentMethod.sinpe,
+        status: PaymentStatus.completed,
+      },
+    });
+  }
+
+  console.log(`  ✅ ${completedOrders.length} completed orders created`);
+
+  // ============================================
   // ⭐ RATINGS
   // ============================================
   console.log('\n⭐ Creating ratings...');
@@ -625,17 +954,24 @@ async function main() {
   🔧 Admin:    admin@kiwi.app
 
 📦 Sample Orders:
-  ✅ Delivered: Bowl Tropikal + Café (Juan Carlos)
-  🚚 In Transit: Bowl Hawaiian + Smoothie (Fran)
-  ⏳ Pending: Patacones + Jugo
-  📅 Scheduled: 10x Bowl Tropikal para evento (Liberia)
-  🛵 Assigned: Bowl Proteína (Joel)
+  ✅ 28 Delivered orders (for earnings testing)
+  🚚 1 In Transit (Bowl Hawaiian + Smoothie, Fran)
+  ⏳ 1 Pending (Patacones + Jugo)
+  📅 1 Scheduled (10x Bowl Tropikal para evento, Liberia)
+  🛵 1 Assigned (Bowl Proteína, Joel)
+
+📊 Earnings Summary:
+  🛵 Juan Carlos: ~10 deliveries (moto)
+  🚗 Fran: ~7 deliveries (carro)
+  🛵 Joel: ~7 deliveries (moto)
 
 🍽️ Menu Items: ${menuItems.length} productos
   🥗 4 Bowls (₡4,200 - ₡5,500)
   ☕ 4 Cafés (₡1,200 - ₡1,800)
   🥤 3 Bebidas (₡1,500 - ₡2,500)
   🍌 3 Snacks (₡1,200 - ₡2,200)
+
+💳 Payments: All completed orders have SINPE payments
 `);
 }
 
