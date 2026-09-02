@@ -600,6 +600,16 @@ export default function MerchantAnalyticsPage() {
               <span className="text-sm font-medium">Mi QR</span>
             </motion.button>
           </Link>
+          <Link href="/analytics/traffic">
+            <motion.button 
+              className="w-full p-4 rounded-xl bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/50 transition-colors"
+              whileHover={{ y: -2 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <span className="text-2xl block mb-2">🚦</span>
+              <span className="text-sm font-medium">Tráfico</span>
+            </motion.button>
+          </Link>
         </div>
       </motion.div>
     </div>
