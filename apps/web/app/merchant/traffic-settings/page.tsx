@@ -1,122 +1,82 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  AnimatedButton, 
-  Skeleton,
-  ThemeToggle,
-  useAuth,
-  api
-} from '@kiwi/ui';
+import Link from 'next/link';
 
 interface TrafficSettings {
-  // Delivery preferences
-  deliveryRadius: number; // km
-  maxDeliveryDistance: number; // km
-  estimatedDeliveryTime: number; // minutes
-  
-  // Traffic preferences
+  deliveryRadius: number;
+  maxDeliveryTime: number;
   avoidHeavyTraffic: boolean;
   preferMainRoads: boolean;
-  allowAlternativeRoutes: boolean;
-  
-  // Time preferences
-  peakHourSurcharge: boolean;
-  peakHourMultiplier: number; // 1.0 = no surcharge
-  freeDeliveryThreshold: number; // minimum order for free delivery
-  
-  // Notification preferences
-  trafficAlerts: boolean;
-  trafficPredictions: boolean;
-  bestTimeRecommendations: boolean;
-  deliveryDelayWarnings: boolean;
-  
-  // Operating hours based on traffic
-  useTrafficBasedHours: boolean;
-  peakHoursStart: number; // hour (0-23)
-  peakHoursEnd: number;
-  closedDuringPeak: boolean;
-  
-  // Pricing adjustments
+  allowAlternatives: boolean;
+  peakHoursEnabled: boolean;
+  peakHoursMultiplier: number;
+  peakHours: string[];
+  freeDeliveryThreshold: number;
+  minimumOrder: number;
   dynamicPricing: boolean;
-  trafficBasedPricing: boolean;
-  minimumOrderForDelivery: number;
+  notificationsEnabled: boolean;
+  predictionAlerts: boolean;
+  bestTimeAlerts: boolean;
+  peakHourWarnings: boolean;
+  delayWarnings: boolean;
+  routeRecommendations: boolean;
 }
 
-const DEFAULT_SETTINGS: TrafficSettings = {
-  deliveryRadius: 5,
-  maxDeliveryDistance: 10,
-  estimatedDeliveryTime: 30,
-  avoidHeavyTraffic: true,
-  preferMainRoads: true,
-  allowAlternativeRoutes: true,
-  peakHourSurcharge: false,
-  peakHourMultiplier: 1.0,
-  freeDeliveryThreshold: 5000,
-  trafficAlerts: true,
-  trafficPredictions: true,
-  bestTimeRecommendations: true,
-  deliveryDelayWarnings: true,
-  useTrafficBasedHours: false,
-  peakHoursStart: 7,
-  peakHoursEnd: 9,
-  closedDuringPeak: false,
-  dynamicPricing: false,
-  trafficBasedPricing: false,
-  minimumOrderForDelivery: 2000,
-};
+export default function MerchantTrafficSettings() {
+  const [settings, setSettings] = useState<TrafficSettings>({
+    deliveryRadius: 5,
+    maxDeliveryTime: 30,
+    avoidHeavyTraffic: true,
+    preferMainRoads: true,
+    allowAlternatives: true,
+    peakHoursEnabled: true,
+    peakHoursMultiplier: 1.2,
+    peakHours: ['morning', 'lunch', 'evening'],
+    freeDeliveryThreshold: 5000,
+    minimumOrder: 2000,
+    dynamicPricing: true,
+    notificationsEnabled: true,
+    predictionAlerts: true,
+    bestTimeAlerts: true,
+    peakHourWarnings: true,
+    delayWarnings: true,
+    routeRecommendations: true,
+  });
 
-const PEAK_HOUR_OPTIONS = [
-  { start: 7, end: 9, label: 'Mañana (7-9 AM)' },
-  { start: 12, end: 14, label: 'Mediodía (12-2 PM)' },
-  { start: 17, end: 19, label: 'Tarde (5-7 PM)' },
-  { start: 7, end: 19, label: 'Todo el día pico' },
-];
-
-export default function MerchantTrafficSettingsPage() {
-  const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
-  
-  const [settings, setSettings] = useState<TrafficSettings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
-    if (!authLoading && (!user || user.role !== 'merchant')) {
-      router.push('/login');
-    }
-  }, [user, authLoading, router]);
+    fetchSettings();
+  }, []);
 
-  const fetchSettings = useCallback(async () => {
+  const fetchSettings = async () => {
     try {
-      // In production, fetch from API
-      // For now, use defaults
-      setSettings(DEFAULT_SETTINGS);
+      const response = await fetch('/api/merchant/traffic-settings');
+      if (response.ok) {
+        const data = await response.json();
+        setSettings(data);
+      }
     } catch (error) {
       console.error('Failed to fetch settings:', error);
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  useEffect(() => {
-    if (user) {
-      fetchSettings();
-    }
-  }, [user, fetchSettings]);
+  };
 
   const handleSave = async () => {
+    setSaving(true);
     try {
-      setSaving(true);
-      // In production, save to API
-      // await api.updateMerchantTrafficSettings(settings);
-      await new Promise(resolve => setTimeout(resolve, 500)); // Simulate save
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
+      await fetch('/api/merchant/traffic-settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings),
+      });
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 3000);
     } catch (error) {
       console.error('Failed to save settings:', error);
     } finally {
@@ -131,660 +91,522 @@ export default function MerchantTrafficSettingsPage() {
     setSettings(prev => ({ ...prev, [key]: value }));
   };
 
-  if (authLoading || loading) {
+  if (loading) {
     return (
-      <div className="min-h-screen bg-bg-light dark:bg-surface-950">
-        <div className="sticky top-0 z-50 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl">
-          <div className="mx-auto max-w-4xl px-4 py-4">
-            <Skeleton className="h-6 w-48" />
+      <div className="min-h-screen bg-gradient-to-br from-surface-50 to-surface-100 dark:from-surface-900 dark:to-surface-800">
+        <div className="max-w-3xl mx-auto px-4 py-8">
+          <div className="animate-pulse space-y-6">
+            <div className="h-8 bg-surface-200 dark:bg-surface-700 rounded w-64" />
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="h-32 bg-surface-200 dark:bg-surface-700 rounded-2xl" />
+            ))}
           </div>
-        </div>
-        <div className="mx-auto max-w-4xl px-4 py-8 space-y-4">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark">
-              <Skeleton className="h-48 w-full" />
-            </div>
-          ))}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-bg-light dark:bg-surface-950">
+    <div className="min-h-screen bg-gradient-to-br from-surface-50 to-surface-100 dark:from-surface-900 dark:to-surface-800">
       {/* Header */}
-      <motion.header 
-        className="sticky top-0 z-50 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl"
-        initial={{ y: -100 }}
-        animate={{ y: 0 }}
-      >
-        <div className="mx-auto max-w-4xl px-4 py-4">
+      <div className="bg-white/80 dark:bg-surface-800/80 backdrop-blur-xl border-b border-surface-200 dark:border-surface-700 sticky top-0 z-40">
+        <div className="max-w-3xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <Link href="/dashboard" className="flex items-center gap-2 text-surface-600 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200">
-              <motion.span whileHover={{ x: -4 }}>←</motion.span>
-              <span className="text-sm font-medium">Dashboard</span>
-            </Link>
-            <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">⚙️ Configuración de Tráfico</h1>
-            <ThemeToggle />
+            <div className="flex items-center gap-4">
+              <Link
+                href="/settings"
+                className="p-2 hover:bg-surface-100 dark:hover:bg-surface-700 rounded-xl transition-colors"
+              >
+                <svg className="w-5 h-5 text-surface-600 dark:text-surface-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </Link>
+              <div>
+                <h1 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100">
+                  ⚙️ Configuración de Tráfico
+                </h1>
+                <p className="text-sm text-surface-500 dark:text-surface-400">
+                  Personaliza las entregas según el tráfico
+                </p>
+              </div>
+            </div>
+
+            <motion.button
+              onClick={handleSave}
+              disabled={saving}
+              className={`px-4 py-2 rounded-xl font-medium transition-colors ${
+                saving
+                  ? 'bg-surface-200 dark:bg-surface-700 text-surface-500'
+                  : 'bg-kiwi-500 hover:bg-kiwi-600 text-white'
+              }`}
+              whileTap={{ scale: 0.95 }}
+            >
+              {saving ? 'Guardando...' : 'Guardar'}
+            </motion.button>
           </div>
         </div>
-      </motion.header>
+      </div>
 
-      <main className="mx-auto max-w-4xl px-4 py-8">
-        {/* Save Success Toast */}
-        <AnimatePresence>
-          {saved && (
-            <motion.div
-              className="fixed top-20 right-4 z-50 rounded-xl bg-green-500 text-white px-4 py-3 shadow-lg"
-              initial={{ opacity: 0, x: 100 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 100 }}
-            >
-              ✅ Configuración guardada
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <div className="space-y-6">
-          {/* Delivery Radius Settings */}
+      {/* Success Toast */}
+      <AnimatePresence>
+        {showSuccess && (
           <motion.div
-            className="rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+            className="fixed top-20 right-4 z-50 bg-kiwi-500 text-white px-4 py-3 rounded-xl shadow-lg"
+            initial={{ opacity: 0, x: 100 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 100 }}
           >
-            <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-              📍 Radio de Entrega
-            </h3>
+            ✅ Configuración guardada
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-            <div className="space-y-4">
-              {/* Delivery Radius */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm text-surface-600 dark:text-surface-400">
-                    Radio máximo de entrega
-                  </label>
-                  <span className="text-sm font-semibold text-kiwi-600 dark:text-kiwi-400">
-                    {settings.deliveryRadius} km
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min="1"
-                  max="20"
-                  step="0.5"
-                  value={settings.deliveryRadius}
-                  onChange={(e) => updateSetting('deliveryRadius', parseFloat(e.target.value))}
-                  className="w-full h-2 bg-surface-200 dark:bg-surface-700 rounded-lg appearance-none cursor-pointer accent-kiwi-500"
-                />
-                <div className="flex justify-between text-xs text-surface-400 dark:text-surface-500 mt-1">
-                  <span>1 km</span>
-                  <span>20 km</span>
-                </div>
+      {/* Main Content */}
+      <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
+        {/* Delivery Radius */}
+        <motion.div
+          className="bg-white dark:bg-surface-800 rounded-2xl p-6 shadow-soft dark:shadow-dark"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <h2 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100 mb-4">
+            📍 Radio de Entrega
+          </h2>
+
+          <div className="space-y-6">
+            <div>
+              <div className="flex justify-between mb-2">
+                <label className="text-sm font-medium text-surface-700 dark:text-surface-300">
+                  Radio máximo
+                </label>
+                <span className="text-sm font-bold text-kiwi-600 dark:text-kiwi-400">
+                  {settings.deliveryRadius} km
+                </span>
               </div>
-
-              {/* Estimated Delivery Time */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm text-surface-600 dark:text-surface-400">
-                    Tiempo estimado de entrega
-                  </label>
-                  <span className="text-sm font-semibold text-kiwi-600 dark:text-kiwi-400">
-                    {settings.estimatedDeliveryTime} min
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min="15"
-                  max="60"
-                  step="5"
-                  value={settings.estimatedDeliveryTime}
-                  onChange={(e) => updateSetting('estimatedDeliveryTime', parseInt(e.target.value))}
-                  className="w-full h-2 bg-surface-200 dark:bg-surface-700 rounded-lg appearance-none cursor-pointer accent-kiwi-500"
-                />
-                <div className="flex justify-between text-xs text-surface-400 dark:text-surface-500 mt-1">
-                  <span>15 min</span>
-                  <span>60 min</span>
-                </div>
+              <input
+                type="range"
+                min="1"
+                max="20"
+                step="0.5"
+                value={settings.deliveryRadius}
+                onChange={(e) => updateSetting('deliveryRadius', parseFloat(e.target.value))}
+                className="w-full h-2 bg-surface-200 dark:bg-surface-700 rounded-lg appearance-none cursor-pointer accent-kiwi-500"
+              />
+              <div className="flex justify-between text-xs text-surface-500 dark:text-surface-400 mt-1">
+                <span>1 km</span>
+                <span>20 km</span>
               </div>
             </div>
-          </motion.div>
 
-          {/* Traffic Preferences */}
-          <motion.div
-            className="rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
-            <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-              🚦 Preferencias de Tráfico
-            </h3>
+            <div>
+              <div className="flex justify-between mb-2">
+                <label className="text-sm font-medium text-surface-700 dark:text-surface-300">
+                  Tiempo máximo de entrega
+                </label>
+                <span className="text-sm font-bold text-kiwi-600 dark:text-kiwi-400">
+                  {settings.maxDeliveryTime} min
+                </span>
+              </div>
+              <input
+                type="range"
+                min="15"
+                max="60"
+                step="5"
+                value={settings.maxDeliveryTime}
+                onChange={(e) => updateSetting('maxDeliveryTime', parseInt(e.target.value))}
+                className="w-full h-2 bg-surface-200 dark:bg-surface-700 rounded-lg appearance-none cursor-pointer accent-kiwi-500"
+              />
+              <div className="flex justify-between text-xs text-surface-500 dark:text-surface-400 mt-1">
+                <span>15 min</span>
+                <span>60 min</span>
+              </div>
+            </div>
+          </div>
+        </motion.div>
 
-            <div className="space-y-4">
-              {/* Avoid Heavy Traffic */}
-              <div className="flex items-center justify-between p-3 rounded-xl bg-surface-50 dark:bg-surface-900">
+        {/* Traffic Preferences */}
+        <motion.div
+          className="bg-white dark:bg-surface-800 rounded-2xl p-6 shadow-soft dark:shadow-dark"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <h2 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100 mb-4">
+            🚦 Preferencias de Tráfico
+          </h2>
+
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-4 rounded-xl bg-surface-50 dark:bg-surface-900">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">🚫</span>
                 <div>
-                  <p className="font-medium text-surface-800 dark:text-surface-100">
+                  <p className="font-medium text-surface-800 dark:text-surface-200">
                     Evitar tráfico pesado
                   </p>
-                  <p className="text-xs text-surface-500 dark:text-surface-400">
-                    Rutas alternativas cuando hay congestión
+                  <p className="text-sm text-surface-500 dark:text-surface-400">
+                    No aceptar entregas en horas pico
                   </p>
                 </div>
-                <motion.button
-                  className={`relative h-8 w-14 rounded-full p-1 transition-colors ${
-                    settings.avoidHeavyTraffic ? 'bg-kiwi-500' : 'bg-surface-300 dark:bg-surface-600'
-                  }`}
-                  onClick={() => updateSetting('avoidHeavyTraffic', !settings.avoidHeavyTraffic)}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <motion.div
-                    className="h-6 w-6 rounded-full bg-white shadow-md"
-                    animate={{ x: settings.avoidHeavyTraffic ? 24 : 0 }}
-                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                  />
-                </motion.button>
               </div>
+              <button
+                onClick={() => updateSetting('avoidHeavyTraffic', !settings.avoidHeavyTraffic)}
+                className={`relative w-12 h-6 rounded-full transition-colors ${
+                  settings.avoidHeavyTraffic ? 'bg-kiwi-500' : 'bg-surface-300 dark:bg-surface-600'
+                }`}
+              >
+                <motion.div
+                  className="absolute top-1 left-1 w-4 h-4 bg-white rounded-full"
+                  animate={{ x: settings.avoidHeavyTraffic ? 24 : 0 }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                />
+              </button>
+            </div>
 
-              {/* Prefer Main Roads */}
-              <div className="flex items-center justify-between p-3 rounded-xl bg-surface-50 dark:bg-surface-900">
+            <div className="flex items-center justify-between p-4 rounded-xl bg-surface-50 dark:bg-surface-900">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">🛣️</span>
                 <div>
-                  <p className="font-medium text-surface-800 dark:text-surface-100">
+                  <p className="font-medium text-surface-800 dark:text-surface-200">
                     Preferir caminos principales
                   </p>
-                  <p className="text-xs text-surface-500 dark:text-surface-400">
-                    Usar avenidas y carreteras principales
+                  <p className="text-sm text-surface-500 dark:text-surface-400">
+                    Usar rutas principales aunque sean más largas
                   </p>
                 </div>
-                <motion.button
-                  className={`relative h-8 w-14 rounded-full p-1 transition-colors ${
-                    settings.preferMainRoads ? 'bg-kiwi-500' : 'bg-surface-300 dark:bg-surface-600'
-                  }`}
-                  onClick={() => updateSetting('preferMainRoads', !settings.preferMainRoads)}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <motion.div
-                    className="h-6 w-6 rounded-full bg-white shadow-md"
-                    animate={{ x: settings.preferMainRoads ? 24 : 0 }}
-                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                  />
-                </motion.button>
               </div>
+              <button
+                onClick={() => updateSetting('preferMainRoads', !settings.preferMainRoads)}
+                className={`relative w-12 h-6 rounded-full transition-colors ${
+                  settings.preferMainRoads ? 'bg-kiwi-500' : 'bg-surface-300 dark:bg-surface-600'
+                }`}
+              >
+                <motion.div
+                  className="absolute top-1 left-1 w-4 h-4 bg-white rounded-full"
+                  animate={{ x: settings.preferMainRoads ? 24 : 0 }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                />
+              </button>
+            </div>
 
-              {/* Allow Alternative Routes */}
-              <div className="flex items-center justify-between p-3 rounded-xl bg-surface-50 dark:bg-surface-900">
+            <div className="flex items-center justify-between p-4 rounded-xl bg-surface-50 dark:bg-surface-900">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">🔄</span>
                 <div>
-                  <p className="font-medium text-surface-800 dark:text-surface-100">
+                  <p className="font-medium text-surface-800 dark:text-surface-200">
                     Permitir rutas alternativas
                   </p>
-                  <p className="text-xs text-surface-500 dark:text-surface-400">
-                    Mostrar opciones de ruta a repartidores
+                  <p className="text-sm text-surface-500 dark:text-surface-400">
+                    Mostrar rutas alternativas cuando hay tráfico
                   </p>
                 </div>
-                <motion.button
-                  className={`relative h-8 w-14 rounded-full p-1 transition-colors ${
-                    settings.allowAlternativeRoutes ? 'bg-kiwi-500' : 'bg-surface-300 dark:bg-surface-600'
-                  }`}
-                  onClick={() => updateSetting('allowAlternativeRoutes', !settings.allowAlternativeRoutes)}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <motion.div
-                    className="h-6 w-6 rounded-full bg-white shadow-md"
-                    animate={{ x: settings.allowAlternativeRoutes ? 24 : 0 }}
-                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                  />
-                </motion.button>
               </div>
-            </div>
-          </motion.div>
-
-          {/* Peak Hour Settings */}
-          <motion.div
-            className="rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-              ⏰ Horas Pico
-            </h3>
-
-            <div className="space-y-4">
-              {/* Peak Hour Surcharge */}
-              <div className="flex items-center justify-between p-3 rounded-xl bg-surface-50 dark:bg-surface-900">
-                <div>
-                  <p className="font-medium text-surface-800 dark:text-surface-100">
-                    Cargo por horas pico
-                  </p>
-                  <p className="text-xs text-surface-500 dark:text-surface-400">
-                    Aplicar recargo cuando hay tráfico pesado
-                  </p>
-                </div>
-                <motion.button
-                  className={`relative h-8 w-14 rounded-full p-1 transition-colors ${
-                    settings.peakHourSurcharge ? 'bg-kiwi-500' : 'bg-surface-300 dark:bg-surface-600'
-                  }`}
-                  onClick={() => updateSetting('peakHourSurcharge', !settings.peakHourSurcharge)}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <motion.div
-                    className="h-6 w-6 rounded-full bg-white shadow-md"
-                    animate={{ x: settings.peakHourSurcharge ? 24 : 0 }}
-                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                  />
-                </motion.button>
-              </div>
-
-              {/* Peak Hour Multiplier */}
-              {settings.peakHourSurcharge && (
+              <button
+                onClick={() => updateSetting('allowAlternatives', !settings.allowAlternatives)}
+                className={`relative w-12 h-6 rounded-full transition-colors ${
+                  settings.allowAlternatives ? 'bg-kiwi-500' : 'bg-surface-300 dark:bg-surface-600'
+                }`}
+              >
                 <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="text-sm text-surface-600 dark:text-surface-400">
-                      Multiplicador de precio
+                  className="absolute top-1 left-1 w-4 h-4 bg-white rounded-full"
+                  animate={{ x: settings.allowAlternatives ? 24 : 0 }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                />
+              </button>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Peak Hours */}
+        <motion.div
+          className="bg-white dark:bg-surface-800 rounded-2xl p-6 shadow-soft dark:shadow-dark"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100">
+              ⏰ Horas Pico
+            </h2>
+            <button
+              onClick={() => updateSetting('peakHoursEnabled', !settings.peakHoursEnabled)}
+              className={`relative w-12 h-6 rounded-full transition-colors ${
+                settings.peakHoursEnabled ? 'bg-kiwi-500' : 'bg-surface-300 dark:bg-surface-600'
+              }`}
+            >
+              <motion.div
+                className="absolute top-1 left-1 w-4 h-4 bg-white rounded-full"
+                animate={{ x: settings.peakHoursEnabled ? 24 : 0 }}
+                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+              />
+            </button>
+          </div>
+
+          <AnimatePresence>
+            {settings.peakHoursEnabled && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="overflow-hidden"
+              >
+                <div className="space-y-4">
+                  <div>
+                    <div className="flex justify-between mb-2">
+                      <label className="text-sm font-medium text-surface-700 dark:text-surface-300">
+                        Multiplicador de precio en horas pico
+                      </label>
+                      <span className="text-sm font-bold text-kiwi-600 dark:text-kiwi-400">
+                        x{settings.peakHoursMultiplier}
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min="1.0"
+                      max="2.0"
+                      step="0.1"
+                      value={settings.peakHoursMultiplier}
+                      onChange={(e) => updateSetting('peakHoursMultiplier', parseFloat(e.target.value))}
+                      className="w-full h-2 bg-surface-200 dark:bg-surface-700 rounded-lg appearance-none cursor-pointer accent-kiwi-500"
+                    />
+                    <div className="flex justify-between text-xs text-surface-500 dark:text-surface-400 mt-1">
+                      <span>x1.0</span>
+                      <span>x2.0</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-surface-700 dark:text-surface-300 mb-3 block">
+                      Seleccionar horas pico
                     </label>
-                    <span className="text-sm font-semibold text-kiwi-600 dark:text-kiwi-400">
-                      x{settings.peakHourMultiplier}
-                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { id: 'morning', label: 'Mañana 7-9', icon: '🌅' },
+                        { id: 'lunch', label: 'Mediodía 12-2', icon: '☀️' },
+                        { id: 'evening', label: 'Tarde 5-7', icon: '🌇' },
+                      ].map((period) => (
+                        <button
+                          key={period.id}
+                          onClick={() => {
+                            const newPeakHours = settings.peakHours.includes(period.id)
+                              ? settings.peakHours.filter(h => h !== period.id)
+                              : [...settings.peakHours, period.id];
+                            updateSetting('peakHours', newPeakHours);
+                          }}
+                          className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+                            settings.peakHours.includes(period.id)
+                              ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border border-orange-300 dark:border-orange-700'
+                              : 'bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400 border border-transparent'
+                          }`}
+                        >
+                          {period.icon} {period.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                  <input
-                    type="range"
-                    min="1.0"
-                    max="2.0"
-                    step="0.1"
-                    value={settings.peakHourMultiplier}
-                    onChange={(e) => updateSetting('peakHourMultiplier', parseFloat(e.target.value))}
-                    className="w-full h-2 bg-surface-200 dark:bg-surface-700 rounded-lg appearance-none cursor-pointer accent-kiwi-500"
-                  />
-                  <div className="flex justify-between text-xs text-surface-400 dark:text-surface-500 mt-1">
-                    <span>x1.0 (sin recargo)</span>
-                    <span>x2.0 (100% recargo)</span>
-                  </div>
-                </motion.div>
-              )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
 
-              {/* Peak Hours Selection */}
-              <div>
-                <label className="block text-sm font-medium text-surface-600 dark:text-surface-400 mb-2">
-                  Horas pico configuradas
+        {/* Pricing Settings */}
+        <motion.div
+          className="bg-white dark:bg-surface-800 rounded-2xl p-6 shadow-soft dark:shadow-dark"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          <h2 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100 mb-4">
+            💰 Configuración de Precios
+          </h2>
+
+          <div className="space-y-4">
+            <div>
+              <div className="flex justify-between mb-2">
+                <label className="text-sm font-medium text-surface-700 dark:text-surface-300">
+                  Envío gratis desde
                 </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {PEAK_HOUR_OPTIONS.map((option) => (
-                    <motion.button
-                      key={option.label}
-                      className={`p-3 rounded-xl text-sm font-medium transition-all ${
-                        settings.peakHoursStart === option.start && settings.peakHoursEnd === option.end
-                          ? 'bg-kiwi-100 dark:bg-kiwi-900/50 text-kiwi-700 dark:text-kiwi-400 ring-2 ring-kiwi-500'
-                          : 'bg-surface-50 dark:bg-surface-900 text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800'
-                      }`}
-                      onClick={() => {
-                        updateSetting('peakHoursStart', option.start);
-                        updateSetting('peakHoursEnd', option.end);
-                      }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      {option.label}
-                    </motion.button>
-                  ))}
-                </div>
+                <span className="text-sm font-bold text-kiwi-600 dark:text-kiwi-400">
+                  ₡{settings.freeDeliveryThreshold.toLocaleString()}
+                </span>
               </div>
-
-              {/* Closed During Peak */}
-              <div className="flex items-center justify-between p-3 rounded-xl bg-surface-50 dark:bg-surface-900">
-                <div>
-                  <p className="font-medium text-surface-800 dark:text-surface-100">
-                    Cerrar durante horas pico
-                  </p>
-                  <p className="text-xs text-surface-500 dark:text-surface-400">
-                    No aceptar pedidos cuando hay mucho tráfico
-                  </p>
-                </div>
-                <motion.button
-                  className={`relative h-8 w-14 rounded-full p-1 transition-colors ${
-                    settings.closedDuringPeak ? 'bg-kiwi-500' : 'bg-surface-300 dark:bg-surface-600'
-                  }`}
-                  onClick={() => updateSetting('closedDuringPeak', !settings.closedDuringPeak)}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <motion.div
-                    className="h-6 w-6 rounded-full bg-white shadow-md"
-                    animate={{ x: settings.closedDuringPeak ? 24 : 0 }}
-                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                  />
-                </motion.button>
+              <input
+                type="range"
+                min="0"
+                max="20000"
+                step="500"
+                value={settings.freeDeliveryThreshold}
+                onChange={(e) => updateSetting('freeDeliveryThreshold', parseInt(e.target.value))}
+                className="w-full h-2 bg-surface-200 dark:bg-surface-700 rounded-lg appearance-none cursor-pointer accent-kiwi-500"
+              />
+              <div className="flex justify-between text-xs text-surface-500 dark:text-surface-400 mt-1">
+                <span>₡0</span>
+                <span>₡20,000</span>
               </div>
             </div>
-          </motion.div>
 
-          {/* Pricing Settings */}
-          <motion.div
-            className="rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-              💰 Configuración de Precios
-            </h3>
-
-            <div className="space-y-4">
-              {/* Free Delivery Threshold */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm text-surface-600 dark:text-surface-400">
-                    Pedido mínimo para envío gratis
-                  </label>
-                  <span className="text-sm font-semibold text-kiwi-600 dark:text-kiwi-400">
-                    ₡{settings.freeDeliveryThreshold.toLocaleString()}
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="20000"
-                  step="500"
-                  value={settings.freeDeliveryThreshold}
-                  onChange={(e) => updateSetting('freeDeliveryThreshold', parseInt(e.target.value))}
-                  className="w-full h-2 bg-surface-200 dark:bg-surface-700 rounded-lg appearance-none cursor-pointer accent-kiwi-500"
-                />
-                <div className="flex justify-between text-xs text-surface-400 dark:text-surface-500 mt-1">
-                  <span>Sin mínimo</span>
-                  <span>₡20,000</span>
-                </div>
+            <div>
+              <div className="flex justify-between mb-2">
+                <label className="text-sm font-medium text-surface-700 dark:text-surface-300">
+                  Pedido mínimo
+                </label>
+                <span className="text-sm font-bold text-kiwi-600 dark:text-kiwi-400">
+                  ₡{settings.minimumOrder.toLocaleString()}
+                </span>
               </div>
-
-              {/* Minimum Order for Delivery */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm text-surface-600 dark:text-surface-400">
-                    Pedido mínimo para delivery
-                  </label>
-                  <span className="text-sm font-semibold text-kiwi-600 dark:text-kiwi-400">
-                    ₡{settings.minimumOrderForDelivery.toLocaleString()}
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="10000"
-                  step="500"
-                  value={settings.minimumOrderForDelivery}
-                  onChange={(e) => updateSetting('minimumOrderForDelivery', parseInt(e.target.value))}
-                  className="w-full h-2 bg-surface-200 dark:bg-surface-700 rounded-lg appearance-none cursor-pointer accent-kiwi-500"
-                />
-                <div className="flex justify-between text-xs text-surface-400 dark:text-surface-500 mt-1">
-                  <span>Sin mínimo</span>
-                  <span>₡10,000</span>
-                </div>
+              <input
+                type="range"
+                min="0"
+                max="10000"
+                step="500"
+                value={settings.minimumOrder}
+                onChange={(e) => updateSetting('minimumOrder', parseInt(e.target.value))}
+                className="w-full h-2 bg-surface-200 dark:bg-surface-700 rounded-lg appearance-none cursor-pointer accent-kiwi-500"
+              />
+              <div className="flex justify-between text-xs text-surface-500 dark:text-surface-400 mt-1">
+                <span>₡0</span>
+                <span>₡10,000</span>
               </div>
+            </div>
 
-              {/* Dynamic Pricing */}
-              <div className="flex items-center justify-between p-3 rounded-xl bg-surface-50 dark:bg-surface-900">
+            <div className="flex items-center justify-between p-4 rounded-xl bg-surface-50 dark:bg-surface-900">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">📈</span>
                 <div>
-                  <p className="font-medium text-surface-800 dark:text-surface-100">
+                  <p className="font-medium text-surface-800 dark:text-surface-200">
                     Precios dinámicos
                   </p>
-                  <p className="text-xs text-surface-500 dark:text-surface-400">
+                  <p className="text-sm text-surface-500 dark:text-surface-400">
                     Ajustar precios según demanda y tráfico
                   </p>
                 </div>
-                <motion.button
-                  className={`relative h-8 w-14 rounded-full p-1 transition-colors ${
-                    settings.dynamicPricing ? 'bg-kiwi-500' : 'bg-surface-300 dark:bg-surface-600'
-                  }`}
-                  onClick={() => updateSetting('dynamicPricing', !settings.dynamicPricing)}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <motion.div
-                    className="h-6 w-6 rounded-full bg-white shadow-md"
-                    animate={{ x: settings.dynamicPricing ? 24 : 0 }}
-                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                  />
-                </motion.button>
               </div>
-            </div>
-          </motion.div>
-
-          {/* Notification Settings */}
-          <motion.div
-            className="rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-          >
-            <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-              🔔 Notificaciones de Tráfico
-            </h3>
-
-            <div className="space-y-3">
-              {/* Traffic Alerts */}
-              <div className="flex items-center justify-between p-3 rounded-xl bg-surface-50 dark:bg-surface-900">
-                <div className="flex items-center gap-3">
-                  <span className="text-xl">🚨</span>
-                  <div>
-                    <p className="font-medium text-surface-800 dark:text-surface-100">
-                      Alertas de tráfico
-                    </p>
-                    <p className="text-xs text-surface-500 dark:text-surface-400">
-                      Congestión, accidentes, cierres
-                    </p>
-                  </div>
-                </div>
-                <motion.button
-                  className={`relative h-8 w-14 rounded-full p-1 transition-colors ${
-                    settings.trafficAlerts ? 'bg-kiwi-500' : 'bg-surface-300 dark:bg-surface-600'
-                  }`}
-                  onClick={() => updateSetting('trafficAlerts', !settings.trafficAlerts)}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <motion.div
-                    className="h-6 w-6 rounded-full bg-white shadow-md"
-                    animate={{ x: settings.trafficAlerts ? 24 : 0 }}
-                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                  />
-                </motion.button>
-              </div>
-
-              {/* Traffic Predictions */}
-              <div className="flex items-center justify-between p-3 rounded-xl bg-surface-50 dark:bg-surface-900">
-                <div className="flex items-center gap-3">
-                  <span className="text-xl">🔮</span>
-                  <div>
-                    <p className="font-medium text-surface-800 dark:text-surface-100">
-                      Predicciones de tráfico
-                    </p>
-                    <p className="text-xs text-surface-500 dark:text-surface-400">
-                      Pronósticos para planificar entregas
-                    </p>
-                  </div>
-                </div>
-                <motion.button
-                  className={`relative h-8 w-14 rounded-full p-1 transition-colors ${
-                    settings.trafficPredictions ? 'bg-kiwi-500' : 'bg-surface-300 dark:bg-surface-600'
-                  }`}
-                  onClick={() => updateSetting('trafficPredictions', !settings.trafficPredictions)}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <motion.div
-                    className="h-6 w-6 rounded-full bg-white shadow-md"
-                    animate={{ x: settings.trafficPredictions ? 24 : 0 }}
-                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                  />
-                </motion.button>
-              </div>
-
-              {/* Best Time Recommendations */}
-              <div className="flex items-center justify-between p-3 rounded-xl bg-surface-50 dark:bg-surface-900">
-                <div className="flex items-center gap-3">
-                  <span className="text-xl">💡</span>
-                  <div>
-                    <p className="font-medium text-surface-800 dark:text-surface-100">
-                      Recomendaciones de horario
-                    </p>
-                    <p className="text-xs text-surface-500 dark:text-surface-400">
-                      Mejores momentos para enviar repartidores
-                    </p>
-                  </div>
-                </div>
-                <motion.button
-                  className={`relative h-8 w-14 rounded-full p-1 transition-colors ${
-                    settings.bestTimeRecommendations ? 'bg-kiwi-500' : 'bg-surface-300 dark:bg-surface-600'
-                  }`}
-                  onClick={() => updateSetting('bestTimeRecommendations', !settings.bestTimeRecommendations)}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <motion.div
-                    className="h-6 w-6 rounded-full bg-white shadow-md"
-                    animate={{ x: settings.bestTimeRecommendations ? 24 : 0 }}
-                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                  />
-                </motion.button>
-              </div>
-
-              {/* Delivery Delay Warnings */}
-              <div className="flex items-center justify-between p-3 rounded-xl bg-surface-50 dark:bg-surface-900">
-                <div className="flex items-center gap-3">
-                  <span className="text-xl">⏱️</span>
-                  <div>
-                    <p className="font-medium text-surface-800 dark:text-surface-100">
-                      Alertas de retraso
-                    </p>
-                    <p className="text-xs text-surface-500 dark:text-surface-400">
-                      Notificar retrasos por tráfico
-                    </p>
-                  </div>
-                </div>
-                <motion.button
-                  className={`relative h-8 w-14 rounded-full p-1 transition-colors ${
-                    settings.deliveryDelayWarnings ? 'bg-kiwi-500' : 'bg-surface-300 dark:bg-surface-600'
-                  }`}
-                  onClick={() => updateSetting('deliveryDelayWarnings', !settings.deliveryDelayWarnings)}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <motion.div
-                    className="h-6 w-6 rounded-full bg-white shadow-md"
-                    animate={{ x: settings.deliveryDelayWarnings ? 24 : 0 }}
-                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                  />
-                </motion.button>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Traffic-Based Operating Hours */}
-          <motion.div
-            className="rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-          >
-            <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-              🕐 Horarios Basados en Tráfico
-            </h3>
-
-            <div className="space-y-4">
-              {/* Use Traffic Based Hours */}
-              <div className="flex items-center justify-between p-3 rounded-xl bg-surface-50 dark:bg-surface-900">
-                <div>
-                  <p className="font-medium text-surface-800 dark:text-surface-100">
-                    Usar horarios inteligentes
-                  </p>
-                  <p className="text-xs text-surface-500 dark:text-surface-400">
-                    Ajustar disponibilidad según tráfico
-                  </p>
-                </div>
-                <motion.button
-                  className={`relative h-8 w-14 rounded-full p-1 transition-colors ${
-                    settings.useTrafficBasedHours ? 'bg-kiwi-500' : 'bg-surface-300 dark:bg-surface-600'
-                  }`}
-                  onClick={() => updateSetting('useTrafficBasedHours', !settings.useTrafficBasedHours)}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <motion.div
-                    className="h-6 w-6 rounded-full bg-white shadow-md"
-                    animate={{ x: settings.useTrafficBasedHours ? 24 : 0 }}
-                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                  />
-                </motion.button>
-              </div>
-
-              {settings.useTrafficBasedHours && (
+              <button
+                onClick={() => updateSetting('dynamicPricing', !settings.dynamicPricing)}
+                className={`relative w-12 h-6 rounded-full transition-colors ${
+                  settings.dynamicPricing ? 'bg-kiwi-500' : 'bg-surface-300 dark:bg-surface-600'
+                }`}
+              >
                 <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  className="p-4 rounded-xl bg-kiwi-50 dark:bg-kiwi-900/30"
-                >
-                  <p className="text-sm text-kiwi-700 dark:text-kiwi-400 mb-3">
-                    ℹ️ Tu negocio se mostrará como "Cerrado" automáticamente durante las horas pico configuradas.
-                  </p>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-medium text-kiwi-700 dark:text-kiwi-400 mb-1">
-                        Inicio horas pico
-                      </label>
-                      <select
-                        value={settings.peakHoursStart}
-                        onChange={(e) => updateSetting('peakHoursStart', parseInt(e.target.value))}
-                        className="w-full rounded-lg border border-kiwi-200 dark:border-kiwi-800 bg-white dark:bg-surface-800 px-3 py-2 text-sm"
-                      >
-                        {Array.from({ length: 24 }, (_, i) => (
-                          <option key={i} value={i}>{i}:00</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-kiwi-700 dark:text-kiwi-400 mb-1">
-                        Fin horas pico
-                      </label>
-                      <select
-                        value={settings.peakHoursEnd}
-                        onChange={(e) => updateSetting('peakHoursEnd', parseInt(e.target.value))}
-                        className="w-full rounded-lg border border-kiwi-200 dark:border-kiwi-800 bg-white dark:bg-surface-800 px-3 py-2 text-sm"
-                      >
-                        {Array.from({ length: 24 }, (_, i) => (
-                          <option key={i} value={i}>{i}:00</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
+                  className="absolute top-1 left-1 w-4 h-4 bg-white rounded-full"
+                  animate={{ x: settings.dynamicPricing ? 24 : 0 }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                />
+              </button>
             </div>
-          </motion.div>
+          </div>
+        </motion.div>
 
-          {/* Save Button */}
-          <motion.div
-            className="sticky bottom-4 z-10"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-          >
-            <AnimatedButton
-              variant="gradient"
-              className="w-full py-4 text-lg"
-              onClick={handleSave}
-              disabled={saving}
+        {/* Notification Settings */}
+        <motion.div
+          className="bg-white dark:bg-surface-800 rounded-2xl p-6 shadow-soft dark:shadow-dark"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100">
+              🔔 Notificaciones
+            </h2>
+            <button
+              onClick={() => updateSetting('notificationsEnabled', !settings.notificationsEnabled)}
+              className={`relative w-12 h-6 rounded-full transition-colors ${
+                settings.notificationsEnabled ? 'bg-kiwi-500' : 'bg-surface-300 dark:bg-surface-600'
+              }`}
             >
-              {saving ? (
-                <span className="flex items-center justify-center gap-2">
-                  <motion.span
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                  >
-                    ⏳
-                  </motion.span>
-                  Guardando...
-                </span>
-              ) : (
-                '💾 Guardar Configuración'
-              )}
-            </AnimatedButton>
-          </motion.div>
-        </div>
-      </main>
+              <motion.div
+                className="absolute top-1 left-1 w-4 h-4 bg-white rounded-full"
+                animate={{ x: settings.notificationsEnabled ? 24 : 0 }}
+                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+              />
+            </button>
+          </div>
+
+          <AnimatePresence>
+            {settings.notificationsEnabled && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="overflow-hidden"
+              >
+                <div className="space-y-3">
+                  {[
+                    { key: 'predictionAlerts', icon: '🔮', label: 'Alertas de predicción', desc: 'Niveles de tráfico actuales' },
+                    { key: 'bestTimeAlerts', icon: '💡', label: 'Mejores horas', desc: 'Momentos óptimos para entregas' },
+                    { key: 'peakHourWarnings', icon: '⚠️', label: 'Aviso de hora pico', desc: 'Cuando se acerca una hora pico' },
+                    { key: 'delayWarnings', icon: '⏱️', label: 'Avisos de retraso', desc: 'Cuando un pedido se retrasa' },
+                    { key: 'routeRecommendations', icon: '🗺️', label: 'Recomendaciones de ruta', desc: 'Mejores rutas disponibles' },
+                  ].map((item) => (
+                    <div
+                      key={item.key}
+                      className="flex items-center justify-between p-3 rounded-xl bg-surface-50 dark:bg-surface-900"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-xl">{item.icon}</span>
+                        <div>
+                          <p className="text-sm font-medium text-surface-800 dark:text-surface-200">
+                            {item.label}
+                          </p>
+                          <p className="text-xs text-surface-500 dark:text-surface-400">
+                            {item.desc}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => updateSetting(item.key as keyof TrafficSettings, !(settings as any)[item.key])}
+                        className={`relative w-10 h-5 rounded-full transition-colors ${
+                          (settings as any)[item.key] ? 'bg-kiwi-500' : 'bg-surface-300 dark:bg-surface-600'
+                        }`}
+                      >
+                        <motion.div
+                          className="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full"
+                          animate={{ x: (settings as any)[item.key] ? 20 : 0 }}
+                          transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                        />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
+
+        {/* Save Button (Mobile) */}
+        <motion.div
+          className="sticky bottom-4 md:hidden"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+        >
+          <motion.button
+            onClick={handleSave}
+            disabled={saving}
+            className={`w-full py-4 rounded-2xl font-semibold text-lg shadow-lg ${
+              saving
+                ? 'bg-surface-200 dark:bg-surface-700 text-surface-500'
+                : 'bg-kiwi-500 hover:bg-kiwi-600 text-white shadow-kiwi-lg'
+            }`}
+            whileTap={{ scale: 0.98 }}
+          >
+            {saving ? (
+              <span className="flex items-center justify-center gap-2">
+                <motion.span
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                >
+                  ⏳
+                </motion.span>
+                Guardando...
+              </span>
+            ) : (
+              '💾 Guardar Configuración'
+            )}
+          </motion.button>
+        </motion.div>
+      </div>
     </div>
   );
 }
