@@ -30,12 +30,9 @@ export class OrdersController {
     @Query('status') status?: string,
   ) {
     if (user.role === 'merchant') {
-      // Get merchant profile first
-      const merchant = await this.getMerchantId(user.sub);
-      return this.ordersService.findByMerchant(merchant, status);
+      return this.ordersService.findByMerchant(user.sub, status);
     } else {
-      const driver = await this.getDriverId(user.sub);
-      return this.ordersService.findByDriver(driver, status);
+      return this.ordersService.findByDriver(user.sub, status);
     }
   }
 
@@ -87,6 +84,18 @@ export class OrdersController {
     return this.ordersService.assignDriver(id, driverId);
   }
 
+  @Post(':id/accept')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('driver')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Driver accepts a pending order' })
+  async acceptOrder(
+    @Param('id') id: string,
+    @CurrentUser() user: any,
+  ) {
+    return this.ordersService.acceptOrderAsDriver(id, user.sub);
+  }
+
   @Post(':id/proposals')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('driver')
@@ -111,15 +120,5 @@ export class OrdersController {
     @CurrentUser() user: any,
   ) {
     return this.ordersService.acceptProposal(orderId, proposalId, user.sub);
-  }
-
-  private async getMerchantId(userId: string) {
-    // This would normally come from the database
-    // For now, we'll use a simple lookup
-    return userId; // In real app, lookup merchant profile
-  }
-
-  private async getDriverId(userId: string) {
-    return userId; // In real app, lookup driver profile
   }
 }

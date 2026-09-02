@@ -52,7 +52,7 @@ export default function Dashboard() {
       console.log('📦 Order accepted:', data);
       setNotifications(prev => [...prev, { type: 'success', message: data.message, time: new Date() }]);
       // Refresh orders
-      api.getMyOrders().then(setOrders).catch(console.error);
+      fetchOrders();
     },
     onOrderStatusChanged: (data) => {
       console.log('🔄 Order status changed:', data);
@@ -72,24 +72,30 @@ export default function Dashboard() {
     }
   }, [user, authLoading, router]);
 
+  const fetchOrders = async () => {
+    try {
+      const data = await api.getMyOrders();
+      setOrders(data);
+    } catch (error) {
+      console.error('Failed to fetch orders:', error);
+    }
+  };
+
   useEffect(() => {
-    const fetchOrders = async () => {
+    const fetchData = async () => {
+      await fetchOrders();
+      setLoading(false);
+      // Fetch unread count
       try {
-        const data = await api.getMyOrders();
-        setOrders(data);
-      } catch (error) {
-        console.error('Failed to fetch orders:', error);
-      } finally {
-        setLoading(false);
-      }
+        const data = await api.getUnreadNotificationCount();
+        setUnreadCount(data.count);
+      } catch {}
+      // Request push notification permission
+      requestPermission();
     };
 
     if (user) {
-      fetchOrders();
-      // Fetch unread count
-      api.getUnreadNotificationCount().then(data => setUnreadCount(data.count)).catch(console.error);
-      // Request push notification permission
-      requestPermission();
+      fetchData();
     }
   }, [user, requestPermission]);
 
@@ -106,6 +112,16 @@ export default function Dashboard() {
       </div>
     );
   }
+
+  // Compute stats from real orders
+  const todayOrders = orders.filter(o => {
+    const created = new Date(o.createdAt);
+    const today = new Date();
+    return created.toDateString() === today.toDateString();
+  });
+  const totalRevenue = orders.reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
+  const pendingOrders = orders.filter(o => o.status === 'pending');
+  const deliveredOrders = orders.filter(o => o.status === 'delivered');
 
   return (
     <div className="min-h-screen bg-bg-light">
@@ -197,18 +213,18 @@ export default function Dashboard() {
           <StaggerItem>
             <StatCard
               title="Pedidos Hoy"
-              value="12"
-              change="+3 vs ayer"
-              changeType="positive"
+              value={String(todayOrders.length)}
+              change={`${orders.length} total`}
+              changeType="neutral"
               icon={<span className="text-2xl">📦</span>}
               color="kiwi"
             />
           </StaggerItem>
           <StaggerItem>
             <StatCard
-              title="Ganancias"
-              value="₡45,000"
-              change="+₡8,000 vs ayer"
+              title="Ingresos"
+              value={`₡${totalRevenue.toLocaleString()}`}
+              change={`${deliveredOrders.length} entregados`}
               changeType="positive"
               icon={<span className="text-2xl">💰</span>}
               color="gold"
@@ -216,22 +232,22 @@ export default function Dashboard() {
           </StaggerItem>
           <StaggerItem>
             <StatCard
-              title="Repartidores"
-              value="8"
-              change="3 disponibles"
-              changeType="neutral"
-              icon={<span className="text-2xl">🛵</span>}
-              color="bark"
+              title="Pendientes"
+              value={String(pendingOrders.length)}
+              change={pendingOrders.length > 0 ? 'Esperando repartidor' : 'Todo al día'}
+              changeType={pendingOrders.length > 0 ? 'negative' : 'positive'}
+              icon={<span className="text-2xl">⏳</span>}
+              color="blue"
             />
           </StaggerItem>
           <StaggerItem>
             <StatCard
-              title="Pendientes"
-              value="3"
-              change="2 esperando"
-              changeType="negative"
-              icon={<span className="text-2xl">⏳</span>}
-              color="blue"
+              title="Tasa Éxito"
+              value={`${orders.length > 0 ? Math.round((deliveredOrders.length / orders.length) * 100) : 100}%`}
+              change="de pedidos"
+              changeType="positive"
+              icon={<span className="text-2xl">✅</span>}
+              color="bark"
             />
           </StaggerItem>
         </StaggerContainer>
@@ -264,7 +280,7 @@ export default function Dashboard() {
 
           <StaggerItem>
             <motion.div 
-              className="rounded-2xl bg-white/70 backdrop-blur-xl border border-white/30 shadow-soft-md p-4 cursor-pointer group"
+              className="rounded-2xl bg-white/70 dark:bg-surface-800/70 backdrop-blur-xl border border-white/30 dark:border-surface-700/30 shadow-soft-md dark:shadow-dark p-4 cursor-pointer group"
               whileHover={{ y: -4, boxShadow: '0 12px 32px -8px rgba(251, 191, 36, 0.25)' }}
               whileTap={{ scale: 0.98 }}
             >
@@ -277,8 +293,8 @@ export default function Dashboard() {
                   <span className="text-2xl">📅</span>
                 </motion.div>
                 <div>
-                  <h3 className="font-display font-semibold text-surface-800">Programar</h3>
-                  <p className="text-sm text-surface-500">Agendar para después</p>
+                  <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">Programar</h3>
+                  <p className="text-sm text-surface-500 dark:text-surface-400">Agendar para después</p>
                 </div>
               </div>
             </motion.div>
@@ -287,21 +303,21 @@ export default function Dashboard() {
           <StaggerItem>
             <Link href="/drivers">
               <motion.div 
-                className="rounded-2xl bg-white/70 backdrop-blur-xl border border-white/30 shadow-soft-md p-4 cursor-pointer group"
+                className="rounded-2xl bg-white/70 dark:bg-surface-800/70 backdrop-blur-xl border border-white/30 dark:border-surface-700/30 shadow-soft-md dark:shadow-dark p-4 cursor-pointer group"
                 whileHover={{ y: -4, boxShadow: '0 12px 32px -8px rgba(139, 101, 61, 0.15)' }}
                 whileTap={{ scale: 0.98 }}
               >
                 <div className="flex items-center gap-4">
                   <motion.div 
-                    className="flex h-14 w-14 items-center justify-center rounded-2xl bg-bark-100 text-bark-600 transition-colors group-hover:bg-bark-500 group-hover:text-white"
+                    className="flex h-14 w-14 items-center justify-center rounded-2xl bg-bark-100 dark:bg-bark-900/50 text-bark-600 dark:text-bark-400 transition-colors group-hover:bg-bark-500 group-hover:text-white"
                     whileHover={{ scale: 1.1 }}
                     transition={{ type: 'spring', stiffness: 260, damping: 20 }}
                   >
                     <span className="text-2xl">🛵</span>
                   </motion.div>
                   <div>
-                    <h3 className="font-display font-semibold text-surface-800">Repartidores</h3>
-                    <p className="text-sm text-surface-500">Ver y asignar</p>
+                    <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">Repartidores</h3>
+                    <p className="text-sm text-surface-500 dark:text-surface-400">Ver y asignar</p>
                   </div>
                 </div>
               </motion.div>
@@ -347,87 +363,77 @@ export default function Dashboard() {
               </Link>
             </div>
             
-            <StaggerContainer className="space-y-4">
-              {(orders.length > 0 ? orders.slice(0, 5) : [
-                {
-                  id: '1',
-                  pickupAddress: 'Nicoya Centro',
-                  deliveryAddress: 'Santa Cruz',
-                  status: 'in_transit_to_delivery',
-                  createdAt: new Date().toISOString(),
-                  driverId: '1',
-                  totalAmount: 2500,
-                },
-                {
-                  id: '2',
-                  pickupAddress: 'Liberia',
-                  deliveryAddress: 'Nicoya',
-                  status: 'delivered',
-                  createdAt: new Date().toISOString(),
-                  driverId: '2',
-                  totalAmount: 4000,
-                },
-                {
-                  id: '3',
-                  pickupAddress: 'Santa Cruz',
-                  deliveryAddress: 'Cañas',
-                  status: 'pending',
-                  createdAt: new Date().toISOString(),
-                  driverId: undefined,
-                  totalAmount: 3200,
-                },
-              ]).map((order: any) => {
-                const statusMap: Record<string, { label: string; color: string }> = {
-                  pending: { label: 'Pendiente', color: 'bg-gold-100 text-gold-700' },
-                  assigned: { label: 'Asignado', color: 'bg-blue-100 text-blue-700' },
-                  in_transit_to_pickup: { label: 'En camino', color: 'bg-kiwi-100 text-kiwi-700' },
-                  picked_up: { label: 'Recogido', color: 'bg-kiwi-100 text-kiwi-700' },
-                  in_transit_to_delivery: { label: 'En camino', color: 'bg-kiwi-100 text-kiwi-700' },
-                  delivered: { label: 'Entregado', color: 'bg-green-100 text-green-700' },
-                  cancelled: { label: 'Cancelado', color: 'bg-red-100 text-red-700' },
-                };
-                const statusInfo = statusMap[order.status] || { label: order.status, color: 'bg-surface-100 text-surface-700' };
-                const time = new Date(order.createdAt).toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' });
-                
-                return (
-                <StaggerItem key={order.id}>
-                  <motion.div
-                    className="group flex items-center justify-between rounded-xl border border-surface-100 dark:border-surface-700 bg-surface-50/50 dark:bg-surface-900/50 p-4 transition-all hover:border-kiwi-200 hover:bg-white dark:hover:bg-surface-800 hover:shadow-soft-md"
-                    whileHover={{ x: 4 }}
-                  >
-                  <div className="flex items-center gap-4">
-                    <motion.div 
-                      className="flex h-12 w-12 items-center justify-center rounded-xl bg-kiwi-100 text-kiwi-600 transition-colors group-hover:bg-kiwi-500 group-hover:text-white"
-                      whileHover={{ rotate: 10 }}
+            {orders.length === 0 ? (
+              <motion.div 
+                className="text-center py-8"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+              >
+                <motion.div 
+                  className="text-5xl mb-3"
+                  animate={{ y: [0, -10, 0] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
+                  📦
+                </motion.div>
+                <p className="text-surface-500 dark:text-surface-400">Aún no hay pedidos</p>
+                <p className="text-xs text-surface-400 mt-1">Crea tu primer pedido para empezar</p>
+              </motion.div>
+            ) : (
+              <StaggerContainer className="space-y-4">
+                {orders.slice(0, 5).map((order: any) => {
+                  const statusMap: Record<string, { label: string; color: string }> = {
+                    pending: { label: 'Pendiente', color: 'bg-gold-100 text-gold-700' },
+                    assigned: { label: 'Asignado', color: 'bg-blue-100 text-blue-700' },
+                    in_transit_to_pickup: { label: 'En camino', color: 'bg-kiwi-100 text-kiwi-700' },
+                    picked_up: { label: 'Recogido', color: 'bg-kiwi-100 text-kiwi-700' },
+                    in_transit_to_delivery: { label: 'Entregando', color: 'bg-kiwi-100 text-kiwi-700' },
+                    delivered: { label: 'Entregado', color: 'bg-green-100 text-green-700' },
+                    cancelled: { label: 'Cancelado', color: 'bg-red-100 text-red-700' },
+                  };
+                  const statusInfo = statusMap[order.status] || { label: order.status, color: 'bg-surface-100 text-surface-700' };
+                  const time = new Date(order.createdAt).toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' });
+                  
+                  return (
+                  <StaggerItem key={order.id}>
+                    <motion.div
+                      className="group flex items-center justify-between rounded-xl border border-surface-100 dark:border-surface-700 bg-surface-50/50 dark:bg-surface-900/50 p-4 transition-all hover:border-kiwi-200 hover:bg-white dark:hover:bg-surface-800 hover:shadow-soft-md"
+                      whileHover={{ x: 4 }}
                     >
-                      <span className="text-lg font-bold">#{order.id}</span>
-                    </motion.div>
-                    <div>
-                      <p className="font-medium text-surface-800">{order.pickupAddress} → {order.deliveryAddress}</p>
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm text-surface-400">
-                          {order.driverId ? '🛵 Asignado' : '⏳ Sin repartidor'}
-                        </p>
-                        {order.driverId && (
-                          <VehicleBadge type="motorcycle" size="sm" />
-                        )}
+                      <div className="flex items-center gap-4">
+                        <motion.div 
+                          className="flex h-12 w-12 items-center justify-center rounded-xl bg-kiwi-100 text-kiwi-600 transition-colors group-hover:bg-kiwi-500 group-hover:text-white"
+                          whileHover={{ rotate: 10 }}
+                        >
+                          <span className="text-lg font-bold">#{order.id.slice(-4)}</span>
+                        </motion.div>
+                        <div>
+                          <p className="font-medium text-surface-800 dark:text-surface-200">{order.pickupAddress} → {order.deliveryAddress}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm text-surface-400">
+                              {order.driver ? '🛵 Asignado' : '⏳ Sin repartidor'}
+                            </p>
+                            {order.driver && (
+                              <VehicleBadge type={order.driver.vehicleType || 'motorcycle'} size="sm" />
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                    <div className="flex items-center gap-4">
-                      <span className="text-lg font-semibold text-surface-700">₡{order.totalAmount.toLocaleString()}</span>
-                      <motion.span
-                        className={`rounded-full px-3 py-1 text-xs font-medium ${statusInfo.color}`}
-                        whileHover={{ scale: 1.05 }}
-                      >
-                        {statusInfo.label}
-                      </motion.span>
-                      <span className="text-sm text-surface-400">{time}</span>
-                    </div>
-                  </motion.div>
-                </StaggerItem>
-              ))}
-            </StaggerContainer>
+                      <div className="flex items-center gap-4">
+                        <span className="text-lg font-semibold text-surface-700 dark:text-surface-300">₡{Number(order.totalAmount).toLocaleString()}</span>
+                        <motion.span
+                          className={`rounded-full px-3 py-1 text-xs font-medium ${statusInfo.color}`}
+                          whileHover={{ scale: 1.05 }}
+                        >
+                          {statusInfo.label}
+                        </motion.span>
+                        <span className="text-sm text-surface-400">{time}</span>
+                      </div>
+                    </motion.div>
+                  </StaggerItem>
+                )})}
+              </StaggerContainer>
+            )}
           </div>
         </motion.div>
       </main>

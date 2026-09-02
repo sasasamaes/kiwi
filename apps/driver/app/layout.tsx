@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter, Poppins } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider, AuthProvider } from '@kiwi/ui';
+import { OfflineBanner } from './offline-banner';
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -34,10 +35,16 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" className={`${inter.variable} ${poppins.variable}`} suppressHydrationWarning>
+      <head>
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+      </head>
       <body className="font-sans antialiased bg-bg-light min-h-screen dark:bg-surface-950 dark:text-surface-100">
         <ThemeProvider>
           <AuthProvider>
             {children}
+            <OfflineBanner />
           </AuthProvider>
         </ThemeProvider>
       </body>

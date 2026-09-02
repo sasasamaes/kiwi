@@ -149,3 +149,9 @@ export {
   getDriverLevelLabel,
   generateId,
 } from './utils';
+
+// ============================================
+// 📴 OFFLINE SUPPORT
+// ============================================
+export { offlineQueue, offlineFetch } from './offline-queue';
+export { OfflineIndicator } from './OfflineIndicator';

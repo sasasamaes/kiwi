@@ -241,6 +241,12 @@ class ApiClient {
     });
   }
 
+  async acceptOrder(orderId: string) {
+    return this.request<any>(`/orders/${orderId}/accept`, {
+      method: 'POST',
+    });
+  }
+
   async submitProposal(orderId: string, data: any) {
     return this.request<any>(`/orders/${orderId}/proposals`, {
       method: 'POST',

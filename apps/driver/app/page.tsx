@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -14,10 +14,8 @@ import {
   useAuth,
   useSocket,
   api,
-  cardVariants,
-  staggerContainer,
-  slideInUp,
-  floatAnimation
+  Order,
+  staggerContainer
 } from '@kiwi/ui';
 
 export default function Home() {
@@ -26,7 +24,18 @@ export default function Home() {
   const [isOnline, setIsOnline] = useState(true);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ trips: 0, earnings: 0, rating: 5.0 });
+  const [availableOrders, setAvailableOrders] = useState<Order[]>([]);
+  const [activeOrders, setActiveOrders] = useState<Order[]>([]);
   const [newOrderAlert, setNewOrderAlert] = useState<any>(null);
+  const [acceptingOrder, setAcceptingOrder] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'all' | 'delivery' | 'trip' | 'freight'>('all');
+
+  const tabs = [
+    { id: 'all' as const, label: 'Todos', icon: '📋' },
+    { id: 'delivery' as const, label: 'Delivery', icon: '📦' },
+    { id: 'trip' as const, label: 'Viajes', icon: '🏍️' },
+    { id: 'freight' as const, label: 'Fletes', icon: '🚛' },
+  ];
 
   // Real-time socket connection
   const {
@@ -39,6 +48,8 @@ export default function Home() {
     onNewOrder: (data) => {
       console.log('📦 New order available:', data);
       setNewOrderAlert(data);
+      // Add to available orders list
+      setAvailableOrders(prev => [data, ...prev]);
       // Play notification sound
       try {
         const audio = new Audio('/notification.mp3');
@@ -47,8 +58,28 @@ export default function Home() {
     },
     onOrderStatusChanged: (data) => {
       console.log('🔄 Order status changed:', data);
+      // Refresh active orders
+      fetchActiveOrders();
     },
   });
+
+  const fetchAvailableOrders = useCallback(async () => {
+    try {
+      const data = await api.getAvailableOrders();
+      setAvailableOrders(data);
+    } catch (error) {
+      console.error('Failed to fetch available orders:', error);
+    }
+  }, []);
+
+  const fetchActiveOrders = useCallback(async () => {
+    try {
+      const data = await api.getMyOrders('assigned');
+      setActiveOrders(data);
+    } catch (error) {
+      console.error('Failed to fetch active orders:', error);
+    }
+  }, []);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -62,10 +93,13 @@ export default function Home() {
         const profile = await api.getDriverProfile();
         setStats({
           trips: profile.totalTrips || 0,
-          earnings: 0, // Calculate from orders
+          earnings: 0,
           rating: Number(profile.rating) || 5.0,
         });
         setIsOnline(profile.status === 'available');
+        // Fetch real orders
+        await fetchAvailableOrders();
+        await fetchActiveOrders();
       } catch (error) {
         console.error('Failed to fetch driver data:', error);
       } finally {
@@ -76,7 +110,7 @@ export default function Home() {
     if (user) {
       fetchDriverData();
     }
-  }, [user]);
+  }, [user, fetchAvailableOrders, fetchActiveOrders]);
 
   const toggleOnlineStatus = async () => {
     const newStatus = isOnline ? 'offline' : 'available';
@@ -89,6 +123,63 @@ export default function Home() {
     }
   };
 
+  const handleAcceptOrder = async (orderId: string) => {
+    setAcceptingOrder(orderId);
+    try {
+      await api.acceptOrder(orderId);
+      // Remove from available orders
+      setAvailableOrders(prev => prev.filter(o => o.id !== orderId));
+      // Add to active orders
+      const order = availableOrders.find(o => o.id === orderId);
+      if (order) {
+        setActiveOrders(prev => [{ ...order, status: 'assigned' }, ...prev]);
+      }
+      setNewOrderAlert(null);
+      // Refresh data
+      await fetchActiveOrders();
+    } catch (error) {
+      console.error('Failed to accept order:', error);
+      alert('No se pudo aceptar el pedido. Inténtalo de nuevo.');
+    } finally {
+      setAcceptingOrder(null);
+    }
+  };
+
+  const handleRejectOrder = (orderId: string) => {
+    setAvailableOrders(prev => prev.filter(o => o.id !== orderId));
+    setNewOrderAlert(null);
+  };
+
+  const handleUpdateStatus = async (orderId: string, newStatus: string) => {
+    try {
+      await api.updateOrderStatus(orderId, newStatus);
+      await fetchActiveOrders();
+    } catch (error) {
+      console.error('Failed to update status:', error);
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    const labels: Record<string, string> = {
+      assigned: 'Asignado',
+      in_transit_to_pickup: 'En camino a recoger',
+      picked_up: 'Recogido',
+      in_transit_to_delivery: 'Entregando',
+      delivered: 'Entregado',
+    };
+    return labels[status] || status;
+  };
+
+  const getNextStatus = (currentStatus: string) => {
+    const flow: Record<string, string> = {
+      assigned: 'in_transit_to_pickup',
+      in_transit_to_pickup: 'picked_up',
+      picked_up: 'in_transit_to_delivery',
+      in_transit_to_delivery: 'delivered',
+    };
+    return flow[currentStatus];
+  };
+
   if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-bg-light dark:bg-surface-950 flex items-center justify-center">
@@ -96,14 +187,12 @@ export default function Home() {
       </div>
     );
   }
-  const [activeTab, setActiveTab] = useState<'all' | 'delivery' | 'trip' | 'freight'>('all');
 
-  const tabs = [
-    { id: 'all' as const, label: 'Todos', icon: '📋' },
-    { id: 'delivery' as const, label: 'Delivery', icon: '📦' },
-    { id: 'trip' as const, label: 'Viajes', icon: '🏍️' },
-    { id: 'freight' as const, label: 'Fletes', icon: '🚛' },
-  ];
+  const filteredOrders = availableOrders.filter(order => {
+    if (activeTab === 'all') return true;
+    // Simple filtering based on order type or distance
+    return true;
+  });
 
   return (
     <main className="min-h-screen flex flex-col">
@@ -133,7 +222,6 @@ export default function Home() {
               <VehicleBadge type={(user?.driverProfile?.vehicleType as any) || 'motorcycle'} size="sm" />
             </motion.div>
             <div className="flex items-center gap-3">
-              {/* Connection Status */}
               <div className="flex items-center gap-1">
                 <motion.div 
                   className={`h-2 w-2 rounded-full ${isConnected ? 'bg-kiwi-400' : 'bg-red-400'}`}
@@ -142,24 +230,13 @@ export default function Home() {
                 />
               </div>
               <ThemeToggle />
-              <motion.button 
-                className="relative rounded-full p-2 text-surface-500 hover:bg-surface-100 dark:hover:bg-surface-800"
+              <motion.div 
+                className="h-8 w-8 rounded-full bg-kiwi-gradient text-white flex items-center justify-center text-sm font-semibold shadow-kiwi"
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
               >
-                <span className="text-xl">🔔</span>
-                <motion.span 
-                  className="absolute right-1 top-1 h-2 w-2 rounded-full bg-kiwi-500"
-                  animate={{ scale: [1, 1.2, 1] }}
-                  transition={{ duration: 1.5, repeat: Infinity }}
-                />
-              </motion.button>                <motion.div 
-                  className="h-8 w-8 rounded-full bg-kiwi-gradient text-white flex items-center justify-center text-sm font-semibold shadow-kiwi"
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                >
-                  {user?.driverProfile?.fullName?.charAt(0) || 'D'}
-                </motion.div>
+                {user?.driverProfile?.fullName?.charAt(0) || 'D'}
+              </motion.div>
             </div>
           </div>
         </div>
@@ -174,7 +251,6 @@ export default function Home() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          {/* Background decoration */}
           <motion.div 
             className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/10"
             animate={{ scale: [1, 1.2, 1] }}
@@ -225,10 +301,9 @@ export default function Home() {
                   >
                     ●
                   </motion.span>
-                  <span>En línea - Tú eliges qué trabajar</span>
+                  <span>En línea - Recibiendo pedidos</span>
                 </div>
                 
-                {/* Service Type Tabs */}
                 <div className="flex gap-2">
                   {tabs.map((tab) => (
                     <motion.button
@@ -263,23 +338,98 @@ export default function Home() {
           </StaggerItem>
           <StaggerItem>
             <motion.div 
-              className="rounded-xl bg-white p-4 text-center shadow-soft"
+              className="rounded-xl bg-white dark:bg-surface-800 p-4 text-center shadow-soft dark:shadow-dark"
               whileHover={{ y: -2, boxShadow: '0 8px 24px 0 rgb(0 0 0 / 0.08)' }}
             >
-              <AnimatedCounter value={24} prefix="₡" suffix="k" className="text-2xl font-bold text-gold-600" />
-              <p className="text-xs text-surface-500">Ganancias</p>
+              <AnimatedCounter value={stats.rating} decimals={1} prefix="⭐" className="text-2xl font-bold text-bark-600" />
+              <p className="text-xs text-surface-500 dark:text-surface-400">Rating</p>
             </motion.div>
           </StaggerItem>
           <StaggerItem>
             <motion.div 
-              className="rounded-xl bg-white p-4 text-center shadow-soft"
+              className="rounded-xl bg-white dark:bg-surface-800 p-4 text-center shadow-soft dark:shadow-dark"
               whileHover={{ y: -2, boxShadow: '0 8px 24px 0 rgb(0 0 0 / 0.08)' }}
             >
-              <AnimatedCounter value={stats.rating} decimals={1} prefix="⭐" className="text-2xl font-bold text-bark-600" />
-              <p className="text-xs text-surface-500">Rating</p>
+              <span className="text-2xl font-bold text-gold-600">{availableOrders.length}</span>
+              <p className="text-xs text-surface-500 dark:text-surface-400">Disponibles</p>
             </motion.div>
           </StaggerItem>
         </StaggerContainer>
+
+        {/* Active Orders Section */}
+        {activeOrders.length > 0 && (
+          <motion.div 
+            className="mb-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-300">🎯 Mis Pedidos Activos</h3>
+              <span className="text-xs text-surface-400">{activeOrders.length} en curso</span>
+            </div>
+            
+            <StaggerContainer className="space-y-3">
+              {activeOrders.map((order) => {
+                const nextStatus = getNextStatus(order.status);
+                const nextStatusLabel = nextStatus ? getStatusLabel(nextStatus) : null;
+                
+                return (
+                  <StaggerItem key={order.id}>
+                    <motion.div 
+                      className="rounded-2xl border-2 border-kiwi-200 bg-kiwi-50/50 dark:bg-kiwi-900/20 p-4 shadow-soft"
+                      whileHover={{ y: -2 }}
+                    >
+                      <div className="mb-3 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <motion.span 
+                            className="rounded-full bg-kiwi-500 px-3 py-1 text-xs font-medium text-white"
+                            animate={{ scale: [1, 1.05, 1] }}
+                            transition={{ duration: 2, repeat: Infinity }}
+                          >
+                            🎯 {getStatusLabel(order.status)}
+                          </motion.span>
+                        </div>
+                        <span className="text-sm font-semibold text-surface-700">₡{Number(order.totalAmount).toLocaleString()}</span>
+                      </div>
+                      
+                      <div className="mb-4 space-y-2">
+                        <div className="flex items-start gap-3">
+                          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-kiwi-100 text-kiwi-600">
+                            <span className="text-xs">📍</span>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-surface-800">{order.pickupAddress}</p>
+                            <p className="text-xs text-surface-400">Recoger aquí</p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-3">
+                          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gold-100 text-gold-600">
+                            <span className="text-xs">🏠</span>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-surface-800">{order.deliveryAddress}</p>
+                            <p className="text-xs text-surface-400">Entregar aquí</p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {nextStatus && (
+                        <AnimatedButton 
+                          variant="gradient" 
+                          className="w-full"
+                          onClick={() => handleUpdateStatus(order.id, nextStatus)}
+                        >
+                          {nextStatusLabel} →
+                        </AnimatedButton>
+                      )}
+                    </motion.div>
+                  </StaggerItem>
+                );
+              })}
+            </StaggerContainer>
+          </motion.div>
+        )}
 
         {/* Available Orders */}
         <motion.div 
@@ -289,209 +439,105 @@ export default function Home() {
           transition={{ delay: 0.4 }}
         >
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-surface-600">Pedidos Disponibles</h3>
-            <span className="text-xs text-surface-400">Tú eliges cuáles aceptar</span>
+            <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-300">📦 Pedidos Disponibles</h3>
+            <span className="text-xs text-surface-400">{filteredOrders.length} cerca de ti</span>
           </div>
           
-          <StaggerContainer className="space-y-3">
-            {/* Order Card 1 */}
-            <StaggerItem>
+          {filteredOrders.length === 0 ? (
+            <motion.div 
+              className="rounded-2xl bg-white dark:bg-surface-800 p-8 text-center shadow-soft dark:shadow-dark"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+            >
               <motion.div 
-                className="rounded-2xl border border-kiwi-100 bg-white p-4 shadow-soft"
-                whileHover={{ y: -4, boxShadow: '0 12px 32px -8px rgba(34, 197, 94, 0.25)' }}
-                whileTap={{ scale: 0.98 }}
+                className="text-5xl mb-3"
+                animate={{ y: [0, -10, 0] }}
+                transition={{ duration: 2, repeat: Infinity }}
               >
-                <div className="mb-3 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <motion.span 
-                      className="rounded-full bg-kiwi-100 px-3 py-1 text-xs font-medium text-kiwi-700"
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ type: 'spring', stiffness: 500, delay: 0.5 }}
-                    >
-                      📦 Delivery
-                    </motion.span>
-                    <span className="text-xs text-surface-400">•</span>
-                    <span className="text-xs text-surface-400">Nuevo</span>
-                  </div>
-                  <span className="text-sm font-semibold text-surface-700">₡2,500</span>
-                </div>
-                
-                <div className="mb-4 space-y-2">
-                  <div className="flex items-start gap-3">
-                    <motion.div 
-                      className="flex h-6 w-6 items-center justify-center rounded-full bg-kiwi-100 text-kiwi-600"
-                      whileHover={{ scale: 1.2 }}
-                    >
-                      <span className="text-xs">📍</span>
-                    </motion.div>
-                    <div>
-                      <p className="text-sm font-medium text-surface-800">Restaurante El Sabor</p>
-                      <p className="text-xs text-surface-400">Nicoya Centro</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <motion.div 
-                      className="flex h-6 w-6 items-center justify-center rounded-full bg-gold-100 text-gold-600"
-                      whileHover={{ scale: 1.2 }}
-                    >
-                      <span className="text-xs">🏠</span>
-                    </motion.div>
-                    <div>
-                      <p className="text-sm font-medium text-surface-800">Casa del Cliente</p>
-                      <p className="text-xs text-surface-400">Santa Cruz, 2.5 km</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 mt-2">
-                    <VehicleBadge type="motorcycle" size="sm" />
-                    <span className="text-xs text-surface-400">•</span>
-                    <span className="text-xs text-surface-400">📦 Pequeño</span>
-                  </div>
-                </div>
-                
-                <div className="flex gap-2">
-                  <AnimatedButton variant="secondary" className="flex-1">
-                    Rechazar
-                  </AnimatedButton>
-                  <AnimatedButton variant="gradient" className="flex-1">
-                    Aceptar
-                  </AnimatedButton>
-                </div>
+                🥝
               </motion.div>
-            </StaggerItem>
-
-            {/* Order Card 2 */}
-            <StaggerItem>
-              <motion.div 
-                className="rounded-2xl border border-surface-100 bg-white p-4 shadow-soft"
-                whileHover={{ y: -4, boxShadow: '0 12px 32px -8px rgba(0, 0, 0, 0.1)' }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <div className="mb-3 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <motion.span 
-                      className="rounded-full bg-gold-100 px-3 py-1 text-xs font-medium text-gold-700"
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ type: 'spring', stiffness: 500, delay: 0.6 }}
-                    >
-                      🏍️ Viaje
-                    </motion.span>
-                    <span className="text-xs text-surface-400">•</span>
-                    <span className="text-xs text-surface-400">Express</span>
-                  </div>
-                  <span className="text-sm font-semibold text-surface-700">₡3,800</span>
-                </div>
-                
-                <div className="mb-4 space-y-2">
-                  <div className="flex items-start gap-3">
-                    <motion.div 
-                      className="flex h-6 w-6 items-center justify-center rounded-full bg-kiwi-100 text-kiwi-600"
-                      whileHover={{ scale: 1.2 }}
-                    >
-                      <span className="text-xs">💊</span>
-                    </motion.div>
-                    <div>
-                      <p className="text-sm font-medium text-surface-800">Farmacia La Bomba</p>
-                      <p className="text-xs text-surface-400">Nicoya, 1 km</p>
+              <p className="text-surface-500 dark:text-surface-400">No hay pedidos disponibles ahora</p>
+              <p className="text-xs text-surface-400 mt-1">Cuando haya pedidos, aparecerán aquí</p>
+            </motion.div>
+          ) : (
+            <StaggerContainer className="space-y-3">
+              {filteredOrders.map((order, index) => (
+                <StaggerItem key={order.id}>
+                  <motion.div 
+                    className="rounded-2xl border border-surface-100 dark:border-surface-700 bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
+                    whileHover={{ y: -4, boxShadow: '0 12px 32px -8px rgba(34, 197, 94, 0.25)' }}
+                    whileTap={{ scale: 0.98 }}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                  >
+                    <div className="mb-3 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <motion.span 
+                          className="rounded-full bg-kiwi-100 dark:bg-kiwi-900/50 px-3 py-1 text-xs font-medium text-kiwi-700 dark:text-kiwi-400"
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          transition={{ type: 'spring', stiffness: 500, delay: 0.5 }}
+                        >
+                          📦 Delivery
+                        </motion.span>
+                        <span className="text-xs text-surface-400">•</span>
+                        <span className="text-xs text-surface-400">Nuevo</span>
+                      </div>
+                      <span className="text-sm font-semibold text-surface-700 dark:text-surface-200">
+                        ₡{Number(order.totalAmount || order.basePrice || 0).toLocaleString()}
+                      </span>
                     </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <motion.div 
-                      className="flex h-6 w-6 items-center justify-center rounded-full bg-gold-100 text-gold-600"
-                      whileHover={{ scale: 1.2 }}
-                    >
-                      <span className="text-xs">🏠</span>
-                    </motion.div>
-                    <div>
-                      <p className="text-sm font-medium text-surface-800">Barrio Los Ángeles</p>
-                      <p className="text-xs text-surface-400">Nicoya, 3.2 km</p>
+                    
+                    <div className="mb-4 space-y-2">
+                      <div className="flex items-start gap-3">
+                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-kiwi-100 text-kiwi-600">
+                          <span className="text-xs">📍</span>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-surface-800 dark:text-surface-200">{order.pickupAddress}</p>
+                          <p className="text-xs text-surface-400">Origen</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gold-100 text-gold-600">
+                          <span className="text-xs">🏠</span>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-surface-800 dark:text-surface-200">{order.deliveryAddress}</p>
+                          <p className="text-xs text-surface-400">{order.distanceKm ? `${order.distanceKm} km` : 'Destino'}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 mt-2">
+                        <VehicleBadge type={(user?.driverProfile?.vehicleType as any) || 'motorcycle'} size="sm" />
+                        <span className="text-xs text-surface-400">•</span>
+                        <span className="text-xs text-surface-400">💰 Ganancia: ₡{Number(order.driverPayout || 0).toLocaleString()}</span>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2 mt-2">
-                    <VehicleBadge type="car" size="sm" />
-                    <span className="text-xs text-surface-400">•</span>
-                    <span className="text-xs text-surface-400">📦 Mediano</span>
-                  </div>
-                </div>
-                
-                <div className="flex gap-2">
-                  <AnimatedButton variant="secondary" className="flex-1">
-                    Rechazar
-                  </AnimatedButton>
-                  <AnimatedButton variant="gradient" className="flex-1">
-                    Aceptar
-                  </AnimatedButton>
-                </div>
-              </motion.div>
-            </StaggerItem>
-
-            {/* Order Card 3 - Freight */}
-            <StaggerItem>
-              <motion.div 
-                className="rounded-2xl border border-surface-100 bg-white p-4 shadow-soft"
-                whileHover={{ y: -4, boxShadow: '0 12px 32px -8px rgba(0, 0, 0, 0.1)' }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <div className="mb-3 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <motion.span 
-                      className="rounded-full bg-purple-100 px-3 py-1 text-xs font-medium text-purple-700"
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ type: 'spring', stiffness: 500, delay: 0.7 }}
-                    >
-                      🚛 Flete
-                    </motion.span>
-                    <span className="text-xs text-surface-400">•</span>
-                    <span className="text-xs text-surface-400">Carga grande</span>
-                  </div>
-                  <span className="text-sm font-semibold text-surface-700">₡8,500</span>
-                </div>
-                
-                <div className="mb-4 space-y-2">
-                  <div className="flex items-start gap-3">
-                    <motion.div 
-                      className="flex h-6 w-6 items-center justify-center rounded-full bg-purple-100 text-purple-600"
-                      whileHover={{ scale: 1.2 }}
-                    >
-                      <span className="text-xs">🏭</span>
-                    </motion.div>
-                    <div>
-                      <p className="text-sm font-medium text-surface-800">Bodega Central</p>
-                      <p className="text-xs text-surface-400">Nicoya, 0.5 km</p>
+                    
+                    <div className="flex gap-2">
+                      <AnimatedButton 
+                        variant="secondary" 
+                        className="flex-1"
+                        onClick={() => handleRejectOrder(order.id)}
+                        disabled={acceptingOrder === order.id}
+                      >
+                        Rechazar
+                      </AnimatedButton>
+                      <AnimatedButton 
+                        variant="gradient" 
+                        className="flex-1"
+                        onClick={() => handleAcceptOrder(order.id)}
+                        disabled={acceptingOrder === order.id}
+                      >
+                        {acceptingOrder === order.id ? '⏳ Aceptando...' : 'Aceptar 🎉'}
+                      </AnimatedButton>
                     </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <motion.div 
-                      className="flex h-6 w-6 items-center justify-center rounded-full bg-gold-100 text-gold-600"
-                      whileHover={{ scale: 1.2 }}
-                    >
-                      <span className="text-xs">📍</span>
-                    </motion.div>
-                    <div>
-                      <p className="text-sm font-medium text-surface-800">Construction Site</p>
-                      <p className="text-xs text-surface-400">Santa Cruz, 15 km</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 mt-2">
-                    <VehicleBadge type="truck" size="sm" />
-                    <span className="text-xs text-surface-400">•</span>
-                    <span className="text-xs text-surface-400">📦 ~200 kg</span>
-                  </div>
-                </div>
-                
-                <div className="flex gap-2">
-                  <AnimatedButton variant="secondary" className="flex-1">
-                    Rechazar
-                  </AnimatedButton>
-                  <AnimatedButton variant="gradient" className="flex-1">
-                    Aceptar
-                  </AnimatedButton>
-                </div>
-              </motion.div>
-            </StaggerItem>
-          </StaggerContainer>
+                  </motion.div>
+                </StaggerItem>
+              ))}
+            </StaggerContainer>
+          )}
         </motion.div>
 
         {/* Progress Card */}
@@ -502,26 +548,26 @@ export default function Home() {
           transition={{ delay: 0.6 }}
           whileHover={{ y: -2 }}
         >
-          <h3 className="mb-3 text-sm font-semibold text-surface-600">Tu Progreso</h3>
+          <h3 className="mb-3 text-sm font-semibold text-surface-600 dark:text-surface-300">Tu Progreso</h3>
           <div className="space-y-3">
             <div>
               <div className="mb-1 flex items-center justify-between text-sm">
-                <span className="text-surface-600">Nivel Bronce</span>
-                <span className="text-kiwi-600 font-medium">12/50 viajes</span>
+                <span className="text-surface-600 dark:text-surface-400">Nivel {user?.driverProfile?.level || 'Bronce'}</span>
+                <span className="text-kiwi-600 font-medium">{stats.trips}/50 viajes</span>
               </div>
-              <div className="h-2 rounded-full bg-surface-100 overflow-hidden">
+              <div className="h-2 rounded-full bg-surface-100 dark:bg-surface-700 overflow-hidden">
                 <motion.div 
                   className="h-2 rounded-full bg-kiwi-gradient"
                   initial={{ width: 0 }}
-                  animate={{ width: '24%' }}
+                  animate={{ width: `${Math.min((stats.trips / 50) * 100, 100)}%` }}
                   transition={{ duration: 1, delay: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
                 />
               </div>
             </div>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-surface-500">Próximo incentivo:</span>
+              <span className="text-surface-500 dark:text-surface-400">Próximo incentivo:</span>
               <motion.span 
-                className="font-medium text-surface-700"
+                className="font-medium text-surface-700 dark:text-surface-300"
                 animate={{ scale: [1, 1.05, 1] }}
                 transition={{ duration: 2, repeat: Infinity }}
               >
@@ -584,7 +630,7 @@ export default function Home() {
                   <div className="flex items-center justify-between">
                     <span className="text-surface-500 dark:text-surface-400">Ganancia</span>
                     <span className="text-2xl font-bold text-kiwi-600 dark:text-kiwi-400">
-                      ₡{newOrderAlert.totalAmount?.toLocaleString()}
+                      ₡{Number(newOrderAlert.totalAmount || 0).toLocaleString()}
                     </span>
                   </div>
                 </div>
@@ -594,19 +640,18 @@ export default function Home() {
                 <AnimatedButton 
                   variant="secondary" 
                   className="flex-1"
-                  onClick={() => setNewOrderAlert(null)}
+                  onClick={() => handleRejectOrder(newOrderAlert.orderId || newOrderAlert.id)}
+                  disabled={acceptingOrder === newOrderAlert.orderId}
                 >
                   Rechazar
                 </AnimatedButton>
                 <AnimatedButton 
                   variant="gradient" 
                   className="flex-1"
-                  onClick={() => {
-                    // TODO: Accept order
-                    setNewOrderAlert(null);
-                  }}
+                  onClick={() => handleAcceptOrder(newOrderAlert.orderId || newOrderAlert.id)}
+                  disabled={acceptingOrder === newOrderAlert.orderId}
                 >
-                  Aceptar 🎉
+                  {acceptingOrder === newOrderAlert.orderId ? '⏳ Aceptando...' : 'Aceptar 🎉'}
                 </AnimatedButton>
               </div>
             </motion.div>
@@ -632,7 +677,7 @@ export default function Home() {
             <Link key={item.href} href={item.href}>
               <motion.div 
                 className={`flex flex-col items-center gap-1 px-4 py-2 ${
-                  item.active ? 'text-kiwi-600' : 'text-surface-400 hover:text-surface-600'
+                  item.active ? 'text-kiwi-600' : 'text-surface-400 hover:text-surface-600 dark:hover:text-surface-300'
                 }`}
                 whileHover={{ y: -2 }}
                 whileTap={{ scale: 0.9 }}
