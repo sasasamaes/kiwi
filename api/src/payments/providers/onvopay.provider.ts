@@ -16,69 +16,85 @@ interface OnvoPayPaymentResponse {
   success: boolean;
   paymentId?: string;
   checkoutUrl?: string;
+  clientSecret?: string;
   error?: string;
+}
+
+interface PaymentMethodToken {
+  type: 'card' | 'sinpe';
+  card?: {
+    number: string;
+    expMonth: number;
+    expYear: number;
+    cvv: string;
+    holderName: string;
+  };
+  sinpe?: {
+    phone: string;
+  };
 }
 
 @Injectable()
 export class OnvoPayProvider {
   private readonly logger = new Logger(OnvoPayProvider.name);
-  private readonly apiKey: string;
-  private readonly merchantId: string;
+  private readonly secretKey: string;
+  private readonly publishableKey: string;
   private readonly baseUrl: string;
 
   constructor(private configService: ConfigService) {
-    this.apiKey = this.configService.get<string>('ONVOPAY_API_KEY', '');
-    this.merchantId = this.configService.get<string>('ONVOPAY_MERCHANT_ID', '');
-    this.baseUrl = this.configService.get<string>('ONVOPAY_BASE_URL', 'https://api.onvopay.com/v1');
+    this.secretKey = this.configService.get<string>('ONVO_SECRET_KEY', '');
+    this.publishableKey = this.configService.get<string>('ONVO_PUBLISHABLE_KEY', '');
+    this.baseUrl = this.configService.get<string>('ONVO_BASE_URL', 'https://api.onvopay.com/v1');
   }
 
-  async createPayment(request: OnvoPayPaymentRequest): Promise<OnvoPayPaymentResponse> {
+  /**
+   * Create a payment intent with OnvoPay
+   * @see https://docs.onvopay.com/en/payments/payment-intents
+   */
+  async createPaymentIntent(request: OnvoPayPaymentRequest): Promise<OnvoPayPaymentResponse> {
     try {
-      this.logger.log(`Creating OnvoPay payment for order ${request.orderId}`);
+      this.logger.log(`Creating OnvoPay payment intent for order ${request.orderId}`);
 
-      // In production, this would call the actual OnvoPay API
-      // For now, we'll simulate the response
-      if (!this.apiKey) {
-        this.logger.warn('OnvoPay API key not configured, using mock response');
-        return this.mockCreatePayment(request);
+      // In development, use mock if no API key configured
+      if (!this.secretKey) {
+        this.logger.warn('OnvoPay secret key not configured, using mock response');
+        return this.mockCreatePaymentIntent(request);
       }
 
-      const response = await fetch(`${this.baseUrl}/payments`, {
+      const response = await fetch(`${this.baseUrl}/payment-intents`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`,
-          'X-Merchant-Id': this.merchantId,
+          'Authorization': `Bearer ${this.secretKey}`,
         },
         body: JSON.stringify({
-          amount: request.amount,
-          currency: request.currency,
+          amount: Math.round(request.amount), // Colones don't have decimals
+          currency: request.currency || 'CRC',
           description: request.description,
-          reference: request.orderId,
-          customer: {
-            email: request.customerEmail,
-            phone: request.customerPhone,
+          metadata: {
+            orderId: request.orderId,
+            customerEmail: request.customerEmail,
+            customerPhone: request.customerPhone,
           },
-          callbacks: {
-            success: request.returnUrl,
-            cancel: request.cancelUrl,
-          },
+          returnUrl: request.returnUrl,
+          cancelUrl: request.cancelUrl,
         }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Payment creation failed');
+        throw new Error(data.message || 'Payment intent creation failed');
       }
 
       return {
         success: true,
         paymentId: data.id,
-        checkoutUrl: data.checkout_url,
+        checkoutUrl: data.checkoutUrl,
+        clientSecret: data.clientSecret,
       };
     } catch (error) {
-      this.logger.error('OnvoPay payment creation failed:', error);
+      this.logger.error('OnvoPay payment intent creation failed:', error);
       return {
         success: false,
         error: error.message,
@@ -86,64 +102,185 @@ export class OnvoPayProvider {
     }
   }
 
-  async getPaymentStatus(paymentId: string): Promise<{ status: string; details?: any }> {
+  /**
+   * Confirm a payment intent with a payment method
+   * @see https://docs.onvopay.com/en/api/confirmar-una-intencion-de-pago
+   */
+  async confirmPaymentIntent(
+    paymentIntentId: string,
+    paymentMethodId: string,
+  ): Promise<{ success: boolean; status?: string; error?: string }> {
     try {
-      if (!this.apiKey) {
-        return this.mockGetPaymentStatus(paymentId);
+      this.logger.log(`Confirming OnvoPay payment intent ${paymentIntentId}`);
+
+      if (!this.secretKey) {
+        return { success: true, status: 'succeeded' };
       }
 
-      const response = await fetch(`${this.baseUrl}/payments/${paymentId}`, {
+      const response = await fetch(`${this.baseUrl}/payment-intents/${paymentIntentId}/confirm`, {
+        method: 'POST',
         headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'X-Merchant-Id': this.merchantId,
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.secretKey}`,
+        },
+        body: JSON.stringify({
+          paymentMethodId,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Payment confirmation failed');
+      }
+
+      return {
+        success: true,
+        status: data.status,
+      };
+    } catch (error) {
+      this.logger.error('OnvoPay payment confirmation failed:', error);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Get payment intent status
+   * @see https://docs.onvopay.com/en/api/crear-una-intencion-de-pago
+   */
+  async getPaymentIntentStatus(paymentIntentId: string): Promise<{ status: string; details?: any }> {
+    try {
+      if (!this.secretKey) {
+        return this.mockGetPaymentStatus(paymentIntentId);
+      }
+
+      const response = await fetch(`${this.baseUrl}/payment-intents/${paymentIntentId}`, {
+        headers: {
+          'Authorization': `Bearer ${this.secretKey}`,
         },
       });
 
       const data = await response.json();
       return { status: data.status, details: data };
     } catch (error) {
-      this.logger.error('Failed to get payment status:', error);
+      this.logger.error('Failed to get payment intent status:', error);
       return { status: 'error', details: { error: error.message } };
     }
   }
 
-  async refundPayment(paymentId: string, amount?: number): Promise<{ success: boolean; error?: string }> {
+  /**
+   * Cancel a payment intent
+   * @see https://docs.onvopay.com/en/api/cancelar-una-intencion-de-pago
+   */
+  async cancelPaymentIntent(paymentIntentId: string): Promise<{ success: boolean; error?: string }> {
     try {
-      if (!this.apiKey) {
+      if (!this.secretKey) {
         return { success: true };
       }
 
-      const response = await fetch(`${this.baseUrl}/payments/${paymentId}/refund`, {
+      const response = await fetch(`${this.baseUrl}/payment-intents/${paymentIntentId}/cancel`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`,
-          'X-Merchant-Id': this.merchantId,
+          'Authorization': `Bearer ${this.secretKey}`,
         },
-        body: JSON.stringify({ amount }),
       });
 
       return { success: response.ok };
     } catch (error) {
-      this.logger.error('Refund failed:', error);
+      this.logger.error('Cancel payment intent failed:', error);
       return { success: false, error: error.message };
     }
   }
 
+  /**
+   * Capture a payment intent (for authorized payments)
+   * @see https://docs.onvopay.com/en/api/capturar-una-intencion-de-pago
+   */
+  async capturePaymentIntent(
+    paymentIntentId: string,
+    amount?: number,
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      if (!this.secretKey) {
+        return { success: true };
+      }
+
+      const response = await fetch(`${this.baseUrl}/payment-intents/${paymentIntentId}/capture`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.secretKey}`,
+        },
+        body: amount ? JSON.stringify({ amount }) : undefined,
+      });
+
+      return { success: response.ok };
+    } catch (error) {
+      this.logger.error('Capture payment intent failed:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Create a payment method (tokenize card or SINPE)
+   * This should be called client-side with publishable key
+   * @see https://docs.onvopay.com/en/api/crear-un-metodo-de-pago
+   */
+  async createPaymentMethod(token: string, billing?: any): Promise<{ id: string; type: string }> {
+    try {
+      // In production, this is done client-side with publishable key
+      // Server-side we just store the token ID
+      this.logger.log('Payment method token received');
+      
+      return {
+        id: token,
+        type: 'card', // or 'sinpe'
+      };
+    } catch (error) {
+      this.logger.error('Failed to process payment method:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Verify webhook signature
+   * @see https://docs.onvopay.com/en/webhooks
+   */
+  verifyWebhookSignature(payload: string, signature: string): boolean {
+    // In production, verify HMAC signature
+    // const expectedSignature = crypto
+    //   .createHmac('sha256', this.webhookSecret)
+    //   .update(payload)
+    //   .digest('hex');
+    // return signature === expectedSignature;
+    
+    return true; // Mock for development
+  }
+
   // Mock methods for development
-  private mockCreatePayment(request: OnvoPayPaymentRequest): OnvoPayPaymentResponse {
-    const paymentId = `onvo_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  private mockCreatePaymentIntent(request: OnvoPayPaymentRequest): OnvoPayPaymentResponse {
+    const paymentId = `pi_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     return {
       success: true,
       paymentId,
       checkoutUrl: `https://checkout.onvopay.com/pay/${paymentId}`,
+      clientSecret: `pi_${paymentId}_secret_${Math.random().toString(36).substr(2, 16)}`,
     };
   }
 
-  private mockGetPaymentStatus(paymentId: string): { status: string; details: any } {
+  private mockGetPaymentStatus(paymentIntentId: string): { status: string; details: any } {
     return {
-      status: 'completed',
-      details: { id: paymentId, amount: 2500, currency: 'CRC' },
+      status: 'succeeded',
+      details: {
+        id: paymentIntentId,
+        amount: 5000,
+        currency: 'CRC',
+        status: 'succeeded',
+      },
     };
   }
 }

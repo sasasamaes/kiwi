@@ -13,7 +13,9 @@ import {
   MenuItem,
   MerchantPublicProfile,
   useSocket,
-  AddressInput
+  AddressInput,
+  OnvoPayCheckout,
+  CryptoCheckout
 } from '@kiwi/ui';
 
 interface CartItem extends MenuItem {
@@ -59,8 +61,12 @@ export default function MenuPage() {
   const [selectedAddressType, setSelectedAddressType] = useState<string>('home');
 
   // Payment method
-  type PaymentMethod = 'sinpe' | 'card' | 'cash';
+  type PaymentMethod = 'sinpe' | 'card' | 'cash' | 'crypto_usdc' | 'crypto_usdt';
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('sinpe');
+  
+  // Payment state
+  const [paymentPending, setPaymentPending] = useState(false);
+  const [paymentIntent, setPaymentIntent] = useState<any>(null);
 
   // Socket for real-time order updates
   const { isConnected } = useSocket();
@@ -161,16 +167,67 @@ export default function MenuPage() {
 
       const order = await api.createOrder(orderData);
       
-      setCart([]);
-      setShowCheckout(false);
-      setOrderSuccess(order.id);
+      // Handle payment based on method
+      if (paymentMethod === 'sinpe' || paymentMethod === 'card') {
+        // Create payment with OnvoPay
+        const paymentResult = await api.createPayment({
+          orderId: order.id,
+          method: paymentMethod === 'sinpe' ? 'onvopay_sinpe' : 'onvopay_card',
+          amount: totalWithDelivery,
+          customerPhone: deliveryInfo.phone,
+          customerEmail: deliveryInfo.phone + '@kiwi.app', // Temporary
+        });
+
+        if (paymentResult.checkoutUrl) {
+          // Redirect to OnvoPay checkout
+          window.location.href = paymentResult.checkoutUrl;
+          return;
+        }
+
+        setPaymentIntent(paymentResult);
+        setPaymentPending(true);
+      } else if (paymentMethod === 'crypto_usdc' || paymentMethod === 'crypto_usdt') {
+        // Create crypto payment
+        const coin = paymentMethod === 'crypto_usdc' ? 'USDC' : 'USDT';
+        const paymentResult = await api.createPayment({
+          orderId: order.id,
+          method: 'crypto',
+          amount: totalWithDelivery,
+          cryptoCoin: coin,
+        });
+
+        setPaymentIntent(paymentResult);
+        setPaymentPending(true);
+      } else {
+        // Cash payment - no external processing needed
+        setCart([]);
+        setShowCheckout(false);
+        setOrderSuccess(order.id);
+      }
     } catch (err) {
       console.error('Failed to create order:', err);
       alert('Error al crear el pedido. Intenta de nuevo.');
     } finally {
       setCheckingOut(false);
     }
-  }, [cart, merchant, deliveryInfo, canCheckout]);
+  }, [cart, merchant, deliveryInfo, canCheckout, paymentMethod, totalWithDelivery]);
+
+  // Payment success handler
+  const handlePaymentSuccess = useCallback((paymentId: string) => {
+    setPaymentPending(false);
+    setPaymentIntent(null);
+    setCart([]);
+    setShowCheckout(false);
+    setOrderSuccess(paymentIntent?.orderId || paymentId);
+  }, [paymentIntent]);
+
+  // Payment error handler
+  const handlePaymentError = useCallback((error: string) => {
+    setPaymentPending(false);
+    setPaymentIntent(null);
+    console.error('Payment error:', error);
+    alert('Error en el pago: ' + error);
+  }, []);
 
   // Order success screen
   if (orderSuccess) {
@@ -688,6 +745,40 @@ export default function MenuPage() {
                     ))}
                   </div>
 
+                  {/* Crypto Options */}
+                  <div className="grid grid-cols-2 gap-3 mt-3">
+                    {([
+                      { id: 'crypto_usdc' as const, icon: '💵', label: 'USDC', desc: 'Stellar' },
+                      { id: 'crypto_usdt' as const, icon: '💲', label: 'USDT', desc: 'Stellar' },
+                    ]).map((method) => (
+                      <motion.button
+                        key={method.id}
+                        type="button"
+                        className={`flex items-center gap-3 p-3 rounded-xl transition-all ${
+                          paymentMethod === method.id
+                            ? 'bg-purple-100 dark:bg-purple-900/50 ring-2 ring-purple-500 shadow-purple'
+                            : 'bg-surface-100 dark:bg-surface-700 hover:bg-surface-200 dark:hover:bg-surface-600'
+                        }`}
+                        onClick={() => setPaymentMethod(method.id)}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <span className="text-xl">{method.icon}</span>
+                        <div className="text-left">
+                          <span className={`text-sm font-semibold ${
+                            paymentMethod === method.id
+                              ? 'text-purple-700 dark:text-purple-400'
+                              : 'text-surface-700 dark:text-surface-300'
+                          }`}>
+                            {method.label}
+                          </span>
+                          <span className="text-xs text-surface-400 dark:text-surface-500 block">
+                            {method.desc}
+                          </span>
+                        </div>
+                      </motion.button>
+                    ))}
+                  </div>
+
                   {/* SINPE Phone Input */}
                   {paymentMethod === 'sinpe' && (
                     <motion.div
@@ -787,6 +878,61 @@ export default function MenuPage() {
                   </p>
                 )}
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Payment Modal */}
+      <AnimatePresence>
+        {paymentPending && paymentIntent && (
+          <motion.div 
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            {/* Backdrop */}
+            <motion.div 
+              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+              onClick={() => {
+                setPaymentPending(false);
+                setPaymentIntent(null);
+              }}
+            />
+
+            {/* Payment Component */}
+            <motion.div 
+              className="relative w-full max-w-md"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+            >
+              {(paymentMethod === 'crypto_usdc' || paymentMethod === 'crypto_usdt') ? (
+                <CryptoCheckout
+                  walletAddress={paymentIntent.walletAddress || ''}
+                  amount={totalWithDelivery}
+                  amountInCrypto={paymentIntent.amountInCrypto || 0}
+                  coin={paymentMethod === 'crypto_usdc' ? 'USDC' : 'USDT'}
+                  qrCode={paymentIntent.qrCode}
+                  onSuccess={() => handlePaymentSuccess(paymentIntent.paymentId)}
+                  onError={handlePaymentError}
+                />
+              ) : (
+                <OnvoPayCheckout
+                  paymentIntentId={paymentIntent.paymentId || ''}
+                  clientSecret={paymentIntent.clientSecret || ''}
+                  checkoutUrl={paymentIntent.checkoutUrl}
+                  amount={totalWithDelivery}
+                  currency="CRC"
+                  onSuccess={handlePaymentSuccess}
+                  onError={handlePaymentError}
+                  onCancel={() => {
+                    setPaymentPending(false);
+                    setPaymentIntent(null);
+                  }}
+                />
+              )}
             </motion.div>
           </motion.div>
         )}

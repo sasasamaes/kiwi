@@ -11,12 +11,14 @@ interface CreatePaymentDTO {
   customerEmail?: string;
   customerPhone?: string;
   cryptoCoin?: 'USDC' | 'USDT';
+  paymentMethodId?: string; // Tokenized payment method from client
 }
 
 interface PaymentResult {
   success: boolean;
   paymentId?: string;
   checkoutUrl?: string;
+  clientSecret?: string;
   walletAddress?: string;
   amountInCrypto?: number;
   exchangeRate?: number;
@@ -35,7 +37,7 @@ export class PaymentsService {
   ) {}
 
   async createPayment(dto: CreatePaymentDTO): Promise<PaymentResult> {
-    const { orderId, method, amount, currency, customerEmail, customerPhone, cryptoCoin } = dto;
+    const { orderId, method, amount, currency, customerEmail, customerPhone, cryptoCoin, paymentMethodId } = dto;
 
     // Validate order exists
     const order = await this.prisma.order.findUnique({
@@ -60,7 +62,7 @@ export class PaymentsService {
     switch (method) {
       case 'onvopay_card':
       case 'onvopay_sinpe':
-        result = await this.createOnvoPayPayment(orderId, amount, method, customerEmail, customerPhone);
+        result = await this.createOnvoPayPayment(orderId, amount, method, customerEmail, customerPhone, paymentMethodId);
         break;
       
       case 'crypto':
@@ -76,36 +78,29 @@ export class PaymentsService {
     }
 
     // Save or update payment record
+    const paymentData = {
+      amount,
+      currency: method === 'crypto' ? cryptoCoin : 'CRC',
+      method: method as any,
+      status: result.success ? 'pending' : 'failed',
+      onvoPaymentId: result.paymentId,
+      onvoCheckoutUrl: result.checkoutUrl,
+      cryptoCoin: cryptoCoin,
+      cryptoWalletAddress: result.walletAddress,
+      cryptoAmount: result.amountInCrypto,
+      exchangeRate: result.exchangeRate,
+    };
+
     if (existingPayment) {
       await this.prisma.payment.update({
         where: { orderId },
-        data: {
-          amount,
-          currency: method === 'crypto' ? cryptoCoin : 'CRC',
-          method: method as any,
-          status: 'pending',
-          onvoPaymentId: result.paymentId,
-          onvoCheckoutUrl: result.checkoutUrl,
-          cryptoCoin: cryptoCoin,
-          cryptoWalletAddress: result.walletAddress,
-          cryptoAmount: result.amountInCrypto,
-          exchangeRate: result.exchangeRate,
-        },
+        data: paymentData,
       });
     } else {
       await this.prisma.payment.create({
         data: {
           orderId,
-          amount,
-          currency: method === 'crypto' ? cryptoCoin : 'CRC',
-          method: method as any,
-          status: 'pending',
-          onvoPaymentId: result.paymentId,
-          onvoCheckoutUrl: result.checkoutUrl,
-          cryptoCoin: cryptoCoin,
-          cryptoWalletAddress: result.walletAddress,
-          cryptoAmount: result.amountInCrypto,
-          exchangeRate: result.exchangeRate,
+          ...paymentData,
         },
       });
     }
@@ -119,10 +114,12 @@ export class PaymentsService {
     method: 'onvopay_card' | 'onvopay_sinpe',
     customerEmail?: string,
     customerPhone?: string,
+    paymentMethodId?: string,
   ): Promise<PaymentResult> {
     const paymentType = method === 'onvopay_card' ? 'Tarjeta' : 'SINPE';
     
-    const result = await this.onvopayProvider.createPayment({
+    // Create payment intent
+    const intentResult = await this.onvopayProvider.createPaymentIntent({
       amount,
       currency: 'CRC',
       description: `Pago Kiwi - Pedido #${orderId.slice(0, 8)} (${paymentType})`,
@@ -133,11 +130,41 @@ export class PaymentsService {
       cancelUrl: `${process.env.FRONTEND_URL}/orders/${orderId}/cancel`,
     });
 
+    if (!intentResult.success) {
+      return {
+        success: false,
+        error: intentResult.error,
+      };
+    }
+
+    // If payment method ID is provided, confirm immediately
+    if (paymentMethodId && intentResult.paymentId) {
+      const confirmResult = await this.onvopayProvider.confirmPaymentIntent(
+        intentResult.paymentId,
+        paymentMethodId,
+      );
+
+      if (!confirmResult.success) {
+        return {
+          success: false,
+          error: confirmResult.error,
+        };
+      }
+
+      return {
+        success: true,
+        paymentId: intentResult.paymentId,
+        checkoutUrl: intentResult.checkoutUrl,
+        clientSecret: intentResult.clientSecret,
+      };
+    }
+
+    // Return checkout URL for client-side completion
     return {
-      success: result.success,
-      paymentId: result.paymentId,
-      checkoutUrl: result.checkoutUrl,
-      error: result.error,
+      success: true,
+      paymentId: intentResult.paymentId,
+      checkoutUrl: intentResult.checkoutUrl,
+      clientSecret: intentResult.clientSecret,
     };
   }
 
@@ -187,14 +214,20 @@ export class PaymentsService {
     // Check with provider if needed
     if (payment.method === 'onvopay_card' || payment.method === 'onvopay_sinpe') {
       if (payment.onvoPaymentId && payment.status === 'pending') {
-        const status = await this.onvopayProvider.getPaymentStatus(payment.onvoPaymentId);
+        const status = await this.onvopayProvider.getPaymentIntentStatus(payment.onvoPaymentId);
         
-        if (status.status === 'completed') {
+        if (status.status === 'succeeded') {
           await this.prisma.payment.update({
             where: { orderId },
             data: { status: 'completed' },
           });
           payment.status = 'completed';
+        } else if (status.status === 'canceled') {
+          await this.prisma.payment.update({
+            where: { orderId },
+            data: { status: 'cancelled' },
+          });
+          payment.status = 'cancelled';
         }
       }
     }
@@ -214,12 +247,12 @@ export class PaymentsService {
     return payment;
   }
 
-  async handleWebhook(provider: string, payload: any) {
+  async handleWebhook(provider: string, payload: any, signature?: string) {
     this.logger.log(`Received ${provider} webhook`);
 
     switch (provider) {
       case 'onvopay':
-        return this.handleOnvoPayWebhook(payload);
+        return this.handleOnvoPayWebhook(payload, signature);
       case 'stellar':
         return this.handleStellarWebhook(payload);
       default:
@@ -227,22 +260,46 @@ export class PaymentsService {
     }
   }
 
-  private async handleOnvoPayWebhook(payload: any) {
-    const { reference, status } = payload;
+  private async handleOnvoPayWebhook(payload: any, signature?: string) {
+    // Verify webhook signature
+    if (signature && !this.onvopayProvider.verifyWebhookSignature(JSON.stringify(payload), signature)) {
+      this.logger.error('Invalid OnvoPay webhook signature');
+      return { received: false, error: 'Invalid signature' };
+    }
 
-    if (status === 'completed') {
-      await this.prisma.payment.update({
-        where: { orderId: reference },
-        data: { status: 'completed' },
-      });
-      
-      // Update order status
-      await this.prisma.order.update({
-        where: { id: reference },
-        data: { status: 'assigned' },
-      });
+    const { type, data } = payload;
 
-      this.logger.log(`Payment completed for order ${reference}`);
+    // Handle different event types
+    if (type === 'payment_intent.succeeded') {
+      const { id, metadata } = data;
+      const orderId = metadata?.orderId;
+
+      if (orderId) {
+        await this.prisma.payment.update({
+          where: { orderId },
+          data: { status: 'completed' },
+        });
+        
+        // Update order status
+        await this.prisma.order.update({
+          where: { id: orderId },
+          data: { status: 'assigned' },
+        });
+
+        this.logger.log(`Payment completed for order ${orderId}`);
+      }
+    } else if (type === 'payment_intent.canceled') {
+      const { metadata } = data;
+      const orderId = metadata?.orderId;
+
+      if (orderId) {
+        await this.prisma.payment.update({
+          where: { orderId },
+          data: { status: 'cancelled' },
+        });
+
+        this.logger.log(`Payment cancelled for order ${orderId}`);
+      }
     }
 
     return { received: true };

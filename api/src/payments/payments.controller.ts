@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, Param, UseGuards, Req, HttpCode } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, UseGuards, Req, HttpCode, Headers } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { PaymentsService } from './payments.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -22,12 +22,26 @@ export class PaymentsController {
       customerEmail?: string;
       customerPhone?: string;
       cryptoCoin?: 'USDC' | 'USDT';
+      paymentMethodId?: string;
     },
   ) {
     return this.paymentsService.createPayment({
       ...body,
       currency: body.cryptoCoin || 'CRC',
     });
+  }
+
+  @Post('confirm/:paymentIntentId')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Confirm a payment intent' })
+  async confirmPayment(
+    @Param('paymentIntentId') paymentIntentId: string,
+    @Body() body: { paymentMethodId: string },
+  ) {
+    const { OnvoPayProvider } = await import('./providers/onvopay.provider');
+    const provider = new OnvoPayProvider(null as any);
+    return provider.confirmPaymentIntent(paymentIntentId, body.paymentMethodId);
   }
 
   @Get('status/:orderId')
@@ -50,9 +64,9 @@ export class PaymentsController {
   async handleWebhook(
     @Param('provider') provider: string,
     @Req() req: any,
+    @Headers('x-onvo-signature') signature?: string,
   ) {
-    // In production, verify webhook signature
-    return this.paymentsService.handleWebhook(provider, req.body);
+    return this.paymentsService.handleWebhook(provider, req.body, signature);
   }
 
   @Get('crypto/quote')

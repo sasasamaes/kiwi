@@ -179,3 +179,9 @@ export type { AddressInputProps } from './AddressInput';
 // ============================================
 export { RouteOptimizer } from './RouteOptimizer';
 export type { RouteOptimizerProps } from './RouteOptimizer';
+
+// ============================================
+// 💳 ONVOPAY CHECKOUT
+// ============================================
+export { OnvoPayCheckout, CryptoCheckout } from './OnvoPayCheckout';
+export type { OnvoPayCheckoutProps, CryptoCheckoutProps } from './OnvoPayCheckout';
