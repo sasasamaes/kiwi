@@ -291,3 +291,11 @@ export type { Route, SavedWaypoint, OfflineNavigationOptions, RouteStep, RoutePo
 export { useOfflineNavigation, useDriverNavigation, useCustomerTracking } from './useOfflineNavigation';
 export type { UseOfflineNavigationOptions, UseOfflineNavigationResult } from './useOfflineNavigation';
 export { OfflineNavigation, NavigationButton } from './OfflineNavigation';
+
+// ============================================
+// 💾 DATA EXPORT
+// ============================================
+export { dataExport } from './data-export';
+export type { ExportOptions, ExportData, ImportResult, ExportFormat, ExportType } from './data-export';
+export { useDataExport } from './useDataExport';
+export { DataExport } from './DataExport';
