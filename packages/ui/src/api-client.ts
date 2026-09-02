@@ -129,6 +129,39 @@ class ApiClient {
   // 🏪 MERCHANTS
   // ============================================
 
+  async getMerchantPublicProfile(merchantId: string) {
+    return this.request<any>(`/menu/merchant/${merchantId}`);
+  }
+
+  async getMerchantMenuItems(merchantId: string, category?: string) {
+    const params = category && category !== 'Todos' ? `?category=${encodeURIComponent(category)}` : '';
+    return this.request<any>(`/menu/merchant/${merchantId}/items${params}`);
+  }
+
+  async getMyMenuItems() {
+    return this.request<any>('/menu/my');
+  }
+
+  async createMenuItem(data: any) {
+    return this.request<any>('/menu/my', {
+      method: 'POST',
+      body: data,
+    });
+  }
+
+  async updateMenuItem(itemId: string, data: any) {
+    return this.request<any>(`/menu/my/${itemId}`, {
+      method: 'PUT',
+      body: data,
+    });
+  }
+
+  async deleteMenuItem(itemId: string) {
+    return this.request<any>(`/menu/my/${itemId}`, {
+      method: 'DELETE',
+    });
+  }
+
   async getMerchantProfile() {
     return this.request<any>('/merchants/me');
   }
@@ -396,4 +429,32 @@ export interface Order {
   driverPayout: number;
   totalAmount: number;
   createdAt: string;
+}
+
+export interface MenuItem {
+  id: string;
+  merchantId: string;
+  name: string;
+  description: string;
+  price: number;
+  image: string;
+  category: string;
+  isPopular: boolean;
+  isAvailable: boolean;
+  sortOrder: number;
+}
+
+export interface MerchantPublicProfile {
+  id: string;
+  businessName: string;
+  address: string;
+  description: string;
+  logoUrl: string;
+  latitude: number;
+  longitude: number;
+  rating: number;
+  totalRatings: number;
+  activeOrders: number;
+  isOpen: boolean;
+  openingHours: any;
 }

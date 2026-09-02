@@ -6,6 +6,7 @@ import { UsersModule } from './users/users.module';
 import { MerchantsModule } from './merchants/merchants.module';
 import { DriversModule } from './drivers/drivers.module';
 import { OrdersModule } from './orders/orders.module';
+import { MenuModule } from './menu/menu.module';
 import { KycModule } from './kyc/kyc.module';
 import { EventsModule } from './events/events.module';
 import { NotificationsModule } from './notifications/notifications.module';
@@ -28,6 +29,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
     MerchantsModule,
     DriversModule,
     OrdersModule,
+    MenuModule,
     KycModule,
     EventsModule,
     NotificationsModule,
