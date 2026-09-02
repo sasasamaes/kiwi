@@ -23,6 +23,42 @@ export interface MerchantProfile {
   logoUrl?: string;
   description?: string;
   openingHours?: Record<string, { open: string; close: string }>;
+  kycStatus: KYCStatus;
+  kycVerifiedAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// KYC types
+export type KYCStatus = 'pending' | 'documents_submitted' | 'under_review' | 'approved' | 'rejected' | 'expired';
+
+export interface KYCVerification {
+  id: string;
+  userId: string;
+  status: KYCStatus;
+  // Identity
+  idType?: string;
+  idNumber?: string;
+  idFrontUrl?: string;
+  idBackUrl?: string;
+  // Selfie
+  selfieUrl?: string;
+  selfieVerified: boolean;
+  // Driver License
+  licenseNumber?: string;
+  licenseExpiry?: Date;
+  licenseUrl?: string;
+  // Vehicle Documents
+  vehicleRegisterUrl?: string;
+  insuranceUrl?: string;
+  // Business Documents
+  businessLicenseUrl?: string;
+  taxId?: string;
+  // Metadata
+  verifiedAt?: Date;
+  verifiedBy?: string;
+  rejectionReason?: string;
+  notes?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -53,6 +89,8 @@ export interface DriverProfile {
   rating: number;
   totalTrips: number;
   status: DriverStatus;
+  kycStatus: KYCStatus;
+  kycVerifiedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }

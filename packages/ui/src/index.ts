@@ -68,6 +68,12 @@ export { AuthForm } from './AuthForm';
 export type { AuthFormProps, AuthFormData } from './AuthForm';
 
 // ============================================
+// 🪪 KYC COMPONENTS
+// ============================================
+export { KYCVerification, KYCStatusBadge } from './KYCVerification';
+export type { KYCData, KYCStatus } from './KYCVerification';
+
+// ============================================
 // 🚗 VEHICLE COMPONENTS
 // ============================================
 export { VehicleSelector, VehicleBadge, vehicles } from './VehicleSelector';

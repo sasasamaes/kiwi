@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AnimatedButton, StaggerContainer, StaggerItem, AnimatedCounter, VehicleSelector, VehicleBadge, VehicleType } from '@kiwi/ui';
+import { AnimatedButton, StaggerContainer, StaggerItem, AnimatedCounter, VehicleSelector, VehicleBadge, VehicleType, KYCStatusBadge } from '@kiwi/ui';
 
 export default function Profile() {
   const [showVehicleModal, setShowVehicleModal] = useState(false);
@@ -166,6 +166,27 @@ export default function Profile() {
               </motion.div>
             ))}
           </div>
+        </motion.div>
+
+        {/* KYC Status */}
+        <motion.div 
+          className="mb-6 rounded-2xl bg-white p-5 shadow-soft"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35 }}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-display font-semibold text-surface-800">🪪 Verificación</h3>
+            <KYCStatusBadge status="pending" size="sm" />
+          </div>
+          <p className="text-sm text-surface-500 mb-4">
+            Verifica tu identidad para empezar a trabajar
+          </p>
+          <Link href="/kyc">
+            <AnimatedButton variant="primary" className="w-full">
+              Verificar Ahora
+            </AnimatedButton>
+          </Link>
         </motion.div>
 
         {/* Vehicle Info */}

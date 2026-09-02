@@ -55,6 +55,10 @@ model MerchantProfile {
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
+  // KYC
+  kycStatus      KYCStatus  @default(pending) @map("kyc_status")
+  kycVerifiedAt  DateTime?  @map("kyc_verified_at")
+
   // Relations
   user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   orders         Order[]
@@ -78,6 +82,10 @@ model DriverProfile {
   status        DriverStatus @default(offline)
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  // KYC
+  kycStatus      KYCStatus  @default(pending) @map("kyc_status")
+  kycVerifiedAt  DateTime?  @map("kyc_verified_at")
 
   // Relations
   user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -111,6 +119,60 @@ enum DriverStatus {
   offline
   available
   busy
+}
+
+// KYC Verification
+model KYCVerification {
+  id              String    @id @default(uuid())
+  userId          String    @unique @map("user_id")
+  status          KYCStatus @default(pending)
+  
+  // Identity Documents
+  idType          String?   @map("id_type") // cedula, passport, etc.
+  idNumber        String?   @map("id_number")
+  idFrontUrl      String?   @map("id_front_url")
+  idBackUrl       String?   @map("id_back_url")
+  
+  // Selfie Verification
+  selfieUrl       String?   @map("selfie_url")
+  selfieVerified  Boolean   @default(false) @map("selfie_verified")
+  
+  // Driver License (for drivers)
+  licenseNumber   String?   @map("license_number")
+  licenseExpiry   DateTime? @map("license_expiry")
+  licenseUrl      String?   @map("license_url")
+  
+  // Vehicle Documents (for drivers)
+  vehicleRegisterUrl  String? @map("vehicle_register_url")
+  insuranceUrl        String? @map("insurance_url")
+  
+  // Business Documents (for merchants)
+  businessLicenseUrl  String? @map("business_license_url")
+  taxId               String? @map("tax_id")
+  
+  // Verification metadata
+  verifiedAt      DateTime? @map("verified_at")
+  verifiedBy      String?   @map("verified_by")
+  rejectionReason String?   @map("rejection_reason")
+  notes           String?
+  
+  // Timestamps
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("kyc_verifications")
+}
+
+enum KYCStatus {
+  pending
+  documents_submitted
+  under_review
+  approved
+  rejected
+  expired
 }
 
 // Driver schedules
