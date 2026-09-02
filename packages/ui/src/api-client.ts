@@ -517,6 +517,36 @@ class ApiClient {
       body: { reason },
     });
   }
+
+  // ============================================
+  // 🗺️ GEOCODING
+  // ============================================
+
+  async searchAddresses(query: string, limit: number = 5, country?: string) {
+    const params = new URLSearchParams({ q: query, limit: String(limit) });
+    if (country) params.append('country', country);
+    return this.request<any>(`/geocoding/search?${params.toString()}`);
+  }
+
+  async searchNicoyaAddresses(query: string, limit: number = 5) {
+    const params = new URLSearchParams({ q: query, limit: String(limit) });
+    return this.request<any>(`/geocoding/search/nicoya?${params.toString()}`);
+  }
+
+  async reverseGeocode(lat: number, lng: number) {
+    const params = new URLSearchParams({ lat: String(lat), lng: String(lng) });
+    return this.request<any>(`/geocoding/reverse?${params.toString()}`);
+  }
+
+  async calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number) {
+    const params = new URLSearchParams({
+      lat1: String(lat1),
+      lng1: String(lng1),
+      lat2: String(lat2),
+      lng2: String(lng2),
+    });
+    return this.request<any>(`/geocoding/distance?${params.toString()}`);
+  }
 }
 
 // Export singleton instance

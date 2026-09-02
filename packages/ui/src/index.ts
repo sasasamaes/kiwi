@@ -167,3 +167,9 @@ export type { QRCodeGeneratorProps, QRScannerProps } from './QRCodeGenerator';
 // ============================================
 export { TrackingMap } from './TrackingMap';
 export type { TrackingMapProps } from './TrackingMap';
+
+// ============================================
+// 📍 ADDRESS INPUT
+// ============================================
+export { AddressInput } from './AddressInput';
+export type { AddressInputProps } from './AddressInput';

@@ -12,7 +12,8 @@ import {
   api,
   MenuItem,
   MerchantPublicProfile,
-  useSocket
+  useSocket,
+  AddressInput
 } from '@kiwi/ui';
 
 interface CartItem extends MenuItem {
@@ -593,12 +594,16 @@ export default function MenuPage() {
                     ))}
                   </div>
 
-                  <input
-                    type="text"
+                  <AddressInput
                     value={deliveryInfo.address}
-                    onChange={(e) => setDeliveryInfo({ ...deliveryInfo, address: e.target.value })}
-                    placeholder="Ej: Barrio Los Ángeles, 200m norte del parque"
-                    className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:border-kiwi-500 focus:ring-2 focus:ring-kiwi-500/20 transition-all"
+                    onChange={(address, coordinates) => {
+                      setDeliveryInfo({ ...deliveryInfo, address });
+                      if (coordinates) {
+                        console.log('📍 Address coordinates:', coordinates);
+                      }
+                    }}
+                    placeholder="Buscar dirección en Nicoya..."
+                    nicoyaOnly={true}
                   />
                 </div>
 

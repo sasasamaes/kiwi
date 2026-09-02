@@ -13,6 +13,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { PaymentsModule } from './payments/payments.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { WithdrawalsModule } from './withdrawals/withdrawals.module';
+import { GeocodingModule } from './geocoding/geocoding.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { WithdrawalsModule } from './withdrawals/withdrawals.module';
     PaymentsModule,
     AnalyticsModule,
     WithdrawalsModule,
+    GeocodingModule,
   ],
 })
 export class AppModule {}
