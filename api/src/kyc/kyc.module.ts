@@ -1,10 +1,12 @@
 import { Module } from '@nestjs/common';
-import { KycService } from './kyc.service';
-import { KycController } from './kyc.controller';
+import { KYCService } from './kyc.service';
+import { KYCController } from './kyc.controller';
+import { PrismaModule } from '../prisma/prisma.module';
 
 @Module({
-  providers: [KycService],
-  controllers: [KycController],
-  exports: [KycService],
+  imports: [PrismaModule],
+  providers: [KYCService],
+  controllers: [KYCController],
+  exports: [KYCService],
 })
-export class KycModule {}
+export class KYCModule {}

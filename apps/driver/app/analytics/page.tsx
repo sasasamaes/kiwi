@@ -1,18 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { 
-  LineChartComponent, 
-  AreaChartComponent, 
-  BarChartComponent, 
-  PieChartComponent,
-  StatCard,
-  PeriodSelector 
-} from '@kiwi/ui';
+import { motion } from 'framer-motion';
+import { api, Skeleton, StaggerContainer, StaggerItem } from '@kiwi/ui';
 
 interface DriverAnalytics {
+  period: string;
   overview: {
     totalDeliveries: number;
     totalEarnings: number;
@@ -22,11 +16,17 @@ interface DriverAnalytics {
     activeHours: number;
   };
   deliveries: {
-    daily: { date: string; value: number }[];
+    total: number;
+    completed: number;
+    cancelled: number;
     averageDistance: number;
     averageTime: number;
+    daily: { date: string; value: number }[];
   };
   earnings: {
+    total: number;
+    average: number;
+    highest: number;
     daily: { date: string; value: number }[];
     breakdown: { type: string; amount: number }[];
   };
@@ -48,339 +48,419 @@ interface DriverAnalytics {
   };
 }
 
-// Mock data for demo
-const mockDriverAnalytics: DriverAnalytics = {
-  overview: {
-    totalDeliveries: 156,
-    totalEarnings: 234000,
-    averageEarningPerDelivery: 1500,
-    averageRating: 4.9,
-    completionRate: 95,
-    activeHours: 168,
-  },
-  deliveries: {
-    daily: Array.from({ length: 30 }, (_, i) => {
-      const date = new Date();
-      date.setDate(date.getDate() - (29 - i));
-      return { date: date.toISOString().split('T')[0], value: Math.floor(Math.random() * 10) + 2 };
-    }),
-    averageDistance: 3.2,
-    averageTime: 25,
-  },
-  earnings: {
-    daily: Array.from({ length: 30 }, (_, i) => {
-      const date = new Date();
-      date.setDate(date.getDate() - (29 - i));
-      return { date: date.toISOString().split('T')[0], value: Math.floor(Math.random() * 15000) + 5000 };
-    }),
-    breakdown: [
-      { type: 'Comisión por viaje', amount: 163800 },
-      { type: 'Propinas', amount: 46800 },
-      { type: 'Bonificaciones', amount: 23400 },
-    ],
-  },
-  ratings: {
-    average: 4.9,
-    total: 156,
-    distribution: [
-      { stars: 5, count: 120 },
-      { stars: 4, count: 28 },
-      { stars: 3, count: 6 },
-      { stars: 2, count: 1 },
-      { stars: 1, count: 1 },
-    ],
-  },
-  schedule: {
-    activeHours: 168,
-    averageHoursPerDay: 6.2,
-    mostActiveDay: 'Sábado',
-    utilizationRate: 75,
-  },
-  trend: {
-    deliveriesGrowth: 18.5,
-    earningsGrowth: 22.3,
-    ratingGrowth: 0.2,
-  },
-};
+const PERIODS = [
+  { id: 'today', label: 'Hoy', icon: '📅' },
+  { id: 'week', label: 'Semana', icon: '📆' },
+  { id: 'month', label: 'Mes', icon: '🗓️' },
+  { id: 'all', label: 'Todo', icon: '♾️' },
+];
 
 export default function DriverAnalyticsPage() {
-  const [period, setPeriod] = useState('week');
-  const [analytics, setAnalytics] = useState<DriverAnalytics>(mockDriverAnalytics);
-  const [loading, setLoading] = useState(false);
+  const [analytics, setAnalytics] = useState<DriverAnalytics | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedPeriod, setSelectedPeriod] = useState('week');
 
-  const fetchAnalytics = async (selectedPeriod: string) => {
-    setLoading(true);
-    // In production, this would fetch from API
-    // const response = await fetch(`/api/analytics/driver?period=${selectedPeriod}`);
-    // const data = await response.json();
-    
-    // For now, use mock data with simulated delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-    setAnalytics(mockDriverAnalytics);
-    setLoading(false);
-  };
+  const fetchAnalytics = useCallback(async (period: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await api.getDriverAnalytics(period);
+      setAnalytics(data);
+    } catch (err) {
+      console.error('Failed to fetch analytics:', err);
+      setError(err instanceof Error ? err.message : 'No se pudieron cargar las analíticas');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    fetchAnalytics(period);
-  }, [period]);
+    fetchAnalytics(selectedPeriod);
+  }, [selectedPeriod, fetchAnalytics]);
 
   const formatCurrency = (amount: number) => {
     return `₡${amount.toLocaleString()}`;
   };
 
+  const getGrowthColor = (growth: number) => {
+    if (growth > 0) return 'text-kiwi-600 dark:text-kiwi-400';
+    if (growth < 0) return 'text-red-600 dark:text-red-400';
+    return 'text-surface-500 dark:text-surface-400';
+  };
+
+  const getGrowthIcon = (growth: number) => {
+    if (growth > 0) return '↑';
+    if (growth < 0) return '↓';
+    return '→';
+  };
+
+  // Calculate max for chart scaling
+  const maxDailyEarnings = analytics?.earnings?.daily
+    ? Math.max(...analytics.earnings.daily.map(d => d.value), 1)
+    : 1;
+
+  const maxDailyDeliveries = analytics?.deliveries?.daily
+    ? Math.max(...analytics.deliveries.daily.map(d => d.value), 1)
+    : 1;
+
+  if (loading && !analytics) {
+    return (
+      <main className="min-h-screen bg-bg-light dark:bg-surface-950">
+        <div className="sticky top-0 z-40 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl">
+          <div className="mx-auto max-w-lg px-4 py-4">
+            <Skeleton className="h-6 w-32" />
+          </div>
+        </div>
+        <div className="mx-auto max-w-lg px-4 py-6 space-y-4">
+          {[...Array(4)].map((_, i) => (
+            <Skeleton key={i} className="h-24 rounded-2xl" />
+          ))}
+        </div>
+      </main>
+    );
+  }
+
+  if (error && !analytics) {
+    return (
+      <main className="min-h-screen bg-bg-light dark:bg-surface-950 flex items-center justify-center">
+        <motion.div 
+          className="text-center"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+        >
+          <motion.div 
+            className="text-6xl mb-4"
+            animate={{ y: [0, -10, 0] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
+            😕
+          </motion.div>
+          <h2 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100 mb-2">
+            No pudimos cargar las analíticas
+          </h2>
+          <p className="text-surface-500 dark:text-surface-400 mb-6">{error}</p>
+          <motion.button
+            onClick={() => fetchAnalytics(selectedPeriod)}
+            className="px-6 py-3 rounded-xl bg-kiwi-gradient text-white font-semibold shadow-kiwi-lg"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            🔄 Reintentar
+          </motion.button>
+        </motion.div>
+      </main>
+    );
+  }
+
   return (
-    <main className="min-h-screen bg-bg-light dark:bg-surface-950">
+    <main className="min-h-screen bg-bg-light dark:bg-surface-950 pb-24">
       {/* Header */}
-      <motion.header
+      <motion.header 
         className="sticky top-0 z-40 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
       >
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4">
+        <div className="mx-auto max-w-lg px-4 py-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-display font-bold text-surface-800 dark:text-surface-100">
-                📊 Mis Analytics
-              </h1>
-              <p className="text-surface-500 dark:text-surface-400 mt-1">
-                Tu rendimiento como repartidor
-              </p>
-            </div>
-            <Link
-              href="/"
-              className="px-4 py-2 text-sm font-medium text-surface-600 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200 transition-colors"
-            >
-              ← Volver
+            <Link href="/" className="flex items-center gap-2 text-surface-600 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200">
+              <span>←</span>
+              <span className="text-sm font-medium">Volver</span>
             </Link>
+            <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">📊 Mis Analytics</h1>
+            <div className="w-16" />
           </div>
         </div>
       </motion.header>
 
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+      <div className="mx-auto max-w-lg px-4 py-6">
         {/* Period Selector */}
-        <motion.div
-          className="mb-8"
+        <motion.div 
+          className="mb-6 flex gap-2 rounded-xl bg-surface-100 dark:bg-surface-800 p-1"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <PeriodSelector selected={period} onSelect={setPeriod} />
+          {PERIODS.map((period) => (
+            <motion.button
+              key={period.id}
+              onClick={() => setSelectedPeriod(period.id)}
+              className={`flex-1 rounded-lg py-2.5 text-sm font-medium transition-all ${
+                selectedPeriod === period.id
+                  ? 'bg-white dark:bg-surface-700 text-surface-800 dark:text-surface-100 shadow-soft'
+                  : 'text-surface-500 dark:text-surface-400 hover:text-surface-700 dark:hover:text-surface-300'
+              }`}
+              whileTap={{ scale: 0.95 }}
+            >
+              <span className="mr-1">{period.icon}</span>
+              {period.label}
+            </motion.button>
+          ))}
         </motion.div>
 
         {/* Overview Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-          <StatCard
-            title="Total Entregas"
-            value={analytics.overview.totalDeliveries}
-            change={analytics.trend.deliveriesGrowth}
-            icon="📦"
-            color="#22c55e"
-          />
-          <StatCard
-            title="Ganancias"
-            value={formatCurrency(analytics.overview.totalEarnings)}
-            change={analytics.trend.earningsGrowth}
-            icon="💰"
-            color="#3b82f6"
-          />
-          <StatCard
-            title="Promedio por Entrega"
-            value={formatCurrency(analytics.overview.averageEarningPerDelivery)}
-            icon="🧾"
-            color="#f59e0b"
-          />
-          <StatCard
-            title="Calificación"
-            value={`${analytics.overview.averageRating} ⭐`}
-            change={analytics.trend.ratingGrowth}
-            icon="⭐"
-            color="#eab308"
-          />
-          <StatCard
-            title="Tasa Completado"
-            value={`${analytics.overview.completionRate}%`}
-            icon="✅"
-            color="#22c55e"
-          />
-          <StatCard
-            title="Horas Activas"
-            value={`${analytics.overview.activeHours}h`}
-            icon="⏱️"
-            color="#8b5cf6"
-          />
-        </div>
-
-        {/* Charts Row 1 */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* Earnings Chart */}
-          <motion.div
-            className="rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
-            <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-              💰 Mis Ganancias
-            </h3>
-            <AreaChartComponent data={analytics.earnings.daily} height={250} />
-          </motion.div>
-
-          {/* Deliveries Chart */}
-          <motion.div
-            className="rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-              📦 Entregas Diarias
-            </h3>
-            <LineChartComponent data={analytics.deliveries.daily} height={250} />
-          </motion.div>
-        </div>
-
-        {/* Charts Row 2 */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          {/* Earnings Breakdown */}
-          <motion.div
-            className="rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-              💵 Desglose de Ganancias
-            </h3>
-            <PieChartComponent 
-              data={analytics.earnings.breakdown.map(b => ({ 
-                name: b.type, 
-                value: b.amount 
-              }))} 
-              height={200}
-            />
-          </motion.div>
-
-          {/* Schedule Stats */}
-          <motion.div
-            className="rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-          >
-            <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-              📅 Horario
-            </h3>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-surface-600 dark:text-surface-400">Horas totales</span>
-                <span className="font-semibold text-surface-800 dark:text-surface-200">
-                  {analytics.schedule.activeHours}h
+        <StaggerContainer className="grid grid-cols-2 gap-3 mb-6">
+          <StaggerItem>
+            <motion.div 
+              className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
+              whileHover={{ y: -2 }}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-2xl">📦</span>
+                <span className={`text-xs font-medium ${getGrowthColor(analytics?.trend?.deliveriesGrowth || 0)}`}>
+                  {getGrowthIcon(analytics?.trend?.deliveriesGrowth || 0)} {Math.abs(analytics?.trend?.deliveriesGrowth || 0)}%
                 </span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-surface-600 dark:text-surface-400">Promedio diario</span>
-                <span className="font-semibold text-surface-800 dark:text-surface-200">
-                  {analytics.schedule.averageHoursPerDay}h
+              <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
+                {analytics?.overview?.totalDeliveries || 0}
+              </p>
+              <p className="text-sm text-surface-500 dark:text-surface-400">Entregas</p>
+            </motion.div>
+          </StaggerItem>
+
+          <StaggerItem>
+            <motion.div 
+              className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
+              whileHover={{ y: -2 }}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-2xl">💰</span>
+                <span className={`text-xs font-medium ${getGrowthColor(analytics?.trend?.earningsGrowth || 0)}`}>
+                  {getGrowthIcon(analytics?.trend?.earningsGrowth || 0)} {Math.abs(analytics?.trend?.earningsGrowth || 0)}%
                 </span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-surface-600 dark:text-surface-400">Día más activo</span>
-                <span className="font-semibold text-kiwi-600 dark:text-kiwi-400">
-                  {analytics.schedule.mostActiveDay}
+              <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
+                {formatCurrency(analytics?.overview?.totalEarnings || 0)}
+              </p>
+              <p className="text-sm text-surface-500 dark:text-surface-400">Ganancias</p>
+            </motion.div>
+          </StaggerItem>
+
+          <StaggerItem>
+            <motion.div 
+              className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
+              whileHover={{ y: -2 }}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-2xl">📊</span>
+                <span className="text-xs font-medium text-surface-500 dark:text-surface-400">Promedio</span>
+              </div>
+              <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
+                {formatCurrency(analytics?.overview?.averageEarningPerDelivery || 0)}
+              </p>
+              <p className="text-sm text-surface-500 dark:text-surface-400">Por Entrega</p>
+            </motion.div>
+          </StaggerItem>
+
+          <StaggerItem>
+            <motion.div 
+              className="rounded-2xl bg-kiwi-50 dark:bg-kiwi-900/30 p-4 shadow-soft dark:shadow-dark border border-kiwi-200 dark:border-kiwi-800"
+              whileHover={{ y: -2 }}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-2xl">⭐</span>
+                <span className={`text-xs font-medium ${getGrowthColor(analytics?.trend?.ratingGrowth || 0)}`}>
+                  {getGrowthIcon(analytics?.trend?.ratingGrowth || 0)} {Math.abs(analytics?.trend?.ratingGrowth || 0)}
                 </span>
               </div>
-              <div className="pt-2">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-surface-600 dark:text-surface-400">Utilización</span>
-                  <span className="font-semibold text-surface-800 dark:text-surface-200">
-                    {analytics.schedule.utilizationRate}%
-                  </span>
-                </div>
-                <div className="w-full bg-surface-200 dark:bg-surface-700 rounded-full h-3">
+              <p className="text-2xl font-bold text-kiwi-700 dark:text-kiwi-300">
+                {analytics?.overview?.averageRating || 0}
+              </p>
+              <p className="text-sm text-kiwi-600 dark:text-kiwi-400">Calificación</p>
+            </motion.div>
+          </StaggerItem>
+        </StaggerContainer>
+
+        {/* Earnings Chart */}
+        <motion.div
+          className="mb-6 rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-4">
+            💰 Ganancias Diarias
+          </h3>
+          <div className="flex items-end gap-1 h-32">
+            {(analytics?.earnings?.daily || []).slice(-7).map((day, index) => (
+              <motion.div
+                key={day.date}
+                className="flex-1 flex flex-col items-center"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                transition={{ delay: 0.3 + index * 0.05 }}
+              >
+                <div className="w-full flex flex-col items-center justify-end h-24">
                   <motion.div
-                    className="bg-kiwi-500 h-3 rounded-full"
-                    initial={{ width: 0 }}
-                    animate={{ width: `${analytics.schedule.utilizationRate}%` }}
-                    transition={{ delay: 0.5, duration: 0.5 }}
+                    className="w-full rounded-t-lg bg-kiwi-gradient"
+                    initial={{ height: 0 }}
+                    animate={{ height: `${(day.value / maxDailyEarnings) * 100}%` }}
+                    transition={{ delay: 0.4 + index * 0.05, type: 'spring', stiffness: 100 }}
+                    style={{ minHeight: day.value > 0 ? '8px' : '0px' }}
                   />
                 </div>
-              </div>
-            </div>
-          </motion.div>
+                <p className="mt-2 text-[10px] text-surface-400 dark:text-surface-500">
+                  {new Date(day.date).toLocaleDateString('es-CR', { weekday: 'short' })}
+                </p>
+                <p className="text-[10px] font-medium text-surface-600 dark:text-surface-300">
+                  {formatCurrency(day.value)}
+                </p>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
 
-          {/* Performance Metrics */}
-          <motion.div
-            className="rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-          >
-            <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-              📊 Métricas
-            </h3>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-surface-600 dark:text-surface-400">Distancia promedio</span>
-                <span className="font-semibold text-surface-800 dark:text-surface-200">
-                  {analytics.deliveries.averageDistance} km
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-surface-600 dark:text-surface-400">Tiempo promedio</span>
-                <span className="font-semibold text-surface-800 dark:text-surface-200">
-                  {analytics.deliveries.averageTime} min
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-surface-600 dark:text-surface-400">Velocidad promedio</span>
-                <span className="font-semibold text-surface-800 dark:text-surface-200">
-                  {(analytics.deliveries.averageDistance / (analytics.deliveries.averageTime / 60)).toFixed(1)} km/h
-                </span>
-              </div>
+        {/* Deliveries Chart */}
+        <motion.div
+          className="mb-6 rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-4">
+            📦 Entregas Diarias
+          </h3>
+          <div className="flex items-end gap-1 h-32">
+            {(analytics?.deliveries?.daily || []).slice(-7).map((day, index) => (
+              <motion.div
+                key={day.date}
+                className="flex-1 flex flex-col items-center"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                transition={{ delay: 0.4 + index * 0.05 }}
+              >
+                <div className="w-full flex flex-col items-center justify-end h-24">
+                  <motion.div
+                    className="w-full rounded-t-lg bg-blue-500"
+                    initial={{ height: 0 }}
+                    animate={{ height: `${(day.value / maxDailyDeliveries) * 100}%` }}
+                    transition={{ delay: 0.5 + index * 0.05, type: 'spring', stiffness: 100 }}
+                    style={{ minHeight: day.value > 0 ? '8px' : '0px' }}
+                  />
+                </div>
+                <p className="mt-2 text-[10px] text-surface-400 dark:text-surface-500">
+                  {new Date(day.date).toLocaleDateString('es-CR', { weekday: 'short' })}
+                </p>
+                <p className="text-[10px] font-medium text-surface-600 dark:text-surface-300">
+                  {day.value}
+                </p>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Earnings Breakdown */}
+        <motion.div
+          className="mb-6 rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-4">
+            💵 Desglose de Ganancias
+          </h3>
+          <div className="space-y-3">
+            {(analytics?.earnings?.breakdown || []).map((item) => {
+              const percentage = analytics?.earnings?.total ? (item.amount / analytics.earnings.total) * 100 : 0;
+              return (
+                <div key={item.type}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm text-surface-600 dark:text-surface-400">{item.type}</span>
+                    <span className="text-sm font-medium text-surface-800 dark:text-surface-200">
+                      {formatCurrency(item.amount)}
+                    </span>
+                  </div>
+                  <div className="h-2 bg-surface-100 dark:bg-surface-700 rounded-full overflow-hidden">
+                    <motion.div
+                      className="h-full bg-kiwi-500 rounded-full"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${percentage}%` }}
+                      transition={{ delay: 0.6, duration: 0.8 }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </motion.div>
+
+        {/* Performance Metrics */}
+        <motion.div
+          className="mb-6 rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+        >
+          <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-4">
+            📊 Métricas de Rendimiento
+          </h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="p-3 rounded-xl bg-surface-50 dark:bg-surface-700/50">
+              <p className="text-sm text-surface-500 dark:text-surface-400">Distancia Promedio</p>
+              <p className="text-lg font-bold text-surface-800 dark:text-surface-100">
+                {analytics?.deliveries?.averageDistance || 0} km
+              </p>
             </div>
-          </motion.div>
-        </div>
+            <div className="p-3 rounded-xl bg-surface-50 dark:bg-surface-700/50">
+              <p className="text-sm text-surface-500 dark:text-surface-400">Tiempo Promedio</p>
+              <p className="text-lg font-bold text-surface-800 dark:text-surface-100">
+                {analytics?.deliveries?.averageTime || 0} min
+              </p>
+            </div>
+            <div className="p-3 rounded-xl bg-surface-50 dark:bg-surface-700/50">
+              <p className="text-sm text-surface-500 dark:text-surface-400">Horas Activas</p>
+              <p className="text-lg font-bold text-surface-800 dark:text-surface-100">
+                {analytics?.schedule?.activeHours || 0}h
+              </p>
+            </div>
+            <div className="p-3 rounded-xl bg-surface-50 dark:bg-surface-700/50">
+              <p className="text-sm text-surface-500 dark:text-surface-400">Utilización</p>
+              <p className="text-lg font-bold text-kiwi-600 dark:text-kiwi-400">
+                {analytics?.schedule?.utilizationRate || 0}%
+              </p>
+            </div>
+          </div>
+        </motion.div>
 
         {/* Ratings Section */}
         <motion.div
-          className="rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark"
+          className="mb-6 rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
         >
-          <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-6">
-            ⭐ Calificaciones Recibidas
+          <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-4">
+            ⭐ Calificaciones
           </h3>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Average Rating */}
+          <div className="flex items-center gap-6">
             <div className="text-center">
-              <div className="text-6xl font-bold text-surface-800 dark:text-surface-100 mb-2">
-                {analytics.ratings.average}
-              </div>
-              <div className="text-4xl mb-2">⭐</div>
-              <p className="text-surface-500 dark:text-surface-400">
-                {analytics.ratings.total} calificaciones
+              <p className="text-4xl font-bold text-surface-800 dark:text-surface-100">
+                {analytics?.ratings?.average || 0}
+              </p>
+              <p className="text-2xl">⭐</p>
+              <p className="text-xs text-surface-500 dark:text-surface-400">
+                {analytics?.ratings?.total || 0} calificaciones
               </p>
             </div>
-
-            {/* Rating Distribution */}
-            <div className="space-y-3">
-              {analytics.ratings.distribution.map((rating) => {
-                const percentage = (rating.count / analytics.ratings.total) * 100;
+            <div className="flex-1 space-y-2">
+              {(analytics?.ratings?.distribution || []).map((rating) => {
+                const total = analytics?.ratings?.total || 1;
+                const percentage = (rating.count / total) * 100;
+                
                 return (
-                  <div key={rating.stars} className="flex items-center gap-3">
-                    <span className="text-lg font-medium text-surface-800 dark:text-surface-200 w-12">
+                  <div key={rating.stars} className="flex items-center gap-2">
+                    <span className="text-xs text-surface-500 dark:text-surface-400 w-8">
                       {rating.stars} ⭐
                     </span>
-                    <div className="flex-1 bg-surface-200 dark:bg-surface-700 rounded-full h-4">
+                    <div className="flex-1 h-2 bg-surface-100 dark:bg-surface-700 rounded-full overflow-hidden">
                       <motion.div
-                        className="bg-yellow-500 h-4 rounded-full"
+                        className="h-full bg-yellow-500 rounded-full"
                         initial={{ width: 0 }}
                         animate={{ width: `${percentage}%` }}
-                        transition={{ delay: 0.7, duration: 0.5 }}
+                        transition={{ delay: 0.8, duration: 0.8 }}
                       />
                     </div>
-                    <span className="text-sm text-surface-500 dark:text-surface-400 w-16 text-right">
-                      {rating.count} ({percentage.toFixed(0)}%)
+                    <span className="text-xs text-surface-500 dark:text-surface-400 w-8 text-right">
+                      {rating.count}
                     </span>
                   </div>
                 );
@@ -391,7 +471,7 @@ export default function DriverAnalyticsPage() {
 
         {/* Tips Section */}
         <motion.div
-          className="mt-8 rounded-2xl bg-gradient-to-r from-kiwi-500 to-emerald-600 p-6 text-white"
+          className="rounded-2xl bg-gradient-to-r from-kiwi-500 to-emerald-600 p-6 text-white"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.7 }}
@@ -399,54 +479,48 @@ export default function DriverAnalyticsPage() {
           <h3 className="text-lg font-display font-semibold mb-4">
             💡 Consejos para Ganar Más
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-white/20 rounded-xl p-4">
-              <p className="font-medium mb-1">🌅 Trabaja en horas pico</p>
-              <p className="text-sm text-white/80">
-                Las 11am-2pm y 5pm-8pm tienen más pedidos
-              </p>
+          <div className="space-y-3">
+            <div className="bg-white/20 rounded-xl p-3">
+              <p className="font-medium">🌅 Trabaja en horas pico</p>
+              <p className="text-sm text-white/80">Las 11am-2pm y 5pm-8pm tienen más pedidos</p>
             </div>
-            <div className="bg-white/20 rounded-xl p-4">
-              <p className="font-medium mb-1">⭐ Mantén alta calificación</p>
-              <p className="text-sm text-white/80">
-                Los repartidores top reciben más pedidos premium
-              </p>
+            <div className="bg-white/20 rounded-xl p-3">
+              <p className="font-medium">⭐ Mantén alta calificación</p>
+              <p className="text-sm text-white/80">Los repartidores top reciben más pedidos premium</p>
             </div>
-            <div className="bg-white/20 rounded-xl p-4">
-              <p className="font-medium mb-1">🎯 Sé consistente</p>
-              <p className="text-sm text-white/80">
-                Trabaja al menos 5 días a la semana para bonos
-              </p>
+            <div className="bg-white/20 rounded-xl p-3">
+              <p className="font-medium">🎯 Sé consistente</p>
+              <p className="text-sm text-white/80">Trabaja al menos 5 días a la semana para bonos</p>
             </div>
           </div>
         </motion.div>
       </div>
 
-      {/* Loading Overlay */}
-      {loading && (
-        <motion.div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-        >
-          <motion.div
-            className="bg-white dark:bg-surface-800 rounded-2xl p-8 shadow-2xl"
-            initial={{ scale: 0.9 }}
-            animate={{ scale: 1 }}
-          >
-            <div className="flex items-center gap-4">
-              <motion.div
-                className="w-8 h-8 border-4 border-kiwi-500 border-t-transparent rounded-full"
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-              />
-              <span className="text-surface-800 dark:text-surface-100 font-medium">
-                Cargando analytics...
-              </span>
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
+      {/* Bottom Navigation */}
+      <nav className="sticky bottom-0 border-t border-surface-200/50 dark:border-surface-700/50 bg-white/80 dark:bg-surface-900/80 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-lg items-center justify-around py-2">
+          <Link href="/" className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300">
+            <span className="text-xl">🏠</span>
+            <span className="text-xs font-medium">Inicio</span>
+          </Link>
+          <Link href="/active" className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300">
+            <span className="text-xl">📦</span>
+            <span className="text-xs font-medium">Activos</span>
+          </Link>
+          <Link href="/earnings" className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300">
+            <span className="text-xl">💰</span>
+            <span className="text-xs font-medium">Ganancias</span>
+          </Link>
+          <Link href="/analytics" className="flex flex-col items-center gap-1 px-4 py-2 text-kiwi-600 dark:text-kiwi-400">
+            <span className="text-xl">📊</span>
+            <span className="text-xs font-medium">Analytics</span>
+          </Link>
+          <Link href="/profile" className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300">
+            <span className="text-xl">👤</span>
+            <span className="text-xs font-medium">Perfil</span>
+          </Link>
+        </div>
+      </nav>
     </main>
   );
 }

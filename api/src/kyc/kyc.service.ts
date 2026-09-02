@@ -2,129 +2,13 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
-export class KycService {
+export class KYCService {
   constructor(private prisma: PrismaService) {}
-
-  async getKycStatus(userId: string) {
-    const kyc = await this.prisma.kYCVerification.findUnique({
-      where: { userId },
-    });
-
-    if (!kyc) {
-      return {
-        status: 'pending',
-        message: 'No has iniciado la verificación',
-      };
-    }
-
-    return kyc;
-  }
-
-  async submitDocuments(userId: string, data: any) {
-    // Check if KYC already exists
-    const existingKyc = await this.prisma.kYCVerification.findUnique({
-      where: { userId },
-    });
-
-    if (existingKyc && existingKyc.status === 'approved') {
-      throw new BadRequestException('Tu cuenta ya está verificada');
-    }
-
-    if (existingKyc && existingKyc.status === 'under_review') {
-      throw new BadRequestException('Tus documentos están en revisión');
-    }
-
-    // Create or update KYC
-    const kycData = {
-      userId,
-      status: 'documents_submitted' as any,
-      idType: data.idType,
-      idNumber: data.idNumber,
-      idFrontUrl: data.idFrontUrl,
-      idBackUrl: data.idBackUrl,
-      selfieUrl: data.selfieUrl,
-      // Driver specific
-      licenseNumber: data.licenseNumber,
-      licenseExpiry: data.licenseExpiry ? new Date(data.licenseExpiry) : null,
-      licenseUrl: data.licenseUrl,
-      vehicleRegisterUrl: data.vehicleRegisterUrl,
-      insuranceUrl: data.insuranceUrl,
-      // Merchant specific
-      businessLicenseUrl: data.businessLicenseUrl,
-      taxId: data.taxId,
-    };
-
-    if (existingKyc) {
-      return this.prisma.kYCVerification.update({
-        where: { userId },
-        data: kycData,
-      });
-    }
-
-    return this.prisma.kYCVerification.create({
-      data: kycData,
-    });
-  }
-
-  async updateStatus(userId: string, status: string, notes?: string, rejectionReason?: string) {
-    const kyc = await this.prisma.kYCVerification.findUnique({
-      where: { userId },
-    });
-
-    if (!kyc) {
-      throw new NotFoundException('KYC no encontrado');
-    }
-
-    const updateData: any = {
-      status: status as any,
-      notes,
-      rejectionReason,
-    };
-
-    if (status === 'approved') {
-      updateData.verifiedAt = new Date();
-      updateData.verifiedBy = 'system'; // In real app, use admin ID
-
-      // Update user's KYC status
-      const user = await this.prisma.user.findUnique({
-        where: { id: userId },
-        include: {
-          merchantProfile: true,
-          driverProfile: true,
-        },
-      });
-
-      if (user?.merchantProfile) {
-        await this.prisma.merchantProfile.update({
-          where: { userId },
-          data: {
-            kycStatus: 'approved',
-            kycVerifiedAt: new Date(),
-          },
-        });
-      } else if (user?.driverProfile) {
-        await this.prisma.driverProfile.update({
-          where: { userId },
-          data: {
-            kycStatus: 'approved',
-            kycVerifiedAt: new Date(),
-          },
-        });
-      }
-    }
-
-    return this.prisma.kYCVerification.update({
-      where: { userId },
-      data: updateData,
-    });
-  }
 
   async getPendingVerifications() {
     return this.prisma.kYCVerification.findMany({
       where: {
-        status: {
-          in: ['documents_submitted', 'under_review'],
-        },
+        status: { in: ['pending', 'documents_submitted', 'under_review'] },
       },
       include: {
         user: {
@@ -138,5 +22,205 @@ export class KycService {
       },
       orderBy: { createdAt: 'asc' },
     });
+  }
+
+  async getAllVerifications(status?: string) {
+    const where: any = {};
+    if (status && status !== 'all') {
+      where.status = status;
+    }
+
+    return this.prisma.kYCVerification.findMany({
+      where,
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            phone: true,
+            role: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async getVerificationById(id: string) {
+    const verification = await this.prisma.kYCVerification.findUnique({
+      where: { id },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            phone: true,
+            role: true,
+          },
+        },
+      },
+    });
+
+    if (!verification) {
+      throw new NotFoundException('Verificación no encontrada');
+    }
+
+    return verification;
+  }
+
+  async submitDocuments(userId: string, data: {
+    idType?: string;
+    idNumber?: string;
+    idFrontUrl?: string;
+    idBackUrl?: string;
+    selfieUrl?: string;
+    licenseNumber?: string;
+    licenseExpiry?: string;
+    licenseUrl?: string;
+    vehicleRegisterUrl?: string;
+    insuranceUrl?: string;
+    businessLicenseUrl?: string;
+    taxId?: string;
+  }) {
+    // Check if verification already exists
+    const existing = await this.prisma.kYCVerification.findUnique({
+      where: { userId },
+    });
+
+    if (existing && existing.status === 'approved') {
+      throw new BadRequestException('KYC ya está aprobado');
+    }
+
+    if (existing && existing.status === 'rejected') {
+      // Allow resubmission after rejection
+      return this.prisma.kYCVerification.update({
+        where: { userId },
+        data: {
+          ...data,
+          status: 'documents_submitted',
+          rejectionReason: null,
+        },
+      });
+    }
+
+    // Create new verification
+    return this.prisma.kYCVerification.create({
+      data: {
+        userId,
+        ...data,
+        status: 'documents_submitted',
+      },
+    });
+  }
+
+  async approveVerification(id: string, adminUserId: string) {
+    const verification = await this.prisma.kYCVerification.findUnique({
+      where: { id },
+      include: { user: true },
+    });
+
+    if (!verification) {
+      throw new NotFoundException('Verificación no encontrada');
+    }
+
+    if (verification.status === 'approved') {
+      throw new BadRequestException('La verificación ya está aprobada');
+    }
+
+    // Update KYC status
+    const updated = await this.prisma.kYCVerification.update({
+      where: { id },
+      data: {
+        status: 'approved',
+        verifiedAt: new Date(),
+        verifiedBy: adminUserId,
+      },
+    });
+
+    // Update user's KYC status in profile
+    if (verification.user.role === 'driver') {
+      await this.prisma.driverProfile.update({
+        where: { userId: verification.userId },
+        data: {
+          kycStatus: 'approved',
+          kycVerifiedAt: new Date(),
+        },
+      });
+    } else if (verification.user.role === 'merchant') {
+      await this.prisma.merchantProfile.update({
+        where: { userId: verification.userId },
+        data: {
+          kycStatus: 'approved',
+          kycVerifiedAt: new Date(),
+        },
+      });
+    }
+
+    // Create notification
+    await this.prisma.notification.create({
+      data: {
+        userId: verification.userId,
+        title: 'KYC Aprobado',
+        body: 'Tu verificación de identidad fue aprobada. ¡Ya puedes usar la plataforma!',
+        type: 'kyc_approved',
+      },
+    });
+
+    return updated;
+  }
+
+  async rejectVerification(id: string, adminUserId: string, reason: string) {
+    const verification = await this.prisma.kYCVerification.findUnique({
+      where: { id },
+      include: { user: true },
+    });
+
+    if (!verification) {
+      throw new NotFoundException('Verificación no encontrada');
+    }
+
+    if (verification.status === 'rejected') {
+      throw new BadRequestException('La verificación ya fue rechazada');
+    }
+
+    // Update KYC status
+    const updated = await this.prisma.kYCVerification.update({
+      where: { id },
+      data: {
+        status: 'rejected',
+        rejectionReason: reason,
+        verifiedAt: new Date(),
+        verifiedBy: adminUserId,
+      },
+    });
+
+    // Create notification
+    await this.prisma.notification.create({
+      data: {
+        userId: verification.userId,
+        title: 'KYC Rechazado',
+        body: `Tu verificación fue rechazada: ${reason}. Por favor, sube los documentos correctos.`,
+        type: 'kyc_rejected',
+        data: { reason },
+      },
+    });
+
+    return updated;
+  }
+
+  async getVerificationStats() {
+    const [total, pending, approved, rejected] = await Promise.all([
+      this.prisma.kYCVerification.count(),
+      this.prisma.kYCVerification.count({ where: { status: { in: ['pending', 'documents_submitted', 'under_review'] } } }),
+      this.prisma.kYCVerification.count({ where: { status: 'approved' } }),
+      this.prisma.kYCVerification.count({ where: { status: 'rejected' } }),
+    ]);
+
+    return {
+      total,
+      pending,
+      approved,
+      rejected,
+    };
   }
 }

@@ -320,6 +320,37 @@ class ApiClient {
     });
   }
 
+  // Admin KYC endpoints
+  async getAllKycVerifications(status?: string) {
+    const params = status && status !== 'all' ? `?status=${status}` : '';
+    return this.request<any>(`/kyc/admin/all${params}`);
+  }
+
+  async getPendingKycVerifications() {
+    return this.request<any>('/kyc/admin/pending');
+  }
+
+  async getKycStats() {
+    return this.request<any>('/kyc/admin/stats');
+  }
+
+  async getKycById(id: string) {
+    return this.request<any>(`/kyc/admin/${id}`);
+  }
+
+  async approveKyc(id: string) {
+    return this.request<any>(`/kyc/admin/${id}/approve`, {
+      method: 'PUT',
+    });
+  }
+
+  async rejectKyc(id: string, reason: string) {
+    return this.request<any>(`/kyc/admin/${id}/reject`, {
+      method: 'PUT',
+      body: { reason },
+    });
+  }
+
   // ============================================
   // 🔔 NOTIFICATIONS
   // ============================================

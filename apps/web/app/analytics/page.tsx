@@ -1,18 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { 
-  LineChartComponent, 
-  AreaChartComponent, 
-  BarChartComponent, 
-  PieChartComponent,
-  StatCard,
-  PeriodSelector 
-} from '@kiwi/ui';
+import { motion } from 'framer-motion';
+import { api, Skeleton, StaggerContainer, StaggerItem } from '@kiwi/ui';
 
-interface AnalyticsData {
+interface MerchantAnalytics {
+  period: string;
   overview: {
     totalOrders: number;
     totalRevenue: number;
@@ -22,462 +16,592 @@ interface AnalyticsData {
     customerSatisfaction: number;
   };
   orders: {
-    daily: { date: string; value: number }[];
-    byStatus: { status: string; count: number }[];
+    total: number;
+    completed: number;
+    cancelled: number;
+    pending: number;
+    byStatus: Array<{ status: string; count: number }>;
+    daily: Array<{ date: string; value: number }>;
   };
   revenue: {
-    daily: { date: string; value: number }[];
-    byPaymentMethod: { method: string; amount: number }[];
+    total: number;
+    average: number;
+    highest: number;
+    lowest: number;
+    byPaymentMethod: Array<{ method: string; amount: number }>;
   };
-  topItems: { id: string; name: string; orders: number; revenue: number; image: string }[];
-  peakHours: { hour: number; orders: number; revenue: number }[];
+  topItems: Array<{
+    id: string;
+    name: string;
+    orders: number;
+    revenue: number;
+    image: string;
+  }>;
+  peakHours: Array<{
+    hour: number;
+    orders: number;
+    revenue: number;
+  }>;
   customerStats: {
     totalCustomers: number;
     newCustomers: number;
     returningCustomers: number;
     averageRating: number;
-    ratingDistribution: { stars: number; count: number }[];
+    ratingDistribution: Array<{ stars: number; count: number }>;
   };
   trend: {
     ordersGrowth: number;
     revenueGrowth: number;
     customerGrowth: number;
-    averageOrderGrowth: number;
   };
 }
 
-// Mock data for demo
-const mockAnalytics: AnalyticsData = {
-  overview: {
-    totalOrders: 342,
-    totalRevenue: 1710000,
-    averageOrderValue: 5000,
-    completionRate: 92,
-    averageDeliveryTime: 28,
-    customerSatisfaction: 4.8,
-  },
-  orders: {
-    daily: Array.from({ length: 30 }, (_, i) => {
-      const date = new Date();
-      date.setDate(date.getDate() - (29 - i));
-      return { date: date.toISOString().split('T')[0], value: Math.floor(Math.random() * 30) + 5 };
-    }),
-    byStatus: [
-      { status: 'Completado', count: 315 },
-      { status: 'Cancelado', count: 17 },
-      { status: 'Pendiente', count: 10 },
-    ],
-  },
-  revenue: {
-    daily: Array.from({ length: 30 }, (_, i) => {
-      const date = new Date();
-      date.setDate(date.getDate() - (29 - i));
-      return { date: date.toISOString().split('T')[0], value: Math.floor(Math.random() * 100000) + 30000 };
-    }),
-    byPaymentMethod: [
-      { method: 'SINPE', amount: 769500 },
-      { method: 'Tarjeta', amount: 513000 },
-      { method: 'Efectivo', amount: 342000 },
-      { method: 'Crypto', amount: 85500 },
-    ],
-  },
-  topItems: [
-    { id: '1', name: 'Bowl de Pollo', orders: 156, revenue: 702000, image: '🥗' },
-    { id: '2', name: 'Café Americano', orders: 134, revenue: 174200, image: '☕' },
-    { id: '3', name: 'Smoothie Tropical', orders: 98, revenue: 245000, image: '🥤' },
-    { id: '4', name: 'Bowl Vegano', orders: 87, revenue: 417600, image: '🥬' },
-    { id: '5', name: 'Latte con Leche', orders: 76, revenue: 152000, image: '☕' },
-  ],
-  peakHours: [
-    { hour: 7, orders: 12, revenue: 54000 },
-    { hour: 8, orders: 28, revenue: 126000 },
-    { hour: 9, orders: 45, revenue: 202500 },
-    { hour: 10, orders: 38, revenue: 171000 },
-    { hour: 11, orders: 52, revenue: 234000 },
-    { hour: 12, orders: 68, revenue: 306000 },
-    { hour: 13, orders: 62, revenue: 279000 },
-    { hour: 14, orders: 42, revenue: 189000 },
-    { hour: 15, orders: 35, revenue: 157500 },
-    { hour: 16, orders: 28, revenue: 126000 },
-    { hour: 17, orders: 45, revenue: 202500 },
-    { hour: 18, orders: 38, revenue: 171000 },
-    { hour: 19, orders: 22, revenue: 99000 },
-    { hour: 20, orders: 15, revenue: 67500 },
-  ],
-  customerStats: {
-    totalCustomers: 234,
-    newCustomers: 45,
-    returningCustomers: 189,
-    averageRating: 4.8,
-    ratingDistribution: [
-      { stars: 5, count: 156 },
-      { stars: 4, count: 52 },
-      { stars: 3, count: 18 },
-      { stars: 2, count: 5 },
-      { stars: 1, count: 3 },
-    ],
-  },
-  trend: {
-    ordersGrowth: 12.5,
-    revenueGrowth: 15.3,
-    customerGrowth: 8.2,
-    averageOrderGrowth: 2.8,
-  },
+const PERIODS = [
+  { id: 'today', label: 'Hoy', icon: '📅' },
+  { id: 'week', label: 'Semana', icon: '📆' },
+  { id: 'month', label: 'Mes', icon: '🗓️' },
+  { id: 'quarter', label: 'Trimestre', icon: '📊' },
+  { id: 'year', label: 'Año', icon: '📈' },
+];
+
+const PAYMENT_METHODS: Record<string, { label: string; icon: string; color: string }> = {
+  sinpe: { label: 'SINPE', icon: '📱', color: 'bg-green-100 text-green-700' },
+  card: { label: 'Tarjeta', icon: '💳', color: 'bg-blue-100 text-blue-700' },
+  cash: { label: 'Efectivo', icon: '💵', color: 'bg-yellow-100 text-yellow-700' },
+  crypto: { label: 'Crypto', icon: '₿', color: 'bg-purple-100 text-purple-700' },
 };
 
-export default function AnalyticsPage() {
-  const [period, setPeriod] = useState('week');
-  const [analytics, setAnalytics] = useState<AnalyticsData>(mockAnalytics);
-  const [loading, setLoading] = useState(false);
+export default function MerchantAnalyticsPage() {
+  const [analytics, setAnalytics] = useState<MerchantAnalytics | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedPeriod, setSelectedPeriod] = useState('week');
 
-  const fetchAnalytics = async (selectedPeriod: string) => {
-    setLoading(true);
-    // In production, this would fetch from API
-    // const response = await fetch(`/api/analytics/merchant?period=${selectedPeriod}`);
-    // const data = await response.json();
-    
-    // For now, use mock data with simulated delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-    setAnalytics(mockAnalytics);
-    setLoading(false);
-  };
+  const fetchAnalytics = useCallback(async (period: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await api.getMerchantAnalytics(period);
+      setAnalytics(data);
+    } catch (err) {
+      console.error('Failed to fetch analytics:', err);
+      setError(err instanceof Error ? err.message : 'No se pudieron cargar las analíticas');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    fetchAnalytics(period);
-  }, [period]);
+    fetchAnalytics(selectedPeriod);
+  }, [selectedPeriod, fetchAnalytics]);
 
   const formatCurrency = (amount: number) => {
     return `₡${amount.toLocaleString()}`;
   };
 
-  return (
-    <main className="min-h-screen bg-bg-light dark:bg-surface-950">
-      {/* Header */}
-      <motion.header
-        className="sticky top-0 z-40 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl"
-        initial={{ y: -100 }}
-        animate={{ y: 0 }}
-      >
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-display font-bold text-surface-800 dark:text-surface-100">
-                📊 Analytics
-              </h1>
-              <p className="text-surface-500 dark:text-surface-400 mt-1">
-                Rendimiento de tu negocio
-              </p>
-            </div>
-            <Link
-              href="/dashboard"
-              className="px-4 py-2 text-sm font-medium text-surface-600 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200 transition-colors"
-            >
-              ← Volver al Dashboard
-            </Link>
-          </div>
-        </div>
-      </motion.header>
+  const getGrowthColor = (growth: number) => {
+    if (growth > 0) return 'text-kiwi-600 dark:text-kiwi-400';
+    if (growth < 0) return 'text-red-600 dark:text-red-400';
+    return 'text-surface-500 dark:text-surface-400';
+  };
 
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
-        {/* Period Selector */}
+  const getGrowthIcon = (growth: number) => {
+    if (growth > 0) return '↑';
+    if (growth < 0) return '↓';
+    return '→';
+  };
+
+  // Calculate max for chart scaling
+  const maxDailyOrders = analytics?.orders?.daily
+    ? Math.max(...analytics.orders.daily.map(d => d.value), 1)
+    : 1;
+
+  if (loading && !analytics) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-10 w-48" />
+          <Skeleton className="h-10 w-32" />
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          {[...Array(6)].map((_, i) => (
+            <Skeleton key={i} className="h-32 rounded-2xl" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error && !analytics) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <motion.div 
+          className="text-center"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+        >
+          <motion.div 
+            className="text-6xl mb-4"
+            animate={{ y: [0, -10, 0] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
+            😕
+          </motion.div>
+          <h2 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100 mb-2">
+            No pudimos cargar las analíticas
+          </h2>
+          <p className="text-surface-500 dark:text-surface-400 mb-6">{error}</p>
+          <motion.button
+            onClick={() => fetchAnalytics(selectedPeriod)}
+            className="px-6 py-3 rounded-xl bg-kiwi-gradient text-white font-semibold shadow-kiwi-lg"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            🔄 Reintentar
+          </motion.button>
+        </motion.div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-display font-bold text-surface-800 dark:text-surface-100">
+            📊 Mis Analíticas
+          </h1>
+          <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">
+            Rendimiento de tu negocio
+          </p>
+        </div>
+        <motion.button
+          onClick={() => fetchAnalytics(selectedPeriod)}
+          className="px-4 py-2 text-sm font-medium bg-surface-100 dark:bg-surface-800 text-surface-700 dark:text-surface-300 rounded-lg hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors"
+          whileTap={{ scale: 0.95 }}
+        >
+          🔄 Actualizar
+        </motion.button>
+      </div>
+
+      {/* Period Selector */}
+      <motion.div 
+        className="flex gap-2 rounded-xl bg-surface-100 dark:bg-surface-800 p-1 overflow-x-auto"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        {PERIODS.map((period) => (
+          <motion.button
+            key={period.id}
+            onClick={() => setSelectedPeriod(period.id)}
+            className={`flex-shrink-0 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              selectedPeriod === period.id
+                ? 'bg-white dark:bg-surface-700 text-surface-800 dark:text-surface-100 shadow-soft'
+                : 'text-surface-500 dark:text-surface-400 hover:text-surface-700 dark:hover:text-surface-300'
+            }`}
+            whileTap={{ scale: 0.95 }}
+          >
+            <span className="mr-1">{period.icon}</span>
+            {period.label}
+          </motion.button>
+        ))}
+      </motion.div>
+
+      {/* Overview Stats */}
+      <StaggerContainer className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <StaggerItem>
+          <motion.div 
+            className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
+            whileHover={{ y: -2 }}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-2xl">📦</span>
+              <span className={`text-xs font-medium ${getGrowthColor(analytics?.trend?.ordersGrowth || 0)}`}>
+                {getGrowthIcon(analytics?.trend?.ordersGrowth || 0)} {Math.abs(analytics?.trend?.ordersGrowth || 0)}%
+              </span>
+            </div>
+            <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
+              {analytics?.overview?.totalOrders || 0}
+            </p>
+            <p className="text-sm text-surface-500 dark:text-surface-400">Total Pedidos</p>
+          </motion.div>
+        </StaggerItem>
+
+        <StaggerItem>
+          <motion.div 
+            className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
+            whileHover={{ y: -2 }}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-2xl">💰</span>
+              <span className={`text-xs font-medium ${getGrowthColor(analytics?.trend?.revenueGrowth || 0)}`}>
+                {getGrowthIcon(analytics?.trend?.revenueGrowth || 0)} {Math.abs(analytics?.trend?.revenueGrowth || 0)}%
+              </span>
+            </div>
+            <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
+              {formatCurrency(analytics?.overview?.totalRevenue || 0)}
+            </p>
+            <p className="text-sm text-surface-500 dark:text-surface-400">Ingresos</p>
+          </motion.div>
+        </StaggerItem>
+
+        <StaggerItem>
+          <motion.div 
+            className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
+            whileHover={{ y: -2 }}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-2xl">📊</span>
+              <span className="text-xs font-medium text-surface-500 dark:text-surface-400">Promedio</span>
+            </div>
+            <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
+              {formatCurrency(analytics?.overview?.averageOrderValue || 0)}
+            </p>
+            <p className="text-sm text-surface-500 dark:text-surface-400">Por Pedido</p>
+          </motion.div>
+        </StaggerItem>
+
+        <StaggerItem>
+          <motion.div 
+            className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
+            whileHover={{ y: -2 }}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-2xl">✅</span>
+              <span className="text-xs font-medium text-kiwi-600 dark:text-kiwi-400">
+                {analytics?.overview?.completionRate || 0}%
+              </span>
+            </div>
+            <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
+              {analytics?.orders?.completed || 0}
+            </p>
+            <p className="text-sm text-surface-500 dark:text-surface-400">Completados</p>
+          </motion.div>
+        </StaggerItem>
+
+        <StaggerItem>
+          <motion.div 
+            className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
+            whileHover={{ y: -2 }}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-2xl">⏱️</span>
+              <span className="text-xs font-medium text-surface-500 dark:text-surface-400">min</span>
+            </div>
+            <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
+              {analytics?.overview?.averageDeliveryTime || 0}
+            </p>
+            <p className="text-sm text-surface-500 dark:text-surface-400">Tiempo Promedio</p>
+          </motion.div>
+        </StaggerItem>
+
+        <StaggerItem>
+          <motion.div 
+            className="rounded-2xl bg-kiwi-50 dark:bg-kiwi-900/30 p-4 shadow-soft dark:shadow-dark border border-kiwi-200 dark:border-kiwi-800"
+            whileHover={{ y: -2 }}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-2xl">⭐</span>
+              <span className="text-xs font-medium text-kiwi-600 dark:text-kiwi-400">Rating</span>
+            </div>
+            <p className="text-2xl font-bold text-kiwi-700 dark:text-kiwi-300">
+              {analytics?.overview?.customerSatisfaction || 0}
+            </p>
+            <p className="text-sm text-kiwi-600 dark:text-kiwi-400">Satisfacción</p>
+          </motion.div>
+        </StaggerItem>
+      </StaggerContainer>
+
+      {/* Charts Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Daily Orders Chart */}
         <motion.div
-          className="mb-8"
+          className="rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
         >
-          <PeriodSelector selected={period} onSelect={setPeriod} />
+          <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
+            📊 Pedidos Diarios
+          </h3>
+          <div className="flex items-end gap-1 h-40">
+            {(analytics?.orders?.daily || []).slice(-7).map((day, index) => (
+              <motion.div
+                key={day.date}
+                className="flex-1 flex flex-col items-center"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                transition={{ delay: 0.4 + index * 0.05 }}
+              >
+                <div className="w-full flex flex-col items-center justify-end h-32">
+                  <motion.div
+                    className="w-full rounded-t-lg bg-kiwi-gradient"
+                    initial={{ height: 0 }}
+                    animate={{ height: `${(day.value / maxDailyOrders) * 100}%` }}
+                    transition={{ delay: 0.5 + index * 0.05, type: 'spring', stiffness: 100 }}
+                    style={{ minHeight: day.value > 0 ? '8px' : '0px' }}
+                  />
+                </div>
+                <p className="mt-2 text-[10px] text-surface-400 dark:text-surface-500">
+                  {new Date(day.date).toLocaleDateString('es-CR', { weekday: 'short' })}
+                </p>
+                <p className="text-[10px] font-medium text-surface-600 dark:text-surface-300">
+                  {day.value}
+                </p>
+              </motion.div>
+            ))}
+          </div>
         </motion.div>
 
-        {/* Overview Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-          <StatCard
-            title="Total Pedidos"
-            value={analytics.overview.totalOrders}
-            change={analytics.trend.ordersGrowth}
-            icon="📦"
-            color="#22c55e"
-          />
-          <StatCard
-            title="Ingresos"
-            value={formatCurrency(analytics.overview.totalRevenue)}
-            change={analytics.trend.revenueGrowth}
-            icon="💰"
-            color="#3b82f6"
-          />
-          <StatCard
-            title="Ticket Promedio"
-            value={formatCurrency(analytics.overview.averageOrderValue)}
-            change={analytics.trend.averageOrderGrowth}
-            icon="🧾"
-            color="#f59e0b"
-          />
-          <StatCard
-            title="Tasa Completado"
-            value={`${analytics.overview.completionRate}%`}
-            icon="✅"
-            color="#22c55e"
-          />
-          <StatCard
-            title="Tiempo Promedio"
-            value={`${analytics.overview.averageDeliveryTime} min`}
-            icon="⏱️"
-            color="#8b5cf6"
-          />
-          <StatCard
-            title="Satisfacción"
-            value={`${analytics.overview.customerSatisfaction} ⭐`}
-            icon="😊"
-            color="#06b6d4"
-          />
-        </div>
+        {/* Payment Methods */}
+        <motion.div
+          className="rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
+            💳 Métodos de Pago
+          </h3>
+          <div className="space-y-4">
+            {(analytics?.revenue?.byPaymentMethod || []).map((method) => {
+              const config = PAYMENT_METHODS[method.method] || { label: method.method, icon: '💰', color: 'bg-surface-100 text-surface-700' };
+              const percentage = analytics?.revenue?.total ? (method.amount / analytics.revenue.total) * 100 : 0;
+              
+              return (
+                <div key={method.method}>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2 py-1 rounded-lg text-xs font-medium ${config.color}`}>
+                        {config.icon} {config.label}
+                      </span>
+                    </div>
+                    <span className="text-sm font-medium text-surface-800 dark:text-surface-200">
+                      {formatCurrency(method.amount)}
+                    </span>
+                  </div>
+                  <div className="h-2 bg-surface-100 dark:bg-surface-700 rounded-full overflow-hidden">
+                    <motion.div
+                      className="h-full bg-kiwi-500 rounded-full"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${percentage}%` }}
+                      transition={{ delay: 0.6, duration: 0.8 }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </motion.div>
+      </div>
 
-        {/* Charts Row 1 */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* Revenue Chart */}
-          <motion.div
-            className="rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
-            <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-              💰 Ingresos Diarios
-            </h3>
-            <AreaChartComponent data={analytics.revenue.daily} height={250} />
-          </motion.div>
-
-          {/* Orders Chart */}
-          <motion.div
-            className="rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-              📦 Pedidos Diarios
-            </h3>
-            <LineChartComponent data={analytics.orders.daily} height={250} />
-          </motion.div>
-        </div>
-
-        {/* Charts Row 2 */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          {/* Peak Hours */}
-          <motion.div
-            className="lg:col-span-2 rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-              🕐 Horas Pico
-            </h3>
-            <BarChartComponent 
-              data={analytics.peakHours.map(h => ({ 
-                name: `${h.hour}:00`, 
-                value: h.orders 
-              }))} 
-              height={250} 
-            />
-          </motion.div>
-
-          {/* Payment Methods */}
-          <motion.div
-            className="rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-          >
-            <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-              💳 Métodos de Pago
-            </h3>
-            <PieChartComponent 
-              data={analytics.revenue.byPaymentMethod.map(p => ({ 
-                name: p.method, 
-                value: p.amount 
-              }))} 
-              height={200}
-            />
-          </motion.div>
-        </div>
-
+      {/* Top Items & Peak Hours */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top Items */}
         <motion.div
-          className="rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark mb-8"
+          className="rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
         >
           <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-            🏆 Productos Más Vendidos
+            🏆 Top Productos
           </h3>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-surface-200 dark:border-surface-700">
-                  <th className="text-left py-3 px-4 text-sm font-medium text-surface-500 dark:text-surface-400">
-                    Producto
-                  </th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-surface-500 dark:text-surface-400">
-                    Pedidos
-                  </th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-surface-500 dark:text-surface-400">
-                    Ingresos
-                  </th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-surface-500 dark:text-surface-400">
-                    Popularidad
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {analytics.topItems.map((item, index) => (
-                  <motion.tr
-                    key={item.id}
-                    className="border-b border-surface-100 dark:border-surface-700/50 hover:bg-surface-50 dark:hover:bg-surface-700/50 transition-colors"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.5 + index * 0.1 }}
-                  >
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-3">
-                        <span className="text-2xl">{item.image}</span>
-                        <div>
-                          <p className="font-medium text-surface-800 dark:text-surface-200">
-                            {item.name}
-                          </p>
-                          <p className="text-sm text-surface-500 dark:text-surface-400">
-                            #{index + 1}
-                          </p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <span className="font-medium text-surface-800 dark:text-surface-200">
-                        {item.orders}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4">
-                      <span className="font-medium text-surface-800 dark:text-surface-200">
-                        {formatCurrency(item.revenue)}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="w-24 bg-surface-200 dark:bg-surface-700 rounded-full h-2">
-                        <div
-                          className="bg-kiwi-500 h-2 rounded-full"
-                          style={{ width: `${(item.orders / analytics.topItems[0].orders) * 100}%` }}
-                        />
-                      </div>
-                    </td>
-                  </motion.tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="space-y-3">
+            {(analytics?.topItems || []).slice(0, 5).map((item, index) => (
+              <motion.div
+                key={item.id}
+                className="flex items-center justify-between p-3 rounded-xl bg-surface-50 dark:bg-surface-700/50"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.6 + index * 0.1 }}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">{item.image}</span>
+                  <div>
+                    <p className="font-medium text-surface-800 dark:text-surface-200">{item.name}</p>
+                    <p className="text-sm text-surface-500 dark:text-surface-400">{item.orders} pedidos</p>
+                  </div>
+                </div>
+                <span className="font-semibold text-kiwi-600 dark:text-kiwi-400">
+                  {formatCurrency(item.revenue)}
+                </span>
+              </motion.div>
+            ))}
           </div>
         </motion.div>
 
-        {/* Customer Stats */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Customer Overview */}
-          <motion.div
-            className="rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-          >
-            <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-              👥 Clientes
-            </h3>
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <div className="text-center p-4 bg-surface-50 dark:bg-surface-700/50 rounded-xl">
-                <p className="text-3xl font-bold text-kiwi-600 dark:text-kiwi-400">
-                  {analytics.customerStats.totalCustomers}
-                </p>
-                <p className="text-sm text-surface-500 dark:text-surface-400">Total</p>
-              </div>
-              <div className="text-center p-4 bg-surface-50 dark:bg-surface-700/50 rounded-xl">
-                <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
-                  {analytics.customerStats.newCustomers}
-                </p>
-                <p className="text-sm text-surface-500 dark:text-surface-400">Nuevos</p>
-              </div>
-              <div className="text-center p-4 bg-surface-50 dark:bg-surface-700/50 rounded-xl">
-                <p className="text-3xl font-bold text-purple-600 dark:text-purple-400">
-                  {analytics.customerStats.returningCustomers}
-                </p>
-                <p className="text-sm text-surface-500 dark:text-surface-400">Recurrentes</p>
-              </div>
-              <div className="text-center p-4 bg-surface-50 dark:bg-surface-700/50 rounded-xl">
-                <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">
-                  {analytics.customerStats.averageRating} ⭐
-                </p>
-                <p className="text-sm text-surface-500 dark:text-surface-400">Satisfacción</p>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Rating Distribution */}
-          <motion.div
-            className="rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7 }}
-          >
-            <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-              ⭐ Distribución de Calificaciones
-            </h3>
-            <div className="space-y-3">
-              {analytics.customerStats.ratingDistribution.map((rating) => {
-                const percentage = (rating.count / analytics.customerStats.totalCustomers) * 100;
-                return (
-                  <div key={rating.stars} className="flex items-center gap-3">
-                    <span className="text-lg font-medium text-surface-800 dark:text-surface-200 w-8">
-                      {rating.stars}⭐
-                    </span>
-                    <div className="flex-1 bg-surface-200 dark:bg-surface-700 rounded-full h-3">
-                      <motion.div
-                        className="bg-yellow-500 h-3 rounded-full"
-                        initial={{ width: 0 }}
-                        animate={{ width: `${percentage}%` }}
-                        transition={{ delay: 0.8, duration: 0.5 }}
-                      />
-                    </div>
-                    <span className="text-sm text-surface-500 dark:text-surface-400 w-12 text-right">
-                      {rating.count}
-                    </span>
+        {/* Peak Hours */}
+        <motion.div
+          className="rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+        >
+          <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
+            ⏰ Horas Pico
+          </h3>
+          <div className="flex items-end gap-1 h-40">
+            {(analytics?.peakHours || []).slice(7, 20).map((hour, index) => {
+              const maxOrders = Math.max(...(analytics?.peakHours || []).map(h => h.orders), 1);
+              const height = (hour.orders / maxOrders) * 100;
+              
+              return (
+                <motion.div
+                  key={hour.hour}
+                  className="flex-1 flex flex-col items-center"
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  transition={{ delay: 0.7 + index * 0.03 }}
+                >
+                  <div className="w-full flex flex-col items-center justify-end h-32">
+                    <motion.div
+                      className="w-full rounded-t-lg bg-blue-500"
+                      initial={{ height: 0 }}
+                      animate={{ height: `${height}%` }}
+                      transition={{ delay: 0.8 + index * 0.03, type: 'spring', stiffness: 100 }}
+                      style={{ minHeight: hour.orders > 0 ? '4px' : '0px' }}
+                    />
                   </div>
-                );
-              })}
-            </div>
-          </motion.div>
-        </div>
+                  <p className="mt-1 text-[8px] text-surface-400 dark:text-surface-500">
+                    {hour.hour}
+                  </p>
+                </motion.div>
+              );
+            })}
+          </div>
+          <div className="flex justify-between mt-2 text-xs text-surface-400">
+            <span>7am</span>
+            <span>12pm</span>
+            <span>5pm</span>
+          </div>
+        </motion.div>
       </div>
 
-      {/* Loading Overlay */}
-      {loading && (
-        <motion.div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-        >
-          <motion.div
-            className="bg-white dark:bg-surface-800 rounded-2xl p-8 shadow-2xl"
-            initial={{ scale: 0.9 }}
-            animate={{ scale: 1 }}
-          >
-            <div className="flex items-center gap-4">
-              <motion.div
-                className="w-8 h-8 border-4 border-kiwi-500 border-t-transparent rounded-full"
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-              />
-              <span className="text-surface-800 dark:text-surface-100 font-medium">
-                Cargando analytics...
-              </span>
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
-    </main>
+      {/* Customer Stats */}
+      <motion.div
+        className="rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.7 }}
+      >
+        <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
+          👥 Estadísticas de Clientes
+        </h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="text-center p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50">
+            <p className="text-3xl font-bold text-surface-800 dark:text-surface-100">
+              {analytics?.customerStats?.totalCustomers || 0}
+            </p>
+            <p className="text-sm text-surface-500 dark:text-surface-400">Total Clientes</p>
+          </div>
+          <div className="text-center p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50">
+            <p className="text-3xl font-bold text-kiwi-600 dark:text-kiwi-400">
+              {analytics?.customerStats?.newCustomers || 0}
+            </p>
+            <p className="text-sm text-surface-500 dark:text-surface-400">Nuevos</p>
+          </div>
+          <div className="text-center p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50">
+            <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+              {analytics?.customerStats?.returningCustomers || 0}
+            </p>
+            <p className="text-sm text-surface-500 dark:text-surface-400">Recurrentes</p>
+          </div>
+          <div className="text-center p-4 rounded-xl bg-yellow-50 dark:bg-yellow-900/30">
+            <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">
+              ⭐ {analytics?.customerStats?.averageRating || 0}
+            </p>
+            <p className="text-sm text-surface-500 dark:text-surface-400">Rating Promedio</p>
+          </div>
+        </div>
+
+        {/* Rating Distribution */}
+        <div className="mt-6 pt-6 border-t border-surface-100 dark:border-surface-700">
+          <h4 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-3">
+            Distribución de Calificaciones
+          </h4>
+          <div className="space-y-2">
+            {(analytics?.customerStats?.ratingDistribution || []).map((rating) => {
+              const total = analytics?.customerStats?.ratingDistribution?.reduce((sum, r) => sum + r.count, 0) || 1;
+              const percentage = (rating.count / total) * 100;
+              
+              return (
+                <div key={rating.stars} className="flex items-center gap-3">
+                  <span className="text-sm font-medium text-surface-800 dark:text-surface-200 w-12">
+                    {rating.stars} ⭐
+                  </span>
+                  <div className="flex-1 h-3 bg-surface-100 dark:bg-surface-700 rounded-full overflow-hidden">
+                    <motion.div
+                      className="h-full bg-yellow-500 rounded-full"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${percentage}%` }}
+                      transition={{ delay: 0.9, duration: 0.8 }}
+                    />
+                  </div>
+                  <span className="text-sm text-surface-500 dark:text-surface-400 w-16 text-right">
+                    {rating.count} ({percentage.toFixed(0)}%)
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Quick Actions */}
+      <motion.div
+        className="rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.8 }}
+      >
+        <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
+          ⚡ Acciones Rápidas
+        </h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Link href="/dashboard">
+            <motion.button 
+              className="w-full p-4 rounded-xl bg-kiwi-50 dark:bg-kiwi-900/30 text-kiwi-600 dark:text-kiwi-400 hover:bg-kiwi-100 dark:hover:bg-kiwi-900/50 transition-colors"
+              whileHover={{ y: -2 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <span className="text-2xl block mb-2">📊</span>
+              <span className="text-sm font-medium">Dashboard</span>
+            </motion.button>
+          </Link>
+          <Link href="/menu">
+            <motion.button 
+              className="w-full p-4 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
+              whileHover={{ y: -2 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <span className="text-2xl block mb-2">🍽️</span>
+              <span className="text-sm font-medium">Mi Menú</span>
+            </motion.button>
+          </Link>
+          <Link href="/orders/scheduled">
+            <motion.button 
+              className="w-full p-4 rounded-xl bg-yellow-50 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-100 dark:hover:bg-yellow-900/50 transition-colors"
+              whileHover={{ y: -2 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <span className="text-2xl block mb-2">📅</span>
+              <span className="text-sm font-medium">Programados</span>
+            </motion.button>
+          </Link>
+          <Link href="/merchants/me/qr">
+            <motion.button 
+              className="w-full p-4 rounded-xl bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors"
+              whileHover={{ y: -2 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <span className="text-2xl block mb-2">📱</span>
+              <span className="text-sm font-medium">Mi QR</span>
+            </motion.button>
+          </Link>
+        </div>
+      </motion.div>
+    </div>
   );
 }
