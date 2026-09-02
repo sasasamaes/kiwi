@@ -442,6 +442,70 @@ class ApiClient {
   async getAnalyticsSummary() {
     return this.request<any>('/analytics/summary');
   }
+
+  // ============================================
+  // 💰 WITHDRAWALS
+  // ============================================
+
+  async getBalance() {
+    return this.request<any>('/withdrawals/balance');
+  }
+
+  async requestWithdrawal(data: {
+    amount: number;
+    paymentMethod: 'sinpe' | 'bank_transfer';
+    sinpePhone?: string;
+    sinpeName?: string;
+    bankName?: string;
+    accountNumber?: string;
+    accountHolder?: string;
+  }) {
+    return this.request<any>('/withdrawals/request', {
+      method: 'POST',
+      body: data,
+    });
+  }
+
+  async getMyWithdrawals(status?: string) {
+    const params = status ? `?status=${status}` : '';
+    return this.request<any>(`/withdrawals/my${params}`);
+  }
+
+  async getWithdrawalById(id: string) {
+    return this.request<any>(`/withdrawals/my/${id}`);
+  }
+
+  async cancelWithdrawal(id: string) {
+    return this.request<any>(`/withdrawals/my/${id}/cancel`, {
+      method: 'PUT',
+    });
+  }
+
+  // Admin withdrawal endpoints
+  async getPendingWithdrawals() {
+    return this.request<any>('/withdrawals/admin/pending');
+  }
+
+  async approveWithdrawal(id: string, transactionId?: string) {
+    return this.request<any>(`/withdrawals/admin/${id}/approve`, {
+      method: 'PUT',
+      body: { transactionId },
+    });
+  }
+
+  async completeWithdrawal(id: string, transactionId: string) {
+    return this.request<any>(`/withdrawals/admin/${id}/complete`, {
+      method: 'PUT',
+      body: { transactionId },
+    });
+  }
+
+  async rejectWithdrawal(id: string, reason: string) {
+    return this.request<any>(`/withdrawals/admin/${id}/reject`, {
+      method: 'PUT',
+      body: { reason },
+    });
+  }
 }
 
 // Export singleton instance

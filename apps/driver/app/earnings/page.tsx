@@ -404,13 +404,15 @@ export default function EarningsPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
         >
-          <motion.button
-            className="w-full rounded-2xl bg-kiwi-gradient py-4 text-lg font-semibold text-white shadow-kiwi-lg"
-            whileHover={{ scale: 1.02, boxShadow: '0 16px 40px -8px rgba(34, 197, 94, 0.5)' }}
-            whileTap={{ scale: 0.98 }}
-          >
-            💳 Retirar {formatCurrency(earnings?.totalEarnings || 0)}
-          </motion.button>
+          <Link href="/withdraw">
+            <motion.button
+              className="w-full rounded-2xl bg-kiwi-gradient py-4 text-lg font-semibold text-white shadow-kiwi-lg"
+              whileHover={{ scale: 1.02, boxShadow: '0 16px 40px -8px rgba(34, 197, 94, 0.5)' }}
+              whileTap={{ scale: 0.98 }}
+            >
+              💳 Retirar Ganancias
+            </motion.button>
+          </Link>
           <p className="text-center text-xs text-surface-400 dark:text-surface-500 mt-2">
             Retiros disponibles de lunes a viernes
           </p>
