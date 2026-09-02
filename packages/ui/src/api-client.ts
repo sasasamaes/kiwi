@@ -391,6 +391,26 @@ class ApiClient {
       body: { amount, coin },
     });
   }
+
+  // ============================================
+  // 📊 ANALYTICS
+  // ============================================
+
+  async getPlatformAnalytics(period: string = 'week') {
+    return this.request<any>(`/analytics/platform?period=${period}`);
+  }
+
+  async getMerchantAnalytics(period: string = 'week') {
+    return this.request<any>(`/analytics/merchant?period=${period}`);
+  }
+
+  async getDriverAnalytics(period: string = 'week') {
+    return this.request<any>(`/analytics/driver?period=${period}`);
+  }
+
+  async getAnalyticsSummary() {
+    return this.request<any>('/analytics/summary');
+  }
 }
 
 // Export singleton instance
