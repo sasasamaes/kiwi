@@ -8,6 +8,7 @@ import {
   AnimatedCounter, 
   StaggerContainer, 
   StaggerItem,
+  VehicleBadge,
   cardVariants,
   staggerContainer,
   slideInUp,
@@ -42,6 +43,7 @@ export default function Home() {
                 🥝
               </motion.span>
               <h1 className="text-lg font-display font-bold text-surface-800">Kiwi Driver</h1>
+              <VehicleBadge type="motorcycle" size="sm" />
             </motion.div>
             <div className="flex items-center gap-3">
               <motion.button 
@@ -218,6 +220,11 @@ export default function Home() {
                       <p className="text-xs text-surface-400">Santa Cruz, 2.5 km</p>
                     </div>
                   </div>
+                  <div className="flex items-center gap-2 mt-2">
+                    <VehicleBadge type="motorcycle" size="sm" />
+                    <span className="text-xs text-surface-400">•</span>
+                    <span className="text-xs text-surface-400">📦 Pequeño</span>
+                  </div>
                 </div>
                 
                 <div className="flex gap-2">
@@ -274,6 +281,11 @@ export default function Home() {
                       <p className="text-sm font-medium text-surface-800">Barrio Los Ángeles</p>
                       <p className="text-xs text-surface-400">Nicoya, 3.2 km</p>
                     </div>
+                  </div>
+                  <div className="flex items-center gap-2 mt-2">
+                    <VehicleBadge type="car" size="sm" />
+                    <span className="text-xs text-surface-400">•</span>
+                    <span className="text-xs text-surface-400">📦 Mediano</span>
                   </div>
                 </div>
                 

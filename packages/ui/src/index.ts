@@ -62,6 +62,12 @@ export {
 export { kiwiPremiumTheme } from './theme-kiwi';
 
 // ============================================
+// 🚗 VEHICLE COMPONENTS
+// ============================================
+export { VehicleSelector, VehicleBadge, vehicles } from './VehicleSelector';
+export type { Vehicle, VehicleType } from './VehicleSelector';
+
+// ============================================
 // 🛠️ UTILS
 // ============================================
 export {

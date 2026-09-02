@@ -8,6 +8,7 @@ import {
   StaggerContainer, 
   StaggerItem,
   StatCard,
+  VehicleBadge,
   staggerContainer
 } from '@kiwi/ui';
 
@@ -123,7 +124,7 @@ export default function Dashboard() {
         </StaggerContainer>
 
         {/* Quick Actions */}
-        <StaggerContainer className="mb-8 grid gap-4 md:grid-cols-3">
+        <StaggerContainer className="mb-8 grid gap-4 md:grid-cols-4">
           <StaggerItem>
             <Link href="/orders/new">
               <motion.div 
@@ -168,6 +169,30 @@ export default function Dashboard() {
                 </div>
               </div>
             </motion.div>
+          </StaggerItem>
+
+          <StaggerItem>
+            <Link href="/drivers">
+              <motion.div 
+                className="rounded-2xl bg-white/70 backdrop-blur-xl border border-white/30 shadow-soft-md p-4 cursor-pointer group"
+                whileHover={{ y: -4, boxShadow: '0 12px 32px -8px rgba(139, 101, 61, 0.15)' }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <div className="flex items-center gap-4">
+                  <motion.div 
+                    className="flex h-14 w-14 items-center justify-center rounded-2xl bg-bark-100 text-bark-600 transition-colors group-hover:bg-bark-500 group-hover:text-white"
+                    whileHover={{ scale: 1.1 }}
+                    transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+                  >
+                    <span className="text-2xl">🛵</span>
+                  </motion.div>
+                  <div>
+                    <h3 className="font-display font-semibold text-surface-800">Repartidores</h3>
+                    <p className="text-sm text-surface-500">Ver y asignar</p>
+                  </div>
+                </div>
+              </motion.div>
+            </Link>
           </StaggerItem>
 
           <StaggerItem>
@@ -242,20 +267,25 @@ export default function Dashboard() {
                     className="group flex items-center justify-between rounded-xl border border-surface-100 bg-surface-50/50 p-4 transition-all hover:border-kiwi-200 hover:bg-white hover:shadow-soft-md"
                     whileHover={{ x: 4 }}
                   >
-                    <div className="flex items-center gap-4">
-                      <motion.div 
-                        className="flex h-12 w-12 items-center justify-center rounded-xl bg-kiwi-100 text-kiwi-600 transition-colors group-hover:bg-kiwi-500 group-hover:text-white"
-                        whileHover={{ rotate: 10 }}
-                      >
-                        <span className="text-lg font-bold">#{order.id}</span>
-                      </motion.div>
-                      <div>
-                        <p className="font-medium text-surface-800">{order.address}</p>
+                  <div className="flex items-center gap-4">
+                    <motion.div 
+                      className="flex h-12 w-12 items-center justify-center rounded-xl bg-kiwi-100 text-kiwi-600 transition-colors group-hover:bg-kiwi-500 group-hover:text-white"
+                      whileHover={{ rotate: 10 }}
+                    >
+                      <span className="text-lg font-bold">#{order.id}</span>
+                    </motion.div>
+                    <div>
+                      <p className="font-medium text-surface-800">{order.address}</p>
+                      <div className="flex items-center gap-2">
                         <p className="text-sm text-surface-400">
-                          {order.driver ? `🛵 ${order.driver}` : '⏳ Sin repartidor'}
+                          {order.driver ? `${order.driver}` : '⏳ Sin repartidor'}
                         </p>
+                        {order.driver && (
+                          <VehicleBadge type="motorcycle" size="sm" />
+                        )}
                       </div>
                     </div>
+                  </div>
                     <div className="flex items-center gap-4">
                       <span className="text-lg font-semibold text-surface-700">{order.price}</span>
                       <motion.span

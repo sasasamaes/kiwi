@@ -28,7 +28,17 @@ export interface MerchantProfile {
 }
 
 // Driver types
-export type VehicleType = 'motorcycle' | 'bicycle';
+export type VehicleType = 'motorcycle' | 'motorized_bike' | 'bicycle' | 'car' | 'truck';
+
+export interface VehicleInfo {
+  type: VehicleType;
+  brand?: string;
+  model?: string;
+  year?: number;
+  plate?: string;
+  color?: string;
+  capacity?: string; // For trucks: 'small', 'medium', 'large'
+}
 export type DriverLevel = 'bronce' | 'plata' | 'oro' | 'diamante' | 'vip';
 export type DriverStatus = 'offline' | 'available' | 'busy';
 

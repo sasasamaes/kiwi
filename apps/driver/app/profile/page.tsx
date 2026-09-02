@@ -1,10 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { AnimatedButton, StaggerContainer, StaggerItem, AnimatedCounter } from '@kiwi/ui';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatedButton, StaggerContainer, StaggerItem, AnimatedCounter, VehicleSelector, VehicleBadge, VehicleType } from '@kiwi/ui';
 
 export default function Profile() {
+  const [showVehicleModal, setShowVehicleModal] = useState(false);
+  const [selectedVehicle, setSelectedVehicle] = useState<VehicleType>('motorcycle');
+
   return (
     <main className="min-h-screen flex flex-col">
       {/* Header */}
@@ -164,6 +168,35 @@ export default function Profile() {
           </div>
         </motion.div>
 
+        {/* Vehicle Info */}
+        <motion.div 
+          className="mb-6 rounded-2xl bg-white p-5 shadow-soft"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-display font-semibold text-surface-800">🚗 Mi Vehículo</h3>
+            <AnimatedButton 
+              variant="ghost" 
+              size="sm"
+              onClick={() => setShowVehicleModal(true)}
+            >
+              Editar
+            </AnimatedButton>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-surface-100 text-3xl">
+              🏍️
+            </div>
+            <div>
+              <p className="font-display font-semibold text-surface-800">Moto</p>
+              <p className="text-sm text-surface-500">Placa: ABC123</p>
+              <p className="text-xs text-surface-400">Hasta 10 kg • ₡500/km</p>
+            </div>
+          </div>
+        </motion.div>
+
         {/* Settings Menu */}
         <div className="rounded-2xl bg-white shadow-soft overflow-hidden">
           <h3 className="p-4 pb-2 font-display font-semibold text-surface-800">Configuración</h3>
@@ -196,6 +229,65 @@ export default function Profile() {
           </AnimatedButton>
         </div>
       </main>
+
+      {/* Vehicle Selection Modal */}
+      <AnimatePresence>
+        {showVehicleModal && (
+          <motion.div 
+            className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowVehicleModal(false)}
+          >
+            <motion.div 
+              className="w-full max-w-lg rounded-t-3xl bg-white p-6 shadow-2xl"
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="mb-6 flex items-center justify-between">
+                <h3 className="font-display text-lg font-semibold text-surface-800">
+                  Seleccionar vehículo
+                </h3>
+                <button 
+                  onClick={() => setShowVehicleModal(false)}
+                  className="text-surface-400 hover:text-surface-600"
+                >
+                  ✕
+                </button>
+              </div>
+              
+              <VehicleSelector 
+                selected={selectedVehicle} 
+                onSelect={setSelectedVehicle} 
+              />
+              
+              <div className="mt-6 flex gap-3">
+                <AnimatedButton 
+                  variant="ghost" 
+                  className="flex-1"
+                  onClick={() => setShowVehicleModal(false)}
+                >
+                  Cancelar
+                </AnimatedButton>
+                <AnimatedButton 
+                  variant="primary" 
+                  className="flex-1"
+                  onClick={() => {
+                    // TODO: Save vehicle type
+                    setShowVehicleModal(false);
+                  }}
+                >
+                  Guardar
+                </AnimatedButton>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Bottom Navigation */}
       <nav className="sticky bottom-0 border-t border-surface-200/50 bg-white/80 backdrop-blur-xl">
