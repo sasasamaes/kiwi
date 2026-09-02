@@ -85,14 +85,14 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
           >
-            <Link href="/dashboard">
+            <Link href="/login">
               <AnimatedButton variant="gradient" size="lg" className="min-w-[200px] shadow-kiwi-lg">
-                🍃 Entrar al Dashboard
+                🍃 Iniciar Sesión
               </AnimatedButton>
             </Link>
-            <Link href="/driver">
+            <Link href="/register">
               <AnimatedButton variant="glass" size="lg" className="min-w-[200px]">
-                🛵 Soy Repartidor
+                📝 Crear Cuenta
               </AnimatedButton>
             </Link>
           </motion.div>

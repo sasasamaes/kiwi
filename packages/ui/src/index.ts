@@ -62,6 +62,12 @@ export {
 export { kiwiPremiumTheme } from './theme-kiwi';
 
 // ============================================
+// 🔐 AUTH COMPONENTS
+// ============================================
+export { AuthForm } from './AuthForm';
+export type { AuthFormProps, AuthFormData } from './AuthForm';
+
+// ============================================
 // 🚗 VEHICLE COMPONENTS
 // ============================================
 export { VehicleSelector, VehicleBadge, vehicles } from './VehicleSelector';
