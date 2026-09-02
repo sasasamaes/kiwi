@@ -92,6 +92,17 @@ export { api } from './api-client';
 export type { User, MerchantProfile, DriverProfile, Order } from './api-client';
 
 // ============================================
+// 📡 SOCKET.IO
+// ============================================
+export { socketClient } from './socket-client';
+export { useSocket } from './useSocket';
+
+// ============================================
+// 🔔 NOTIFICATIONS
+// ============================================
+export { NotificationToast, useNotifications } from './NotificationToast';
+
+// ============================================
 // 🔐 AUTH CONTEXT
 // ============================================
 export { AuthProvider, useAuth } from './AuthContext';

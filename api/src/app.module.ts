@@ -7,6 +7,7 @@ import { MerchantsModule } from './merchants/merchants.module';
 import { DriversModule } from './drivers/drivers.module';
 import { OrdersModule } from './orders/orders.module';
 import { KycModule } from './kyc/kyc.module';
+import { EventsModule } from './events/events.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { KycModule } from './kyc/kyc.module';
     DriversModule,
     OrdersModule,
     KycModule,
+    EventsModule,
   ],
 })
 export class AppModule {}

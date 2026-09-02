@@ -13,6 +13,7 @@ import {
   VehicleBadge,
   ThemeToggle,
   useAuth,
+  useSocket,
   api,
   Order,
   staggerContainer
@@ -23,6 +24,32 @@ export default function Dashboard() {
   const { user, loading: authLoading, logout } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [notifications, setNotifications] = useState<any[]>([]);
+
+  // Real-time socket connection
+  const {
+    isConnected,
+    onOrderAccepted,
+    onOrderStatusChanged,
+  } = useSocket({
+    onConnect: () => console.log('🟢 Connected to real-time updates'),
+    onOrderAccepted: (data) => {
+      console.log('📦 Order accepted:', data);
+      setNotifications(prev => [...prev, { type: 'success', message: data.message, time: new Date() }]);
+      // Refresh orders
+      api.getMyOrders().then(setOrders).catch(console.error);
+    },
+    onOrderStatusChanged: (data) => {
+      console.log('🔄 Order status changed:', data);
+      setNotifications(prev => [...prev, { type: 'info', message: data.message, time: new Date() }]);
+      // Update order in list
+      setOrders(prev => prev.map(order => 
+        order.id === data.orderId 
+          ? { ...order, status: data.status }
+          : order
+      ));
+    },
+  });
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -83,6 +110,17 @@ export default function Dashboard() {
               <h1 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100">Kiwi</h1>
             </Link>
             <div className="flex items-center gap-4">
+              {/* Connection Status */}
+              <div className="flex items-center gap-2">
+                <motion.div 
+                  className={`h-2 w-2 rounded-full ${isConnected ? 'bg-kiwi-500' : 'bg-red-500'}`}
+                  animate={isConnected ? { scale: [1, 1.2, 1] } : {}}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                />
+                <span className="text-xs text-surface-400 hidden sm:inline">
+                  {isConnected ? 'En vivo' : 'Desconectado'}
+                </span>
+              </div>
               <ThemeToggle />
               <motion.button 
                 className="relative rounded-full p-2 text-surface-500 hover:bg-surface-100 hover:text-surface-700 transition-colors dark:hover:bg-surface-800"

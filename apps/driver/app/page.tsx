@@ -12,6 +12,7 @@ import {
   VehicleBadge,
   ThemeToggle,
   useAuth,
+  useSocket,
   api,
   cardVariants,
   staggerContainer,
@@ -25,6 +26,29 @@ export default function Home() {
   const [isOnline, setIsOnline] = useState(true);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ trips: 0, earnings: 0, rating: 5.0 });
+  const [newOrderAlert, setNewOrderAlert] = useState<any>(null);
+
+  // Real-time socket connection
+  const {
+    isConnected,
+    onNewOrder,
+    onOrderStatusChanged,
+    updateDriverStatus: socketUpdateStatus,
+  } = useSocket({
+    onConnect: () => console.log('🟢 Driver connected to real-time'),
+    onNewOrder: (data) => {
+      console.log('📦 New order available:', data);
+      setNewOrderAlert(data);
+      // Play notification sound
+      try {
+        const audio = new Audio('/notification.mp3');
+        audio.play().catch(() => {});
+      } catch {}
+    },
+    onOrderStatusChanged: (data) => {
+      console.log('🔄 Order status changed:', data);
+    },
+  });
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -58,6 +82,7 @@ export default function Home() {
     const newStatus = isOnline ? 'offline' : 'available';
     try {
       await api.updateDriverStatus(newStatus as any);
+      socketUpdateStatus(newStatus as any);
       setIsOnline(!isOnline);
     } catch (error) {
       console.error('Failed to update status:', error);
@@ -108,6 +133,14 @@ export default function Home() {
               <VehicleBadge type={(user?.driverProfile?.vehicleType as any) || 'motorcycle'} size="sm" />
             </motion.div>
             <div className="flex items-center gap-3">
+              {/* Connection Status */}
+              <div className="flex items-center gap-1">
+                <motion.div 
+                  className={`h-2 w-2 rounded-full ${isConnected ? 'bg-kiwi-400' : 'bg-red-400'}`}
+                  animate={isOnline && isConnected ? { scale: [1, 1.3, 1] } : {}}
+                  transition={{ duration: 2, repeat: Infinity }}
+                />
+              </div>
               <ThemeToggle />
               <motion.button 
                 className="relative rounded-full p-2 text-surface-500 hover:bg-surface-100 dark:hover:bg-surface-800"
@@ -498,6 +531,88 @@ export default function Home() {
           </div>
         </motion.div>
       </main>
+
+      {/* New Order Alert Popup */}
+      <AnimatePresence>
+        {newOrderAlert && (
+          <motion.div 
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div 
+              className="mx-4 w-full max-w-md rounded-3xl bg-white dark:bg-surface-800 p-6 shadow-2xl"
+              initial={{ scale: 0.8, y: 50 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.8, y: 50 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+            >
+              <div className="text-center mb-4">
+                <motion.div 
+                  className="text-6xl mb-2"
+                  animate={{ rotate: [0, -10, 10, 0] }}
+                  transition={{ duration: 0.5 }}
+                >
+                  📦
+                </motion.div>
+                <h3 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100">
+                  ¡Nuevo Pedido!
+                </h3>
+              </div>
+              
+              <div className="space-y-3 mb-6">
+                <div className="flex items-center justify-between">
+                  <span className="text-surface-500 dark:text-surface-400">Desde</span>
+                  <span className="font-medium text-surface-800 dark:text-surface-200">
+                    {newOrderAlert.pickupAddress}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-surface-500 dark:text-surface-400">Hasta</span>
+                  <span className="font-medium text-surface-800 dark:text-surface-200">
+                    {newOrderAlert.deliveryAddress}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-surface-500 dark:text-surface-400">Distancia</span>
+                  <span className="font-medium text-surface-800 dark:text-surface-200">
+                    {newOrderAlert.distanceKm || '?'} km
+                  </span>
+                </div>
+                <div className="border-t border-surface-200 dark:border-surface-700 pt-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-surface-500 dark:text-surface-400">Ganancia</span>
+                    <span className="text-2xl font-bold text-kiwi-600 dark:text-kiwi-400">
+                      ₡{newOrderAlert.totalAmount?.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <AnimatedButton 
+                  variant="secondary" 
+                  className="flex-1"
+                  onClick={() => setNewOrderAlert(null)}
+                >
+                  Rechazar
+                </AnimatedButton>
+                <AnimatedButton 
+                  variant="gradient" 
+                  className="flex-1"
+                  onClick={() => {
+                    // TODO: Accept order
+                    setNewOrderAlert(null);
+                  }}
+                >
+                  Aceptar 🎉
+                </AnimatedButton>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Bottom Navigation */}
       <motion.nav 
