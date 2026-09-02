@@ -181,6 +181,13 @@ export type { UseOfflineOrdersOptions, UseOfflineOrdersResult, CreateOrderData }
 export { OfflineOrderForm, OfflineOrderTracker, OfflineOrderList } from './OfflineOrderForm';
 
 // ============================================
+// 🗜️ DATA COMPRESSION
+// ============================================
+export { compression } from './compression';
+export type { CompressedData, StorageStats, CompressionOptions, CompressionAlgorithm } from './compression';
+export { StorageManager, StorageWarning, StorageIndicatorCompact } from './StorageManager';
+
+// ============================================
 // 📱 QR CODE
 // ============================================
 export { QRCodeGenerator, QRScanner } from './QRCodeGenerator';
