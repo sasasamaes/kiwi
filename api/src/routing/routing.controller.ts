@@ -3,6 +3,7 @@ import { ApiTags, ApiOperation, ApiBody } from '@nestjs/swagger';
 import { RoutingService } from './routing.service';
 import { TrafficService } from './traffic.service';
 import { TrafficAlertsService } from './traffic-alerts.service';
+import { TrafficHistoryService } from './traffic-history.service';
 
 @ApiTags('Routing')
 @Controller('routing')
@@ -11,6 +12,7 @@ export class RoutingController {
     private readonly routingService: RoutingService,
     private readonly trafficService: TrafficService,
     private readonly trafficAlertsService: TrafficAlertsService,
+    private readonly trafficHistoryService: TrafficHistoryService,
   ) {}
 
   @Post('optimize')
@@ -275,5 +277,86 @@ export class RoutingController {
       body.destLat,
       body.destLng,
     );
+  }
+
+  // ============================================
+  // 📊 TRAFFIC HISTORY ENDPOINTS
+  // ============================================
+
+  @Get('history')
+  @ApiOperation({ summary: 'Get traffic history' })
+  async getTrafficHistory(
+    @Query('zone') zone?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const start = startDate ? new Date(startDate) : undefined;
+    const end = endDate ? new Date(endDate) : undefined;
+    const limitNum = limit ? parseInt(limit) : 100;
+    return this.trafficHistoryService.getTrafficHistory(zone, start, end, limitNum);
+  }
+
+  @Get('history/patterns')
+  @ApiOperation({ summary: 'Get traffic patterns by hour and day' })
+  async getTrafficPatterns(
+    @Query('zone') zone?: string,
+    @Query('daysBack') daysBack?: string,
+  ) {
+    const days = daysBack ? parseInt(daysBack) : 30;
+    return this.trafficHistoryService.getTrafficPatterns(zone, days);
+  }
+
+  @Get('history/trends')
+  @ApiOperation({ summary: 'Get traffic trends' })
+  async getTrafficTrends(
+    @Query('zone') zone?: string,
+    @Query('period') period?: string,
+  ) {
+    const periodType = (period as 'day' | 'week' | 'month') || 'week';
+    return this.trafficHistoryService.getTrafficTrends(zone, periodType);
+  }
+
+  @Get('history/heatmap')
+  @ApiOperation({ summary: 'Get traffic heatmap data' })
+  async getTrafficHeatmap(
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    const start = startDate ? new Date(startDate) : undefined;
+    const end = endDate ? new Date(endDate) : undefined;
+    return this.trafficHistoryService.getTrafficHeatmap(start, end);
+  }
+
+  @Get('history/merchant/:merchantId')
+  @ApiOperation({ summary: 'Get merchant traffic report' })
+  async getMerchantTrafficReport(
+    @Param('merchantId') merchantId: string,
+    @Query('period') period?: string,
+  ) {
+    const periodType = (period as 'day' | 'week' | 'month') || 'week';
+    return this.trafficHistoryService.getMerchantTrafficReport(merchantId, periodType);
+  }
+
+  @Get('history/best-times')
+  @ApiOperation({ summary: 'Get best times for deliveries' })
+  async getBestDeliveryTimes(
+    @Query('lat') lat: string,
+    @Query('lng') lng: string,
+    @Query('daysBack') daysBack?: string,
+  ) {
+    const days = daysBack ? parseInt(daysBack) : 30;
+    return this.trafficHistoryService.getBestDeliveryTimes(parseFloat(lat), parseFloat(lng), days);
+  }
+
+  @Get('history/worst-times')
+  @ApiOperation({ summary: 'Get worst times to avoid' })
+  async getWorstDeliveryTimes(
+    @Query('lat') lat: string,
+    @Query('lng') lng: string,
+    @Query('daysBack') daysBack?: string,
+  ) {
+    const days = daysBack ? parseInt(daysBack) : 30;
+    return this.trafficHistoryService.getWorstDeliveryTimes(parseFloat(lat), parseFloat(lng), days);
   }
 }

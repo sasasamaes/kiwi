@@ -700,6 +700,58 @@ class ApiClient {
       body: { originLat, originLng, destLat, destLng },
     });
   }
+
+  // ============================================
+  // 📊 TRAFFIC HISTORY
+  // ============================================
+
+  async getTrafficHistory(zone?: string, startDate?: string, endDate?: string, limit?: number) {
+    const params = new URLSearchParams();
+    if (zone) params.append('zone', zone);
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    if (limit) params.append('limit', String(limit));
+    return this.request<any>(`/routing/history?${params.toString()}`);
+  }
+
+  async getTrafficPatterns(zone?: string, daysBack?: number) {
+    const params = new URLSearchParams();
+    if (zone) params.append('zone', zone);
+    if (daysBack) params.append('daysBack', String(daysBack));
+    return this.request<any>(`/routing/history/patterns?${params.toString()}`);
+  }
+
+  async getTrafficTrends(zone?: string, period?: string) {
+    const params = new URLSearchParams();
+    if (zone) params.append('zone', zone);
+    if (period) params.append('period', period);
+    return this.request<any>(`/routing/history/trends?${params.toString()}`);
+  }
+
+  async getTrafficHeatmap(startDate?: string, endDate?: string) {
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    return this.request<any>(`/routing/history/heatmap?${params.toString()}`);
+  }
+
+  async getMerchantTrafficReport(merchantId: string, period?: string) {
+    const params = new URLSearchParams();
+    if (period) params.append('period', period);
+    return this.request<any>(`/routing/history/merchant/${merchantId}?${params.toString()}`);
+  }
+
+  async getBestDeliveryTimes(lat: number, lng: number, daysBack?: number) {
+    const params = new URLSearchParams({ lat: String(lat), lng: String(lng) });
+    if (daysBack) params.append('daysBack', String(daysBack));
+    return this.request<any>(`/routing/history/best-times?${params.toString()}`);
+  }
+
+  async getWorstDeliveryTimes(lat: number, lng: number, daysBack?: number) {
+    const params = new URLSearchParams({ lat: String(lat), lng: String(lng) });
+    if (daysBack) params.append('daysBack', String(daysBack));
+    return this.request<any>(`/routing/history/worst-times?${params.toString()}`);
+  }
 }
 
 // Export singleton instance

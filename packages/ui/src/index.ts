@@ -197,3 +197,9 @@ export type { TrafficIndicatorProps, DeliveryEstimateProps, TrafficMapOverlayPro
 // ============================================
 export { TrafficAlertBanner, TrafficAlertList, TrafficAlertBadge, TrafficAlertsPanel } from './TrafficAlerts';
 export type { TrafficAlert, TrafficAlertBannerProps, TrafficAlertListProps, TrafficAlertBadgeProps } from './TrafficAlerts';
+
+// ============================================
+// 📊 TRAFFIC ANALYTICS
+// ============================================
+export { TrafficAnalytics, TrafficHeatmap } from './TrafficAnalytics';
+export type { TrafficAnalyticsProps, TrafficHeatmapData, TrafficPattern, TrafficTrend, MerchantTrafficReport } from './TrafficAnalytics';
