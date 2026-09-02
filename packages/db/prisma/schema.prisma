@@ -1,0 +1,337 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Users table
+model User {
+  id            String    @id @default(uuid())
+  email         String?   @unique
+  phone         String?   @unique
+  passwordHash  String?   @map("password_hash")
+  role          Role      @default(merchant)
+  status        UserStatus @default(active)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  merchantProfile MerchantProfile?
+  driverProfile   DriverProfile?
+  notifications   Notification[]
+
+  @@map("users")
+}
+
+enum Role {
+  merchant
+  driver
+  admin
+}
+
+enum UserStatus {
+  active
+  inactive
+  pending
+}
+
+// Merchant profiles
+model MerchantProfile {
+  id            String   @id @default(uuid())
+  userId        String   @unique @map("user_id")
+  businessName  String   @map("business_name")
+  address       String
+  latitude      Decimal? @db.Decimal(10, 8)
+  longitude     Decimal? @db.Decimal(11, 8)
+  logoUrl       String?  @map("logo_url")
+  description   String?
+  openingHours  Json?    @map("opening_hours")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders         Order[]
+  favoriteDrivers FavoriteDriver[]
+  ratings        Rating[]
+
+  @@map("merchant_profiles")
+}
+
+// Driver profiles
+model DriverProfile {
+  id            String    @id @default(uuid())
+  userId        String    @unique @map("user_id")
+  fullName      String    @map("full_name")
+  photoUrl      String?   @map("photo_url")
+  vehicleType   VehicleType @map("vehicle_type")
+  vehiclePlate  String?   @map("vehicle_plate")
+  level         DriverLevel @default(bronce)
+  rating        Decimal   @default(5.0) @db.Decimal(3, 2)
+  totalTrips    Int       @default(0) @map("total_trips")
+  status        DriverStatus @default(offline)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  schedules      DriverSchedule[]
+  orders         Order[]
+  proposals      DriverProposal[]
+  favoriteDrivers FavoriteDriver[]
+  ratings        Rating[]
+  incentives     DriverIncentive[]
+
+  @@map("driver_profiles")
+}
+
+enum VehicleType {
+  motorcycle
+  bicycle
+}
+
+enum DriverLevel {
+  bronce
+  plata
+  oro
+  diamante
+  vip
+}
+
+enum DriverStatus {
+  offline
+  available
+  busy
+}
+
+// Driver schedules
+model DriverSchedule {
+  id          String   @id @default(uuid())
+  driverId    String   @map("driver_id")
+  dayOfWeek   Int      @map("day_of_week")
+  startTime   DateTime @map("start_time")
+  endTime     DateTime @map("end_time")
+  isAvailable Boolean  @default(true) @map("is_available")
+
+  // Relations
+  driver DriverProfile @relation(fields: [driverId], references: [id], onDelete: Cascade)
+
+  @@map("driver_schedules")
+}
+
+// Orders
+model Order {
+  id                String      @id @default(uuid())
+  merchantId        String      @map("merchant_id")
+  driverId          String?     @map("driver_id")
+  status            OrderStatus @default(pending)
+  orderType         OrderType   @map("order_type")
+  
+  // Schedule
+  scheduledDate     DateTime?   @map("scheduled_date")
+  scheduledTime     String?     @map("scheduled_time")
+  
+  // Addresses
+  pickupAddress     String      @map("pickup_address")
+  pickupLat         Decimal?    @map("pickup_lat") @db.Decimal(10, 8)
+  pickupLng         Decimal?    @map("pickup_lng") @db.Decimal(11, 8)
+  deliveryAddress   String      @map("delivery_address")
+  deliveryLat       Decimal?    @map("delivery_lat") @db.Decimal(10, 8)
+  deliveryLng       Decimal?    @map("delivery_lng") @db.Decimal(11, 8)
+  
+  // Pricing
+  distanceKm        Decimal?    @map("distance_km") @db.Decimal(5, 2)
+  basePrice         Decimal     @map("base_price") @db.Decimal(10, 2)
+  commission        Decimal     @db.Decimal(10, 2)
+  driverPayout      Decimal     @map("driver_payout") @db.Decimal(10, 2)
+  totalAmount       Decimal     @map("total_amount") @db.Decimal(10, 2)
+  
+  // Instructions
+  specialInstructions String?   @map("special_instructions")
+  
+  // Timestamps
+  createdAt         DateTime    @default(now()) @map("created_at")
+  assignedAt        DateTime?   @map("assigned_at")
+  pickedUpAt        DateTime?   @map("picked_up_at")
+  deliveredAt       DateTime?   @map("delivered_at")
+
+  // Relations
+  merchant   MerchantProfile @relation(fields: [merchantId], references: [id])
+  driver     DriverProfile?  @relation(fields: [driverId], references: [id])
+  proposals  DriverProposal[]
+  payment    Payment?
+  ratings    Rating[]
+
+  @@map("orders")
+}
+
+enum OrderStatus {
+  pending
+  driver_proposals
+  assigned
+  in_transit_to_pickup
+  picked_up
+  in_transit_to_delivery
+  delivered
+  cancelled
+}
+
+enum OrderType {
+  immediate
+  scheduled
+}
+
+// Driver proposals (for scheduled orders)
+model DriverProposal {
+  id              String           @id @default(uuid())
+  orderId         String           @map("order_id")
+  driverId        String           @map("driver_id")
+  status          ProposalStatus   @default(pending)
+  estimatedArrival String?         @map("estimated_arrival")
+  message         String?
+  createdAt       DateTime         @default(now()) @map("created_at")
+
+  // Relations
+  order  Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  driver DriverProfile  @relation(fields: [driverId], references: [id], onDelete: Cascade)
+
+  @@map("driver_proposals")
+}
+
+enum ProposalStatus {
+  pending
+  accepted
+  rejected
+}
+
+// Payments
+model Payment {
+  id                String        @id @default(uuid())
+  orderId           String        @unique @map("order_id")
+  amount            Decimal       @db.Decimal(10, 2)
+  currency          String        @default("CRC")
+  method            PaymentMethod
+  status            PaymentStatus @default(pending)
+  
+  // OnvoPay
+  onvoPaymentId     String?       @map("onvo_payment_id")
+  onvoCheckoutUrl   String?       @map("onvo_checkout_url")
+  
+  // Crypto
+  cryptoCoin        String?       @map("crypto_coin")
+  cryptoNetwork     String?       @map("crypto_network")
+  cryptoWalletAddress String?     @map("crypto_wallet_address")
+  cryptoTxHash      String?       @map("crypto_tx_hash")
+  cryptoAmount      Decimal?      @map("crypto_amount") @db.Decimal(10, 6)
+  exchangeRate      Decimal?      @map("exchange_rate") @db.Decimal(10, 4)
+  
+  // Timestamps
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
+
+enum PaymentMethod {
+  onvopay_card
+  onvopay_sinpe
+  crypto
+  cash
+}
+
+enum PaymentStatus {
+  pending
+  processing
+  completed
+  failed
+  refunded
+}
+
+// Ratings
+model Rating {
+  id              String   @id @default(uuid())
+  orderId         String   @map("order_id")
+  driverId        String   @map("driver_id")
+  merchantId      String   @map("merchant_id")
+  rating          Int      @db.Int
+  comment         String?
+  onTime          Boolean? @map("on_time")
+  carefulWithOrder Boolean? @map("careful_with_order")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  // Relations
+  order    Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  driver   DriverProfile   @relation(fields: [driverId], references: [id])
+  merchant MerchantProfile @relation(fields: [merchantId], references: [id])
+
+  @@map("ratings")
+}
+
+// Favorite drivers
+model FavoriteDriver {
+  id          String   @id @default(uuid())
+  merchantId  String   @map("merchant_id")
+  driverId    String   @map("driver_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relations
+  merchant MerchantProfile @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  driver   DriverProfile   @relation(fields: [driverId], references: [id], onDelete: Cascade)
+
+  @@unique([merchantId, driverId])
+  @@map("favorite_drivers")
+}
+
+// Driver incentives
+model DriverIncentive {
+  id              String          @id @default(uuid())
+  driverId        String          @map("driver_id")
+  incentiveType   IncentiveType   @map("incentive_type")
+  status          IncentiveStatus @default(pending)
+  deliveredAt     DateTime?       @map("delivered_at")
+  createdAt       DateTime        @default(now()) @map("created_at")
+
+  // Relations
+  driver DriverProfile @relation(fields: [driverId], references: [id], onDelete: Cascade)
+
+  @@map("driver_incentives")
+}
+
+enum IncentiveType {
+  bag
+  rain_cover
+  box
+  maintenance
+  marchamo
+}
+
+enum IncentiveStatus {
+  pending
+  delivered
+}
+
+// Notifications
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  title     String
+  body      String
+  type      String
+  data      Json?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
