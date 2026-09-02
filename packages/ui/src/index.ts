@@ -92,6 +92,19 @@ export { PaymentSelector, CryptoQR } from './PaymentSelector';
 export type { PaymentMethod } from './PaymentSelector';
 
 // ============================================
+// 📊 CHART COMPONENTS
+// ============================================
+export {
+  LineChartComponent,
+  AreaChartComponent,
+  BarChartComponent,
+  PieChartComponent,
+  MultiLineChartComponent,
+  StatCard,
+  PeriodSelector,
+} from './Charts';
+
+// ============================================
 // 🔌 API CLIENT
 // ============================================
 export { api } from './api-client';

@@ -625,7 +625,7 @@ export default function Home() {
           {[
             { href: '/', icon: '🏠', label: 'Inicio', active: true },
             { href: '/active', icon: '📦', label: 'Activos', active: false },
-            { href: '/earnings', icon: '💰', label: 'Ganancias', active: false },
+            { href: '/analytics', icon: '📊', label: 'Analytics', active: false },
             { href: '/schedule', icon: '📅', label: 'Horario', active: false },
             { href: '/profile', icon: '👤', label: 'Perfil', active: false },
           ].map((item) => (

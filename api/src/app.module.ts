@@ -10,6 +10,7 @@ import { KycModule } from './kyc/kyc.module';
 import { EventsModule } from './events/events.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PaymentsModule } from './payments/payments.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { PaymentsModule } from './payments/payments.module';
     EventsModule,
     NotificationsModule,
     PaymentsModule,
+    AnalyticsModule,
   ],
 })
 export class AppModule {}
