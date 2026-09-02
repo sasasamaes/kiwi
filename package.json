@@ -4,18 +4,25 @@
   "private": true,
   "workspaces": [
     "apps/*",
-    "packages/*"
+    "packages/*",
+    "api"
   ],
   "scripts": {
     "dev": "turbo run dev",
+    "dev:api": "cd api && npm run dev",
+    "dev:all": "concurrently \"npm run dev\" \"npm run dev\"",
     "build": "turbo run build",
+    "build:api": "cd api && npm run build",
     "test": "turbo run test",
     "test:watch": "turbo run test -- --watch",
     "lint": "turbo run lint",
     "lint:fix": "turbo run lint -- --fix",
     "type-check": "turbo run type-check",
     "clean": "turbo run clean",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\""
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "prisma:generate": "cd api && npm run prisma:generate",
+    "prisma:migrate": "cd api && npm run prisma:migrate",
+    "prisma:studio": "cd api && npm run prisma:studio"
   },
   "devDependencies": {
     "eslint": "^8.0.0",
