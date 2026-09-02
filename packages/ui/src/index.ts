@@ -1,22 +1,76 @@
 /**
- * 🥝 Kiwi UI Components
+ * 🥝 KIWI UI COMPONENTS
  * 
- * Componentes compartidos para la plataforma Kiwi
+ * Premium UI library with Silicon Valley level animations
  */
 
-// UI Components
+// ============================================
+// 📦 CORE COMPONENTS
+// ============================================
 export { Button } from './Button';
 export type { ButtonProps } from './Button';
 
 export { Input } from './Input';
 export type { InputProps } from './Input';
 
-export { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from './Card';
+export { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter, StatCard } from './Card';
 export type { CardProps } from './Card';
 
-// Theme
-export { kiwiTheme, colors, spacing, borderRadius, shadows, fontFamily, fontSize } from './theme';
-export type { KiwiTheme } from './theme';
+// ============================================
+// ✨ ANIMATED COMPONENTS
+// ============================================
+export { AnimatedCard } from './AnimatedCard';
+export { AnimatedButton } from './AnimatedButton';
+export { AnimatedCounter } from './AnimatedCounter';
+export { PageTransition } from './PageTransition';
+export { StaggerContainer, StaggerItem } from './StaggerContainer';
+export { Skeleton, OrderCardSkeleton, StatCardSkeleton } from './Skeleton';
 
-// Utils
-export { cn, formatCRC, formatDate, formatTime, calculateDistance, getOrderStatusLabel, getDriverLevelLabel, generateId } from './utils';
+// ============================================
+// 🎬 ANIMATION VARIANTS
+// ============================================
+export {
+  pageTransition,
+  cardVariants,
+  cardStagger,
+  buttonVariants,
+  buttonGlow,
+  counterVariants,
+  floatAnimation,
+  pulseAnimation,
+  slideInLeft,
+  slideInRight,
+  slideInUp,
+  slideInDown,
+  modalOverlay,
+  modalContent,
+  shimmer,
+  spinner,
+  statusPulse,
+  navItemVariants,
+  progressVariants,
+  staggerContainer,
+  staggerItem,
+  springTransition,
+  smoothTransition,
+  bouncyTransition,
+} from './animations';
+
+// ============================================
+// 🎨 THEME
+// ============================================
+export { kiwiPremiumTheme } from './theme-kiwi';
+
+// ============================================
+// 🛠️ UTILS
+// ============================================
+export {
+  cn,
+  formatCRC,
+  formatDate,
+  formatTime,
+  calculateDistance,
+  getOrderStatusLabel,
+  getDriverLevelLabel,
+  generateId,
+} from './utils';

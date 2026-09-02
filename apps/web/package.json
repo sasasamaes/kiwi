@@ -20,6 +20,7 @@
     "@kiwi/ui": "*",
     "@kiwi/types": "*",
     "@kiwi/db": "*",
+    "framer-motion": "^11.0.0",
     "lucide-react": "^0.400.0",
     "clsx": "^2.0.0",
     "tailwind-merge": "^2.0.0"

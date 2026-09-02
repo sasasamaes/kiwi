@@ -1,5 +1,8 @@
+'use client';
+
 import Link from 'next/link';
-import { Button, Card } from '@delivery/ui';
+import { motion } from 'framer-motion';
+import { AnimatedButton, StaggerContainer, StaggerItem } from '@kiwi/ui';
 
 export default function Home() {
   return (
@@ -8,212 +11,360 @@ export default function Home() {
       <section className="relative overflow-hidden px-6 py-20 lg:px-8">
         {/* Background decoration */}
         <div className="absolute inset-0 -z-10">
-          <div className="absolute left-1/2 top-0 -z-10 -translate-x-1/2 -translate-y-1/2">
+          <motion.div 
+            className="absolute left-1/2 top-0 -z-10 -translate-x-1/2 -translate-y-1/2"
+            animate={{ scale: [1, 1.1, 1] }}
+            transition={{ duration: 8, repeat: Infinity }}
+          >
             <div className="h-[600px] w-[600px] rounded-full bg-kiwi-200/30 blur-3xl" />
-          </div>
-          <div className="absolute bottom-0 right-0 -z-10">
+          </motion.div>
+          <motion.div 
+            className="absolute bottom-0 right-0 -z-10"
+            animate={{ scale: [1, 1.2, 1] }}
+            transition={{ duration: 6, repeat: Infinity, delay: 2 }}
+          >
             <div className="h-[400px] w-[400px] rounded-full bg-gold-200/20 blur-3xl" />
-          </div>
+          </motion.div>
         </div>
 
         <div className="mx-auto max-w-4xl text-center">
           {/* Logo */}
-          <div className="mb-8 inline-flex items-center justify-center">
+          <motion.div 
+            className="mb-8 inline-flex items-center justify-center"
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+          >
             <div className="relative">
-              <div className="absolute inset-0 animate-pulse-soft rounded-full bg-kiwi-300/30 blur-xl" />
-              <div className="relative text-8xl animate-float">🥝</div>
+              <motion.div 
+                className="absolute inset-0 rounded-full bg-kiwi-300/30 blur-xl"
+                animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.8, 0.5] }}
+                transition={{ duration: 3, repeat: Infinity }}
+              />
+              <motion.div 
+                className="relative text-8xl"
+                animate={{ y: [-10, 10, -10] }}
+                transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+              >
+                🥝
+              </motion.div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Title */}
-          <h1 className="mb-4 text-6xl font-display font-bold tracking-tight text-surface-900">
+          <motion.h1 
+            className="mb-4 text-6xl font-display font-bold tracking-tight text-surface-900"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
             Kiwi
-          </h1>
-          <p className="mb-3 text-xl font-medium text-kiwi-600">
+          </motion.h1>
+          <motion.p 
+            className="mb-3 text-xl font-medium text-kiwi-600"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
             Repartidores para comerciantes
-          </p>
-          <p className="mb-10 text-lg text-surface-500 max-w-2xl mx-auto">
+          </motion.p>
+          <motion.p 
+            className="mb-10 text-lg text-surface-500 max-w-2xl mx-auto"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+          >
             La plataforma que conecta tu negocio con repartidores confiables en Nicoya y Guanacaste.
             Simple, rápido, y sin complicaciones.
-          </p>
+          </motion.p>
 
           {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <motion.div 
+            className="flex flex-col sm:flex-row items-center justify-center gap-4"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+          >
             <Link href="/dashboard">
-              <Button variant="gradient" size="lg" className="min-w-[200px] shadow-kiwi-lg hover:shadow-kiwi-xl">
+              <AnimatedButton variant="gradient" size="lg" className="min-w-[200px] shadow-kiwi-lg">
                 🍃 Entrar al Dashboard
-              </Button>
+              </AnimatedButton>
             </Link>
             <Link href="/driver">
-              <Button variant="glass" size="lg" className="min-w-[200px]">
+              <AnimatedButton variant="glass" size="lg" className="min-w-[200px]">
                 🛵 Soy Repartidor
-              </Button>
+              </AnimatedButton>
             </Link>
-          </div>
+          </motion.div>
 
           {/* Social Proof */}
-          <div className="mt-12 flex items-center justify-center gap-8">
-            <div className="flex items-center gap-2 text-surface-400">
-              <span className="text-2xl">✅</span>
-              <span className="text-sm">100+ comercios</span>
-            </div>
-            <div className="flex items-center gap-2 text-surface-400">
-              <span className="text-2xl">⭐</span>
-              <span className="text-sm">4.9 calificación</span>
-            </div>
-            <div className="flex items-center gap-2 text-surface-400">
-              <span className="text-2xl">🚗</span>
-              <span className="text-sm">50+ repartidores</span>
-            </div>
-          </div>
+          <motion.div 
+            className="mt-12 flex items-center justify-center gap-8"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.7 }}
+          >
+            {[
+              { icon: '✅', text: '100+ comercios' },
+              { icon: '⭐', text: '4.9 calificación' },
+              { icon: '🚗', text: '50+ repartidores' },
+            ].map((item, i) => (
+              <motion.div 
+                key={i}
+                className="flex items-center gap-2 text-surface-400"
+                whileHover={{ scale: 1.05, color: '#22c55e' }}
+              >
+                <span className="text-2xl">{item.icon}</span>
+                <span className="text-sm">{item.text}</span>
+              </motion.div>
+            ))}
+          </motion.div>
         </div>
       </section>
 
       {/* Features Section */}
       <section className="px-6 py-20 lg:px-8">
         <div className="mx-auto max-w-6xl">
-          <div className="mb-12 text-center">
+          <motion.div 
+            className="mb-12 text-center"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
             <h2 className="mb-3 text-3xl font-display font-bold text-surface-900">
               ¿Por qué Kiwi?
             </h2>
             <p className="text-surface-500">
               Diseñado para la realidad de Nicoya y Guanacaste
             </p>
-          </div>
+          </motion.div>
 
-          <div className="grid gap-6 md:grid-cols-3">
+          <StaggerContainer className="grid gap-6 md:grid-cols-3">
             {/* Feature 1 */}
-            <Card variant="glass" hover className="group">
-              <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-kiwi-100 text-kiwi-600 transition-transform group-hover:scale-110">
-                <span className="text-3xl">📅</span>
-              </div>
-              <h3 className="mb-2 text-lg font-display font-semibold text-surface-800">
-                Pedidos Programados
-              </h3>
-              <p className="text-surface-500">
-                Elige la hora exacta para recolectar tu pedido. Planifica con anticipación.
-              </p>
-            </Card>
+            <StaggerItem>
+              <motion.div 
+                className="rounded-2xl bg-white/70 backdrop-blur-xl border border-white/30 shadow-soft-md p-6 group"
+                whileHover={{ y: -8, boxShadow: '0 20px 40px -12px rgba(34, 197, 94, 0.2)' }}
+              >
+                <motion.div 
+                  className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-kiwi-100 text-kiwi-600"
+                  whileHover={{ rotate: 10, scale: 1.1 }}
+                  transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+                >
+                  <span className="text-3xl">📅</span>
+                </motion.div>
+                <h3 className="mb-2 text-lg font-display font-semibold text-surface-800">
+                  Pedidos Programados
+                </h3>
+                <p className="text-surface-500">
+                  Elige la hora exacta para recolectar tu pedido. Planifica con anticipación.
+                </p>
+              </motion.div>
+            </StaggerItem>
 
             {/* Feature 2 */}
-            <Card variant="glass" hover className="group">
-              <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gold-100 text-gold-600 transition-transform group-hover:scale-110">
-                <span className="text-3xl">⭐</span>
-              </div>
-              <h3 className="mb-2 text-lg font-display font-semibold text-surface-800">
-                Calidad, No Precio
-              </h3>
-              <p className="text-surface-500">
-                Los repartidores compiten por servicio, no por dinero. Tú eliges al mejor.
-              </p>
-            </Card>
+            <StaggerItem>
+              <motion.div 
+                className="rounded-2xl bg-white/70 backdrop-blur-xl border border-white/30 shadow-soft-md p-6 group"
+                whileHover={{ y: -8, boxShadow: '0 20px 40px -12px rgba(251, 191, 36, 0.2)' }}
+              >
+                <motion.div 
+                  className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gold-100 text-gold-600"
+                  whileHover={{ rotate: -10, scale: 1.1 }}
+                  transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+                >
+                  <span className="text-3xl">⭐</span>
+                </motion.div>
+                <h3 className="mb-2 text-lg font-display font-semibold text-surface-800">
+                  Calidad, No Precio
+                </h3>
+                <p className="text-surface-500">
+                  Los repartidores compiten por servicio, no por dinero. Tú eliges al mejor.
+                </p>
+              </motion.div>
+            </StaggerItem>
 
             {/* Feature 3 */}
-            <Card variant="glass" hover className="group">
-              <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-bark-100 text-bark-600 transition-transform group-hover:scale-110">
-                <span className="text-3xl">📴</span>
-              </div>
-              <h3 className="mb-2 text-lg font-display font-semibold text-surface-800">
-                Funciona Offline
-              </h3>
-              <p className="text-surface-500">
-                Sin señal no es problema. La app funciona y se sincroniza después.
-              </p>
-            </Card>
-          </div>
+            <StaggerItem>
+              <motion.div 
+                className="rounded-2xl bg-white/70 backdrop-blur-xl border border-white/30 shadow-soft-md p-6 group"
+                whileHover={{ y: -8, boxShadow: '0 20px 40px -12px rgba(139, 101, 61, 0.15)' }}
+              >
+                <motion.div 
+                  className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-bark-100 text-bark-600"
+                  whileHover={{ scale: 1.1 }}
+                  transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+                >
+                  <span className="text-3xl">📴</span>
+                </motion.div>
+                <h3 className="mb-2 text-lg font-display font-semibold text-surface-800">
+                  Funciona Offline
+                </h3>
+                <p className="text-surface-500">
+                  Sin señal no es problema. La app funciona y se sincroniza después.
+                </p>
+              </motion.div>
+            </StaggerItem>
+          </StaggerContainer>
         </div>
       </section>
 
       {/* How it Works Section */}
       <section className="px-6 py-20 lg:px-8 bg-white">
         <div className="mx-auto max-w-6xl">
-          <div className="mb-12 text-center">
+          <motion.div 
+            className="mb-12 text-center"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
             <h2 className="mb-3 text-3xl font-display font-bold text-surface-900">
               ¿Cómo funciona?
             </h2>
             <p className="text-surface-500">
               Tres simples pasos para empezar
             </p>
-          </div>
+          </motion.div>
 
-          <div className="grid gap-8 md:grid-cols-3">
+          <StaggerContainer className="grid gap-8 md:grid-cols-3">
             {/* Step 1 */}
-            <div className="relative text-center">
-              <div className="mb-4 text-5xl">1️⃣</div>
-              <h3 className="mb-2 text-lg font-display font-semibold text-surface-800">
-                Crea tu pedido
-              </h3>
-              <p className="text-surface-500">
-                Selecciona productos y dirección de entrega
-              </p>
-              {/* Connector line */}
-              <div className="absolute right-0 top-8 hidden h-0.5 w-12 bg-kiwi-200 md:block" />
-            </div>
+            <StaggerItem>
+              <div className="relative text-center">
+                <motion.div 
+                  className="mb-4 text-5xl"
+                  whileHover={{ scale: 1.2, rotate: 10 }}
+                  transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+                >
+                  1️⃣
+                </motion.div>
+                <h3 className="mb-2 text-lg font-display font-semibold text-surface-800">
+                  Crea tu pedido
+                </h3>
+                <p className="text-surface-500">
+                  Selecciona productos y dirección de entrega
+                </p>
+                {/* Connector line */}
+                <div className="absolute right-0 top-8 hidden h-0.5 w-12 bg-kiwi-200 md:block" />
+              </div>
+            </StaggerItem>
 
             {/* Step 2 */}
-            <div className="relative text-center">
-              <div className="mb-4 text-5xl">2️⃣</div>
-              <h3 className="mb-2 text-lg font-display font-semibold text-surface-800">
-                Elige al repartidor
-              </h3>
-              <p className="text-surface-500">
-                Comparten propuestas, tú seleccionas por calidad
-              </p>
-              {/* Connector line */}
-              <div className="absolute right-0 top-8 hidden h-0.5 w-12 bg-kiwi-200 md:block" />
-            </div>
+            <StaggerItem>
+              <div className="relative text-center">
+                <motion.div 
+                  className="mb-4 text-5xl"
+                  whileHover={{ scale: 1.2, rotate: -10 }}
+                  transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+                >
+                  2️⃣
+                </motion.div>
+                <h3 className="mb-2 text-lg font-display font-semibold text-surface-800">
+                  Elige al repartidor
+                </h3>
+                <p className="text-surface-500">
+                  Comparten propuestas, tú seleccionas por calidad
+                </p>
+                {/* Connector line */}
+                <div className="absolute right-0 top-8 hidden h-0.5 w-12 bg-kiwi-200 md:block" />
+              </div>
+            </StaggerItem>
 
             {/* Step 3 */}
-            <div className="text-center">
-              <div className="mb-4 text-5xl">3️⃣</div>
-              <h3 className="mb-2 text-lg font-display font-semibold text-surface-800">
-                ¡Listo!
-              </h3>
-              <p className="text-surface-500">
-                Tracking en tiempo real y pago digital
-              </p>
-            </div>
-          </div>
+            <StaggerItem>
+              <div className="text-center">
+                <motion.div 
+                  className="mb-4 text-5xl"
+                  whileHover={{ scale: 1.2, rotate: 10 }}
+                  transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+                >
+                  3️⃣
+                </motion.div>
+                <h3 className="mb-2 text-lg font-display font-semibold text-surface-800">
+                  ¡Listo!
+                </h3>
+                <p className="text-surface-500">
+                  Tracking en tiempo real y pago digital
+                </p>
+              </div>
+            </StaggerItem>
+          </StaggerContainer>
         </div>
       </section>
 
       {/* CTA Section */}
       <section className="px-6 py-20 lg:px-8">
         <div className="mx-auto max-w-4xl">
-          <Card variant="gradient" className="text-center py-12 px-8">
-            <div className="mb-4 text-6xl animate-bounce-in">🥝</div>
-            <h2 className="mb-4 text-3xl font-display font-bold text-white">
-              ¿Listo para empezar?
-            </h2>
-            <p className="mb-8 text-lg text-white/80">
-              Únete a los comercios de Nicoya que ya usan Kiwi
-            </p>
-            <Link href="/dashboard">
-              <Button variant="secondary" size="lg" className="bg-white text-kiwi-600 hover:bg-white/90">
-                Comprar Ahora →
-              </Button>
-            </Link>
-          </Card>
+          <motion.div 
+            className="rounded-2xl bg-kiwi-gradient py-12 px-8 text-center shadow-kiwi-lg overflow-hidden relative"
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+          >
+            {/* Background decorations */}
+            <motion.div 
+              className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/10"
+              animate={{ scale: [1, 1.2, 1] }}
+              transition={{ duration: 5, repeat: Infinity }}
+            />
+            <motion.div 
+              className="absolute -left-10 -bottom-10 h-32 w-32 rounded-full bg-white/10"
+              animate={{ scale: [1, 1.3, 1] }}
+              transition={{ duration: 4, repeat: Infinity, delay: 1 }}
+            />
+            
+            <div className="relative">
+              <motion.div 
+                className="mb-4 text-6xl"
+                animate={{ y: [-5, 5, -5] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                🥝
+              </motion.div>
+              <h2 className="mb-4 text-3xl font-display font-bold text-white">
+                ¿Listo para empezar?
+              </h2>
+              <p className="mb-8 text-lg text-white/80">
+                Únete a los comercios de Nicoya que ya usan Kiwi
+              </p>
+              <Link href="/dashboard">
+                <AnimatedButton variant="secondary" size="lg" className="bg-white text-kiwi-600 hover:bg-white/90">
+                  Comprar Ahora →
+                </AnimatedButton>
+              </Link>
+            </div>
+          </motion.div>
         </div>
       </section>
 
       {/* Footer */}
       <footer className="border-t border-surface-200 bg-white px-6 py-8 lg:px-8">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 md:flex-row">
-          <div className="flex items-center gap-2">
+          <motion.div 
+            className="flex items-center gap-2"
+            whileHover={{ scale: 1.05 }}
+          >
             <span className="text-2xl">🥝</span>
             <span className="font-display font-bold text-surface-800">Kiwi</span>
-          </div>
+          </motion.div>
           <p className="text-sm text-surface-400">
             © 2026 Kiwi. Hecho con 💚 en Nicoya, Costa Rica
           </p>
           <div className="flex gap-4">
-            <a href="#" className="text-surface-400 hover:text-kiwi-500 transition-colors">
+            <motion.a 
+              href="#" 
+              className="text-surface-400 hover:text-kiwi-500 transition-colors"
+              whileHover={{ y: -2 }}
+            >
               Términos
-            </a>
-            <a href="#" className="text-surface-400 hover:text-kiwi-500 transition-colors">
+            </motion.a>
+            <motion.a 
+              href="#" 
+              className="text-surface-400 hover:text-kiwi-500 transition-colors"
+              whileHover={{ y: -2 }}
+            >
               Privacidad
-            </a>
+            </motion.a>
           </div>
         </div>
       </footer>
