@@ -106,7 +106,7 @@ export default function CheckoutPage() {
           </div>
 
           <div className="space-y-3">
-            <Link href={`/tracking/order-1234`}>
+            <Link href={`/order/${order?.id || 'new'}/tracking`}>
               <AnimatedButton variant="gradient" className="w-full">
                 📍 Rastrear Pedido
               </AnimatedButton>

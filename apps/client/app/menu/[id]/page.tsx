@@ -214,8 +214,13 @@ export default function MenuPage() {
           </div>
 
           <div className="space-y-3">
-            <Link href="/">
+            <Link href={`/order/${orderSuccess}/tracking`}>
               <AnimatedButton variant="gradient" className="w-full">
+                📍 Rastrear Pedido
+              </AnimatedButton>
+            </Link>
+            <Link href="/">
+              <AnimatedButton variant="secondary" className="w-full">
                 🏠 Volver al inicio
               </AnimatedButton>
             </Link>
