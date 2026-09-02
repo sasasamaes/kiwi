@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { 
   AnimatedButton, 
   StaggerContainer, 
@@ -16,6 +16,18 @@ import {
 } from '@kiwi/ui';
 import { MenuItemForm } from '../../components/ui/MenuItemForm';
 
+const CATEGORIES = [
+  'Todos',
+  'Bowls',
+  'Café',
+  'Bebidas',
+  'Snacks',
+  'Postres',
+  'Platos Fuertes',
+  'Ensaladas',
+  'Otros',
+];
+
 export default function MenuManagementPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
@@ -25,6 +37,16 @@ export default function MenuManagementPage() {
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [togglingAvailability, setTogglingAvailability] = useState<string | null>(null);
+  
+  // New state for improvements
+  const [selectedCategory, setSelectedCategory] = useState('Todos');
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+  const [showBulkActions, setShowBulkActions] = useState(false);
+  const [isReordering, setIsReordering] = useState(false);
+  const [showCategoryManager, setShowCategoryManager] = useState(false);
+  const [customCategories, setCustomCategories] = useState<string[]>([]);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [duplicatingItem, setDuplicatingItem] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -73,6 +95,38 @@ export default function MenuManagementPage() {
     }
   };
 
+  const handleBulkDelete = async () => {
+    if (selectedItems.size === 0) return;
+    
+    try {
+      await Promise.all(
+        Array.from(selectedItems).map(id => api.deleteMenuItem(id))
+      );
+      setSelectedItems(new Set());
+      setShowBulkActions(false);
+      await fetchMenuItems();
+    } catch (error) {
+      console.error('Failed to delete items:', error);
+    }
+  };
+
+  const handleBulkToggleAvailability = async (available: boolean) => {
+    if (selectedItems.size === 0) return;
+    
+    try {
+      await Promise.all(
+        Array.from(selectedItems).map(id => 
+          api.updateMenuItem(id, { isAvailable: available })
+        )
+      );
+      setSelectedItems(new Set());
+      setShowBulkActions(false);
+      await fetchMenuItems();
+    } catch (error) {
+      console.error('Failed to toggle availability:', error);
+    }
+  };
+
   const handleToggleAvailability = async (item: MenuItem) => {
     setTogglingAvailability(item.id);
     try {
@@ -87,6 +141,61 @@ export default function MenuManagementPage() {
     }
   };
 
+  const handleDuplicate = async (item: MenuItem) => {
+    setDuplicatingItem(item.id);
+    try {
+      await api.createMenuItem({
+        name: `${item.name} (Copia)`,
+        description: item.description,
+        price: item.price,
+        category: item.category,
+        image: item.image,
+        isPopular: item.isPopular,
+        isAvailable: item.isAvailable,
+      });
+      await fetchMenuItems();
+    } catch (error) {
+      console.error('Failed to duplicate item:', error);
+    } finally {
+      setDuplicatingItem(null);
+    }
+  };
+
+  const handleReorder = async (reorderedItems: MenuItem[]) => {
+    try {
+      // Update local state immediately for smooth UX
+      setMenuItems(reorderedItems);
+      
+      // TODO: Implement backend reorder endpoint
+      // await api.reorderMenuItems(reorderedItems.map(i => i.id));
+    } catch (error) {
+      console.error('Failed to reorder items:', error);
+      await fetchMenuItems(); // Revert on error
+    }
+  };
+
+  const toggleItemSelection = (itemId: string) => {
+    const newSelected = new Set(selectedItems);
+    if (newSelected.has(itemId)) {
+      newSelected.delete(itemId);
+    } else {
+      newSelected.add(itemId);
+    }
+    setSelectedItems(newSelected);
+    setShowBulkActions(newSelected.size > 0);
+  };
+
+  const selectAllItems = () => {
+    const filteredItems = getFilteredItems();
+    if (selectedItems.size === filteredItems.length) {
+      setSelectedItems(new Set());
+      setShowBulkActions(false);
+    } else {
+      setSelectedItems(new Set(filteredItems.map(i => i.id)));
+      setShowBulkActions(true);
+    }
+  };
+
   const openEditForm = (item: MenuItem) => {
     setEditingItem(item);
     setShowForm(true);
@@ -95,6 +204,40 @@ export default function MenuManagementPage() {
   const closeForm = () => {
     setShowForm(false);
     setEditingItem(null);
+  };
+
+  const addCategory = () => {
+    if (newCategoryName.trim() && !customCategories.includes(newCategoryName.trim())) {
+      setCustomCategories([...customCategories, newCategoryName.trim()]);
+      setNewCategoryName('');
+    }
+  };
+
+  const removeCategory = (category: string) => {
+    setCustomCategories(customCategories.filter(c => c !== category));
+  };
+
+  const getFilteredItems = () => {
+    if (selectedCategory === 'Todos') {
+      return menuItems;
+    }
+    return menuItems.filter(item => item.category === selectedCategory);
+  };
+
+  const getAllCategories = () => {
+    const menuCategories = [...new Set(menuItems.map(item => item.category))];
+    return [...CATEGORIES, ...customCategories.filter(c => !menuCategories.includes(c))];
+  };
+
+  const getItemStats = () => {
+    const total = menuItems.length;
+    const available = menuItems.filter(i => i.isAvailable).length;
+    const popular = menuItems.filter(i => i.isPopular).length;
+    const avgPrice = total > 0 
+      ? Math.round(menuItems.reduce((sum, i) => sum + i.price, 0) / total)
+      : 0;
+    
+    return { total, available, popular, avgPrice };
   };
 
   if (authLoading || loading) {
@@ -123,6 +266,9 @@ export default function MenuManagementPage() {
     );
   }
 
+  const stats = getItemStats();
+  const filteredItems = getFilteredItems();
+
   return (
     <div className="min-h-screen bg-bg-light dark:bg-surface-950">
       {/* Header */}
@@ -139,7 +285,16 @@ export default function MenuManagementPage() {
               <span className="text-sm font-medium">Dashboard</span>
             </Link>
             <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">🍽️ Mi Menú</h1>
-            <div className="w-16" />
+            <div className="flex items-center gap-2">
+              <motion.button
+                className="p-2 rounded-xl bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400 hover:bg-surface-200 dark:hover:bg-surface-600 transition-colors"
+                onClick={() => setShowCategoryManager(!showCategoryManager)}
+                whileTap={{ scale: 0.95 }}
+              >
+                📂
+              </motion.button>
+              <ThemeToggle />
+            </div>
           </div>
         </div>
       </motion.header>
@@ -184,6 +339,74 @@ export default function MenuManagementPage() {
           </motion.div>
         )}
 
+        {/* Category Manager Modal */}
+        <AnimatePresence>
+          {showCategoryManager && (
+            <motion.div
+              className="mb-6 rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">
+                  📂 Gestionar Categorías
+                </h3>
+                <motion.button
+                  onClick={() => setShowCategoryManager(false)}
+                  className="text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                >
+                  ✕
+                </motion.button>
+              </div>
+              
+              <div className="flex gap-2 mb-4">
+                <input
+                  type="text"
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  placeholder="Nueva categoría..."
+                  className="flex-1 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-2 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:border-kiwi-500 focus:ring-2 focus:ring-kiwi-500/20 transition-all"
+                  onKeyPress={(e) => e.key === 'Enter' && addCategory()}
+                />
+                <AnimatedButton
+                  variant="gradient"
+                  size="sm"
+                  onClick={addCategory}
+                  disabled={!newCategoryName.trim()}
+                >
+                  ➕
+                </AnimatedButton>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {getAllCategories().map((cat) => (
+                  <div
+                    key={cat}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium ${
+                      cat === 'Todos' || CATEGORIES.includes(cat)
+                        ? 'bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400'
+                        : 'bg-kiwi-100 dark:bg-kiwi-900/50 text-kiwi-700 dark:text-kiwi-400'
+                    }`}
+                  >
+                    {cat}
+                    {!CATEGORIES.includes(cat) && (
+                      <button
+                        onClick={() => removeCategory(cat)}
+                        className="ml-1 text-kiwi-500 hover:text-kiwi-700 dark:hover:text-kiwi-300"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Add New Item Button */}
         {!showForm && (
           <motion.div
@@ -224,32 +447,133 @@ export default function MenuManagementPage() {
                 onSubmit={editingItem ? handleUpdate : handleCreate}
                 onCancel={closeForm}
                 isEditing={!!editingItem}
+                categories={getAllCategories().filter(c => c !== 'Todos')}
               />
             </motion.div>
           )}
         </AnimatePresence>
 
+        {/* Bulk Actions Bar */}
+        <AnimatePresence>
+          {showBulkActions && selectedItems.size > 0 && (
+            <motion.div
+              className="mb-4 rounded-2xl bg-kiwi-50 dark:bg-kiwi-900/30 p-4"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-kiwi-700 dark:text-kiwi-400">
+                  {selectedItems.size} seleccionados
+                </span>
+                <div className="flex gap-2">
+                  <AnimatedButton
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => handleBulkToggleAvailability(true)}
+                  >
+                    ✅ Disponible
+                  </AnimatedButton>
+                  <AnimatedButton
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => handleBulkToggleAvailability(false)}
+                  >
+                    ❌ Agotado
+                  </AnimatedButton>
+                  <AnimatedButton
+                    variant="danger"
+                    size="sm"
+                    onClick={handleBulkDelete}
+                  >
+                    🗑️ Eliminar
+                  </AnimatedButton>
+                  <AnimatedButton
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedItems(new Set());
+                      setShowBulkActions(false);
+                    }}
+                  >
+                    ✕
+                  </AnimatedButton>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Category Filter */}
+        <motion.div
+          className="mb-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+        >
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+            {getAllCategories().map((cat) => (
+              <motion.button
+                key={cat}
+                className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                  selectedCategory === cat
+                    ? 'bg-kiwi-500 text-white shadow-kiwi'
+                    : 'bg-white dark:bg-surface-800 text-surface-600 dark:text-surface-400 shadow-soft dark:shadow-dark'
+                }`}
+                onClick={() => setSelectedCategory(cat)}
+                whileTap={{ scale: 0.95 }}
+              >
+                {cat}
+              </motion.button>
+            ))}
+          </div>
+        </motion.div>
+
         {/* Menu Items List */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
+          transition={{ delay: 0.2 }}
         >
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100">
-              Productos ({menuItems.length})
-            </h2>
-            {user?.merchantProfile?.id && (
-              <Link
-                href={`/merchants/${user.merchantProfile.id}/qr`}
-                className="text-sm font-medium text-kiwi-600 hover:text-kiwi-700"
+            <div className="flex items-center gap-3">
+              <h2 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100">
+                Productos ({filteredItems.length})
+              </h2>
+              {filteredItems.length > 0 && (
+                <motion.button
+                  className="text-sm text-surface-500 dark:text-surface-400 hover:text-surface-700 dark:hover:text-surface-300"
+                  onClick={selectAllItems}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  {selectedItems.size === filteredItems.length ? '☐ Deseleccionar' : '☑️ Seleccionar todo'}
+                </motion.button>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <motion.button
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  isReordering
+                    ? 'bg-kiwi-100 dark:bg-kiwi-900/50 text-kiwi-700 dark:text-kiwi-400'
+                    : 'bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400 hover:bg-surface-200 dark:hover:bg-surface-600'
+                }`}
+                onClick={() => setIsReordering(!isReordering)}
+                whileTap={{ scale: 0.95 }}
               >
-                📱 Ver mi QR →
-              </Link>
-            )}
+                {isReordering ? '✅ Listo' : '🔄 Reordenar'}
+              </motion.button>
+              {user?.merchantProfile?.id && (
+                <Link
+                  href={`/merchants/${user.merchantProfile.id}/qr`}
+                  className="text-sm font-medium text-kiwi-600 hover:text-kiwi-700"
+                >
+                  📱 Ver mi QR →
+                </Link>
+              )}
+            </div>
           </div>
 
-          {menuItems.length === 0 ? (
+          {filteredItems.length === 0 ? (
             <motion.div
               className="rounded-2xl bg-white dark:bg-surface-800 p-12 text-center shadow-soft dark:shadow-dark"
               initial={{ opacity: 0 }}
@@ -263,29 +587,87 @@ export default function MenuManagementPage() {
                 🍽️
               </motion.div>
               <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-2">
-                Tu menú está vacío
+                {selectedCategory === 'Todos' ? 'Tu menú está vacío' : `No hay productos en ${selectedCategory}`}
               </h3>
               <p className="text-surface-500 dark:text-surface-400 mb-6">
-                Agrega productos para que los clientes puedan ver tu menú
+                {selectedCategory === 'Todos' 
+                  ? 'Agrega productos para que los clientes puedan ver tu menú'
+                  : 'Agrega productos a esta categoría'}
               </p>
               <AnimatedButton
                 variant="gradient"
                 onClick={() => setShowForm(true)}
               >
-                ➕ Agregar Primer Producto
+                ➕ Agregar Producto
               </AnimatedButton>
             </motion.div>
+          ) : isReordering ? (
+            <Reorder.Group
+              axis="y"
+              values={filteredItems}
+              onReorder={handleReorder}
+              className="space-y-3"
+            >
+              {filteredItems.map((item) => (
+                <Reorder.Item
+                  key={item.id}
+                  value={item}
+                  className={`rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark cursor-grab active:cursor-grabbing ${
+                    !item.isAvailable ? 'opacity-60' : ''
+                  }`}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="text-surface-400 dark:text-surface-500">⋮⋮</div>
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-surface-100 dark:bg-surface-700 text-2xl flex-shrink-0">
+                      {item.image || '🍽️'}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100 truncate">
+                          {item.name}
+                        </h3>
+                        {item.isPopular && (
+                          <span className="px-2 py-0.5 rounded-full bg-gold-100 dark:bg-gold-900/50 text-xs font-medium text-gold-700 dark:text-gold-400">
+                            🔥
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-kiwi-600 dark:text-kiwi-400 font-medium">
+                        ₡{item.price.toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                </Reorder.Item>
+              ))}
+            </Reorder.Group>
           ) : (
             <StaggerContainer className="space-y-3">
-              {menuItems.map((item) => (
+              {filteredItems.map((item) => (
                 <StaggerItem key={item.id}>
                   <motion.div
                     className={`rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark transition-all ${
                       !item.isAvailable ? 'opacity-60' : ''
-                    }`}
+                    } ${selectedItems.has(item.id) ? 'ring-2 ring-kiwi-500' : ''}`}
                     whileHover={{ y: -2 }}
                   >
                     <div className="flex gap-4">
+                      {/* Selection Checkbox */}
+                      <div className="flex items-center">
+                        <motion.button
+                          className={`h-6 w-6 rounded-lg border-2 flex items-center justify-center transition-colors ${
+                            selectedItems.has(item.id)
+                              ? 'bg-kiwi-500 border-kiwi-500'
+                              : 'border-surface-300 dark:border-surface-600 hover:border-kiwi-500'
+                          }`}
+                          onClick={() => toggleItemSelection(item.id)}
+                          whileTap={{ scale: 0.9 }}
+                        >
+                          {selectedItems.has(item.id) && (
+                            <span className="text-white text-xs">✓</span>
+                          )}
+                        </motion.button>
+                      </div>
+
                       {/* Item Image */}
                       <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-surface-100 dark:bg-surface-700 text-3xl flex-shrink-0">
                         {item.image || '🍽️'}
@@ -340,6 +722,17 @@ export default function MenuManagementPage() {
                               whileTap={{ scale: 0.95 }}
                             >
                               {togglingAvailability === item.id ? '⏳' : item.isAvailable ? '✅ Disponible' : '❌ Agotado'}
+                            </motion.button>
+
+                            {/* Duplicate */}
+                            <motion.button
+                              className="p-2 rounded-lg bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400 hover:bg-surface-200 dark:hover:bg-surface-600 transition-colors"
+                              onClick={() => handleDuplicate(item)}
+                              disabled={duplicatingItem === item.id}
+                              whileTap={{ scale: 0.95 }}
+                              title="Duplicar"
+                            >
+                              {duplicatingItem === item.id ? '⏳' : '📋'}
                             </motion.button>
 
                             {/* Edit */}
@@ -415,22 +808,22 @@ export default function MenuManagementPage() {
             <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
               📊 Resumen del Menú
             </h3>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-4 gap-4">
               <div className="text-center">
-                <p className="text-2xl font-bold text-kiwi-600">{menuItems.length}</p>
+                <p className="text-2xl font-bold text-kiwi-600">{stats.total}</p>
                 <p className="text-xs text-surface-500 dark:text-surface-400">Productos</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-gold-600">
-                  {menuItems.filter(i => i.isPopular).length}
-                </p>
+                <p className="text-2xl font-bold text-gold-600">{stats.popular}</p>
                 <p className="text-xs text-surface-500 dark:text-surface-400">Populares</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-surface-600 dark:text-surface-400">
-                  {menuItems.filter(i => i.isAvailable).length}
-                </p>
+                <p className="text-2xl font-bold text-surface-600 dark:text-surface-400">{stats.available}</p>
                 <p className="text-xs text-surface-500 dark:text-surface-400">Disponibles</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-blue-600">₡{stats.avgPrice.toLocaleString()}</p>
+                <p className="text-xs text-surface-500 dark:text-surface-400">Precio Prom.</p>
               </div>
             </div>
           </motion.div>

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AnimatedButton } from '@kiwi/ui';
 
-const CATEGORIES = [
+const DEFAULT_CATEGORIES = [
   'Bowls',
   'Café',
   'Bebidas',
@@ -36,6 +36,7 @@ interface MenuItemFormProps {
   onSubmit: (data: MenuItemFormData) => Promise<void>;
   onCancel: () => void;
   isEditing?: boolean;
+  categories?: string[];
 }
 
 export function MenuItemForm({
@@ -43,12 +44,13 @@ export function MenuItemForm({
   onSubmit,
   onCancel,
   isEditing = false,
+  categories = DEFAULT_CATEGORIES,
 }: MenuItemFormProps) {
   const [formData, setFormData] = useState<MenuItemFormData>({
     name: initialData?.name || '',
     description: initialData?.description || '',
     price: initialData?.price || 0,
-    category: initialData?.category || 'Bowls',
+    category: initialData?.category || categories[0] || 'Bowls',
     image: initialData?.image || '🍽️',
     isPopular: initialData?.isPopular || false,
     isAvailable: initialData?.isAvailable ?? true,
@@ -56,6 +58,8 @@ export function MenuItemForm({
 
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof MenuItemFormData, string>>>({});
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   useEffect(() => {
     if (initialData) {
@@ -63,13 +67,13 @@ export function MenuItemForm({
         name: initialData.name || '',
         description: initialData.description || '',
         price: initialData.price || 0,
-        category: initialData.category || 'Bowls',
+        category: initialData.category || categories[0] || 'Bowls',
         image: initialData.image || '🍽️',
         isPopular: initialData.isPopular || false,
         isAvailable: initialData.isAvailable ?? true,
       });
     }
-  }, [initialData]);
+  }, [initialData, categories]);
 
   const validate = (): boolean => {
     const newErrors: Partial<Record<keyof MenuItemFormData, string>> = {};
@@ -103,6 +107,18 @@ export function MenuItemForm({
     }
   };
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // For now, just show a preview URL
+      // In production, upload to S3/Cloudflare R2
+      const url = URL.createObjectURL(file);
+      setImagePreview(url);
+      // TODO: Upload to storage and set formData.image to the URL
+      console.log('📸 Image selected:', file.name);
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -132,11 +148,29 @@ export function MenuItemForm({
           </label>
           <div className="flex items-center gap-4">
             <motion.div
-              className="flex h-20 w-20 items-center justify-center rounded-2xl bg-surface-100 dark:bg-surface-700 text-4xl"
+              className="relative flex h-24 w-24 items-center justify-center rounded-2xl bg-surface-100 dark:bg-surface-700 text-5xl overflow-hidden"
               whileHover={{ scale: 1.05 }}
             >
-              {formData.image}
+              {imagePreview ? (
+                <img 
+                  src={imagePreview} 
+                  alt="Preview" 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                formData.image
+              )}
+              <label className="absolute bottom-1 right-1 h-6 w-6 rounded-full bg-kiwi-500 text-white text-xs flex items-center justify-center cursor-pointer hover:bg-kiwi-600 transition-colors">
+                📷
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleImageUpload}
+                />
+              </label>
             </motion.div>
+            
             <div className="flex-1">
               <div className="flex flex-wrap gap-2">
                 {EMOJI_OPTIONS.map((emoji) => (
@@ -148,13 +182,19 @@ export function MenuItemForm({
                         ? 'bg-kiwi-100 dark:bg-kiwi-900/50 ring-2 ring-kiwi-500'
                         : 'bg-surface-100 dark:bg-surface-700 hover:bg-surface-200 dark:hover:bg-surface-600'
                     }`}
-                    onClick={() => setFormData({ ...formData, image: emoji })}
+                    onClick={() => {
+                      setFormData({ ...formData, image: emoji });
+                      setImagePreview(null);
+                    }}
                     whileTap={{ scale: 0.9 }}
                   >
                     {emoji}
                   </motion.button>
                 ))}
               </div>
+              <p className="text-xs text-surface-400 dark:text-surface-500 mt-2">
+                O sube una foto del producto
+              </p>
             </div>
           </div>
         </div>
@@ -237,7 +277,7 @@ export function MenuItemForm({
                   : 'border-surface-200 dark:border-surface-700 focus:border-kiwi-500'
               }`}
             >
-              {CATEGORIES.map((cat) => (
+              {categories.map((cat) => (
                 <option key={cat} value={cat}>
                   {cat}
                 </option>
@@ -297,6 +337,30 @@ export function MenuItemForm({
                 />
               </motion.button>
             </div>
+          </div>
+        </div>
+
+        {/* Quick Price Suggestions */}
+        <div>
+          <label className="mb-2 block text-sm font-medium text-surface-600 dark:text-surface-400">
+            Precios rápidos
+          </label>
+          <div className="flex gap-2 flex-wrap">
+            {[1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000].map((price) => (
+              <motion.button
+                key={price}
+                type="button"
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  formData.price === price
+                    ? 'bg-kiwi-100 dark:bg-kiwi-900/50 text-kiwi-700 dark:text-kiwi-400 ring-2 ring-kiwi-500'
+                    : 'bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400 hover:bg-surface-200 dark:hover:bg-surface-600'
+                }`}
+                onClick={() => setFormData({ ...formData, price })}
+                whileTap={{ scale: 0.95 }}
+              >
+                ₡{price.toLocaleString()}
+              </motion.button>
+            ))}
           </div>
         </div>
 
