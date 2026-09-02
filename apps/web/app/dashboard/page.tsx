@@ -302,8 +302,7 @@ export default function Dashboard() {
             </Link>
           </StaggerItem>
 
-          <StaggerItem>
-            <Link href="/drivers">
+          <StaggerItem>              <Link href="/drivers">
               <motion.div 
                 className="rounded-2xl bg-white/70 dark:bg-surface-800/70 backdrop-blur-xl border border-white/30 dark:border-surface-700/30 shadow-soft-md dark:shadow-dark p-4 cursor-pointer group"
                 whileHover={{ y: -4, boxShadow: '0 12px 32px -8px rgba(139, 101, 61, 0.15)' }}
@@ -320,6 +319,30 @@ export default function Dashboard() {
                   <div>
                     <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">Repartidores</h3>
                     <p className="text-sm text-surface-500 dark:text-surface-400">Ver y asignar</p>
+                  </div>
+                </div>
+              </motion.div>
+            </Link>
+          </StaggerItem>
+
+          <StaggerItem>
+            <Link href="/orders/scheduled">
+              <motion.div 
+                className="rounded-2xl bg-white/70 dark:bg-surface-800/70 backdrop-blur-xl border border-white/30 dark:border-surface-700/30 shadow-soft-md dark:shadow-dark p-4 cursor-pointer group"
+                whileHover={{ y: -4, boxShadow: '0 12px 32px -8px rgba(251, 191, 36, 0.25)' }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <div className="flex items-center gap-4">
+                  <motion.div 
+                    className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gold-100 dark:bg-gold-900/50 text-gold-600 dark:text-gold-400 transition-colors group-hover:bg-gold-500 group-hover:text-white"
+                    whileHover={{ scale: 1.1 }}
+                    transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+                  >
+                    <span className="text-2xl">📅</span>
+                  </motion.div>
+                  <div>
+                    <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">Programados</h3>
+                    <p className="text-sm text-surface-500 dark:text-surface-400">Ver propuestas</p>
                   </div>
                 </div>
               </motion.div>

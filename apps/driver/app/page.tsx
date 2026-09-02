@@ -670,8 +670,8 @@ export default function Home() {
           {[
             { href: '/', icon: '🏠', label: 'Inicio', active: true },
             { href: '/active', icon: '📦', label: 'Activos', active: false },
+            { href: '/scheduled', icon: '📅', label: 'Programados', active: false },
             { href: '/analytics', icon: '📊', label: 'Analytics', active: false },
-            { href: '/schedule', icon: '📅', label: 'Horario', active: false },
             { href: '/profile', icon: '👤', label: 'Perfil', active: false },
           ].map((item) => (
             <Link key={item.href} href={item.href}>

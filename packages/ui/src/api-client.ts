@@ -293,6 +293,14 @@ class ApiClient {
     });
   }
 
+  async getProposals(orderId: string) {
+    return this.request<any>(`/orders/${orderId}/proposals`);
+  }
+
+  async getScheduledOrders() {
+    return this.request<any>('/orders/available?scheduled=true');
+  }
+
   // ============================================
   // 🪪 KYC
   // ============================================
@@ -457,4 +465,21 @@ export interface MerchantPublicProfile {
   activeOrders: number;
   isOpen: boolean;
   openingHours: any;
+}
+
+export interface DriverProposal {
+  id: string;
+  orderId: string;
+  driverId: string;
+  status: 'pending' | 'accepted' | 'rejected';
+  estimatedArrival: string;
+  message: string;
+  createdAt: string;
+  driver?: {
+    id: string;
+    fullName: string;
+    vehicleType: string;
+    rating: number;
+    totalTrips: number;
+  };
 }

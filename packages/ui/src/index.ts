@@ -108,7 +108,7 @@ export {
 // 🔌 API CLIENT
 // ============================================
 export { api } from './api-client';
-export type { User, MerchantProfile, DriverProfile, Order, MenuItem, MerchantPublicProfile } from './api-client';
+export type { User, MerchantProfile, DriverProfile, Order, MenuItem, MerchantPublicProfile, DriverProposal } from './api-client';
 
 // ============================================
 // 📡 SOCKET.IO
