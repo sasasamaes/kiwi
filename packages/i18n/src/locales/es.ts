@@ -400,4 +400,227 @@ export default {
     syncData: 'Sincronizar datos',
     pullToRefresh: 'Desliza para actualizar',
   },
+
+  // Traffic
+  traffic: {
+    title: 'Tráfico',
+    current: 'Tráfico Actual',
+    predictions: 'Predicciones',
+    alerts: 'Alertas',
+    history: 'Historial',
+    analytics: 'Análisis',
+    settings: 'Configuración de Tráfico',
+
+    // Traffic levels
+    levels: {
+      free: 'Sin tráfico',
+      light: 'Tráfico ligero',
+      moderate: 'Tráfico moderado',
+      heavy: 'Tráfico pesado',
+      severe: 'Tráfico severo',
+    },
+
+    // Traffic status
+    status: {
+      excellent: '🟢 Excelente - ideal para entregas',
+      good: '🟡 Bueno - buen momento para enviar',
+      moderate: '🟠 Moderado - considera retrasar',
+      heavy: '🔴 Pesado - evita enviar repartidores',
+      severe: '⛔ Severo - no recomendar entregas',
+    },
+
+    // Predictions
+    predictions: {
+      title: 'Predicciones de Tráfico',
+      hourly: 'Por Hora',
+      daily: 'Por Día',
+      weekly: 'Por Semana',
+      insights: 'Insights',
+      currentPrediction: 'Predicción Actual',
+      nextHours: 'Próximas Horas',
+      bestTimes: 'Mejores Momentos',
+      worstTimes: 'Momentos a Evitar',
+      confidence: 'Confianza',
+      mlActive: 'ML Activo',
+      patternDetected: 'Patrón Detectado',
+      anomalyDetected: 'Anomalía Detectada',
+    },
+
+    // Alerts
+    alerts: {
+      title: 'Alertas de Tráfico',
+      create: 'Crear Alerta',
+      active: 'Alertas Activas',
+      type: 'Tipo',
+      severity: 'Severidad',
+      location: 'Ubicación',
+      radius: 'Radio',
+      duration: 'Duración',
+      expires: 'Expira',
+      dismiss: 'Cerrar',
+      delete: 'Eliminar',
+
+      types: {
+        congestion: 'Congestión',
+        accident: 'Accidente',
+        roadClosed: 'Camino Cerrado',
+        weather: 'Clima',
+        event: 'Evento',
+        alternativeRoute: 'Ruta Alternativa',
+      },
+
+      severity: {
+        low: 'Baja',
+        medium: 'Media',
+        high: 'Alta',
+        critical: 'Crítica',
+      },
+    },
+
+    // Routes
+    routes: {
+      title: 'Rutas Disponibles',
+      recommended: 'Recomendada',
+      alternative: 'Alternativa',
+      fastest: 'Más Rápida',
+      shortest: 'Más Corta',
+      avoidTraffic: 'Evita tráfico',
+      timeSaved: 'Ahorra {{time}} min',
+      navigate: 'Navegar',
+      selectRoute: 'Seleccionar Ruta',
+    },
+
+    // Delivery estimates
+    delivery: {
+      title: 'Tiempo Estimado',
+      driving: 'Manejo',
+      traffic: 'Tráfico',
+      pickup: 'Recolección',
+      preparation: 'Preparación',
+      total: 'Total',
+      minutes: 'min',
+      veryFast: '⚡ Muy rápido',
+      normal: '✅ Normal',
+      heavyTraffic: '🐢 Tráfico pesado',
+    },
+
+    // Settings
+    settings: {
+      title: 'Configuración de Tráfico',
+      deliveryRadius: 'Radio de Entrega',
+      maxRadius: 'Radio máximo de entrega',
+      estimatedTime: 'Tiempo estimado de entrega',
+      avoidHeavy: 'Evitar tráfico pesado',
+      mainRoads: 'Preferir caminos principales',
+      alternatives: 'Permitir rutas alternativas',
+      peakHours: 'Horas Pico',
+      peakSurcharge: 'Cargo por horas pico',
+      peakMultiplier: 'Multiplicador de precio',
+      freeDelivery: 'Envío gratis desde',
+      minimumOrder: 'Pedido mínimo',
+      dynamicPricing: 'Precios dinámicos',
+      notifications: 'Notificaciones de Tráfico',
+      trafficAlerts: 'Alertas de tráfico',
+      predictions: 'Predicciones de tráfico',
+      bestTimes: 'Recomendaciones de horario',
+      delays: 'Alertas de retraso',
+      smartHours: 'Horarios inteligentes',
+      closedDuringPeak: 'Cerrar durante horas pico',
+    },
+
+    // Notifications
+    notifications: {
+      predictionTitle: 'Predicción de Tráfico',
+      bestTimeTitle: 'Mejor Momento para Entregas',
+      peakWarningTitle: 'Hora Pico se Acerca',
+      delayTitle: 'Retraso en Entrega',
+      routeTitle: 'Ruta Alternativa Disponible',
+      predictionMessage: 'Tráfico {{level}} - {{message}}',
+      bestTimeMessage: 'El tráfico está {{level}} a las {{hour}}:00',
+      peakMessage: 'Se espera tráfico {{level}} en la próxima hora',
+      delayMessage: 'Pedido #{{orderId}} tiene un retraso de {{minutes}} min',
+      routeMessage: 'Hay una ruta {{timeSaved}} min más rápida',
+    },
+
+    // Analytics
+    analytics: {
+      title: 'Análisis de Tráfico',
+      totalDeliveries: 'Entregas',
+      avgTime: 'Tiempo Prom.',
+      avgTraffic: 'Tráfico Prom.',
+      delays: 'Retrasos',
+      timeLost: 'minutos perdidos por tráfico',
+      deliveriesAffected: 'entregas afectadas',
+      trends: 'Tendencias',
+      patterns: 'Patrones por Día y Hora',
+      peakHours: 'Horas Pico',
+      bestHours: 'Mejores Horarios',
+      worstHours: 'Horas a Evitar',
+      recommendations: 'Recomendaciones',
+      heatmap: 'Mapa de Calor',
+    },
+
+    // Best times
+    bestTimes: {
+      excellent: '🟢 Tráfico libre - Tiempo ideal',
+      good: '🟡 Tráfico ligero - Buen momento',
+    },
+
+    // Route warnings
+    warnings: {
+      heavyTraffic: '🚦 Tráfico intenso en esta ruta',
+      longRoute: '📏 Ruta larga - considera alternativas',
+      hotspot: '⚠️ Esta ruta pasa por una zona con tráfico pesado',
+      avoidArea: 'Evita {{area}} por tráfico pesado',
+    },
+
+    // Route advantages
+    advantages: {
+      avoidsTraffic: '✅ Evita zonas de tráfico pesado',
+      fastRoute: '⚡ Ruta rápida',
+      keyPoints: '📍 Pasa por puntos clave',
+      shortest: '📏 Ruta más corta',
+    },
+
+    // Time periods
+    periods: {
+      now: 'Ahora',
+      today: 'Hoy',
+      tomorrow: 'Mañana',
+      thisWeek: 'Esta semana',
+      nextWeek: 'Próxima semana',
+      thisMonth: 'Este mes',
+    },
+
+    // Days
+    days: {
+      monday: 'Lunes',
+      tuesday: 'Martes',
+      wednesday: 'Miércoles',
+      thursday: 'Jueves',
+      friday: 'Viernes',
+      saturday: 'Sábado',
+      sunday: 'Domingo',
+    },
+
+    // Hours
+    hours: {
+      morning: 'Mañana (6-11 AM)',
+      afternoon: 'Mediodía (12-2 PM)',
+      evening: 'Tarde (5-7 PM)',
+      night: 'Noche (8 PM - 5 AM)',
+    },
+
+    // Common
+    common: {
+      loading: 'Cargando predicciones...',
+      error: 'Error al cargar predicciones',
+      retry: 'Reintentar',
+      noData: 'No hay datos disponibles',
+      updated: 'Actualizado hace {{time}}',
+      km: 'km',
+      min: 'min',
+      percentage: '%',
+    },
+  },
 };

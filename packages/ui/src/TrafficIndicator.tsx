@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslations } from '../LanguageProvider';
 
 interface TrafficCondition {
   level: 'free' | 'light' | 'moderate' | 'heavy' | 'severe';
@@ -38,6 +39,7 @@ export function TrafficIndicator({
   compact = false,
   className = '',
 }: TrafficIndicatorProps) {
+  const { t } = useTranslations();
   const [traffic, setTraffic] = useState<TrafficCondition | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -95,6 +97,17 @@ export function TrafficIndicator({
     );
   }
 
+  const getTrafficTranslation = (level: string) => {
+    const translations: Record<string, string> = {
+      free: t('traffic.free'),
+      light: t('traffic.light'),
+      moderate: t('traffic.moderate'),
+      heavy: t('traffic.heavy'),
+      severe: t('traffic.severe'),
+    };
+    return translations[level] || level;
+  };
+
   return (
     <motion.div
       className={`rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark ${className}`}
@@ -103,7 +116,7 @@ export function TrafficIndicator({
     >
       <div className="flex items-center justify-between mb-2">
         <h4 className="text-sm font-semibold text-surface-800 dark:text-surface-100">
-          🚦 Tráfico
+          🚦 {t('traffic.title')}
         </h4>
         <motion.div
           className="h-3 w-3 rounded-full"
@@ -126,11 +139,11 @@ export function TrafficIndicator({
         </div>
         <div>
           <p className="font-semibold text-surface-800 dark:text-surface-100">
-            {traffic.description}
+            {getTrafficTranslation(traffic.level)}
           </p>
           {showDetails && (
             <p className="text-xs text-surface-500 dark:text-surface-400">
-              Velocidad: {Math.round(traffic.speedFactor * 100)}% del normal
+              {t('traffic.speed')}: {Math.round(traffic.speedFactor * 100)}% {t('traffic.free')}
             </p>
           )}
         </div>
@@ -139,7 +152,7 @@ export function TrafficIndicator({
       {showDetails && (
         <div className="mt-3 pt-3 border-t border-surface-100 dark:border-surface-700">
           <div className="flex justify-between text-xs text-surface-500 dark:text-surface-400">
-            <span>Velocidad promedio</span>
+            <span>{t('traffic.speed')}</span>
             <span className="font-medium text-surface-700 dark:text-surface-300">
               {Math.round(30 * traffic.speedFactor)} km/h
             </span>
@@ -167,6 +180,7 @@ export function DeliveryEstimate({
   distance,
   className = '',
 }: DeliveryEstimateProps) {
+  const { t } = useTranslations();
   const [estimate, setEstimate] = useState<DeliveryEstimate | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -214,7 +228,7 @@ export function DeliveryEstimate({
     >
       <div className="flex items-center justify-between mb-4">
         <h4 className="text-sm font-semibold text-surface-800 dark:text-surface-100">
-          ⏱️ Tiempo Estimado
+          ⏱️ {t('traffic.estimatedTime')}
         </h4>
         <div className="flex items-center gap-2">
           <motion.div
@@ -242,7 +256,7 @@ export function DeliveryEstimate({
         <p className="text-sm text-surface-500 dark:text-surface-400">
           {estimate.estimatedMinutes <= 15 ? '⚡ Muy rápido' :
            estimate.estimatedMinutes <= 30 ? '✅ Normal' :
-           '🐢 Tráfico pesado'}
+           '🐢 ' + t('traffic.heavy')}
         </p>
       </div>
 
@@ -251,27 +265,27 @@ export function DeliveryEstimate({
         <div className="flex justify-between text-sm">
           <span className="text-surface-500 dark:text-surface-400">🚗 Manejo</span>
           <span className="font-medium text-surface-700 dark:text-surface-300">
-            {estimate.breakdown.driving} min
+            {estimate.breakdown.driving} {t('traffic.minutes')}
           </span>
         </div>
         {estimate.breakdown.traffic > 0 && (
           <div className="flex justify-between text-sm">
-            <span className="text-surface-500 dark:text-surface-400">🚦 Tráfico</span>
+            <span className="text-surface-500 dark:text-surface-400">🚦 {t('traffic.title')}</span>
             <span className="font-medium" style={{ color: estimate.trafficColor }}>
-              +{estimate.breakdown.traffic} min
+              +{estimate.breakdown.traffic} {t('traffic.minutes')}
             </span>
           </div>
         )}
         <div className="flex justify-between text-sm">
           <span className="text-surface-500 dark:text-surface-400">📦 Recolección</span>
           <span className="font-medium text-surface-700 dark:text-surface-300">
-            {estimate.breakdown.pickup} min
+            {estimate.breakdown.pickup} {t('traffic.minutes')}
           </span>
         </div>
         <div className="flex justify-between text-sm">
           <span className="text-surface-500 dark:text-surface-400">👨‍🍳 Preparación</span>
           <span className="font-medium text-surface-700 dark:text-surface-300">
-            {estimate.breakdown.preparation} min
+            {estimate.breakdown.preparation} {t('traffic.minutes')}
           </span>
         </div>
       </div>
@@ -288,8 +302,8 @@ export function DeliveryEstimate({
           />
         </div>
         <div className="flex justify-between mt-1 text-xs text-surface-400 dark:text-surface-500">
-          <span>Sin tráfico</span>
-          <span>Con tráfico</span>
+          <span>{t('traffic.trafficFree')}</span>
+          <span>{t('traffic.trafficHeavy')}</span>
         </div>
       </div>
     </motion.div>
@@ -301,6 +315,7 @@ interface TrafficMapOverlayProps {
 }
 
 export function TrafficMapOverlay({ className = '' }: TrafficMapOverlayProps) {
+  const { t } = useTranslations();
   const [trafficData, setTrafficData] = useState<Array<{
     lat: number;
     lng: number;
@@ -360,7 +375,7 @@ export function TrafficMapOverlay({ className = '' }: TrafficMapOverlayProps) {
     >
       <div className="flex items-center justify-between mb-3">
         <h4 className="text-sm font-semibold text-surface-800 dark:text-surface-100">
-          🗺️ Mapa de Tráfico
+          🗺️ {t('traffic.heatmap')}
         </h4>
         <motion.button
           className="text-xs text-kiwi-600 hover:text-kiwi-700 dark:text-kiwi-400"
@@ -374,11 +389,11 @@ export function TrafficMapOverlay({ className = '' }: TrafficMapOverlayProps) {
       {/* Traffic Legend */}
       <div className="flex flex-wrap gap-2 mb-3">
         {[
-          { level: 'free', label: 'Libre', color: '#22c55e' },
-          { level: 'light', label: 'Ligero', color: '#84cc16' },
-          { level: 'moderate', label: 'Moderado', color: '#eab308' },
-          { level: 'heavy', label: 'Pesado', color: '#f97316' },
-          { level: 'severe', label: 'Severo', color: '#ef4444' },
+          { level: 'free', label: t('traffic.free'), color: '#22c55e' },
+          { level: 'light', label: t('traffic.light'), color: '#84cc16' },
+          { level: 'moderate', label: t('traffic.moderate'), color: '#eab308' },
+          { level: 'heavy', label: t('traffic.heavy'), color: '#f97316' },
+          { level: 'severe', label: t('traffic.severe'), color: '#ef4444' },
         ].map((item) => (
           <div key={item.level} className="flex items-center gap-1.5 text-xs">
             <div

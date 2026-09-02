@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslations } from '../LanguageProvider';
 
 interface TrafficAlert {
   id: string;
@@ -105,6 +106,7 @@ export function TrafficAlertBanner({
   onNavigate,
   className = '',
 }: TrafficAlertBannerProps) {
+  const { t } = useTranslations();
   const config = ALERT_CONFIG[alert.type];
   const severityConfig = SEVERITY_CONFIG[alert.severity];
 
@@ -149,7 +151,7 @@ export function TrafficAlertBanner({
             <span>📍</span>
             <span>{alert.location.address}</span>
             <span>•</span>
-            <span>Radio: {alert.affectedArea.radius} km</span>
+            <span>{t('traffic.maxDistance')}: {alert.affectedArea.radius} km</span>
           </div>
 
           {/* Alternative Route */}
@@ -158,12 +160,12 @@ export function TrafficAlertBanner({
               <div className="flex items-center gap-2">
                 <span className="text-sm">🗺️</span>
                 <span className={`text-xs font-medium ${config.textColor}`}>
-                  Ruta alternativa: {alert.alternativeRoute.description}
+                  {t('traffic.alternativeRoute')}: {alert.alternativeRoute.description}
                 </span>
               </div>
               {alert.alternativeRoute.estimatedTimeSaved > 0 && (
                 <p className={`text-xs ${config.textColor} opacity-75 mt-1`}>
-                  Ahorra ~{alert.alternativeRoute.estimatedTimeSaved} min
+                  ⏱️ {t('traffic.estimatedTimeSaved')}: ~{alert.alternativeRoute.estimatedTimeSaved} {t('traffic.minutes')}
                 </p>
               )}
             </div>
@@ -176,14 +178,14 @@ export function TrafficAlertBanner({
               onClick={() => onNavigate(alert.location.lat, alert.location.lng)}
               whileTap={{ scale: 0.95 }}
             >
-              🧭 Navegar
+              🧭 {t('driver.navigation')}
             </motion.button>
             <motion.button
               className={`px-3 py-1.5 rounded-lg text-xs font-medium ${config.textColor} opacity-75 hover:opacity-100`}
               onClick={() => onDismiss(alert.id)}
               whileTap={{ scale: 0.95 }}
             >
-              ✕ Cerrar
+              ✕ {t('app.close')}
             </motion.button>
           </div>
         </div>
@@ -215,10 +217,10 @@ export function TrafficAlertList({
           ✅
         </motion.div>
         <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100 mb-1">
-          Sin alertas
+          {t('traffic.noAlerts')}
         </h3>
         <p className="text-sm text-surface-500 dark:text-surface-400">
-          No hay alertas de tráfico en tu zona
+          {t('traffic.noAlerts')}
         </p>
       </motion.div>
     );
@@ -309,7 +311,7 @@ export function TrafficAlertList({
                           <div className="flex items-center gap-2 mb-1">
                             <span>🗺️</span>
                             <span className={`text-xs font-semibold ${config.textColor}`}>
-                              Ruta Alternativa
+                              {t('traffic.alternativeRoute')}
                             </span>
                           </div>
                           <p className={`text-xs ${config.textColor} opacity-90`}>
@@ -317,7 +319,7 @@ export function TrafficAlertList({
                           </p>
                           {alert.alternativeRoute.estimatedTimeSaved > 0 && (
                             <p className={`text-xs ${config.textColor} font-medium mt-1`}>
-                              ⏱️ Ahorra ~{alert.alternativeRoute.estimatedTimeSaved} minutos
+                              ⏱️ {t('traffic.estimatedTimeSaved')}: ~{alert.alternativeRoute.estimatedTimeSaved} {t('traffic.minutes')}
                             </p>
                           )}
                         </div>
@@ -330,7 +332,7 @@ export function TrafficAlertList({
                           onClick={() => onNavigate(alert.location.lat, alert.location.lng)}
                           whileTap={{ scale: 0.95 }}
                         >
-                          🧭 Navegar al área
+                          🧭 {t('driver.navigation')}
                         </motion.button>
                         <motion.button
                           className="py-2 px-4 rounded-xl text-sm font-medium text-surface-600 dark:text-surface-400 bg-white/50 dark:bg-surface-800/50"
@@ -362,6 +364,7 @@ export function TrafficAlertBadge({
   onClick,
   className = '',
 }: TrafficAlertBadgeProps) {
+  const { t } = useTranslations();
   if (count === 0) return null;
 
   return (
@@ -380,7 +383,7 @@ export function TrafficAlertBadge({
       >
         🚨
       </motion.span>
-      <span className="text-sm">{count} alerta{count !== 1 ? 's' : ''}</span>
+      <span className="text-sm">{count} {t('traffic.alerts')}</span>
       
       {/* Badge */}
       <motion.div
@@ -407,6 +410,7 @@ export function TrafficAlertsPanel({
   onNavigate: (lat: number, lng: number) => void;
   className?: string;
 }) {
+  const { t } = useTranslations();
   const [alerts, setAlerts] = useState<TrafficAlert[]>([]);
   const [loading, setLoading] = useState(true);
   const [showPanel, setShowPanel] = useState(false);
@@ -494,7 +498,7 @@ export function TrafficAlertsPanel({
               {/* Header */}
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-display font-bold text-surface-800 dark:text-surface-100">
-                  🚨 Alertas de Tráfico
+                  🚨 {t('traffic.alerts')}
                 </h3>
                 <motion.button
                   className="text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
@@ -521,7 +525,7 @@ export function TrafficAlertsPanel({
                 onClick={fetchAlerts}
                 whileTap={{ scale: 0.95 }}
               >
-                🔄 Actualizar alertas
+                🔄 {t('phrases.syncData')}
               </motion.button>
             </motion.div>
           </motion.div>

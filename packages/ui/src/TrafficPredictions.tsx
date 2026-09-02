@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslations } from '../LanguageProvider';
 
 interface TrafficPrediction {
   timestamp: string;
@@ -54,6 +55,7 @@ export function TrafficPredictions({
   lng,
   className = '',
 }: TrafficPredictionsProps) {
+  const { t } = useTranslations();
   const [activeTab, setActiveTab] = useState<'hourly' | 'daily' | 'insights'>('hourly');
   const [loading, setLoading] = useState(true);
 
@@ -75,7 +77,7 @@ export function TrafficPredictions({
       <div className="p-4 border-b border-surface-100 dark:border-surface-700">
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-display font-bold text-surface-800 dark:text-surface-100">
-            🔮 Predicciones de Tráfico
+            🔮 {t('traffic.predictions')}
           </h3>
           <div className="flex items-center gap-2">
             <motion.div
@@ -83,16 +85,16 @@ export function TrafficPredictions({
               animate={{ scale: [1, 1.2, 1] }}
               transition={{ duration: 2, repeat: Infinity }}
             />
-            <span className="text-xs text-surface-500 dark:text-surface-400">ML Activo</span>
+            <span className="text-xs text-surface-500 dark:text-surface-400">ML {t('phrases.connected')}</span>
           </div>
         </div>
 
         {/* Tabs */}
         <div className="flex gap-1 bg-surface-100 dark:bg-surface-700 rounded-xl p-1">
           {[
-            { id: 'hourly' as const, label: 'Por Hora', icon: '🕐' },
-            { id: 'daily' as const, label: 'Por Día', icon: '📅' },
-            { id: 'insights' as const, label: 'Insights', icon: '💡' },
+            { id: 'hourly' as const, label: t('traffic.hourly'), icon: '🕐' },
+            { id: 'daily' as const, label: t('traffic.daily'), icon: '📅' },
+            { id: 'insights' as const, label: t('traffic.insights'), icon: '💡' },
           ].map((tab) => (
             <motion.button
               key={tab.id}
@@ -180,13 +182,12 @@ function HourlyForecastTab({ lat, lng }: { lat: number; lng: number }) {
   const currentHour = new Date().getHours();
 
   return (
-    <div className="space-y-4">
-      {/* Current Hour Highlight */}
+    <div className="space-y-4">          {/* Current Hour Highlight */}
       <div className="p-4 rounded-xl bg-kiwi-50 dark:bg-kiwi-900/30">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm text-kiwi-700 dark:text-kiwi-400 font-medium">
-              Predicción Actual
+              {t('traffic.predictions')}
             </p>
             <p className="text-2xl font-bold text-kiwi-800 dark:text-kiwi-300">
               {currentHour}:00
@@ -201,7 +202,7 @@ function HourlyForecastTab({ lat, lng }: { lat: number; lng: number }) {
               {forecast[currentHour]?.level || 'free'}
             </p>
             <p className="text-xs text-surface-500 dark:text-surface-400">
-              Confianza: {Math.round((forecast[currentHour]?.confidence || 0) * 100)}%
+              {t('traffic.confidence')}: {Math.round((forecast[currentHour]?.confidence || 0) * 100)}%
             </p>
           </div>
         </div>
@@ -333,7 +334,7 @@ function DailyForecastTab({ lat, lng }: { lat: number; lng: number }) {
           {/* Peak Hours */}
           <div className="mb-4">
             <p className="text-xs font-medium text-surface-500 dark:text-surface-400 mb-2">
-              🔴 Horas Pico (evitar)
+              🔴 {t('traffic.peakHours')} ({t('traffic.worstTimes')})
             </p>
             <div className="flex gap-2">
               {forecast[selectedDay].peakHours.map(hour => (
@@ -350,7 +351,7 @@ function DailyForecastTab({ lat, lng }: { lat: number; lng: number }) {
           {/* Best Hours */}
           <div>
             <p className="text-xs font-medium text-surface-500 dark:text-surface-400 mb-2">
-              🟢 Mejores Horas (recomendado)
+              🟢 {t('traffic.bestTimes')} ({t('traffic.recommendations')})
             </p>
             <div className="flex gap-2">
               {forecast[selectedDay].bestDeliveryHours.map(hour => (
@@ -438,7 +439,7 @@ function InsightsTab({ lat, lng }: { lat: number; lng: number }) {
       {insights.patterns.length > 0 && (
         <div>
           <h4 className="font-semibold text-surface-800 dark:text-surface-100 mb-3">
-            📊 Patrones Detectados
+            📊 {t('traffic.patterns')}
           </h4>
           <div className="space-y-2">
             {insights.patterns.map((pattern, index) => (
@@ -454,7 +455,7 @@ function InsightsTab({ lat, lng }: { lat: number; lng: number }) {
                     {pattern.name}
                   </p>
                   <span className="text-xs text-surface-500 dark:text-surface-400">
-                    {Math.round(pattern.confidence * 100)}% confianza
+                    {Math.round(pattern.confidence * 100)}% {t('traffic.confidence')}
                   </span>
                 </div>
                 <p className="text-xs text-surface-500 dark:text-surface-400">
@@ -470,7 +471,7 @@ function InsightsTab({ lat, lng }: { lat: number; lng: number }) {
       {insights.anomalies.length > 0 && (
         <div>
           <h4 className="font-semibold text-surface-800 dark:text-surface-100 mb-3">
-            ⚠️ Anomalías Detectadas
+            ⚠️ {t('traffic.incidents')}
           </h4>
           <div className="space-y-2">
             {insights.anomalies.map((anomaly, index) => (
@@ -505,7 +506,7 @@ function InsightsTab({ lat, lng }: { lat: number; lng: number }) {
       {/* Recommendations */}
       <div>
         <h4 className="font-semibold text-surface-800 dark:text-surface-100 mb-3">
-          💡 Recomendaciones
+          💡 {t('traffic.recommendations')}
         </h4>
         <div className="space-y-2">
           {insights.recommendations.map((rec, index) => (
@@ -529,7 +530,7 @@ function InsightsTab({ lat, lng }: { lat: number; lng: number }) {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs font-medium text-surface-500 dark:text-surface-400">
-              Modelo ML
+              {t('traffic.modelVersion')}
             </p>
             <p className="text-sm font-semibold text-surface-800 dark:text-surface-100">
               TimeSeries-v1
@@ -537,7 +538,7 @@ function InsightsTab({ lat, lng }: { lat: number; lng: number }) {
           </div>
           <div className="text-right">
             <p className="text-xs font-medium text-surface-500 dark:text-surface-400">
-              Precisión
+              {t('traffic.accuracy')}
             </p>
             <p className="text-sm font-semibold text-kiwi-600 dark:text-kiwi-400">
               82%
