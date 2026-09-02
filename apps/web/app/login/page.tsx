@@ -4,10 +4,11 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { AuthForm } from '@kiwi/ui';
+import { AuthForm, useAuth } from '@kiwi/ui';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -16,16 +17,10 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      // Mock authentication - replace with real API
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Simulate success
-      console.log('Login data:', data);
-      
-      // Redirect to dashboard
+      await login(data.email, data.password);
       router.push('/dashboard');
-    } catch (err) {
-      setError('Error al iniciar sesión. Intenta de nuevo.');
+    } catch (err: any) {
+      setError(err.message || 'Error al iniciar sesión. Intenta de nuevo.');
     } finally {
       setLoading(false);
     }

@@ -86,6 +86,17 @@ export { VehicleSelector, VehicleBadge, vehicles } from './VehicleSelector';
 export type { Vehicle, VehicleType } from './VehicleSelector';
 
 // ============================================
+// 🔌 API CLIENT
+// ============================================
+export { api } from './api-client';
+export type { User, MerchantProfile, DriverProfile, Order } from './api-client';
+
+// ============================================
+// 🔐 AUTH CONTEXT
+// ============================================
+export { AuthProvider, useAuth } from './AuthContext';
+
+// ============================================
 // 🛠️ UTILS
 // ============================================
 export {

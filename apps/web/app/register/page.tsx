@@ -4,10 +4,11 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { AuthForm } from '@kiwi/ui';
+import { AuthForm, useAuth } from '@kiwi/ui';
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { register } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -16,16 +17,17 @@ export default function RegisterPage() {
     setError(null);
 
     try {
-      // Mock registration - replace with real API
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Simulate success
-      console.log('Register data:', data);
-      
-      // Show success message and redirect
+      await register({
+        email: data.email,
+        password: data.password,
+        phone: data.phone,
+        fullName: data.fullName,
+        role: 'merchant',
+        businessName: data.businessName,
+      });
       router.push('/dashboard');
-    } catch (err) {
-      setError('Error al crear la cuenta. Intenta de nuevo.');
+    } catch (err: any) {
+      setError(err.message || 'Error al crear la cuenta. Intenta de nuevo.');
     } finally {
       setLoading(false);
     }

@@ -1,0 +1,321 @@
+/**
+ * 🥝 Kiwi API Client
+ * 
+ * Centralized API client for all frontend apps
+ */
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+
+interface RequestOptions {
+  method?: string;
+  body?: any;
+  headers?: Record<string, string>;
+}
+
+class ApiClient {
+  private baseUrl: string;
+  private token: string | null = null;
+
+  constructor(baseUrl: string) {
+    this.baseUrl = baseUrl;
+    // Load token from localStorage if available
+    if (typeof window !== 'undefined') {
+      this.token = localStorage.getItem('kiwi_token');
+    }
+  }
+
+  setToken(token: string | null) {
+    this.token = token;
+    if (typeof window !== 'undefined') {
+      if (token) {
+        localStorage.setItem('kiwi_token', token);
+      } else {
+        localStorage.removeItem('kiwi_token');
+      }
+    }
+  }
+
+  getToken(): string | null {
+    if (typeof window !== 'undefined' && !this.token) {
+      this.token = localStorage.getItem('kiwi_token');
+    }
+    return this.token;
+  }
+
+  private async request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
+    const { method = 'GET', body, headers = {} } = options;
+
+    const requestHeaders: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...headers,
+    };
+
+    const token = this.getToken();
+    if (token) {
+      requestHeaders['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+      method,
+      headers: requestHeaders,
+      body: body ? JSON.stringify(body) : undefined,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Error desconocido' }));
+      throw new Error(error.message || `Error ${response.status}`);
+    }
+
+    return response.json();
+  }
+
+  // ============================================
+  // 🔐 AUTH
+  // ============================================
+  
+  async register(data: {
+    email: string;
+    password: string;
+    phone?: string;
+    fullName: string;
+    role: 'merchant' | 'driver';
+    businessName?: string;
+    vehicleType?: string;
+  }) {
+    const result = await this.request<any>('/auth/register', {
+      method: 'POST',
+      body: data,
+    });
+    this.setToken(result.accessToken);
+    return result;
+  }
+
+  async login(email: string, password: string) {
+    const result = await this.request<any>('/auth/login', {
+      method: 'POST',
+      body: { email, password },
+    });
+    this.setToken(result.accessToken);
+    return result;
+  }
+
+  async getProfile() {
+    return this.request<any>('/auth/profile');
+  }
+
+  logout() {
+    this.setToken(null);
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('kiwi_user');
+    }
+  }
+
+  // ============================================
+  // 👤 USERS
+  // ============================================
+
+  async getMe() {
+    return this.request<any>('/users/me');
+  }
+
+  async updateMe(data: any) {
+    return this.request<any>('/users/me', {
+      method: 'PUT',
+      body: data,
+    });
+  }
+
+  // ============================================
+  // 🏪 MERCHANTS
+  // ============================================
+
+  async getMerchantProfile() {
+    return this.request<any>('/merchants/me');
+  }
+
+  async updateMerchantProfile(data: any) {
+    return this.request<any>('/merchants/me', {
+      method: 'PUT',
+      body: data,
+    });
+  }
+
+  async getFavoriteDrivers() {
+    return this.request<any>('/merchants/me/favorites');
+  }
+
+  async addFavoriteDriver(driverId: string) {
+    return this.request<any>(`/merchants/me/favorites/${driverId}`, {
+      method: 'POST',
+    });
+  }
+
+  async removeFavoriteDriver(driverId: string) {
+    return this.request<any>(`/merchants/me/favorites/${driverId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // ============================================
+  // 🛵 DRIVERS
+  // ============================================
+
+  async getDriverProfile() {
+    return this.request<any>('/drivers/me');
+  }
+
+  async updateDriverProfile(data: any) {
+    return this.request<any>('/drivers/me', {
+      method: 'PUT',
+      body: data,
+    });
+  }
+
+  async updateDriverStatus(status: 'online' | 'offline' | 'busy') {
+    return this.request<any>('/drivers/me/status', {
+      method: 'PUT',
+      body: { status },
+    });
+  }
+
+  async getDriverSchedule() {
+    return this.request<any>('/drivers/me/schedule');
+  }
+
+  async updateDriverSchedule(schedules: any[]) {
+    return this.request<any>('/drivers/me/schedule', {
+      method: 'PUT',
+      body: schedules,
+    });
+  }
+
+  async getAvailableDrivers(lat?: number, lng?: number) {
+    const params = new URLSearchParams();
+    if (lat) params.append('lat', String(lat));
+    if (lng) params.append('lng', String(lng));
+    return this.request<any>(`/drivers/available?${params.toString()}`);
+  }
+
+  async getDriverById(id: string) {
+    return this.request<any>(`/drivers/${id}`);
+  }
+
+  // ============================================
+  // 📦 ORDERS
+  // ============================================
+
+  async createOrder(data: any) {
+    return this.request<any>('/orders', {
+      method: 'POST',
+      body: data,
+    });
+  }
+
+  async getMyOrders(status?: string) {
+    const params = status ? `?status=${status}` : '';
+    return this.request<any>(`/orders/my${params}`);
+  }
+
+  async getAvailableOrders(lat?: number, lng?: number) {
+    const params = new URLSearchParams();
+    if (lat) params.append('lat', String(lat));
+    if (lng) params.append('lng', String(lng));
+    return this.request<any>(`/orders/available?${params.toString()}`);
+  }
+
+  async getOrderById(id: string) {
+    return this.request<any>(`/orders/${id}`);
+  }
+
+  async updateOrderStatus(orderId: string, status: string) {
+    return this.request<any>(`/orders/${orderId}/status`, {
+      method: 'PUT',
+      body: { status },
+    });
+  }
+
+  async assignDriver(orderId: string, driverId: string) {
+    return this.request<any>(`/orders/${orderId}/assign`, {
+      method: 'PUT',
+      body: { driverId },
+    });
+  }
+
+  async submitProposal(orderId: string, data: any) {
+    return this.request<any>(`/orders/${orderId}/proposals`, {
+      method: 'POST',
+      body: data,
+    });
+  }
+
+  async acceptProposal(orderId: string, proposalId: string) {
+    return this.request<any>(`/orders/${orderId}/proposals/${proposalId}/accept`, {
+      method: 'PUT',
+    });
+  }
+
+  // ============================================
+  // 🪪 KYC
+  // ============================================
+
+  async getKycStatus() {
+    return this.request<any>('/kyc/status');
+  }
+
+  async submitKycDocuments(data: any) {
+    return this.request<any>('/kyc/submit', {
+      method: 'POST',
+      body: data,
+    });
+  }
+}
+
+// Export singleton instance
+export const api = new ApiClient(API_BASE_URL);
+
+// Export types
+export interface User {
+  id: string;
+  email?: string;
+  phone?: string;
+  role: 'merchant' | 'driver' | 'admin';
+  status: string;
+  merchantProfile?: MerchantProfile;
+  driverProfile?: DriverProfile;
+}
+
+export interface MerchantProfile {
+  id: string;
+  userId: string;
+  businessName: string;
+  address: string;
+  kycStatus: string;
+}
+
+export interface DriverProfile {
+  id: string;
+  userId: string;
+  fullName: string;
+  vehicleType: string;
+  level: string;
+  rating: number;
+  totalTrips: number;
+  status: string;
+  kycStatus: string;
+}
+
+export interface Order {
+  id: string;
+  merchantId: string;
+  driverId?: string;
+  status: string;
+  orderType: string;
+  pickupAddress: string;
+  deliveryAddress: string;
+  distanceKm?: number;
+  basePrice: number;
+  commission: number;
+  driverPayout: number;
+  totalAmount: number;
+  createdAt: string;
+}

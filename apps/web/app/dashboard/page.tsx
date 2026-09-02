@@ -1,6 +1,8 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { 
   AnimatedButton, 
@@ -10,10 +12,55 @@ import {
   StatCard,
   VehicleBadge,
   ThemeToggle,
+  useAuth,
+  api,
+  Order,
   staggerContainer
 } from '@kiwi/ui';
 
 export default function Dashboard() {
+  const router = useRouter();
+  const { user, loading: authLoading, logout } = useAuth();
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, authLoading, router]);
+
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const data = await api.getMyOrders();
+        setOrders(data);
+      } catch (error) {
+        console.error('Failed to fetch orders:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (user) {
+      fetchOrders();
+    }
+  }, [user]);
+
+  if (authLoading || loading) {
+    return (
+      <div className="min-h-screen bg-bg-light flex items-center justify-center">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+          className="text-4xl"
+        >
+          ⏳
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-bg-light">
       {/* Header */}
@@ -56,7 +103,7 @@ export default function Dashboard() {
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                 >
-                  M
+                  {user?.merchantProfile?.businessName?.charAt(0) || 'M'}
                 </motion.div>
               </div>
             </div>
@@ -74,7 +121,7 @@ export default function Dashboard() {
           transition={{ delay: 0.1 }}
         >
           <h2 className="text-2xl font-display font-bold text-surface-800 dark:text-surface-100">
-            Buenos días 👋
+            Buenos días 👋 {user?.merchantProfile?.businessName || ''}
           </h2>
           <p className="text-surface-500 dark:text-surface-400">
             Aquí está el resumen de tu negocio hoy
@@ -235,35 +282,48 @@ export default function Dashboard() {
             </div>
             
             <StaggerContainer className="space-y-4">
-              {[
+              {(orders.length > 0 ? orders.slice(0, 5) : [
                 {
                   id: '1',
-                  address: 'Nicoya Centro → Santa Cruz',
-                  status: 'En camino',
-                  time: '10:30 AM',
-                  driver: 'Juan',
-                  price: '₡2,500',
-                  statusColor: 'bg-kiwi-100 text-kiwi-700',
+                  pickupAddress: 'Nicoya Centro',
+                  deliveryAddress: 'Santa Cruz',
+                  status: 'in_transit_to_delivery',
+                  createdAt: new Date().toISOString(),
+                  driverId: '1',
+                  totalAmount: 2500,
                 },
                 {
                   id: '2',
-                  address: 'Liberia → Nicoya',
-                  status: 'Entregado',
-                  time: '10:15 AM',
-                  driver: 'Pedro',
-                  price: '₡4,000',
-                  statusColor: 'bg-green-100 text-green-700',
+                  pickupAddress: 'Liberia',
+                  deliveryAddress: 'Nicoya',
+                  status: 'delivered',
+                  createdAt: new Date().toISOString(),
+                  driverId: '2',
+                  totalAmount: 4000,
                 },
                 {
                   id: '3',
-                  address: 'Santa Cruz → Cañas',
-                  status: 'Pendiente',
-                  time: '10:00 AM',
-                  driver: null,
-                  price: '₡3,200',
-                  statusColor: 'bg-gold-100 text-gold-700',
+                  pickupAddress: 'Santa Cruz',
+                  deliveryAddress: 'Cañas',
+                  status: 'pending',
+                  createdAt: new Date().toISOString(),
+                  driverId: undefined,
+                  totalAmount: 3200,
                 },
-              ].map((order) => (
+              ]).map((order: any) => {
+                const statusMap: Record<string, { label: string; color: string }> = {
+                  pending: { label: 'Pendiente', color: 'bg-gold-100 text-gold-700' },
+                  assigned: { label: 'Asignado', color: 'bg-blue-100 text-blue-700' },
+                  in_transit_to_pickup: { label: 'En camino', color: 'bg-kiwi-100 text-kiwi-700' },
+                  picked_up: { label: 'Recogido', color: 'bg-kiwi-100 text-kiwi-700' },
+                  in_transit_to_delivery: { label: 'En camino', color: 'bg-kiwi-100 text-kiwi-700' },
+                  delivered: { label: 'Entregado', color: 'bg-green-100 text-green-700' },
+                  cancelled: { label: 'Cancelado', color: 'bg-red-100 text-red-700' },
+                };
+                const statusInfo = statusMap[order.status] || { label: order.status, color: 'bg-surface-100 text-surface-700' };
+                const time = new Date(order.createdAt).toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' });
+                
+                return (
                 <StaggerItem key={order.id}>
                   <motion.div
                     className="group flex items-center justify-between rounded-xl border border-surface-100 dark:border-surface-700 bg-surface-50/50 dark:bg-surface-900/50 p-4 transition-all hover:border-kiwi-200 hover:bg-white dark:hover:bg-surface-800 hover:shadow-soft-md"
@@ -277,26 +337,26 @@ export default function Dashboard() {
                       <span className="text-lg font-bold">#{order.id}</span>
                     </motion.div>
                     <div>
-                      <p className="font-medium text-surface-800">{order.address}</p>
+                      <p className="font-medium text-surface-800">{order.pickupAddress} → {order.deliveryAddress}</p>
                       <div className="flex items-center gap-2">
                         <p className="text-sm text-surface-400">
-                          {order.driver ? `${order.driver}` : '⏳ Sin repartidor'}
+                          {order.driverId ? '🛵 Asignado' : '⏳ Sin repartidor'}
                         </p>
-                        {order.driver && (
+                        {order.driverId && (
                           <VehicleBadge type="motorcycle" size="sm" />
                         )}
                       </div>
                     </div>
                   </div>
                     <div className="flex items-center gap-4">
-                      <span className="text-lg font-semibold text-surface-700">{order.price}</span>
+                      <span className="text-lg font-semibold text-surface-700">₡{order.totalAmount.toLocaleString()}</span>
                       <motion.span
-                        className={`rounded-full px-3 py-1 text-xs font-medium ${order.statusColor}`}
+                        className={`rounded-full px-3 py-1 text-xs font-medium ${statusInfo.color}`}
                         whileHover={{ scale: 1.05 }}
                       >
-                        {order.status}
+                        {statusInfo.label}
                       </motion.span>
-                      <span className="text-sm text-surface-400">{order.time}</span>
+                      <span className="text-sm text-surface-400">{time}</span>
                     </div>
                   </motion.div>
                 </StaggerItem>

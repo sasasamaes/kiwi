@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   AnimatedButton, 
@@ -10,6 +11,8 @@ import {
   StaggerItem,
   VehicleBadge,
   ThemeToggle,
+  useAuth,
+  api,
   cardVariants,
   staggerContainer,
   slideInUp,
@@ -17,7 +20,57 @@ import {
 } from '@kiwi/ui';
 
 export default function Home() {
+  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   const [isOnline, setIsOnline] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({ trips: 0, earnings: 0, rating: 5.0 });
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, authLoading, router]);
+
+  useEffect(() => {
+    const fetchDriverData = async () => {
+      try {
+        const profile = await api.getDriverProfile();
+        setStats({
+          trips: profile.totalTrips || 0,
+          earnings: 0, // Calculate from orders
+          rating: Number(profile.rating) || 5.0,
+        });
+        setIsOnline(profile.status === 'available');
+      } catch (error) {
+        console.error('Failed to fetch driver data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (user) {
+      fetchDriverData();
+    }
+  }, [user]);
+
+  const toggleOnlineStatus = async () => {
+    const newStatus = isOnline ? 'offline' : 'available';
+    try {
+      await api.updateDriverStatus(newStatus as any);
+      setIsOnline(!isOnline);
+    } catch (error) {
+      console.error('Failed to update status:', error);
+    }
+  };
+
+  if (authLoading || loading) {
+    return (
+      <div className="min-h-screen bg-bg-light dark:bg-surface-950 flex items-center justify-center">
+        <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} className="text-4xl">⏳</motion.div>
+      </div>
+    );
+  }
   const [activeTab, setActiveTab] = useState<'all' | 'delivery' | 'trip' | 'freight'>('all');
 
   const tabs = [
@@ -52,7 +105,7 @@ export default function Home() {
                 🥝
               </motion.span>
               <h1 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100">Kiwi Driver</h1>
-              <VehicleBadge type="motorcycle" size="sm" />
+              <VehicleBadge type={(user?.driverProfile?.vehicleType as any) || 'motorcycle'} size="sm" />
             </motion.div>
             <div className="flex items-center gap-3">
               <ThemeToggle />
@@ -67,14 +120,13 @@ export default function Home() {
                   animate={{ scale: [1, 1.2, 1] }}
                   transition={{ duration: 1.5, repeat: Infinity }}
                 />
-              </motion.button>
-              <motion.div 
-                className="h-8 w-8 rounded-full bg-kiwi-gradient text-white flex items-center justify-center text-sm font-semibold shadow-kiwi"
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-              >
-                J
-              </motion.div>
+              </motion.button>                <motion.div 
+                  className="h-8 w-8 rounded-full bg-kiwi-gradient text-white flex items-center justify-center text-sm font-semibold shadow-kiwi"
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                >
+                  {user?.driverProfile?.fullName?.charAt(0) || 'D'}
+                </motion.div>
             </div>
           </div>
         </div>
@@ -110,7 +162,7 @@ export default function Home() {
               className={`relative h-12 w-20 rounded-full p-1 transition-colors ${
                 isOnline ? 'bg-white' : 'bg-white/20'
               }`}
-              onClick={() => setIsOnline(!isOnline)}
+              onClick={toggleOnlineStatus}
               whileTap={{ scale: 0.95 }}
             >
               <motion.div
@@ -172,7 +224,7 @@ export default function Home() {
               className="rounded-xl bg-white dark:bg-surface-800 p-4 text-center shadow-soft dark:shadow-dark"
               whileHover={{ y: -2, boxShadow: '0 8px 24px 0 rgb(0 0 0 / 0.08)' }}
             >
-              <AnimatedCounter value={8} className="text-2xl font-bold text-kiwi-600" />
+              <AnimatedCounter value={stats.trips} className="text-2xl font-bold text-kiwi-600" />
               <p className="text-xs text-surface-500 dark:text-surface-400">Viajes</p>
             </motion.div>
           </StaggerItem>
@@ -190,7 +242,7 @@ export default function Home() {
               className="rounded-xl bg-white p-4 text-center shadow-soft"
               whileHover={{ y: -2, boxShadow: '0 8px 24px 0 rgb(0 0 0 / 0.08)' }}
             >
-              <AnimatedCounter value={4.9} decimals={1} prefix="⭐" className="text-2xl font-bold text-bark-600" />
+              <AnimatedCounter value={stats.rating} decimals={1} prefix="⭐" className="text-2xl font-bold text-bark-600" />
               <p className="text-xs text-surface-500">Rating</p>
             </motion.div>
           </StaggerItem>
