@@ -86,6 +86,12 @@ export { VehicleSelector, VehicleBadge, vehicles } from './VehicleSelector';
 export type { Vehicle, VehicleType } from './VehicleSelector';
 
 // ============================================
+// 💳 PAYMENT COMPONENTS
+// ============================================
+export { PaymentSelector, CryptoQR } from './PaymentSelector';
+export type { PaymentMethod } from './PaymentSelector';
+
+// ============================================
 // 🔌 API CLIENT
 // ============================================
 export { api } from './api-client';

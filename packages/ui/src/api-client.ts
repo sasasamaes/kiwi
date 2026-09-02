@@ -307,6 +307,39 @@ class ApiClient {
       body: { token, platform },
     });
   }
+
+  // ============================================
+  // 💳 PAYMENTS
+  // ============================================
+
+  async createPayment(data: {
+    orderId: string;
+    method: 'onvopay_card' | 'onvopay_sinpe' | 'crypto' | 'cash';
+    amount: number;
+    customerEmail?: string;
+    customerPhone?: string;
+    cryptoCoin?: 'USDC' | 'USDT';
+  }) {
+    return this.request<any>('/payments/create', {
+      method: 'POST',
+      body: data,
+    });
+  }
+
+  async getPaymentStatus(orderId: string) {
+    return this.request<any>(`/payments/status/${orderId}`);
+  }
+
+  async getPaymentMethods() {
+    return this.request<any>('/payments/methods');
+  }
+
+  async getCryptoQuote(amount: number, coin: 'USDC' | 'USDT') {
+    return this.request<any>('/payments/crypto/quote', {
+      method: 'GET',
+      body: { amount, coin },
+    });
+  }
 }
 
 // Export singleton instance

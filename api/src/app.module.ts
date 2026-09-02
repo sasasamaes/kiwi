@@ -9,6 +9,7 @@ import { OrdersModule } from './orders/orders.module';
 import { KycModule } from './kyc/kyc.module';
 import { EventsModule } from './events/events.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { PaymentsModule } from './payments/payments.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     KycModule,
     EventsModule,
     NotificationsModule,
+    PaymentsModule,
   ],
 })
 export class AppModule {}

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AnimatedButton } from '@kiwi/ui';
+import { AnimatedButton, PaymentSelector } from '@kiwi/ui';
 
 interface CartItem {
   id: string;
@@ -14,7 +14,7 @@ interface CartItem {
   image: string;
 }
 
-type PaymentMethod = 'sinpe' | 'card' | 'cash';
+type PaymentMethod = 'sinpe' | 'card' | 'cash' | 'crypto_usdc' | 'crypto_usdt';
 
 export default function CheckoutPage() {
   const searchParams = useSearchParams();
@@ -43,8 +43,26 @@ export default function CheckoutPage() {
 
   const placeOrder = async () => {
     setLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setOrderPlaced(true);
+    try {
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: cart,
+          paymentMethod,
+          address,
+          notes,
+          total,
+        }),
+      });
+      if (response.ok) {
+        setOrderPlaced(true);
+      }
+    } catch (error) {
+      console.error('Error placing order:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (orderPlaced) {
@@ -178,52 +196,11 @@ export default function CheckoutPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-            💳 Método de Pago
-          </h3>
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              { id: 'sinpe' as const, icon: '📱', label: 'SINPE' },
-              { id: 'card' as const, icon: '💳', label: 'Tarjeta' },
-              { id: 'cash' as const, icon: '💵', label: 'Efectivo' },
-            ].map((method) => (
-              <motion.button
-                key={method.id}
-                className={`flex flex-col items-center p-4 rounded-xl border-2 transition-all ${
-                  paymentMethod === method.id
-                    ? 'border-kiwi-500 bg-kiwi-50 dark:bg-kiwi-900/30'
-                    : 'border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800'
-                }`}
-                onClick={() => setPaymentMethod(method.id)}
-                whileTap={{ scale: 0.95 }}
-              >
-                <span className="text-2xl mb-2">{method.icon}</span>
-                <span className="text-sm font-medium text-surface-700 dark:text-surface-300">
-                  {method.label}
-                </span>
-              </motion.button>
-            ))}
-          </div>
-
-          {/* SINPE Phone Input */}
-          <AnimatePresence>
-            {paymentMethod === 'sinpe' && (
-              <motion.div 
-                className="mt-4"
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-              >
-                <input
-                  type="tel"
-                  placeholder="Número de teléfono SINPE"
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-surface-100 dark:bg-surface-700 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-kiwi-500"
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
+          <PaymentSelector 
+            selected={paymentMethod}
+            onSelect={setPaymentMethod}
+            total={total}
+          />
         </motion.div>
 
         {/* Special Notes */}
