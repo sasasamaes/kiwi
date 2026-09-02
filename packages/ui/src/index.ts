@@ -163,6 +163,15 @@ export { useNetworkStatus, useIsOffline, useIsOnline, useIsSlowConnection, useJu
 export type { NetworkStatus, UseNetworkStatusOptions } from './useNetworkStatus';
 
 // ============================================
+// 🔄 BACKGROUND SYNC
+// ============================================
+export { backgroundSync } from './background-sync';
+export type { SyncAction, SyncQueueStats, BackgroundSyncOptions, SyncPriority, SyncStatus, ActionType } from './background-sync';
+export { useBackgroundSync, useOrderSync, useLocationSync, usePaymentSync } from './useBackgroundSync';
+export type { UseBackgroundSyncOptions, UseBackgroundSyncResult } from './useBackgroundSync';
+export { SyncStatus, SyncIndicatorCompact, SyncBanner, SyncActionStatus } from './SyncStatus';
+
+// ============================================
 // 📱 QR CODE
 // ============================================
 export { QRCodeGenerator, QRScanner } from './QRCodeGenerator';
