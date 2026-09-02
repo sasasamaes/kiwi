@@ -172,6 +172,15 @@ export type { UseBackgroundSyncOptions, UseBackgroundSyncResult } from './useBac
 export { SyncStatus, SyncIndicatorCompact, SyncBanner, SyncActionStatus } from './SyncStatus';
 
 // ============================================
+// 📦 OFFLINE ORDERS
+// ============================================
+export { offlineOrders } from './offline-orders';
+export type { OfflineOrder, OfflineOrderOptions, OrderStatus, PaymentMethod, OrderItem } from './offline-orders';
+export { useOfflineOrders, useMerchantOrders, useDriverOrders, useCustomerOrders } from './useOfflineOrders';
+export type { UseOfflineOrdersOptions, UseOfflineOrdersResult, CreateOrderData } from './useOfflineOrders';
+export { OfflineOrderForm, OfflineOrderTracker, OfflineOrderList } from './OfflineOrderForm';
+
+// ============================================
 // 📱 QR CODE
 // ============================================
 export { QRCodeGenerator, QRScanner } from './QRCodeGenerator';
