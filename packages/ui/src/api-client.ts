@@ -547,6 +547,42 @@ class ApiClient {
     });
     return this.request<any>(`/geocoding/distance?${params.toString()}`);
   }
+
+  // ============================================
+  // 🗺️ ROUTING
+  // ============================================
+
+  async optimizeRoute(data: {
+    startLocation: { lat: number; lng: number };
+    orders: Array<{
+      orderId: string;
+      pickup: { lat: number; lng: number };
+      delivery: { lat: number; lng: number };
+      pickupAddress: string;
+      deliveryAddress: string;
+      merchantName: string;
+    }>;
+  }) {
+    return this.request<any>('/routing/optimize', {
+      method: 'POST',
+      body: data,
+    });
+  }
+
+  async calculateRoute(
+    originLat: number,
+    originLng: number,
+    destLat: number,
+    destLng: number,
+  ) {
+    const params = new URLSearchParams({
+      originLat: String(originLat),
+      originLng: String(originLng),
+      destLat: String(destLat),
+      destLng: String(destLng),
+    });
+    return this.request<any>(`/routing/route?${params.toString()}`);
+  }
 }
 
 // Export singleton instance

@@ -173,3 +173,9 @@ export type { TrackingMapProps } from './TrackingMap';
 // ============================================
 export { AddressInput } from './AddressInput';
 export type { AddressInputProps } from './AddressInput';
+
+// ============================================
+// 🗺️ ROUTE OPTIMIZER
+// ============================================
+export { RouteOptimizer } from './RouteOptimizer';
+export type { RouteOptimizerProps } from './RouteOptimizer';
