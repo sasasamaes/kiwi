@@ -17,9 +17,25 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.kiwi.driver",
+      "buildNumber": "1",
       "config": {
-        "googleMapsApiKey": "YOUR_GOOGLE_MAPS_API_KEY"
-      }
+        "googleMapsApiKey": "YOUR_GOOGLE_MAPS_API_KEY",
+        "usesNonExemptEncryption": false
+      },
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Kiwi necesita tu ubicación para mostrar pedidos cercanos y navegar al destino.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Kiwi necesita tu ubicación en segundo plano para rastrear entregas en curso.",
+        "NSCameraUsageDescription": "Kiwi necesita acceso a la cámara para verificar tu identidad (KYC).",
+        "NSPhotoLibraryUsageDescription": "Kiwi necesita acceso a tus fotos para subir documentos de verificación.",
+        "NSFaceIDUsageDescription": "Kiwi usa Face ID para un acceso rápido y seguro a tu cuenta.",
+        "UIApplicationSceneManifest": {
+          "UIApplicationSupportsMultipleScenes": false
+        }
+      },
+      "associatedDomains": [
+        "applinks:kiwi.app",
+        "webcredentials:kiwi.app"
+      ]
     },
     "android": {
       "adaptiveIcon": {
@@ -27,28 +43,87 @@
         "backgroundColor": "#22c55e"
       },
       "package": "com.kiwi.driver",
+      "versionCode": 1,
       "config": {
         "googleMaps": {
           "apiKey": "YOUR_GOOGLE_MAPS_API_KEY"
+        },
+        "googleSignIn": {
+          "certificateHash": "YOUR_CERTIFICATE_HASH"
         }
       },
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
         "FOREGROUND_SERVICE",
-        "CAMERA"
+        "FOREGROUND_SERVICE_LOCATION",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE",
+        "WAKE_LOCK"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "data": [
+            {
+              "scheme": "https",
+              "host": "kiwi.app",
+              "pathPrefix": "/"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
       ]
     },
     "plugins": [
-      "expo-location",
-      "expo-notifications"
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Kiwi necesita tu ubicación para rastrear entregas y mostrar pedidos cercanos."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "sounds": ["./src/assets/sounds/notification.wav"]
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Kiwi necesita acceso a la cámara para verificar tu identidad."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Kiwi necesita acceso a tus fotos para subir documentos.",
+          "cameraPermission": "Kiwi necesita acceso a la cámara para tomar fotos."
+        }
+      ]
     ],
     "extra": {
-      "apiUrl": "http://localhost:3000",
-      "socketUrl": "http://localhost:3000",
+      "apiUrl": "https://api.kiwi.app",
+      "socketUrl": "https://api.kiwi.app",
       "eas": {
         "projectId": "your-project-id"
+      },
+      "updates": {
+        "url": "https://u.expo.dev/your-project-id"
       }
+    },
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    },
+    "updates": {
+      "fallbackToCacheTimeout": 0,
+      "checkAutomatically": "ON_LOAD"
     }
   }
 }
