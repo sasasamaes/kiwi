@@ -4,6 +4,7 @@ import { RoutingService } from './routing.service';
 import { TrafficService } from './traffic.service';
 import { TrafficAlertsService } from './traffic-alerts.service';
 import { TrafficHistoryService } from './traffic-history.service';
+import { RouteSuggestionsService } from './route-suggestions.service';
 
 @ApiTags('Routing')
 @Controller('routing')
@@ -13,6 +14,7 @@ export class RoutingController {
     private readonly trafficService: TrafficService,
     private readonly trafficAlertsService: TrafficAlertsService,
     private readonly trafficHistoryService: TrafficHistoryService,
+    private readonly routeSuggestionsService: RouteSuggestionsService,
   ) {}
 
   @Post('optimize')
@@ -358,5 +360,99 @@ export class RoutingController {
   ) {
     const days = daysBack ? parseInt(daysBack) : 30;
     return this.trafficHistoryService.getWorstDeliveryTimes(parseFloat(lat), parseFloat(lng), days);
+  }
+
+  // ============================================
+  // 🗺️ ROUTE SUGGESTIONS ENDPOINTS
+  // ============================================
+
+  @Get('suggestions')
+  @ApiOperation({ summary: 'Get route suggestions based on traffic' })
+  async getRouteSuggestions(
+    @Query('originLat') originLat: string,
+    @Query('originLng') originLng: string,
+    @Query('destLat') destLat: string,
+    @Query('destLng') destLng: string,
+    @Query('prioritizeSpeed') prioritizeSpeed?: string,
+    @Query('vehicleType') vehicleType?: string,
+  ) {
+    return this.routeSuggestionsService.getRouteSuggestions(
+      parseFloat(originLat),
+      parseFloat(originLng),
+      parseFloat(destLat),
+      parseFloat(destLng),
+      {
+        prioritizeSpeed: prioritizeSpeed === 'true',
+        vehicleType,
+      },
+    );
+  }
+
+  @Get('suggestions/quick')
+  @ApiOperation({ summary: 'Get quick route suggestion' })
+  async getQuickSuggestion(
+    @Query('originLat') originLat: string,
+    @Query('originLng') originLng: string,
+    @Query('destLat') destLat: string,
+    @Query('destLng') destLng: string,
+  ) {
+    return this.routeSuggestionsService.getQuickSuggestion(
+      parseFloat(originLat),
+      parseFloat(originLng),
+      parseFloat(destLat),
+      parseFloat(destLng),
+    );
+  }
+
+  @Get('suggestions/etas')
+  @ApiOperation({ summary: 'Get traffic-aware ETAs for multiple routes' })
+  async getTrafficAwareETAs(
+    @Query('originLat') originLat: string,
+    @Query('originLng') originLng: string,
+    @Query('destLat') destLat: string,
+    @Query('destLng') destLng: string,
+  ) {
+    return this.routeSuggestionsService.getTrafficAwareETAs(
+      parseFloat(originLat),
+      parseFloat(originLng),
+      parseFloat(destLat),
+      parseFloat(destLng),
+    );
+  }
+
+  @Get('suggestions/with-warnings')
+  @ApiOperation({ summary: 'Get route with traffic warnings' })
+  async getRouteWithWarnings(
+    @Query('originLat') originLat: string,
+    @Query('originLng') originLng: string,
+    @Query('destLat') destLat: string,
+    @Query('destLng') destLng: string,
+  ) {
+    return this.routeSuggestionsService.getRouteWithWarnings(
+      parseFloat(originLat),
+      parseFloat(originLng),
+      parseFloat(destLat),
+      parseFloat(destLng),
+    );
+  }
+
+  @Post('suggestions/blocked')
+  @ApiOperation({ summary: 'Get alternative for blocked route' })
+  async getAlternativeForBlockedRoute(
+    @Body() body: {
+      originLat: number;
+      originLng: number;
+      destLat: number;
+      destLng: number;
+      blockedRouteId: string;
+    },
+  ) {
+    return this.routeSuggestionsService.getAlternativeForBlockedRoute(
+      body.originLat,
+      body.originLng,
+      body.destLat,
+      body.destLng,
+      body.blockedRouteId,
+    );
   }
 }

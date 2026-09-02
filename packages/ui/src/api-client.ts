@@ -752,6 +752,89 @@ class ApiClient {
     if (daysBack) params.append('daysBack', String(daysBack));
     return this.request<any>(`/routing/history/worst-times?${params.toString()}`);
   }
+
+  // ============================================
+  // 🗺️ ROUTE SUGGESTIONS
+  // ============================================
+
+  async getRouteSuggestions(
+    originLat: number,
+    originLng: number,
+    destLat: number,
+    destLng: number,
+    options?: {
+      prioritizeSpeed?: boolean;
+      vehicleType?: string;
+    },
+  ) {
+    const params = new URLSearchParams({
+      originLat: String(originLat),
+      originLng: String(originLng),
+      destLat: String(destLat),
+      destLng: String(destLng),
+    });
+    if (options?.prioritizeSpeed) params.append('prioritizeSpeed', 'true');
+    if (options?.vehicleType) params.append('vehicleType', options.vehicleType);
+    return this.request<any>(`/routing/suggestions?${params.toString()}`);
+  }
+
+  async getQuickSuggestion(
+    originLat: number,
+    originLng: number,
+    destLat: number,
+    destLng: number,
+  ) {
+    const params = new URLSearchParams({
+      originLat: String(originLat),
+      originLng: String(originLng),
+      destLat: String(destLat),
+      destLng: String(destLng),
+    });
+    return this.request<any>(`/routing/suggestions/quick?${params.toString()}`);
+  }
+
+  async getTrafficAwareETAs(
+    originLat: number,
+    originLng: number,
+    destLat: number,
+    destLng: number,
+  ) {
+    const params = new URLSearchParams({
+      originLat: String(originLat),
+      originLng: String(originLng),
+      destLat: String(destLat),
+      destLng: String(destLng),
+    });
+    return this.request<any>(`/routing/suggestions/etas?${params.toString()}`);
+  }
+
+  async getRouteWithWarnings(
+    originLat: number,
+    originLng: number,
+    destLat: number,
+    destLng: number,
+  ) {
+    const params = new URLSearchParams({
+      originLat: String(originLat),
+      originLng: String(originLng),
+      destLat: String(destLat),
+      destLng: String(destLng),
+    });
+    return this.request<any>(`/routing/suggestions/with-warnings?${params.toString()}`);
+  }
+
+  async getAlternativeForBlockedRoute(
+    originLat: number,
+    originLng: number,
+    destLat: number,
+    destLng: number,
+    blockedRouteId: string,
+  ) {
+    return this.request<any>('/routing/suggestions/blocked', {
+      method: 'POST',
+      body: { originLat, originLng, destLat, destLng, blockedRouteId },
+    });
+  }
 }
 
 // Export singleton instance
