@@ -583,6 +583,62 @@ class ApiClient {
     });
     return this.request<any>(`/routing/route?${params.toString()}`);
   }
+
+  // ============================================
+  // 🚦 TRAFFIC
+  // ============================================
+
+  async getTrafficConditions(lat?: number, lng?: number) {
+    const params = new URLSearchParams();
+    if (lat) params.append('lat', String(lat));
+    if (lng) params.append('lng', String(lng));
+    return this.request<any>(`/routing/traffic?${params.toString()}`);
+  }
+
+  async getTrafficAdjustedETA(duration: number, lat?: number, lng?: number) {
+    const params = new URLSearchParams({ duration: String(duration) });
+    if (lat) params.append('lat', String(lat));
+    if (lng) params.append('lng', String(lng));
+    return this.request<any>(`/routing/traffic/eta?${params.toString()}`);
+  }
+
+  async getDeliveryEstimate(
+    pickupLat: number,
+    pickupLng: number,
+    deliveryLat: number,
+    deliveryLng: number,
+    distance: number,
+  ) {
+    const params = new URLSearchParams({
+      pickupLat: String(pickupLat),
+      pickupLng: String(pickupLng),
+      deliveryLat: String(deliveryLat),
+      deliveryLng: String(deliveryLng),
+      distance: String(distance),
+    });
+    return this.request<any>(`/routing/traffic/delivery-estimate?${params.toString()}`);
+  }
+
+  async compareRouteTraffic(routes: Array<{
+    distance: number;
+    duration: number;
+    startLat: number;
+    startLng: number;
+    endLat: number;
+    endLng: number;
+  }>) {
+    return this.request<any>('/routing/traffic/compare-routes', {
+      method: 'POST',
+      body: { routes },
+    });
+  }
+
+  async getTrafficUpdates(points: Array<{ lat: number; lng: number }>) {
+    return this.request<any>('/routing/traffic/updates', {
+      method: 'POST',
+      body: { points },
+    });
+  }
 }
 
 // Export singleton instance

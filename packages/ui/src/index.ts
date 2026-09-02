@@ -185,3 +185,9 @@ export type { RouteOptimizerProps } from './RouteOptimizer';
 // ============================================
 export { OnvoPayCheckout, CryptoCheckout } from './OnvoPayCheckout';
 export type { OnvoPayCheckoutProps, CryptoCheckoutProps } from './OnvoPayCheckout';
+
+// ============================================
+// 🚦 TRAFFIC INDICATOR
+// ============================================
+export { TrafficIndicator, DeliveryEstimate, TrafficMapOverlay } from './TrafficIndicator';
+export type { TrafficIndicatorProps, DeliveryEstimateProps, TrafficMapOverlayProps } from './TrafficIndicator';

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { api, Skeleton } from '@kiwi/ui';
+import { api, Skeleton, TrafficIndicator, DeliveryEstimate } from '@kiwi/ui';
 import dynamic from 'next/dynamic';
 
 // Dynamically import TrackingMap to avoid SSR issues with Leaflet
@@ -273,6 +273,7 @@ export default function OrderTrackingPage() {
               driverLocation={getMapDriver()}
               height={300}
               showRoute={true}
+              showTraffic={true}
             />
             {driverLocation && !driverLocation.isStale && (
               <motion.div
@@ -288,6 +289,40 @@ export default function OrderTrackingPage() {
                 <span>Ubicación del repartidor actualizada</span>
               </motion.div>
             )}
+          </motion.div>
+        )}
+
+        {/* Traffic Indicator */}
+        {showMap && (
+          <motion.div 
+            className="mb-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            <TrafficIndicator
+              lat={getMapPickup().lat}
+              lng={getMapPickup().lng}
+              showDetails={true}
+            />
+          </motion.div>
+        )}
+
+        {/* Delivery Estimate */}
+        {showMap && (
+          <motion.div 
+            className="mb-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <DeliveryEstimate
+              pickupLat={getMapPickup().lat}
+              pickupLng={getMapPickup().lng}
+              deliveryLat={getMapDelivery().lat}
+              deliveryLng={getMapDelivery().lng}
+              distance={2.5} // Default distance, should be calculated
+            />
           </motion.div>
         )}
 

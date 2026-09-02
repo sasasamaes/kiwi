@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Dynamically import Leaflet to avoid SSR issues
 let L: any = null;
@@ -11,6 +11,12 @@ interface Location {
   lng: number;
 }
 
+interface TrafficCondition {
+  level: 'free' | 'light' | 'moderate' | 'heavy' | 'severe';
+  color: string;
+  description: string;
+}
+
 interface TrackingMapProps {
   pickup?: Location;
   delivery?: Location;
@@ -18,6 +24,7 @@ interface TrackingMapProps {
   height?: number;
   className?: string;
   showRoute?: boolean;
+  showTraffic?: boolean;
 }
 
 export function TrackingMap({
@@ -27,13 +34,16 @@ export function TrackingMap({
   height = 300,
   className = '',
   showRoute = true,
+  showTraffic = true,
 }: TrackingMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
   const routeRef = useRef<any>(null);
+  const trafficCirclesRef = useRef<any[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [traffic, setTraffic] = useState<TrafficCondition | null>(null);
 
   // Initialize map
   useEffect(() => {
@@ -103,6 +113,49 @@ export function TrackingMap({
     });
   };
 
+  // Create traffic circle icon
+  const createTrafficIcon = (color: string, level: string) => {
+    if (!L) return null;
+    
+    return L.divIcon({
+      html: `<div style="
+        background: ${color}40;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        border: 3px solid ${color};
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: bold;
+        color: ${color};
+      ">${level === 'free' ? '🟢' : level === 'light' ? '🟡' : level === 'moderate' ? '🟠' : level === 'heavy' ? '🔴' : '⛔'}</div>`,
+      className: 'traffic-marker',
+      iconSize: [60, 60],
+      iconAnchor: [30, 30],
+    });
+  };
+
+  // Fetch traffic data
+  useEffect(() => {
+    if (!showTraffic) return;
+
+    const fetchTraffic = async () => {
+      try {
+        const response = await fetch('/api/routing/traffic?lat=10.1483&lng=-85.4527');
+        const data = await response.json();
+        setTraffic(data.conditions);
+      } catch (error) {
+        console.error('Failed to fetch traffic:', error);
+      }
+    };
+
+    fetchTraffic();
+    const interval = setInterval(fetchTraffic, 5 * 60 * 1000); // Refresh every 5 min
+    return () => clearInterval(interval);
+  }, [showTraffic]);
+
   // Update markers when locations change
   useEffect(() => {
     if (!mapInstanceRef.current || !L) return;
@@ -149,7 +202,7 @@ export function TrackingMap({
     }
   }, [pickup, delivery, driverLocation]);
 
-  // Draw route line
+  // Draw route line with traffic colors
   useEffect(() => {
     if (!mapInstanceRef.current || !L || !showRoute) return;
 
@@ -168,14 +221,44 @@ export function TrackingMap({
     if (points.length >= 2) {
       const latLngs = points.map((p) => [p.lat, p.lng] as [number, number]);
       
+      // Color route based on traffic
+      let routeColor = '#22c55e'; // green (free)
+      if (traffic) {
+        routeColor = traffic.color;
+      }
+      
       routeRef.current = L.polyline(latLngs, {
-        color: '#22c55e',
+        color: routeColor,
         weight: 4,
         opacity: 0.8,
         dashArray: '10, 10',
       }).addTo(mapInstanceRef.current);
     }
-  }, [pickup, delivery, driverLocation, showRoute]);
+  }, [pickup, delivery, driverLocation, showRoute, traffic]);
+
+  // Add traffic circles at key locations
+  useEffect(() => {
+    if (!mapInstanceRef.current || !L || !showTraffic) return;
+
+    // Clear existing traffic circles
+    trafficCirclesRef.current.forEach((circle) => circle.remove());
+    trafficCirclesRef.current = [];
+
+    // Add traffic indicators at key locations
+    const trafficLocations = [
+      { lat: 10.1483, lng: -85.4527, level: 'moderate', color: '#eab308', label: 'Centro' },
+      { lat: 10.1490, lng: -85.4520, level: 'heavy', color: '#f97316', label: 'Mercado' },
+      { lat: 10.1470, lng: -85.4540, level: 'light', color: '#84cc16', label: 'Hospital' },
+    ];
+
+    trafficLocations.forEach((loc) => {
+      const icon = createTrafficIcon(loc.color, loc.level);
+      const marker = L.marker([loc.lat, loc.lng], { icon })
+        .addTo(mapInstanceRef.current)
+        .bindPopup(`<b>${loc.label}</b><br>Tráfico: ${loc.level}`);
+      trafficCirclesRef.current.push(marker);
+    });
+  }, [showTraffic]);
 
   if (error) {
     return (
@@ -218,6 +301,28 @@ export function TrackingMap({
         </motion.div>
       )}
 
+      {/* Traffic Indicator */}
+      {isLoaded && traffic && showTraffic && (
+        <motion.div
+          className="absolute top-2 left-2 bg-white dark:bg-surface-800 rounded-lg shadow-lg p-2"
+          initial={{ opacity: 0, x: -10 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <div className="flex items-center gap-2">
+            <motion.div
+              className="h-3 w-3 rounded-full"
+              style={{ backgroundColor: traffic.color }}
+              animate={{ scale: [1, 1.2, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            />
+            <span className="text-xs font-medium" style={{ color: traffic.color }}>
+              {traffic.description}
+            </span>
+          </div>
+        </motion.div>
+      )}
+
       {/* Legend */}
       {isLoaded && (
         <motion.div
@@ -239,6 +344,12 @@ export function TrackingMap({
               <div className="flex items-center gap-1">
                 <span className="w-3 h-3 rounded-full bg-blue-500" />
                 <span className="text-surface-600 dark:text-surface-400">Repartidor</span>
+              </div>
+            )}
+            {showTraffic && (
+              <div className="flex items-center gap-1">
+                <span className="w-3 h-3 rounded-full bg-surface-400" />
+                <span className="text-surface-600 dark:text-surface-400">Tráfico</span>
               </div>
             )}
           </div>
