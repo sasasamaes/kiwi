@@ -206,6 +206,15 @@ export type { UseConflictResolutionOptions, UseConflictResolutionResult } from '
 export { ConflictResolver, ConflictIndicator, ConflictBanner } from './ConflictResolver';
 
 // ============================================
+// 📊 SYNC PROGRESS
+// ============================================
+export { syncProgress } from './sync-progress';
+export type { SyncProgressItem, SyncProgressState, SyncProgressOptions, SyncOperation } from './sync-progress';
+export { useSyncProgress, useSingleSyncProgress } from './useSyncProgress';
+export type { UseSyncProgressOptions, UseSyncProgressResult } from './useSyncProgress';
+export { SyncProgressBar, SyncIndicator, SyncToast, SyncStatusPage } from './SyncProgressBar';
+
+// ============================================
 // 📱 QR CODE
 // ============================================
 export { QRCodeGenerator, QRScanner } from './QRCodeGenerator';
