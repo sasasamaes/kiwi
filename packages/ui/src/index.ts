@@ -299,3 +299,12 @@ export { dataExport } from './data-export';
 export type { ExportOptions, ExportData, ImportResult, ExportFormat, ExportType } from './data-export';
 export { useDataExport } from './useDataExport';
 export { DataExport } from './DataExport';
+
+// ============================================
+// 🔔 PAYMENT NOTIFICATIONS
+// ============================================
+export { paymentNotifications } from './payment-notifications';
+export type { PaymentNotification, NotificationType, NotificationPriority, PaymentNotificationOptions } from './payment-notifications';
+export { usePaymentNotifications, useMerchantPaymentNotifications, useCustomerPaymentNotifications } from './usePaymentNotifications';
+export type { UsePaymentNotificationsOptions, UsePaymentNotificationsResult } from './usePaymentNotifications';
+export { PaymentNotifications, NotificationBadge, PaymentNotificationToast } from './PaymentNotifications';
