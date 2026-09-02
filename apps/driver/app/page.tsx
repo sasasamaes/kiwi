@@ -9,6 +9,7 @@ import {
   StaggerContainer, 
   StaggerItem,
   VehicleBadge,
+  ThemeToggle,
   cardVariants,
   staggerContainer,
   slideInUp,
@@ -30,7 +31,7 @@ export default function Home() {
     <main className="min-h-screen flex flex-col">
       {/* Header */}
       <motion.header 
-        className="sticky top-0 z-50 border-b border-surface-200/50 bg-white/70 backdrop-blur-xl"
+        className="sticky top-0 z-50 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         transition={{ type: 'spring', stiffness: 260, damping: 20 }}
@@ -50,12 +51,13 @@ export default function Home() {
               >
                 🥝
               </motion.span>
-              <h1 className="text-lg font-display font-bold text-surface-800">Kiwi Driver</h1>
+              <h1 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100">Kiwi Driver</h1>
               <VehicleBadge type="motorcycle" size="sm" />
             </motion.div>
             <div className="flex items-center gap-3">
+              <ThemeToggle />
               <motion.button 
-                className="relative rounded-full p-2 text-surface-500 hover:bg-surface-100"
+                className="relative rounded-full p-2 text-surface-500 hover:bg-surface-100 dark:hover:bg-surface-800"
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
               >
@@ -167,11 +169,11 @@ export default function Home() {
         <StaggerContainer className="mb-6 grid grid-cols-3 gap-3">
           <StaggerItem>
             <motion.div 
-              className="rounded-xl bg-white p-4 text-center shadow-soft"
+              className="rounded-xl bg-white dark:bg-surface-800 p-4 text-center shadow-soft dark:shadow-dark"
               whileHover={{ y: -2, boxShadow: '0 8px 24px 0 rgb(0 0 0 / 0.08)' }}
             >
               <AnimatedCounter value={8} className="text-2xl font-bold text-kiwi-600" />
-              <p className="text-xs text-surface-500">Viajes</p>
+              <p className="text-xs text-surface-500 dark:text-surface-400">Viajes</p>
             </motion.div>
           </StaggerItem>
           <StaggerItem>
@@ -409,7 +411,7 @@ export default function Home() {
 
         {/* Progress Card */}
         <motion.div 
-          className="rounded-2xl bg-white p-4 shadow-soft"
+          className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
@@ -447,7 +449,7 @@ export default function Home() {
 
       {/* Bottom Navigation */}
       <motion.nav 
-        className="sticky bottom-0 border-t border-surface-200/50 bg-white/80 backdrop-blur-xl"
+        className="sticky bottom-0 border-t border-surface-200/50 dark:border-surface-700/50 bg-white/80 dark:bg-surface-900/80 backdrop-blur-xl"
         initial={{ y: 100 }}
         animate={{ y: 0 }}
         transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.3 }}

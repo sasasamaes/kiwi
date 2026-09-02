@@ -9,6 +9,7 @@ import {
   StaggerItem,
   StatCard,
   VehicleBadge,
+  ThemeToggle,
   staggerContainer
 } from '@kiwi/ui';
 
@@ -32,11 +33,12 @@ export default function Dashboard() {
               >
                 🥝
               </motion.span>
-              <h1 className="text-xl font-display font-bold text-surface-800">Kiwi</h1>
+              <h1 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100">Kiwi</h1>
             </Link>
             <div className="flex items-center gap-4">
+              <ThemeToggle />
               <motion.button 
-                className="relative rounded-full p-2 text-surface-500 hover:bg-surface-100 hover:text-surface-700 transition-colors"
+                className="relative rounded-full p-2 text-surface-500 hover:bg-surface-100 hover:text-surface-700 transition-colors dark:hover:bg-surface-800"
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
               >
@@ -48,7 +50,7 @@ export default function Dashboard() {
                 />
               </motion.button>
               <div className="flex items-center gap-3">
-                <span className="hidden text-sm font-medium text-surface-600 md:block">Mi Negocio</span>
+                <span className="hidden text-sm font-medium text-surface-600 dark:text-surface-400 md:block">Mi Negocio</span>
                 <motion.div 
                   className="flex h-10 w-10 items-center justify-center rounded-full bg-kiwi-gradient text-white font-semibold shadow-kiwi"
                   whileHover={{ scale: 1.1 }}
@@ -71,10 +73,10 @@ export default function Dashboard() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <h2 className="text-2xl font-display font-bold text-surface-800">
+          <h2 className="text-2xl font-display font-bold text-surface-800 dark:text-surface-100">
             Buenos días 👋
           </h2>
-          <p className="text-surface-500">
+          <p className="text-surface-500 dark:text-surface-400">
             Aquí está el resumen de tu negocio hoy
           </p>
         </motion.div>
@@ -128,21 +130,21 @@ export default function Dashboard() {
           <StaggerItem>
             <Link href="/orders/new">
               <motion.div 
-                className="rounded-2xl bg-white/70 backdrop-blur-xl border border-white/30 shadow-soft-md p-4 cursor-pointer group"
+                className="rounded-2xl bg-white/70 dark:bg-surface-800/70 backdrop-blur-xl border border-white/30 dark:border-surface-700/30 shadow-soft-md dark:shadow-dark p-4 cursor-pointer group"
                 whileHover={{ y: -4, boxShadow: '0 12px 32px -8px rgba(34, 197, 94, 0.25)' }}
                 whileTap={{ scale: 0.98 }}
               >
                 <div className="flex items-center gap-4">
                   <motion.div 
-                    className="flex h-14 w-14 items-center justify-center rounded-2xl bg-kiwi-100 text-kiwi-600 transition-colors group-hover:bg-kiwi-500 group-hover:text-white"
+                    className="flex h-14 w-14 items-center justify-center rounded-2xl bg-kiwi-100 dark:bg-kiwi-900/50 text-kiwi-600 dark:text-kiwi-400 transition-colors group-hover:bg-kiwi-500 group-hover:text-white"
                     whileHover={{ rotate: 90 }}
                     transition={{ type: 'spring', stiffness: 260, damping: 20 }}
                   >
                     <span className="text-2xl">➕</span>
                   </motion.div>
                   <div>
-                    <h3 className="font-display font-semibold text-surface-800">Nuevo Pedido</h3>
-                    <p className="text-sm text-surface-500">Crear un pedido ahora</p>
+                    <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">Nuevo Pedido</h3>
+                    <p className="text-sm text-surface-500 dark:text-surface-400">Crear un pedido ahora</p>
                   </div>
                 </div>
               </motion.div>
@@ -224,9 +226,9 @@ export default function Dashboard() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
         >
-          <div className="rounded-2xl bg-white shadow-soft p-6">
+          <div className="rounded-2xl bg-white dark:bg-surface-800 shadow-soft dark:shadow-dark p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-display font-semibold text-surface-800">Pedidos Recientes</h3>
+              <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100">Pedidos Recientes</h3>
               <Link href="/orders" className="text-sm font-medium text-kiwi-600 hover:text-kiwi-700">
                 Ver todos →
               </Link>
@@ -264,7 +266,7 @@ export default function Dashboard() {
               ].map((order) => (
                 <StaggerItem key={order.id}>
                   <motion.div
-                    className="group flex items-center justify-between rounded-xl border border-surface-100 bg-surface-50/50 p-4 transition-all hover:border-kiwi-200 hover:bg-white hover:shadow-soft-md"
+                    className="group flex items-center justify-between rounded-xl border border-surface-100 dark:border-surface-700 bg-surface-50/50 dark:bg-surface-900/50 p-4 transition-all hover:border-kiwi-200 hover:bg-white dark:hover:bg-surface-800 hover:shadow-soft-md"
                     whileHover={{ x: 4 }}
                   >
                   <div className="flex items-center gap-4">

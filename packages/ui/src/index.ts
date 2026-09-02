@@ -74,6 +74,12 @@ export { KYCVerification, KYCStatusBadge } from './KYCVerification';
 export type { KYCData, KYCStatus } from './KYCVerification';
 
 // ============================================
+// 🌙 THEME COMPONENTS
+// ============================================
+export { ThemeProvider, ThemeToggle, useTheme } from './ThemeProvider';
+export type { Theme } from './ThemeProvider';
+
+// ============================================
 // 🚗 VEHICLE COMPONENTS
 // ============================================
 export { VehicleSelector, VehicleBadge, vehicles } from './VehicleSelector';
