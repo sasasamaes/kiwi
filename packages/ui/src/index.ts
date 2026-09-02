@@ -308,3 +308,17 @@ export type { PaymentNotification, NotificationType, NotificationPriority, Payme
 export { usePaymentNotifications, useMerchantPaymentNotifications, useCustomerPaymentNotifications } from './usePaymentNotifications';
 export type { UsePaymentNotificationsOptions, UsePaymentNotificationsResult } from './usePaymentNotifications';
 export { PaymentNotifications, NotificationBadge, PaymentNotificationToast } from './PaymentNotifications';
+
+// ============================================
+// 📊 ADMIN SYNC MONITORING
+// ============================================
+export { adminSyncMonitoring } from './admin-sync-monitor';
+export type { DeviceSyncInfo, SyncEvent, DevicePlatform, SyncStatus, DeviceStatus, AdminSyncOptions } from './admin-sync-monitor';
+export { AdminSyncDashboard } from './AdminSyncDashboard';
+
+// ============================================
+// 📈 OFFLINE ANALYTICS
+// ============================================
+export { offlineAnalytics } from './offline-analytics';
+export type { AnalyticsEvent, AnalyticsEventType, OfflineUsageStats, OfflineAnalyticsOptions } from './offline-analytics';
+export { OfflineAnalyticsDashboard } from './OfflineAnalyticsDashboard';

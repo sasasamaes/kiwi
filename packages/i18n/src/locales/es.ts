@@ -623,4 +623,193 @@ export default {
       percentage: '%',
     },
   },
+
+  // Offline Features
+  offline: {
+    // Status
+    status: {
+      online: 'En línea',
+      offline: 'Sin conexión',
+      syncing: 'Sincronizando...',
+      synced: 'Sincronizado',
+      pending: 'Pendiente',
+      error: 'Error de sincronización',
+      stale: 'Datos obsoletos',
+    },
+
+    // Network
+    network: {
+      connected: 'Conectado a internet',
+      disconnected: 'Sin conexión a internet',
+      slowConnection: 'Conexión lenta',
+      autoSync: 'Se sincronizará automáticamente',
+      waitingForConnection: 'Esperando conexión...',
+    },
+
+    // Cache
+    cache: {
+      title: 'Almacenamiento',
+      used: 'Usado',
+      available: 'Disponible',
+      percentage: '{{percent}}% usado',
+      lowStorage: 'Almacenamiento bajo',
+      criticalStorage: 'Almacenamiento crítico',
+      clearCache: 'Limpiar caché',
+      clearAll: 'Limpiar todo',
+      dataSaved: 'Datos guardados localmente',
+      compression: 'Compresión de datos',
+      compressionSaved: 'Espacio ahorrado por compresión',
+    },
+
+    // Sync
+    sync: {
+      title: 'Sincronización',
+      syncing: 'Sincronizando datos...',
+      complete: 'Sincronización completa',
+      failed: 'Error en sincronización',
+      pending: '{{count}} pendientes',
+      syncNow: 'Sincronizar ahora',
+      syncAll: 'Sincronizar todo',
+      lastSync: 'Última sincronización',
+      speed: 'Velocidad',
+      timeRemaining: 'Tiempo restante',
+      progress: '{{percent}}% completado',
+    },
+
+    // Orders
+    orders: {
+      title: 'Pedidos Offline',
+      created: 'Pedido creado localmente',
+      synced: 'Pedido sincronizado',
+      pendingSync: 'Pedido pendiente de sincronización',
+      createOffline: 'Crear pedido offline',
+      viewOffline: 'Ver pedidos offline',
+      pendingOrders: '{{count}} pedidos pendientes',
+    },
+
+    // Payments
+    payments: {
+      title: 'Pagos Offline',
+      processed: 'Pago procesado localmente',
+      receipt: 'Recibo local',
+      printReceipt: 'Imprimir recibo',
+      downloadReceipt: 'Descargar recibo',
+      verifyReceipt: 'Verificar recibo',
+      receiptNumber: 'Recibo #{{number}}',
+      paymentMethod: 'Método de pago',
+      total: 'Total',
+    },
+
+    // Navigation
+    navigation: {
+      title: 'Navegación Offline',
+      cachedRoute: 'Ruta guardada',
+      cachedRoutes: '{{count}} rutas guardadas',
+      findRoute: 'Encontrar ruta',
+      saveRoute: 'Guardar ruta',
+      deleteRoute: 'Eliminar ruta',
+      clearRoutes: 'Limpiar rutas',
+      navigateOffline: 'Navegar offline',
+      turnByTurn: 'Instrucciones paso a paso',
+      distance: 'Distancia',
+      estimatedTime: 'Tiempo estimado',
+      startNavigation: 'Iniciar navegación',
+      stopNavigation: 'Detener navegación',
+    },
+
+    // Data Export
+    export: {
+      title: 'Exportar Datos',
+      subtitle: 'Respaldar o restaurar información',
+      exportAll: 'Exportar todo',
+      exportOrders: 'Exportar pedidos',
+      exportPayments: 'Exportar pagos',
+      exportRoutes: 'Exportar rutas',
+      exportCSV: 'Exportar CSV',
+      importData: 'Importar datos',
+      importBackup: 'Importar respaldo',
+      backupFile: 'Archivo de respaldo',
+      downloadStarted: 'Descarga iniciada',
+      importSuccess: 'Importación exitosa',
+      importFailed: 'Error en importación',
+    },
+
+    // Notifications
+    notifications: {
+      title: 'Notificaciones de Pago',
+      unread: '{{count}} sin leer',
+      markAllRead: 'Marcar todo como leído',
+      clearAll: 'Limpiar notificaciones',
+      activate: 'Activar notificaciones',
+      paymentCreated: 'Pago registrado',
+      paymentProcessing: 'Procesando pago',
+      paymentCompleted: 'Pago completado',
+      paymentFailed: 'Pago fallido',
+      paymentRefunded: 'Reembolso procesado',
+      paymentReceived: 'Pago recibido',
+      paymentPending: 'Pago pendiente',
+      paymentExpired: 'Pago expirado',
+    },
+
+    // Admin
+    admin: {
+      title: 'Monitor de Sincronización',
+      subtitle: 'Estado en tiempo real de dispositivos',
+      totalDevices: 'Total dispositivos',
+      activeDevices: 'Activos',
+      offlineDevices: 'Sin conexión',
+      syncingDevices: 'Sincronizando',
+      errorDevices: 'Con errores',
+      pendingSync: 'Pendientes sync',
+      allDevices: 'Todos',
+      merchants: 'Comerciantes',
+      drivers: 'Repartidores',
+      customers: 'Clientes',
+      live: 'En vivo',
+    },
+
+    // Analytics
+    analytics: {
+      title: 'Analíticas Offline',
+      subtitle: 'Uso offline en los últimos {{days}} días',
+      totalOfflineTime: 'Tiempo offline total',
+      offlineSessions: 'Sesiones offline',
+      avgSessionDuration: 'Promedio duración',
+      offlineOrders: 'Pedidos offline',
+      offlinePayments: 'Pagos offline',
+      routesCached: 'Rutas guardadas',
+      syncSuccessRate: 'Éxito sync',
+      conflictsDetected: 'Conflictos detectados',
+      networkDistribution: 'Distribución de red',
+      featureUsage: 'Funciones usadas offline',
+      dailyTrends: 'Tendencias diarias',
+      insights: 'Insights',
+    },
+
+    // Conflicts
+    conflicts: {
+      title: 'Conflictos',
+      pending: '{{count}} pendientes',
+      resolved: 'Resueltos',
+      dismissed: 'Descartados',
+      noConflicts: 'Sin conflictos',
+      keepLocal: 'Usar Local',
+      keepRemote: 'Usar Remoto',
+      merge: 'Combinar',
+      autoMerge: 'Auto-combinar',
+      dismiss: 'Descartar',
+    },
+
+    // Common
+    common: {
+      offline: 'Offline',
+      online: 'Online',
+      saved: 'Guardado localmente',
+      willSync: 'Se sincronizará cuando vuelva la conexión',
+      dataAvailable: 'Datos disponibles offline',
+      lastUpdated: 'Última actualización',
+      refreshData: 'Actualizar datos',
+      settings: 'Configuración offline',
+    },
+  },
 };
