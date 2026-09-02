@@ -155,3 +155,9 @@ export {
 // ============================================
 export { offlineQueue, offlineFetch } from './offline-queue';
 export { OfflineIndicator } from './OfflineIndicator';
+
+// ============================================
+// 📱 QR CODE
+// ============================================
+export { QRCodeGenerator, QRScanner } from './QRCodeGenerator';
+export type { QRCodeGeneratorProps, QRScannerProps } from './QRCodeGenerator';

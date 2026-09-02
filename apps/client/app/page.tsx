@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AnimatedButton, StaggerContainer, StaggerItem, ThemeToggle } from '@kiwi/ui';
+import { AnimatedButton, StaggerContainer, StaggerItem, ThemeToggle, QRScanner } from '@kiwi/ui';
 
 interface Restaurant {
   id: string;
@@ -55,12 +56,48 @@ const mockRestaurants: Restaurant[] = [
 ];
 
 export default function ClientHome() {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
+  const [showScanner, setShowScanner] = useState(false);
+  const [scannerActive, setScannerActive] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
 
   const filteredRestaurants = mockRestaurants.filter(r =>
     r.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     r.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handleScan = useCallback((merchantId: string, url: string) => {
+    console.log('📱 QR scanned:', merchantId, url);
+    setShowScanner(false);
+    setScannerActive(false);
+    // Navigate to the merchant's menu
+    router.push(`/menu/${merchantId}`);
+  }, [router]);
+
+  const handleScanError = useCallback((error: string) => {
+    console.error('Scan error:', error);
+    setScanError(error);
+    setTimeout(() => setScanError(null), 3000);
+  }, []);
+
+  const startScanner = useCallback(() => {
+    setScannerActive(true);
+    setShowScanner(true);
+    setScanError(null);
+  }, []);
+
+  const stopScanner = useCallback(() => {
+    setScannerActive(false);
+    setShowScanner(false);
+  }, []);
+
+  // Cleanup scanner on unmount
+  useEffect(() => {
+    return () => {
+      setScannerActive(false);
+    };
+  }, []);
 
   return (
     <main className="min-h-screen bg-bg-light dark:bg-surface-950">
@@ -99,17 +136,67 @@ export default function ClientHome() {
       </motion.header>
 
       <main className="mx-auto max-w-lg px-4 py-6">
+        {/* QR Scanner View */}
+        <AnimatePresence mode="wait">
+          {showScanner && (
+            <motion.div
+              key="scanner"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="mb-6"
+            >
+              <div className="rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100">
+                    📷 Escanear QR
+                  </h2>
+                  <motion.button
+                    onClick={stopScanner}
+                    className="text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                  >
+                    ✕
+                  </motion.button>
+                </div>
+                
+                <QRScanner
+                  onScan={handleScan}
+                  onError={handleScanError}
+                  isActive={scannerActive}
+                />
+
+                {/* Error Toast */}
+                <AnimatePresence>
+                  {scanError && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="mt-4 rounded-xl bg-red-50 dark:bg-red-900/30 p-3 text-center"
+                    >
+                      <p className="text-sm text-red-600 dark:text-red-400">{scanError}</p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* QR Scanner Button */}
-        <motion.div 
-          className="mb-6"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <Link href="/menu/demo">
+        {!showScanner && (
+          <motion.div 
+            className="mb-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
             <motion.div 
               className="rounded-2xl bg-kiwi-gradient p-6 text-white shadow-kiwi-lg cursor-pointer overflow-hidden relative"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
+              onClick={startScanner}
             >
               <motion.div 
                 className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/10"
@@ -118,16 +205,22 @@ export default function ClientHome() {
               />
               <div className="relative flex items-center gap-4">
                 <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/20">
-                  <span className="text-3xl">📷</span>
+                  <motion.span 
+                    className="text-3xl"
+                    animate={{ rotate: [0, -5, 5, 0] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  >
+                    📷
+                  </motion.span>
                 </div>
                 <div>
                   <h2 className="text-lg font-display font-bold">Escanear QR</h2>
-                  <p className="text-white/80 text-sm">Escanea el código del restaurante</p>
+                  <p className="text-white/80 text-sm">Escanea el código del restaurante para ver el menú</p>
                 </div>
               </div>
             </motion.div>
-          </Link>
-        </motion.div>
+          </motion.div>
+        )}
 
         {/* Categories */}
         <motion.div 
