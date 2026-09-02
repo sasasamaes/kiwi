@@ -8,6 +8,7 @@ import { DriversModule } from './drivers/drivers.module';
 import { OrdersModule } from './orders/orders.module';
 import { KycModule } from './kyc/kyc.module';
 import { EventsModule } from './events/events.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { EventsModule } from './events/events.module';
     OrdersModule,
     KycModule,
     EventsModule,
+    NotificationsModule,
   ],
 })
 export class AppModule {}

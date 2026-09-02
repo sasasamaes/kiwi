@@ -14,6 +14,7 @@ import {
   ThemeToggle,
   useAuth,
   useSocket,
+  usePushNotifications,
   api,
   Order,
   staggerContainer
@@ -25,6 +26,20 @@ export default function Dashboard() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [notifications, setNotifications] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // Push notifications
+  const { requestPermission } = usePushNotifications({
+    enabled: true,
+    onNotification: (payload) => {
+      setNotifications(prev => [...prev, { 
+        type: 'info', 
+        message: payload.notification?.body || 'Nueva notificación', 
+        time: new Date() 
+      }]);
+      setUnreadCount(prev => prev + 1);
+    },
+  });
 
   // Real-time socket connection
   const {
@@ -71,8 +86,12 @@ export default function Dashboard() {
 
     if (user) {
       fetchOrders();
+      // Fetch unread count
+      api.getUnreadNotificationCount().then(data => setUnreadCount(data.count)).catch(console.error);
+      // Request push notification permission
+      requestPermission();
     }
-  }, [user]);
+  }, [user, requestPermission]);
 
   if (authLoading || loading) {
     return (
@@ -122,18 +141,25 @@ export default function Dashboard() {
                 </span>
               </div>
               <ThemeToggle />
-              <motion.button 
-                className="relative rounded-full p-2 text-surface-500 hover:bg-surface-100 hover:text-surface-700 transition-colors dark:hover:bg-surface-800"
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-              >
-                <span className="text-xl">🔔</span>
-                <motion.span 
-                  className="absolute right-1 top-1 h-2 w-2 rounded-full bg-kiwi-500"
-                  animate={{ scale: [1, 1.2, 1] }}
-                  transition={{ duration: 1.5, repeat: Infinity }}
-                />
-              </motion.button>
+              <Link href="/notifications">
+                <motion.button 
+                  className="relative rounded-full p-2 text-surface-500 hover:bg-surface-100 hover:text-surface-700 transition-colors dark:hover:bg-surface-800"
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                >
+                  <span className="text-xl">🔔</span>
+                  {unreadCount > 0 && (
+                    <motion.span 
+                      className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-kiwi-500 text-white text-xs font-bold flex items-center justify-center"
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: 'spring', stiffness: 500 }}
+                    >
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </motion.span>
+                  )}
+                </motion.button>
+              </Link>
               <div className="flex items-center gap-3">
                 <span className="hidden text-sm font-medium text-surface-600 dark:text-surface-400 md:block">Mi Negocio</span>
                 <motion.div 

@@ -268,6 +268,45 @@ class ApiClient {
       body: data,
     });
   }
+
+  // ============================================
+  // 🔔 NOTIFICATIONS
+  // ============================================
+
+  async getMyNotifications(unreadOnly = false) {
+    const params = new URLSearchParams();
+    if (unreadOnly) params.append('unreadOnly', 'true');
+    return this.request<any>(`/notifications?${params.toString()}`);
+  }
+
+  async getUnreadNotificationCount() {
+    return this.request<any>('/notifications/unread-count');
+  }
+
+  async markNotificationAsRead(id: string) {
+    return this.request<any>(`/notifications/${id}/read`, {
+      method: 'PUT',
+    });
+  }
+
+  async markAllNotificationsAsRead() {
+    return this.request<any>('/notifications/read-all', {
+      method: 'PUT',
+    });
+  }
+
+  async deleteNotification(id: string) {
+    return this.request<any>(`/notifications/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async registerDeviceToken(token: string, platform: 'ios' | 'android' | 'web') {
+    return this.request<any>('/notifications/device-token', {
+      method: 'PUT',
+      body: { token, platform },
+    });
+  }
 }
 
 // Export singleton instance
