@@ -57,6 +57,10 @@ export default function MenuPage() {
   });
   const [selectedAddressType, setSelectedAddressType] = useState<string>('home');
 
+  // Payment method
+  type PaymentMethod = 'sinpe' | 'card' | 'cash';
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('sinpe');
+
   // Socket for real-time order updates
   const { isConnected } = useSocket();
 
@@ -151,6 +155,7 @@ export default function MenuPage() {
         distanceKm: 2.5,
         customerPhone: deliveryInfo.phone,
         customerName: deliveryInfo.name,
+        paymentMethod,
       };
 
       const order = await api.createOrder(orderData);
@@ -631,6 +636,98 @@ export default function MenuPage() {
                     rows={2}
                     className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:border-kiwi-500 focus:ring-2 focus:ring-kiwi-500/20 transition-all resize-none"
                   />
+                </div>
+
+                {/* Payment Method */}
+                <div>
+                  <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-3">💳 Método de pago</h3>
+                  <div className="grid grid-cols-3 gap-3">
+                    {([
+                      { id: 'sinpe' as const, icon: '📱', label: 'SINPE', desc: 'Transferencia' },
+                      { id: 'card' as const, icon: '💳', label: 'Tarjeta', desc: 'Crédito/Débito' },
+                      { id: 'cash' as const, icon: '💵', label: 'Efectivo', desc: 'Al repartidor' },
+                    ]).map((method) => (
+                      <motion.button
+                        key={method.id}
+                        type="button"
+                        className={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all ${
+                          paymentMethod === method.id
+                            ? 'bg-kiwi-100 dark:bg-kiwi-900/50 ring-2 ring-kiwi-500 shadow-kiwi'
+                            : 'bg-surface-100 dark:bg-surface-700 hover:bg-surface-200 dark:hover:bg-surface-600'
+                        }`}
+                        onClick={() => setPaymentMethod(method.id)}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <span className="text-2xl">{method.icon}</span>
+                        <span className={`text-sm font-semibold ${
+                          paymentMethod === method.id
+                            ? 'text-kiwi-700 dark:text-kiwi-400'
+                            : 'text-surface-700 dark:text-surface-300'
+                        }`}>
+                          {method.label}
+                        </span>
+                        <span className="text-xs text-surface-400 dark:text-surface-500">
+                          {method.desc}
+                        </span>
+                        {paymentMethod === method.id && (
+                          <motion.div
+                            className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-kiwi-500 text-white text-xs flex items-center justify-center"
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ type: 'spring', stiffness: 500 }}
+                          >
+                            ✓
+                          </motion.div>
+                        )}
+                      </motion.button>
+                    ))}
+                  </div>
+
+                  {/* SINPE Phone Input */}
+                  {paymentMethod === 'sinpe' && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      className="mt-3"
+                    >
+                      <input
+                        type="tel"
+                        value={deliveryInfo.phone}
+                        onChange={(e) => setDeliveryInfo({ ...deliveryInfo, phone: e.target.value })}
+                        placeholder="Número SINPE (8888-1234)"
+                        className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:border-kiwi-500 focus:ring-2 focus:ring-kiwi-500/20 transition-all"
+                      />
+                      <p className="text-xs text-surface-400 dark:text-surface-500 mt-1">
+                        Se enviará un cobro SINPE a este número
+                      </p>
+                    </motion.div>
+                  )}
+
+                  {/* Cash Info */}
+                  {paymentMethod === 'cash' && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      className="mt-3 rounded-xl bg-gold-50 dark:bg-gold-900/30 p-3"
+                    >
+                      <p className="text-sm text-gold-700 dark:text-gold-400">
+                        💵 Paga en efectivo al repartidor cuando te entreguen tu pedido
+                      </p>
+                    </motion.div>
+                  )}
+
+                  {/* Card Info */}
+                  {paymentMethod === 'card' && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      className="mt-3 rounded-xl bg-blue-50 dark:bg-blue-900/30 p-3"
+                    >
+                      <p className="text-sm text-blue-700 dark:text-blue-400">
+                        💳 Se te redirigirá a OnvoPay para completar el pago seguro
+                      </p>
+                    </motion.div>
+                  )}
                 </div>
 
                 {/* Price Summary */}
