@@ -835,6 +835,51 @@ class ApiClient {
       body: { originLat, originLng, destLat, destLng, blockedRouteId },
     });
   }
+
+  // ============================================
+  // 🔮 TRAFFIC PREDICTIONS
+  // ============================================
+
+  async getTrafficPrediction(lat: number, lng: number, time: string) {
+    const params = new URLSearchParams({
+      lat: String(lat),
+      lng: String(lng),
+      time,
+    });
+    return this.request<any>(`/routing/predictions?${params.toString()}`);
+  }
+
+  async getHourlyForecast(lat: number, lng: number) {
+    const params = new URLSearchParams({ lat: String(lat), lng: String(lng) });
+    return this.request<any>(`/routing/predictions/hourly?${params.toString()}`);
+  }
+
+  async getDailyForecast(lat: number, lng: number, days?: number) {
+    const params = new URLSearchParams({ lat: String(lat), lng: String(lng) });
+    if (days) params.append('days', String(days));
+    return this.request<any>(`/routing/predictions/daily?${params.toString()}`);
+  }
+
+  async getBestDeliveryTimesPredictions(lat: number, lng: number, days?: number) {
+    const params = new URLSearchParams({ lat: String(lat), lng: String(lng) });
+    if (days) params.append('days', String(days));
+    return this.request<any>(`/routing/predictions/best-times?${params.toString()}`);
+  }
+
+  async getTrafficTrendPredictions(lat: number, lng: number, timeframe?: string) {
+    const params = new URLSearchParams({ lat: String(lat), lng: String(lng) });
+    if (timeframe) params.append('timeframe', timeframe);
+    return this.request<any>(`/routing/predictions/trend?${params.toString()}`);
+  }
+
+  async getPredictionAccuracy() {
+    return this.request<any>('/routing/predictions/accuracy');
+  }
+
+  async getPatternInsights(lat: number, lng: number) {
+    const params = new URLSearchParams({ lat: String(lat), lng: String(lng) });
+    return this.request<any>(`/routing/predictions/insights?${params.toString()}`);
+  }
 }
 
 // Export singleton instance

@@ -5,6 +5,7 @@ import { TrafficService } from './traffic.service';
 import { TrafficAlertsService } from './traffic-alerts.service';
 import { TrafficHistoryService } from './traffic-history.service';
 import { RouteSuggestionsService } from './route-suggestions.service';
+import { TrafficPredictionsService } from './traffic-predictions.service';
 
 @ApiTags('Routing')
 @Controller('routing')
@@ -15,6 +16,7 @@ export class RoutingController {
     private readonly trafficAlertsService: TrafficAlertsService,
     private readonly trafficHistoryService: TrafficHistoryService,
     private readonly routeSuggestionsService: RouteSuggestionsService,
+    private readonly trafficPredictionsService: TrafficPredictionsService,
   ) {}
 
   @Post('optimize')
@@ -453,6 +455,99 @@ export class RoutingController {
       body.destLat,
       body.destLng,
       body.blockedRouteId,
+    );
+  }
+
+  // ============================================
+  // 🔮 TRAFFIC PREDICTIONS ENDPOINTS
+  // ============================================
+
+  @Get('predictions')
+  @ApiOperation({ summary: 'Get traffic prediction for specific time' })
+  async getPrediction(
+    @Query('lat') lat: string,
+    @Query('lng') lng: string,
+    @Query('time') time: string,
+  ) {
+    return this.trafficPredictionsService.getPrediction(
+      parseFloat(lat),
+      parseFloat(lng),
+      new Date(time),
+    );
+  }
+
+  @Get('predictions/hourly')
+  @ApiOperation({ summary: 'Get hourly forecast for today' })
+  async getHourlyForecast(
+    @Query('lat') lat: string,
+    @Query('lng') lng: string,
+  ) {
+    return this.trafficPredictionsService.getHourlyForecast(
+      parseFloat(lat),
+      parseFloat(lng),
+    );
+  }
+
+  @Get('predictions/daily')
+  @ApiOperation({ summary: 'Get daily forecast for the week' })
+  async getDailyForecast(
+    @Query('lat') lat: string,
+    @Query('lng') lng: string,
+    @Query('days') days?: string,
+  ) {
+    const numDays = days ? parseInt(days) : 7;
+    return this.trafficPredictionsService.getDailyForecast(
+      parseFloat(lat),
+      parseFloat(lng),
+      numDays,
+    );
+  }
+
+  @Get('predictions/best-times')
+  @ApiOperation({ summary: 'Get best times for delivery based on predictions' })
+  async getBestDeliveryTimes(
+    @Query('lat') lat: string,
+    @Query('lng') lng: string,
+    @Query('days') days?: string,
+  ) {
+    const numDays = days ? parseInt(days) : 7;
+    return this.trafficPredictionsService.getBestDeliveryTimes(
+      parseFloat(lat),
+      parseFloat(lng),
+      numDays,
+    );
+  }
+
+  @Get('predictions/trend')
+  @ApiOperation({ summary: 'Get traffic trend analysis' })
+  async getTrafficTrend(
+    @Query('lat') lat: string,
+    @Query('lng') lng: string,
+    @Query('timeframe') timeframe?: string,
+  ) {
+    const tf = (timeframe as 'hour' | 'day' | 'week') || 'day';
+    return this.trafficPredictionsService.getTrafficTrend(
+      parseFloat(lat),
+      parseFloat(lng),
+      tf,
+    );
+  }
+
+  @Get('predictions/accuracy')
+  @ApiOperation({ summary: 'Get prediction accuracy metrics' })
+  async getPredictionAccuracy() {
+    return this.trafficPredictionsService.getPredictionAccuracy();
+  }
+
+  @Get('predictions/insights')
+  @ApiOperation({ summary: 'Get traffic pattern insights' })
+  async getPatternInsights(
+    @Query('lat') lat: string,
+    @Query('lng') lng: string,
+  ) {
+    return this.trafficPredictionsService.getPatternInsights(
+      parseFloat(lat),
+      parseFloat(lng),
     );
   }
 }

@@ -209,3 +209,9 @@ export type { TrafficAnalyticsProps, TrafficHeatmapData, TrafficPattern, Traffic
 // ============================================
 export { RouteSuggestionPanel, QuickSuggestionBanner, RouteComparisonCard } from './RouteSuggestion';
 export type { RouteSuggestion, RouteComparison, RouteSuggestionProps, RouteCardProps, QuickSuggestionProps } from './RouteSuggestion';
+
+// ============================================
+// 🔮 TRAFFIC PREDICTIONS
+// ============================================
+export { TrafficPredictions } from './TrafficPredictions';
+export type { TrafficPredictionsProps, TrafficPrediction, HourlyForecast, DailyForecast } from './TrafficPredictions';
