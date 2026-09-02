@@ -1,7 +1,8 @@
-import { Controller, Post, Get, Body, Query } from '@nestjs/common';
+import { Controller, Post, Get, Put, Body, Query, Param } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBody } from '@nestjs/swagger';
 import { RoutingService } from './routing.service';
 import { TrafficService } from './traffic.service';
+import { TrafficAlertsService } from './traffic-alerts.service';
 
 @ApiTags('Routing')
 @Controller('routing')
@@ -9,6 +10,7 @@ export class RoutingController {
   constructor(
     private readonly routingService: RoutingService,
     private readonly trafficService: TrafficService,
+    private readonly trafficAlertsService: TrafficAlertsService,
   ) {}
 
   @Post('optimize')
@@ -162,5 +164,116 @@ export class RoutingController {
     },
   ) {
     return this.trafficService.getTrafficUpdates(body.points);
+  }
+
+  // ============================================
+  // 🚨 TRAFFIC ALERTS ENDPOINTS
+  // ============================================
+
+  @Get('alerts')
+  @ApiOperation({ summary: 'Get active traffic alerts for driver' })
+  async getDriverAlerts(
+    @Query('driverId') driverId: string,
+    @Query('lat') lat?: string,
+    @Query('lng') lng?: string,
+  ) {
+    const latNum = lat ? parseFloat(lat) : undefined;
+    const lngNum = lng ? parseFloat(lng) : undefined;
+    return this.trafficAlertsService.getActiveAlertsForDriver(driverId, latNum, lngNum);
+  }
+
+  @Get('alerts/system')
+  @ApiOperation({ summary: 'Get all system alerts' })
+  async getSystemAlerts() {
+    return this.trafficAlertsService.getSystemAlerts();
+  }
+
+  @Post('alerts')
+  @ApiOperation({ summary: 'Create manual traffic alert (admin)' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        type: { type: 'string', enum: ['congestion', 'accident', 'road_closed', 'weather', 'event', 'alternative_route'] },
+        severity: { type: 'string', enum: ['low', 'medium', 'high', 'critical'] },
+        title: { type: 'string' },
+        message: { type: 'string' },
+        location: {
+          type: 'object',
+          properties: {
+            lat: { type: 'number' },
+            lng: { type: 'number' },
+            address: { type: 'string' },
+          },
+        },
+        radius: { type: 'number' },
+        durationMinutes: { type: 'number' },
+        alternativeRoute: {
+          type: 'object',
+          properties: {
+            description: { type: 'string' },
+            estimatedTimeSaved: { type: 'number' },
+          },
+        },
+      },
+    },
+  })
+  async createAlert(
+    @Body() body: {
+      type: 'congestion' | 'accident' | 'road_closed' | 'weather' | 'event' | 'alternative_route';
+      severity: 'low' | 'medium' | 'high' | 'critical';
+      title: string;
+      message: string;
+      location: { lat: number; lng: number; address: string };
+      radius: number;
+      durationMinutes: number;
+      alternativeRoute?: { description: string; estimatedTimeSaved: number };
+    },
+  ) {
+    return this.trafficAlertsService.createManualAlert(body);
+  }
+
+  @Put('alerts/:alertId/dismiss')
+  @ApiOperation({ summary: 'Dismiss an alert for driver' })
+  async dismissAlert(
+    @Param('alertId') alertId: string,
+    @Body() body: { driverId: string },
+  ) {
+    await this.trafficAlertsService.dismissAlert(body.driverId, alertId);
+    return { success: true };
+  }
+
+  @Put('alerts/:alertId/read')
+  @ApiOperation({ summary: 'Mark alert as read' })
+  async markAlertAsRead(
+    @Param('alertId') alertId: string,
+    @Body() body: { driverId: string },
+  ) {
+    await this.trafficAlertsService.markAlertAsRead(body.driverId, alertId);
+    return { success: true };
+  }
+
+  @Get('alerts/stats')
+  @ApiOperation({ summary: 'Get alert statistics' })
+  async getAlertStats() {
+    return this.trafficAlertsService.getAlertStats();
+  }
+
+  @Post('alerts/alternative-route')
+  @ApiOperation({ summary: 'Get alternative route suggestion' })
+  async getAlternativeRoute(
+    @Body() body: {
+      originLat: number;
+      originLng: number;
+      destLat: number;
+      destLng: number;
+    },
+  ) {
+    return this.trafficAlertsService.getAlternativeRoute(
+      body.originLat,
+      body.originLng,
+      body.destLat,
+      body.destLng,
+    );
   }
 }

@@ -191,3 +191,9 @@ export type { OnvoPayCheckoutProps, CryptoCheckoutProps } from './OnvoPayCheckou
 // ============================================
 export { TrafficIndicator, DeliveryEstimate, TrafficMapOverlay } from './TrafficIndicator';
 export type { TrafficIndicatorProps, DeliveryEstimateProps, TrafficMapOverlayProps } from './TrafficIndicator';
+
+// ============================================
+// 🚨 TRAFFIC ALERTS
+// ============================================
+export { TrafficAlertBanner, TrafficAlertList, TrafficAlertBadge, TrafficAlertsPanel } from './TrafficAlerts';
+export type { TrafficAlert, TrafficAlertBannerProps, TrafficAlertListProps, TrafficAlertBadgeProps } from './TrafficAlerts';

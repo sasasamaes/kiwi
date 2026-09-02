@@ -639,6 +639,67 @@ class ApiClient {
       body: { points },
     });
   }
+
+  // ============================================
+  // 🚨 TRAFFIC ALERTS
+  // ============================================
+
+  async getTrafficAlerts(driverId: string, lat?: number, lng?: number) {
+    const params = new URLSearchParams({ driverId });
+    if (lat) params.append('lat', String(lat));
+    if (lng) params.append('lng', String(lng));
+    return this.request<any>(`/routing/alerts?${params.toString()}`);
+  }
+
+  async getSystemAlerts() {
+    return this.request<any>('/routing/alerts/system');
+  }
+
+  async createTrafficAlert(data: {
+    type: 'congestion' | 'accident' | 'road_closed' | 'weather' | 'event' | 'alternative_route';
+    severity: 'low' | 'medium' | 'high' | 'critical';
+    title: string;
+    message: string;
+    location: { lat: number; lng: number; address: string };
+    radius: number;
+    durationMinutes: number;
+    alternativeRoute?: { description: string; estimatedTimeSaved: number };
+  }) {
+    return this.request<any>('/routing/alerts', {
+      method: 'POST',
+      body: data,
+    });
+  }
+
+  async dismissTrafficAlert(alertId: string, driverId: string) {
+    return this.request<any>(`/routing/alerts/${alertId}/dismiss`, {
+      method: 'PUT',
+      body: { driverId },
+    });
+  }
+
+  async markTrafficAlertAsRead(alertId: string, driverId: string) {
+    return this.request<any>(`/routing/alerts/${alertId}/read`, {
+      method: 'PUT',
+      body: { driverId },
+    });
+  }
+
+  async getAlertStats() {
+    return this.request<any>('/routing/alerts/stats');
+  }
+
+  async getAlternativeRoute(
+    originLat: number,
+    originLng: number,
+    destLat: number,
+    destLng: number,
+  ) {
+    return this.request<any>('/routing/alerts/alternative-route', {
+      method: 'POST',
+      body: { originLat, originLng, destLat, destLng },
+    });
+  }
 }
 
 // Export singleton instance
