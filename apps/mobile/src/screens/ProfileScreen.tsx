@@ -12,31 +12,53 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
+import { useTranslation } from '../hooks/useTranslations';
 import { colors, gradients, shadows } from '../utils/theme';
+import { locales, Locale } from '@kiwi/i18n';
 
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
   const { isDark, theme, setTheme } = useTheme();
+  const { t, locale, setLocale } = useTranslation();
 
   const handleLogout = () => {
     Alert.alert(
-      'Cerrar Sesión',
-      '¿Estás seguro que deseas cerrar sesión?',
+      t.auth.logout,
+      locale === 'es' ? '¿Estás seguro que deseas cerrar sesión?' : 'Are you sure you want to log out?',
       [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Cerrar Sesión', style: 'destructive', onPress: logout },
+        { text: t.app.cancel, style: 'cancel' },
+        { text: t.auth.logout, style: 'destructive', onPress: logout },
+      ]
+    );
+  };
+
+  const handleLanguageChange = () => {
+    Alert.alert(
+      t.settings.language,
+      locale === 'es' ? 'Selecciona tu idioma' : 'Select your language',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: '🇨🇷 Español',
+          onPress: () => setLocale('es'),
+        },
+        {
+          text: '🇺🇸 English',
+          onPress: () => setLocale('en'),
+        },
       ]
     );
   };
 
   const menuItems = [
-    { icon: 'person-outline', label: 'Editar Perfil', onPress: () => {} },
-    { icon: 'car-outline', label: 'Mi Vehículo', onPress: () => {} },
-    { icon: 'document-text-outline', label: 'Documentos (KYC)', onPress: () => {} },
-    { icon: 'notifications-outline', label: 'Notificaciones', onPress: () => {} },
-    { icon: 'moon-outline', label: 'Modo Oscuro', onPress: () => setTheme(theme === 'dark' ? 'light' : 'dark') },
-    { icon: 'help-circle-outline', label: 'Ayuda', onPress: () => {} },
-    { icon: 'information-circle-outline', label: 'Acerca de', onPress: () => {} },
+    { icon: 'person-outline', label: t.profile.editProfile, onPress: () => {} },
+    { icon: 'car-outline', label: t.profile.myVehicle, onPress: () => {} },
+    { icon: 'document-text-outline', label: t.profile.documents, onPress: () => {} },
+    { icon: 'notifications-outline', label: t.profile.notifications, onPress: () => {} },
+    { icon: 'language-outline', label: t.settings.language, onPress: handleLanguageChange },
+    { icon: 'moon-outline', label: t.profile.darkMode, onPress: () => setTheme(theme === 'dark' ? 'light' : 'dark') },
+    { icon: 'help-circle-outline', label: t.profile.help, onPress: () => {} },
+    { icon: 'information-circle-outline', label: t.profile.about, onPress: () => {} },
   ];
 
   return (
@@ -47,7 +69,7 @@ export default function ProfileScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Text style={[styles.title, { color: isDark ? colors.surface[100] : colors.surface[900] }]}>
-            Mi Perfil
+            {t.profile.title}
           </Text>
         </View>
 
@@ -68,24 +90,24 @@ export default function ProfileScreen() {
           </View>
           
           <Text style={styles.profileName}>
-            {user?.driverProfile?.fullName || 'Repartidor'}
+            {user?.driverProfile?.fullName || (locale === 'es' ? 'Repartidor' : 'Driver')}
           </Text>
           <Text style={styles.profileEmail}>{user?.email}</Text>
           
           <View style={styles.profileStats}>
             <View style={styles.profileStat}>
               <Text style={styles.profileStatValue}>⭐ 4.9</Text>
-              <Text style={styles.profileStatLabel}>Rating</Text>
+              <Text style={styles.profileStatLabel}>{t.driver.rating}</Text>
             </View>
             <View style={styles.profileStatDivider} />
             <View style={styles.profileStat}>
               <Text style={styles.profileStatValue}>156</Text>
-              <Text style={styles.profileStatLabel}>Viajes</Text>
+              <Text style={styles.profileStatLabel}>{t.driver.totalTrips}</Text>
             </View>
             <View style={styles.profileStatDivider} />
             <View style={styles.profileStat}>
-              <Text style={styles.profileStatValue}>Bronce</Text>
-              <Text style={styles.profileStatLabel}>Nivel</Text>
+              <Text style={styles.profileStatValue}>{t.profile.bronze}</Text>
+              <Text style={styles.profileStatLabel}>{t.profile.level}</Text>
             </View>
           </View>
         </LinearGradient>
@@ -110,11 +132,18 @@ export default function ProfileScreen() {
                   {item.label}
                 </Text>
               </View>
-              <Ionicons 
-                name="chevron-forward" 
-                size={18} 
-                color={colors.surface[400]} 
-              />
+              <View style={styles.menuRight}>
+                {item.icon === 'language-outline' && (
+                  <Text style={[styles.languageCode, { color: isDark ? colors.surface[400] : colors.surface[500] }]}>
+                    {locales[locale].flag} {locale.toUpperCase()}
+                  </Text>
+                )}
+                <Ionicons 
+                  name="chevron-forward" 
+                  size={18} 
+                  color={colors.surface[400]} 
+                />
+              </View>
             </TouchableOpacity>
           ))}
         </View>
@@ -128,7 +157,7 @@ export default function ProfileScreen() {
           onPress={handleLogout}
         >
           <Ionicons name="log-out-outline" size={20} color={colors.red[500]} />
-          <Text style={styles.logoutText}>Cerrar Sesión</Text>
+          <Text style={styles.logoutText}>{t.auth.logout}</Text>
         </TouchableOpacity>
 
         {/* App Version */}
@@ -246,8 +275,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 16,
   },
+  menuRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   menuLabel: {
     fontSize: 16,
+    fontWeight: '500',
+  },
+  languageCode: {
+    fontSize: 14,
     fontWeight: '500',
   },
   logoutButton: {

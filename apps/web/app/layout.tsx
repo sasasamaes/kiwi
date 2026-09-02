@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter, Poppins } from 'next/font/google';
 import './globals.css';
-import { ThemeProvider, AuthProvider } from '@kiwi/ui';
+import { ThemeProvider, AuthProvider, LanguageProvider } from '@kiwi/ui';
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -33,11 +33,13 @@ export default function RootLayout({
   return (
     <html lang="es" className={`${inter.variable} ${poppins.variable}`} suppressHydrationWarning>
       <body className="font-sans antialiased">
-        <ThemeProvider>
-          <AuthProvider>
-            {children}
-          </AuthProvider>
-        </ThemeProvider>
+        <LanguageProvider>
+          <ThemeProvider>
+            <AuthProvider>
+              {children}
+            </AuthProvider>
+          </ThemeProvider>
+        </LanguageProvider>
       </body>
     </html>
   );

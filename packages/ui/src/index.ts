@@ -131,6 +131,12 @@ export { requestNotificationPermission, initializeFirebase } from './firebase';
 export { AuthProvider, useAuth } from './AuthContext';
 
 // ============================================
+// 🌍 i18n (Internationalization)
+// ============================================
+export { LanguageProvider, useLanguage, useTranslations, LanguageSwitcher, LanguageSwitcherCompact } from './LanguageProvider';
+export type { Locale, TranslationKeys } from './LanguageProvider';
+
+// ============================================
 // 🛠️ UTILS
 // ============================================
 export {
