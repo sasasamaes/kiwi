@@ -17,6 +17,14 @@ import {
 
 export default function Home() {
   const [isOnline, setIsOnline] = useState(true);
+  const [activeTab, setActiveTab] = useState<'all' | 'delivery' | 'trip' | 'freight'>('all');
+
+  const tabs = [
+    { id: 'all' as const, label: 'Todos', icon: '📋' },
+    { id: 'delivery' as const, label: 'Delivery', icon: '📦' },
+    { id: 'trip' as const, label: 'Viajes', icon: '🏍️' },
+    { id: 'freight' as const, label: 'Fletes', icon: '🚛' },
+  ];
 
   return (
     <main className="min-h-screen flex flex-col">
@@ -94,7 +102,7 @@ export default function Home() {
           <div className="relative flex items-center justify-between">
             <div>
               <h2 className="text-lg font-display font-semibold">Estado</h2>
-              <p className="text-white/80 text-sm">Estás disponible para recibir pedidos</p>
+              <p className="text-white/80 text-sm">Tú decides cuándo y qué trabajar</p>
             </div>
             <motion.button
               className={`relative h-12 w-20 rounded-full p-1 transition-colors ${
@@ -118,18 +126,38 @@ export default function Home() {
           <AnimatePresence>
             {isOnline && (
               <motion.div 
-                className="relative mt-4 flex items-center gap-2 text-white/80 text-sm"
+                className="relative mt-4 space-y-3"
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
               >
-                <motion.span 
-                  animate={{ opacity: [1, 0.5, 1] }}
-                  transition={{ duration: 1.5, repeat: Infinity }}
-                >
-                  ●
-                </motion.span>
-                <span>En línea - Recibiendo pedidos</span>
+                <div className="flex items-center gap-2 text-white/80 text-sm">
+                  <motion.span 
+                    animate={{ opacity: [1, 0.5, 1] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                  >
+                    ●
+                  </motion.span>
+                  <span>En línea - Tú eliges qué trabajar</span>
+                </div>
+                
+                {/* Service Type Tabs */}
+                <div className="flex gap-2">
+                  {tabs.map((tab) => (
+                    <motion.button
+                      key={tab.id}
+                      className={`flex-1 rounded-xl py-2 px-3 text-xs font-medium transition-colors ${
+                        activeTab === tab.id 
+                          ? 'bg-white text-kiwi-600' 
+                          : 'bg-white/20 text-white/80 hover:bg-white/30'
+                      }`}
+                      onClick={() => setActiveTab(tab.id)}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      {tab.icon} {tab.label}
+                    </motion.button>
+                  ))}
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -173,7 +201,10 @@ export default function Home() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
         >
-          <h3 className="mb-3 text-sm font-semibold text-surface-600">Pedidos Disponibles</h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-surface-600">Pedidos Disponibles</h3>
+            <span className="text-xs text-surface-400">Tú eliges cuáles aceptar</span>
+          </div>
           
           <StaggerContainer className="space-y-3">
             {/* Order Card 1 */}
@@ -184,14 +215,18 @@ export default function Home() {
                 whileTap={{ scale: 0.98 }}
               >
                 <div className="mb-3 flex items-center justify-between">
-                  <motion.span 
-                    className="rounded-full bg-kiwi-100 px-3 py-1 text-xs font-medium text-kiwi-700"
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ type: 'spring', stiffness: 500, delay: 0.5 }}
-                  >
-                    📦 Nuevo
-                  </motion.span>
+                  <div className="flex items-center gap-2">
+                    <motion.span 
+                      className="rounded-full bg-kiwi-100 px-3 py-1 text-xs font-medium text-kiwi-700"
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: 'spring', stiffness: 500, delay: 0.5 }}
+                    >
+                      📦 Delivery
+                    </motion.span>
+                    <span className="text-xs text-surface-400">•</span>
+                    <span className="text-xs text-surface-400">Nuevo</span>
+                  </div>
                   <span className="text-sm font-semibold text-surface-700">₡2,500</span>
                 </div>
                 
@@ -246,14 +281,18 @@ export default function Home() {
                 whileTap={{ scale: 0.98 }}
               >
                 <div className="mb-3 flex items-center justify-between">
-                  <motion.span 
-                    className="rounded-full bg-gold-100 px-3 py-1 text-xs font-medium text-gold-700"
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ type: 'spring', stiffness: 500, delay: 0.6 }}
-                  >
-                    ⚡ Express
-                  </motion.span>
+                  <div className="flex items-center gap-2">
+                    <motion.span 
+                      className="rounded-full bg-gold-100 px-3 py-1 text-xs font-medium text-gold-700"
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: 'spring', stiffness: 500, delay: 0.6 }}
+                    >
+                      🏍️ Viaje
+                    </motion.span>
+                    <span className="text-xs text-surface-400">•</span>
+                    <span className="text-xs text-surface-400">Express</span>
+                  </div>
                   <span className="text-sm font-semibold text-surface-700">₡3,800</span>
                 </div>
                 
@@ -286,6 +325,72 @@ export default function Home() {
                     <VehicleBadge type="car" size="sm" />
                     <span className="text-xs text-surface-400">•</span>
                     <span className="text-xs text-surface-400">📦 Mediano</span>
+                  </div>
+                </div>
+                
+                <div className="flex gap-2">
+                  <AnimatedButton variant="secondary" className="flex-1">
+                    Rechazar
+                  </AnimatedButton>
+                  <AnimatedButton variant="gradient" className="flex-1">
+                    Aceptar
+                  </AnimatedButton>
+                </div>
+              </motion.div>
+            </StaggerItem>
+
+            {/* Order Card 3 - Freight */}
+            <StaggerItem>
+              <motion.div 
+                className="rounded-2xl border border-surface-100 bg-white p-4 shadow-soft"
+                whileHover={{ y: -4, boxShadow: '0 12px 32px -8px rgba(0, 0, 0, 0.1)' }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <div className="mb-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <motion.span 
+                      className="rounded-full bg-purple-100 px-3 py-1 text-xs font-medium text-purple-700"
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: 'spring', stiffness: 500, delay: 0.7 }}
+                    >
+                      🚛 Flete
+                    </motion.span>
+                    <span className="text-xs text-surface-400">•</span>
+                    <span className="text-xs text-surface-400">Carga grande</span>
+                  </div>
+                  <span className="text-sm font-semibold text-surface-700">₡8,500</span>
+                </div>
+                
+                <div className="mb-4 space-y-2">
+                  <div className="flex items-start gap-3">
+                    <motion.div 
+                      className="flex h-6 w-6 items-center justify-center rounded-full bg-purple-100 text-purple-600"
+                      whileHover={{ scale: 1.2 }}
+                    >
+                      <span className="text-xs">🏭</span>
+                    </motion.div>
+                    <div>
+                      <p className="text-sm font-medium text-surface-800">Bodega Central</p>
+                      <p className="text-xs text-surface-400">Nicoya, 0.5 km</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <motion.div 
+                      className="flex h-6 w-6 items-center justify-center rounded-full bg-gold-100 text-gold-600"
+                      whileHover={{ scale: 1.2 }}
+                    >
+                      <span className="text-xs">📍</span>
+                    </motion.div>
+                    <div>
+                      <p className="text-sm font-medium text-surface-800">Construction Site</p>
+                      <p className="text-xs text-surface-400">Santa Cruz, 15 km</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 mt-2">
+                    <VehicleBadge type="truck" size="sm" />
+                    <span className="text-xs text-surface-400">•</span>
+                    <span className="text-xs text-surface-400">📦 ~200 kg</span>
                   </div>
                 </div>
                 
