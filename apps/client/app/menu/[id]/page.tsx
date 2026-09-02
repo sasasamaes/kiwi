@@ -19,6 +19,19 @@ interface CartItem extends MenuItem {
   quantity: number;
 }
 
+interface DeliveryInfo {
+  address: string;
+  phone: string;
+  name: string;
+  instructions: string;
+}
+
+const SAVED_ADDRESSES = [
+  { id: 'home', label: '🏠 Casa', address: '' },
+  { id: 'work', label: '💼 Trabajo', address: '' },
+  { id: 'other', label: '📍 Otro', address: '' },
+];
+
 export default function MenuPage() {
   const params = useParams();
   const router = useRouter();
@@ -31,8 +44,18 @@ export default function MenuPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [showCart, setShowCart] = useState(false);
+  const [showCheckout, setShowCheckout] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
+  const [orderSuccess, setOrderSuccess] = useState<string | null>(null);
+
+  // Delivery info
+  const [deliveryInfo, setDeliveryInfo] = useState<DeliveryInfo>({
+    address: '',
+    phone: '',
+    name: '',
+    instructions: '',
+  });
+  const [selectedAddressType, setSelectedAddressType] = useState<string>('home');
 
   // Socket for real-time order updates
   const { isConnected } = useSocket();
@@ -43,7 +66,6 @@ export default function MenuPage() {
       setLoading(true);
       setError(null);
 
-      // Fetch merchant profile and menu items in parallel
       const [merchantData, menuData] = await Promise.all([
         api.getMerchantPublicProfile(merchantId),
         api.getMerchantMenuItems(merchantId),
@@ -95,23 +117,29 @@ export default function MenuPage() {
 
   const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const deliveryFee = cartTotal >= 5000 ? 0 : 500; // Free delivery over ₡5,000
+  const totalWithDelivery = cartTotal + deliveryFee;
 
   // Filter items by category
   const filteredItems = selectedCategory === 'Todos'
     ? menuItems
     : menuItems.filter(item => item.category === selectedCategory);
 
+  // Validate checkout
+  const canCheckout = deliveryInfo.address.trim().length > 0 && 
+                       deliveryInfo.phone.trim().length >= 8 &&
+                       deliveryInfo.name.trim().length > 0;
+
   // Checkout handler
   const handleCheckout = useCallback(async () => {
-    if (cart.length === 0 || !merchant) return;
+    if (cart.length === 0 || !merchant || !canCheckout) return;
 
     setCheckingOut(true);
     try {
-      // Create order with cart items
       const orderData = {
         merchantId: merchant.id,
         pickupAddress: merchant.address,
-        deliveryAddress: 'Dirección del cliente', // TODO: Get from user input
+        deliveryAddress: deliveryInfo.address,
         orderType: 'immediate',
         items: cart.map(item => ({
           menuItemId: item.id,
@@ -119,28 +147,95 @@ export default function MenuPage() {
           price: item.price,
           quantity: item.quantity,
         })),
-        specialInstructions: '',
-        distanceKm: 2.5, // Default estimate
+        specialInstructions: deliveryInfo.instructions,
+        distanceKm: 2.5,
+        customerPhone: deliveryInfo.phone,
+        customerName: deliveryInfo.name,
       };
 
       const order = await api.createOrder(orderData);
       
-      // Clear cart and redirect to order confirmation
       setCart([]);
-      router.push(`/order/${order.id}/confirmation`);
+      setShowCheckout(false);
+      setOrderSuccess(order.id);
     } catch (err) {
       console.error('Failed to create order:', err);
       alert('Error al crear el pedido. Intenta de nuevo.');
     } finally {
       setCheckingOut(false);
     }
-  }, [cart, merchant, router]);
+  }, [cart, merchant, deliveryInfo, canCheckout]);
+
+  // Order success screen
+  if (orderSuccess) {
+    return (
+      <main className="min-h-screen bg-bg-light dark:bg-surface-950 flex items-center justify-center p-4">
+        <motion.div 
+          className="max-w-md w-full text-center"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+        >
+          <motion.div 
+            className="text-8xl mb-6"
+            initial={{ scale: 0, rotate: -180 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}
+          >
+            🎉
+          </motion.div>
+          <h1 className="text-2xl font-display font-bold text-surface-800 dark:text-surface-100 mb-2">
+            ¡Pedido Creado!
+          </h1>
+          <p className="text-surface-500 dark:text-surface-400 mb-6">
+            Tu pedido está buscando repartidor
+          </p>
+          
+          <div className="rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark mb-6">
+            <div className="space-y-3">
+              <div className="flex justify-between">
+                <span className="text-surface-500 dark:text-surface-400">Número</span>
+                <span className="font-semibold text-surface-800 dark:text-surface-200">
+                  #{orderSuccess.slice(0, 8)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-surface-500 dark:text-surface-400">Entregar en</span>
+                <span className="font-medium text-surface-800 dark:text-surface-200 text-right max-w-[60%]">
+                  {deliveryInfo.address}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-surface-500 dark:text-surface-400">Total</span>
+                <span className="font-bold text-kiwi-600 dark:text-kiwi-400">
+                  ₡{totalWithDelivery.toLocaleString()}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <Link href="/">
+              <AnimatedButton variant="gradient" className="w-full">
+                🏠 Volver al inicio
+              </AnimatedButton>
+            </Link>
+            <AnimatedButton 
+              variant="ghost" 
+              className="w-full"
+              onClick={() => setOrderSuccess(null)}
+            >
+              ➕ Hacer otro pedido
+            </AnimatedButton>
+          </div>
+        </motion.div>
+      </main>
+    );
+  }
 
   // Loading state
   if (loading) {
     return (
       <main className="min-h-screen bg-bg-light dark:bg-surface-950 pb-32">
-        {/* Header skeleton */}
         <div className="sticky top-0 z-40 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl">
           <div className="mx-auto max-w-lg px-4 py-4">
             <div className="flex items-center justify-between">
@@ -150,8 +245,6 @@ export default function MenuPage() {
             </div>
           </div>
         </div>
-
-        {/* Merchant info skeleton */}
         <div className="mx-auto max-w-lg px-4 py-6">
           <div className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark">
             <div className="flex items-center gap-4">
@@ -163,8 +256,6 @@ export default function MenuPage() {
             </div>
           </div>
         </div>
-
-        {/* Menu items skeleton */}
         <div className="mx-auto max-w-lg px-4">
           <div className="space-y-4">
             {[1, 2, 3].map(i => (
@@ -204,16 +295,10 @@ export default function MenuPage() {
           <h2 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100 mb-2">
             No pudimos cargar el menú
           </h2>
-          <p className="text-surface-500 dark:text-surface-400 mb-6">
-            {error}
-          </p>
+          <p className="text-surface-500 dark:text-surface-400 mb-6">{error}</p>
           <div className="flex gap-3 justify-center">
-            <AnimatedButton variant="secondary" onClick={() => router.push('/')}>
-              ← Volver
-            </AnimatedButton>
-            <AnimatedButton variant="gradient" onClick={fetchData}>
-              🔄 Reintentar
-            </AnimatedButton>
+            <AnimatedButton variant="secondary" onClick={() => router.push('/')}>← Volver</AnimatedButton>
+            <AnimatedButton variant="gradient" onClick={fetchData}>🔄 Reintentar</AnimatedButton>
           </div>
         </motion.div>
       </main>
@@ -227,9 +312,7 @@ export default function MenuPage() {
         <div className="text-center">
           <span className="text-5xl mb-4 block">❌</span>
           <p className="text-surface-500 dark:text-surface-400">Comercio no encontrado</p>
-          <Link href="/" className="mt-4 inline-block text-kiwi-600 hover:text-kiwi-700">
-            ← Volver al inicio
-          </Link>
+          <Link href="/" className="mt-4 inline-block text-kiwi-600 hover:text-kiwi-700">← Volver al inicio</Link>
         </div>
       </main>
     );
@@ -263,9 +346,7 @@ export default function MenuPage() {
       >
         <div className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark">
           <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-kiwi-100 dark:bg-kiwi-900/30 text-3xl">
-              🥗
-            </div>
+            <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-kiwi-100 dark:bg-kiwi-900/30 text-3xl">🥗</div>
             <div>
               <h2 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100">
                 {merchant.businessName}
@@ -285,11 +366,6 @@ export default function MenuPage() {
                   {merchant.isOpen ? 'Abierto' : 'Cerrado'}
                 </span>
               </div>
-              {merchant.description && (
-                <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">
-                  {merchant.description}
-                </p>
-              )}
             </div>
           </div>
         </div>
@@ -330,15 +406,12 @@ export default function MenuPage() {
         {filteredItems.length === 0 ? (
           <div className="text-center py-12">
             <span className="text-5xl mb-4 block">🍽️</span>
-            <p className="text-surface-500 dark:text-surface-400">
-              No hay productos en esta categoría
-            </p>
+            <p className="text-surface-500 dark:text-surface-400">No hay productos en esta categoría</p>
           </div>
         ) : (
           <StaggerContainer className="space-y-4">
             {filteredItems.map((item) => {
               const quantity = getItemQuantity(item.id);
-              
               return (
                 <StaggerItem key={item.id}>
                   <motion.div 
@@ -346,56 +419,34 @@ export default function MenuPage() {
                     whileHover={{ y: -2 }}
                   >
                     <div className="flex gap-4">
-                      {/* Item Image */}
                       <div className="flex h-20 w-20 items-center justify-center rounded-xl bg-surface-100 dark:bg-surface-700 text-3xl flex-shrink-0">
                         {item.image || '🍽️'}
                       </div>
-                      
-                      {/* Item Info */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between">
                           <div>
                             <div className="flex items-center gap-2">
-                              <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-                                {item.name}
-                              </h3>
+                              <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">{item.name}</h3>
                               {item.isPopular && (
-                                <span className="px-2 py-0.5 rounded-full bg-gold-100 dark:bg-gold-900/50 text-xs font-medium text-gold-700 dark:text-gold-400">
-                                  🔥 Popular
-                                </span>
+                                <span className="px-2 py-0.5 rounded-full bg-gold-100 dark:bg-gold-900/50 text-xs font-medium text-gold-700 dark:text-gold-400">🔥 Popular</span>
                               )}
                             </div>
                             {item.description && (
-                              <p className="text-sm text-surface-500 dark:text-surface-400 mt-1 line-clamp-2">
-                                {item.description}
-                              </p>
+                              <p className="text-sm text-surface-500 dark:text-surface-400 mt-1 line-clamp-2">{item.description}</p>
                             )}
                           </div>
                         </div>
-                        
                         <div className="flex items-center justify-between mt-3">
-                          <p className="text-lg font-bold text-kiwi-600 dark:text-kiwi-400">
-                            ₡{item.price.toLocaleString()}
-                          </p>
-                          
-                          {/* Add to Cart */}
+                          <p className="text-lg font-bold text-kiwi-600 dark:text-kiwi-400">₡{item.price.toLocaleString()}</p>
                           <div className="flex items-center gap-2">
                             {quantity > 0 && (
-                              <motion.div 
-                                className="flex items-center gap-2"
-                                initial={{ opacity: 0, scale: 0.8 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                              >
+                              <motion.div className="flex items-center gap-2" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}>
                                 <motion.button
                                   className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400"
                                   onClick={() => removeFromCart(item.id)}
                                   whileTap={{ scale: 0.9 }}
-                                >
-                                  −
-                                </motion.button>
-                                <span className="w-6 text-center font-semibold text-surface-800 dark:text-surface-200">
-                                  {quantity}
-                                </span>
+                                >−</motion.button>
+                                <span className="w-6 text-center font-semibold text-surface-800 dark:text-surface-200">{quantity}</span>
                               </motion.div>
                             )}
                             <motion.button
@@ -404,9 +455,7 @@ export default function MenuPage() {
                               whileTap={{ scale: 0.9 }}
                               whileHover={{ scale: 1.1 }}
                               disabled={!merchant.isOpen}
-                            >
-                              +
-                            </motion.button>
+                            >+</motion.button>
                           </div>
                         </div>
                       </div>
@@ -421,7 +470,7 @@ export default function MenuPage() {
 
       {/* Floating Cart Button */}
       <AnimatePresence>
-        {cartCount > 0 && (
+        {cartCount > 0 && !showCheckout && (
           <motion.div 
             className="fixed bottom-6 left-4 right-4 z-50"
             initial={{ y: 100, opacity: 0 }}
@@ -432,21 +481,204 @@ export default function MenuPage() {
               className="mx-auto max-w-lg rounded-2xl bg-kiwi-gradient p-4 text-white shadow-kiwi-lg cursor-pointer"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={handleCheckout}
+              onClick={() => setShowCheckout(true)}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20">
                     <span className="font-bold">{cartCount}</span>
                   </div>
-                  <span className="font-semibold">
-                    {checkingOut ? '⏳ Creando pedido...' : 'Ver carrito'}
-                  </span>
+                  <span className="font-semibold">Ver carrito</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-white/80">Total:</span>
                   <span className="text-xl font-bold">₡{cartTotal.toLocaleString()}</span>
                 </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Checkout Modal */}
+      <AnimatePresence>
+        {showCheckout && (
+          <motion.div 
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            {/* Backdrop */}
+            <motion.div 
+              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+              onClick={() => setShowCheckout(false)}
+            />
+
+            {/* Modal */}
+            <motion.div 
+              className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto bg-white dark:bg-surface-800 rounded-t-3xl sm:rounded-3xl shadow-2xl"
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            >
+              {/* Handle */}
+              <div className="sticky top-0 bg-white dark:bg-surface-800 pt-4 pb-2 px-6 border-b border-surface-100 dark:border-surface-700 rounded-t-3xl sm:rounded-t-3xl">
+                <div className="w-12 h-1 bg-surface-300 dark:bg-surface-600 rounded-full mx-auto mb-3" />
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100">
+                    🛒 Tu Pedido
+                  </h2>
+                  <motion.button
+                    onClick={() => setShowCheckout(false)}
+                    className="text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                  >✕</motion.button>
+                </div>
+              </div>
+
+              <div className="p-6 space-y-6">
+                {/* Order Summary */}
+                <div>
+                  <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-3">📦 Resumen</h3>
+                  <div className="space-y-2">
+                    {cart.map((item) => (
+                      <div key={item.id} className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <span className="text-xl">{item.image || '🍽️'}</span>
+                          <div>
+                            <p className="text-sm font-medium text-surface-800 dark:text-surface-200">{item.name}</p>
+                            <p className="text-xs text-surface-400">x{item.quantity}</p>
+                          </div>
+                        </div>
+                        <span className="text-sm font-semibold text-surface-800 dark:text-surface-200">
+                          ₡{(item.price * item.quantity).toLocaleString()}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Delivery Address */}
+                <div>
+                  <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-3">📍 Dirección de entrega</h3>
+                  
+                  {/* Saved Addresses */}
+                  <div className="flex gap-2 mb-3">
+                    {SAVED_ADDRESSES.map((addr) => (
+                      <motion.button
+                        key={addr.id}
+                        className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all ${
+                          selectedAddressType === addr.id
+                            ? 'bg-kiwi-100 dark:bg-kiwi-900/50 text-kiwi-700 dark:text-kiwi-400 ring-2 ring-kiwi-500'
+                            : 'bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400'
+                        }`}
+                        onClick={() => setSelectedAddressType(addr.id)}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        {addr.label}
+                      </motion.button>
+                    ))}
+                  </div>
+
+                  <input
+                    type="text"
+                    value={deliveryInfo.address}
+                    onChange={(e) => setDeliveryInfo({ ...deliveryInfo, address: e.target.value })}
+                    placeholder="Ej: Barrio Los Ángeles, 200m norte del parque"
+                    className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:border-kiwi-500 focus:ring-2 focus:ring-kiwi-500/20 transition-all"
+                  />
+                </div>
+
+                {/* Contact Info */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-3">👤 Nombre</h3>
+                    <input
+                      type="text"
+                      value={deliveryInfo.name}
+                      onChange={(e) => setDeliveryInfo({ ...deliveryInfo, name: e.target.value })}
+                      placeholder="Tu nombre"
+                      className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:border-kiwi-500 focus:ring-2 focus:ring-kiwi-500/20 transition-all"
+                    />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-3">📱 Teléfono</h3>
+                    <input
+                      type="tel"
+                      value={deliveryInfo.phone}
+                      onChange={(e) => setDeliveryInfo({ ...deliveryInfo, phone: e.target.value })}
+                      placeholder="8888-1234"
+                      className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:border-kiwi-500 focus:ring-2 focus:ring-kiwi-500/20 transition-all"
+                    />
+                  </div>
+                </div>
+
+                {/* Special Instructions */}
+                <div>
+                  <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-3">📝 Instrucciones (opcional)</h3>
+                  <textarea
+                    value={deliveryInfo.instructions}
+                    onChange={(e) => setDeliveryInfo({ ...deliveryInfo, instructions: e.target.value })}
+                    placeholder="Ej: Tocar el timbre, dejar en recepción, sin cebolla..."
+                    rows={2}
+                    className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:border-kiwi-500 focus:ring-2 focus:ring-kiwi-500/20 transition-all resize-none"
+                  />
+                </div>
+
+                {/* Price Summary */}
+                <div className="rounded-xl bg-surface-50 dark:bg-surface-900 p-4">
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-surface-500 dark:text-surface-400">Subtotal</span>
+                      <span className="text-surface-800 dark:text-surface-200">₡{cartTotal.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-surface-500 dark:text-surface-400">Envío</span>
+                      <span className={deliveryFee === 0 ? 'text-kiwi-600 dark:text-kiwi-400 font-medium' : 'text-surface-800 dark:text-surface-200'}>
+                        {deliveryFee === 0 ? 'Gratis 🎉' : `₡${deliveryFee.toLocaleString()}`}
+                      </span>
+                    </div>
+                    {cartTotal < 5000 && (
+                      <p className="text-xs text-kiwi-600 dark:text-kiwi-400">
+                        🎉 Envío gratis en pedidos mayores a ₡5,000
+                      </p>
+                    )}
+                    <div className="border-t border-surface-200 dark:border-surface-700 pt-2 mt-2">
+                      <div className="flex justify-between">
+                        <span className="font-semibold text-surface-800 dark:text-surface-200">Total</span>
+                        <span className="text-xl font-bold text-kiwi-600 dark:text-kiwi-400">
+                          ₡{totalWithDelivery.toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Checkout Button */}
+                <AnimatedButton
+                  variant="gradient"
+                  className="w-full"
+                  onClick={handleCheckout}
+                  disabled={!canCheckout || checkingOut}
+                >
+                  {checkingOut ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <motion.span animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}>⏳</motion.span>
+                      Creando pedido...
+                    </span>
+                  ) : (
+                    `🚀 Pedir • ₡${totalWithDelivery.toLocaleString()}`
+                  )}
+                </AnimatedButton>
+
+                {!canCheckout && (
+                  <p className="text-xs text-center text-surface-400">
+                    Completa nombre, dirección y teléfono para continuar
+                  </p>
+                )}
               </div>
             </motion.div>
           </motion.div>
