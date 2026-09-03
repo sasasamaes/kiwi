@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { AnimatedButton, TrackingMap, Skeleton, useSocket, api, Order } from '@kiwi/ui';
+import { ArrowLeft, Clock, Check, Bike, Package, Rocket, PartyPopper, X, Star } from 'lucide-react';
 
 type OrderStatus =
   | 'pending'
@@ -17,41 +18,50 @@ type OrderStatus =
 
 const statusConfig: Record<
   OrderStatus,
-  { label: string; icon: string; description: string; progress: number }
+  { label: string; description: string; progress: number }
 > = {
-  pending: { label: 'Pendiente', icon: 'Clock', description: 'Esperando repartidor', progress: 10 },
-  assigned: { label: 'Asignado', icon: 'Check', description: 'Repartidor asignado', progress: 20 },
+  pending: { label: 'Pendiente', description: 'Esperando repartidor', progress: 10 },
+  assigned: { label: 'Asignado', description: 'Repartidor asignado', progress: 20 },
   in_transit_to_pickup: {
     label: 'En camino a recoger',
-    icon: 'Bike',
     description: 'El repartidor va al comercio',
     progress: 40,
   },
   picked_up: {
     label: 'Recogido',
-    icon: 'Package',
-    description: 'El repartidor recogió tu pedido',
+    description: 'El repartidor recogio tu pedido',
     progress: 60,
   },
   in_transit_to_delivery: {
     label: 'En camino',
-    icon: '🚀',
     description: 'Tu pedido va en camino',
     progress: 80,
   },
   delivered: {
     label: 'Entregado',
-    icon: 'PartyPopper',
-    description: '¡Recibiste tu pedido!',
+    description: 'Recibiste tu pedido!',
     progress: 100,
   },
   cancelled: {
     label: 'Cancelado',
-    icon: 'X',
     description: 'El pedido fue cancelado',
     progress: 0,
   },
 };
+
+function StatusIcon({ status }: { status: OrderStatus }) {
+  const iconClass = 'h-5 w-5';
+  switch (status) {
+    case 'pending': return <Clock className={iconClass} />;
+    case 'assigned': return <Check className={iconClass} />;
+    case 'in_transit_to_pickup': return <Bike className={iconClass} />;
+    case 'picked_up': return <Package className={iconClass} />;
+    case 'in_transit_to_delivery': return <Rocket className={iconClass} />;
+    case 'delivered': return <PartyPopper className={iconClass} />;
+    case 'cancelled': return <X className={iconClass} />;
+    default: return <Clock className={iconClass} />;
+  }
+}
 
 export default function TrackingPage() {
   const params = useParams();
@@ -67,23 +77,19 @@ export default function TrackingPage() {
     { status: string; timestamp: Date; message: string }[]
   >([]);
 
-  // Socket for real-time updates
   const { isConnected, on, emit } = useSocket({
     onConnect: () => {
-      console.log('🟢 Connected for order tracking');
-      // Join order room for updates
       emit('order:track', { orderId });
     },
   });
 
-  // Fetch initial order data
   const fetchOrder = useCallback(async () => {
     try {
       setLoading(true);
       const data = await api.getOrder(orderId);
       setOrder(data);
       setCurrentStatus(data.status as OrderStatus);
-    } catch (err) {
+    } catch {
       setError('No se pudo cargar el pedido');
     } finally {
       setLoading(false);
@@ -94,7 +100,6 @@ export default function TrackingPage() {
     fetchOrder();
   }, [fetchOrder]);
 
-  // Listen for real-time status changes
   useEffect(() => {
     const cleanup = on('order:statusChanged', (data: any) => {
       if (data.orderId === orderId) {
@@ -103,54 +108,28 @@ export default function TrackingPage() {
           { status: data.status, timestamp: new Date(), message: data.message },
           ...prev,
         ]);
-
-        // Update eta based on status
-        if (data.status === 'in_transit_to_delivery') {
-          setEta(15);
-        } else if (data.status === 'picked_up') {
-          setEta(25);
-        } else if (data.status === 'delivered') {
-          setEta(0);
-        }
+        if (data.status === 'in_transit_to_delivery') setEta(15);
+        else if (data.status === 'picked_up') setEta(25);
+        else if (data.status === 'delivered') setEta(0);
       }
     });
-
     return cleanup;
   }, [on, orderId]);
 
-  // Listen for driver location updates
   useEffect(() => {
     const cleanup = on('driver:location', (data: any) => {
       if (data.orderId === orderId) {
         setDriverLocation({ lat: data.lat, lng: data.lng });
       }
     });
-
     return cleanup;
   }, [on, orderId]);
 
-  // Listen for driver assignment
-  useEffect(() => {
-    const cleanup = on('order:assigned', (data: any) => {
-      if (data.orderId === orderId) {
-        setStatusHistory((prev) => [
-          { status: 'assigned', timestamp: new Date(), message: data.message },
-          ...prev,
-        ]);
-      }
-    });
-
-    return cleanup;
-  }, [on, orderId]);
-
-  // Countdown timer for ETA
   useEffect(() => {
     if (eta === null || eta <= 0) return;
-
     const interval = setInterval(() => {
       setEta((prev) => (prev !== null && prev > 0 ? prev - 1 : 0));
-    }, 60000); // Update every minute
-
+    }, 60000);
     return () => clearInterval(interval);
   }, [eta]);
 
@@ -159,7 +138,7 @@ export default function TrackingPage() {
   if (loading) {
     return (
       <div className="min-h-[100dvh] bg-bg-light dark:bg-surface-950">
-        <div className="sticky top-0 z-40 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl">
+        <div className="sticky top-0 z-40 glass-strong">
           <div className="mx-auto max-w-lg px-4 py-4">
             <Skeleton className="h-6 w-48" />
           </div>
@@ -176,7 +155,7 @@ export default function TrackingPage() {
     return (
       <div className="min-h-[100dvh] bg-bg-light dark:bg-surface-950 flex items-center justify-center">
         <div className="text-center">
-          <span className="text-6xl mb-4 block">X</span>
+          <X className="h-16 w-16 text-surface-300 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-surface-800 dark:text-surface-100 mb-2">
             {error || 'Pedido no encontrado'}
           </h2>
@@ -190,9 +169,8 @@ export default function TrackingPage() {
 
   return (
     <main className="min-h-[100dvh] bg-bg-light dark:bg-surface-950">
-      {/* Header */}
       <motion.header
-        className="sticky top-0 z-40 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl"
+        className="sticky top-0 z-40 glass-strong"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
       >
@@ -202,7 +180,7 @@ export default function TrackingPage() {
               href="/"
               className="flex items-center gap-2 text-surface-600 dark:text-surface-400"
             >
-              <motion.span whileHover={{ x: -4 }}>←</motion.span>
+              <ArrowLeft className="h-4 w-4" />
               <span className="text-sm font-medium">Volver</span>
             </Link>
             <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
@@ -214,9 +192,8 @@ export default function TrackingPage() {
       </motion.header>
 
       <main className="mx-auto max-w-lg px-4 py-6">
-        {/* Live Map */}
         <motion.div
-          className="rounded-2xl overflow-hidden shadow-soft dark:shadow-dark mb-6"
+          className="rounded-2xl overflow-hidden mb-6"
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.1 }}
@@ -231,7 +208,6 @@ export default function TrackingPage() {
           />
         </motion.div>
 
-        {/* Connection Status */}
         <motion.div
           className={`mb-4 px-3 py-1.5 rounded-full text-xs font-medium inline-flex items-center gap-1.5 ${
             isConnected
@@ -242,10 +218,9 @@ export default function TrackingPage() {
           animate={{ opacity: 1 }}
         >
           <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
-          {isConnected ? 'En vivo' : 'Sin conexión'}
+          {isConnected ? 'En vivo' : 'Sin conexion'}
         </motion.div>
 
-        {/* Status Card */}
         <motion.div
           className="rounded-2xl glass p-6 mb-6"
           initial={{ opacity: 0, y: 20 }}
@@ -253,7 +228,9 @@ export default function TrackingPage() {
           transition={{ delay: 0.2 }}
         >
           <div className="flex items-center gap-4 mb-4">
-            <span className="text-4xl">{config.icon}</span>
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-kiwi-100 dark:bg-kiwi-900/30 text-kiwi-600">
+              <StatusIcon status={currentStatus} />
+            </div>
             <div>
               <h2 className="text-xl font-display font-semibold text-surface-800 dark:text-surface-100">
                 {config.label}
@@ -262,7 +239,6 @@ export default function TrackingPage() {
             </div>
           </div>
 
-          {/* Progress Bar */}
           <div className="relative h-2 bg-surface-100 dark:bg-surface-700 rounded-full overflow-hidden">
             <motion.div
               className="absolute inset-y-0 left-0 bg-gradient-to-r from-kiwi-400 to-kiwi-600"
@@ -272,22 +248,21 @@ export default function TrackingPage() {
             />
           </div>
 
-          {/* ETA */}
           {eta !== null && eta > 0 && currentStatus !== 'delivered' && (
             <motion.div
               className="mt-4 flex items-center gap-2"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
             >
+              <Clock className="h-4 w-4 text-surface-400" />
               <span className="text-sm text-surface-500 dark:text-surface-400">
                 Tiempo estimado:
               </span>
-              <span className="text-lg font-bold text-kiwi-600 dark:text-kiwi-400">{eta} min</span>
+              <span className="text-lg font-bold text-kiwi-600 dark:text-kiwi-400 font-mono">{eta} min</span>
             </motion.div>
           )}
         </motion.div>
 
-        {/* Order Details */}
         <motion.div
           className="rounded-2xl glass p-4 mb-6"
           initial={{ opacity: 0, y: 20 }}
@@ -300,7 +275,7 @@ export default function TrackingPage() {
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-surface-500 dark:text-surface-400">Pedido</span>
-              <span className="text-surface-700 dark:text-surface-200 font-medium">
+              <span className="text-surface-700 dark:text-surface-200 font-medium font-mono">
                 #{orderId.slice(0, 8)}
               </span>
             </div>
@@ -310,14 +285,13 @@ export default function TrackingPage() {
             </div>
             <div className="flex justify-between">
               <span className="text-surface-500 dark:text-surface-400">Total</span>
-              <span className="text-surface-700 dark:text-surface-200 font-semibold">
-                ₡{Number(order.totalAmount || 0).toLocaleString()}
+              <span className="text-surface-700 dark:text-surface-200 font-semibold font-mono">
+                {Number(order.totalAmount || 0).toLocaleString()}
               </span>
             </div>
           </div>
         </motion.div>
 
-        {/* Status History */}
         {statusHistory.length > 0 && (
           <motion.div
             className="rounded-2xl glass p-4 mb-6"
@@ -349,7 +323,6 @@ export default function TrackingPage() {
           </motion.div>
         )}
 
-        {/* Actions */}
         <div className="flex gap-3">
           <Link href="/" className="flex-1">
             <AnimatedButton variant="secondary" className="w-full">
@@ -358,7 +331,7 @@ export default function TrackingPage() {
           </Link>
           {currentStatus === 'delivered' && (
             <Link href={`/order/${orderId}/rate`} className="flex-1">
-              <AnimatedButton className="w-full">Star Calificar</AnimatedButton>
+              <AnimatedButton className="w-full">Calificar</AnimatedButton>
             </Link>
           )}
         </div>

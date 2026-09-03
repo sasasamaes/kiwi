@@ -1,20 +1,14 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { Bike, MapPin, Home, AlertTriangle } from 'lucide-react';
 
-// Dynamically import Leaflet to avoid SSR issues
 let L: any = null;
 
 interface Location {
   lat: number;
   lng: number;
-}
-
-interface TrafficCondition {
-  level: 'free' | 'light' | 'moderate' | 'heavy' | 'severe';
-  color: string;
-  description: string;
 }
 
 interface TrackingMapProps {
@@ -26,6 +20,47 @@ interface TrackingMapProps {
   showRoute?: boolean;
   showTraffic?: boolean;
 }
+
+function createSvgIcon(svgContent: string, color: string, size = 40): any {
+  return L.divIcon({
+    html: `<div style="
+      background: ${color};
+      width: ${size}px;
+      height: ${size}px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      border: 3px solid white;
+    ">${svgContent}</div>`,
+    className: 'custom-marker',
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+  });
+}
+
+const MARKER_SVGS = {
+  pickup: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`,
+  delivery: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>`,
+  driver: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/><path d="M12 17.5V14l-3.5-3.5 2-3 2 3 2-3 2 3 2-3 2 3V14l-2.5 3.5"/></svg>`,
+  traffic: (level: string, color: string) => {
+    const icon = level === 'free' ? '●' : level === 'light' ? '◐' : level === 'moderate' ? '◑' : '●';
+    return `<div style="
+      background: ${color}40;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      border: 3px solid ${color};
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      font-weight: bold;
+      color: ${color};
+    ">${icon}</div>`;
+  },
+};
 
 export function TrackingMap({
   pickup,
@@ -40,38 +75,30 @@ export function TrackingMap({
   const mapInstanceRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
   const routeRef = useRef<any>(null);
-  const trafficCirclesRef = useRef<any[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [traffic, setTraffic] = useState<TrafficCondition | null>(null);
 
-  // Initialize map
   useEffect(() => {
     if (typeof window === 'undefined' || !mapRef.current || mapInstanceRef.current) return;
 
     const initMap = async () => {
       try {
-        // Dynamic import of Leaflet
         L = await import('leaflet');
         await import('leaflet/dist/leaflet.css');
 
-        // Create map centered on Nicoya, Costa Rica
         const map = L.map(mapRef.current, {
-          center: [10.1483, -85.4527], // Nicoya coordinates
+          center: [10.1483, -85.4527],
           zoom: 14,
           zoomControl: false,
           attributionControl: false,
         });
 
-        // Add OpenStreetMap tiles (free, no API key needed)
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           maxZoom: 19,
-          attribution: '© OpenStreetMap contributors',
+          attribution: '\u00a9 OpenStreetMap contributors',
         }).addTo(map);
 
-        // Add zoom control to bottom right
         L.control.zoom({ position: 'bottomright' }).addTo(map);
-
         mapInstanceRef.current = map;
         setIsLoaded(true);
       } catch (err) {
@@ -90,85 +117,16 @@ export function TrackingMap({
     };
   }, []);
 
-  // Custom icons
-  const createIcon = (emoji: string, color: string) => {
-    if (!L) return null;
-    
-    return L.divIcon({
-      html: `<div style="
-        background: ${color};
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 20px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        border: 3px solid white;
-      ">${emoji}</div>`,
-      className: 'custom-marker',
-      iconSize: [40, 40],
-      iconAnchor: [20, 20],
-    });
-  };
-
-  // Create traffic circle icon
-  const createTrafficIcon = (color: string, level: string) => {
-    if (!L) return null;
-    
-    return L.divIcon({
-      html: `<div style="
-        background: ${color}40;
-        width: 60px;
-        height: 60px;
-        border-radius: 50%;
-        border: 3px solid ${color};
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 12px;
-        font-weight: bold;
-        color: ${color};
-      ">${level === 'free' ? '🟢' : level === 'light' ? '🟡' : level === 'moderate' ? '🟠' : level === 'heavy' ? '🔴' : '⛔'}</div>`,
-      className: 'traffic-marker',
-      iconSize: [60, 60],
-      iconAnchor: [30, 30],
-    });
-  };
-
-  // Fetch traffic data
-  useEffect(() => {
-    if (!showTraffic) return;
-
-    const fetchTraffic = async () => {
-      try {
-        const response = await fetch('/api/routing/traffic?lat=10.1483&lng=-85.4527');
-        const data = await response.json();
-        setTraffic(data.conditions);
-      } catch (error) {
-        console.error('Failed to fetch traffic:', error);
-      }
-    };
-
-    fetchTraffic();
-    const interval = setInterval(fetchTraffic, 5 * 60 * 1000); // Refresh every 5 min
-    return () => clearInterval(interval);
-  }, [showTraffic]);
-
-  // Update markers when locations change
   useEffect(() => {
     if (!mapInstanceRef.current || !L) return;
 
-    // Clear existing markers
-    markersRef.current.forEach((marker) => marker.remove());
+    markersRef.current.forEach((m) => m.remove());
     markersRef.current = [];
 
     const bounds = L.latLngBounds([]);
 
-    // Add pickup marker
     if (pickup) {
-      const icon = createIcon('🏪', '#22c55e');
+      const icon = createSvgIcon(MARKER_SVGS.pickup, '#22c55e');
       const marker = L.marker([pickup.lat, pickup.lng], { icon })
         .addTo(mapInstanceRef.current)
         .bindPopup('<b>Pickup</b><br>Tu negocio');
@@ -176,19 +134,17 @@ export function TrackingMap({
       bounds.extend([pickup.lat, pickup.lng]);
     }
 
-    // Add delivery marker
     if (delivery) {
-      const icon = createIcon('home', '#f59e0b');
+      const icon = createSvgIcon(MARKER_SVGS.delivery, '#f59e0b');
       const marker = L.marker([delivery.lat, delivery.lng], { icon })
         .addTo(mapInstanceRef.current)
-        .bindPopup('<b>Entrega</b><br>Dirección del cliente');
+        .bindPopup('<b>Entrega</b><br>Direccion del cliente');
       markersRef.current.push(marker);
       bounds.extend([delivery.lat, delivery.lng]);
     }
 
-    // Add driver marker (animated)
     if (driverLocation) {
-      const icon = createIcon('bike', '#3b82f6');
+      const icon = createSvgIcon(MARKER_SVGS.driver, '#3b82f6');
       const marker = L.marker([driverLocation.lat, driverLocation.lng], { icon })
         .addTo(mapInstanceRef.current)
         .bindPopup('<b>Repartidor</b><br>En camino');
@@ -196,23 +152,19 @@ export function TrackingMap({
       bounds.extend([driverLocation.lat, driverLocation.lng]);
     }
 
-    // Fit map to show all markers
     if (bounds.isValid()) {
       mapInstanceRef.current.fitBounds(bounds, { padding: [50, 50] });
     }
   }, [pickup, delivery, driverLocation]);
 
-  // Draw route line with traffic colors
   useEffect(() => {
     if (!mapInstanceRef.current || !L || !showRoute) return;
 
-    // Remove existing route
     if (routeRef.current) {
       routeRef.current.remove();
       routeRef.current = null;
     }
 
-    // Draw line from pickup to delivery through driver
     const points: Location[] = [];
     if (pickup) points.push(pickup);
     if (driverLocation) points.push(driverLocation);
@@ -220,54 +172,23 @@ export function TrackingMap({
 
     if (points.length >= 2) {
       const latLngs = points.map((p) => [p.lat, p.lng] as [number, number]);
-      
-      // Color route based on traffic
-      let routeColor = '#22c55e'; // green (free)
-      if (traffic) {
-        routeColor = traffic.color;
-      }
-      
       routeRef.current = L.polyline(latLngs, {
-        color: routeColor,
+        color: '#22c55e',
         weight: 4,
         opacity: 0.8,
         dashArray: '10, 10',
       }).addTo(mapInstanceRef.current);
     }
-  }, [pickup, delivery, driverLocation, showRoute, traffic]);
-
-  // Add traffic circles at key locations
-  useEffect(() => {
-    if (!mapInstanceRef.current || !L || !showTraffic) return;
-
-    // Clear existing traffic circles
-    trafficCirclesRef.current.forEach((circle) => circle.remove());
-    trafficCirclesRef.current = [];
-
-    // Add traffic indicators at key locations
-    const trafficLocations = [
-      { lat: 10.1483, lng: -85.4527, level: 'moderate', color: '#eab308', label: 'Centro' },
-      { lat: 10.1490, lng: -85.4520, level: 'heavy', color: '#f97316', label: 'Mercado' },
-      { lat: 10.1470, lng: -85.4540, level: 'light', color: '#84cc16', label: 'Hospital' },
-    ];
-
-    trafficLocations.forEach((loc) => {
-      const icon = createTrafficIcon(loc.color, loc.level);
-      const marker = L.marker([loc.lat, loc.lng], { icon })
-        .addTo(mapInstanceRef.current)
-        .bindPopup(`<b>${loc.label}</b><br>Tráfico: ${loc.level}`);
-      trafficCirclesRef.current.push(marker);
-    });
-  }, [showTraffic]);
+  }, [pickup, delivery, driverLocation, showRoute]);
 
   if (error) {
     return (
-      <div 
+      <div
         className={`flex items-center justify-center bg-surface-100 dark:bg-surface-800 rounded-2xl ${className}`}
         style={{ height }}
       >
         <div className="text-center">
-          <span className="text-4xl block mb-2">Map</span>
+          <AlertTriangle className="h-10 w-10 text-surface-400 mx-auto mb-2" />
           <p className="text-sm text-surface-500 dark:text-surface-400">{error}</p>
         </div>
       </div>
@@ -276,14 +197,8 @@ export function TrackingMap({
 
   return (
     <div className={`relative rounded-2xl overflow-hidden ${className}`}>
-      {/* Map Container */}
-      <div 
-        ref={mapRef} 
-        style={{ height }}
-        className="w-full"
-      />
+      <div ref={mapRef} style={{ height }} className="w-full" />
 
-      {/* Loading Overlay */}
       {!isLoaded && (
         <motion.div
           className="absolute inset-0 flex items-center justify-center bg-surface-100 dark:bg-surface-800"
@@ -301,32 +216,9 @@ export function TrackingMap({
         </motion.div>
       )}
 
-      {/* Traffic Indicator */}
-      {isLoaded && traffic && showTraffic && (
-        <motion.div
-          className="absolute top-2 left-2 bg-white dark:bg-surface-800 rounded-lg shadow-lg p-2"
-          initial={{ opacity: 0, x: -10 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          <div className="flex items-center gap-2">
-            <motion.div
-              className="h-3 w-3 rounded-full"
-              style={{ backgroundColor: traffic.color }}
-              animate={{ scale: [1, 1.2, 1] }}
-              transition={{ duration: 2, repeat: Infinity }}
-            />
-            <span className="text-xs font-medium" style={{ color: traffic.color }}>
-              {traffic.description}
-            </span>
-          </div>
-        </motion.div>
-      )}
-
-      {/* Legend */}
       {isLoaded && (
         <motion.div
-          className="absolute bottom-2 left-2 bg-white dark:bg-surface-800 rounded-lg shadow-lg p-2 text-xs"
+          className="absolute bottom-2 left-2 glass rounded-lg p-2 text-xs"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
@@ -346,19 +238,12 @@ export function TrackingMap({
                 <span className="text-surface-600 dark:text-surface-400">Repartidor</span>
               </div>
             )}
-            {showTraffic && (
-              <div className="flex items-center gap-1">
-                <span className="w-3 h-3 rounded-full bg-surface-400" />
-                <span className="text-surface-600 dark:text-surface-400">Tráfico</span>
-              </div>
-            )}
           </div>
         </motion.div>
       )}
 
-      {/* Fullscreen Button */}
       <button
-        className="absolute top-2 right-2 w-8 h-8 bg-white dark:bg-surface-800 rounded-lg shadow-lg flex items-center justify-center hover:bg-surface-50 dark:hover:bg-surface-700 transition-colors"
+        className="absolute top-2 right-2 w-8 h-8 glass rounded-lg flex items-center justify-center hover:bg-surface-50 dark:hover:bg-surface-700 transition-colors"
         onClick={() => {
           if (mapInstanceRef.current) {
             mapInstanceRef.current.setZoom(mapInstanceRef.current.getZoom() + 1);

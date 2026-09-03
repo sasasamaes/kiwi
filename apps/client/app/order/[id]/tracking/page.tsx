@@ -6,6 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api, Skeleton, TrafficIndicator, DeliveryEstimate } from '@kiwi/ui';
 import dynamic from 'next/dynamic';
+import { Package, Bike, Check, PartyPopper, Rocket, User, MapPin, Home, Clock } from 'lucide-react';
 
 // Dynamically import TrackingMap to avoid SSR issues with Leaflet
 const TrackingMap = dynamic(() => import('@kiwi/ui').then((mod) => mod.TrackingMap), {
@@ -60,27 +61,27 @@ interface DriverLocation {
 }
 
 const STATUS_STEPS = [
-  { key: 'pending', label: 'Pedido creado', icon: 'Package', description: 'Tu pedido fue recibido' },
+  { key: 'pending', label: 'Pedido creado', icon: Package, description: 'Tu pedido fue recibido' },
   {
     key: 'assigned',
     label: 'Repartidor asignado',
-    icon: 'Bike',
+    icon: Bike,
     description: 'Un repartidor tomó tu pedido',
   },
   {
     key: 'in_transit_to_pickup',
     label: 'Recogiendo',
-    icon: '🏃',
+    icon: Runner,
     description: 'El repartidor va a recoger tu pedido',
   },
-  { key: 'picked_up', label: 'Pedido recogido', icon: 'Check', description: 'Tu pedido fue recogido' },
+  { key: 'picked_up', label: 'Pedido recogido', icon: Check, description: 'Tu pedido fue recogido' },
   {
     key: 'in_transit_to_delivery',
     label: 'En camino',
-    icon: '🚀',
+    icon: Rocket,
     description: 'Tu pedido va camino a ti',
   },
-  { key: 'delivered', label: 'Entregado', icon: 'PartyPopper', description: '¡Tu pedido fue entregado!' },
+  { key: 'delivered', label: 'Entregado', icon: PartyPopper, description: '¡Tu pedido fue entregado!' },
 ];
 
 export default function OrderTrackingPage() {
@@ -378,16 +379,7 @@ export default function OrderTrackingPage() {
               <div>
                 <p className="text-white/80 text-sm">Pedido #{order.id.slice(0, 8)}</p>
                 <h2 className="text-2xl font-display font-bold mt-1">
-                  {isDelivered
-                    ? 'PartyPopper Entregado'
-                    : isCancelled
-                      ? 'X Cancelado'
-                      : STATUS_STEPS[currentStepIndex]?.icon || 'Package'}{' '}
-                  {isDelivered
-                    ? ''
-                    : isCancelled
-                      ? ''
-                      : STATUS_STEPS[currentStepIndex]?.label || 'Procesando'}
+                  {STATUS_STEPS[currentStepIndex]?.label || 'Procesando'}
                 </h2>
               </div>
               <motion.div
@@ -395,11 +387,10 @@ export default function OrderTrackingPage() {
                 animate={isDelivered ? { rotate: [0, -10, 10, 0], scale: [1, 1.1, 1] } : {}}
                 transition={{ duration: 0.5, repeat: isDelivered ? Infinity : 0, repeatDelay: 2 }}
               >
-                {isDelivered
-                  ? 'PartyPopper'
-                  : isCancelled
-                    ? 'X'
-                    : STATUS_STEPS[currentStepIndex]?.icon || 'Package'}
+                {(() => {
+                  const IconComp = STATUS_STEPS[currentStepIndex]?.icon;
+                  return IconComp ? <IconComp className="h-12 w-12 text-white" /> : null;
+                })()}
               </motion.div>
             </div>
 
