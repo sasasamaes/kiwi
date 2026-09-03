@@ -1,41 +1,162 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { AnimatedButton } from '@kiwi/ui';
+import { 
+  AnimatedButton, 
+  TrackingMap, 
+  Skeleton,
+  useSocket,
+  api,
+  Order 
+} from '@kiwi/ui';
 
-type OrderStatus = 'confirmed' | 'preparing' | 'picked_up' | 'delivering' | 'delivered';
+type OrderStatus = 'pending' | 'assigned' | 'in_transit_to_pickup' | 'picked_up' | 'in_transit_to_delivery' | 'delivered' | 'cancelled';
 
 const statusConfig: Record<OrderStatus, { label: string; icon: string; description: string; progress: number }> = {
-  confirmed: { label: 'Confirmado', icon: '✅', description: 'El restaurante recibió tu pedido', progress: 20 },
-  preparing: { label: 'Preparando', icon: '👨‍🍳', description: 'Están preparando tu comida', progress: 40 },
+  pending: { label: 'Pendiente', icon: '⏳', description: 'Esperando repartidor', progress: 10 },
+  assigned: { label: 'Asignado', icon: '✅', description: 'Repartidor asignado', progress: 20 },
+  in_transit_to_pickup: { label: 'En camino a recoger', icon: '🛵', description: 'El repartidor va al comercio', progress: 40 },
   picked_up: { label: 'Recogido', icon: '📦', description: 'El repartidor recogió tu pedido', progress: 60 },
-  delivering: { label: 'En camino', icon: '🛵', description: 'Tu pedido va en camino', progress: 80 },
+  in_transit_to_delivery: { label: 'En camino', icon: '🚀', description: 'Tu pedido va en camino', progress: 80 },
   delivered: { label: 'Entregado', icon: '🎉', description: '¡Recibiste tu pedido!', progress: 100 },
+  cancelled: { label: 'Cancelado', icon: '❌', description: 'El pedido fue cancelado', progress: 0 },
 };
 
-export default function TrackingPage({ params }: { params: { id: string } }) {
-  const [currentStatus, setCurrentStatus] = useState<OrderStatus>('confirmed');
-  const [eta, setEta] = useState(25);
+export default function TrackingPage() {
+  const params = useParams();
+  const orderId = params.id as string;
 
-  // Simulate order progress
+  const [order, setOrder] = useState<Order | null>(null);
+  const [currentStatus, setCurrentStatus] = useState<OrderStatus>('pending');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [driverLocation, setDriverLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [eta, setEta] = useState<number | null>(null);
+  const [statusHistory, setStatusHistory] = useState<{ status: string; timestamp: Date; message: string }[]>([]);
+
+  // Socket for real-time updates
+  const { isConnected, on, emit } = useSocket({
+    onConnect: () => {
+      console.log('🟢 Connected for order tracking');
+      // Join order room for updates
+      emit('order:track', { orderId });
+    },
+  });
+
+  // Fetch initial order data
+  const fetchOrder = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await api.getOrder(orderId);
+      setOrder(data);
+      setCurrentStatus(data.status as OrderStatus);
+    } catch (err) {
+      setError('No se pudo cargar el pedido');
+    } finally {
+      setLoading(false);
+    }
+  }, [orderId]);
+
   useEffect(() => {
-    const statuses: OrderStatus[] = ['confirmed', 'preparing', 'picked_up', 'delivering', 'delivered'];
-    let currentIndex = 0;
+    fetchOrder();
+  }, [fetchOrder]);
+
+  // Listen for real-time status changes
+  useEffect(() => {
+    const cleanup = on('order:statusChanged', (data: any) => {
+      if (data.orderId === orderId) {
+        setCurrentStatus(data.status as OrderStatus);
+        setStatusHistory(prev => [
+          { status: data.status, timestamp: new Date(), message: data.message },
+          ...prev,
+        ]);
+        
+        // Update eta based on status
+        if (data.status === 'in_transit_to_delivery') {
+          setEta(15);
+        } else if (data.status === 'picked_up') {
+          setEta(25);
+        } else if (data.status === 'delivered') {
+          setEta(0);
+        }
+      }
+    });
+
+    return cleanup;
+  }, [on, orderId]);
+
+  // Listen for driver location updates
+  useEffect(() => {
+    const cleanup = on('driver:location', (data: any) => {
+      if (data.orderId === orderId) {
+        setDriverLocation({ lat: data.lat, lng: data.lng });
+      }
+    });
+
+    return cleanup;
+  }, [on, orderId]);
+
+  // Listen for driver assignment
+  useEffect(() => {
+    const cleanup = on('order:assigned', (data: any) => {
+      if (data.orderId === orderId) {
+        setStatusHistory(prev => [
+          { status: 'assigned', timestamp: new Date(), message: data.message },
+          ...prev,
+        ]);
+      }
+    });
+
+    return cleanup;
+  }, [on, orderId]);
+
+  // Countdown timer for ETA
+  useEffect(() => {
+    if (eta === null || eta <= 0) return;
 
     const interval = setInterval(() => {
-      if (currentIndex < statuses.length - 1) {
-        currentIndex++;
-        setCurrentStatus(statuses[currentIndex]);
-        setEta(prev => Math.max(0, prev - 5));
-      }
-    }, 5000);
+      setEta(prev => (prev !== null && prev > 0 ? prev - 1 : 0));
+    }, 60000); // Update every minute
 
     return () => clearInterval(interval);
-  }, []);
+  }, [eta]);
 
   const config = statusConfig[currentStatus];
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-bg-light dark:bg-surface-950">
+        <div className="sticky top-0 z-40 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl">
+          <div className="mx-auto max-w-lg px-4 py-4">
+            <Skeleton className="h-6 w-48" />
+          </div>
+        </div>
+        <div className="mx-auto max-w-lg px-4 py-6 space-y-4">
+          <Skeleton className="h-64 rounded-2xl" />
+          <Skeleton className="h-32 rounded-2xl" />
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !order) {
+    return (
+      <div className="min-h-screen bg-bg-light dark:bg-surface-950 flex items-center justify-center">
+        <div className="text-center">
+          <span className="text-6xl mb-4 block">❌</span>
+          <h2 className="text-xl font-semibold text-surface-800 dark:text-surface-100 mb-2">
+            {error || 'Pedido no encontrado'}
+          </h2>
+          <Link href="/">
+            <AnimatedButton>Volver al inicio</AnimatedButton>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-bg-light dark:bg-surface-950">
@@ -48,7 +169,7 @@ export default function TrackingPage({ params }: { params: { id: string } }) {
         <div className="mx-auto max-w-lg px-4 py-4">
           <div className="flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2 text-surface-600 dark:text-surface-400">
-              <span>←</span>
+              <motion.span whileHover={{ x: -4 }}>←</motion.span>
               <span className="text-sm font-medium">Volver</span>
             </Link>
             <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">Rastrear Pedido</h1>
@@ -58,221 +179,150 @@ export default function TrackingPage({ params }: { params: { id: string } }) {
       </motion.header>
 
       <main className="mx-auto max-w-lg px-4 py-6">
-        {/* Order Status Card */}
-        <motion.div 
-          className="mb-6 rounded-2xl bg-kiwi-gradient p-6 text-white shadow-kiwi-lg overflow-hidden relative"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <motion.div 
-            className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/10"
-            animate={{ scale: [1, 1.2, 1] }}
-            transition={{ duration: 4, repeat: Infinity }}
-          />
-          
-          <div className="relative">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-white/80 text-sm">Pedido #KIWI-1234</p>
-                <motion.h2 
-                  className="text-2xl font-bold"
-                  key={currentStatus}
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                >
-                  {config.label}
-                </motion.h2>
-              </div>
-              <motion.div 
-                className="text-5xl"
-                key={currentStatus}
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ type: 'spring', stiffness: 200 }}
-              >
-                {config.icon}
-              </motion.div>
-            </div>
-            
-            <p className="text-white/80 mb-4">{config.description}</p>
-            
-            {/* Progress Bar */}
-            <div className="h-2 bg-white/20 rounded-full overflow-hidden">
-              <motion.div 
-                className="h-2 bg-white rounded-full"
-                initial={{ width: 0 }}
-                animate={{ width: `${config.progress}%` }}
-                transition={{ duration: 0.5, ease: 'easeOut' }}
-              />
-            </div>
-            
-            {currentStatus !== 'delivered' && (
-              <div className="flex items-center justify-between mt-4">
-                <span className="text-white/80">Tiempo estimado</span>
-                <motion.span 
-                  className="text-2xl font-bold"
-                  key={eta}
-                  initial={{ scale: 0.5 }}
-                  animate={{ scale: 1 }}
-                >
-                  {eta} min
-                </motion.span>
-              </div>
-            )}
-          </div>
-        </motion.div>
-
-        {/* Status Timeline */}
-        <motion.div 
-          className="mb-6 rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+        {/* Live Map */}
+        <motion.div
+          className="rounded-2xl overflow-hidden shadow-soft dark:shadow-dark mb-6"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.1 }}
         >
-          <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-            Estado del Pedido
-          </h3>
-          <div className="space-y-4">
-            {Object.entries(statusConfig).map(([key, value], index) => {
-              const statusKey = key as OrderStatus;
-              const isCompleted = config.progress >= value.progress;
-              const isCurrent = currentStatus === statusKey;
-              
-              return (
-                <div key={key} className="flex items-center gap-4">
-                  <div className={`flex h-10 w-10 items-center justify-center rounded-full ${
-                    isCompleted 
-                      ? 'bg-kiwi-100 dark:bg-kiwi-900/50 text-kiwi-600 dark:text-kiwi-400' 
-                      : 'bg-surface-100 dark:bg-surface-700 text-surface-400'
-                  } ${isCurrent ? 'ring-2 ring-kiwi-500 ring-offset-2 dark:ring-offset-surface-800' : ''}`}>
-                    <span className="text-lg">{value.icon}</span>
-                  </div>
-                  <div className="flex-1">
-                    <p className={`font-medium ${
-                      isCompleted ? 'text-surface-800 dark:text-surface-200' : 'text-surface-400'
-                    }`}>
-                      {value.label}
-                    </p>
-                    <p className="text-sm text-surface-500 dark:text-surface-400">{value.description}</p>
-                  </div>
-                  {isCompleted && !isCurrent && (
-                    <span className="text-kiwi-500">✓</span>
-                  )}
-                  {isCurrent && (
-                    <motion.span 
-                      className="text-kiwi-500"
-                      animate={{ scale: [1, 1.2, 1] }}
-                      transition={{ duration: 1, repeat: Infinity }}
-                    >
-                      ●
-                    </motion.span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+          <TrackingMap
+            pickup={{ lat: 10.1483, lng: -85.4527 }}
+            delivery={{ lat: 10.1583, lng: -85.4627 }}
+            driverLocation={driverLocation || undefined}
+            height={300}
+            showRoute={true}
+            showTraffic={true}
+          />
         </motion.div>
 
-        {/* Driver Info */}
-        {(currentStatus === 'picked_up' || currentStatus === 'delivering') && (
-          <motion.div 
-            className="mb-6 rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-              🛵 Tu Repartidor
-            </h3>
-            <div className="flex items-center gap-4">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-kiwi-gradient text-white font-bold text-xl">
-                JC
-              </div>
-              <div className="flex-1">
-                <p className="font-semibold text-surface-800 dark:text-surface-200">Juan Carlos</p>
-                <p className="text-sm text-surface-500 dark:text-surface-400">⭐ 4.9 • 156 viajes</p>
-              </div>
-              <motion.button 
-                className="flex h-12 w-12 items-center justify-center rounded-full bg-kiwi-100 dark:bg-kiwi-900/50 text-kiwi-600 dark:text-kiwi-400"
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-              >
-                📞
-              </motion.button>
-            </div>
-          </motion.div>
-        )}
+        {/* Connection Status */}
+        <motion.div
+          className={`mb-4 px-3 py-1.5 rounded-full text-xs font-medium inline-flex items-center gap-1.5 ${
+            isConnected 
+              ? 'bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400'
+              : 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400'
+          }`}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+        >
+          <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+          {isConnected ? 'En vivo' : 'Sin conexión'}
+        </motion.div>
 
-        {/* Order Details */}
-        <motion.div 
-          className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
+        {/* Status Card */}
+        <motion.div
+          className="rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark mb-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-            📋 Detalles del Pedido
-          </h3>
-          <div className="space-y-3">
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">🥗</span>
-              <div className="flex-1">
-                <p className="font-medium text-surface-800 dark:text-surface-200">Bowl Tropikal</p>
-                <p className="text-sm text-surface-500 dark:text-surface-400">x1</p>
-              </div>
-              <p className="font-semibold text-surface-800 dark:text-surface-200">₡4,500</p>
+          <div className="flex items-center gap-4 mb-4">
+            <span className="text-4xl">{config.icon}</span>
+            <div>
+              <h2 className="text-xl font-display font-semibold text-surface-800 dark:text-surface-100">
+                {config.label}
+              </h2>
+              <p className="text-surface-500 dark:text-surface-400">{config.description}</p>
             </div>
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">☕</span>
-              <div className="flex-1">
-                <p className="font-medium text-surface-800 dark:text-surface-200">Latte</p>
-                <p className="text-sm text-surface-500 dark:text-surface-400">x2</p>
-              </div>
-              <p className="font-semibold text-surface-800 dark:text-surface-200">₡3,600</p>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="relative h-2 bg-surface-100 dark:bg-surface-700 rounded-full overflow-hidden">
+            <motion.div
+              className="absolute inset-y-0 left-0 bg-gradient-to-r from-kiwi-400 to-kiwi-600"
+              initial={{ width: 0 }}
+              animate={{ width: `${config.progress}%` }}
+              transition={{ duration: 0.8, ease: 'easeOut' }}
+            />
+          </div>
+
+          {/* ETA */}
+          {eta !== null && eta > 0 && currentStatus !== 'delivered' && (
+            <motion.div
+              className="mt-4 flex items-center gap-2"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+            >
+              <span className="text-sm text-surface-500 dark:text-surface-400">Tiempo estimado:</span>
+              <span className="text-lg font-bold text-kiwi-600 dark:text-kiwi-400">{eta} min</span>
+            </motion.div>
+          )}
+        </motion.div>
+
+        {/* Order Details */}
+        <motion.div
+          className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark mb-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <h3 className="font-semibold text-surface-800 dark:text-surface-100 mb-3">Detalles del pedido</h3>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-surface-500 dark:text-surface-400">Pedido</span>
+              <span className="text-surface-700 dark:text-surface-200 font-medium">#{orderId.slice(0, 8)}</span>
             </div>
-            <div className="border-t border-surface-200 dark:border-surface-700 pt-3">
-              <div className="flex justify-between">
-                <span className="text-surface-500 dark:text-surface-400">Subtotal</span>
-                <span className="text-surface-800 dark:text-surface-200">₡8,100</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-surface-500 dark:text-surface-400">Envío</span>
-                <span className="text-kiwi-600 dark:text-kiwi-400">Gratis</span>
-              </div>
-              <div className="flex justify-between mt-2">
-                <span className="font-semibold text-surface-800 dark:text-surface-200">Total</span>
-                <span className="text-xl font-bold text-surface-800 dark:text-surface-200">₡8,100</span>
-              </div>
+            <div className="flex justify-between">
+              <span className="text-surface-500 dark:text-surface-400">Estado</span>
+              <span className="text-surface-700 dark:text-surface-200">{config.label}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-surface-500 dark:text-surface-400">Total</span>
+              <span className="text-surface-700 dark:text-surface-200 font-semibold">
+                ₡{Number(order.totalAmount || 0).toLocaleString()}
+              </span>
             </div>
           </div>
         </motion.div>
 
-        {/* Rate Order (when delivered) */}
-        {currentStatus === 'delivered' && (
-          <motion.div 
-            className="mt-6 rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark text-center"
+        {/* Status History */}
+        {statusHistory.length > 0 && (
+          <motion.div
+            className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark mb-6"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
           >
-            <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-              ⭐ ¿Cómo fue tu experiencia?
-            </h3>
-            <div className="flex justify-center gap-2 mb-4">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <motion.button
-                  key={star}
-                  className="text-3xl"
-                  whileHover={{ scale: 1.2 }}
-                  whileTap={{ scale: 0.9 }}
-                >
-                  ⭐
-                </motion.button>
+            <h3 className="font-semibold text-surface-800 dark:text-surface-100 mb-3">Historial</h3>
+            <div className="space-y-3">
+              {statusHistory.map((item, index) => (
+                <div key={index} className="flex gap-3">
+                  <div className="flex flex-col items-center">
+                    <div className="w-3 h-3 rounded-full bg-kiwi-500" />
+                    {index < statusHistory.length - 1 && (
+                      <div className="w-0.5 h-8 bg-surface-200 dark:bg-surface-700" />
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-surface-700 dark:text-surface-200">
+                      {item.message}
+                    </p>
+                    <p className="text-xs text-surface-400">
+                      {new Date(item.timestamp).toLocaleTimeString('es-CR')}
+                    </p>
+                  </div>
+                </div>
               ))}
             </div>
-            <AnimatedButton variant="gradient" className="w-full">
-              Enviar Calificación
-            </AnimatedButton>
           </motion.div>
         )}
+
+        {/* Actions */}
+        <div className="flex gap-3">
+          <Link href="/" className="flex-1">
+            <AnimatedButton variant="secondary" className="w-full">
+              Volver al inicio
+            </AnimatedButton>
+          </Link>
+          {currentStatus === 'delivered' && (
+            <Link href={`/order/${orderId}/rate`} className="flex-1">
+              <AnimatedButton className="w-full">
+                ⭐ Calificar
+              </AnimatedButton>
+            </Link>
+          )}
+        </div>
       </main>
     </main>
   );

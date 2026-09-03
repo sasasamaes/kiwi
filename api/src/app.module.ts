@@ -15,6 +15,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { WithdrawalsModule } from './withdrawals/withdrawals.module';
 import { GeocodingModule } from './geocoding/geocoding.module';
 import { RoutingModule } from './routing/routing.module';
+import { SecurityModule } from './security/security.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { RoutingModule } from './routing/routing.module';
     WithdrawalsModule,
     GeocodingModule,
     RoutingModule,
+    SecurityModule,
   ],
 })
 export class AppModule {}

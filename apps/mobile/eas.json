@@ -16,8 +16,8 @@
         "resourceClass": "medium"
       },
       "env": {
-        "API_URL": "http://localhost:3000",
-        "SOCKET_URL": "http://localhost:3000",
+        "API_URL": "http://192.168.1.100:3000",
+        "SOCKET_URL": "http://192.168.1.100:3000",
         "APP_ENV": "development"
       }
     },
@@ -55,9 +55,9 @@
   "submit": {
     "production": {
       "ios": {
-        "appleId": "your-apple-id@email.com",
-        "ascAppId": "your-app-store-connect-app-id",
-        "appleTeamId": "YOUR-TEAM-ID"
+        "appleId": "kiwi.delivery.app@gmail.com",
+        "ascAppId": "YOUR_APP_STORE_CONNECT_APP_ID",
+        "appleTeamId": "YOUR-APPLE-TEAM-ID"
       },
       "android": {
         "serviceAccountKeyPath": "./google-services.json",
@@ -65,6 +65,16 @@
         "apk": false,
         "aab": true
       }
+    }
+  },
+  "app": {
+    "ios": {
+      "bundleIdentifier": "app.kiwi.delivery",
+      "buildNumber": "1"
+    },
+    "android": {
+      "package": "app.kiwi.delivery",
+      "versionCode": 1
     }
   }
 }
