@@ -32,10 +32,13 @@
     "deploy:driver": "cd apps/driver && vercel --prod",
     "deploy:client": "cd apps/client && vercel --prod",
     "deploy:admin": "cd apps/web && vercel --prod --name kiwi-admin",
-    "preview": "turbo run dev --filter='./apps/*'"
+    "preview": "turbo run dev --filter='./apps/*'",
+    "prepare": "husky"
   },
   "devDependencies": {
     "eslint": "^8.0.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
     "prettier": "^3.0.0",
     "turbo": "^2.0.0",
     "typescript": "^5.4.0"
@@ -44,6 +47,15 @@
     "node": ">=20"
   },
   "packageManager": "npm@10.0.0",
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "prettier --write",
+      "eslint --fix --no-error-on-unmatched-pattern"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
+  },
   "dependencies": {
     "framer-motion": "^13.1.1"
   }
