@@ -322,3 +322,18 @@ export { AdminSyncDashboard } from './AdminSyncDashboard';
 export { offlineAnalytics } from './offline-analytics';
 export type { AnalyticsEvent, AnalyticsEventType, OfflineUsageStats, OfflineAnalyticsOptions } from './offline-analytics';
 export { OfflineAnalyticsDashboard } from './OfflineAnalyticsDashboard';
+
+// ============================================
+// 📊 ANALYTICS TRACKING
+// ============================================
+export { analytics, events, trackPageView, trackPerformance, trackError } from './analytics';
+
+// ============================================
+// 🔍 ORDER SEARCH & FILTER
+// ============================================
+export { OrderSearch } from './OrderSearch';
+
+// ============================================
+// 🔗 UNIFIED CACHE
+// ============================================
+export { unifiedCache, useUnifiedCache } from './unified-cache';
