@@ -15,8 +15,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
+import { useNetworkStatus } from '../hooks/useNetworkStatus';
+import { useLocationTracking } from '../hooks/useLocationTracking';
+import { usePushNotifications } from '../hooks/usePushNotifications';
 import { colors, gradients, shadows } from '../utils/theme';
 import { api, connectSocket, disconnectSocket, onSocket, Order } from '../services/api';
+import { orderCache, offlineQueue } from '../services/offlineStorage';
 import OrderCard from '../components/OrderCard';
 
 const { width } = Dimensions.get('window');
@@ -24,18 +28,54 @@ const { width } = Dimensions.get('window');
 export default function HomeScreen({ navigation }: any) {
   const { user } = useAuth();
   const { isDark } = useTheme();
+  const { isOnline: networkOnline, justCameBackOnline } = useNetworkStatus();
+  const { location, tracking, startTracking, stopTracking } = useLocationTracking({
+    enabled: false, // Will be enabled when driver goes online
+  });
+  const { sendLocalNotification } = usePushNotifications();
   const [isOnline, setIsOnline] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
   const [stats, setStats] = useState({ trips: 0, earnings: 0, rating: 5.0 });
   const [refreshing, setRefreshing] = useState(false);
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const [socketConnected, setSocketConnected] = useState(false);
+  const [pendingSyncCount, setPendingSyncCount] = useState(0);
+
+  const updatePendingSyncCount = async () => {
+    const count = await offlineQueue.getCount();
+    setPendingSyncCount(count);
+  };
+
+  // Sync queued actions when coming back online
+  useEffect(() => {
+    if (justCameBackOnline && networkOnline) {
+      syncQueuedActions();
+    }
+  }, [justCameBackOnline, networkOnline]);
+
+  const syncQueuedActions = async () => {
+    try {
+      const queue = await offlineQueue.getQueue();
+      for (const action of queue) {
+        try {
+          await fetch(action.endpoint, {
+            method: action.method,
+            headers: { 'Content-Type': 'application/json' },
+            body: action.body ? JSON.stringify(action.body) : undefined,
+          });
+          await offlineQueue.remove(action.id);
+        } catch {}
+      }
+      await updatePendingSyncCount();
+    } catch {}
+  };
 
   useEffect(() => {
     fetchOrders();
     fetchStats();
     setupSocket();
     startPulse();
+    updatePendingSyncCount();
 
     return () => {
       disconnectSocket();
@@ -91,33 +131,68 @@ export default function HomeScreen({ navigation }: any) {
 
   const fetchOrders = async () => {
     try {
-      const data = await api.getAvailableOrders();
-      setOrders(data || []);
+      if (networkOnline) {
+        const data = await api.getAvailableOrders();
+        setOrders(data || []);
+        await orderCache.saveAvailableOrders(data || []);
+      } else {
+        // Use cached data when offline
+        const cached = await orderCache.getAvailableOrders();
+        if (cached) {
+          setOrders(cached);
+        }
+      }
     } catch (error) {
       console.error('Failed to fetch orders:', error);
+      // Fallback to cache on error
+      const cached = await orderCache.getAvailableOrders();
+      if (cached) setOrders(cached);
     }
   };
 
   const fetchStats = async () => {
     try {
-      const driverProfile = await api.getDriverProfile();
-      setStats({
-        trips: driverProfile.totalTrips || 0,
-        earnings: 0, // Will be fetched from earnings endpoint
-        rating: Number(driverProfile.rating) || 5.0,
-      });
-      setIsOnline(driverProfile.status === 'available');
+      if (networkOnline) {
+        const driverProfile = await api.getDriverProfile();
+        setStats({
+          trips: driverProfile.totalTrips || 0,
+          earnings: 0,
+          rating: Number(driverProfile.rating) || 5.0,
+        });
+        setIsOnline(driverProfile.status === 'available');
+        await orderCache.saveDriverProfile(driverProfile);
 
-      // Fetch earnings separately
-      try {
-        const earnings = await api.getEarnings('week');
-        setStats(prev => ({
-          ...prev,
-          earnings: earnings.totalEarnings || 0,
-        }));
-      } catch {}
+        try {
+          const earnings = await api.getEarnings('week');
+          setStats(prev => ({ ...prev, earnings: earnings.totalEarnings || 0 }));
+          await orderCache.saveEarnings(earnings);
+        } catch {}
+      } else {
+        // Use cached data when offline
+        const cachedProfile = await orderCache.getDriverProfile();
+        if (cachedProfile) {
+          setStats({
+            trips: cachedProfile.totalTrips || 0,
+            earnings: 0,
+            rating: Number(cachedProfile.rating) || 5.0,
+          });
+          setIsOnline(cachedProfile.status === 'available');
+        }
+        const cachedEarnings = await orderCache.getEarnings();
+        if (cachedEarnings) {
+          setStats(prev => ({ ...prev, earnings: cachedEarnings.totalEarnings || 0 }));
+        }
+      }
     } catch (error) {
       console.error('Failed to fetch stats:', error);
+      const cachedProfile = await orderCache.getDriverProfile();
+      if (cachedProfile) {
+        setStats({
+          trips: cachedProfile.totalTrips || 0,
+          earnings: 0,
+          rating: Number(cachedProfile.rating) || 5.0,
+        });
+      }
     }
   };
 
@@ -130,11 +205,25 @@ export default function HomeScreen({ navigation }: any) {
   const toggleOnline = async () => {
     const newStatus = !isOnline;
     try {
-      await api.updateDriverStatus(newStatus ? 'available' : 'offline');
+      if (networkOnline) {
+        await api.updateDriverStatus(newStatus ? 'available' : 'offline');
+      } else {
+        // Queue for later sync
+        await offlineQueue.enqueue({
+          type: 'driver:status',
+          endpoint: '/drivers/me/status',
+          method: 'PUT',
+          body: { status: newStatus ? 'available' : 'offline' },
+        });
+        await updatePendingSyncCount();
+      }
       setIsOnline(newStatus);
       if (newStatus) {
         fetchOrders();
         startPulse();
+        startTracking();
+      } else {
+        stopTracking();
       }
     } catch (error) {
       console.error('Failed to update status:', error);
@@ -144,11 +233,20 @@ export default function HomeScreen({ navigation }: any) {
 
   const handleAcceptOrder = async (orderId: string) => {
     try {
-      await api.acceptOrder(orderId);
+      if (networkOnline) {
+        await api.acceptOrder(orderId);
+      } else {
+        await offlineQueue.enqueue({
+          type: 'order:accept',
+          endpoint: `/orders/${orderId}/accept`,
+          method: 'POST',
+        });
+        await updatePendingSyncCount();
+      }
       Alert.alert('Pedido aceptado', 'Ve a recoger el pedido', [
         { text: 'Ver detalle', onPress: () => navigation.navigate('OrderDetail', { orderId }) },
       ]);
-      fetchOrders(); // Refresh available orders
+      fetchOrders();
     } catch (error: any) {
       const message = error.response?.data?.message || 'No se pudo aceptar el pedido';
       Alert.alert('Error', message);
@@ -191,6 +289,25 @@ export default function HomeScreen({ navigation }: any) {
             </TouchableOpacity>
           </View>
         </View>
+
+        {/* Network Status Banner */}
+        {!networkOnline && (
+          <View style={[styles.offlineBanner, { backgroundColor: '#fef3c7' }]}>
+            <Ionicons name="cloud-offline" size={16} color="#92400e" />
+            <Text style={styles.offlineText}>Sin conexion - Los cambios se sincronizaran</Text>
+            {pendingSyncCount > 0 && (
+              <View style={styles.pendingBadge}>
+                <Text style={styles.pendingBadgeText}>{pendingSyncCount}</Text>
+              </View>
+            )}
+          </View>
+        )}
+        {justCameBackOnline && (
+          <View style={[styles.offlineBanner, { backgroundColor: '#dcfce7' }]}>
+            <Ionicons name="cloud-done" size={16} color="#166534" />
+            <Text style={[styles.offlineText, { color: '#166534' }]}>Conexion restaurada - Sincronizando...</Text>
+          </View>
+        )}
 
         {/* Status Card */}
         <LinearGradient
@@ -460,4 +577,25 @@ const styles = StyleSheet.create({
   orderTime: { fontSize: 12 },
   acceptButton: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20 },
   acceptButtonText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  offlineBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 20,
+    marginTop: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    gap: 8,
+  },
+  offlineText: { fontSize: 12, fontWeight: '600', color: '#92400e', flex: 1 },
+  pendingBadge: {
+    backgroundColor: '#ef4444',
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+  },
+  pendingBadgeText: { color: '#fff', fontSize: 10, fontWeight: '700' },
 });
