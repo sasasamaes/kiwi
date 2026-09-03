@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   RefreshControl,
   Animated,
   Dimensions,
+  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,7 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
 import { colors, gradients, shadows } from '../utils/theme';
-import { api } from '../services/api';
+import { api, connectSocket, disconnectSocket, onSocket, Order } from '../services/api';
 import OrderCard from '../components/OrderCard';
 
 const { width } = Dimensions.get('window');
@@ -24,16 +25,50 @@ export default function HomeScreen({ navigation }: any) {
   const { user } = useAuth();
   const { isDark } = useTheme();
   const [isOnline, setIsOnline] = useState(false);
-  const [orders, setOrders] = useState<any[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [stats, setStats] = useState({ trips: 0, earnings: 0, rating: 5.0 });
   const [refreshing, setRefreshing] = useState(false);
   const pulseAnim = useRef(new Animated.Value(1)).current;
+  const [socketConnected, setSocketConnected] = useState(false);
 
   useEffect(() => {
     fetchOrders();
     fetchStats();
+    setupSocket();
     startPulse();
+
+    return () => {
+      disconnectSocket();
+    };
   }, [isOnline]);
+
+  const setupSocket = async () => {
+    try {
+      const token = await import('expo-secure-store').then(m => m.default.getItemAsync('auth_token'));
+      if (token) {
+        const sock = await connectSocket(token);
+        if (sock) {
+          sock.on('connect', () => setSocketConnected(true));
+          sock.on('disconnect', () => setSocketConnected(false));
+
+          // Listen for new orders assigned to this driver
+          onSocket('order:assigned', (data: any) => {
+            console.log('📦 New order assigned:', data);
+            fetchOrders();
+            Alert.alert('📦 Nuevo Pedido', data.message || 'Te asignaron un nuevo pedido');
+          });
+
+          // Listen for order status changes
+          onSocket('order:statusChanged', (data: any) => {
+            console.log('📋 Order status changed:', data);
+            fetchOrders();
+          });
+        }
+      }
+    } catch (error) {
+      console.warn('Socket setup failed:', error);
+    }
+  };
 
   const startPulse = () => {
     if (isOnline) {
@@ -57,7 +92,7 @@ export default function HomeScreen({ navigation }: any) {
   const fetchOrders = async () => {
     try {
       const data = await api.getAvailableOrders();
-      setOrders(data);
+      setOrders(data || []);
     } catch (error) {
       console.error('Failed to fetch orders:', error);
     }
@@ -65,13 +100,22 @@ export default function HomeScreen({ navigation }: any) {
 
   const fetchStats = async () => {
     try {
-      const data = await api.getDriverProfile();
+      const driverProfile = await api.getDriverProfile();
       setStats({
-        trips: data.totalTrips || 0,
-        earnings: data.totalEarnings || 0,
-        rating: Number(data.rating) || 5.0,
+        trips: driverProfile.totalTrips || 0,
+        earnings: 0, // Will be fetched from earnings endpoint
+        rating: Number(driverProfile.rating) || 5.0,
       });
-      setIsOnline(data.status === 'available');
+      setIsOnline(driverProfile.status === 'available');
+
+      // Fetch earnings separately
+      try {
+        const earnings = await api.getEarnings('week');
+        setStats(prev => ({
+          ...prev,
+          earnings: earnings.totalEarnings || 0,
+        }));
+      } catch {}
     } catch (error) {
       console.error('Failed to fetch stats:', error);
     }
@@ -88,20 +132,30 @@ export default function HomeScreen({ navigation }: any) {
     try {
       await api.updateDriverStatus(newStatus ? 'available' : 'offline');
       setIsOnline(newStatus);
-      if (newStatus) fetchOrders();
+      if (newStatus) {
+        fetchOrders();
+        startPulse();
+      }
     } catch (error) {
       console.error('Failed to update status:', error);
+      Alert.alert('Error', 'No se pudo cambiar el estado');
     }
   };
 
   const handleAcceptOrder = async (orderId: string) => {
     try {
       await api.acceptOrder(orderId);
-      navigation.navigate('OrderDetail', { orderId });
-    } catch (error) {
-      console.error('Failed to accept order:', error);
+      Alert.alert('✅ Pedido aceptado', 'Ve a recoger el pedido', [
+        { text: 'Ver detalle', onPress: () => navigation.navigate('OrderDetail', { orderId }) },
+      ]);
+      fetchOrders(); // Refresh available orders
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'No se pudo aceptar el pedido';
+      Alert.alert('Error', message);
     }
   };
+
+  const formatCurrency = (amount: number) => `₡${amount.toLocaleString()}`;
 
   return (
     <SafeAreaView style={[styles.container, { 
@@ -110,7 +164,7 @@ export default function HomeScreen({ navigation }: any) {
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.kiwi[500]} />
         }
         showsVerticalScrollIndicator={false}
       >
@@ -124,12 +178,18 @@ export default function HomeScreen({ navigation }: any) {
               {user?.driverProfile?.fullName || 'Repartidor'}
             </Text>
           </View>
-          <TouchableOpacity style={[styles.notificationButton, { 
-            backgroundColor: isDark ? colors.surface[800] : '#fff' 
-          }]}>
-            <Ionicons name="notifications-outline" size={22} color={isDark ? colors.surface[100] : colors.surface[700]} />
-            <View style={styles.notificationBadge} />
-          </TouchableOpacity>
+          <View style={styles.headerRight}>
+            {/* Socket status indicator */}
+            <View style={[styles.socketIndicator, { backgroundColor: socketConnected ? '#22c55e' : '#ef4444' }]} />
+            <TouchableOpacity 
+              style={[styles.notificationButton, { 
+                backgroundColor: isDark ? colors.surface[800] : '#fff' 
+              }]}
+              onPress={() => navigation.navigate('Profile')}
+            >
+              <Ionicons name="notifications-outline" size={22} color={isDark ? colors.surface[100] : colors.surface[700]} />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Status Card */}
@@ -178,33 +238,32 @@ export default function HomeScreen({ navigation }: any) {
           )}
         </LinearGradient>
 
-        {/* Stats Grid */}
-        <View style={styles.statsGrid}>
-          <View style={[styles.statCard, { 
-            backgroundColor: isDark ? colors.surface[800] : '#fff' 
-          }]}>
-            <Text style={styles.statValue}>{stats.trips}</Text>
-            <Text style={[styles.statLabel, { color: isDark ? colors.surface[400] : colors.surface[500] }]}>
+        {/* Quick Stats */}
+        <View style={styles.quickStats}>
+          <View style={[styles.quickStat, { backgroundColor: isDark ? colors.surface[800] : '#fff' }]}>
+            <Ionicons name="cube" size={20} color={colors.kiwi[500]} />
+            <Text style={[styles.quickStatValue, { color: isDark ? colors.surface[100] : colors.surface[900] }]}>
+              {stats.trips}
+            </Text>
+            <Text style={[styles.quickStatLabel, { color: isDark ? colors.surface[400] : colors.surface[500] }]}>
               Viajes
             </Text>
           </View>
-          <View style={[styles.statCard, { 
-            backgroundColor: isDark ? colors.surface[800] : '#fff' 
-          }]}>
-            <Text style={[styles.statValue, { color: colors.gold[600] }]}>
-              ₡{(stats.earnings / 1000).toFixed(0)}k
+          <View style={[styles.quickStat, { backgroundColor: isDark ? colors.surface[800] : '#fff' }]}>
+            <Ionicons name="wallet" size={20} color={colors.gold[500]} />
+            <Text style={[styles.quickStatValue, { color: isDark ? colors.surface[100] : colors.surface[900] }]}>
+              {formatCurrency(stats.earnings)}
             </Text>
-            <Text style={[styles.statLabel, { color: isDark ? colors.surface[400] : colors.surface[500] }]}>
-              Ganancias
+            <Text style={[styles.quickStatLabel, { color: isDark ? colors.surface[400] : colors.surface[500] }]}>
+              Esta semana
             </Text>
           </View>
-          <View style={[styles.statCard, { 
-            backgroundColor: isDark ? colors.surface[800] : '#fff' 
-          }]}>
-            <Text style={[styles.statValue, { color: colors.gold[500] }]}>
-              ⭐ {stats.rating.toFixed(1)}
+          <View style={[styles.quickStat, { backgroundColor: isDark ? colors.surface[800] : '#fff' }]}>
+            <Ionicons name="star" size={20} color={colors.gold[500]} />
+            <Text style={[styles.quickStatValue, { color: isDark ? colors.surface[100] : colors.surface[900] }]}>
+              {stats.rating.toFixed(1)}
             </Text>
-            <Text style={[styles.statLabel, { color: isDark ? colors.surface[400] : colors.surface[500] }]}>
+            <Text style={[styles.quickStatLabel, { color: isDark ? colors.surface[400] : colors.surface[500] }]}>
               Rating
             </Text>
           </View>
@@ -212,50 +271,59 @@ export default function HomeScreen({ navigation }: any) {
 
         {/* Available Orders */}
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: isDark ? colors.surface[100] : colors.surface[900] }]}>
-              Pedidos Disponibles
-            </Text>
-            <Text style={[styles.sectionCount, { color: colors.kiwi[500] }]}>
-              {orders.length}
-            </Text>
-          </View>
+          <Text style={[styles.sectionTitle, { color: isDark ? colors.surface[100] : colors.surface[900] }]}>
+            Pedidos disponibles ({orders.length})
+          </Text>
 
-          {!isOnline ? (
-            <View style={[styles.emptyState, { 
-              backgroundColor: isDark ? colors.surface[800] : '#fff' 
-            }]}>
-              <Ionicons name="wifi-off" size={48} color={colors.surface[300]} />
-              <Text style={[styles.emptyTitle, { color: isDark ? colors.surface[300] : colors.surface[600] }]}>
-                Estás desconectado
-              </Text>
+          {orders.length === 0 ? (
+            <View style={[styles.emptyState, { backgroundColor: isDark ? colors.surface[800] : '#fff' }]}>
+              <Ionicons name="cube-outline" size={48} color={colors.surface[300]} />
               <Text style={[styles.emptyText, { color: isDark ? colors.surface[400] : colors.surface[500] }]}>
-                Conectate para ver pedidos disponibles
-              </Text>
-            </View>
-          ) : orders.length === 0 ? (
-            <View style={[styles.emptyState, { 
-              backgroundColor: isDark ? colors.surface[800] : '#fff' 
-            }]}>
-              <Ionicons name="search" size={48} color={colors.surface[300]} />
-              <Text style={[styles.emptyTitle, { color: isDark ? colors.surface[300] : colors.surface[600] }]}>
-                No hay pedidos
-              </Text>
-              <Text style={[styles.emptyText, { color: isDark ? colors.surface[400] : colors.surface[500] }]}>
-                Esperando nuevos pedidos cerca de ti...
+                {isOnline ? 'No hay pedidos disponibles' : 'Conectate para recibir pedidos'}
               </Text>
             </View>
           ) : (
-            <View style={styles.ordersList}>
-              {orders.map((order) => (
-                <OrderCard
-                  key={order.id}
-                  order={order}
-                  onAccept={() => handleAcceptOrder(order.id)}
-                  onReject={() => console.log('Reject', order.id)}
-                />
-              ))}
-            </View>
+            orders.map((order) => (
+              <TouchableOpacity
+                key={order.id}
+                style={[styles.orderCard, { backgroundColor: isDark ? colors.surface[800] : '#fff' }, shadows.soft]}
+                onPress={() => handleAcceptOrder(order.id)}
+              >
+                <View style={styles.orderHeader}>
+                  <Text style={[styles.orderId, { color: isDark ? colors.surface[100] : colors.surface[900] }]}>
+                    #{order.id.slice(-6).toUpperCase()}
+                  </Text>
+                  <Text style={[styles.orderAmount, { color: colors.kiwi[600] }]}>
+                    {formatCurrency(Number(order.totalAmount) || 0)}
+                  </Text>
+                </View>
+                
+                <View style={styles.orderRoute}>
+                  <View style={styles.routePoint}>
+                    <View style={[styles.routeDot, { backgroundColor: colors.kiwi[500] }]} />
+                    <Text style={[styles.routeText, { color: isDark ? colors.surface[300] : colors.surface[600] }]} numberOfLines={1}>
+                      {order.pickupAddress}
+                    </Text>
+                  </View>
+                  <Ionicons name="arrow-down" size={16} color={colors.surface[300]} />
+                  <View style={styles.routePoint}>
+                    <View style={[styles.routeDot, { backgroundColor: colors.red[500] }]} />
+                    <Text style={[styles.routeText, { color: isDark ? colors.surface[300] : colors.surface[600] }]} numberOfLines={1}>
+                      {order.deliveryAddress}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.orderFooter}>
+                  <Text style={[styles.orderTime, { color: isDark ? colors.surface[400] : colors.surface[500] }]}>
+                    {new Date(order.createdAt).toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' })}
+                  </Text>
+                  <LinearGradient colors={gradients.kiwi} style={styles.acceptButton} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+                    <Text style={styles.acceptButtonText}>Aceptar</Text>
+                  </LinearGradient>
+                </View>
+              </TouchableOpacity>
+            ))
           )}
         </View>
       </ScrollView>
@@ -264,73 +332,44 @@ export default function HomeScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 100,
-  },
+  container: { flex: 1 },
+  scrollContent: { paddingBottom: 100 },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
-    paddingTop: 20,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 8,
   },
-  headerLeft: {
-    flex: 1,
-  },
-  greeting: {
-    fontSize: 14,
-    marginBottom: 4,
-  },
-  name: {
-    fontSize: 24,
-    fontWeight: '700',
-  },
+  headerLeft: { flex: 1 },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  greeting: { fontSize: 14, marginBottom: 2 },
+  name: { fontSize: 22, fontWeight: '700' },
+  socketIndicator: { width: 8, height: 8, borderRadius: 4 },
   notificationButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
-    ...shadows.soft,
-  },
-  notificationBadge: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.red[500],
   },
   statusCard: {
-    borderRadius: 24,
-    padding: 24,
-    marginBottom: 24,
+    marginHorizontal: 20,
+    marginTop: 16,
+    borderRadius: 20,
+    padding: 20,
   },
   statusHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  statusTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#fff',
-  },
-  statusSubtitle: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.8)',
-    marginTop: 4,
-  },
-  statusToggle: {
-    marginLeft: 16,
-  },
+  statusTitle: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  statusSubtitle: { color: 'rgba(255,255,255,0.8)', fontSize: 13, marginTop: 2 },
+  statusToggle: { alignItems: 'center' },
   toggleTrack: {
-    width: 56,
+    width: 60,
     height: 32,
     borderRadius: 16,
     padding: 2,
@@ -344,75 +383,58 @@ const styles = StyleSheet.create({
   },
   statusStats: {
     flexDirection: 'row',
-    marginTop: 16,
     gap: 16,
+    marginTop: 16,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.2)',
   },
-  statusStat: {
+  statusStat: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  statusText: { color: '#fff', fontSize: 12 },
+  quickStats: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+    marginHorizontal: 20,
+    marginTop: 16,
+    gap: 10,
   },
-  statusText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 24,
-  },
-  statCard: {
+  quickStat: {
     flex: 1,
+    padding: 14,
+    borderRadius: 16,
+    alignItems: 'center',
+  },
+  quickStatValue: { fontSize: 18, fontWeight: '700', marginTop: 4 },
+  quickStatLabel: { fontSize: 11, marginTop: 2 },
+  section: { marginHorizontal: 20, marginTop: 24 },
+  sectionTitle: { fontSize: 16, fontWeight: '700', marginBottom: 12 },
+  emptyState: {
+    padding: 40,
+    borderRadius: 16,
+    alignItems: 'center',
+  },
+  emptyText: { fontSize: 14, marginTop: 12 },
+  orderCard: {
     borderRadius: 16,
     padding: 16,
-    alignItems: 'center',
-    ...shadows.soft,
+    marginBottom: 10,
   },
-  statValue: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.kiwi[500],
-    marginBottom: 4,
+  orderHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
   },
-  statLabel: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionHeader: {
+  orderId: { fontSize: 14, fontWeight: '700' },
+  orderAmount: { fontSize: 16, fontWeight: '800' },
+  orderRoute: { marginBottom: 12 },
+  routePoint: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
+  routeDot: { width: 8, height: 8, borderRadius: 4 },
+  routeText: { fontSize: 13, flex: 1 },
+  orderFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  sectionCount: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  ordersList: {
-    gap: 12,
-  },
-  emptyState: {
-    borderRadius: 20,
-    padding: 40,
-    alignItems: 'center',
-    ...shadows.soft,
-  },
-  emptyTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  emptyText: {
-    fontSize: 14,
-    textAlign: 'center',
-  },
+  orderTime: { fontSize: 12 },
+  acceptButton: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20 },
+  acceptButtonText: { color: '#fff', fontSize: 14, fontWeight: '700' },
 });
