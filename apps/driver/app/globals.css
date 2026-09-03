@@ -1,9 +1,10 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+@import '../../packages/ui/src/design-system.css';
 
 /* ═══════════════════════════════════════════
-   🥝 KIWI DRIVER — Tropical Pura Vida Night
+   KIWI DRIVER - Tropical Pura Vida Night
    ═══════════════════════════════════════════ */
 
 :root {
@@ -19,14 +20,10 @@
 
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background: var(--bg-gradient);
-  min-height: 100vh;
+  background: linear-gradient(180deg, #0b1326 0%, #0f172a 100%);
+  min-height: 100dvh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-.dark body {
-  background: linear-gradient(180deg, #0b1326 0%, #0f172a 100%);
   color: #f8fafc;
 }
 
