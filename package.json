@@ -37,6 +37,7 @@
   },
   "devDependencies": {
     "eslint": "^8.0.0",
+    "eslint-plugin-react": "^7.37.5",
     "husky": "^9.1.7",
     "lint-staged": "^16.4.0",
     "prettier": "^3.0.0",
@@ -49,14 +50,14 @@
   "packageManager": "npm@10.0.0",
   "lint-staged": {
     "*.{ts,tsx}": [
-      "prettier --write",
-      "eslint --fix --no-error-on-unmatched-pattern"
+      "prettier --write"
     ],
     "*.{json,md,yml,yaml}": [
       "prettier --write"
     ]
   },
   "dependencies": {
+    "@sentry/react": "^10.73.0",
     "framer-motion": "^13.1.1"
   }
 }

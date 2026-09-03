@@ -16,6 +16,7 @@ import { WithdrawalsModule } from './withdrawals/withdrawals.module';
 import { GeocodingModule } from './geocoding/geocoding.module';
 import { RoutingModule } from './routing/routing.module';
 import { SecurityModule } from './security/security.module';
+import { SentryModule } from './sentry/sentry.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { SecurityModule } from './security/security.module';
     GeocodingModule,
     RoutingModule,
     SecurityModule,
+    SentryModule,
   ],
 })
 export class AppModule {}
