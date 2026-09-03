@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Delete, Param, Query, UseGuards, Body } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Query, UseGuards, Body } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { NotificationsService } from './notifications.service';
 import { TrafficNotificationService } from './traffic-notification.service';

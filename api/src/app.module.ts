@@ -7,7 +7,7 @@ import { MerchantsModule } from './merchants/merchants.module';
 import { DriversModule } from './drivers/drivers.module';
 import { OrdersModule } from './orders/orders.module';
 import { MenuModule } from './menu/menu.module';
-import { KycModule } from './kyc/kyc.module';
+import { KYCModule } from './kyc/kyc.module';
 import { EventsModule } from './events/events.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PaymentsModule } from './payments/payments.module';
@@ -34,7 +34,7 @@ import { SecurityModule } from './security/security.module';
     DriversModule,
     OrdersModule,
     MenuModule,
-    KycModule,
+    KYCModule,
     EventsModule,
     NotificationsModule,
     PaymentsModule,

@@ -32,16 +32,17 @@ export class NotificationsService {
       const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT;
       
       if (serviceAccount) {
-        const admin = await import('firebase-admin');
+        const adminModule = await import('firebase-admin');
+        const admin = adminModule.default || adminModule;
         
-        if (!admin.apps.length) {
+        if (!(admin as any).apps?.length) {
           const serviceAccountJson = JSON.parse(serviceAccount);
-          admin.initializeApp({
-            credential: admin.credential.cert(serviceAccountJson),
+          (admin as any).initializeApp({
+            credential: (admin as any).credential?.cert(serviceAccountJson),
           });
         }
         
-        this.fcmAdmin = admin.messaging();
+        this.fcmAdmin = (admin as any).messaging();
         this.logger.log('Firebase Cloud Messaging initialized successfully');
       } else {
         this.logger.warn('FIREBASE_SERVICE_ACCOUNT not set, using in-app notifications only');

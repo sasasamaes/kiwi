@@ -30,6 +30,10 @@ export class UsersService {
   async updateProfile(userId: string, data: any) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
+      include: {
+        merchantProfile: true,
+        driverProfile: true,
+      },
     });
 
     if (!user) {

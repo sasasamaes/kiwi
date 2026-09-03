@@ -878,7 +878,7 @@ async function main() {
         orderId: order.id,
         amount: totalAmount,
         currency: 'CRC',
-        method: PaymentMethod.sinpe,
+        method: PaymentMethod.onvopay_sinpe,
         status: PaymentStatus.completed,
       },
     });

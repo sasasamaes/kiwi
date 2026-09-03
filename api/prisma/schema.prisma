@@ -24,6 +24,7 @@ model User {
   // Relations
   merchantProfile MerchantProfile?
   driverProfile   DriverProfile?
+  kycVerification KYCVerification?
   notifications   Notification[]
 
   @@map("users")
@@ -330,7 +331,7 @@ model Rating {
   orderId         String   @map("order_id")
   driverId        String   @map("driver_id")
   merchantId      String   @map("merchant_id")
-  rating          Int      @db.Int
+  rating          Int
   comment         String?
   onTime          Boolean? @map("on_time")
   carefulWithOrder Boolean? @map("careful_with_order")
