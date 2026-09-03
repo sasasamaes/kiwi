@@ -265,7 +265,7 @@ export default function Schedule() {
 
         {/* Hours Grid */}
         <motion.div
-          className="mb-6 rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
+          className="mb-6 rounded-2xl glass p-4"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.25 }}

@@ -81,7 +81,7 @@ export function OfflinePaymentForm({
   if (paymentComplete && receipt) {
     return (
       <motion.div
-        className={`bg-white dark:bg-surface-800 rounded-2xl shadow-soft dark:shadow-dark overflow-hidden ${className}`}
+        className={`glass rounded-2xl overflow-hidden ${className}`}
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
       >
@@ -181,7 +181,7 @@ export function OfflinePaymentForm({
   }
 
   return (
-    <div className={`bg-white dark:bg-surface-800 rounded-2xl shadow-soft dark:shadow-dark overflow-hidden ${className}`}>
+    <div className={`glass rounded-2xl overflow-hidden ${className}`}>
       {/* Header */}
       <div className="p-4 border-b border-surface-100 dark:border-surface-700">
         <div className="flex items-center justify-between">
@@ -323,7 +323,7 @@ export function PaymentReceipt({
   const receipt = payment.receipt;
 
   return (
-    <div className={`bg-white dark:bg-surface-800 rounded-2xl shadow-soft dark:shadow-dark overflow-hidden ${className}`}>
+    <div className={`glass rounded-2xl overflow-hidden ${className}`}>
       <div className="p-4 bg-kiwi-500 text-white text-center">
         <p className="font-bold text-lg"> KIWI</p>
         <p className="text-xs opacity-90">Tu app de delivery</p>

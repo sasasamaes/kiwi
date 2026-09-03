@@ -19,7 +19,7 @@ export function AnimatedCard({
 }: AnimatedCardProps) {
   const variants = {
     default: 'bg-white shadow-soft rounded-2xl',
-    glass: 'bg-white/70 backdrop-blur-xl border border-white/30 shadow-soft-md rounded-2xl',
+    glass: 'glass-strong border border-white/30 shadow-soft-md rounded-2xl',
     elevated: 'bg-white shadow-soft-lg rounded-2xl ring-1 ring-surface-100',
     gradient: 'bg-kiwi-gradient text-white shadow-kiwi rounded-2xl',
   };

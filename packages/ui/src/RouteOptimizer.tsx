@@ -145,7 +145,7 @@ export function RouteOptimizer({
 
   if (activeOrders.length === 0) {
     return (
-      <div className={`rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark ${className}`}>
+      <div className={`rounded-2xl glass p-4 ${className}`}>
         <div className="text-center py-4">
           <span className="text-3xl block mb-2">Package</span>
           <p className="text-sm text-surface-500 dark:text-surface-400">
@@ -157,7 +157,7 @@ export function RouteOptimizer({
   }
 
   return (
-    <div className={`rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark ${className}`}>
+    <div className={`rounded-2xl glass p-4 ${className}`}>
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">

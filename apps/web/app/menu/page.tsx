@@ -247,7 +247,7 @@ export default function MenuManagementPage() {
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
+              className="rounded-2xl glass p-4"
             >
               <div className="flex gap-4">
                 <Skeleton className="h-16 w-16 rounded-xl" />
@@ -346,7 +346,7 @@ export default function MenuManagementPage() {
         <AnimatePresence>
           {showCategoryManager && (
             <motion.div
-              className="mb-6 rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark"
+              className="mb-6 rounded-2xl glass p-6"
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
@@ -612,7 +612,7 @@ export default function MenuManagementPage() {
                 <Reorder.Item
                   key={item.id}
                   value={item}
-                  className={`rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark cursor-grab active:cursor-grabbing ${
+                  className={`rounded-2xl glass p-4 cursor-grab active:cursor-grabbing ${
                     !item.isAvailable ? 'opacity-60' : ''
                   }`}
                 >
@@ -645,7 +645,7 @@ export default function MenuManagementPage() {
               {filteredItems.map((item) => (
                 <StaggerItem key={item.id}>
                   <motion.div
-                    className={`rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark transition-all ${
+                    className={`rounded-2xl glass p-4 transition-all ${
                       !item.isAvailable ? 'opacity-60' : ''
                     } ${selectedItems.has(item.id) ? 'ring-2 ring-kiwi-500' : ''}`}
                     whileHover={{ y: -2 }}
@@ -804,7 +804,7 @@ export default function MenuManagementPage() {
         {/* Stats Summary */}
         {menuItems.length > 0 && (
           <motion.div
-            className="mt-8 rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark"
+            className="mt-8 rounded-2xl glass p-6"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}

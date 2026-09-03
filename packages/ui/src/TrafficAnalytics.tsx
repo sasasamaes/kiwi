@@ -96,7 +96,7 @@ export function TrafficAnalytics({
 
   if (!report) {
     return (
-      <div className={`rounded-2xl bg-white dark:bg-surface-800 p-8 text-center shadow-soft dark:shadow-dark ${className}`}>
+      <div className={`rounded-2xl glass p-8 text-center ${className}`}>
         <span className="text-4xl block mb-3">BarChart3</span>
         <p className="text-surface-500 dark:text-surface-400">
           No hay datos de tráfico disponibles
@@ -526,7 +526,7 @@ export function TrafficHeatmap({
 }) {
   if (data.length === 0) {
     return (
-      <div className={`rounded-2xl bg-white dark:bg-surface-800 p-8 text-center shadow-soft dark:shadow-dark ${className}`}>
+      <div className={`rounded-2xl glass p-8 text-center ${className}`}>
         <span className="text-4xl block mb-3">Map</span>
         <p className="text-surface-500 dark:text-surface-400">
           No hay datos de mapa de calor disponibles
@@ -539,7 +539,7 @@ export function TrafficHeatmap({
   const maxIntensity = Math.max(...data.map((d) => d.intensity));
 
   return (
-    <div className={`rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark ${className}`}>
+    <div className={`rounded-2xl glass p-4 ${className}`}>
       <h4 className="font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
         Map Mapa de Calor del Tráfico
       </h4>

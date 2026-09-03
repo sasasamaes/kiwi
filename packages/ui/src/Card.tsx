@@ -24,7 +24,7 @@ function Card({
       'rounded-2xl'
     ),
     glass: cn(
-      'bg-white/70 backdrop-blur-xl',
+      'glass-strong',
       'border border-white/30',
       'shadow-soft-md',
       'rounded-2xl'

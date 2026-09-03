@@ -110,7 +110,7 @@ export function TrafficIndicator({
 
   return (
     <motion.div
-      className={`rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark ${className}`}
+      className={`rounded-2xl glass p-4 ${className}`}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
     >
@@ -222,7 +222,7 @@ export function DeliveryEstimate({
 
   return (
     <motion.div
-      className={`rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark ${className}`}
+      className={`rounded-2xl glass p-4 ${className}`}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
     >
@@ -369,7 +369,7 @@ export function TrafficMapOverlay({ className = '' }: TrafficMapOverlayProps) {
 
   return (
     <motion.div
-      className={`rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark ${className}`}
+      className={`rounded-2xl glass p-4 ${className}`}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
     >

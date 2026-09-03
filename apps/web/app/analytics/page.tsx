@@ -212,7 +212,7 @@ export default function MerchantAnalyticsPage() {
       <StaggerContainer className="grid grid-cols-2 md:grid-cols-3 gap-4">
         <StaggerItem>
           <motion.div 
-            className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
+            className="rounded-2xl glass p-4"
             whileHover={{ y: -2 }}
           >
             <div className="flex items-center justify-between mb-2">
@@ -230,7 +230,7 @@ export default function MerchantAnalyticsPage() {
 
         <StaggerItem>
           <motion.div 
-            className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
+            className="rounded-2xl glass p-4"
             whileHover={{ y: -2 }}
           >
             <div className="flex items-center justify-between mb-2">
@@ -248,7 +248,7 @@ export default function MerchantAnalyticsPage() {
 
         <StaggerItem>
           <motion.div 
-            className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
+            className="rounded-2xl glass p-4"
             whileHover={{ y: -2 }}
           >
             <div className="flex items-center justify-between mb-2">
@@ -264,7 +264,7 @@ export default function MerchantAnalyticsPage() {
 
         <StaggerItem>
           <motion.div 
-            className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
+            className="rounded-2xl glass p-4"
             whileHover={{ y: -2 }}
           >
             <div className="flex items-center justify-between mb-2">
@@ -282,7 +282,7 @@ export default function MerchantAnalyticsPage() {
 
         <StaggerItem>
           <motion.div 
-            className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
+            className="rounded-2xl glass p-4"
             whileHover={{ y: -2 }}
           >
             <div className="flex items-center justify-between mb-2">
@@ -317,7 +317,7 @@ export default function MerchantAnalyticsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Daily Orders Chart */}
         <motion.div
-          className="rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark"
+          className="rounded-2xl glass p-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
@@ -356,7 +356,7 @@ export default function MerchantAnalyticsPage() {
 
         {/* Payment Methods */}
         <motion.div
-          className="rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark"
+          className="rounded-2xl glass p-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
@@ -400,7 +400,7 @@ export default function MerchantAnalyticsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top Items */}
         <motion.div
-          className="rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark"
+          className="rounded-2xl glass p-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
@@ -434,7 +434,7 @@ export default function MerchantAnalyticsPage() {
 
         {/* Peak Hours */}
         <motion.div
-          className="rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark"
+          className="rounded-2xl glass p-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
@@ -481,7 +481,7 @@ export default function MerchantAnalyticsPage() {
 
       {/* Customer Stats */}
       <motion.div
-        className="rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark"
+        className="rounded-2xl glass p-6"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.7 }}
@@ -551,7 +551,7 @@ export default function MerchantAnalyticsPage() {
 
       {/* Quick Actions */}
       <motion.div
-        className="rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark"
+        className="rounded-2xl glass p-6"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.8 }}

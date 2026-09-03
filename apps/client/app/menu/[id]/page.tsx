@@ -257,7 +257,7 @@ export default function MenuPage() {
             Tu pedido está buscando repartidor
           </p>
 
-          <div className="rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark mb-6">
+          <div className="rounded-2xl glass p-6 mb-6">
             <div className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-surface-500 dark:text-surface-400">Número</span>
@@ -318,7 +318,7 @@ export default function MenuPage() {
           </div>
         </div>
         <div className="mx-auto max-w-lg px-4 py-6">
-          <div className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark">
+          <div className="rounded-2xl glass p-4">
             <div className="flex items-center gap-4">
               <Skeleton className="h-16 w-16 rounded-xl" />
               <div className="flex-1">
@@ -333,7 +333,7 @@ export default function MenuPage() {
             {[1, 2, 3].map((i) => (
               <div
                 key={i}
-                className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
+                className="rounded-2xl glass p-4"
               >
                 <div className="flex gap-4">
                   <Skeleton className="h-20 w-20 rounded-xl" />
@@ -430,7 +430,7 @@ export default function MenuPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <div className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark">
+        <div className="rounded-2xl glass p-4">
           <div className="flex items-center gap-4">
             <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-kiwi-100 dark:bg-kiwi-900/30 text-3xl">
               🥗
@@ -507,7 +507,7 @@ export default function MenuPage() {
               return (
                 <StaggerItem key={item.id}>
                   <motion.div
-                    className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
+                    className="rounded-2xl glass p-4"
                     whileHover={{ y: -2 }}
                   >
                     <div className="flex gap-4">

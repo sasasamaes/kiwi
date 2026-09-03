@@ -84,7 +84,7 @@ export function AuthForm({
 
       {/* Form Card */}
       <motion.div 
-        className="rounded-3xl bg-white/70 backdrop-blur-xl border border-white/30 shadow-kiwi-lg p-8"
+        className="rounded-3xl glass-strong border border-white/30 shadow-kiwi-lg p-8"
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.3 }}

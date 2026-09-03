@@ -263,7 +263,7 @@ export function CryptoQR({ address, amount, coin }: CryptoQRProps) {
   };
 
   return (
-    <div className="rounded-xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark text-center">
+    <div className="rounded-xl glass p-6 text-center">
       <h4 className="font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
         Escanea para pagar
       </h4>

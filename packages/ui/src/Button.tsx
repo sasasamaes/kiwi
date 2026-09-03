@@ -66,7 +66,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         'rounded-xl'
       ),
       glass: cn(
-        'bg-white/70 backdrop-blur-xl text-surface-700',
+        'glass-strong text-surface-700',
         'border border-white/30',
         'hover:bg-white/90 hover:shadow-soft-lg',
         'focus-visible:ring-kiwi-500',

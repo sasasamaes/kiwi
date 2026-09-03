@@ -263,7 +263,7 @@ export default function OrderHistoryPage() {
                   >
                     <Link href={`/order/${order.id}/tracking`}>
                       <motion.div
-                        className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark cursor-pointer overflow-hidden"
+                        className="rounded-2xl glass p-4 cursor-pointer overflow-hidden"
                         whileHover={{ y: -2, boxShadow: '0 8px 24px -8px rgba(34, 197, 94, 0.2)' }}
                         whileTap={{ scale: 0.98 }}
                       >

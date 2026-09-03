@@ -145,7 +145,7 @@ export function OfflineOrderTracker({
 
   return (
     <motion.div
-      className={`bg-white dark:bg-surface-800 rounded-2xl shadow-soft dark:shadow-dark overflow-hidden ${className}`}
+      className={`glass rounded-2xl overflow-hidden ${className}`}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
     >

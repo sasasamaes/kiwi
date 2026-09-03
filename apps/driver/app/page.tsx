@@ -216,7 +216,7 @@ export default function Home() {
     <main className="min-h-[100dvh] flex flex-col">
       {/* Header */}
       <motion.header
-        className="sticky top-0 z-50 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl"
+        className="sticky top-0 z-50 glass-strong"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         transition={{ type: 'spring', stiffness: 260, damping: 20 }}
@@ -263,7 +263,7 @@ export default function Home() {
       <main className="flex-1 mx-auto w-full max-w-lg px-4 py-6">
         {/* Status Toggle */}
         <motion.div
-          className="mb-6 rounded-2xl bg-kiwi-gradient p-6 text-white shadow-kiwi-lg overflow-hidden relative"
+          className="mb-6 rounded-2xl bg-kiwi-gradient p-6 text-white glow-kiwi-lg overflow-hidden relative"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
@@ -346,8 +346,8 @@ export default function Home() {
         <StaggerContainer className="mb-6 grid grid-cols-3 gap-3">
           <StaggerItem>
             <motion.div
-              className="rounded-xl bg-white dark:bg-surface-800 p-4 text-center shadow-soft dark:shadow-dark"
-              whileHover={{ y: -2, boxShadow: '0 8px 24px 0 rgb(0 0 0 / 0.08)' }}
+              className="rounded-xl glass p-4 text-center tactile"
+              whileHover={{ y: -2 }}
             >
               <AnimatedCounter value={stats.trips} className="text-2xl font-bold text-kiwi-600" />
               <p className="text-xs text-surface-500 dark:text-surface-400">Viajes</p>
@@ -355,8 +355,8 @@ export default function Home() {
           </StaggerItem>
           <StaggerItem>
             <motion.div
-              className="rounded-xl bg-white dark:bg-surface-800 p-4 text-center shadow-soft dark:shadow-dark"
-              whileHover={{ y: -2, boxShadow: '0 8px 24px 0 rgb(0 0 0 / 0.08)' }}
+              className="rounded-xl glass p-4 text-center tactile"
+              whileHover={{ y: -2 }}
             >
               <div className="flex items-center justify-center gap-1">
                 <Star className="h-5 w-5 fill-gold-400 text-gold-400" />
@@ -371,8 +371,8 @@ export default function Home() {
           </StaggerItem>
           <StaggerItem>
             <motion.div
-              className="rounded-xl bg-white dark:bg-surface-800 p-4 text-center shadow-soft dark:shadow-dark"
-              whileHover={{ y: -2, boxShadow: '0 8px 24px 0 rgb(0 0 0 / 0.08)' }}
+              className="rounded-xl glass p-4 text-center tactile"
+              whileHover={{ y: -2 }}
             >
               <span className="text-2xl font-bold text-gold-600">{availableOrders.length}</span>
               <p className="text-xs text-surface-500 dark:text-surface-400">Disponibles</p>
@@ -403,7 +403,7 @@ export default function Home() {
                 return (
                   <StaggerItem key={order.id}>
                     <motion.div
-                      className="rounded-2xl border-2 border-kiwi-200 bg-kiwi-50/50 dark:bg-kiwi-900/20 p-4 shadow-soft"
+                      className="rounded-2xl glass p-4 glow-kiwi"
                       whileHover={{ y: -2 }}
                     >
                       <div className="mb-3 flex items-center justify-between">
@@ -479,7 +479,7 @@ export default function Home() {
 
           {filteredOrders.length === 0 ? (
             <motion.div
-              className="rounded-2xl bg-white dark:bg-surface-800 p-8 text-center shadow-soft dark:shadow-dark"
+              className="rounded-2xl glass p-8 text-center"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
             >
@@ -500,7 +500,7 @@ export default function Home() {
               {filteredOrders.map((order, index) => (
                 <StaggerItem key={order.id}>
                   <motion.div
-                    className="rounded-2xl border border-surface-100 dark:border-surface-700 bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
+                    className="rounded-2xl glass p-4 tactile"
                     whileHover={{ y: -4, boxShadow: '0 12px 32px -8px rgba(34, 197, 94, 0.25)' }}
                     whileTap={{ scale: 0.98 }}
                     initial={{ opacity: 0, y: 20 }}
@@ -636,13 +636,13 @@ export default function Home() {
       <AnimatePresence>
         {newOrderAlert && (
           <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-md"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className="mx-4 w-full max-w-md rounded-3xl bg-white dark:bg-surface-800 p-6 shadow-2xl"
+              className="mx-4 w-full max-w-md rounded-3xl glass-elevated p-6"
               initial={{ scale: 0.8, y: 50 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.8, y: 50 }}
@@ -715,7 +715,7 @@ export default function Home() {
 
       {/* Bottom Navigation */}
       <motion.nav
-        className="sticky bottom-0 border-t border-surface-200/50 dark:border-surface-700/50 bg-white/80 dark:bg-surface-900/80 backdrop-blur-xl"
+        className="sticky bottom-0 glass-strong border-t border-surface-200/50 dark:border-surface-700/50"
         initial={{ y: 100 }}
         animate={{ y: 0 }}
         transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.3 }}

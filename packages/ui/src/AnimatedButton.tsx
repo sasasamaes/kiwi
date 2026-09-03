@@ -25,7 +25,7 @@ export function AnimatedButton({
     secondary: 'bg-surface-100 text-surface-700 hover:bg-surface-200 border border-surface-200',
     ghost: 'text-surface-600 hover:bg-surface-100',
     danger: 'bg-red-500 text-white hover:bg-red-600',
-    glass: 'bg-white/70 backdrop-blur-xl text-surface-700 border border-white/30',
+    glass: 'glass-strong text-surface-700 border border-white/30',
     gradient: 'bg-kiwi-gradient text-white shadow-kiwi-lg',
   };
 

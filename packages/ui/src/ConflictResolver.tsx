@@ -53,7 +53,7 @@ function ConflictCard({ conflict, onResolve, onDismiss }: ConflictCardProps) {
 
   return (
     <motion.div
-      className="bg-white dark:bg-surface-800 rounded-2xl shadow-soft dark:shadow-dark overflow-hidden border border-orange-200 dark:border-orange-800"
+      className="glass rounded-2xl overflow-hidden border border-orange-200 dark:border-orange-800"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       layout

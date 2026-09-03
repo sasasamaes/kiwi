@@ -90,7 +90,7 @@ export default function SettingsPage() {
       {/* Platform Settings */}
       {activeTab === 'platform' && (
         <motion.div
-          className="rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark"
+          className="rounded-2xl glass p-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
@@ -180,7 +180,7 @@ export default function SettingsPage() {
       {/* Payment Settings */}
       {activeTab === 'payments' && (
         <motion.div
-          className="rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark"
+          className="rounded-2xl glass p-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
@@ -277,7 +277,7 @@ export default function SettingsPage() {
       {/* Notification Settings */}
       {activeTab === 'notifications' && (
         <motion.div
-          className="rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark"
+          className="rounded-2xl glass p-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
@@ -323,7 +323,7 @@ export default function SettingsPage() {
       {/* Security Settings */}
       {activeTab === 'security' && (
         <motion.div
-          className="rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark"
+          className="rounded-2xl glass p-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >

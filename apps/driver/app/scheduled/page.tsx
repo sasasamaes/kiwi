@@ -106,7 +106,7 @@ export default function ScheduledOrdersPage() {
           {[1, 2].map((i) => (
             <div
               key={i}
-              className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
+              className="rounded-2xl glass p-4"
             >
               <div className="flex gap-4">
                 <Skeleton className="h-16 w-16 rounded-xl" />
@@ -199,7 +199,7 @@ export default function ScheduledOrdersPage() {
               return (
                 <StaggerItem key={order.id}>
                   <motion.div
-                    className={`rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark ${
+                    className={`rounded-2xl glass p-4 ${
                       hasSubmitted ? 'ring-2 ring-kiwi-500' : ''
                     }`}
                     whileHover={{ y: -2 }}

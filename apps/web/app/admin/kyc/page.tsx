@@ -213,7 +213,7 @@ export default function KYCPage() {
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <motion.div 
-          className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
+          className="rounded-2xl glass p-4"
           whileHover={{ y: -2 }}
         >
           <p className="text-sm text-surface-500 dark:text-surface-400">Total</p>
@@ -289,7 +289,7 @@ export default function KYCPage() {
             return (
               <motion.div
                 key={kyc.id}
-                className={`rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark cursor-pointer hover:shadow-medium dark:hover:shadow-dark transition-all ${
+                className={`rounded-2xl glass p-6 cursor-pointer hover:shadow-medium dark:hover:shadow-dark transition-all ${
                   kyc.status === 'pending' || kyc.status === 'documents_submitted'
                     ? 'border-2 border-yellow-200 dark:border-yellow-800' 
                     : ''

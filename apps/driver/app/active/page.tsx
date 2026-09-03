@@ -9,7 +9,7 @@ export default function ActiveOrders() {
   return (
     <main className="min-h-[100dvh] flex flex-col">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-surface-200/50 bg-white/70 backdrop-blur-xl">
+      <header className="sticky top-0 z-50 glass-strong">
         <div className="mx-auto max-w-lg px-4 py-4">
           <div className="flex items-center justify-between">
             <Link
@@ -74,7 +74,7 @@ export default function ActiveOrders() {
         </div>
 
         {/* Order Details */}
-        <div className="mb-6 rounded-2xl bg-white p-5 shadow-soft">
+        <div className="mb-6 rounded-2xl glass p-5">
           <div className="mb-4 flex items-center justify-between">
             <span className="rounded-full bg-kiwi-100 px-3 py-1 text-xs font-medium text-kiwi-700">
               Pedido #123
@@ -83,7 +83,7 @@ export default function ActiveOrders() {
           </div>
 
           {/* Pickup Location */}
-          <div className="mb-4 rounded-xl bg-kiwi-50 p-4">
+          <div className="mb-4 rounded-xl glass p-4">
             <div className="mb-2 flex items-center gap-2">
               <span className="text-lg">MapPin</span>
               <span className="text-sm font-semibold text-kiwi-700">
@@ -98,7 +98,7 @@ export default function ActiveOrders() {
           </div>
 
           {/* Delivery Location */}
-          <div className="rounded-xl bg-gold-50 p-4">
+          <div className="rounded-xl glass p-4">
             <div className="mb-2 flex items-center gap-2">
               <span className="text-lg">Home</span>
               <span className="text-sm font-semibold text-gold-700">
@@ -117,7 +117,7 @@ export default function ActiveOrders() {
           </div>
 
           {/* Customer Info */}
-          <div className="mt-4 flex items-center justify-between rounded-xl bg-surface-50 p-3">
+          <div className="mt-4 flex items-center justify-between rounded-xl glass p-3">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-full bg-kiwi-100 flex items-center justify-center text-kiwi-600 font-semibold">
                 MC

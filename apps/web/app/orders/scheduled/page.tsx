@@ -123,7 +123,7 @@ export default function ScheduledOrdersPage() {
           {[1, 2].map((i) => (
             <div
               key={i}
-              className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
+              className="rounded-2xl glass p-4"
             >
               <div className="flex gap-4">
                 <Skeleton className="h-16 w-16 rounded-xl" />
@@ -216,7 +216,7 @@ export default function ScheduledOrdersPage() {
             {scheduledOrders.map((order) => (
               <StaggerItem key={order.id}>
                 <motion.div
-                  className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark cursor-pointer"
+                  className="rounded-2xl glass p-4 cursor-pointer"
                   whileHover={{ y: -2, boxShadow: '0 12px 32px -8px rgba(34, 197, 94, 0.25)' }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => handleSelectOrder(order)}

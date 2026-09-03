@@ -127,7 +127,7 @@ export function OfflineOrderForm({
   };
 
   return (
-    <div className={`bg-white dark:bg-surface-800 rounded-2xl shadow-soft dark:shadow-dark overflow-hidden ${className}`}>
+    <div className={`glass rounded-2xl overflow-hidden ${className}`}>
       {/* Header */}
       <div className="p-4 border-b border-surface-100 dark:border-surface-700">
         <div className="flex items-center justify-between">

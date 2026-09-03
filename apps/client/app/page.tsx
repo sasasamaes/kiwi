@@ -123,7 +123,7 @@ export default function ClientHome() {
     <main className="min-h-[100dvh] bg-bg-light dark:bg-surface-950">
       {/* Header */}
       <motion.header
-        className="sticky top-0 z-50 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl"
+        className="sticky top-0 z-50 glass-strong"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
       >
@@ -162,7 +162,7 @@ export default function ClientHome() {
               exit={{ opacity: 0, scale: 0.95 }}
               className="mb-6"
             >
-              <div className="rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark">
+              <div className="rounded-2xl glass p-6">
                 <div className="flex items-center justify-between mb-4">
                   {' '}
                   <h2 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 flex items-center gap-2">
@@ -206,7 +206,7 @@ export default function ClientHome() {
             animate={{ opacity: 1, y: 0 }}
           >
             <motion.div
-              className="rounded-2xl bg-kiwi-gradient p-6 text-white shadow-kiwi-lg cursor-pointer overflow-hidden relative"
+              className="rounded-2xl bg-kiwi-gradient p-6 text-white glow-kiwi-lg cursor-pointer overflow-hidden relative tactile"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={startScanner}
@@ -264,7 +264,7 @@ export default function ClientHome() {
               <StaggerItem key={restaurant.id}>
                 <Link href={`/menu/${restaurant.id}`}>
                   <motion.div
-                    className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark cursor-pointer overflow-hidden"
+                    className="rounded-2xl glass p-4 tactile cursor-pointer overflow-hidden"
                     whileHover={{ y: -4, boxShadow: '0 12px 32px -8px rgba(34, 197, 94, 0.25)' }}
                     whileTap={{ scale: 0.98 }}
                   >

@@ -205,7 +205,7 @@ export function TrafficAlertList({
   if (alerts.length === 0) {
     return (
       <motion.div
-        className={`rounded-2xl bg-white dark:bg-surface-800 p-8 text-center shadow-soft dark:shadow-dark ${className}`}
+        className={`rounded-2xl glass p-8 text-center ${className}`}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
       >

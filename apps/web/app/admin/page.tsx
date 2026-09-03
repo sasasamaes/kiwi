@@ -203,7 +203,7 @@ export default function AdminDashboard() {
       <StaggerContainer className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StaggerItem>
           <motion.div 
-            className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
+            className="rounded-2xl glass p-4"
             whileHover={{ y: -2 }}
           >
             <div className="flex items-center justify-between mb-2">
@@ -221,7 +221,7 @@ export default function AdminDashboard() {
 
         <StaggerItem>
           <motion.div 
-            className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
+            className="rounded-2xl glass p-4"
             whileHover={{ y: -2 }}
           >
             <div className="flex items-center justify-between mb-2">
@@ -239,7 +239,7 @@ export default function AdminDashboard() {
 
         <StaggerItem>
           <motion.div 
-            className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
+            className="rounded-2xl glass p-4"
             whileHover={{ y: -2 }}
           >
             <div className="flex items-center justify-between mb-2">
@@ -257,7 +257,7 @@ export default function AdminDashboard() {
 
         <StaggerItem>
           <motion.div 
-            className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
+            className="rounded-2xl glass p-4"
             whileHover={{ y: -2 }}
           >
             <div className="flex items-center justify-between mb-2">
@@ -293,7 +293,7 @@ export default function AdminDashboard() {
 
         <StaggerItem>
           <motion.div 
-            className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
+            className="rounded-2xl glass p-4"
             whileHover={{ y: -2 }}
           >
             <div className="flex items-center justify-between mb-2">
@@ -311,7 +311,7 @@ export default function AdminDashboard() {
 
         <StaggerItem>
           <motion.div 
-            className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
+            className="rounded-2xl glass p-4"
             whileHover={{ y: -2 }}
           >
             <div className="flex items-center justify-between mb-2">
@@ -329,7 +329,7 @@ export default function AdminDashboard() {
 
         <StaggerItem>
           <motion.div 
-            className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
+            className="rounded-2xl glass p-4"
             whileHover={{ y: -2 }}
           >
             <div className="flex items-center justify-between mb-2">
@@ -350,7 +350,7 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Order Status Breakdown */}
         <motion.div
-          className="rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark"
+          className="rounded-2xl glass p-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
@@ -436,7 +436,7 @@ export default function AdminDashboard() {
 
         {/* Growth Metrics */}
         <motion.div
-          className="rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark"
+          className="rounded-2xl glass p-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
@@ -522,7 +522,7 @@ export default function AdminDashboard() {
 
       {/* Quick Actions */}
       <motion.div
-        className="rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark"
+        className="rounded-2xl glass p-6"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5 }}
@@ -576,7 +576,7 @@ export default function AdminDashboard() {
 
       {/* Recent Activity */}
       <motion.div
-        className="rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark"
+        className="rounded-2xl glass p-6"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.6 }}

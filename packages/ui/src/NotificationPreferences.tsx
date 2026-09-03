@@ -82,7 +82,7 @@ export function NotificationPreferences({ onSave }: NotificationPreferencesProps
         {preferences.map((pref) => (
           <motion.div
             key={pref.id}
-            className="flex items-center justify-between rounded-xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
+            className="flex items-center justify-between rounded-xl glass p-4"
             whileHover={{ x: 4 }}
           >
             <div className="flex items-center gap-4">

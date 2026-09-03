@@ -32,7 +32,7 @@ interface ChartProps {
 export function LineChartComponent({ data, height = 300, className = '' }: ChartProps) {
   return (
     <motion.div
-      className={`rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark ${className}`}
+      className={`rounded-2xl glass p-4 ${className}`}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
     >
@@ -79,7 +79,7 @@ export function LineChartComponent({ data, height = 300, className = '' }: Chart
 export function AreaChartComponent({ data, height = 300, className = '' }: ChartProps) {
   return (
     <motion.div
-      className={`rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark ${className}`}
+      className={`rounded-2xl glass p-4 ${className}`}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
     >
@@ -137,7 +137,7 @@ export function AreaChartComponent({ data, height = 300, className = '' }: Chart
 export function BarChartComponent({ data, height = 300, className = '' }: ChartProps) {
   return (
     <motion.div
-      className={`rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark ${className}`}
+      className={`rounded-2xl glass p-4 ${className}`}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
     >
@@ -189,7 +189,7 @@ export function PieChartComponent({
 
   return (
     <motion.div
-      className={`rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark ${className}`}
+      className={`rounded-2xl glass p-4 ${className}`}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
     >
@@ -245,7 +245,7 @@ export function MultiLineChartComponent({
 }: MultiLineChartProps) {
   return (
     <motion.div
-      className={`rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark ${className}`}
+      className={`rounded-2xl glass p-4 ${className}`}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
     >
@@ -300,7 +300,7 @@ interface StatCardProps {
 export function StatCard({ title, value, change, icon, color = '#22c55e' }: StatCardProps) {
   return (
     <motion.div
-      className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
+      className="rounded-2xl glass p-4"
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       whileHover={{ scale: 1.02 }}

@@ -62,7 +62,7 @@ export function OnvoPayCheckout({
 
   return (
     <motion.div
-      className="rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark"
+      className="rounded-2xl glass p-6"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
     >
@@ -171,7 +171,7 @@ export function CryptoCheckout({
 
   return (
     <motion.div
-      className="rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark"
+      className="rounded-2xl glass p-6"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
     >

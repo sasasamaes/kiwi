@@ -247,7 +247,7 @@ export default function TrackingPage() {
 
         {/* Status Card */}
         <motion.div
-          className="rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark mb-6"
+          className="rounded-2xl glass p-6 mb-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
@@ -289,7 +289,7 @@ export default function TrackingPage() {
 
         {/* Order Details */}
         <motion.div
-          className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark mb-6"
+          className="rounded-2xl glass p-4 mb-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
@@ -320,7 +320,7 @@ export default function TrackingPage() {
         {/* Status History */}
         {statusHistory.length > 0 && (
           <motion.div
-            className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark mb-6"
+            className="rounded-2xl glass p-4 mb-6"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}

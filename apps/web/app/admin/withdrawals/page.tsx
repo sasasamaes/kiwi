@@ -278,7 +278,7 @@ export default function AdminWithdrawalsPage() {
             return (
               <motion.div
                 key={withdrawal.id}
-                className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark cursor-pointer hover:shadow-medium dark:hover:shadow-dark transition-all"
+                className="rounded-2xl glass p-4 cursor-pointer hover:shadow-medium dark:hover:shadow-dark transition-all"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}

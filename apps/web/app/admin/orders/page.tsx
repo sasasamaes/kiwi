@@ -69,7 +69,7 @@ export default function OrdersPage() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <motion.div
-          className="rounded-xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
+          className="rounded-xl glass p-4"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
@@ -77,7 +77,7 @@ export default function OrdersPage() {
           <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">{stats.total}</p>
         </motion.div>
         <motion.div
-          className="rounded-xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
+          className="rounded-xl glass p-4"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
@@ -88,7 +88,7 @@ export default function OrdersPage() {
           </p>
         </motion.div>
         <motion.div
-          className="rounded-xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
+          className="rounded-xl glass p-4"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
@@ -99,7 +99,7 @@ export default function OrdersPage() {
           </p>
         </motion.div>
         <motion.div
-          className="rounded-xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
+          className="rounded-xl glass p-4"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}

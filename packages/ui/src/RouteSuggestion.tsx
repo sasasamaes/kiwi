@@ -128,7 +128,7 @@ export function RouteSuggestionPanel({
 
   if (!comparison || comparison.routes.length === 0) {
     return (
-      <div className={`rounded-2xl bg-white dark:bg-surface-800 p-8 text-center shadow-soft dark:shadow-dark ${className}`}>
+      <div className={`rounded-2xl glass p-8 text-center ${className}`}>
         <span className="text-4xl block mb-3">Map</span>
         <p className="text-surface-500 dark:text-surface-400">
           No se encontraron rutas
@@ -473,7 +473,7 @@ export function RouteComparisonCard({
   className?: string;
 }) {
   return (
-    <div className={`rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark ${className}`}>
+    <div className={`rounded-2xl glass p-4 ${className}`}>
       <h4 className="font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
         BarChart3 Comparación de Rutas
       </h4>

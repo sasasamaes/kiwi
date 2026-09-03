@@ -206,7 +206,7 @@ export default function NewOrder() {
             Tu pedido está buscando repartidor
           </p>
 
-          <div className="rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark mb-6">
+          <div className="rounded-2xl glass p-6 mb-6">
             <div className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-surface-500 dark:text-surface-400">Número</span>
@@ -568,7 +568,7 @@ export default function NewOrder() {
               </div>
 
               {/* Custom Item Form */}
-              <div className="mb-6 rounded-xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark">
+              <div className="mb-6 rounded-xl glass p-4">
                 <h3 className="mb-3 text-sm font-semibold text-surface-600 dark:text-surface-400">
                   Agregar producto personalizado
                 </h3>
@@ -702,7 +702,7 @@ export default function NewOrder() {
               </div>
 
               {/* Schedule Option */}
-              <div className="rounded-xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark">
+              <div className="rounded-xl glass p-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-medium text-surface-800 dark:text-surface-200">
@@ -775,7 +775,7 @@ export default function NewOrder() {
               </h2>
 
               {/* Order Summary */}
-              <div className="mb-6 rounded-xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark">
+              <div className="mb-6 rounded-xl glass p-4">
                 <h3 className="mb-3 text-sm font-semibold text-surface-600 dark:text-surface-400">
                   Resumen del pedido
                 </h3>
@@ -857,7 +857,7 @@ export default function NewOrder() {
               </div>
 
               {/* Payment Method */}
-              <div className="mb-6 rounded-xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark">
+              <div className="mb-6 rounded-xl glass p-4">
                 <h3 className="mb-3 text-sm font-semibold text-surface-600 dark:text-surface-400">
                   Método de pago
                 </h3>

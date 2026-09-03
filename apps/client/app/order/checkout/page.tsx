@@ -149,7 +149,7 @@ export default function CheckoutPage() {
             animate={{ scale: 1 }}
             transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}
           >
-            PartyPopper
+            Success
           </motion.div>
           <h1 className="text-2xl font-display font-bold text-surface-800 dark:text-surface-100 mb-2">
             ¡Pedido creado!
@@ -184,7 +184,7 @@ export default function CheckoutPage() {
     <main className="min-h-[100dvh] bg-bg-light dark:bg-surface-950">
       {/* Header */}
       <motion.header
-        className="sticky top-0 z-40 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl"
+        className="sticky top-0 z-40 glass-strong"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
       >
@@ -220,7 +220,7 @@ export default function CheckoutPage() {
 
         {/* Cart Summary */}
         <motion.div
-          className="mb-6 rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
+          className="mb-6 rounded-2xl glass p-4"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
@@ -267,7 +267,7 @@ export default function CheckoutPage() {
 
         {/* Delivery Info */}
         <motion.div
-          className="mb-6 rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
+          className="mb-6 rounded-2xl glass p-4"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
@@ -324,7 +324,7 @@ export default function CheckoutPage() {
 
         {/* Payment Method */}
         <motion.div
-          className="mb-6 rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
+          className="mb-6 rounded-2xl glass p-4"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
@@ -336,9 +336,9 @@ export default function CheckoutPage() {
           <div className="grid grid-cols-2 gap-2">
             {(
               [
-                { id: 'cash', label: 'DollarSign Efectivo', desc: 'Pagar al repartidor' },
-                { id: 'sinpe', label: 'Smartphone SINPE', desc: 'Transferencia' },
-                { id: 'card', label: 'CreditCard Tarjeta', desc: 'Crédito/Débito' },
+                { id: 'cash', label: 'Efectivo', desc: 'Pagar al repartidor' },
+                { id: 'sinpe', label: 'SINPE', desc: 'Transferencia' },
+                { id: 'card', label: 'Tarjeta', desc: 'Crédito/Débito' },
                 { id: 'crypto_usdc', label: '💎 USDC', desc: 'Cripto' },
               ] as const
             ).map((method) => (
