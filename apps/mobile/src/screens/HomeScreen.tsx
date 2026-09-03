@@ -269,6 +269,23 @@ export default function HomeScreen({ navigation }: any) {
           </View>
         </View>
 
+        {/* Quick Actions */}
+        <View style={styles.quickActions}>
+          <TouchableOpacity
+            style={[styles.quickAction, { backgroundColor: isDark ? colors.surface[800] : '#fff' }]}
+            onPress={() => navigation.navigate('ScheduledOrders')}
+          >
+            <View style={[styles.quickActionIcon, { backgroundColor: `${colors.gold[500]}20` }]}>
+              <Ionicons name="calendar" size={20} color={colors.gold[500]} />
+            </View>
+            <View style={styles.quickActionInfo}>
+              <Text style={[styles.quickActionTitle, { color: isDark ? colors.surface[100] : colors.surface[900] }]}>Pedidos Programados</Text>
+              <Text style={[styles.quickActionSubtitle, { color: isDark ? colors.surface[400] : colors.surface[500] }]}>Enviar propuestas</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.surface[400]} />
+          </TouchableOpacity>
+        </View>
+
         {/* Available Orders */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: isDark ? colors.surface[100] : colors.surface[900] }]}>
@@ -405,6 +422,12 @@ const styles = StyleSheet.create({
   },
   quickStatValue: { fontSize: 18, fontWeight: '700', marginTop: 4 },
   quickStatLabel: { fontSize: 11, marginTop: 2 },
+  quickActions: { marginHorizontal: 20, marginTop: 20 },
+  quickAction: { flexDirection: 'row', alignItems: 'center', padding: 16, borderRadius: 16, gap: 12 },
+  quickActionIcon: { width: 44, height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  quickActionInfo: { flex: 1 },
+  quickActionTitle: { fontSize: 14, fontWeight: '700' },
+  quickActionSubtitle: { fontSize: 12, marginTop: 2 },
   section: { marginHorizontal: 20, marginTop: 24 },
   sectionTitle: { fontSize: 16, fontWeight: '700', marginBottom: 12 },
   emptyState: {

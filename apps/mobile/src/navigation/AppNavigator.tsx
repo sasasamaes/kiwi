@@ -17,6 +17,7 @@ import ProfileScreen from '../screens/ProfileScreen';
 import OrderDetailScreen from '../screens/OrderDetailScreen';
 import KycScreen from '../screens/KycScreen';
 import WithdrawScreen from '../screens/WithdrawScreen';
+import ScheduledOrdersScreen from '../screens/ScheduledOrdersScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -114,6 +115,7 @@ export default function AppNavigator() {
           />
           <Stack.Screen name="KYC" component={KycScreen} />
           <Stack.Screen name="Withdraw" component={WithdrawScreen} />
+          <Stack.Screen name="ScheduledOrders" component={ScheduledOrdersScreen} />
         </>
       )}
     </Stack.Navigator>
