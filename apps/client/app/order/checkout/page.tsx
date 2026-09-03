@@ -1,70 +1,126 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AnimatedButton, PaymentSelector } from '@kiwi/ui';
+import { AnimatedButton, StaggerContainer, StaggerItem, api } from '@kiwi/ui';
 
 interface CartItem {
   id: string;
   name: string;
   price: number;
   quantity: number;
-  image: string;
+  menuItemId?: string;
 }
 
 type PaymentMethod = 'sinpe' | 'card' | 'cash' | 'crypto_usdc' | 'crypto_usdt';
 
 export default function CheckoutPage() {
   const searchParams = useSearchParams();
+  const router = useRouter();
+  
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('sinpe');
+  const [merchantId, setMerchantId] = useState('');
+  const [merchantName, setMerchantName] = useState('');
+  const [pickupAddress, setPickupAddress] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [customerName, setCustomerName] = useState('');
   const [address, setAddress] = useState('');
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
+  const [orderId, setOrderId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const itemsParam = searchParams.get('items');
-    if (itemsParam) {
+    // Parse cart from URL params
+    const cartParam = searchParams.get('cart');
+    const merchantParam = searchParams.get('merchant');
+    const merchantNameParam = searchParams.get('merchantName');
+    const pickupParam = searchParams.get('pickup');
+    
+    if (cartParam) {
       try {
-        setCart(JSON.parse(itemsParam));
-      } catch {
-        setCart([]);
-      }
+        setCart(JSON.parse(cartParam));
+      } catch { setCart([]); }
     }
+    if (merchantParam) setMerchantId(merchantParam);
+    if (merchantNameParam) setMerchantName(merchantNameParam);
+    if (pickupParam) setPickupAddress(decodeURIComponent(pickupParam));
   }, [searchParams]);
 
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const deliveryFee = 0; // Free delivery
+  const deliveryFee = subtotal >= 5000 ? 0 : 500;
   const total = subtotal + deliveryFee;
 
-  const placeOrder = async () => {
+  const canPlaceOrder = customerName.trim().length > 0 && 
+                         phoneNumber.trim().length >= 8 && 
+                         address.trim().length > 0 &&
+                         cart.length > 0;
+
+  const placeOrder = useCallback(async () => {
+    if (!canPlaceOrder) return;
+    
     setLoading(true);
+    setError(null);
+    
     try {
-      const response = await fetch('/api/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          items: cart,
-          paymentMethod,
-          address,
-          notes,
-          total,
-        }),
-      });
-      if (response.ok) {
-        setOrderPlaced(true);
+      // Create order via NestJS API
+      const orderData = {
+        merchantId,
+        pickupAddress: pickupAddress || 'Nicoya Centro',
+        deliveryAddress: address,
+        orderType: 'immediate',
+        items: cart.map(item => ({
+          menuItemId: item.menuItemId || item.id,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+        })),
+        specialInstructions: notes,
+        distanceKm: 2.5,
+        customerPhone: phoneNumber,
+        customerName,
+        paymentMethod,
+      };
+
+      const order = await api.createOrder(orderData);
+      setOrderId(order.id);
+
+      // Process payment based on method
+      if (paymentMethod === 'sinpe' || paymentMethod === 'card') {
+        try {
+          const paymentResult = await api.createPayment({
+            orderId: order.id,
+            method: paymentMethod === 'sinpe' ? 'onvopay_sinpe' : 'onvopay_card',
+            amount: total,
+            customerPhone: phoneNumber,
+            customerEmail: `${phoneNumber}@kiwi.app`,
+          });
+
+          if (paymentResult?.checkoutUrl) {
+            window.location.href = paymentResult.checkoutUrl;
+            return;
+          }
+        } catch (paymentError) {
+          console.warn('Payment processing failed, order created:', paymentError);
+          // Order is still created, payment can be completed later
+        }
       }
-    } catch (error) {
-      console.error('Error placing order:', error);
+
+      // For cash or crypto, order is placed successfully
+      setOrderPlaced(true);
+    } catch (err: any) {
+      console.error('Error placing order:', err);
+      setError(err.message || 'No se pudo crear el pedido. Intenta de nuevo.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [canPlaceOrder, merchantId, pickupAddress, address, cart, notes, phoneNumber, customerName, paymentMethod, total]);
 
+  // Order success screen
   if (orderPlaced) {
     return (
       <main className="min-h-screen bg-bg-light dark:bg-surface-950 flex items-center justify-center p-4">
@@ -79,41 +135,31 @@ export default function CheckoutPage() {
             animate={{ scale: 1 }}
             transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}
           >
-            ✅
+            🎉
           </motion.div>
           <h1 className="text-2xl font-display font-bold text-surface-800 dark:text-surface-100 mb-2">
-            ¡Pedido Recibido!
+            ¡Pedido creado!
           </h1>
-          <p className="text-surface-500 dark:text-surface-400 mb-8">
-            Tu pedido está siendo preparado
+          <p className="text-surface-500 dark:text-surface-400 mb-2">
+            Tu pedido #{orderId?.slice(-8).toUpperCase()} fue enviado al comercio.
           </p>
-          
-          <div className="rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark mb-6">
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-surface-500 dark:text-surface-400">Número de pedido</span>
-                <span className="font-semibold text-surface-800 dark:text-surface-200">#KIWI-1234</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-surface-500 dark:text-surface-400">Tiempo estimado</span>
-                <span className="font-semibold text-kiwi-600 dark:text-kiwi-400">25-35 min</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-surface-500 dark:text-surface-400">Total</span>
-                <span className="font-bold text-surface-800 dark:text-surface-200">₡{total.toLocaleString()}</span>
-              </div>
-            </div>
-          </div>
+          <p className="text-surface-400 dark:text-surface-500 text-sm mb-8">
+            Espera mientras un repartidor acepta tu pedido. 
+            {paymentMethod === 'cash' && ' Pagas al repartidor al recibir.'}
+            {paymentMethod === 'sinpe' && ' Recibirás un link de pago por SINPE.'}
+          </p>
 
           <div className="space-y-3">
-            <Link href={`/order/${order?.id || 'new'}/tracking`}>
-              <AnimatedButton variant="gradient" className="w-full">
-                📍 Rastrear Pedido
-              </AnimatedButton>
-            </Link>
+            {orderId && (
+              <Link href={`/tracking/${orderId}`}>
+                <AnimatedButton className="w-full">
+                  🗺️ Rastrear pedido
+                </AnimatedButton>
+              </Link>
+            )}
             <Link href="/">
-              <AnimatedButton variant="ghost" className="w-full">
-                ← Volver al inicio
+              <AnimatedButton variant="secondary" className="w-full">
+                Volver al inicio
               </AnimatedButton>
             </Link>
           </div>
@@ -123,7 +169,7 @@ export default function CheckoutPage() {
   }
 
   return (
-    <main className="min-h-screen bg-bg-light dark:bg-surface-950 pb-32">
+    <main className="min-h-screen bg-bg-light dark:bg-surface-950">
       {/* Header */}
       <motion.header 
         className="sticky top-0 z-40 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl"
@@ -132,61 +178,116 @@ export default function CheckoutPage() {
       >
         <div className="mx-auto max-w-lg px-4 py-4">
           <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2 text-surface-600 dark:text-surface-400">
+            <button onClick={() => router.back()} className="flex items-center gap-2 text-surface-600 dark:text-surface-400">
               <span>←</span>
               <span className="text-sm font-medium">Volver</span>
-            </Link>
+            </button>
             <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">Checkout</h1>
             <div className="w-16" />
           </div>
         </div>
       </motion.header>
 
-      <main className="mx-auto max-w-lg px-4 py-6">
-        {/* Cart Summary */}
-        <motion.div 
-          className="mb-6 rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-            🛒 Tu Pedido
-          </h3>
-          <div className="space-y-3">
-            {cart.map((item) => (
-              <div key={item.id} className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">{item.image}</span>
-                  <div>
-                    <p className="font-medium text-surface-800 dark:text-surface-200">{item.name}</p>
-                    <p className="text-sm text-surface-500 dark:text-surface-400">x{item.quantity}</p>
-                  </div>
-                </div>
-                <p className="font-semibold text-surface-800 dark:text-surface-200">
-                  ₡{(item.price * item.quantity).toLocaleString()}
-                </p>
-              </div>
-            ))}
-          </div>
-        </motion.div>
+      <div className="mx-auto max-w-lg px-4 py-6">
+        {/* Merchant Info */}
+        {merchantName && (
+          <motion.div 
+            className="mb-6 p-4 rounded-2xl bg-kiwi-50 dark:bg-kiwi-900/20 border border-kiwi-200 dark:border-kiwi-800"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <p className="text-sm text-kiwi-700 dark:text-kiwi-300">Pedido de</p>
+            <p className="font-semibold text-kiwi-800 dark:text-kiwi-200">{merchantName}</p>
+          </motion.div>
+        )}
 
-        {/* Delivery Address */}
+        {/* Cart Summary */}
         <motion.div 
           className="mb-6 rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-            📍 Dirección de Entrega
-          </h3>
-          <input
-            type="text"
-            placeholder="¿A dónde lo llevamos?"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            className="w-full px-4 py-3 rounded-xl bg-surface-100 dark:bg-surface-700 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-kiwi-500"
-          />
+          <h2 className="font-semibold text-surface-800 dark:text-surface-100 mb-3">Tu pedido</h2>
+          {cart.map((item, index) => (
+            <div key={item.id || index} className="flex justify-between py-2 border-b border-surface-100 dark:border-surface-700 last:border-0">
+              <span className="text-surface-700 dark:text-surface-300">
+                {item.quantity}x {item.name}
+              </span>
+              <span className="font-medium text-surface-800 dark:text-surface-100">
+                ₡{(item.price * item.quantity).toLocaleString()}
+              </span>
+            </div>
+          ))}
+          <div className="mt-3 pt-3 border-t border-surface-200 dark:border-surface-700">
+            <div className="flex justify-between text-sm">
+              <span className="text-surface-500">Subtotal</span>
+              <span className="text-surface-700 dark:text-surface-300">₡{subtotal.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between text-sm mt-1">
+              <span className="text-surface-500">Envío</span>
+              <span className={deliveryFee === 0 ? 'text-green-600 font-medium' : 'text-surface-700 dark:text-surface-300'}>
+                {deliveryFee === 0 ? 'Gratis' : `₡${deliveryFee}`}
+              </span>
+            </div>
+            <div className="flex justify-between font-bold text-lg mt-2">
+              <span className="text-surface-800 dark:text-surface-100">Total</span>
+              <span className="text-kiwi-600">₡{total.toLocaleString()}</span>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Delivery Info */}
+        <motion.div 
+          className="mb-6 rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <h2 className="font-semibold text-surface-800 dark:text-surface-100 mb-3">Datos de entrega</h2>
+          
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm text-surface-500 mb-1">Tu nombre *</label>
+              <input
+                type="text"
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                placeholder="Nombre completo"
+                className="w-full px-3 py-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-surface-500 mb-1">Teléfono *</label>
+              <input
+                type="tel"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                placeholder="8888-1234"
+                className="w-full px-3 py-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-surface-500 mb-1">Dirección de entrega *</label>
+              <input
+                type="text"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="Barrio, calle, referencia..."
+                className="w-full px-3 py-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-surface-500 mb-1">Instrucciones (opcional)</label>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Sin cebolla, portón azul, etc."
+                rows={2}
+                className="w-full px-3 py-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-500 resize-none"
+              />
+            </div>
+          </div>
         </motion.div>
 
         {/* Payment Method */}
@@ -194,86 +295,70 @@ export default function CheckoutPage() {
           className="mb-6 rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <PaymentSelector 
-            selected={paymentMethod}
-            onSelect={setPaymentMethod}
-            total={total}
-          />
-        </motion.div>
-
-        {/* Special Notes */}
-        <motion.div 
-          className="mb-6 rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
-          <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-            📝 Notas Especiales
-          </h3>
-          <textarea
-            placeholder="¿Alguna instrucción especial? (ej: sin cebolla, extra salsa...)"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            rows={3}
-            className="w-full px-4 py-3 rounded-xl bg-surface-100 dark:bg-surface-700 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-kiwi-500 resize-none"
-          />
+          <h2 className="font-semibold text-surface-800 dark:text-surface-100 mb-3">Método de pago</h2>
+          
+          <div className="grid grid-cols-2 gap-2">
+            {([
+              { id: 'cash', label: '💵 Efectivo', desc: 'Pagar al repartidor' },
+              { id: 'sinpe', label: '📱 SINPE', desc: 'Transferencia' },
+              { id: 'card', label: '💳 Tarjeta', desc: 'Crédito/Débito' },
+              { id: 'crypto_usdc', label: '💎 USDC', desc: 'Cripto' },
+            ] as const).map((method) => (
+              <button
+                key={method.id}
+                onClick={() => setPaymentMethod(method.id)}
+                className={`p-3 rounded-xl border-2 text-left transition-all ${
+                  paymentMethod === method.id
+                    ? 'border-kiwi-500 bg-kiwi-50 dark:bg-kiwi-900/20'
+                    : 'border-surface-200 dark:border-surface-700 hover:border-surface-300'
+                }`}
+              >
+                <span className="text-sm font-medium text-surface-800 dark:text-surface-100">{method.label}</span>
+                <span className="block text-xs text-surface-500 mt-0.5">{method.desc}</span>
+              </button>
+            ))}
+          </div>
         </motion.div>
 
-        {/* Order Summary */}
-        <motion.div 
-          className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
+        {/* Error */}
+        {error && (
+          <div className="mb-4 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+            <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+          </div>
+        )}
+
+        {/* Place Order Button */}
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
         >
-          <div className="space-y-3">
-            <div className="flex justify-between">
-              <span className="text-surface-500 dark:text-surface-400">Subtotal</span>
-              <span className="text-surface-800 dark:text-surface-200">₡{subtotal.toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-surface-500 dark:text-surface-400">Envío</span>
-              <span className="text-kiwi-600 dark:text-kiwi-400 font-medium">Gratis 🎉</span>
-            </div>
-            <div className="border-t border-surface-200 dark:border-surface-700 pt-3">
-              <div className="flex justify-between">
-                <span className="font-semibold text-surface-800 dark:text-surface-200">Total</span>
-                <span className="text-xl font-bold text-surface-800 dark:text-surface-200">
-                  ₡{total.toLocaleString()}
-                </span>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      </main>
-
-      {/* Place Order Button */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 dark:bg-surface-900/80 backdrop-blur-xl border-t border-surface-200/50 dark:border-surface-700/50">
-        <div className="mx-auto max-w-lg">
-          <AnimatedButton 
-            variant="gradient" 
-            size="lg" 
-            className="w-full shadow-kiwi-lg"
+          <button
             onClick={placeOrder}
+            disabled={!canPlaceOrder || loading}
+            className={`w-full py-4 rounded-2xl font-bold text-lg text-white transition-all ${
+              canPlaceOrder && !loading
+                ? 'bg-gradient-to-r from-kiwi-500 to-kiwi-600 hover:from-kiwi-600 hover:to-kiwi-700 shadow-lg'
+                : 'bg-surface-300 dark:bg-surface-700 cursor-not-allowed'
+            }`}
           >
             {loading ? (
               <span className="flex items-center justify-center gap-2">
-                <motion.span
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                >
-                  ⏳
-                </motion.span>
-                Procesando...
+                <span className="animate-spin">🔄</span> Procesando...
               </span>
             ) : (
-              `🍔 Hacer Pedido • ₡${total.toLocaleString()}`
+              `Ordenar — ₡${total.toLocaleString()}`
             )}
-          </AnimatedButton>
-        </div>
+          </button>
+          <p className="text-center text-xs text-surface-400 mt-3">
+            {paymentMethod === 'cash' && '💰 Pagas al repartidor al recibir tu pedido'}
+            {paymentMethod === 'sinpe' && '📱 Recibirás un link de pago por SINPE'}
+            {paymentMethod === 'card' && '💳 Serás redirigido al pago seguro'}
+            {paymentMethod === 'crypto_usdc' && '💎 Paga con USDC en la red Stellar'}
+          </p>
+        </motion.div>
       </div>
     </main>
   );
