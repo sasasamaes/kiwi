@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Seguimiento de Pedido - Kiwi</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+                "primary-container": "#22c55e",
+                "on-background": "#dae2fd",
+                "surface-bright": "#31394d",
+                "on-tertiary": "#003824",
+                "inverse-primary": "#006e2f",
+                "on-primary-container": "#004b1e",
+                "on-tertiary-container": "#004a31",
+                "inverse-surface": "#dae2fd",
+                "surface-container": "#171f33",
+                "secondary-fixed": "#6dfe9c",
+                "on-surface-variant": "#bccbb9",
+                "tertiary-container": "#28c38a",
+                "surface-container-lowest": "#060e20",
+                "on-error-container": "#ffdad6",
+                "surface-variant": "#2d3449",
+                "outline-variant": "#3d4a3d",
+                "tertiary-fixed-dim": "#4edea3",
+                "tertiary-fixed": "#6ffbbe",
+                "background": "#0b1326",
+                "surface-container-low": "#131b2e",
+                "on-error": "#690005",
+                "surface": "#0b1326",
+                "on-primary-fixed-variant": "#005321",
+                "primary-fixed": "#6bff8f",
+                "error-container": "#93000a",
+                "error": "#ffb4ab",
+                "on-surface": "#dae2fd",
+                "secondary": "#4de082",
+                "primary-fixed-dim": "#4ae176",
+                "surface-dim": "#0b1326",
+                "surface-container-high": "#222a3d",
+                "on-secondary-fixed-variant": "#005227",
+                "on-secondary-fixed": "#00210c",
+                "on-primary": "#003915",
+                "secondary-container": "#00b55d",
+                "tertiary": "#50dfa4",
+                "on-secondary": "#003919",
+                "on-secondary-container": "#003e1c",
+                "surface-container-highest": "#2d3449",
+                "primary": "#4be277",
+                "on-tertiary-fixed-variant": "#005236",
+                "secondary-fixed-dim": "#4de082",
+                "on-tertiary-fixed": "#002113",
+                "outline": "#869585",
+                "on-primary-fixed": "#002109",
+                "inverse-on-surface": "#283044",
+                "surface-tint": "#4ae176"
+        },
+        "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px"
+        },
+        "spacing": {
+                "margin-desktop": "3rem",
+                "space-sm": "0.75rem",
+                "space-2xs": "0.25rem",
+                "margin-tablet": "2rem",
+                "space-xs": "0.5rem",
+                "space-xl": "2rem",
+                "space-md": "1rem",
+                "gutter-mobile": "1rem",
+                "gutter-desktop": "1.5rem",
+                "space-3xl": "4rem",
+                "margin-mobile": "1rem",
+                "space-lg": "1.5rem",
+                "space-2xl": "3rem"
+        },
+        "fontFamily": {
+                "label-md": [
+                        "Inter"
+                ],
+                "headline-sm": [
+                        "Inter"
+                ],
+                "headline-md": [
+                        "Inter"
+                ],
+                "headline-lg": [
+                        "Inter"
+                ],
+                "body-lg": [
+                        "Inter"
+                ],
+                "title-md": [
+                        "Inter"
+                ],
+                "display-lg": [
+                        "Inter"
+                ],
+                "body-sm": [
+                        "Inter"
+                ],
+                "body-md": [
+                        "Inter"
+                ],
+                "label-sm": [
+                        "Inter"
+                ],
+                "display-lg-mobile": [
+                        "Inter"
+                ]
+        },
+        "fontSize": {
+                "label-md": [
+                        "12px",
+                        {
+                                "lineHeight": "16px",
+                                "letterSpacing": "0.04em",
+                                "fontWeight": "600"
+                        }
+                ],
+                "headline-sm": [
+                        "20px",
+                        {
+                                "lineHeight": "28px",
+                                "letterSpacing": "-0.01em",
+                                "fontWeight": "600"
+                        }
+                ],
+                "headline-md": [
+                        "24px",
+                        {
+                                "lineHeight": "32px",
+                                "letterSpacing": "-0.015em",
+                                "fontWeight": "600"
+                        }
+                ],
+                "headline-lg": [
+                        "32px",
+                        {
+                                "lineHeight": "40px",
+                                "letterSpacing": "-0.02em",
+                                "fontWeight": "700"
+                        }
+                ],
+                "body-lg": [
+                        "18px",
+                        {
+                                "lineHeight": "28px",
+                                "letterSpacing": "0em",
+                                "fontWeight": "400"
+                        }
+                ],
+                "title-md": [
+                        "16px",
+                        {
+                                "lineHeight": "24px",
+                                "letterSpacing": "-0.005em",
+                                "fontWeight": "600"
+                        }
+                ],
+                "display-lg": [
+                        "56px",
+                        {
+                                "lineHeight": "64px",
+                                "letterSpacing": "-0.03em",
+                                "fontWeight": "700"
+                        }
+                ],
+                "body-sm": [
+                        "13px",
+                        {
+                                "lineHeight": "20px",
+                                "letterSpacing": "0.005em",
+                                "fontWeight": "400"
+                        }
+                ],
+                "body-md": [
+                        "15px",
+                        {
+                                "lineHeight": "24px",
+                                "letterSpacing": "0em",
+                                "fontWeight": "400"
+                        }
+                ],
+                "label-sm": [
+                        "11px",
+                        {
+                                "lineHeight": "14px",
+                                "letterSpacing": "0.06em",
+                                "fontWeight": "500"
+                        }
+                ],
+                "display-lg-mobile": [
+                        "36px",
+                        {
+                                "lineHeight": "44px",
+                                "letterSpacing": "-0.025em",
+                                "fontWeight": "700"
+                        }
+                ]
+        }
+},
+    },
+  }
+</script>
+<style>
+  body {
+    background-color: #0f172a; /* Solid Canvas */
+    color: #f8fafc;
+  }
+  .glass-card {
+    background: rgba(30, 41, 59, 0.75);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(51, 65, 85, 0.6);
+    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+  }
+  .glass-card-elevated {
+    background: rgba(51, 65, 85, 0.8);
+    backdrop-filter: blur(24px);
+    border: 1px solid rgba(74, 222, 128, 0.2);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+  }
+  .neon-glow {
+    box-shadow: 0 0 20px -2px rgba(34, 197, 94, 0.35);
+  }
+</style>
+</head>
+<body class="font-body-md text-body-md min-h-screen max-w-[390px] mx-auto bg-[#0f172a] relative overflow-x-hidden pb-10">
+<!-- TopAppBar -->
+<header class="bg-surface/75 dark:bg-surface-container-low/75 backdrop-blur-xl fixed top-0 w-full max-w-[390px] z-50 border-b border-white/10 dark:border-white/5 shadow-lg shadow-black/20 flex justify-between items-center px-margin-mobile h-16 transition-colors">
+<button class="text-on-surface-variant hover:bg-primary/10 rounded-full p-2 active:scale-95 duration-200">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="font-headline-md text-headline-md-mobile font-bold text-primary tracking-tight">Seguimiento</h1>
+<div class="w-10"></div> <!-- Spacer -->
+</header>
+<!-- Map View -->
+<div class="pt-16 relative w-full h-[300px]">
+<div class="w-full h-full bg-cover bg-center" data-alt="A dark-themed stylized map view of Nicoya, Costa Rica at night. The map features deep slate blues and blacks, with glowing street lines. A vibrant kiwi-green neon pulse marks the delivery driver's location, and a distinct pin marks the destination. The aesthetic is modern, tech-focused, and tropical nocturnal." data-location="Nicoya, Costa Rica" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBcEIv_XyB7HdN7xnbvLa9paDzwJlv1k4r05tNoOcrQBCUXwPFP9eLzETfNOj8KjJXwaGQTpE5BprEWEVA5u-upwPLqOOza4GcxF_bvrPO9ttVwSB1S5G9p9oV-IDUEUSQei2OGIrfJkmf93mp0Rx645JBgKcaw_R38FKRIrt6HvKgs3WOu2BgOf1FLgqdPj6aqQ9ZNZnoaWaakkJJkoOEKvzyHL8R92Vm29hsaDjURuGBt_Nt5IORdbR8KRPCxBAKQ0ipSrvplzUA_')"></div>
+<!-- ETA Glass Card -->
+<div class="absolute bottom-4 left-1/2 -translate-x-1/2 glass-card-elevated rounded-xl px-4 py-2 flex items-center space-x-2">
+<span class="material-symbols-outlined text-[#22c55e]" data-icon="two_wheeler">two_wheeler</span>
+<span class="font-headline-sm text-headline-sm text-on-background whitespace-nowrap">Llegando en 15 min</span>
+</div>
+</div>
+<!-- Main Content Canvas -->
+<main class="px-margin-mobile pt-space-md space-y-space-md">
+<!-- Driver Info Card -->
+<div class="glass-card rounded-[16px] p-space-md flex items-center justify-between hover:border-[#4ade80]/50 transition-colors">
+<div class="flex items-center space-x-space-sm">
+<img alt="Juan Carlos" class="w-12 h-12 rounded-full object-cover border border-[#334155]" src="https://lh3.googleusercontent.com/aida/AEtjO1U-nb8krhEN7mlWbxsjYNiABveHCI6zenRZ35UdyAzUfpxl5pG8p6PkZzOEl534zeOHT6CcW0g0Vj7zySaoI2YbP2gyE77rG8owJKmRkt2I4UCO2YWZKuuLlQmYSB4Tp64SKbibOA06NNhjREgahP6l3Rn5AeQ-05ZAU5pa9-cY0SbqI6VyRwBihYMwWarHmyIKhKy_0NiHDIF9Ka_LoPAw04_4og-69LjtK8IqTYf2JIIhYpiKG8zA-ti5"/>
+<div>
+<h2 class="font-title-md text-title-md text-on-background">Juan Carlos</h2>
+<div class="flex items-center space-x-1 text-on-surface-variant text-label-md">
+<span class="material-symbols-outlined text-[14px]" data-icon="star">star</span>
+<span>4.9</span>
+<span class="px-1">•</span>
+<span>Repartidor</span>
+</div>
+</div>
+</div>
+<button class="bg-[rgba(30,41,59,0.6)] backdrop-blur-md border border-[rgba(51,65,85,0.7)] text-[#f8fafc] w-10 h-10 rounded-full flex items-center justify-center hover:bg-[rgba(51,65,85,0.8)] hover:border-[#4ade80] transition-all">
+<span class="material-symbols-outlined" data-icon="call">call</span>
+</button>
+</div>
+<!-- Status Timeline -->
+<div class="glass-card rounded-[16px] p-space-lg">
+<div class="relative space-y-6">
+<!-- Vertical Line -->
+<div class="absolute left-[11px] top-2 bottom-2 w-[2px] bg-[rgba(51,65,85,0.6)] z-0"></div>
+<!-- Stages -->
+<div class="flex items-start relative z-10">
+<div class="w-6 h-6 rounded-full bg-[#22c55e] flex items-center justify-center mt-1 neon-glow shadow-[0_0_10px_#22c55e]">
+<span class="material-symbols-outlined text-[#0f172a] text-[14px]" data-icon="check">check</span>
+</div>
+<div class="ml-4 flex-1">
+<p class="font-title-md text-title-md text-on-background">Pedido Confirmado</p>
+</div>
+</div>
+<div class="flex items-start relative z-10">
+<div class="w-6 h-6 rounded-full bg-[#22c55e] flex items-center justify-center mt-1 neon-glow shadow-[0_0_10px_#22c55e]">
+<span class="material-symbols-outlined text-[#0f172a] text-[14px]" data-icon="check">check</span>
+</div>
+<div class="ml-4 flex-1">
+<p class="font-title-md text-title-md text-on-background">Preparando tu pedido</p>
+</div>
+</div>
+<div class="flex items-start relative z-10">
+<div class="w-6 h-6 rounded-full bg-[#0f172a] border-2 border-[#22c55e] flex items-center justify-center mt-1 neon-glow shadow-[0_0_15px_#22c55e]">
+<div class="w-2 h-2 rounded-full bg-[#22c55e]"></div>
+</div>
+<div class="ml-4 flex-1">
+<p class="font-title-md text-title-md text-[#22c55e]">Repartidor asignado</p>
+<p class="font-label-md text-label-md text-on-surface-variant">Juan Carlos está en camino.</p>
+</div>
+</div>
+<div class="flex items-start relative z-10 opacity-50">
+<div class="w-6 h-6 rounded-full bg-[rgba(15,23,42,0.5)] border-[1.5px] border-[rgba(148,163,184,0.4)] flex items-center justify-center mt-1"></div>
+<div class="ml-4 flex-1">
+<p class="font-body-md text-body-md text-on-surface-variant">En camino a recoger</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Order Summary -->
+<div class="glass-card rounded-[16px] p-space-md">
+<h3 class="font-title-md text-title-md text-on-background mb-2">Detalle de tu orden</h3>
+<div class="space-y-1">
+<div class="flex justify-between items-center py-1 border-b border-[rgba(51,65,85,0.4)] last:border-0">
+<span class="text-on-surface-variant">1x Casado Tradicional</span>
+</div>
+<div class="flex justify-between items-center py-1 border-b border-[rgba(51,65,85,0.4)] last:border-0">
+<span class="text-on-surface-variant">1x Café Chorreado</span>
+</div>
+</div>
+</div>
+<!-- Support Button -->
+<button class="w-full py-3 px-4 rounded-[16px] bg-[rgba(30,41,59,0.6)] backdrop-blur-[12px] border border-[rgba(51,65,85,0.7)] text-[#f8fafc] font-title-md text-title-md hover:bg-[rgba(51,65,85,0.8)] hover:border-[#4ade80] transition-all flex items-center justify-center space-x-2 mt-4">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+<span>Necesito ayuda con mi pedido</span>
+</button>
+</main>
+</body></html>

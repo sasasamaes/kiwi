@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Kiwi - Home</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-tint": "#4ae176",
+                        "on-surface": "#dae2fd",
+                        "on-primary-fixed-variant": "#005321",
+                        "secondary-container": "#00b55d",
+                        "on-secondary": "#003919",
+                        "on-tertiary": "#003824",
+                        "tertiary-fixed": "#6ffbbe",
+                        "on-primary-fixed": "#002109",
+                        "primary-container": "#22c55e",
+                        "on-error-container": "#ffdad6",
+                        "on-primary-container": "#004b1e",
+                        "surface-dim": "#0b1326",
+                        "primary": "#4be277",
+                        "surface": "#0b1326",
+                        "surface-container-low": "#131b2e",
+                        "on-tertiary-fixed-variant": "#005236",
+                        "secondary-fixed": "#6dfe9c",
+                        "tertiary-container": "#28c38a",
+                        "on-primary": "#003915",
+                        "on-background": "#dae2fd",
+                        "on-secondary-fixed": "#00210c",
+                        "error": "#ffb4ab",
+                        "primary-fixed-dim": "#4ae176",
+                        "on-tertiary-container": "#004a31",
+                        "on-secondary-fixed-variant": "#005227",
+                        "surface-container": "#171f33",
+                        "primary-fixed": "#6bff8f",
+                        "outline": "#869585",
+                        "on-secondary-container": "#003e1c",
+                        "secondary": "#4de082",
+                        "background": "#0b1326",
+                        "error-container": "#93000a",
+                        "inverse-on-surface": "#283044",
+                        "secondary-fixed-dim": "#4de082",
+                        "surface-container-highest": "#2d3449",
+                        "surface-bright": "#31394d",
+                        "tertiary-fixed-dim": "#4edea3",
+                        "tertiary": "#50dfa4",
+                        "on-surface-variant": "#bccbb9",
+                        "surface-container-high": "#222a3d",
+                        "on-error": "#690005",
+                        "surface-variant": "#2d3449",
+                        "on-tertiary-fixed": "#002113",
+                        "surface-container-lowest": "#060e20",
+                        "outline-variant": "#3d4a3d",
+                        "inverse-primary": "#006e2f",
+                        "inverse-surface": "#dae2fd"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter-mobile": "1rem",
+                        "margin-desktop": "3rem",
+                        "space-xs": "0.5rem",
+                        "space-xl": "2rem",
+                        "space-2xs": "0.25rem",
+                        "margin-mobile": "1rem",
+                        "gutter-desktop": "1.5rem",
+                        "space-md": "1rem",
+                        "space-2xl": "3rem",
+                        "margin-tablet": "2rem",
+                        "space-sm": "0.75rem",
+                        "space-3xl": "4rem",
+                        "space-lg": "1.5rem"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "title-md": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-md": ["Inter"],
+                        "display-lg-mobile": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "headline-sm": ["Inter"],
+                        "headline-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.06em", "fontWeight": "500" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "letterSpacing": "0em", "fontWeight": "400" }],
+                        "title-md": ["16px", { "lineHeight": "24px", "letterSpacing": "-0.005em", "fontWeight": "600" }],
+                        "body-md": ["15px", { "lineHeight": "24px", "letterSpacing": "0em", "fontWeight": "400" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.04em", "fontWeight": "600" }],
+                        "display-lg-mobile": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.025em", "fontWeight": "700" }],
+                        "display-lg": ["56px", { "lineHeight": "64px", "letterSpacing": "-0.03em", "fontWeight": "700" }],
+                        "body-sm": ["13px", { "lineHeight": "20px", "letterSpacing": "0.005em", "fontWeight": "400" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.015em", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.75);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(51, 65, 85, 0.6);
+        }
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(51, 65, 85, 0.6);
+            transition: all 0.3s ease;
+        }
+        .glass-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+            border-top: 1px solid rgba(74, 222, 128, 0.3);
+        }
+        .neon-bloom {
+            box-shadow: 0 0 20px -2px rgba(34, 197, 94, 0.35);
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background antialiased min-h-screen pb-24 md:pb-0">
+<!-- Top AppBar (Desktop/Tablet) -->
+<header class="hidden md:flex bg-surface/75 dark:bg-surface-container-low/75 backdrop-blur-xl font-headline-md text-headline-md font-bold text-primary tracking-tight fixed top-0 w-full z-50 border-b border-white/10 dark:border-white/5 shadow-lg shadow-black/20 justify-between items-center px-margin-mobile h-16">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">qr_code_scanner</span>
+<span>Kiwi</span>
+</div>
+<nav class="flex gap-6">
+<a class="text-primary font-title-md text-title-md hover:bg-primary/10 transition-colors px-3 py-2 rounded-lg relative after:content-[''] after:absolute after:-bottom-1 after:left-1/2 after:-translate-x-1/2 after:w-1 after:h-1 after:bg-primary after:rounded-full after:shadow-[0_0_10px_#22c55e]" href="#">Home</a>
+<a class="text-on-surface-variant font-title-md text-title-md hover:bg-primary/10 transition-colors px-3 py-2 rounded-lg" href="#">Explore</a>
+<a class="text-on-surface-variant font-title-md text-title-md hover:bg-primary/10 transition-colors px-3 py-2 rounded-lg" href="#">Orders</a>
+<a class="text-on-surface-variant font-title-md text-title-md hover:bg-primary/10 transition-colors px-3 py-2 rounded-lg" href="#">Profile</a>
+</nav>
+<div class="flex items-center">
+<span class="material-symbols-outlined hover:bg-primary/10 transition-colors p-2 rounded-full cursor-pointer text-on-surface-variant">account_balance_wallet</span>
+</div>
+</header>
+<!-- Mobile Header -->
+<div class="md:hidden flex justify-between items-center p-margin-mobile pt-6">
+<div class="flex flex-col">
+<h1 class="font-headline-md text-headline-md-mobile text-on-surface">¡Hola, Sofía!</h1>
+<div class="flex items-center text-on-surface-variant mt-1">
+<span class="material-symbols-outlined text-[16px] mr-1 text-primary">location_on</span>
+<span class="font-body-sm text-body-sm">Nicoya Centro</span>
+<span class="material-symbols-outlined text-[16px] ml-1">expand_more</span>
+</div>
+</div>
+<div class="w-12 h-12 rounded-full overflow-hidden border-2 border-primary/30 p-0.5">
+<img class="w-full h-full rounded-full object-cover" data-alt="A portrait of a young Costa Rican woman smiling warmly in soft evening light. The aesthetic is modern and vibrant, reflecting a nocturnal tropical vibe with subtle glowing green lighting accents on her hair, set against a dark blurred background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDTnlqDY4N3GWH1ZkS_ORG_iB_3aZbPYtKeXZwtnzyR3SUlMAfcqvfI-WOtP9I1h5o9A3TWBdviGLCYkAq0buQYnQXd3ZkjoWiBlVumR36aqN32oSG6H4YAOObBsjLf8Pyr9gbyRU-AM08iXCM4A4YFKlddwnIgTSy-O7F-wN7_NAOHlj6be0jRH1U2R1xSD0nfuw7biDUgikl6_KBAFnlDpdIRZncjlb7MIZRaXg9Rlyc_yWA9WJ9BNNGdu9TX8TzzIlHjZGfCWcN3"/>
+</div>
+</div>
+<!-- Main Content -->
+<main class="px-margin-mobile md:px-margin-desktop md:pt-24 max-w-7xl mx-auto space-y-space-xl">
+<!-- Hero Action Card -->
+<section class="glass-panel rounded-2xl p-6 relative overflow-hidden flex flex-col items-center justify-center text-center group cursor-pointer active:scale-[0.98] transition-transform duration-200">
+<!-- Decorative gradient orb -->
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-primary/20 rounded-full blur-[40px] pointer-events-none"></div>
+<div class="w-16 h-16 rounded-full bg-primary-container text-on-primary-fixed flex items-center justify-center neon-bloom mb-4 shadow-lg">
+<span class="material-symbols-outlined text-4xl" style="font-variation-settings: 'FILL' 1;">qr_code_scanner</span>
+</div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface mb-2">Escanear para Ordenar</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Escanea el código en la mesa</p>
+</section>
+<!-- Categories Chips -->
+<section class="flex overflow-x-auto hide-scrollbar gap-3 pb-2 -mx-margin-mobile px-margin-mobile md:mx-0 md:px-0">
+<button class="whitespace-nowrap px-4 py-2 rounded-full bg-primary-container text-[#0f172a] font-label-md text-label-md transition-colors shadow-[0_0_15px_-3px_rgba(34,197,94,0.4)] border border-transparent">Todos</button>
+<button class="whitespace-nowrap px-4 py-2 rounded-full bg-surface-container-low/80 text-on-surface-variant font-label-md text-label-md border border-outline/40 hover:border-primary/50 hover:bg-surface-container-low transition-colors">Café</button>
+<button class="whitespace-nowrap px-4 py-2 rounded-full bg-surface-container-low/80 text-on-surface-variant font-label-md text-label-md border border-outline/40 hover:border-primary/50 hover:bg-surface-container-low transition-colors">Casados</button>
+<button class="whitespace-nowrap px-4 py-2 rounded-full bg-surface-container-low/80 text-on-surface-variant font-label-md text-label-md border border-outline/40 hover:border-primary/50 hover:bg-surface-container-low transition-colors">Pizzería</button>
+<button class="whitespace-nowrap px-4 py-2 rounded-full bg-surface-container-low/80 text-on-surface-variant font-label-md text-label-md border border-outline/40 hover:border-primary/50 hover:bg-surface-container-low transition-colors">Sodas</button>
+</section>
+<!-- Restaurants Horizontal Scroll -->
+<section class="space-y-space-md">
+<div class="flex justify-between items-end">
+<h3 class="font-title-md text-title-md text-on-surface">Sodas y Restaurantes</h3>
+<a class="font-label-md text-label-md text-primary hover:text-primary-fixed transition-colors" href="#">Ver todos</a>
+</div>
+<div class="flex overflow-x-auto hide-scrollbar gap-4 pb-4 -mx-margin-mobile px-margin-mobile md:mx-0 md:px-0 snap-x">
+<!-- Card 1 -->
+<div class="min-w-[280px] w-[280px] md:w-[320px] glass-card rounded-2xl overflow-hidden snap-start group cursor-pointer flex flex-col">
+<div class="h-36 w-full relative overflow-hidden">
+<div class="bg-cover bg-center w-full h-full group-hover:scale-105 transition-transform duration-500" data-alt="A delicious overhead view of a traditional Costa Rican 'Casado' meal on a rustic wooden table. The plate features rice, black beans, fried plantains, salad, and grilled chicken. Deep cinematic shadows with a vivid green accent light hinting at a vibrant, modern nocturnal aesthetic. High quality food photography." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCtmWrpVuCEU3f8jOMFOCANZG-xDWOgBSX8a0ZDqxfP84LLljXXCdOo4NXhI2qufoXUZNNAys-jQxOEKoQLOS0E_OLUXKdASZLlW6s68eO1OHg25_smsDIA1Uee38nvJVPQKO6aYmDfhs0InwqKqbGzKhUpUwMuZ-GMdbNYWZ1W5BgyS1pz0utbtMUGDqH-eR3wD3bCbRndXaKlgCFSmGsFmfa-h7mo9jxkqQdnIMX6aCLWlvOn5cbmPxSpb2YlNOYT4V8H8uYJfuLU')"></div>
+<div class="absolute top-3 right-3 bg-surface/80 backdrop-blur-md px-2 py-1 rounded-lg border border-white/10 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-primary" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="font-label-sm text-label-sm text-on-surface">4.8</span>
+</div>
+</div>
+<div class="p-4 flex-1 flex flex-col justify-between">
+<div>
+<h4 class="font-title-md text-title-md text-on-surface mb-1 truncate">Soda La Guanacasteca</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant truncate">Comida Típica</p>
+</div>
+<div class="flex items-center gap-2 mt-3 text-on-surface-variant/80">
+<span class="material-symbols-outlined text-[16px]">schedule</span>
+<span class="font-label-sm text-label-sm">20-35 min</span>
+</div>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="min-w-[280px] w-[280px] md:w-[320px] glass-card rounded-2xl overflow-hidden snap-start group cursor-pointer flex flex-col">
+<div class="h-36 w-full relative overflow-hidden">
+<div class="bg-cover bg-center w-full h-full group-hover:scale-105 transition-transform duration-500" data-alt="A beautifully plated healthy acai bowl on a sleek dark slate counter. The bowl is topped with fresh vibrant berries, kiwi slices, and coconut flakes. The lighting is moody and dark with a soft, glowing kiwi-green rim light illuminating the fresh fruit, capturing a premium night-mode wellness aesthetic." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBiERlro-B5jipj7a4_Gtu_G2pZ8ixK1kOTNjCHbHdPe_dubf96RVQWyGD1F0OQy6MiKgq5bYauWerDaZRtd9t1KuhcXkZ0_O3X0HqK0jUoOIvMkZVjb5f0BcZ3FHzfIDaaPsJS9t9FSJRWm6TWA-LqiCAko0uOxhPVjvnszaIqhUa7KAQDKyBpZE2zBegnuU58RgCGk0RQFbhxgM_bSBnu5eOqYuCiggi-NI2tScSnheFvFsfW0ucd2-DeC0gikkUt0vmaspbiNd0s')"></div>
+<div class="absolute top-3 right-3 bg-surface/80 backdrop-blur-md px-2 py-1 rounded-lg border border-white/10 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-primary" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="font-label-sm text-label-sm text-on-surface">4.9</span>
+</div>
+</div>
+<div class="p-4 flex-1 flex flex-col justify-between">
+<div>
+<h4 class="font-title-md text-title-md text-on-surface mb-1 truncate">Bowl &amp; Café Luis Alfredo</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant truncate">Café &amp; Healthy</p>
+</div>
+<div class="flex items-center gap-2 mt-3 text-on-surface-variant/80">
+<span class="material-symbols-outlined text-[16px]">schedule</span>
+<span class="font-label-sm text-label-sm">15-25 min</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Promotions Sections -->
+<section class="space-y-space-md mb-8">
+<h3 class="font-title-md text-title-md text-on-surface">Promociones del Día</h3>
+<div class="flex flex-col gap-4">
+<!-- Promo 1 -->
+<div class="glass-card rounded-2xl p-4 flex items-center gap-4 cursor-pointer relative overflow-hidden">
+<div class="absolute right-0 top-0 w-32 h-full bg-gradient-to-l from-primary/10 to-transparent pointer-events-none"></div>
+<div class="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0">
+<div class="bg-cover bg-center w-full h-full" data-alt="Close up of a juicy, premium artisan hamburger with melted cheese and fresh lettuce on a dark textured plate. Shot with cinematic, moody lighting and a subtle vibrant green neon reflection in the background, fitting a sleek night-mode food delivery app." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDGrFKAHghIYcNdrSCHGKfm92X5K22W2a9hwc5tY3GuPs8jua0k53eAxKtBBV4o4u4FHH-UlImRZvjq7NFacvpi4_RRZwLn5-jphzXVQ_5S6Oj_sNDiQbEzqy9VzIsZ5y-AGcNy0ndQm8NPNheHvI5qf_OrDB3-Vdh1LhsWjxO379JZcq6feF7zknh1KILhkkREtZlsI_klQWtTvis8hqB4bP42yn4tf-E_mdRkdUN6d3a_maNfUwyFlO0wn-SP-PAT5oh8-N5jDs9D')"></div>
+</div>
+<div class="flex-1 min-w-0">
+<h4 class="font-title-md text-title-md text-on-surface truncate">Hamburguesas El Chino</h4>
+<p class="font-body-sm text-body-sm text-primary mt-1 font-semibold">₡1,500 OFF</p>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">arrow_forward_ios</span>
+</div>
+<!-- Promo 2 -->
+<div class="glass-card rounded-2xl p-4 flex items-center gap-4 cursor-pointer relative overflow-hidden">
+<div class="absolute right-0 top-0 w-32 h-full bg-gradient-to-l from-primary/10 to-transparent pointer-events-none"></div>
+<div class="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0">
+<div class="bg-cover bg-center w-full h-full" data-alt="A perfectly baked artisan pizza with melting mozzarella and fresh basil leaves, resting on a dark rustic board. Dark atmospheric lighting with high contrast, emphasizing the texture of the crust and a faint tropical green light casting a glow from off-camera. High-end nocturnal dining aesthetic." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDuj6b92GlyeAl9obS31GuTqc-PFRnLSfD19mF0_N73qejnCW_YfRk9_f7KXZxKVp8Mpm0IBrXgeZH3fajnfQNNIqvn9sDWq89VnwZUUSBF9Or2aiX_SZ145JIq1T-E7fHrolmg21MoNEpUcf8AqU4JGej0na_EpfGhRaSRU_UT8wflBQT2Hnc-xKFODjwM2xgIHukXmF-sVV8c8DtwZ_amZAqikoQ49bhemnRR6eDW6Pv1E1L_3rDSD_ltOtMZQzE0PVYV6wpZzmMi')"></div>
+</div>
+<div class="flex-1 min-w-0">
+<h4 class="font-title-md text-title-md text-on-surface truncate">Pizzería Nicoya</h4>
+<p class="font-body-sm text-body-sm text-primary mt-1 font-semibold">2x1 en medianas</p>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">arrow_forward_ios</span>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation Shell (Mobile Only) -->
+<nav class="md:hidden bg-surface/80 dark:bg-surface-container/80 backdrop-blur-2xl font-label-md text-label-md fixed bottom-0 w-full z-50 rounded-t-xl border-t border-white/10 shadow-[0_-10px_30px_-10px_rgba(0,0,0,0.5)] flex justify-around items-center h-20 pb-safe px-4">
+<a class="flex flex-col items-center justify-center text-primary relative after:content-[''] after:absolute after:-bottom-1 after:w-1 after:h-1 after:bg-primary after:rounded-full after:shadow-[0_0_10px_#22c55e] hover:text-primary/80 active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">home</span>
+<span>Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant/70 hover:text-primary/80 active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined mb-1">explore</span>
+<span>Explore</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant/70 hover:text-primary/80 active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined mb-1">restaurant</span>
+<span>Orders</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant/70 hover:text-primary/80 active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined mb-1">person</span>
+<span>Profile</span>
+</a>
+</nav>
+</body></html>

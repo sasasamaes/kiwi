@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Kiwi - Confirmar Pedido</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-bright": "#31394d",
+                      "surface-container-highest": "#2d3449",
+                      "primary-fixed": "#6bff8f",
+                      "on-error-container": "#ffdad6",
+                      "secondary-container": "#00b55d",
+                      "on-tertiary-fixed-variant": "#005236",
+                      "on-surface-variant": "#bccbb9",
+                      "outline": "#869585",
+                      "inverse-on-surface": "#283044",
+                      "on-surface": "#dae2fd",
+                      "on-tertiary": "#003824",
+                      "on-tertiary-container": "#004a31",
+                      "on-primary": "#003915",
+                      "on-error": "#690005",
+                      "surface-container-high": "#222a3d",
+                      "on-primary-fixed-variant": "#005321",
+                      "inverse-primary": "#006e2f",
+                      "inverse-surface": "#dae2fd",
+                      "secondary-fixed": "#6dfe9c",
+                      "secondary": "#4de082",
+                      "tertiary": "#50dfa4",
+                      "surface-container-low": "#131b2e",
+                      "tertiary-fixed": "#6ffbbe",
+                      "on-background": "#dae2fd",
+                      "primary": "#4be277",
+                      "on-primary-fixed": "#002109",
+                      "surface": "#0b1326",
+                      "error": "#ffb4ab",
+                      "on-tertiary-fixed": "#002113",
+                      "on-secondary-fixed-variant": "#005227",
+                      "on-primary-container": "#004b1e",
+                      "on-secondary-container": "#003e1c",
+                      "primary-container": "#22c55e",
+                      "outline-variant": "#3d4a3d",
+                      "tertiary-fixed-dim": "#4edea3",
+                      "primary-fixed-dim": "#4ae176",
+                      "surface-tint": "#4ae176",
+                      "on-secondary": "#003919",
+                      "tertiary-container": "#28c38a",
+                      "surface-container": "#171f33",
+                      "surface-container-lowest": "#060e20",
+                      "error-container": "#93000a",
+                      "background": "#0b1326",
+                      "surface-variant": "#2d3449",
+                      "surface-dim": "#0b1326",
+                      "secondary-fixed-dim": "#4de082",
+                      "on-secondary-fixed": "#00210c"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "space-xs": "0.5rem",
+                      "space-md": "1rem",
+                      "margin-desktop": "3rem",
+                      "margin-tablet": "2rem",
+                      "gutter-mobile": "1rem",
+                      "space-xl": "2rem",
+                      "space-lg": "1.5rem",
+                      "space-3xl": "4rem",
+                      "space-2xl": "3rem",
+                      "space-2xs": "0.25rem",
+                      "margin-mobile": "1rem",
+                      "gutter-desktop": "1.5rem",
+                      "space-sm": "0.75rem"
+              },
+              "fontFamily": {
+                      "label-sm": [
+                              "Inter"
+                      ],
+                      "title-md": [
+                              "Inter"
+                      ],
+                      "headline-sm": [
+                              "Inter"
+                      ],
+                      "headline-md": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "headline-lg": [
+                              "Inter"
+                      ],
+                      "display-lg-mobile": [
+                              "Inter"
+                      ],
+                      "display-lg": [
+                              "Inter"
+                      ],
+                      "label-md": [
+                              "Inter"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "body-sm": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "label-sm": [
+                              "11px",
+                              {
+                                      "lineHeight": "14px",
+                                      "letterSpacing": "0.06em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "title-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "letterSpacing": "-0.005em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-sm": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "letterSpacing": "-0.015em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "15px",
+                              {
+                                      "lineHeight": "24px",
+                                      "letterSpacing": "0em",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "display-lg-mobile": [
+                              "36px",
+                              {
+                                      "lineHeight": "44px",
+                                      "letterSpacing": "-0.025em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "display-lg": [
+                              "56px",
+                              {
+                                      "lineHeight": "64px",
+                                      "letterSpacing": "-0.03em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "label-md": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.04em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "28px",
+                                      "letterSpacing": "0em",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-sm": [
+                              "13px",
+                              {
+                                      "lineHeight": "20px",
+                                      "letterSpacing": "0.005em",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+<style>
+        /* Glassmorphism utility classes */
+        .glass-panel {
+            background-color: rgba(30, 41, 59, 0.75);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(51, 65, 85, 0.6);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+        }
+        
+        .kiwi-button {
+            background-color: #22c55e;
+            color: #0f172a;
+            transition: all 0.2s ease-in-out;
+        }
+        
+        .kiwi-button:active {
+            transform: scale(0.98);
+        }
+        
+        .kiwi-input {
+            background-color: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(51, 65, 85, 0.8);
+            color: #f8fafc;
+            transition: all 0.2s ease-in-out;
+        }
+        
+        .kiwi-input:focus {
+            border-color: #22c55e;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+        }
+
+        .payment-chip {
+            background-color: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(51, 65, 85, 0.6);
+            color: #94a3b8;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .payment-chip.active {
+            background-color: #22c55e;
+            border-color: #22c55e;
+            color: #0f172a;
+            box-shadow: 0 0 15px -2px rgba(34, 197, 94, 0.35);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen flex justify-center overflow-x-hidden font-body-md antialiased selection:bg-primary-container selection:text-on-primary-container">
+<!-- Mobile Container (390px max for app feel) -->
+<main class="w-full max-w-[390px] min-h-screen relative flex flex-col pb-safe">
+<!-- TopAppBar (Transactional - simplified) -->
+<header class="fixed top-0 w-full max-w-[390px] z-50 bg-surface/75 dark:bg-surface-container-low/75 backdrop-blur-xl border-b border-white/10 flex justify-between items-center px-margin-mobile h-16 shadow-lg shadow-black/20">
+<button class="w-10 h-10 flex items-center justify-center text-on-surface-variant hover:bg-primary/10 transition-colors rounded-full active:scale-95 duration-200">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="font-headline-md text-headline-md-mobile font-bold text-on-surface tracking-tight">Confirmar Pedido</h1>
+<div class="w-10 h-10"></div> <!-- Placeholder for balance -->
+</header>
+<!-- Main Content Area -->
+<div class="flex-1 pt-20 px-gutter-mobile pb-32 flex flex-col gap-space-lg overflow-y-auto">
+<!-- 1. Delivery Address (Map & Input) -->
+<section class="glass-panel rounded-xl overflow-hidden flex flex-col">
+<div class="relative w-full h-32 bg-surface-container">
+<!-- Map Image using data-location -->
+<img alt="Map view of Nicoya center" class="w-full h-full object-cover opacity-80 mix-blend-luminosity" data-alt="A detailed overhead map view of Nicoya, Costa Rica, displayed in a sleek, dark-mode styling. The map features deep slate blues and dark charcoal greys for streets and terrain, highlighted by glowing, luminescent kiwi-green route lines and a prominent location pin. The aesthetic is modern, nocturnal, and highly technical, resembling a high-end mobile application navigation interface. Soft gradient fades at the edges blend seamlessly into a deep dark glassmorphism background." data-location="Nicoya, Costa Rica" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBllj0fciPUhLLPJXpmZ42pAJil3Zp8a8fapARkATHZQdVWT38trfAGR933-RrF5YRWeNRV7fOOWWpl7gHun1Ac7mjwnfnMg1GjJMUjV7pZ4dp-JoEIy617MqPhs9aXfOvrf2vX0-upQTa0XQUKmIaPioJzZnUEweagxyHhbbd_AfbKMbwaswWyONWJ_nqhoeEKIqIoCDbGPbm13t_cOOEyp1DRJk1_kF0qC51Capjxu-xUy1uWTWli88XW7NYwoJMMNWRAz6tjUcwa"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container-highest/90 to-transparent flex items-end p-space-sm">
+<div class="flex items-center gap-space-xs text-on-surface">
+<span class="material-symbols-outlined text-primary-container text-[18px]" data-icon="location_on" data-weight="fill" style="font-variation-settings: 'FILL' 1;">location_on</span>
+<span class="font-title-md text-title-md">Centro, Nicoya</span>
+</div>
+</div>
+</div>
+<div class="p-space-md bg-surface-container-highest/50">
+<label class="block font-label-md text-label-md text-on-surface-variant mb-space-xs">Señas Ticas (Detalles del destino)</label>
+<textarea class="w-full kiwi-input rounded-lg p-space-sm font-body-sm text-body-sm resize-none h-20 placeholder:text-outline" placeholder="Ej: 100m sur de la iglesia, casa portón negro..."></textarea>
+</div>
+</section>
+<!-- 2. Order Summary -->
+<section class="glass-panel rounded-xl p-space-md flex flex-col gap-space-md">
+<h2 class="font-title-md text-title-md text-on-surface flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="receipt_long">receipt_long</span>
+                    Resumen
+                </h2>
+<ul class="flex flex-col gap-space-sm">
+<!-- Item 1 -->
+<li class="flex justify-between items-start pb-space-sm border-b border-outline-variant/40">
+<div class="flex gap-space-sm items-start">
+<div class="w-6 h-6 rounded bg-surface-container flex items-center justify-center font-label-sm text-label-sm text-primary-container border border-primary-container/30">1x</div>
+<div class="flex flex-col">
+<span class="font-body-md text-body-md text-on-surface">Bowl Tropikal</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Sin cebolla</span>
+</div>
+</div>
+<span class="font-title-md text-title-md text-on-surface">₡4,500</span>
+</li>
+<!-- Item 2 -->
+<li class="flex justify-between items-start pt-space-xs">
+<div class="flex gap-space-sm items-start">
+<div class="w-6 h-6 rounded bg-surface-container flex items-center justify-center font-label-sm text-label-sm text-primary-container border border-primary-container/30">1x</div>
+<div class="flex flex-col">
+<span class="font-body-md text-body-md text-on-surface">Café Americano</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Caliente</span>
+</div>
+</div>
+<span class="font-title-md text-title-md text-on-surface">₡1,200</span>
+</li>
+</ul>
+</section>
+<!-- 3. Payment Methods -->
+<section class="flex flex-col gap-space-sm">
+<h2 class="font-title-md text-title-md text-on-surface px-space-xs">Método de Pago</h2>
+<div class="flex gap-space-sm overflow-x-auto pb-space-xs hide-scrollbar px-space-xs">
+<!-- SINPE -->
+<button class="payment-chip active flex-shrink-0 px-space-md py-space-sm rounded-full flex items-center gap-space-xs font-label-md text-label-md">
+<span class="material-symbols-outlined text-[16px]" data-icon="smartphone">smartphone</span>
+                        SINPE Móvil
+                    </button>
+<!-- Efectivo -->
+<button class="payment-chip flex-shrink-0 px-space-md py-space-sm rounded-full flex items-center gap-space-xs font-label-md text-label-md">
+<span class="material-symbols-outlined text-[16px]" data-icon="payments">payments</span>
+                        Efectivo
+                    </button>
+<!-- Tarjeta -->
+<button class="payment-chip flex-shrink-0 px-space-md py-space-sm rounded-full flex items-center gap-space-xs font-label-md text-label-md">
+<span class="material-symbols-outlined text-[16px]" data-icon="credit_card">credit_card</span>
+                        Tarjeta
+                    </button>
+</div>
+</section>
+<!-- 4. Totals -->
+<section class="glass-panel rounded-xl p-space-md flex flex-col gap-space-xs bg-surface-container-highest/30">
+<div class="flex justify-between font-body-sm text-body-sm text-on-surface-variant">
+<span>Subtotal</span>
+<span>₡5,700</span>
+</div>
+<div class="flex justify-between font-body-sm text-body-sm text-on-surface-variant">
+<span>Envío</span>
+<span>₡1,000</span>
+</div>
+<div class="flex justify-between font-headline-sm text-headline-sm text-primary-container pt-space-xs mt-space-xs border-t border-outline-variant/50">
+<span>Total</span>
+<span>₡6,700</span>
+</div>
+</section>
+</div>
+<!-- 5. Fixed Action Button Area -->
+<div class="fixed bottom-0 w-full max-w-[390px] p-margin-mobile bg-gradient-to-t from-background via-background/90 to-transparent z-50">
+<button class="w-full kiwi-button h-14 rounded-xl flex items-center justify-center gap-space-sm font-title-md text-title-md font-bold shadow-[0_0_20px_rgba(34,197,94,0.4)]">
+                Confirmar Pedido
+                <span class="material-symbols-outlined" data-icon="check_circle" data-weight="fill" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</button>
+</div>
+</main>
+<style>
+        /* Utility to hide scrollbar but keep functionality */
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<script>
+        // Simple interaction for payment chips
+        document.addEventListener('DOMContentLoaded', () => {
+            const chips = document.querySelectorAll('.payment-chip');
+            chips.forEach(chip => {
+                chip.addEventListener('click', () => {
+                    // Remove active from all
+                    chips.forEach(c => c.classList.remove('active'));
+                    // Add active to clicked
+                    chip.classList.add('active');
+                });
+            });
+        });
+    </script>
+</body></html>
