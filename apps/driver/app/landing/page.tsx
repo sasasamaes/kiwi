@@ -6,15 +6,15 @@ import { AnimatedButton, StaggerContainer, StaggerItem } from '@kiwi/ui';
 
 export default function DriverLanding() {
   return (
-    <main className="min-h-screen bg-gradient-to-br from-kiwi-50 via-white to-kiwi-100 flex flex-col">
+    <main className="min-h-[100dvh] bg-gradient-to-br from-kiwi-50 via-white to-kiwi-100 flex flex-col">
       {/* Background decorations */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <motion.div 
+        <motion.div
           className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-kiwi-200/30"
           animate={{ scale: [1, 1.2, 1], rotate: [0, 180, 360] }}
           transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
         />
-        <motion.div 
+        <motion.div
           className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full bg-kiwi-300/20"
           animate={{ scale: [1.2, 1, 1.2], rotate: [360, 180, 0] }}
           transition={{ duration: 25, repeat: Infinity, ease: 'linear' }}
@@ -25,13 +25,13 @@ export default function DriverLanding() {
       <div className="relative z-10 flex-1 flex items-center justify-center p-6">
         <div className="max-w-md w-full text-center">
           {/* Logo */}
-          <motion.div 
+          <motion.div
             className="mb-8"
             initial={{ opacity: 0, scale: 0.5 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ type: 'spring', stiffness: 260, damping: 20 }}
           >
-            <motion.div 
+            <motion.div
               className="text-8xl inline-block"
               animate={{ y: [-10, 10, -10] }}
               transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
@@ -41,7 +41,7 @@ export default function DriverLanding() {
           </motion.div>
 
           {/* Title */}
-          <motion.h1 
+          <motion.h1
             className="text-4xl font-display font-bold text-surface-900 mb-4"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -49,15 +49,14 @@ export default function DriverLanding() {
           >
             Kiwi Driver
           </motion.h1>
-          
-          <motion.p 
+
+          <motion.p
             className="text-lg text-surface-500 mb-8"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
           >
-            Tú decides cuándo y qué trabajar. 
-            Delivery, viajes o fletes.
+            Tú decides cuándo y qué trabajar. Delivery, viajes o fletes.
           </motion.p>
 
           {/* Features */}
@@ -92,7 +91,7 @@ export default function DriverLanding() {
           </StaggerContainer>
 
           {/* CTA Buttons */}
-          <motion.div 
+          <motion.div
             className="space-y-4"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -111,7 +110,7 @@ export default function DriverLanding() {
           </motion.div>
 
           {/* Back to Home */}
-          <motion.div 
+          <motion.div
             className="mt-8"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

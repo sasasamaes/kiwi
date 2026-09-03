@@ -7,12 +7,15 @@ export default function ActiveOrders() {
   const [orderStatus, setOrderStatus] = useState<'pickup' | 'delivering' | 'delivered'>('pickup');
 
   return (
-    <main className="min-h-screen flex flex-col">
+    <main className="min-h-[100dvh] flex flex-col">
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-surface-200/50 bg-white/70 backdrop-blur-xl">
         <div className="mx-auto max-w-lg px-4 py-4">
           <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2 text-surface-600 hover:text-surface-800">
+            <Link
+              href="/"
+              className="flex items-center gap-2 text-surface-600 hover:text-surface-800"
+            >
               <span>←</span>
               <span className="text-sm font-medium">Volver</span>
             </Link>
@@ -27,26 +30,42 @@ export default function ActiveOrders() {
         {/* Status Progress */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
-            <div className={`flex items-center gap-2 ${orderStatus === 'pickup' ? 'text-kiwi-600' : 'text-surface-400'}`}>
-              <span className={`flex h-8 w-8 items-center justify-center rounded-full ${orderStatus === 'pickup' ? 'bg-kiwi-500 text-white' : 'bg-surface-200'}`}>
+            <div
+              className={`flex items-center gap-2 ${orderStatus === 'pickup' ? 'text-kiwi-600' : 'text-surface-400'}`}
+            >
+              <span
+                className={`flex h-8 w-8 items-center justify-center rounded-full ${orderStatus === 'pickup' ? 'bg-kiwi-500 text-white' : 'bg-surface-200'}`}
+              >
                 1
               </span>
               <span className="text-sm font-medium">Recoger</span>
             </div>
             <div className="flex-1 mx-2 h-1 bg-surface-200 rounded">
-              <div className={`h-1 bg-kiwi-500 rounded transition-all ${orderStatus !== 'pickup' ? 'w-full' : 'w-0'}`} />
+              <div
+                className={`h-1 bg-kiwi-500 rounded transition-all ${orderStatus !== 'pickup' ? 'w-full' : 'w-0'}`}
+              />
             </div>
-            <div className={`flex items-center gap-2 ${orderStatus === 'delivering' ? 'text-kiwi-600' : 'text-surface-400'}`}>
-              <span className={`flex h-8 w-8 items-center justify-center rounded-full ${orderStatus === 'delivering' ? 'bg-kiwi-500 text-white' : orderStatus === 'delivered' ? 'bg-kiwi-500 text-white' : 'bg-surface-200'}`}>
+            <div
+              className={`flex items-center gap-2 ${orderStatus === 'delivering' ? 'text-kiwi-600' : 'text-surface-400'}`}
+            >
+              <span
+                className={`flex h-8 w-8 items-center justify-center rounded-full ${orderStatus === 'delivering' ? 'bg-kiwi-500 text-white' : orderStatus === 'delivered' ? 'bg-kiwi-500 text-white' : 'bg-surface-200'}`}
+              >
                 2
               </span>
               <span className="text-sm font-medium">Entregar</span>
             </div>
             <div className="flex-1 mx-2 h-1 bg-surface-200 rounded">
-              <div className={`h-1 bg-kiwi-500 rounded transition-all ${orderStatus === 'delivered' ? 'w-full' : 'w-0'}`} />
+              <div
+                className={`h-1 bg-kiwi-500 rounded transition-all ${orderStatus === 'delivered' ? 'w-full' : 'w-0'}`}
+              />
             </div>
-            <div className={`flex items-center gap-2 ${orderStatus === 'delivered' ? 'text-kiwi-600' : 'text-surface-400'}`}>
-              <span className={`flex h-8 w-8 items-center justify-center rounded-full ${orderStatus === 'delivered' ? 'bg-kiwi-500 text-white' : 'bg-surface-200'}`}>
+            <div
+              className={`flex items-center gap-2 ${orderStatus === 'delivered' ? 'text-kiwi-600' : 'text-surface-400'}`}
+            >
+              <span
+                className={`flex h-8 w-8 items-center justify-center rounded-full ${orderStatus === 'delivered' ? 'bg-kiwi-500 text-white' : 'bg-surface-200'}`}
+              >
                 3
               </span>
               <span className="text-sm font-medium">Listo</span>
@@ -83,7 +102,11 @@ export default function ActiveOrders() {
             <div className="mb-2 flex items-center gap-2">
               <span className="text-lg">🏠</span>
               <span className="text-sm font-semibold text-gold-700">
-                {orderStatus === 'delivering' ? 'Ir a entregar' : orderStatus === 'delivered' ? 'Entregado' : 'Entrega'}
+                {orderStatus === 'delivering'
+                  ? 'Ir a entregar'
+                  : orderStatus === 'delivered'
+                    ? 'Entregado'
+                    : 'Entrega'}
               </span>
             </div>
             <p className="text-sm font-medium text-surface-800">Casa del Cliente</p>
@@ -120,7 +143,7 @@ export default function ActiveOrders() {
               ✅ Recogí el pedido
             </button>
           )}
-          
+
           {orderStatus === 'delivering' && (
             <button
               onClick={() => setOrderStatus('delivered')}
@@ -129,7 +152,7 @@ export default function ActiveOrders() {
               📦 Entregué el pedido
             </button>
           )}
-          
+
           {orderStatus === 'delivered' && (
             <Link
               href="/"
@@ -138,7 +161,7 @@ export default function ActiveOrders() {
               🎉 ¡Pedido completado!
             </Link>
           )}
-          
+
           <button className="w-full rounded-2xl border border-surface-200 bg-white py-3 text-sm font-medium text-surface-600 hover:bg-surface-50 transition-colors">
             ❌ Cancelar pedido
           </button>

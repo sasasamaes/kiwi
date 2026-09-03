@@ -4,14 +4,14 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  AnimatedButton, 
-  StaggerContainer, 
+import {
+  AnimatedButton,
+  StaggerContainer,
   StaggerItem,
   Skeleton,
   ThemeToggle,
   useAuth,
-  api
+  api,
 } from '@kiwi/ui';
 
 interface TrafficAlert {
@@ -62,19 +62,19 @@ const SEVERITY_LEVELS = [
 
 const NICOYA_LOCATIONS = [
   { name: 'Centro Nicoya', lat: 10.1483, lng: -85.4527 },
-  { name: 'Mercado Central', lat: 10.1490, lng: -85.4520 },
-  { name: 'Hospital Nicoya', lat: 10.1470, lng: -85.4540 },
-  { name: 'Entrada Norte', lat: 10.1550, lng: -85.4527 },
-  { name: 'Zona Industrial', lat: 10.1420, lng: -85.4500 },
-  { name: 'Playa Samara', lat: 9.9800, lng: -85.5300 },
-  { name: 'Santa Cruz', lat: 10.2500, lng: -85.6000 },
-  { name: 'Liberia', lat: 10.6300, lng: -85.4500 },
+  { name: 'Mercado Central', lat: 10.149, lng: -85.452 },
+  { name: 'Hospital Nicoya', lat: 10.147, lng: -85.454 },
+  { name: 'Entrada Norte', lat: 10.155, lng: -85.4527 },
+  { name: 'Zona Industrial', lat: 10.142, lng: -85.45 },
+  { name: 'Playa Samara', lat: 9.98, lng: -85.53 },
+  { name: 'Santa Cruz', lat: 10.25, lng: -85.6 },
+  { name: 'Liberia', lat: 10.63, lng: -85.45 },
 ];
 
 export default function AdminTrafficAlertsPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
-  
+
   const [alerts, setAlerts] = useState<TrafficAlert[]>([]);
   const [stats, setStats] = useState<AlertStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -129,8 +129,8 @@ export default function AdminTrafficAlertsPage() {
 
   const handleCreateAlert = async () => {
     try {
-      const selectedLocation = NICOYA_LOCATIONS.find(l => l.name === formData.locationName);
-      
+      const selectedLocation = NICOYA_LOCATIONS.find((l) => l.name === formData.locationName);
+
       await api.createTrafficAlert({
         type: formData.type,
         severity: formData.severity,
@@ -143,10 +143,12 @@ export default function AdminTrafficAlertsPage() {
         },
         radius: formData.radius,
         durationMinutes: formData.durationMinutes,
-        alternativeRoute: formData.alternativeDescription ? {
-          description: formData.alternativeDescription,
-          estimatedTimeSaved: formData.alternativeTimeSaved,
-        } : undefined,
+        alternativeRoute: formData.alternativeDescription
+          ? {
+              description: formData.alternativeDescription,
+              estimatedTimeSaved: formData.alternativeTimeSaved,
+            }
+          : undefined,
       });
 
       setShowCreateModal(false);
@@ -161,7 +163,7 @@ export default function AdminTrafficAlertsPage() {
   const handleDismissAlert = async (alertId: string) => {
     try {
       // In a real app, this would delete or deactivate the alert
-      setAlerts(alerts.filter(a => a.id !== alertId));
+      setAlerts(alerts.filter((a) => a.id !== alertId));
       await fetchData();
     } catch (error) {
       console.error('Failed to dismiss alert:', error);
@@ -184,11 +186,14 @@ export default function AdminTrafficAlertsPage() {
     });
   };
 
-  const filteredAlerts = alerts.filter(alert => {
+  const filteredAlerts = alerts.filter((alert) => {
     if (filterType !== 'all' && alert.type !== filterType) return false;
     if (filterSeverity !== 'all' && alert.severity !== filterSeverity) return false;
-    if (searchQuery && !alert.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        !alert.message.toLowerCase().includes(searchQuery.toLowerCase())) {
+    if (
+      searchQuery &&
+      !alert.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
+      !alert.message.toLowerCase().includes(searchQuery.toLowerCase())
+    ) {
       return false;
     }
     return true;
@@ -196,15 +201,18 @@ export default function AdminTrafficAlertsPage() {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-bg-light dark:bg-surface-950">
+      <div className="min-h-[100dvh] bg-bg-light dark:bg-surface-950">
         <div className="sticky top-0 z-50 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl">
           <div className="mx-auto max-w-7xl px-4 py-4">
             <Skeleton className="h-6 w-48" />
           </div>
         </div>
         <div className="mx-auto max-w-7xl px-4 py-8 space-y-4">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
+            >
               <Skeleton className="h-24 w-full" />
             </div>
           ))}
@@ -214,20 +222,25 @@ export default function AdminTrafficAlertsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-bg-light dark:bg-surface-950">
+    <div className="min-h-[100dvh] bg-bg-light dark:bg-surface-950">
       {/* Header */}
-      <motion.header 
+      <motion.header
         className="sticky top-0 z-50 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
       >
         <div className="mx-auto max-w-7xl px-4 py-4">
           <div className="flex items-center justify-between">
-            <Link href="/admin" className="flex items-center gap-2 text-surface-600 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200">
+            <Link
+              href="/admin"
+              className="flex items-center gap-2 text-surface-600 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200"
+            >
               <motion.span whileHover={{ x: -4 }}>←</motion.span>
               <span className="text-sm font-medium">Admin</span>
             </Link>
-            <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">🚨 Alertas de Tráfico</h1>
+            <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
+              🚨 Alertas de Tráfico
+            </h1>
             <ThemeToggle />
           </div>
         </div>
@@ -236,7 +249,7 @@ export default function AdminTrafficAlertsPage() {
       <main className="mx-auto max-w-7xl px-4 py-8">
         {/* Stats Cards */}
         {stats && (
-          <motion.div 
+          <motion.div
             className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -247,7 +260,9 @@ export default function AdminTrafficAlertsPage() {
                   <span className="text-2xl">🚨</span>
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">{stats.total}</p>
+                  <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
+                    {stats.total}
+                  </p>
                   <p className="text-xs text-surface-500 dark:text-surface-400">Total Alertas</p>
                 </div>
               </div>
@@ -271,7 +286,9 @@ export default function AdminTrafficAlertsPage() {
                   <span className="text-2xl">🔴</span>
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-red-600">{stats.bySeverity?.critical || 0}</p>
+                  <p className="text-2xl font-bold text-red-600">
+                    {stats.bySeverity?.critical || 0}
+                  </p>
                   <p className="text-xs text-surface-500 dark:text-surface-400">Críticas</p>
                 </div>
               </div>
@@ -283,7 +300,9 @@ export default function AdminTrafficAlertsPage() {
                   <span className="text-2xl">🚦</span>
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-yellow-600">{stats.byType?.congestion || 0}</p>
+                  <p className="text-2xl font-bold text-yellow-600">
+                    {stats.byType?.congestion || 0}
+                  </p>
                   <p className="text-xs text-surface-500 dark:text-surface-400">Congestión</p>
                 </div>
               </div>
@@ -292,7 +311,7 @@ export default function AdminTrafficAlertsPage() {
         )}
 
         {/* Actions Bar */}
-        <motion.div 
+        <motion.div
           className="flex flex-col md:flex-row gap-4 mb-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -317,8 +336,10 @@ export default function AdminTrafficAlertsPage() {
               className="rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-3 text-surface-800 dark:text-surface-100 focus:border-kiwi-500 focus:ring-2 focus:ring-kiwi-500/20 transition-all"
             >
               <option value="all">Todos los tipos</option>
-              {ALERT_TYPES.map(type => (
-                <option key={type.id} value={type.id}>{type.icon} {type.label}</option>
+              {ALERT_TYPES.map((type) => (
+                <option key={type.id} value={type.id}>
+                  {type.icon} {type.label}
+                </option>
               ))}
             </select>
 
@@ -328,17 +349,16 @@ export default function AdminTrafficAlertsPage() {
               className="rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-3 text-surface-800 dark:text-surface-100 focus:border-kiwi-500 focus:ring-2 focus:ring-kiwi-500/20 transition-all"
             >
               <option value="all">Todas las severidades</option>
-              {SEVERITY_LEVELS.map(level => (
-                <option key={level.id} value={level.id}>{level.label}</option>
+              {SEVERITY_LEVELS.map((level) => (
+                <option key={level.id} value={level.id}>
+                  {level.label}
+                </option>
               ))}
             </select>
           </div>
 
           {/* Create Button */}
-          <AnimatedButton
-            variant="gradient"
-            onClick={() => setShowCreateModal(true)}
-          >
+          <AnimatedButton variant="gradient" onClick={() => setShowCreateModal(true)}>
             ➕ Crear Alerta
           </AnimatedButton>
         </motion.div>
@@ -367,10 +387,7 @@ export default function AdminTrafficAlertsPage() {
                   : 'Crea la primera alerta de tráfico'}
               </p>
               {!searchQuery && filterType === 'all' && filterSeverity === 'all' && (
-                <AnimatedButton
-                  variant="gradient"
-                  onClick={() => setShowCreateModal(true)}
-                >
+                <AnimatedButton variant="gradient" onClick={() => setShowCreateModal(true)}>
                   ➕ Crear Primera Alerta
                 </AnimatedButton>
               )}
@@ -378,8 +395,8 @@ export default function AdminTrafficAlertsPage() {
           ) : (
             <StaggerContainer className="space-y-4">
               {filteredAlerts.map((alert) => {
-                const typeConfig = ALERT_TYPES.find(t => t.id === alert.type);
-                const severityConfig = SEVERITY_LEVELS.find(s => s.id === alert.severity);
+                const typeConfig = ALERT_TYPES.find((t) => t.id === alert.type);
+                const severityConfig = SEVERITY_LEVELS.find((s) => s.id === alert.severity);
 
                 return (
                   <StaggerItem key={alert.id}>
@@ -417,7 +434,9 @@ export default function AdminTrafficAlertsPage() {
                               <div className="flex items-center gap-4 text-xs text-surface-400 dark:text-surface-500">
                                 <span>📍 {alert.location.address}</span>
                                 <span>🔄 Radio: {alert.affectedArea.radius} km</span>
-                                <span>⏰ Expira: {new Date(alert.expiresAt).toLocaleString('es-CR')}</span>
+                                <span>
+                                  ⏰ Expira: {new Date(alert.expiresAt).toLocaleString('es-CR')}
+                                </span>
                               </div>
                             </div>
 
@@ -513,7 +532,7 @@ export default function AdminTrafficAlertsPage() {
                     Tipo de Alerta *
                   </label>
                   <div className="grid grid-cols-3 gap-2">
-                    {ALERT_TYPES.map(type => (
+                    {ALERT_TYPES.map((type) => (
                       <motion.button
                         key={type.id}
                         type="button"
@@ -522,7 +541,9 @@ export default function AdminTrafficAlertsPage() {
                             ? 'ring-2 ring-kiwi-500 bg-kiwi-50 dark:bg-kiwi-900/30'
                             : 'bg-surface-50 dark:bg-surface-900 hover:bg-surface-100 dark:hover:bg-surface-800'
                         }`}
-                        onClick={() => setFormData({ ...formData, type: type.id as TrafficAlert['type'] })}
+                        onClick={() =>
+                          setFormData({ ...formData, type: type.id as TrafficAlert['type'] })
+                        }
                         whileTap={{ scale: 0.95 }}
                       >
                         <span className="text-xl">{type.icon}</span>
@@ -540,7 +561,7 @@ export default function AdminTrafficAlertsPage() {
                     Severidad *
                   </label>
                   <div className="grid grid-cols-4 gap-2">
-                    {SEVERITY_LEVELS.map(level => (
+                    {SEVERITY_LEVELS.map((level) => (
                       <motion.button
                         key={level.id}
                         type="button"
@@ -549,8 +570,15 @@ export default function AdminTrafficAlertsPage() {
                             ? 'text-white'
                             : 'bg-surface-50 dark:bg-surface-900 text-surface-700 dark:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-800'
                         }`}
-                        style={formData.severity === level.id ? { backgroundColor: level.color } : {}}
-                        onClick={() => setFormData({ ...formData, severity: level.id as TrafficAlert['severity'] })}
+                        style={
+                          formData.severity === level.id ? { backgroundColor: level.color } : {}
+                        }
+                        onClick={() =>
+                          setFormData({
+                            ...formData,
+                            severity: level.id as TrafficAlert['severity'],
+                          })
+                        }
                         whileTap={{ scale: 0.95 }}
                       >
                         {level.label}
@@ -595,7 +623,7 @@ export default function AdminTrafficAlertsPage() {
                   <select
                     value={formData.locationName}
                     onChange={(e) => {
-                      const location = NICOYA_LOCATIONS.find(l => l.name === e.target.value);
+                      const location = NICOYA_LOCATIONS.find((l) => l.name === e.target.value);
                       setFormData({
                         ...formData,
                         locationName: e.target.value,
@@ -605,8 +633,10 @@ export default function AdminTrafficAlertsPage() {
                     }}
                     className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 focus:border-kiwi-500 focus:ring-2 focus:ring-kiwi-500/20 transition-all"
                   >
-                    {NICOYA_LOCATIONS.map(loc => (
-                      <option key={loc.name} value={loc.name}>{loc.name}</option>
+                    {NICOYA_LOCATIONS.map((loc) => (
+                      <option key={loc.name} value={loc.name}>
+                        {loc.name}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -620,7 +650,9 @@ export default function AdminTrafficAlertsPage() {
                     <input
                       type="number"
                       value={formData.radius}
-                      onChange={(e) => setFormData({ ...formData, radius: parseFloat(e.target.value) || 0.5 })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, radius: parseFloat(e.target.value) || 0.5 })
+                      }
                       min="0.1"
                       max="10"
                       step="0.1"
@@ -634,7 +666,12 @@ export default function AdminTrafficAlertsPage() {
                     <input
                       type="number"
                       value={formData.durationMinutes}
-                      onChange={(e) => setFormData({ ...formData, durationMinutes: parseInt(e.target.value) || 60 })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          durationMinutes: parseInt(e.target.value) || 60,
+                        })
+                      }
                       min="5"
                       max="1440"
                       step="5"
@@ -652,7 +689,9 @@ export default function AdminTrafficAlertsPage() {
                     <input
                       type="text"
                       value={formData.alternativeDescription}
-                      onChange={(e) => setFormData({ ...formData, alternativeDescription: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, alternativeDescription: e.target.value })
+                      }
                       placeholder="Ej: Usar la periferia norte"
                       className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:border-kiwi-500 focus:ring-2 focus:ring-kiwi-500/20 transition-all"
                     />
@@ -663,7 +702,12 @@ export default function AdminTrafficAlertsPage() {
                       <input
                         type="number"
                         value={formData.alternativeTimeSaved}
-                        onChange={(e) => setFormData({ ...formData, alternativeTimeSaved: parseInt(e.target.value) || 0 })}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            alternativeTimeSaved: parseInt(e.target.value) || 0,
+                          })
+                        }
                         min="0"
                         max="60"
                         className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 focus:border-kiwi-500 focus:ring-2 focus:ring-kiwi-500/20 transition-all"
@@ -735,7 +779,7 @@ export default function AdminTrafficAlertsPage() {
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
                   <span className="text-3xl">
-                    {ALERT_TYPES.find(t => t.id === selectedAlert.type)?.icon}
+                    {ALERT_TYPES.find((t) => t.id === selectedAlert.type)?.icon}
                   </span>
                   <div>
                     <h4 className="font-semibold text-surface-800 dark:text-surface-100">
@@ -743,9 +787,13 @@ export default function AdminTrafficAlertsPage() {
                     </h4>
                     <span
                       className="px-2 py-0.5 rounded-full text-xs font-medium text-white"
-                      style={{ backgroundColor: SEVERITY_LEVELS.find(s => s.id === selectedAlert.severity)?.color }}
+                      style={{
+                        backgroundColor: SEVERITY_LEVELS.find(
+                          (s) => s.id === selectedAlert.severity,
+                        )?.color,
+                      }}
                     >
-                      {SEVERITY_LEVELS.find(s => s.id === selectedAlert.severity)?.label}
+                      {SEVERITY_LEVELS.find((s) => s.id === selectedAlert.severity)?.label}
                     </span>
                   </div>
                 </div>
@@ -757,11 +805,15 @@ export default function AdminTrafficAlertsPage() {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-surface-500 dark:text-surface-400">📍 Ubicación</span>
-                    <span className="text-surface-800 dark:text-surface-200">{selectedAlert.location.address}</span>
+                    <span className="text-surface-800 dark:text-surface-200">
+                      {selectedAlert.location.address}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-surface-500 dark:text-surface-400">🔄 Radio</span>
-                    <span className="text-surface-800 dark:text-surface-200">{selectedAlert.affectedArea.radius} km</span>
+                    <span className="text-surface-800 dark:text-surface-200">
+                      {selectedAlert.affectedArea.radius} km
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-surface-500 dark:text-surface-400">⏰ Creada</span>

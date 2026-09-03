@@ -45,7 +45,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
       </head>
       <body
-        className="font-sans antialiased min-h-screen dark:bg-[#0b1326] dark:text-[#f8fafc]"
+        className="font-sans antialiased min-h-[100dvh] dark:bg-[#0b1326] dark:text-[#f8fafc]"
         style={{ background: 'var(--bg-gradient)' }}
       >
         <ThemeProvider>

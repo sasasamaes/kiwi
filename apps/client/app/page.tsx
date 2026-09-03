@@ -5,6 +5,22 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AnimatedButton, StaggerContainer, StaggerItem, ThemeToggle, QRScanner } from '@kiwi/ui';
+import {
+  Search,
+  Camera,
+  ClipboardList,
+  CreditCard,
+  Bike,
+  Star,
+  Clock,
+  UtensilsCrossed,
+  Smartphone,
+  X,
+  Store,
+  Package,
+  MapPin,
+  Loader2,
+} from 'lucide-react';
 
 interface Restaurant {
   id: string;
@@ -62,18 +78,22 @@ export default function ClientHome() {
   const [scannerActive, setScannerActive] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
 
-  const filteredRestaurants = mockRestaurants.filter(r =>
-    r.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    r.category.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredRestaurants = mockRestaurants.filter(
+    (r) =>
+      r.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      r.category.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
-  const handleScan = useCallback((merchantId: string, url: string) => {
-    console.log('📱 QR scanned:', merchantId, url);
-    setShowScanner(false);
-    setScannerActive(false);
-    // Navigate to the merchant's menu
-    router.push(`/menu/${merchantId}`);
-  }, [router]);
+  const handleScan = useCallback(
+    (merchantId: string, url: string) => {
+      console.log('📱 QR scanned:', merchantId, url);
+      setShowScanner(false);
+      setScannerActive(false);
+      // Navigate to the merchant's menu
+      router.push(`/menu/${merchantId}`);
+    },
+    [router],
+  );
 
   const handleScanError = useCallback((error: string) => {
     console.error('Scan error:', error);
@@ -100,9 +120,9 @@ export default function ClientHome() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-bg-light dark:bg-surface-950">
+    <main className="min-h-[100dvh] bg-bg-light dark:bg-surface-950">
       {/* Header */}
-      <motion.header 
+      <motion.header
         className="sticky top-0 z-50 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
@@ -110,23 +130,19 @@ export default function ClientHome() {
         <div className="mx-auto max-w-lg px-4 py-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <motion.span 
-                className="text-3xl"
-                animate={{ rotate: [0, -10, 10, -10, 0] }}
-                transition={{ duration: 0.5, delay: 0.5 }}
-              >
-                🥝
-              </motion.span>
-              <h1 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100">Kiwi</h1>
+              <span className="text-lg font-bold text-kiwi-500">Kiwi</span>
+              <h1 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100">
+                Kiwi
+              </h1>
             </div>
             <ThemeToggle />
           </div>
-          
+
           {/* Search Bar */}
           <div className="relative">
             <input
               type="text"
-              placeholder="🔍 Buscar restaurante o comida..."
+              placeholder="Buscar restaurante o comida..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full px-4 py-3 rounded-xl bg-surface-100 dark:bg-surface-800 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-kiwi-500 transition-all"
@@ -148,8 +164,9 @@ export default function ClientHome() {
             >
               <div className="rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100">
-                    📷 Escanear QR
+                  {' '}
+                  <h2 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 flex items-center gap-2">
+                    <Camera className="h-5 w-5" /> Escanear QR
                   </h2>
                   <motion.button
                     onClick={stopScanner}
@@ -157,15 +174,11 @@ export default function ClientHome() {
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                   >
-                    ✕
+                    <X className="h-5 w-5" />
                   </motion.button>
                 </div>
-                
-                <QRScanner
-                  onScan={handleScan}
-                  onError={handleScanError}
-                  isActive={scannerActive}
-                />
+
+                <QRScanner onScan={handleScan} onError={handleScanError} isActive={scannerActive} />
 
                 {/* Error Toast */}
                 <AnimatePresence>
@@ -187,35 +200,31 @@ export default function ClientHome() {
 
         {/* QR Scanner Button */}
         {!showScanner && (
-          <motion.div 
+          <motion.div
             className="mb-6"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <motion.div 
+            <motion.div
               className="rounded-2xl bg-kiwi-gradient p-6 text-white shadow-kiwi-lg cursor-pointer overflow-hidden relative"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={startScanner}
             >
-              <motion.div 
+              <motion.div
                 className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/10"
                 animate={{ scale: [1, 1.2, 1] }}
                 transition={{ duration: 4, repeat: Infinity }}
               />
               <div className="relative flex items-center gap-4">
                 <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/20">
-                  <motion.span 
-                    className="text-3xl"
-                    animate={{ rotate: [0, -5, 5, 0] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                  >
-                    📷
-                  </motion.span>
+                  <Camera className="h-8 w-8 text-white" />
                 </div>
                 <div>
                   <h2 className="text-lg font-display font-bold">Escanear QR</h2>
-                  <p className="text-white/80 text-sm">Escanea el código del restaurante para ver el menú</p>
+                  <p className="text-white/80 text-sm">
+                    Escanea el código del restaurante para ver el menú
+                  </p>
                 </div>
               </div>
             </motion.div>
@@ -223,13 +232,13 @@ export default function ClientHome() {
         )}
 
         {/* Categories */}
-        <motion.div 
+        <motion.div
           className="mb-6 flex gap-3 overflow-x-auto pb-2 scrollbar-hide"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          {['🍽️ Todos', '🥗 Bowls', '🐟 Mariscos', '🍔 Rápida', '🍦 Snacks', '☕ Café'].map((cat) => (
+          {['Todos', 'Bowls', 'Mariscos', 'Rapida', 'Snacks', 'Cafe'].map((cat) => (
             <motion.button
               key={cat}
               className="flex-shrink-0 px-4 py-2 rounded-full bg-white dark:bg-surface-800 text-sm font-medium text-surface-700 dark:text-surface-300 shadow-soft dark:shadow-dark hover:bg-kiwi-50 dark:hover:bg-kiwi-900/30 transition-colors"
@@ -249,12 +258,12 @@ export default function ClientHome() {
           <h2 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
             Restaurantes cercanos
           </h2>
-          
+
           <StaggerContainer className="space-y-4">
             {filteredRestaurants.map((restaurant) => (
               <StaggerItem key={restaurant.id}>
                 <Link href={`/menu/${restaurant.id}`}>
-                  <motion.div 
+                  <motion.div
                     className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark cursor-pointer overflow-hidden"
                     whileHover={{ y: -4, boxShadow: '0 12px 32px -8px rgba(34, 197, 94, 0.25)' }}
                     whileTap={{ scale: 0.98 }}
@@ -264,7 +273,7 @@ export default function ClientHome() {
                       <div className="flex h-20 w-20 items-center justify-center rounded-xl bg-surface-100 dark:bg-surface-700 text-4xl">
                         {restaurant.image}
                       </div>
-                      
+
                       {/* Restaurant Info */}
                       <div className="flex-1">
                         <div className="flex items-start justify-between">
@@ -276,24 +285,27 @@ export default function ClientHome() {
                               {restaurant.category}
                             </p>
                           </div>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            restaurant.isOpen 
-                              ? 'bg-kiwi-100 dark:bg-kiwi-900/50 text-kiwi-700 dark:text-kiwi-400'
-                              : 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-400'
-                          }`}>
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              restaurant.isOpen
+                                ? 'bg-kiwi-100 dark:bg-kiwi-900/50 text-kiwi-700 dark:text-kiwi-400'
+                                : 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-400'
+                            }`}
+                          >
                             {restaurant.isOpen ? 'Abierto' : 'Cerrado'}
                           </span>
                         </div>
-                        
+
                         <div className="flex items-center gap-4 mt-2">
                           <span className="flex items-center gap-1 text-sm text-surface-600 dark:text-surface-400">
-                            ⭐ {restaurant.rating}
+                            <Star className="h-3 w-3 fill-gold-400 text-gold-400" />{' '}
+                            {restaurant.rating}
                           </span>
                           <span className="flex items-center gap-1 text-sm text-surface-600 dark:text-surface-400">
-                            🕐 {restaurant.deliveryTime}
+                            <Clock className="h-3 w-3" /> {restaurant.deliveryTime}
                           </span>
                           <span className="flex items-center gap-1 text-sm text-kiwi-600 dark:text-kiwi-400">
-                            🛵 Gratis
+                            <Bike className="h-3 w-3" /> Gratis
                           </span>
                         </div>
                       </div>
@@ -305,12 +317,12 @@ export default function ClientHome() {
           </StaggerContainer>
 
           {filteredRestaurants.length === 0 && (
-            <motion.div 
+            <motion.div
               className="text-center py-12"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
             >
-              <span className="text-5xl mb-4 block">🔍</span>
+              <Search className="h-12 w-12 text-surface-300 dark:text-surface-600 mx-auto mb-4" />
               <p className="text-surface-500 dark:text-surface-400">
                 No se encontraron restaurantes
               </p>
@@ -319,7 +331,7 @@ export default function ClientHome() {
         </motion.div>
 
         {/* How it Works */}
-        <motion.div 
+        <motion.div
           className="mt-8 rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -330,14 +342,14 @@ export default function ClientHome() {
           </h3>
           <div className="space-y-4">
             {[
-              { icon: '📱', title: 'Escanea el QR', desc: 'En el restaurante o aquí' },
-              { icon: '📋', title: 'Elige tu comida', desc: 'Selecciona del menú' },
-              { icon: '💳', title: 'Paga fácil', desc: 'SINPE, tarjeta o efectivo' },
-              { icon: '🛵', title: 'Recibe en casa', desc: 'Tracking en tiempo real' },
+              { icon: Smartphone, title: 'Escanea el QR', desc: 'En el restaurante o aqui' },
+              { icon: ClipboardList, title: 'Elige tu comida', desc: 'Selecciona del menu' },
+              { icon: CreditCard, title: 'Paga facil', desc: 'SINPE, tarjeta o efectivo' },
+              { icon: Bike, title: 'Recibe en casa', desc: 'Tracking en tiempo real' },
             ].map((step, i) => (
               <div key={i} className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-kiwi-100 dark:bg-kiwi-900/30 text-2xl">
-                  {step.icon}
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-kiwi-100 dark:bg-kiwi-900/30">
+                  <step.icon className="h-6 w-6 text-kiwi-600 dark:text-kiwi-400" />
                 </div>
                 <div>
                   <p className="font-medium text-surface-800 dark:text-surface-200">{step.title}</p>

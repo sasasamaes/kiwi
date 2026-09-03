@@ -29,11 +29,31 @@ interface Withdrawal {
 }
 
 const STATUS_CONFIG: Record<string, { label: string; icon: string; color: string }> = {
-  pending: { label: 'Pendiente', icon: '⏳', color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400' },
-  processing: { label: 'Procesando', icon: '🔄', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400' },
-  completed: { label: 'Completado', icon: '✅', color: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400' },
-  failed: { label: 'Cancelado', icon: '❌', color: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400' },
-  rejected: { label: 'Rechazado', icon: '❌', color: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400' },
+  pending: {
+    label: 'Pendiente',
+    icon: '⏳',
+    color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400',
+  },
+  processing: {
+    label: 'Procesando',
+    icon: '🔄',
+    color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400',
+  },
+  completed: {
+    label: 'Completado',
+    icon: '✅',
+    color: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400',
+  },
+  failed: {
+    label: 'Cancelado',
+    icon: '❌',
+    color: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400',
+  },
+  rejected: {
+    label: 'Rechazado',
+    icon: '❌',
+    color: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400',
+  },
 };
 
 export default function WithdrawPage() {
@@ -77,9 +97,9 @@ export default function WithdrawPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const amountNum = parseInt(amount.replace(/[^0-9]/g, ''));
-    
+
     if (!amountNum || amountNum < 1000) {
       alert('El monto mínimo de retiro es ₡1,000');
       return;
@@ -123,7 +143,7 @@ export default function WithdrawPage() {
 
       // Refresh data
       fetchData();
-      
+
       alert('Solicitud de retiro enviada exitosamente');
     } catch (err) {
       console.error('Failed to request withdrawal:', err);
@@ -163,7 +183,7 @@ export default function WithdrawPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-bg-light dark:bg-surface-950">
+      <main className="min-h-[100dvh] bg-bg-light dark:bg-surface-950">
         <div className="sticky top-0 z-40 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl">
           <div className="mx-auto max-w-lg px-4 py-4">
             <Skeleton className="h-6 w-32" />
@@ -180,13 +200,13 @@ export default function WithdrawPage() {
 
   if (error) {
     return (
-      <main className="min-h-screen bg-bg-light dark:bg-surface-950 flex items-center justify-center">
-        <motion.div 
+      <main className="min-h-[100dvh] bg-bg-light dark:bg-surface-950 flex items-center justify-center">
+        <motion.div
           className="text-center"
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
         >
-          <motion.div 
+          <motion.div
             className="text-6xl mb-4"
             animate={{ y: [0, -10, 0] }}
             transition={{ duration: 2, repeat: Infinity }}
@@ -211,20 +231,25 @@ export default function WithdrawPage() {
   }
 
   return (
-    <main className="min-h-screen bg-bg-light dark:bg-surface-950 pb-24">
+    <main className="min-h-[100dvh] bg-bg-light dark:bg-surface-950 pb-24">
       {/* Header */}
-      <motion.header 
+      <motion.header
         className="sticky top-0 z-40 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
       >
         <div className="mx-auto max-w-lg px-4 py-4">
           <div className="flex items-center justify-between">
-            <Link href="/earnings" className="flex items-center gap-2 text-surface-600 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200">
+            <Link
+              href="/earnings"
+              className="flex items-center gap-2 text-surface-600 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200"
+            >
               <span>←</span>
               <span className="text-sm font-medium">Volver</span>
             </Link>
-            <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">💰 Retirar</h1>
+            <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
+              💰 Retirar
+            </h1>
             <div className="w-16" />
           </div>
         </div>
@@ -232,17 +257,17 @@ export default function WithdrawPage() {
 
       <div className="mx-auto max-w-lg px-4 py-6">
         {/* Balance Card */}
-        <motion.div 
+        <motion.div
           className="mb-6 rounded-3xl bg-kiwi-gradient p-6 text-white shadow-kiwi-lg overflow-hidden relative"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <motion.div 
+          <motion.div
             className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/10"
             animate={{ scale: [1, 1.2, 1] }}
             transition={{ duration: 4, repeat: Infinity }}
           />
-          <motion.div 
+          <motion.div
             className="absolute -left-5 -bottom-5 h-20 w-20 rounded-full bg-white/10"
             animate={{ scale: [1, 1.3, 1] }}
             transition={{ duration: 3, repeat: Infinity, delay: 1 }}
@@ -250,7 +275,7 @@ export default function WithdrawPage() {
 
           <div className="relative">
             <p className="text-white/80 text-sm font-medium">Saldo Disponible</p>
-            <motion.p 
+            <motion.p
               className="mt-1 text-4xl font-display font-bold"
               key={balance?.availableBalance}
               initial={{ scale: 0.9, opacity: 0 }}
@@ -316,7 +341,9 @@ export default function WithdrawPage() {
                     Monto a retirar
                   </label>
                   <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-surface-400">₡</span>
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-surface-400">
+                      ₡
+                    </span>
                     <input
                       type="text"
                       value={amount}
@@ -360,7 +387,9 @@ export default function WithdrawPage() {
                       }`}
                     >
                       <span className="text-2xl block mb-1">📱</span>
-                      <span className="font-medium text-surface-800 dark:text-surface-100">SINPE</span>
+                      <span className="font-medium text-surface-800 dark:text-surface-100">
+                        SINPE
+                      </span>
                     </button>
                     <button
                       type="button"
@@ -372,7 +401,9 @@ export default function WithdrawPage() {
                       }`}
                     >
                       <span className="text-2xl block mb-1">🏦</span>
-                      <span className="font-medium text-surface-800 dark:text-surface-100">Transferencia</span>
+                      <span className="font-medium text-surface-800 dark:text-surface-100">
+                        Transferencia
+                      </span>
                     </button>
                   </div>
                 </div>
@@ -471,7 +502,9 @@ export default function WithdrawPage() {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  {submitting ? '🔄 Procesando...' : `💳 Retirar ${amount ? formatCurrency(parseInt(amount.replace(/[^0-9]/g, ''))) : ''}`}
+                  {submitting
+                    ? '🔄 Procesando...'
+                    : `💳 Retirar ${amount ? formatCurrency(parseInt(amount.replace(/[^0-9]/g, ''))) : ''}`}
                 </motion.button>
 
                 <p className="text-xs text-center text-surface-400 dark:text-surface-500">
@@ -496,15 +529,13 @@ export default function WithdrawPage() {
           {withdrawals.length === 0 ? (
             <div className="text-center py-8">
               <span className="text-4xl mb-2 block">📭</span>
-              <p className="text-surface-500 dark:text-surface-400 text-sm">
-                No hay retiros aún
-              </p>
+              <p className="text-surface-500 dark:text-surface-400 text-sm">No hay retiros aún</p>
             </div>
           ) : (
             <div className="space-y-3">
               {withdrawals.map((withdrawal, index) => {
                 const statusConfig = STATUS_CONFIG[withdrawal.status] || STATUS_CONFIG.pending;
-                
+
                 return (
                   <motion.div
                     key={withdrawal.id}
@@ -514,7 +545,9 @@ export default function WithdrawPage() {
                     transition={{ delay: 0.3 + index * 0.05 }}
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`flex h-10 w-10 items-center justify-center rounded-full ${statusConfig.color}`}>
+                      <div
+                        className={`flex h-10 w-10 items-center justify-center rounded-full ${statusConfig.color}`}
+                      >
                         <span className="text-lg">{statusConfig.icon}</span>
                       </div>
                       <div>
@@ -522,12 +555,15 @@ export default function WithdrawPage() {
                           {formatCurrency(withdrawal.amount)}
                         </p>
                         <p className="text-xs text-surface-400 dark:text-surface-500">
-                          {withdrawal.paymentMethod === 'sinpe' ? '📱 SINPE' : '🏦 Transferencia'} • {formatDate(withdrawal.createdAt)}
+                          {withdrawal.paymentMethod === 'sinpe' ? '📱 SINPE' : '🏦 Transferencia'} •{' '}
+                          {formatDate(withdrawal.createdAt)}
                         </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusConfig.color}`}>
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${statusConfig.color}`}
+                      >
                         {statusConfig.label}
                       </span>
                       {withdrawal.status === 'pending' && (
@@ -550,23 +586,38 @@ export default function WithdrawPage() {
       {/* Bottom Navigation */}
       <nav className="sticky bottom-0 border-t border-surface-200/50 dark:border-surface-700/50 bg-white/80 dark:bg-surface-900/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-lg items-center justify-around py-2">
-          <Link href="/" className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300">
+          <Link
+            href="/"
+            className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
+          >
             <span className="text-xl">🏠</span>
             <span className="text-xs font-medium">Inicio</span>
           </Link>
-          <Link href="/active" className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300">
+          <Link
+            href="/active"
+            className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
+          >
             <span className="text-xl">📦</span>
             <span className="text-xs font-medium">Activos</span>
           </Link>
-          <Link href="/earnings" className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300">
+          <Link
+            href="/earnings"
+            className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
+          >
             <span className="text-xl">💰</span>
             <span className="text-xs font-medium">Ganancias</span>
           </Link>
-          <Link href="/schedule" className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300">
+          <Link
+            href="/schedule"
+            className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
+          >
             <span className="text-xl">📅</span>
             <span className="text-xs font-medium">Horario</span>
           </Link>
-          <Link href="/profile" className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300">
+          <Link
+            href="/profile"
+            className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
+          >
             <span className="text-xl">👤</span>
             <span className="text-xs font-medium">Perfil</span>
           </Link>

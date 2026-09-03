@@ -17,20 +17,25 @@ export default function NotificationsPage() {
   };
 
   return (
-    <main className="min-h-screen bg-bg-light dark:bg-surface-950">
+    <main className="min-h-[100dvh] bg-bg-light dark:bg-surface-950">
       {/* Header */}
-      <motion.header 
+      <motion.header
         className="sticky top-0 z-50 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
       >
         <div className="mx-auto max-w-lg px-4 py-4">
           <div className="flex items-center justify-between">
-            <Link href="/dashboard" className="flex items-center gap-2 text-surface-600 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200">
+            <Link
+              href="/dashboard"
+              className="flex items-center gap-2 text-surface-600 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200"
+            >
               <span>←</span>
               <span className="text-sm font-medium">Volver</span>
             </Link>
-            <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">Notificaciones</h1>
+            <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
+              Notificaciones
+            </h1>
             <div className="w-16" />
           </div>
         </div>

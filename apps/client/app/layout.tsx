@@ -38,7 +38,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${geist.variable} ${geistMono.variable} ${inter.variable}`}
       suppressHydrationWarning
     >
-      <body className="font-sans antialiased bg-bg-light dark:bg-[#0b1326] dark:text-[#f8fafc] min-h-screen">
+      <body className="font-sans antialiased bg-bg-light dark:bg-[#0b1326] dark:text-[#f8fafc] min-h-[100dvh]">
         <ThemeProvider>
           <NotificationProvider>{children}</NotificationProvider>
         </ThemeProvider>

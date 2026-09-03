@@ -4,16 +4,16 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  AnimatedButton, 
-  StaggerContainer, 
+import {
+  AnimatedButton,
+  StaggerContainer,
   StaggerItem,
   Skeleton,
   ThemeToggle,
   useAuth,
   useSocket,
   api,
-  Order
+  Order,
 } from '@kiwi/ui';
 
 export default function ScheduledOrdersPage() {
@@ -82,7 +82,7 @@ export default function ScheduledOrdersPage() {
     setSubmitting(true);
     try {
       await api.submitProposal(selectedOrder.id, proposalData);
-      setSubmitted(prev => [...prev, selectedOrder.id]);
+      setSubmitted((prev) => [...prev, selectedOrder.id]);
       setShowProposalForm(false);
       setSelectedOrder(null);
       setProposalData({ estimatedArrival: '', message: '' });
@@ -96,15 +96,18 @@ export default function ScheduledOrdersPage() {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-bg-light dark:bg-surface-950">
+      <div className="min-h-[100dvh] bg-bg-light dark:bg-surface-950">
         <div className="sticky top-0 z-50 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl">
           <div className="mx-auto max-w-lg px-4 py-4">
             <Skeleton className="h-6 w-48" />
           </div>
         </div>
         <div className="mx-auto max-w-lg px-4 py-8 space-y-4">
-          {[1, 2].map(i => (
-            <div key={i} className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark">
+          {[1, 2].map((i) => (
+            <div
+              key={i}
+              className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
+            >
               <div className="flex gap-4">
                 <Skeleton className="h-16 w-16 rounded-xl" />
                 <div className="flex-1">
@@ -121,9 +124,9 @@ export default function ScheduledOrdersPage() {
   }
 
   return (
-    <main className="min-h-screen bg-bg-light dark:bg-surface-950 pb-24">
+    <main className="min-h-[100dvh] bg-bg-light dark:bg-surface-950 pb-24">
       {/* Header */}
-      <motion.header 
+      <motion.header
         className="sticky top-0 z-50 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
@@ -131,11 +134,16 @@ export default function ScheduledOrdersPage() {
       >
         <div className="mx-auto max-w-lg px-4 py-4">
           <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2 text-surface-600 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200">
+            <Link
+              href="/"
+              className="flex items-center gap-2 text-surface-600 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200"
+            >
               <motion.span whileHover={{ x: -4 }}>←</motion.span>
               <span className="text-sm font-medium">Inicio</span>
             </Link>
-            <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">📅 Pedidos Programados</h1>
+            <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
+              📅 Pedidos Programados
+            </h1>
             <div className="w-16" />
           </div>
         </div>
@@ -151,9 +159,12 @@ export default function ScheduledOrdersPage() {
           <div className="flex items-start gap-3">
             <span className="text-2xl">💡</span>
             <div>
-              <h3 className="font-medium text-surface-800 dark:text-surface-200">Propón tu servicio</h3>
+              <h3 className="font-medium text-surface-800 dark:text-surface-200">
+                Propón tu servicio
+              </h3>
               <p className="text-sm text-surface-600 dark:text-surface-400 mt-1">
-                Envía tu propuesta con tiempo estimado de llegada y un mensaje. El comerciante elegirá al repartidor que mejor se adapte.
+                Envía tu propuesta con tiempo estimado de llegada y un mensaje. El comerciante
+                elegirá al repartidor que mejor se adapte.
               </p>
             </div>
           </div>
@@ -184,7 +195,7 @@ export default function ScheduledOrdersPage() {
           <StaggerContainer className="space-y-4">
             {scheduledOrders.map((order) => {
               const hasSubmitted = submitted.includes(order.id);
-              
+
               return (
                 <StaggerItem key={order.id}>
                   <motion.div
@@ -219,7 +230,12 @@ export default function ScheduledOrdersPage() {
                           {/* Schedule Time */}
                           {order.scheduledDate && (
                             <span className="flex items-center gap-1 text-sm text-gold-600 dark:text-gold-400 font-medium">
-                              📅 {new Date(order.scheduledDate).toLocaleDateString('es-CR', { weekday: 'short', month: 'short', day: 'numeric' })}
+                              📅{' '}
+                              {new Date(order.scheduledDate).toLocaleDateString('es-CR', {
+                                weekday: 'short',
+                                month: 'short',
+                                day: 'numeric',
+                              })}
                               {order.scheduledTime && ` • ${order.scheduledTime}`}
                             </span>
                           )}
@@ -269,13 +285,16 @@ export default function ScheduledOrdersPage() {
             exit={{ opacity: 0 }}
           >
             {/* Backdrop */}
-            <motion.div 
+            <motion.div
               className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-              onClick={() => { setShowProposalForm(false); setSelectedOrder(null); }}
+              onClick={() => {
+                setShowProposalForm(false);
+                setSelectedOrder(null);
+              }}
             />
 
             {/* Modal */}
-            <motion.div 
+            <motion.div
               className="relative w-full max-w-lg bg-white dark:bg-surface-800 rounded-t-3xl sm:rounded-3xl shadow-2xl"
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
@@ -290,11 +309,16 @@ export default function ScheduledOrdersPage() {
                     📩 Enviar Propuesta
                   </h2>
                   <motion.button
-                    onClick={() => { setShowProposalForm(false); setSelectedOrder(null); }}
+                    onClick={() => {
+                      setShowProposalForm(false);
+                      setSelectedOrder(null);
+                    }}
                     className="text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
-                  >✕</motion.button>
+                  >
+                    ✕
+                  </motion.button>
                 </div>
               </div>
 
@@ -318,7 +342,11 @@ export default function ScheduledOrdersPage() {
                       <div className="flex justify-between text-sm">
                         <span className="text-surface-500 dark:text-surface-400">📅 Fecha:</span>
                         <span className="font-medium text-gold-600 dark:text-gold-400">
-                          {new Date(selectedOrder.scheduledDate).toLocaleDateString('es-CR', { weekday: 'long', month: 'long', day: 'numeric' })}
+                          {new Date(selectedOrder.scheduledDate).toLocaleDateString('es-CR', {
+                            weekday: 'long',
+                            month: 'long',
+                            day: 'numeric',
+                          })}
                           {selectedOrder.scheduledTime && ` a las ${selectedOrder.scheduledTime}`}
                         </span>
                       </div>
@@ -326,7 +354,10 @@ export default function ScheduledOrdersPage() {
                     <div className="flex justify-between text-sm">
                       <span className="text-surface-500 dark:text-surface-400">💰 Pago:</span>
                       <span className="font-bold text-kiwi-600 dark:text-kiwi-400">
-                        ₡{Number(selectedOrder.driverPayout || selectedOrder.totalAmount).toLocaleString()}
+                        ₡
+                        {Number(
+                          selectedOrder.driverPayout || selectedOrder.totalAmount,
+                        ).toLocaleString()}
                       </span>
                     </div>
                   </div>
@@ -340,7 +371,9 @@ export default function ScheduledOrdersPage() {
                   <input
                     type="text"
                     value={proposalData.estimatedArrival}
-                    onChange={(e) => setProposalData({ ...proposalData, estimatedArrival: e.target.value })}
+                    onChange={(e) =>
+                      setProposalData({ ...proposalData, estimatedArrival: e.target.value })
+                    }
                     placeholder="Ej: En 15 minutos, A las 3:00 PM, En una hora"
                     className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:border-kiwi-500 focus:ring-2 focus:ring-kiwi-500/20 transition-all"
                   />
@@ -386,7 +419,12 @@ export default function ScheduledOrdersPage() {
                 >
                   {submitting ? (
                     <span className="flex items-center justify-center gap-2">
-                      <motion.span animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}>⏳</motion.span>
+                      <motion.span
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                      >
+                        ⏳
+                      </motion.span>
                       Enviando...
                     </span>
                   ) : (

@@ -4,9 +4,9 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  AnimatedButton, 
-  StaggerContainer, 
+import {
+  AnimatedButton,
+  StaggerContainer,
   StaggerItem,
   Skeleton,
   ThemeToggle,
@@ -15,7 +15,7 @@ import {
   api,
   Order,
   DriverProposal,
-  VehicleBadge
+  VehicleBadge,
 } from '@kiwi/ui';
 
 export default function ScheduledOrdersPage() {
@@ -82,40 +82,49 @@ export default function ScheduledOrdersPage() {
     }
   }, []);
 
-  const handleSelectOrder = useCallback(async (order: Order) => {
-    setSelectedOrder(order);
-    await fetchProposals(order.id);
-  }, [fetchProposals]);
+  const handleSelectOrder = useCallback(
+    async (order: Order) => {
+      setSelectedOrder(order);
+      await fetchProposals(order.id);
+    },
+    [fetchProposals],
+  );
 
-  const handleAcceptProposal = useCallback(async (proposalId: string) => {
-    if (!selectedOrder) return;
-    
-    setAcceptingProposal(proposalId);
-    try {
-      await api.acceptProposal(selectedOrder.id, proposalId);
-      // Refresh orders and close modal
-      await fetchScheduledOrders();
-      setSelectedOrder(null);
-      setProposals([]);
-    } catch (error) {
-      console.error('Failed to accept proposal:', error);
-      alert('Error al aceptar la propuesta');
-    } finally {
-      setAcceptingProposal(null);
-    }
-  }, [selectedOrder, fetchScheduledOrders]);
+  const handleAcceptProposal = useCallback(
+    async (proposalId: string) => {
+      if (!selectedOrder) return;
+
+      setAcceptingProposal(proposalId);
+      try {
+        await api.acceptProposal(selectedOrder.id, proposalId);
+        // Refresh orders and close modal
+        await fetchScheduledOrders();
+        setSelectedOrder(null);
+        setProposals([]);
+      } catch (error) {
+        console.error('Failed to accept proposal:', error);
+        alert('Error al aceptar la propuesta');
+      } finally {
+        setAcceptingProposal(null);
+      }
+    },
+    [selectedOrder, fetchScheduledOrders],
+  );
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-bg-light dark:bg-surface-950">
+      <div className="min-h-[100dvh] bg-bg-light dark:bg-surface-950">
         <div className="sticky top-0 z-50 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl">
           <div className="mx-auto max-w-4xl px-4 py-4">
             <Skeleton className="h-6 w-48" />
           </div>
         </div>
         <div className="mx-auto max-w-4xl px-4 py-8 space-y-4">
-          {[1, 2].map(i => (
-            <div key={i} className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark">
+          {[1, 2].map((i) => (
+            <div
+              key={i}
+              className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
+            >
               <div className="flex gap-4">
                 <Skeleton className="h-16 w-16 rounded-xl" />
                 <div className="flex-1">
@@ -132,9 +141,9 @@ export default function ScheduledOrdersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-bg-light dark:bg-surface-950">
+    <div className="min-h-[100dvh] bg-bg-light dark:bg-surface-950">
       {/* Header */}
-      <motion.header 
+      <motion.header
         className="sticky top-0 z-50 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
@@ -142,11 +151,16 @@ export default function ScheduledOrdersPage() {
       >
         <div className="mx-auto max-w-4xl px-4 py-4">
           <div className="flex items-center justify-between">
-            <Link href="/dashboard" className="flex items-center gap-2 text-surface-600 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200">
+            <Link
+              href="/dashboard"
+              className="flex items-center gap-2 text-surface-600 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200"
+            >
               <motion.span whileHover={{ x: -4 }}>←</motion.span>
               <span className="text-sm font-medium">Dashboard</span>
             </Link>
-            <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">📅 Pedidos Programados</h1>
+            <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
+              📅 Pedidos Programados
+            </h1>
             <div className="w-16" />
           </div>
         </div>
@@ -162,9 +176,12 @@ export default function ScheduledOrdersPage() {
           <div className="flex items-start gap-3">
             <span className="text-2xl">💡</span>
             <div>
-              <h3 className="font-medium text-surface-800 dark:text-surface-200">¿Cómo funciona?</h3>
+              <h3 className="font-medium text-surface-800 dark:text-surface-200">
+                ¿Cómo funciona?
+              </h3>
               <p className="text-sm text-surface-600 dark:text-surface-400 mt-1">
-                Los pedidos programados muestran propuestas de repartidores. Tú eliges al que mejor se adapte a tus necesidades — no compiten por precio, sino por servicio.
+                Los pedidos programados muestran propuestas de repartidores. Tú eliges al que mejor
+                se adapte a tus necesidades — no compiten por precio, sino por servicio.
               </p>
             </div>
           </div>
@@ -191,9 +208,7 @@ export default function ScheduledOrdersPage() {
               Crea un pedido programado y los repartidores enviarán propuestas
             </p>
             <Link href="/orders/new">
-              <AnimatedButton variant="gradient">
-                ➕ Crear Pedido Programado
-              </AnimatedButton>
+              <AnimatedButton variant="gradient">➕ Crear Pedido Programado</AnimatedButton>
             </Link>
           </motion.div>
         ) : (
@@ -232,7 +247,12 @@ export default function ScheduledOrdersPage() {
                         {/* Schedule Time */}
                         {order.scheduledDate && (
                           <span className="flex items-center gap-1 text-sm text-gold-600 dark:text-gold-400 font-medium">
-                            📅 {new Date(order.scheduledDate).toLocaleDateString('es-CR', { weekday: 'short', month: 'short', day: 'numeric' })}
+                            📅{' '}
+                            {new Date(order.scheduledDate).toLocaleDateString('es-CR', {
+                              weekday: 'short',
+                              month: 'short',
+                              day: 'numeric',
+                            })}
                             {order.scheduledTime && ` • ${order.scheduledTime}`}
                           </span>
                         )}
@@ -261,13 +281,16 @@ export default function ScheduledOrdersPage() {
             exit={{ opacity: 0 }}
           >
             {/* Backdrop */}
-            <motion.div 
+            <motion.div
               className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-              onClick={() => { setSelectedOrder(null); setProposals([]); }}
+              onClick={() => {
+                setSelectedOrder(null);
+                setProposals([]);
+              }}
             />
 
             {/* Modal */}
-            <motion.div 
+            <motion.div
               className="relative w-full max-w-lg max-h-[85vh] overflow-y-auto bg-white dark:bg-surface-800 rounded-t-3xl sm:rounded-3xl shadow-2xl"
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
@@ -282,11 +305,16 @@ export default function ScheduledOrdersPage() {
                     📋 Propuestas
                   </h2>
                   <motion.button
-                    onClick={() => { setSelectedOrder(null); setProposals([]); }}
+                    onClick={() => {
+                      setSelectedOrder(null);
+                      setProposals([]);
+                    }}
                     className="text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
-                  >✕</motion.button>
+                  >
+                    ✕
+                  </motion.button>
                 </div>
               </div>
 
@@ -310,7 +338,11 @@ export default function ScheduledOrdersPage() {
                       <div className="flex justify-between text-sm">
                         <span className="text-surface-500 dark:text-surface-400">📅 Fecha:</span>
                         <span className="font-medium text-gold-600 dark:text-gold-400">
-                          {new Date(selectedOrder.scheduledDate).toLocaleDateString('es-CR', { weekday: 'long', month: 'long', day: 'numeric' })}
+                          {new Date(selectedOrder.scheduledDate).toLocaleDateString('es-CR', {
+                            weekday: 'long',
+                            month: 'long',
+                            day: 'numeric',
+                          })}
                           {selectedOrder.scheduledTime && ` a las ${selectedOrder.scheduledTime}`}
                         </span>
                       </div>
@@ -331,7 +363,7 @@ export default function ScheduledOrdersPage() {
 
                 {loadingProposals ? (
                   <div className="space-y-3">
-                    {[1, 2].map(i => (
+                    {[1, 2].map((i) => (
                       <div key={i} className="rounded-xl bg-surface-50 dark:bg-surface-900 p-4">
                         <div className="flex items-center gap-3">
                           <Skeleton className="h-12 w-12 rounded-full" />
@@ -388,7 +420,10 @@ export default function ScheduledOrdersPage() {
                               </div>
 
                               <div className="flex items-center gap-2 mt-1">
-                                <VehicleBadge type={proposal.driver?.vehicleType || 'motorcycle'} size="sm" />
+                                <VehicleBadge
+                                  type={proposal.driver?.vehicleType || 'motorcycle'}
+                                  size="sm"
+                                />
                                 <span className="text-xs text-surface-400">
                                   {proposal.driver?.totalTrips || 0} viajes
                                 </span>
@@ -417,7 +452,12 @@ export default function ScheduledOrdersPage() {
                               >
                                 {acceptingProposal === proposal.id ? (
                                   <span className="flex items-center justify-center gap-2">
-                                    <motion.span animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}>⏳</motion.span>
+                                    <motion.span
+                                      animate={{ rotate: 360 }}
+                                      transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                                    >
+                                      ⏳
+                                    </motion.span>
                                     Aceptando...
                                   </span>
                                 ) : (

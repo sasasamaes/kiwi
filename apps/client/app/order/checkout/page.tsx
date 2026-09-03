@@ -19,7 +19,7 @@ type PaymentMethod = 'sinpe' | 'card' | 'cash' | 'crypto_usdc' | 'crypto_usdt';
 export default function CheckoutPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  
+
   const [cart, setCart] = useState<CartItem[]>([]);
   const [merchantId, setMerchantId] = useState('');
   const [merchantName, setMerchantName] = useState('');
@@ -40,32 +40,35 @@ export default function CheckoutPage() {
     const merchantParam = searchParams.get('merchant');
     const merchantNameParam = searchParams.get('merchantName');
     const pickupParam = searchParams.get('pickup');
-    
+
     if (cartParam) {
       try {
         setCart(JSON.parse(cartParam));
-      } catch { setCart([]); }
+      } catch {
+        setCart([]);
+      }
     }
     if (merchantParam) setMerchantId(merchantParam);
     if (merchantNameParam) setMerchantName(merchantNameParam);
     if (pickupParam) setPickupAddress(decodeURIComponent(pickupParam));
   }, [searchParams]);
 
-  const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const deliveryFee = subtotal >= 5000 ? 0 : 500;
   const total = subtotal + deliveryFee;
 
-  const canPlaceOrder = customerName.trim().length > 0 && 
-                         phoneNumber.trim().length >= 8 && 
-                         address.trim().length > 0 &&
-                         cart.length > 0;
+  const canPlaceOrder =
+    customerName.trim().length > 0 &&
+    phoneNumber.trim().length >= 8 &&
+    address.trim().length > 0 &&
+    cart.length > 0;
 
   const placeOrder = useCallback(async () => {
     if (!canPlaceOrder) return;
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
       // Create order via NestJS API
       const orderData = {
@@ -73,7 +76,7 @@ export default function CheckoutPage() {
         pickupAddress: pickupAddress || 'Nicoya Centro',
         deliveryAddress: address,
         orderType: 'immediate',
-        items: cart.map(item => ({
+        items: cart.map((item) => ({
           menuItemId: item.menuItemId || item.id,
           name: item.name,
           price: item.price,
@@ -118,18 +121,29 @@ export default function CheckoutPage() {
     } finally {
       setLoading(false);
     }
-  }, [canPlaceOrder, merchantId, pickupAddress, address, cart, notes, phoneNumber, customerName, paymentMethod, total]);
+  }, [
+    canPlaceOrder,
+    merchantId,
+    pickupAddress,
+    address,
+    cart,
+    notes,
+    phoneNumber,
+    customerName,
+    paymentMethod,
+    total,
+  ]);
 
   // Order success screen
   if (orderPlaced) {
     return (
-      <main className="min-h-screen bg-bg-light dark:bg-surface-950 flex items-center justify-center p-4">
-        <motion.div 
+      <main className="min-h-[100dvh] bg-bg-light dark:bg-surface-950 flex items-center justify-center p-4">
+        <motion.div
           className="max-w-md w-full text-center"
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
         >
-          <motion.div 
+          <motion.div
             className="text-8xl mb-6"
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
@@ -144,7 +158,7 @@ export default function CheckoutPage() {
             Tu pedido #{orderId?.slice(-8).toUpperCase()} fue enviado al comercio.
           </p>
           <p className="text-surface-400 dark:text-surface-500 text-sm mb-8">
-            Espera mientras un repartidor acepta tu pedido. 
+            Espera mientras un repartidor acepta tu pedido.
             {paymentMethod === 'cash' && ' Pagas al repartidor al recibir.'}
             {paymentMethod === 'sinpe' && ' Recibirás un link de pago por SINPE.'}
           </p>
@@ -152,9 +166,7 @@ export default function CheckoutPage() {
           <div className="space-y-3">
             {orderId && (
               <Link href={`/tracking/${orderId}`}>
-                <AnimatedButton className="w-full">
-                  🗺️ Rastrear pedido
-                </AnimatedButton>
+                <AnimatedButton className="w-full">🗺️ Rastrear pedido</AnimatedButton>
               </Link>
             )}
             <Link href="/">
@@ -169,20 +181,25 @@ export default function CheckoutPage() {
   }
 
   return (
-    <main className="min-h-screen bg-bg-light dark:bg-surface-950">
+    <main className="min-h-[100dvh] bg-bg-light dark:bg-surface-950">
       {/* Header */}
-      <motion.header 
+      <motion.header
         className="sticky top-0 z-40 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
       >
         <div className="mx-auto max-w-lg px-4 py-4">
           <div className="flex items-center justify-between">
-            <button onClick={() => router.back()} className="flex items-center gap-2 text-surface-600 dark:text-surface-400">
+            <button
+              onClick={() => router.back()}
+              className="flex items-center gap-2 text-surface-600 dark:text-surface-400"
+            >
               <span>←</span>
               <span className="text-sm font-medium">Volver</span>
             </button>
-            <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">Checkout</h1>
+            <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
+              Checkout
+            </h1>
             <div className="w-16" />
           </div>
         </div>
@@ -191,7 +208,7 @@ export default function CheckoutPage() {
       <div className="mx-auto max-w-lg px-4 py-6">
         {/* Merchant Info */}
         {merchantName && (
-          <motion.div 
+          <motion.div
             className="mb-6 p-4 rounded-2xl bg-kiwi-50 dark:bg-kiwi-900/20 border border-kiwi-200 dark:border-kiwi-800"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -202,7 +219,7 @@ export default function CheckoutPage() {
         )}
 
         {/* Cart Summary */}
-        <motion.div 
+        <motion.div
           className="mb-6 rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -210,7 +227,10 @@ export default function CheckoutPage() {
         >
           <h2 className="font-semibold text-surface-800 dark:text-surface-100 mb-3">Tu pedido</h2>
           {cart.map((item, index) => (
-            <div key={item.id || index} className="flex justify-between py-2 border-b border-surface-100 dark:border-surface-700 last:border-0">
+            <div
+              key={item.id || index}
+              className="flex justify-between py-2 border-b border-surface-100 dark:border-surface-700 last:border-0"
+            >
               <span className="text-surface-700 dark:text-surface-300">
                 {item.quantity}x {item.name}
               </span>
@@ -222,11 +242,19 @@ export default function CheckoutPage() {
           <div className="mt-3 pt-3 border-t border-surface-200 dark:border-surface-700">
             <div className="flex justify-between text-sm">
               <span className="text-surface-500">Subtotal</span>
-              <span className="text-surface-700 dark:text-surface-300">₡{subtotal.toLocaleString()}</span>
+              <span className="text-surface-700 dark:text-surface-300">
+                ₡{subtotal.toLocaleString()}
+              </span>
             </div>
             <div className="flex justify-between text-sm mt-1">
               <span className="text-surface-500">Envío</span>
-              <span className={deliveryFee === 0 ? 'text-green-600 font-medium' : 'text-surface-700 dark:text-surface-300'}>
+              <span
+                className={
+                  deliveryFee === 0
+                    ? 'text-green-600 font-medium'
+                    : 'text-surface-700 dark:text-surface-300'
+                }
+              >
                 {deliveryFee === 0 ? 'Gratis' : `₡${deliveryFee}`}
               </span>
             </div>
@@ -238,14 +266,16 @@ export default function CheckoutPage() {
         </motion.div>
 
         {/* Delivery Info */}
-        <motion.div 
+        <motion.div
           className="mb-6 rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <h2 className="font-semibold text-surface-800 dark:text-surface-100 mb-3">Datos de entrega</h2>
-          
+          <h2 className="font-semibold text-surface-800 dark:text-surface-100 mb-3">
+            Datos de entrega
+          </h2>
+
           <div className="space-y-3">
             <div>
               <label className="block text-sm text-surface-500 mb-1">Tu nombre *</label>
@@ -278,7 +308,9 @@ export default function CheckoutPage() {
               />
             </div>
             <div>
-              <label className="block text-sm text-surface-500 mb-1">Instrucciones (opcional)</label>
+              <label className="block text-sm text-surface-500 mb-1">
+                Instrucciones (opcional)
+              </label>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
@@ -291,21 +323,25 @@ export default function CheckoutPage() {
         </motion.div>
 
         {/* Payment Method */}
-        <motion.div 
+        <motion.div
           className="mb-6 rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
-          <h2 className="font-semibold text-surface-800 dark:text-surface-100 mb-3">Método de pago</h2>
-          
+          <h2 className="font-semibold text-surface-800 dark:text-surface-100 mb-3">
+            Método de pago
+          </h2>
+
           <div className="grid grid-cols-2 gap-2">
-            {([
-              { id: 'cash', label: '💵 Efectivo', desc: 'Pagar al repartidor' },
-              { id: 'sinpe', label: '📱 SINPE', desc: 'Transferencia' },
-              { id: 'card', label: '💳 Tarjeta', desc: 'Crédito/Débito' },
-              { id: 'crypto_usdc', label: '💎 USDC', desc: 'Cripto' },
-            ] as const).map((method) => (
+            {(
+              [
+                { id: 'cash', label: '💵 Efectivo', desc: 'Pagar al repartidor' },
+                { id: 'sinpe', label: '📱 SINPE', desc: 'Transferencia' },
+                { id: 'card', label: '💳 Tarjeta', desc: 'Crédito/Débito' },
+                { id: 'crypto_usdc', label: '💎 USDC', desc: 'Cripto' },
+              ] as const
+            ).map((method) => (
               <button
                 key={method.id}
                 onClick={() => setPaymentMethod(method.id)}
@@ -315,7 +351,9 @@ export default function CheckoutPage() {
                     : 'border-surface-200 dark:border-surface-700 hover:border-surface-300'
                 }`}
               >
-                <span className="text-sm font-medium text-surface-800 dark:text-surface-100">{method.label}</span>
+                <span className="text-sm font-medium text-surface-800 dark:text-surface-100">
+                  {method.label}
+                </span>
                 <span className="block text-xs text-surface-500 mt-0.5">{method.desc}</span>
               </button>
             ))}

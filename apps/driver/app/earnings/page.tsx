@@ -89,22 +89,25 @@ export default function EarningsPage() {
   };
 
   // Calculate max daily amount for chart scaling
-  const maxDailyAmount = earnings?.daily
-    ? Math.max(...earnings.daily.map(d => d.amount), 1)
-    : 1;
+  const maxDailyAmount = earnings?.daily ? Math.max(...earnings.daily.map((d) => d.amount), 1) : 1;
 
   if (loading && !earnings) {
     return (
-      <main className="min-h-screen flex flex-col bg-bg-light dark:bg-surface-950">
+      <main className="min-h-[100dvh] flex flex-col bg-bg-light dark:bg-surface-950">
         {/* Header */}
         <header className="sticky top-0 z-50 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl">
           <div className="mx-auto max-w-lg px-4 py-4">
             <div className="flex items-center justify-between">
-              <Link href="/" className="flex items-center gap-2 text-surface-600 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200">
+              <Link
+                href="/"
+                className="flex items-center gap-2 text-surface-600 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200"
+              >
                 <span>←</span>
                 <span className="text-sm font-medium">Volver</span>
               </Link>
-              <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">💰 Ganancias</h1>
+              <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
+                💰 Ganancias
+              </h1>
               <div className="w-16" />
             </div>
           </div>
@@ -127,28 +130,33 @@ export default function EarningsPage() {
 
   if (error && !earnings) {
     return (
-      <main className="min-h-screen flex flex-col bg-bg-light dark:bg-surface-950">
+      <main className="min-h-[100dvh] flex flex-col bg-bg-light dark:bg-surface-950">
         {/* Header */}
         <header className="sticky top-0 z-50 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl">
           <div className="mx-auto max-w-lg px-4 py-4">
             <div className="flex items-center justify-between">
-              <Link href="/" className="flex items-center gap-2 text-surface-600 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200">
+              <Link
+                href="/"
+                className="flex items-center gap-2 text-surface-600 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200"
+              >
                 <span>←</span>
                 <span className="text-sm font-medium">Volver</span>
               </Link>
-              <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">💰 Ganancias</h1>
+              <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
+                💰 Ganancias
+              </h1>
               <div className="w-16" />
             </div>
           </div>
         </header>
 
         <main className="flex-1 mx-auto w-full max-w-lg px-4 py-6 flex items-center justify-center">
-          <motion.div 
+          <motion.div
             className="text-center"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
           >
-            <motion.div 
+            <motion.div
               className="text-6xl mb-4"
               animate={{ y: [0, -10, 0] }}
               transition={{ duration: 2, repeat: Infinity }}
@@ -158,9 +166,7 @@ export default function EarningsPage() {
             <h2 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100 mb-2">
               No pudimos cargar las ganancias
             </h2>
-            <p className="text-surface-500 dark:text-surface-400 mb-6">
-              {error}
-            </p>
+            <p className="text-surface-500 dark:text-surface-400 mb-6">{error}</p>
             <motion.button
               onClick={() => fetchEarnings(selectedPeriod)}
               className="px-6 py-3 rounded-xl bg-kiwi-gradient text-white font-semibold shadow-kiwi-lg"
@@ -176,16 +182,21 @@ export default function EarningsPage() {
   }
 
   return (
-    <main className="min-h-screen flex flex-col bg-bg-light dark:bg-surface-950">
+    <main className="min-h-[100dvh] flex flex-col bg-bg-light dark:bg-surface-950">
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl">
         <div className="mx-auto max-w-lg px-4 py-4">
           <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2 text-surface-600 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200">
+            <Link
+              href="/"
+              className="flex items-center gap-2 text-surface-600 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200"
+            >
               <span>←</span>
               <span className="text-sm font-medium">Volver</span>
             </Link>
-            <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">💰 Ganancias</h1>
+            <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
+              💰 Ganancias
+            </h1>
             <div className="w-16" />
           </div>
         </div>
@@ -194,18 +205,18 @@ export default function EarningsPage() {
       {/* Main Content */}
       <main className="flex-1 mx-auto w-full max-w-lg px-4 py-6">
         {/* Total Earnings Card */}
-        <motion.div 
+        <motion.div
           className="mb-6 rounded-3xl bg-kiwi-gradient p-6 text-white shadow-kiwi-lg overflow-hidden relative"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
           {/* Background decorations */}
-          <motion.div 
+          <motion.div
             className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/10"
             animate={{ scale: [1, 1.2, 1] }}
             transition={{ duration: 4, repeat: Infinity }}
           />
-          <motion.div 
+          <motion.div
             className="absolute -left-5 -bottom-5 h-20 w-20 rounded-full bg-white/10"
             animate={{ scale: [1, 1.3, 1] }}
             transition={{ duration: 3, repeat: Infinity, delay: 1 }}
@@ -213,9 +224,9 @@ export default function EarningsPage() {
 
           <div className="relative">
             <p className="text-white/80 text-sm font-medium">
-              Ganancias {PERIODS.find(p => p.id === selectedPeriod)?.label || 'Totales'}
+              Ganancias {PERIODS.find((p) => p.id === selectedPeriod)?.label || 'Totales'}
             </p>
-            <motion.p 
+            <motion.p
               className="mt-1 text-4xl font-display font-bold"
               key={earnings?.totalEarnings}
               initial={{ scale: 0.9, opacity: 0 }}
@@ -238,7 +249,7 @@ export default function EarningsPage() {
         </motion.div>
 
         {/* Period Tabs */}
-        <motion.div 
+        <motion.div
           className="mb-6 flex gap-2 rounded-xl bg-surface-100 dark:bg-surface-800 p-1"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -262,13 +273,13 @@ export default function EarningsPage() {
         </motion.div>
 
         {/* Stats Grid */}
-        <motion.div 
+        <motion.div
           className="mb-6 grid grid-cols-2 gap-3"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <motion.div 
+          <motion.div
             className="rounded-xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
             whileHover={{ y: -2 }}
           >
@@ -277,7 +288,7 @@ export default function EarningsPage() {
               {earnings?.totalTrips || 0}
             </p>
           </motion.div>
-          <motion.div 
+          <motion.div
             className="rounded-xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
             whileHover={{ y: -2 }}
           >
@@ -286,7 +297,7 @@ export default function EarningsPage() {
               {formatCurrency(earnings?.averagePerTrip || 0)}
             </p>
           </motion.div>
-          <motion.div 
+          <motion.div
             className="rounded-xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
             whileHover={{ y: -2 }}
           >
@@ -295,7 +306,7 @@ export default function EarningsPage() {
               {earnings?.totalHours?.toFixed(1) || '0'}h
             </p>
           </motion.div>
-          <motion.div 
+          <motion.div
             className="rounded-xl bg-kiwi-50 dark:bg-kiwi-900/30 p-4 shadow-soft dark:shadow-dark border border-kiwi-200 dark:border-kiwi-800"
             whileHover={{ y: -2 }}
           >
@@ -308,7 +319,7 @@ export default function EarningsPage() {
 
         {/* Mini Bar Chart */}
         {earnings?.daily && earnings.daily.length > 0 && (
-          <motion.div 
+          <motion.div
             className="mb-6 rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -348,7 +359,7 @@ export default function EarningsPage() {
         )}
 
         {/* Recent Transactions */}
-        <motion.div 
+        <motion.div
           className="mb-6 rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -357,7 +368,7 @@ export default function EarningsPage() {
           <h3 className="mb-3 text-sm font-semibold text-surface-600 dark:text-surface-400">
             📋 Transacciones Recientes
           </h3>
-          
+
           {earnings?.transactions && earnings.transactions.length > 0 ? (
             <div className="space-y-3">
               {earnings.transactions.slice(0, 10).map((transaction, index) => (
@@ -370,7 +381,9 @@ export default function EarningsPage() {
                 >
                   <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-kiwi-100 dark:bg-kiwi-900/50 text-kiwi-600 dark:text-kiwi-400">
-                      <span className="text-lg">{ORDER_TYPE_ICONS[transaction.orderType] || '📦'}</span>
+                      <span className="text-lg">
+                        {ORDER_TYPE_ICONS[transaction.orderType] || '📦'}
+                      </span>
                     </div>
                     <div>
                       <p className="text-sm font-medium text-surface-800 dark:text-surface-100">
@@ -398,7 +411,7 @@ export default function EarningsPage() {
         </motion.div>
 
         {/* Withdraw Button */}
-        <motion.div 
+        <motion.div
           className="mb-20"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -422,23 +435,38 @@ export default function EarningsPage() {
       {/* Bottom Navigation */}
       <nav className="sticky bottom-0 border-t border-surface-200/50 dark:border-surface-700/50 bg-white/80 dark:bg-surface-900/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-lg items-center justify-around py-2">
-          <Link href="/" className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300">
+          <Link
+            href="/"
+            className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
+          >
             <span className="text-xl">🏠</span>
             <span className="text-xs font-medium">Inicio</span>
           </Link>
-          <Link href="/active" className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300">
+          <Link
+            href="/active"
+            className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
+          >
             <span className="text-xl">📦</span>
             <span className="text-xs font-medium">Activos</span>
           </Link>
-          <Link href="/earnings" className="flex flex-col items-center gap-1 px-4 py-2 text-kiwi-600 dark:text-kiwi-400">
+          <Link
+            href="/earnings"
+            className="flex flex-col items-center gap-1 px-4 py-2 text-kiwi-600 dark:text-kiwi-400"
+          >
             <span className="text-xl">💰</span>
             <span className="text-xs font-medium">Ganancias</span>
           </Link>
-          <Link href="/schedule" className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300">
+          <Link
+            href="/schedule"
+            className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
+          >
             <span className="text-xl">📅</span>
             <span className="text-xs font-medium">Horario</span>
           </Link>
-          <Link href="/profile" className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300">
+          <Link
+            href="/profile"
+            className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
+          >
             <span className="text-xl">👤</span>
             <span className="text-xs font-medium">Perfil</span>
           </Link>

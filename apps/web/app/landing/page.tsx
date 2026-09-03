@@ -73,7 +73,7 @@ const MERCHANTS = [
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-bg-light dark:bg-surface-950">
+    <div className="min-h-[100dvh] bg-bg-light dark:bg-surface-950">
       {/* Navigation */}
       <motion.nav
         className="sticky top-0 z-50 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl"
@@ -90,13 +90,22 @@ export default function LandingPage() {
               </span>
             </div>
             <div className="hidden md:flex items-center gap-6">
-              <a href="#features" className="text-sm text-surface-600 dark:text-surface-400 hover:text-kiwi-600 dark:hover:text-kiwi-400">
+              <a
+                href="#features"
+                className="text-sm text-surface-600 dark:text-surface-400 hover:text-kiwi-600 dark:hover:text-kiwi-400"
+              >
                 Características
               </a>
-              <a href="#how-it-works" className="text-sm text-surface-600 dark:text-surface-400 hover:text-kiwi-600 dark:hover:text-kiwi-400">
+              <a
+                href="#how-it-works"
+                className="text-sm text-surface-600 dark:text-surface-400 hover:text-kiwi-600 dark:hover:text-kiwi-400"
+              >
                 Cómo funciona
               </a>
-              <a href="#merchants" className="text-sm text-surface-600 dark:text-surface-400 hover:text-kiwi-600 dark:hover:text-kiwi-400">
+              <a
+                href="#merchants"
+                className="text-sm text-surface-600 dark:text-surface-400 hover:text-kiwi-600 dark:hover:text-kiwi-400"
+              >
                 Comercios
               </a>
               <Link href="/login">
@@ -114,7 +123,7 @@ export default function LandingPage() {
           <div className="absolute top-20 left-10 w-72 h-72 bg-kiwi-300 rounded-full blur-3xl" />
           <div className="absolute bottom-10 right-10 w-96 h-96 bg-kiwi-400 rounded-full blur-3xl" />
         </div>
-        
+
         <div className="relative mx-auto max-w-6xl px-4 py-24 md:py-32">
           <StaggerContainer>
             <StaggerItem>
@@ -126,7 +135,7 @@ export default function LandingPage() {
                 >
                   🥝
                 </motion.div>
-                
+
                 <h1 className="text-5xl md:text-7xl font-display font-bold text-surface-800 dark:text-surface-100 mb-6">
                   Delivery{' '}
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-kiwi-500 to-kiwi-600">
@@ -134,10 +143,10 @@ export default function LandingPage() {
                   </span>{' '}
                   en Nicoya
                 </h1>
-                
+
                 <p className="text-xl text-surface-600 dark:text-surface-400 mb-8 max-w-2xl mx-auto">
-                  Conectamos comerciantes, repartidores y clientes. 
-                  Pide delivery, gestiona tu negocio o trabaja cuando quieras.
+                  Conectamos comerciantes, repartidores y clientes. Pide delivery, gestiona tu
+                  negocio o trabaja cuando quieras.
                 </p>
 
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -181,9 +190,7 @@ export default function LandingPage() {
                 <div className="text-3xl md:text-4xl font-bold text-kiwi-600 dark:text-kiwi-400">
                   {stat.value}
                 </div>
-                <div className="text-surface-500 dark:text-surface-400 mt-1">
-                  {stat.label}
-                </div>
+                <div className="text-surface-500 dark:text-surface-400 mt-1">{stat.label}</div>
               </motion.div>
             ))}
           </div>
@@ -263,9 +270,7 @@ export default function LandingPage() {
                 <h3 className="text-lg font-semibold text-surface-800 dark:text-surface-100 mb-2">
                   {step.title}
                 </h3>
-                <p className="text-sm text-surface-600 dark:text-surface-400">
-                  {step.description}
-                </p>
+                <p className="text-sm text-surface-600 dark:text-surface-400">{step.description}</p>
               </motion.div>
             ))}
           </div>
@@ -304,9 +309,7 @@ export default function LandingPage() {
                 <h3 className="font-semibold text-surface-800 dark:text-surface-100">
                   {merchant.name}
                 </h3>
-                <p className="text-sm text-surface-500 dark:text-surface-400">
-                  {merchant.type}
-                </p>
+                <p className="text-sm text-surface-500 dark:text-surface-400">{merchant.type}</p>
               </motion.div>
             ))}
           </div>
@@ -316,10 +319,7 @@ export default function LandingPage() {
       {/* Download CTA */}
       <section id="download" className="py-20 bg-gradient-to-br from-kiwi-500 to-kiwi-600">
         <div className="mx-auto max-w-4xl px-4 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-          >
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}>
             <span className="text-6xl mb-6 block">📱</span>
             <h2 className="text-3xl md:text-4xl font-display font-bold text-white mb-4">
               Descarga Kiwi ahora
@@ -378,18 +378,36 @@ export default function LandingPage() {
                 Producto
               </h4>
               <ul className="space-y-2 text-sm text-surface-500 dark:text-surface-400">
-                <li><a href="#features" className="hover:text-kiwi-600">Características</a></li>
-                <li><a href="#how-it-works" className="hover:text-kiwi-600">Cómo funciona</a></li>
-                <li><a href="#merchants" className="hover:text-kiwi-600">Comercios</a></li>
+                <li>
+                  <a href="#features" className="hover:text-kiwi-600">
+                    Características
+                  </a>
+                </li>
+                <li>
+                  <a href="#how-it-works" className="hover:text-kiwi-600">
+                    Cómo funciona
+                  </a>
+                </li>
+                <li>
+                  <a href="#merchants" className="hover:text-kiwi-600">
+                    Comercios
+                  </a>
+                </li>
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold text-surface-800 dark:text-surface-100 mb-3">
-                Legal
-              </h4>
+              <h4 className="font-semibold text-surface-800 dark:text-surface-100 mb-3">Legal</h4>
               <ul className="space-y-2 text-sm text-surface-500 dark:text-surface-400">
-                <li><a href="/privacy" className="hover:text-kiwi-600">Privacidad</a></li>
-                <li><a href="/terms" className="hover:text-kiwi-600">Términos</a></li>
+                <li>
+                  <a href="/privacy" className="hover:text-kiwi-600">
+                    Privacidad
+                  </a>
+                </li>
+                <li>
+                  <a href="/terms" className="hover:text-kiwi-600">
+                    Términos
+                  </a>
+                </li>
               </ul>
             </div>
             <div>

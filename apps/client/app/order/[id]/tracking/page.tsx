@@ -8,7 +8,7 @@ import { api, Skeleton, TrafficIndicator, DeliveryEstimate } from '@kiwi/ui';
 import dynamic from 'next/dynamic';
 
 // Dynamically import TrackingMap to avoid SSR issues with Leaflet
-const TrackingMap = dynamic(() => import('@kiwi/ui').then(mod => mod.TrackingMap), {
+const TrackingMap = dynamic(() => import('@kiwi/ui').then((mod) => mod.TrackingMap), {
   ssr: false,
   loading: () => (
     <div className="h-[300px] bg-surface-100 dark:bg-surface-800 rounded-2xl flex items-center justify-center">
@@ -61,10 +61,25 @@ interface DriverLocation {
 
 const STATUS_STEPS = [
   { key: 'pending', label: 'Pedido creado', icon: '📦', description: 'Tu pedido fue recibido' },
-  { key: 'assigned', label: 'Repartidor asignado', icon: '🛵', description: 'Un repartidor tomó tu pedido' },
-  { key: 'in_transit_to_pickup', label: 'Recogiendo', icon: '🏃', description: 'El repartidor va a recoger tu pedido' },
+  {
+    key: 'assigned',
+    label: 'Repartidor asignado',
+    icon: '🛵',
+    description: 'Un repartidor tomó tu pedido',
+  },
+  {
+    key: 'in_transit_to_pickup',
+    label: 'Recogiendo',
+    icon: '🏃',
+    description: 'El repartidor va a recoger tu pedido',
+  },
   { key: 'picked_up', label: 'Pedido recogido', icon: '✅', description: 'Tu pedido fue recogido' },
-  { key: 'in_transit_to_delivery', label: 'En camino', icon: '🚀', description: 'Tu pedido va camino a ti' },
+  {
+    key: 'in_transit_to_delivery',
+    label: 'En camino',
+    icon: '🚀',
+    description: 'Tu pedido va camino a ti',
+  },
   { key: 'delivered', label: 'Entregado', icon: '🎉', description: '¡Tu pedido fue entregado!' },
 ];
 
@@ -127,9 +142,7 @@ export default function OrderTrackingPage() {
   }, []);
 
   // Calculate current step index
-  const currentStepIndex = order
-    ? STATUS_STEPS.findIndex(step => step.key === order.status)
-    : -1;
+  const currentStepIndex = order ? STATUS_STEPS.findIndex((step) => step.key === order.status) : -1;
 
   // Calculate time elapsed since order creation
   const getTimeElapsed = () => {
@@ -167,7 +180,7 @@ export default function OrderTrackingPage() {
       return { lat: Number(order.deliveryLat), lng: Number(order.deliveryLng) };
     }
     // Default slightly south of pickup
-    return { lat: 10.1500, lng: -85.4500 };
+    return { lat: 10.15, lng: -85.45 };
   };
 
   const getMapDriver = () => {
@@ -179,7 +192,7 @@ export default function OrderTrackingPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-bg-light dark:bg-surface-950">
+      <main className="min-h-[100dvh] bg-bg-light dark:bg-surface-950">
         <div className="sticky top-0 z-40 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl">
           <div className="mx-auto max-w-lg px-4 py-4">
             <Skeleton className="h-6 w-32" />
@@ -197,13 +210,13 @@ export default function OrderTrackingPage() {
 
   if (error || !order) {
     return (
-      <main className="min-h-screen bg-bg-light dark:bg-surface-950 flex items-center justify-center">
-        <motion.div 
+      <main className="min-h-[100dvh] bg-bg-light dark:bg-surface-950 flex items-center justify-center">
+        <motion.div
           className="text-center px-4"
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
         >
-          <motion.div 
+          <motion.div
             className="text-6xl mb-4"
             animate={{ y: [0, -10, 0] }}
             transition={{ duration: 2, repeat: Infinity }}
@@ -237,23 +250,33 @@ export default function OrderTrackingPage() {
 
   const isDelivered = order.status === 'delivered';
   const isCancelled = order.status === 'cancelled';
-  const showMap = !isDelivered && !isCancelled && ['assigned', 'in_transit_to_pickup', 'picked_up', 'in_transit_to_delivery'].includes(order.status);
+  const showMap =
+    !isDelivered &&
+    !isCancelled &&
+    ['assigned', 'in_transit_to_pickup', 'picked_up', 'in_transit_to_delivery'].includes(
+      order.status,
+    );
 
   return (
-    <main className="min-h-screen bg-bg-light dark:bg-surface-950 pb-8">
+    <main className="min-h-[100dvh] bg-bg-light dark:bg-surface-950 pb-8">
       {/* Header */}
-      <motion.header 
+      <motion.header
         className="sticky top-0 z-40 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
       >
         <div className="mx-auto max-w-lg px-4 py-4">
           <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2 text-surface-600 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200">
+            <Link
+              href="/"
+              className="flex items-center gap-2 text-surface-600 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200"
+            >
               <span>←</span>
               <span className="text-sm font-medium">Inicio</span>
             </Link>
-            <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">📍 Tracking</h1>
+            <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
+              📍 Tracking
+            </h1>
             <div className="w-16" />
           </div>
         </div>
@@ -262,7 +285,7 @@ export default function OrderTrackingPage() {
       <div className="mx-auto max-w-lg px-4 py-6">
         {/* Live Map */}
         {showMap && (
-          <motion.div 
+          <motion.div
             className="mb-6"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -294,7 +317,7 @@ export default function OrderTrackingPage() {
 
         {/* Traffic Indicator */}
         {showMap && (
-          <motion.div 
+          <motion.div
             className="mb-6"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -310,7 +333,7 @@ export default function OrderTrackingPage() {
 
         {/* Delivery Estimate */}
         {showMap && (
-          <motion.div 
+          <motion.div
             className="mb-6"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -327,22 +350,24 @@ export default function OrderTrackingPage() {
         )}
 
         {/* Status Hero */}
-        <motion.div 
+        <motion.div
           className={`mb-6 rounded-3xl p-6 text-white shadow-kiwi-lg overflow-hidden relative ${
-            isDelivered ? 'bg-gradient-to-br from-green-500 to-green-600' :
-            isCancelled ? 'bg-gradient-to-br from-red-500 to-red-600' :
-            'bg-kiwi-gradient'
+            isDelivered
+              ? 'bg-gradient-to-br from-green-500 to-green-600'
+              : isCancelled
+                ? 'bg-gradient-to-br from-red-500 to-red-600'
+                : 'bg-kiwi-gradient'
           }`}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
           {/* Background decoration */}
-          <motion.div 
+          <motion.div
             className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/10"
             animate={{ scale: [1, 1.2, 1] }}
             transition={{ duration: 4, repeat: Infinity }}
           />
-          <motion.div 
+          <motion.div
             className="absolute -left-5 -bottom-5 h-20 w-20 rounded-full bg-white/10"
             animate={{ scale: [1, 1.3, 1] }}
             transition={{ duration: 3, repeat: Infinity, delay: 1 }}
@@ -353,33 +378,43 @@ export default function OrderTrackingPage() {
               <div>
                 <p className="text-white/80 text-sm">Pedido #{order.id.slice(0, 8)}</p>
                 <h2 className="text-2xl font-display font-bold mt-1">
-                  {isDelivered ? '🎉 Entregado' :
-                   isCancelled ? '❌ Cancelado' :
-                   STATUS_STEPS[currentStepIndex]?.icon || '📦'} {' '}
-                  {isDelivered ? '' :
-                   isCancelled ? '' :
-                   STATUS_STEPS[currentStepIndex]?.label || 'Procesando'}
+                  {isDelivered
+                    ? '🎉 Entregado'
+                    : isCancelled
+                      ? '❌ Cancelado'
+                      : STATUS_STEPS[currentStepIndex]?.icon || '📦'}{' '}
+                  {isDelivered
+                    ? ''
+                    : isCancelled
+                      ? ''
+                      : STATUS_STEPS[currentStepIndex]?.label || 'Procesando'}
                 </h2>
               </div>
-              <motion.div 
+              <motion.div
                 className="text-5xl"
                 animate={isDelivered ? { rotate: [0, -10, 10, 0], scale: [1, 1.1, 1] } : {}}
                 transition={{ duration: 0.5, repeat: isDelivered ? Infinity : 0, repeatDelay: 2 }}
               >
-                {isDelivered ? '🎉' : isCancelled ? '❌' : STATUS_STEPS[currentStepIndex]?.icon || '📦'}
+                {isDelivered
+                  ? '🎉'
+                  : isCancelled
+                    ? '❌'
+                    : STATUS_STEPS[currentStepIndex]?.icon || '📦'}
               </motion.div>
             </div>
 
             {!isDelivered && !isCancelled && (
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-white/80 text-sm">
-                  <motion.span 
+                  <motion.span
                     animate={{ opacity: [1, 0.5, 1] }}
                     transition={{ duration: 1.5, repeat: Infinity }}
                   >
                     ●
                   </motion.span>
-                  <span>{STATUS_STEPS[currentStepIndex]?.description || 'Procesando tu pedido'}</span>
+                  <span>
+                    {STATUS_STEPS[currentStepIndex]?.description || 'Procesando tu pedido'}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-white/70">{getTimeElapsed()}</span>
@@ -391,7 +426,7 @@ export default function OrderTrackingPage() {
         </motion.div>
 
         {/* Status Timeline */}
-        <motion.div 
+        <motion.div
           className="mb-6 rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -407,7 +442,7 @@ export default function OrderTrackingPage() {
               const isCurrent = index === currentStepIndex;
 
               return (
-                <motion.div 
+                <motion.div
                   key={step.key}
                   className="flex gap-4"
                   initial={{ opacity: 0, x: -20 }}
@@ -416,10 +451,10 @@ export default function OrderTrackingPage() {
                 >
                   {/* Timeline line + dot */}
                   <div className="flex flex-col items-center">
-                    <motion.div 
+                    <motion.div
                       className={`flex h-10 w-10 items-center justify-center rounded-full text-lg ${
-                        isCompleted 
-                          ? 'bg-kiwi-500 text-white' 
+                        isCompleted
+                          ? 'bg-kiwi-500 text-white'
                           : isCurrent
                             ? 'bg-kiwi-100 dark:bg-kiwi-900/50 text-kiwi-600 ring-2 ring-kiwi-500'
                             : 'bg-surface-100 dark:bg-surface-700 text-surface-400'
@@ -430,26 +465,32 @@ export default function OrderTrackingPage() {
                       {isCompleted && !isCurrent ? '✓' : step.icon}
                     </motion.div>
                     {index < STATUS_STEPS.length - 1 && (
-                      <div className={`w-0.5 h-8 ${
-                        isCompleted ? 'bg-kiwi-500' : 'bg-surface-200 dark:bg-surface-700'
-                      }`} />
+                      <div
+                        className={`w-0.5 h-8 ${
+                          isCompleted ? 'bg-kiwi-500' : 'bg-surface-200 dark:bg-surface-700'
+                        }`}
+                      />
                     )}
                   </div>
 
                   {/* Step content */}
                   <div className="flex-1 pb-8">
-                    <p className={`font-medium ${
-                      isCompleted 
-                        ? 'text-surface-800 dark:text-surface-100' 
-                        : 'text-surface-400 dark:text-surface-500'
-                    }`}>
+                    <p
+                      className={`font-medium ${
+                        isCompleted
+                          ? 'text-surface-800 dark:text-surface-100'
+                          : 'text-surface-400 dark:text-surface-500'
+                      }`}
+                    >
                       {step.label}
                     </p>
-                    <p className={`text-sm ${
-                      isCompleted 
-                        ? 'text-surface-500 dark:text-surface-400' 
-                        : 'text-surface-300 dark:text-surface-600'
-                    }`}>
+                    <p
+                      className={`text-sm ${
+                        isCompleted
+                          ? 'text-surface-500 dark:text-surface-400'
+                          : 'text-surface-300 dark:text-surface-600'
+                      }`}
+                    >
                       {step.description}
                     </p>
                     {isCurrent && (
@@ -470,7 +511,7 @@ export default function OrderTrackingPage() {
 
         {/* Driver Info */}
         {order.driver && (
-          <motion.div 
+          <motion.div
             className="mb-6 rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -498,10 +539,13 @@ export default function OrderTrackingPage() {
                 </div>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="px-2 py-1 rounded-full bg-surface-100 dark:bg-surface-700 text-xs font-medium text-surface-600 dark:text-surface-400">
-                    {order.driver.vehicleType === 'motorcycle' ? '🏍️ Moto' :
-                     order.driver.vehicleType === 'car' ? '🚗 Carro' :
-                     order.driver.vehicleType === 'bicycle' ? '🚲 Bici' :
-                     order.driver.vehicleType}
+                    {order.driver.vehicleType === 'motorcycle'
+                      ? '🏍️ Moto'
+                      : order.driver.vehicleType === 'car'
+                        ? '🚗 Carro'
+                        : order.driver.vehicleType === 'bicycle'
+                          ? '🚲 Bici'
+                          : order.driver.vehicleType}
                   </span>
                 </div>
               </div>
@@ -510,7 +554,7 @@ export default function OrderTrackingPage() {
         )}
 
         {/* Order Details */}
-        <motion.div 
+        <motion.div
           className="mb-6 rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

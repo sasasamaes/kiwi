@@ -6,19 +6,19 @@ import { AnimatedButton, StaggerContainer, StaggerItem } from '@kiwi/ui';
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-bg-light">
+    <main className="min-h-[100dvh] bg-bg-light">
       {/* Hero Section */}
       <section className="relative overflow-hidden px-6 py-20 lg:px-8">
         {/* Background decoration */}
         <div className="absolute inset-0 -z-10">
-          <motion.div 
+          <motion.div
             className="absolute left-1/2 top-0 -z-10 -translate-x-1/2 -translate-y-1/2"
             animate={{ scale: [1, 1.1, 1] }}
             transition={{ duration: 8, repeat: Infinity }}
           >
             <div className="h-[600px] w-[600px] rounded-full bg-kiwi-200/30 blur-3xl" />
           </motion.div>
-          <motion.div 
+          <motion.div
             className="absolute bottom-0 right-0 -z-10"
             animate={{ scale: [1, 1.2, 1] }}
             transition={{ duration: 6, repeat: Infinity, delay: 2 }}
@@ -29,19 +29,19 @@ export default function Home() {
 
         <div className="mx-auto max-w-4xl text-center">
           {/* Logo */}
-          <motion.div 
+          <motion.div
             className="mb-8 inline-flex items-center justify-center"
             initial={{ opacity: 0, scale: 0.5 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ type: 'spring', stiffness: 260, damping: 20 }}
           >
             <div className="relative">
-              <motion.div 
+              <motion.div
                 className="absolute inset-0 rounded-full bg-kiwi-300/30 blur-xl"
                 animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.8, 0.5] }}
                 transition={{ duration: 3, repeat: Infinity }}
               />
-              <motion.div 
+              <motion.div
                 className="relative text-8xl"
                 animate={{ y: [-10, 10, -10] }}
                 transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
@@ -52,7 +52,7 @@ export default function Home() {
           </motion.div>
 
           {/* Title */}
-          <motion.h1 
+          <motion.h1
             className="mb-4 text-6xl font-display font-bold tracking-tight text-surface-900"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -60,7 +60,7 @@ export default function Home() {
           >
             Kiwi
           </motion.h1>
-          <motion.p 
+          <motion.p
             className="mb-3 text-xl font-medium text-kiwi-600"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -68,7 +68,7 @@ export default function Home() {
           >
             Repartidores para comerciantes
           </motion.p>
-          <motion.p 
+          <motion.p
             className="mb-10 text-lg text-surface-500 max-w-2xl mx-auto"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -79,7 +79,7 @@ export default function Home() {
           </motion.p>
 
           {/* CTA Buttons */}
-          <motion.div 
+          <motion.div
             className="flex flex-col sm:flex-row items-center justify-center gap-4"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -98,7 +98,7 @@ export default function Home() {
           </motion.div>
 
           {/* Social Proof */}
-          <motion.div 
+          <motion.div
             className="mt-12 flex items-center justify-center gap-8"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -109,7 +109,7 @@ export default function Home() {
               { icon: '⭐', text: '4.9 calificación' },
               { icon: '🚗', text: '50+ repartidores' },
             ].map((item, i) => (
-              <motion.div 
+              <motion.div
                 key={i}
                 className="flex items-center gap-2 text-surface-400"
                 whileHover={{ scale: 1.05, color: '#22c55e' }}
@@ -125,7 +125,7 @@ export default function Home() {
       {/* Features Section */}
       <section className="px-6 py-20 lg:px-8">
         <div className="mx-auto max-w-6xl">
-          <motion.div 
+          <motion.div
             className="mb-12 text-center"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -134,19 +134,17 @@ export default function Home() {
             <h2 className="mb-3 text-3xl font-display font-bold text-surface-900">
               ¿Por qué Kiwi?
             </h2>
-            <p className="text-surface-500">
-              Diseñado para la realidad de Nicoya y Guanacaste
-            </p>
+            <p className="text-surface-500">Diseñado para la realidad de Nicoya y Guanacaste</p>
           </motion.div>
 
           <StaggerContainer className="grid gap-6 md:grid-cols-3">
             {/* Feature 1 */}
             <StaggerItem>
-              <motion.div 
+              <motion.div
                 className="rounded-2xl bg-white/70 backdrop-blur-xl border border-white/30 shadow-soft-md p-6 group"
                 whileHover={{ y: -8, boxShadow: '0 20px 40px -12px rgba(34, 197, 94, 0.2)' }}
               >
-                <motion.div 
+                <motion.div
                   className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-kiwi-100 text-kiwi-600"
                   whileHover={{ rotate: 10, scale: 1.1 }}
                   transition={{ type: 'spring', stiffness: 260, damping: 20 }}
@@ -164,11 +162,11 @@ export default function Home() {
 
             {/* Feature 2 */}
             <StaggerItem>
-              <motion.div 
+              <motion.div
                 className="rounded-2xl bg-white/70 backdrop-blur-xl border border-white/30 shadow-soft-md p-6 group"
                 whileHover={{ y: -8, boxShadow: '0 20px 40px -12px rgba(251, 191, 36, 0.2)' }}
               >
-                <motion.div 
+                <motion.div
                   className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gold-100 text-gold-600"
                   whileHover={{ rotate: -10, scale: 1.1 }}
                   transition={{ type: 'spring', stiffness: 260, damping: 20 }}
@@ -186,11 +184,11 @@ export default function Home() {
 
             {/* Feature 3 */}
             <StaggerItem>
-              <motion.div 
+              <motion.div
                 className="rounded-2xl bg-white/70 backdrop-blur-xl border border-white/30 shadow-soft-md p-6 group"
                 whileHover={{ y: -8, boxShadow: '0 20px 40px -12px rgba(139, 101, 61, 0.15)' }}
               >
-                <motion.div 
+                <motion.div
                   className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-bark-100 text-bark-600"
                   whileHover={{ scale: 1.1 }}
                   transition={{ type: 'spring', stiffness: 260, damping: 20 }}
@@ -212,7 +210,7 @@ export default function Home() {
       {/* How it Works Section */}
       <section className="px-6 py-20 lg:px-8 bg-white">
         <div className="mx-auto max-w-6xl">
-          <motion.div 
+          <motion.div
             className="mb-12 text-center"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -221,16 +219,14 @@ export default function Home() {
             <h2 className="mb-3 text-3xl font-display font-bold text-surface-900">
               ¿Cómo funciona?
             </h2>
-            <p className="text-surface-500">
-              Tres simples pasos para empezar
-            </p>
+            <p className="text-surface-500">Tres simples pasos para empezar</p>
           </motion.div>
 
           <StaggerContainer className="grid gap-8 md:grid-cols-3">
             {/* Step 1 */}
             <StaggerItem>
               <div className="relative text-center">
-                <motion.div 
+                <motion.div
                   className="mb-4 text-5xl"
                   whileHover={{ scale: 1.2, rotate: 10 }}
                   transition={{ type: 'spring', stiffness: 260, damping: 20 }}
@@ -240,9 +236,7 @@ export default function Home() {
                 <h3 className="mb-2 text-lg font-display font-semibold text-surface-800">
                   Crea tu pedido
                 </h3>
-                <p className="text-surface-500">
-                  Selecciona productos y dirección de entrega
-                </p>
+                <p className="text-surface-500">Selecciona productos y dirección de entrega</p>
                 {/* Connector line */}
                 <div className="absolute right-0 top-8 hidden h-0.5 w-12 bg-kiwi-200 md:block" />
               </div>
@@ -251,7 +245,7 @@ export default function Home() {
             {/* Step 2 */}
             <StaggerItem>
               <div className="relative text-center">
-                <motion.div 
+                <motion.div
                   className="mb-4 text-5xl"
                   whileHover={{ scale: 1.2, rotate: -10 }}
                   transition={{ type: 'spring', stiffness: 260, damping: 20 }}
@@ -261,9 +255,7 @@ export default function Home() {
                 <h3 className="mb-2 text-lg font-display font-semibold text-surface-800">
                   Elige al repartidor
                 </h3>
-                <p className="text-surface-500">
-                  Comparten propuestas, tú seleccionas por calidad
-                </p>
+                <p className="text-surface-500">Comparten propuestas, tú seleccionas por calidad</p>
                 {/* Connector line */}
                 <div className="absolute right-0 top-8 hidden h-0.5 w-12 bg-kiwi-200 md:block" />
               </div>
@@ -272,7 +264,7 @@ export default function Home() {
             {/* Step 3 */}
             <StaggerItem>
               <div className="text-center">
-                <motion.div 
+                <motion.div
                   className="mb-4 text-5xl"
                   whileHover={{ scale: 1.2, rotate: 10 }}
                   transition={{ type: 'spring', stiffness: 260, damping: 20 }}
@@ -282,9 +274,7 @@ export default function Home() {
                 <h3 className="mb-2 text-lg font-display font-semibold text-surface-800">
                   ¡Listo!
                 </h3>
-                <p className="text-surface-500">
-                  Tracking en tiempo real y pago digital
-                </p>
+                <p className="text-surface-500">Tracking en tiempo real y pago digital</p>
               </div>
             </StaggerItem>
           </StaggerContainer>
@@ -294,7 +284,7 @@ export default function Home() {
       {/* CTA Section */}
       <section className="px-6 py-20 lg:px-8">
         <div className="mx-auto max-w-4xl">
-          <motion.div 
+          <motion.div
             className="rounded-2xl bg-kiwi-gradient py-12 px-8 text-center shadow-kiwi-lg overflow-hidden relative"
             initial={{ opacity: 0, y: 40 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -302,19 +292,19 @@ export default function Home() {
             transition={{ duration: 0.6 }}
           >
             {/* Background decorations */}
-            <motion.div 
+            <motion.div
               className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/10"
               animate={{ scale: [1, 1.2, 1] }}
               transition={{ duration: 5, repeat: Infinity }}
             />
-            <motion.div 
+            <motion.div
               className="absolute -left-10 -bottom-10 h-32 w-32 rounded-full bg-white/10"
               animate={{ scale: [1, 1.3, 1] }}
               transition={{ duration: 4, repeat: Infinity, delay: 1 }}
             />
-            
+
             <div className="relative">
-              <motion.div 
+              <motion.div
                 className="mb-4 text-6xl"
                 animate={{ y: [-5, 5, -5] }}
                 transition={{ duration: 2, repeat: Infinity }}
@@ -328,7 +318,11 @@ export default function Home() {
                 Únete a los comercios de Nicoya que ya usan Kiwi
               </p>
               <Link href="/dashboard">
-                <AnimatedButton variant="secondary" size="lg" className="bg-white text-kiwi-600 hover:bg-white/90">
+                <AnimatedButton
+                  variant="secondary"
+                  size="lg"
+                  className="bg-white text-kiwi-600 hover:bg-white/90"
+                >
                   Comprar Ahora →
                 </AnimatedButton>
               </Link>
@@ -340,10 +334,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="border-t border-surface-200 bg-white px-6 py-8 lg:px-8">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 md:flex-row">
-          <motion.div 
-            className="flex items-center gap-2"
-            whileHover={{ scale: 1.05 }}
-          >
+          <motion.div className="flex items-center gap-2" whileHover={{ scale: 1.05 }}>
             <span className="text-2xl">🥝</span>
             <span className="font-display font-bold text-surface-800">Kiwi</span>
           </motion.div>
@@ -351,15 +342,15 @@ export default function Home() {
             © 2026 Kiwi. Hecho con 💚 en Nicoya, Costa Rica
           </p>
           <div className="flex gap-4">
-            <motion.a 
-              href="#" 
+            <motion.a
+              href="#"
               className="text-surface-400 hover:text-kiwi-500 transition-colors"
               whileHover={{ y: -2 }}
             >
               Términos
             </motion.a>
-            <motion.a 
-              href="#" 
+            <motion.a
+              href="#"
               className="text-surface-400 hover:text-kiwi-500 transition-colors"
               whileHover={{ y: -2 }}
             >

@@ -96,12 +96,12 @@ export default function MerchantTrafficAnalytics() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-surface-50 to-surface-100 dark:from-surface-900 dark:to-surface-800">
+      <div className="min-h-[100dvh] bg-gradient-to-br from-surface-50 to-surface-100 dark:from-surface-900 dark:to-surface-800">
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="animate-pulse space-y-6">
             <div className="h-8 bg-surface-200 dark:bg-surface-700 rounded w-64" />
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {[1, 2, 3, 4].map(i => (
+              {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="h-24 bg-surface-200 dark:bg-surface-700 rounded-2xl" />
               ))}
             </div>
@@ -113,7 +113,7 @@ export default function MerchantTrafficAnalytics() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-surface-50 to-surface-100 dark:from-surface-900 dark:to-surface-800">
+    <div className="min-h-[100dvh] bg-gradient-to-br from-surface-50 to-surface-100 dark:from-surface-900 dark:to-surface-800">
       {/* Header */}
       <div className="bg-white/80 dark:bg-surface-800/80 backdrop-blur-xl border-b border-surface-200 dark:border-surface-700 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 py-4">
@@ -123,8 +123,18 @@ export default function MerchantTrafficAnalytics() {
                 href="/analytics"
                 className="p-2 hover:bg-surface-100 dark:hover:bg-surface-700 rounded-xl transition-colors"
               >
-                <svg className="w-5 h-5 text-surface-600 dark:text-surface-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                <svg
+                  className="w-5 h-5 text-surface-600 dark:text-surface-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 19l-7-7 7-7"
+                  />
                 </svg>
               </Link>
               <div>
@@ -175,9 +185,7 @@ export default function MerchantTrafficAnalytics() {
                 <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
                   {analytics?.totalDeliveries}
                 </p>
-                <p className="text-sm text-surface-500 dark:text-surface-400">
-                  Entregas totales
-                </p>
+                <p className="text-sm text-surface-500 dark:text-surface-400">Entregas totales</p>
               </div>
             </div>
           </motion.div>
@@ -196,9 +204,7 @@ export default function MerchantTrafficAnalytics() {
                 <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
                   {analytics?.averageDeliveryTime} min
                 </p>
-                <p className="text-sm text-surface-500 dark:text-surface-400">
-                  Tiempo promedio
-                </p>
+                <p className="text-sm text-surface-500 dark:text-surface-400">Tiempo promedio</p>
               </div>
             </div>
           </motion.div>
@@ -238,9 +244,7 @@ export default function MerchantTrafficAnalytics() {
                 <p className="text-2xl font-bold text-red-600 dark:text-red-400">
                   +{analytics?.trafficImpact.avgDelay} min
                 </p>
-                <p className="text-sm text-surface-500 dark:text-surface-400">
-                  Retraso promedio
-                </p>
+                <p className="text-sm text-surface-500 dark:text-surface-400">Retraso promedio</p>
               </div>
             </div>
           </motion.div>
@@ -266,16 +270,26 @@ export default function MerchantTrafficAnalytics() {
               <div className="space-y-4">
                 <div>
                   <div className="flex justify-between mb-1">
-                    <span className="text-sm text-surface-600 dark:text-surface-400">✅ A tiempo</span>
+                    <span className="text-sm text-surface-600 dark:text-surface-400">
+                      ✅ A tiempo
+                    </span>
                     <span className="text-sm font-medium text-surface-800 dark:text-surface-200">
-                      {analytics?.trafficImpact.onTime} ({Math.round((analytics?.trafficImpact.onTime || 0) / (analytics?.totalDeliveries || 1) * 100)}%)
+                      {analytics?.trafficImpact.onTime} (
+                      {Math.round(
+                        ((analytics?.trafficImpact.onTime || 0) /
+                          (analytics?.totalDeliveries || 1)) *
+                          100,
+                      )}
+                      %)
                     </span>
                   </div>
                   <div className="h-3 bg-surface-100 dark:bg-surface-700 rounded-full overflow-hidden">
                     <motion.div
                       className="h-full bg-kiwi-500 rounded-full"
                       initial={{ width: 0 }}
-                      animate={{ width: `${(analytics?.trafficImpact.onTime || 0) / (analytics?.totalDeliveries || 1) * 100}%` }}
+                      animate={{
+                        width: `${((analytics?.trafficImpact.onTime || 0) / (analytics?.totalDeliveries || 1)) * 100}%`,
+                      }}
                       transition={{ duration: 1, ease: 'easeOut' }}
                     />
                   </div>
@@ -283,16 +297,26 @@ export default function MerchantTrafficAnalytics() {
 
                 <div>
                   <div className="flex justify-between mb-1">
-                    <span className="text-sm text-surface-600 dark:text-surface-400">⚠️ Retrasadas</span>
+                    <span className="text-sm text-surface-600 dark:text-surface-400">
+                      ⚠️ Retrasadas
+                    </span>
                     <span className="text-sm font-medium text-orange-600 dark:text-orange-400">
-                      {analytics?.trafficImpact.delayed} ({Math.round((analytics?.trafficImpact.delayed || 0) / (analytics?.totalDeliveries || 1) * 100)}%)
+                      {analytics?.trafficImpact.delayed} (
+                      {Math.round(
+                        ((analytics?.trafficImpact.delayed || 0) /
+                          (analytics?.totalDeliveries || 1)) *
+                          100,
+                      )}
+                      %)
                     </span>
                   </div>
                   <div className="h-3 bg-surface-100 dark:bg-surface-700 rounded-full overflow-hidden">
                     <motion.div
                       className="h-full bg-orange-500 rounded-full"
                       initial={{ width: 0 }}
-                      animate={{ width: `${(analytics?.trafficImpact.delayed || 0) / (analytics?.totalDeliveries || 1) * 100}%` }}
+                      animate={{
+                        width: `${((analytics?.trafficImpact.delayed || 0) / (analytics?.totalDeliveries || 1)) * 100}%`,
+                      }}
                       transition={{ duration: 1, ease: 'easeOut', delay: 0.2 }}
                     />
                   </div>
@@ -360,9 +384,7 @@ export default function MerchantTrafficAnalytics() {
                       {time.reason}
                     </p>
                   </div>
-                  <div className="text-kiwi-500">
-                    ✅
-                  </div>
+                  <div className="text-kiwi-500">✅</div>
                 </motion.div>
               ))}
             </div>
@@ -401,9 +423,7 @@ export default function MerchantTrafficAnalytics() {
                       {time.reason}
                     </p>
                   </div>
-                  <div className="text-red-500">
-                    ⚠️
-                  </div>
+                  <div className="text-red-500">⚠️</div>
                 </motion.div>
               ))}
             </div>
@@ -424,8 +444,11 @@ export default function MerchantTrafficAnalytics() {
           <div className="grid grid-cols-7 gap-2">
             {/* Hour labels */}
             <div className="text-xs text-surface-500 dark:text-surface-400 text-center">Hora</div>
-            {[6, 7, 8, 9, 10, 11, 12].map(hour => (
-              <div key={hour} className="text-xs text-surface-500 dark:text-surface-400 text-center">
+            {[6, 7, 8, 9, 10, 11, 12].map((hour) => (
+              <div
+                key={hour}
+                className="text-xs text-surface-500 dark:text-surface-400 text-center"
+              >
                 {hour}:00
               </div>
             ))}
@@ -436,10 +459,13 @@ export default function MerchantTrafficAnalytics() {
               <div
                 key={`mon-${i}`}
                 className={`h-8 rounded ${
-                  color === 'green' ? 'bg-kiwi-200 dark:bg-kiwi-800' :
-                  color === 'yellow' ? 'bg-yellow-200 dark:bg-yellow-800' :
-                  color === 'orange' ? 'bg-orange-200 dark:bg-orange-800' :
-                  'bg-red-200 dark:bg-red-800'
+                  color === 'green'
+                    ? 'bg-kiwi-200 dark:bg-kiwi-800'
+                    : color === 'yellow'
+                      ? 'bg-yellow-200 dark:bg-yellow-800'
+                      : color === 'orange'
+                        ? 'bg-orange-200 dark:bg-orange-800'
+                        : 'bg-red-200 dark:bg-red-800'
                 }`}
               />
             ))}
@@ -450,10 +476,13 @@ export default function MerchantTrafficAnalytics() {
               <div
                 key={`tue-${i}`}
                 className={`h-8 rounded ${
-                  color === 'green' ? 'bg-kiwi-200 dark:bg-kiwi-800' :
-                  color === 'yellow' ? 'bg-yellow-200 dark:bg-yellow-800' :
-                  color === 'orange' ? 'bg-orange-200 dark:bg-orange-800' :
-                  'bg-red-200 dark:bg-red-800'
+                  color === 'green'
+                    ? 'bg-kiwi-200 dark:bg-kiwi-800'
+                    : color === 'yellow'
+                      ? 'bg-yellow-200 dark:bg-yellow-800'
+                      : color === 'orange'
+                        ? 'bg-orange-200 dark:bg-orange-800'
+                        : 'bg-red-200 dark:bg-red-800'
                 }`}
               />
             ))}
@@ -464,27 +493,35 @@ export default function MerchantTrafficAnalytics() {
               <div
                 key={`wed-${i}`}
                 className={`h-8 rounded ${
-                  color === 'green' ? 'bg-kiwi-200 dark:bg-kiwi-800' :
-                  color === 'yellow' ? 'bg-yellow-200 dark:bg-yellow-800' :
-                  color === 'orange' ? 'bg-orange-200 dark:bg-orange-800' :
-                  'bg-red-200 dark:bg-red-800'
+                  color === 'green'
+                    ? 'bg-kiwi-200 dark:bg-kiwi-800'
+                    : color === 'yellow'
+                      ? 'bg-yellow-200 dark:bg-yellow-800'
+                      : color === 'orange'
+                        ? 'bg-orange-200 dark:bg-orange-800'
+                        : 'bg-red-200 dark:bg-red-800'
                 }`}
               />
             ))}
 
             {/* Thursday */}
             <div className="text-xs text-surface-600 dark:text-surface-400 font-medium">Jue</div>
-            {['green', 'yellow', 'orange', 'yellow', 'green', 'yellow', 'orange'].map((color, i) => (
-              <div
-                key={`thu-${i}`}
-                className={`h-8 rounded ${
-                  color === 'green' ? 'bg-kiwi-200 dark:bg-kiwi-800' :
-                  color === 'yellow' ? 'bg-yellow-200 dark:bg-yellow-800' :
-                  color === 'orange' ? 'bg-orange-200 dark:bg-orange-800' :
-                  'bg-red-200 dark:bg-red-800'
-                }`}
-              />
-            ))}
+            {['green', 'yellow', 'orange', 'yellow', 'green', 'yellow', 'orange'].map(
+              (color, i) => (
+                <div
+                  key={`thu-${i}`}
+                  className={`h-8 rounded ${
+                    color === 'green'
+                      ? 'bg-kiwi-200 dark:bg-kiwi-800'
+                      : color === 'yellow'
+                        ? 'bg-yellow-200 dark:bg-yellow-800'
+                        : color === 'orange'
+                          ? 'bg-orange-200 dark:bg-orange-800'
+                          : 'bg-red-200 dark:bg-red-800'
+                  }`}
+                />
+              ),
+            )}
 
             {/* Friday */}
             <div className="text-xs text-surface-600 dark:text-surface-400 font-medium">Vie</div>
@@ -492,10 +529,13 @@ export default function MerchantTrafficAnalytics() {
               <div
                 key={`fri-${i}`}
                 className={`h-8 rounded ${
-                  color === 'green' ? 'bg-kiwi-200 dark:bg-kiwi-800' :
-                  color === 'yellow' ? 'bg-yellow-200 dark:bg-yellow-800' :
-                  color === 'orange' ? 'bg-orange-200 dark:bg-orange-800' :
-                  'bg-red-200 dark:bg-red-800'
+                  color === 'green'
+                    ? 'bg-kiwi-200 dark:bg-kiwi-800'
+                    : color === 'yellow'
+                      ? 'bg-yellow-200 dark:bg-yellow-800'
+                      : color === 'orange'
+                        ? 'bg-orange-200 dark:bg-orange-800'
+                        : 'bg-red-200 dark:bg-red-800'
                 }`}
               />
             ))}
@@ -506,10 +546,13 @@ export default function MerchantTrafficAnalytics() {
               <div
                 key={`sat-${i}`}
                 className={`h-8 rounded ${
-                  color === 'green' ? 'bg-kiwi-200 dark:bg-kiwi-800' :
-                  color === 'yellow' ? 'bg-yellow-200 dark:bg-yellow-800' :
-                  color === 'orange' ? 'bg-orange-200 dark:bg-orange-800' :
-                  'bg-red-200 dark:bg-red-800'
+                  color === 'green'
+                    ? 'bg-kiwi-200 dark:bg-kiwi-800'
+                    : color === 'yellow'
+                      ? 'bg-yellow-200 dark:bg-yellow-800'
+                      : color === 'orange'
+                        ? 'bg-orange-200 dark:bg-orange-800'
+                        : 'bg-red-200 dark:bg-red-800'
                 }`}
               />
             ))}
@@ -520,10 +563,13 @@ export default function MerchantTrafficAnalytics() {
               <div
                 key={`sun-${i}`}
                 className={`h-8 rounded ${
-                  color === 'green' ? 'bg-kiwi-200 dark:bg-kiwi-800' :
-                  color === 'yellow' ? 'bg-yellow-200 dark:bg-yellow-800' :
-                  color === 'orange' ? 'bg-orange-200 dark:bg-orange-800' :
-                  'bg-red-200 dark:bg-red-800'
+                  color === 'green'
+                    ? 'bg-kiwi-200 dark:bg-kiwi-800'
+                    : color === 'yellow'
+                      ? 'bg-yellow-200 dark:bg-yellow-800'
+                      : color === 'orange'
+                        ? 'bg-orange-200 dark:bg-orange-800'
+                        : 'bg-red-200 dark:bg-red-800'
                 }`}
               />
             ))}
@@ -578,7 +624,8 @@ export default function MerchantTrafficAnalytics() {
                 Informa a tus Clientes
               </h3>
               <p className="text-sm text-surface-600 dark:text-surface-400">
-                Muestra alertas de tráfico en tu menú para que los clientes sepan cuando hay retrasos.
+                Muestra alertas de tráfico en tu menú para que los clientes sepan cuando hay
+                retrasos.
               </p>
             </div>
 
@@ -617,22 +664,27 @@ export default function MerchantTrafficAnalytics() {
                       {new Date(day.date).getDate()}
                     </p>
                   </div>
-                  
+
                   <div className="h-32 flex items-end justify-center">
                     <motion.div
                       className="w-full max-w-[40px] rounded-t-lg"
                       style={{
                         height: `${(day.deliveries / 30) * 100}%`,
-                        backgroundColor: day.trafficLevel === 'heavy' ? '#ef4444' :
-                                       day.trafficLevel === 'moderate' ? '#f97316' :
-                                       day.trafficLevel === 'light' ? '#84cc16' : '#22c55e',
+                        backgroundColor:
+                          day.trafficLevel === 'heavy'
+                            ? '#ef4444'
+                            : day.trafficLevel === 'moderate'
+                              ? '#f97316'
+                              : day.trafficLevel === 'light'
+                                ? '#84cc16'
+                                : '#22c55e',
                       }}
                       initial={{ height: 0 }}
                       animate={{ height: `${(day.deliveries / 30) * 100}%` }}
                       transition={{ duration: 0.5, delay: 0.1 * index }}
                     />
                   </div>
-                  
+
                   <div className="text-center mt-2">
                     <p className="text-sm font-medium text-surface-800 dark:text-surface-200">
                       {day.deliveries}

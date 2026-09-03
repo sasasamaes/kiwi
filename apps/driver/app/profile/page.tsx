@@ -3,23 +3,35 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AnimatedButton, StaggerContainer, StaggerItem, AnimatedCounter, VehicleSelector, VehicleBadge, VehicleType, KYCStatusBadge } from '@kiwi/ui';
+import {
+  AnimatedButton,
+  StaggerContainer,
+  StaggerItem,
+  AnimatedCounter,
+  VehicleSelector,
+  VehicleBadge,
+  VehicleType,
+  KYCStatusBadge,
+} from '@kiwi/ui';
 
 export default function Profile() {
   const [showVehicleModal, setShowVehicleModal] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleType>('motorcycle');
 
   return (
-    <main className="min-h-screen flex flex-col">
+    <main className="min-h-[100dvh] flex flex-col">
       {/* Header */}
-      <motion.header 
+      <motion.header
         className="sticky top-0 z-50 border-b border-surface-200/50 bg-white/70 backdrop-blur-xl"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
       >
         <div className="mx-auto max-w-lg px-4 py-4">
           <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2 text-surface-600 hover:text-surface-800">
+            <Link
+              href="/"
+              className="flex items-center gap-2 text-surface-600 hover:text-surface-800"
+            >
               <span>←</span>
               <span className="text-sm font-medium">Volver</span>
             </Link>
@@ -31,19 +43,19 @@ export default function Profile() {
 
       <main className="flex-1 mx-auto w-full max-w-lg px-4 py-6">
         {/* Profile Card */}
-        <motion.div 
+        <motion.div
           className="mb-6 rounded-2xl bg-kiwi-gradient p-6 text-white shadow-kiwi-lg text-center relative overflow-hidden"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
           {/* Background decoration */}
-          <motion.div 
+          <motion.div
             className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/10"
             animate={{ scale: [1, 1.2, 1] }}
             transition={{ duration: 4, repeat: Infinity }}
           />
-          
-          <motion.div 
+
+          <motion.div
             className="relative mb-4 inline-flex h-24 w-24 items-center justify-center rounded-full bg-white text-4xl font-bold text-kiwi-600 shadow-lg"
             whileHover={{ scale: 1.05 }}
           >
@@ -51,10 +63,15 @@ export default function Profile() {
           </motion.div>
           <h2 className="relative text-xl font-display font-bold">Juan Carlos</h2>
           <p className="relative text-white/80">Repartidor desde Enero 2026</p>
-          
+
           <div className="relative mt-4 flex justify-center gap-6">
             <div className="text-center">
-              <AnimatedCounter value={4.9} decimals={1} prefix="⭐" className="text-2xl font-bold" />
+              <AnimatedCounter
+                value={4.9}
+                decimals={1}
+                prefix="⭐"
+                className="text-2xl font-bold"
+              />
               <p className="text-xs text-white/70">Rating</p>
             </div>
             <div className="text-center">
@@ -69,7 +86,7 @@ export default function Profile() {
         </motion.div>
 
         {/* Progress to Next Level */}
-        <motion.div 
+        <motion.div
           className="mb-6 rounded-2xl bg-white p-5 shadow-soft"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -84,7 +101,7 @@ export default function Profile() {
             <span className="font-medium text-surface-700">344/500 viajes</span>
           </div>
           <div className="h-3 rounded-full bg-surface-100 overflow-hidden">
-            <motion.div 
+            <motion.div
               className="h-3 rounded-full bg-kiwi-gradient"
               initial={{ width: 0 }}
               animate={{ width: '69%' }}
@@ -127,7 +144,7 @@ export default function Profile() {
         </StaggerContainer>
 
         {/* Incentives */}
-        <motion.div 
+        <motion.div
           className="mb-6 rounded-2xl bg-white p-5 shadow-soft"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -139,10 +156,15 @@ export default function Profile() {
               { icon: '🎒', name: 'Bolso térmico', status: 'active', date: 'Mar 2026' },
               { icon: '🧥', name: 'Capa de lluvia', status: 'active', date: 'Jun 2026' },
               { icon: '📦', name: 'Cajón container', status: 'locked', date: 'Requiere 7 meses' },
-              { icon: '🔧', name: 'Mantenimiento moto', status: 'locked', date: 'Requiere 10 meses' },
+              {
+                icon: '🔧',
+                name: 'Mantenimiento moto',
+                status: 'locked',
+                date: 'Requiere 10 meses',
+              },
               { icon: '🏍️', name: 'Pago de marchamo', status: 'locked', date: 'Requiere 12 meses' },
             ].map((incentive, i) => (
-              <motion.div 
+              <motion.div
                 key={i}
                 className={`flex items-center justify-between rounded-xl p-3 ${
                   incentive.status === 'active' ? 'bg-kiwi-50' : 'bg-surface-50'
@@ -152,15 +174,19 @@ export default function Profile() {
                 <div className="flex items-center gap-3">
                   <span className="text-2xl">{incentive.icon}</span>
                   <div>
-                    <p className={`text-sm font-medium ${incentive.status === 'active' ? 'text-kiwi-700' : 'text-surface-600'}`}>
+                    <p
+                      className={`text-sm font-medium ${incentive.status === 'active' ? 'text-kiwi-700' : 'text-surface-600'}`}
+                    >
                       {incentive.name}
                     </p>
                     <p className="text-xs text-surface-400">{incentive.date}</p>
                   </div>
                 </div>
-                <span className={`text-sm font-medium ${
-                  incentive.status === 'active' ? 'text-kiwi-600' : 'text-surface-400'
-                }`}>
+                <span
+                  className={`text-sm font-medium ${
+                    incentive.status === 'active' ? 'text-kiwi-600' : 'text-surface-400'
+                  }`}
+                >
                   {incentive.status === 'active' ? '✅ Activo' : '🔒 Bloqueado'}
                 </span>
               </motion.div>
@@ -169,7 +195,7 @@ export default function Profile() {
         </motion.div>
 
         {/* KYC Status */}
-        <motion.div 
+        <motion.div
           className="mb-6 rounded-2xl bg-white p-5 shadow-soft"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -190,7 +216,7 @@ export default function Profile() {
         </motion.div>
 
         {/* Vehicle Info */}
-        <motion.div 
+        <motion.div
           className="mb-6 rounded-2xl bg-white p-5 shadow-soft"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -198,11 +224,7 @@ export default function Profile() {
         >
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-display font-semibold text-surface-800">🚗 Mi Vehículo</h3>
-            <AnimatedButton 
-              variant="ghost" 
-              size="sm"
-              onClick={() => setShowVehicleModal(true)}
-            >
+            <AnimatedButton variant="ghost" size="sm" onClick={() => setShowVehicleModal(true)}>
               Editar
             </AnimatedButton>
           </div>
@@ -229,7 +251,7 @@ export default function Profile() {
             { icon: '❓', label: 'Ayuda', href: '#' },
           ].map((item, i) => (
             <Link key={i} href={item.href}>
-              <motion.div 
+              <motion.div
                 className="flex items-center justify-between border-b border-surface-100 px-4 py-3 hover:bg-surface-50 transition-colors"
                 whileHover={{ x: 4 }}
               >
@@ -254,14 +276,14 @@ export default function Profile() {
       {/* Vehicle Selection Modal */}
       <AnimatePresence>
         {showVehicleModal && (
-          <motion.div 
+          <motion.div
             className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setShowVehicleModal(false)}
           >
-            <motion.div 
+            <motion.div
               className="w-full max-w-lg rounded-t-3xl bg-white p-6 shadow-2xl"
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
@@ -273,29 +295,26 @@ export default function Profile() {
                 <h3 className="font-display text-lg font-semibold text-surface-800">
                   Seleccionar vehículo
                 </h3>
-                <button 
+                <button
                   onClick={() => setShowVehicleModal(false)}
                   className="text-surface-400 hover:text-surface-600"
                 >
                   ✕
                 </button>
               </div>
-              
-              <VehicleSelector 
-                selected={selectedVehicle} 
-                onSelect={setSelectedVehicle} 
-              />
-              
+
+              <VehicleSelector selected={selectedVehicle} onSelect={setSelectedVehicle} />
+
               <div className="mt-6 flex gap-3">
-                <AnimatedButton 
-                  variant="ghost" 
+                <AnimatedButton
+                  variant="ghost"
                   className="flex-1"
                   onClick={() => setShowVehicleModal(false)}
                 >
                   Cancelar
                 </AnimatedButton>
-                <AnimatedButton 
-                  variant="primary" 
+                <AnimatedButton
+                  variant="primary"
                   className="flex-1"
                   onClick={() => {
                     // TODO: Save vehicle type
@@ -321,7 +340,7 @@ export default function Profile() {
             { href: '/profile', icon: '👤', label: 'Perfil', active: true },
           ].map((item) => (
             <Link key={item.href} href={item.href}>
-              <motion.div 
+              <motion.div
                 className={`flex flex-col items-center gap-1 px-4 py-2 ${
                   item.active ? 'text-kiwi-600' : 'text-surface-400 hover:text-surface-600'
                 }`}

@@ -4,10 +4,10 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  AnimatedButton, 
-  StaggerContainer, 
-  StaggerItem, 
+import {
+  AnimatedButton,
+  StaggerContainer,
+  StaggerItem,
   Skeleton,
   api,
   MenuItem,
@@ -15,7 +15,7 @@ import {
   useSocket,
   AddressInput,
   OnvoPayCheckout,
-  CryptoCheckout
+  CryptoCheckout,
 } from '@kiwi/ui';
 
 interface CartItem extends MenuItem {
@@ -63,7 +63,7 @@ export default function MenuPage() {
   // Payment method
   type PaymentMethod = 'sinpe' | 'card' | 'cash' | 'crypto_usdc' | 'crypto_usdt';
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('sinpe');
-  
+
   // Payment state
   const [paymentPending, setPaymentPending] = useState(false);
   const [paymentIntent, setPaymentIntent] = useState<any>(null);
@@ -99,32 +99,31 @@ export default function MenuPage() {
 
   // Cart functions
   const addToCart = useCallback((item: MenuItem) => {
-    setCart(prev => {
-      const existing = prev.find(c => c.id === item.id);
+    setCart((prev) => {
+      const existing = prev.find((c) => c.id === item.id);
       if (existing) {
-        return prev.map(c =>
-          c.id === item.id ? { ...c, quantity: c.quantity + 1 } : c
-        );
+        return prev.map((c) => (c.id === item.id ? { ...c, quantity: c.quantity + 1 } : c));
       }
       return [...prev, { ...item, quantity: 1 }];
     });
   }, []);
 
   const removeFromCart = useCallback((itemId: string) => {
-    setCart(prev => {
-      const existing = prev.find(c => c.id === itemId);
+    setCart((prev) => {
+      const existing = prev.find((c) => c.id === itemId);
       if (existing && existing.quantity > 1) {
-        return prev.map(c =>
-          c.id === itemId ? { ...c, quantity: c.quantity - 1 } : c
-        );
+        return prev.map((c) => (c.id === itemId ? { ...c, quantity: c.quantity - 1 } : c));
       }
-      return prev.filter(c => c.id !== itemId);
+      return prev.filter((c) => c.id !== itemId);
     });
   }, []);
 
-  const getItemQuantity = useCallback((itemId: string) => {
-    return cart.find(c => c.id === itemId)?.quantity || 0;
-  }, [cart]);
+  const getItemQuantity = useCallback(
+    (itemId: string) => {
+      return cart.find((c) => c.id === itemId)?.quantity || 0;
+    },
+    [cart],
+  );
 
   const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -132,14 +131,16 @@ export default function MenuPage() {
   const totalWithDelivery = cartTotal + deliveryFee;
 
   // Filter items by category
-  const filteredItems = selectedCategory === 'Todos'
-    ? menuItems
-    : menuItems.filter(item => item.category === selectedCategory);
+  const filteredItems =
+    selectedCategory === 'Todos'
+      ? menuItems
+      : menuItems.filter((item) => item.category === selectedCategory);
 
   // Validate checkout
-  const canCheckout = deliveryInfo.address.trim().length > 0 && 
-                       deliveryInfo.phone.trim().length >= 8 &&
-                       deliveryInfo.name.trim().length > 0;
+  const canCheckout =
+    deliveryInfo.address.trim().length > 0 &&
+    deliveryInfo.phone.trim().length >= 8 &&
+    deliveryInfo.name.trim().length > 0;
 
   // Checkout handler
   const handleCheckout = useCallback(async () => {
@@ -152,7 +153,7 @@ export default function MenuPage() {
         pickupAddress: merchant.address,
         deliveryAddress: deliveryInfo.address,
         orderType: 'immediate',
-        items: cart.map(item => ({
+        items: cart.map((item) => ({
           menuItemId: item.id,
           name: item.name,
           price: item.price,
@@ -166,7 +167,7 @@ export default function MenuPage() {
       };
 
       const order = await api.createOrder(orderData);
-      
+
       // Handle payment based on method
       if (paymentMethod === 'sinpe' || paymentMethod === 'card') {
         // Create payment with OnvoPay
@@ -213,13 +214,16 @@ export default function MenuPage() {
   }, [cart, merchant, deliveryInfo, canCheckout, paymentMethod, totalWithDelivery]);
 
   // Payment success handler
-  const handlePaymentSuccess = useCallback((paymentId: string) => {
-    setPaymentPending(false);
-    setPaymentIntent(null);
-    setCart([]);
-    setShowCheckout(false);
-    setOrderSuccess(paymentIntent?.orderId || paymentId);
-  }, [paymentIntent]);
+  const handlePaymentSuccess = useCallback(
+    (paymentId: string) => {
+      setPaymentPending(false);
+      setPaymentIntent(null);
+      setCart([]);
+      setShowCheckout(false);
+      setOrderSuccess(paymentIntent?.orderId || paymentId);
+    },
+    [paymentIntent],
+  );
 
   // Payment error handler
   const handlePaymentError = useCallback((error: string) => {
@@ -232,13 +236,13 @@ export default function MenuPage() {
   // Order success screen
   if (orderSuccess) {
     return (
-      <main className="min-h-screen bg-bg-light dark:bg-surface-950 flex items-center justify-center p-4">
-        <motion.div 
+      <main className="min-h-[100dvh] bg-bg-light dark:bg-surface-950 flex items-center justify-center p-4">
+        <motion.div
           className="max-w-md w-full text-center"
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
         >
-          <motion.div 
+          <motion.div
             className="text-8xl mb-6"
             initial={{ scale: 0, rotate: -180 }}
             animate={{ scale: 1, rotate: 0 }}
@@ -252,7 +256,7 @@ export default function MenuPage() {
           <p className="text-surface-500 dark:text-surface-400 mb-6">
             Tu pedido está buscando repartidor
           </p>
-          
+
           <div className="rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark mb-6">
             <div className="space-y-3">
               <div className="flex justify-between">
@@ -287,8 +291,8 @@ export default function MenuPage() {
                 🏠 Volver al inicio
               </AnimatedButton>
             </Link>
-            <AnimatedButton 
-              variant="ghost" 
+            <AnimatedButton
+              variant="ghost"
               className="w-full"
               onClick={() => setOrderSuccess(null)}
             >
@@ -303,7 +307,7 @@ export default function MenuPage() {
   // Loading state
   if (loading) {
     return (
-      <main className="min-h-screen bg-bg-light dark:bg-surface-950 pb-32">
+      <main className="min-h-[100dvh] bg-bg-light dark:bg-surface-950 pb-32">
         <div className="sticky top-0 z-40 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl">
           <div className="mx-auto max-w-lg px-4 py-4">
             <div className="flex items-center justify-between">
@@ -326,8 +330,11 @@ export default function MenuPage() {
         </div>
         <div className="mx-auto max-w-lg px-4">
           <div className="space-y-4">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
+              >
                 <div className="flex gap-4">
                   <Skeleton className="h-20 w-20 rounded-xl" />
                   <div className="flex-1">
@@ -347,13 +354,13 @@ export default function MenuPage() {
   // Error state
   if (error) {
     return (
-      <main className="min-h-screen bg-bg-light dark:bg-surface-950 flex items-center justify-center">
-        <motion.div 
+      <main className="min-h-[100dvh] bg-bg-light dark:bg-surface-950 flex items-center justify-center">
+        <motion.div
           className="text-center px-4"
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
         >
-          <motion.div 
+          <motion.div
             className="text-6xl mb-4"
             animate={{ y: [0, -10, 0] }}
             transition={{ duration: 2, repeat: Infinity }}
@@ -365,8 +372,12 @@ export default function MenuPage() {
           </h2>
           <p className="text-surface-500 dark:text-surface-400 mb-6">{error}</p>
           <div className="flex gap-3 justify-center">
-            <AnimatedButton variant="secondary" onClick={() => router.push('/')}>← Volver</AnimatedButton>
-            <AnimatedButton variant="gradient" onClick={fetchData}>🔄 Reintentar</AnimatedButton>
+            <AnimatedButton variant="secondary" onClick={() => router.push('/')}>
+              ← Volver
+            </AnimatedButton>
+            <AnimatedButton variant="gradient" onClick={fetchData}>
+              🔄 Reintentar
+            </AnimatedButton>
           </div>
         </motion.div>
       </main>
@@ -376,45 +387,54 @@ export default function MenuPage() {
   // Merchant not found
   if (!merchant) {
     return (
-      <main className="min-h-screen bg-bg-light dark:bg-surface-950 flex items-center justify-center">
+      <main className="min-h-[100dvh] bg-bg-light dark:bg-surface-950 flex items-center justify-center">
         <div className="text-center">
           <span className="text-5xl mb-4 block">❌</span>
           <p className="text-surface-500 dark:text-surface-400">Comercio no encontrado</p>
-          <Link href="/" className="mt-4 inline-block text-kiwi-600 hover:text-kiwi-700">← Volver al inicio</Link>
+          <Link href="/" className="mt-4 inline-block text-kiwi-600 hover:text-kiwi-700">
+            ← Volver al inicio
+          </Link>
         </div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-bg-light dark:bg-surface-950 pb-32">
+    <main className="min-h-[100dvh] bg-bg-light dark:bg-surface-950 pb-32">
       {/* Header */}
-      <motion.header 
+      <motion.header
         className="sticky top-0 z-40 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
       >
         <div className="mx-auto max-w-lg px-4 py-4">
           <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2 text-surface-600 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200">
+            <Link
+              href="/"
+              className="flex items-center gap-2 text-surface-600 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200"
+            >
               <span>←</span>
               <span className="text-sm font-medium">Volver</span>
             </Link>
-            <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">Menú</h1>
+            <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
+              Menú
+            </h1>
             <div className="w-16" />
           </div>
         </div>
       </motion.header>
 
       {/* Restaurant Info */}
-      <motion.div 
+      <motion.div
         className="mx-auto max-w-lg px-4 py-6"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
         <div className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark">
           <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-kiwi-100 dark:bg-kiwi-900/30 text-3xl">🥗</div>
+            <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-kiwi-100 dark:bg-kiwi-900/30 text-3xl">
+              🥗
+            </div>
             <div>
               <h2 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100">
                 {merchant.businessName}
@@ -426,11 +446,13 @@ export default function MenuPage() {
                 <span className="text-sm text-surface-500 dark:text-surface-400">
                   📍 {merchant.address}
                 </span>
-                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                  merchant.isOpen 
-                    ? 'bg-kiwi-100 dark:bg-kiwi-900/50 text-kiwi-700 dark:text-kiwi-400'
-                    : 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-400'
-                }`}>
+                <span
+                  className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                    merchant.isOpen
+                      ? 'bg-kiwi-100 dark:bg-kiwi-900/50 text-kiwi-700 dark:text-kiwi-400'
+                      : 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-400'
+                  }`}
+                >
                   {merchant.isOpen ? 'Abierto' : 'Cerrado'}
                 </span>
               </div>
@@ -440,7 +462,7 @@ export default function MenuPage() {
       </motion.div>
 
       {/* Category Filter */}
-      <motion.div 
+      <motion.div
         className="mx-auto max-w-lg px-4 mb-4"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -465,7 +487,7 @@ export default function MenuPage() {
       </motion.div>
 
       {/* Menu Items */}
-      <motion.div 
+      <motion.div
         className="mx-auto max-w-lg px-4"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -474,7 +496,9 @@ export default function MenuPage() {
         {filteredItems.length === 0 ? (
           <div className="text-center py-12">
             <span className="text-5xl mb-4 block">🍽️</span>
-            <p className="text-surface-500 dark:text-surface-400">No hay productos en esta categoría</p>
+            <p className="text-surface-500 dark:text-surface-400">
+              No hay productos en esta categoría
+            </p>
           </div>
         ) : (
           <StaggerContainer className="space-y-4">
@@ -482,7 +506,7 @@ export default function MenuPage() {
               const quantity = getItemQuantity(item.id);
               return (
                 <StaggerItem key={item.id}>
-                  <motion.div 
+                  <motion.div
                     className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
                     whileHover={{ y: -2 }}
                   >
@@ -494,27 +518,43 @@ export default function MenuPage() {
                         <div className="flex items-start justify-between">
                           <div>
                             <div className="flex items-center gap-2">
-                              <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">{item.name}</h3>
+                              <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">
+                                {item.name}
+                              </h3>
                               {item.isPopular && (
-                                <span className="px-2 py-0.5 rounded-full bg-gold-100 dark:bg-gold-900/50 text-xs font-medium text-gold-700 dark:text-gold-400">🔥 Popular</span>
+                                <span className="px-2 py-0.5 rounded-full bg-gold-100 dark:bg-gold-900/50 text-xs font-medium text-gold-700 dark:text-gold-400">
+                                  🔥 Popular
+                                </span>
                               )}
                             </div>
                             {item.description && (
-                              <p className="text-sm text-surface-500 dark:text-surface-400 mt-1 line-clamp-2">{item.description}</p>
+                              <p className="text-sm text-surface-500 dark:text-surface-400 mt-1 line-clamp-2">
+                                {item.description}
+                              </p>
                             )}
                           </div>
                         </div>
                         <div className="flex items-center justify-between mt-3">
-                          <p className="text-lg font-bold text-kiwi-600 dark:text-kiwi-400">₡{item.price.toLocaleString()}</p>
+                          <p className="text-lg font-bold text-kiwi-600 dark:text-kiwi-400">
+                            ₡{item.price.toLocaleString()}
+                          </p>
                           <div className="flex items-center gap-2">
                             {quantity > 0 && (
-                              <motion.div className="flex items-center gap-2" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}>
+                              <motion.div
+                                className="flex items-center gap-2"
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                              >
                                 <motion.button
                                   className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400"
                                   onClick={() => removeFromCart(item.id)}
                                   whileTap={{ scale: 0.9 }}
-                                >−</motion.button>
-                                <span className="w-6 text-center font-semibold text-surface-800 dark:text-surface-200">{quantity}</span>
+                                >
+                                  −
+                                </motion.button>
+                                <span className="w-6 text-center font-semibold text-surface-800 dark:text-surface-200">
+                                  {quantity}
+                                </span>
                               </motion.div>
                             )}
                             <motion.button
@@ -523,7 +563,9 @@ export default function MenuPage() {
                               whileTap={{ scale: 0.9 }}
                               whileHover={{ scale: 1.1 }}
                               disabled={!merchant.isOpen}
-                            >+</motion.button>
+                            >
+                              +
+                            </motion.button>
                           </div>
                         </div>
                       </div>
@@ -539,13 +581,13 @@ export default function MenuPage() {
       {/* Floating Cart Button */}
       <AnimatePresence>
         {cartCount > 0 && !showCheckout && (
-          <motion.div 
+          <motion.div
             className="fixed bottom-6 left-4 right-4 z-50"
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
           >
-            <motion.div 
+            <motion.div
               className="mx-auto max-w-lg rounded-2xl bg-kiwi-gradient p-4 text-white shadow-kiwi-lg cursor-pointer"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -571,20 +613,20 @@ export default function MenuPage() {
       {/* Checkout Modal */}
       <AnimatePresence>
         {showCheckout && (
-          <motion.div 
+          <motion.div
             className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
             {/* Backdrop */}
-            <motion.div 
+            <motion.div
               className="absolute inset-0 bg-black/50 backdrop-blur-sm"
               onClick={() => setShowCheckout(false)}
             />
 
             {/* Modal */}
-            <motion.div 
+            <motion.div
               className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto bg-white dark:bg-surface-800 rounded-t-3xl sm:rounded-3xl shadow-2xl"
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
@@ -603,21 +645,27 @@ export default function MenuPage() {
                     className="text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
-                  >✕</motion.button>
+                  >
+                    ✕
+                  </motion.button>
                 </div>
               </div>
 
               <div className="p-6 space-y-6">
                 {/* Order Summary */}
                 <div>
-                  <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-3">📦 Resumen</h3>
+                  <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-3">
+                    📦 Resumen
+                  </h3>
                   <div className="space-y-2">
                     {cart.map((item) => (
                       <div key={item.id} className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <span className="text-xl">{item.image || '🍽️'}</span>
                           <div>
-                            <p className="text-sm font-medium text-surface-800 dark:text-surface-200">{item.name}</p>
+                            <p className="text-sm font-medium text-surface-800 dark:text-surface-200">
+                              {item.name}
+                            </p>
                             <p className="text-xs text-surface-400">x{item.quantity}</p>
                           </div>
                         </div>
@@ -631,8 +679,10 @@ export default function MenuPage() {
 
                 {/* Delivery Address */}
                 <div>
-                  <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-3">📍 Dirección de entrega</h3>
-                  
+                  <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-3">
+                    📍 Dirección de entrega
+                  </h3>
+
                   {/* Saved Addresses */}
                   <div className="flex gap-2 mb-3">
                     {SAVED_ADDRESSES.map((addr) => (
@@ -667,7 +717,9 @@ export default function MenuPage() {
                 {/* Contact Info */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-3">👤 Nombre</h3>
+                    <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-3">
+                      👤 Nombre
+                    </h3>
                     <input
                       type="text"
                       value={deliveryInfo.name}
@@ -677,7 +729,9 @@ export default function MenuPage() {
                     />
                   </div>
                   <div>
-                    <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-3">📱 Teléfono</h3>
+                    <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-3">
+                      📱 Teléfono
+                    </h3>
                     <input
                       type="tel"
                       value={deliveryInfo.phone}
@@ -690,10 +744,14 @@ export default function MenuPage() {
 
                 {/* Special Instructions */}
                 <div>
-                  <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-3">📝 Instrucciones (opcional)</h3>
+                  <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-3">
+                    📝 Instrucciones (opcional)
+                  </h3>
                   <textarea
                     value={deliveryInfo.instructions}
-                    onChange={(e) => setDeliveryInfo({ ...deliveryInfo, instructions: e.target.value })}
+                    onChange={(e) =>
+                      setDeliveryInfo({ ...deliveryInfo, instructions: e.target.value })
+                    }
                     placeholder="Ej: Tocar el timbre, dejar en recepción, sin cebolla..."
                     rows={2}
                     className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:border-kiwi-500 focus:ring-2 focus:ring-kiwi-500/20 transition-all resize-none"
@@ -702,13 +760,15 @@ export default function MenuPage() {
 
                 {/* Payment Method */}
                 <div>
-                  <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-3">💳 Método de pago</h3>
+                  <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-3">
+                    💳 Método de pago
+                  </h3>
                   <div className="grid grid-cols-3 gap-3">
-                    {([
+                    {[
                       { id: 'sinpe' as const, icon: '📱', label: 'SINPE', desc: 'Transferencia' },
                       { id: 'card' as const, icon: '💳', label: 'Tarjeta', desc: 'Crédito/Débito' },
                       { id: 'cash' as const, icon: '💵', label: 'Efectivo', desc: 'Al repartidor' },
-                    ]).map((method) => (
+                    ].map((method) => (
                       <motion.button
                         key={method.id}
                         type="button"
@@ -721,11 +781,13 @@ export default function MenuPage() {
                         whileTap={{ scale: 0.95 }}
                       >
                         <span className="text-2xl">{method.icon}</span>
-                        <span className={`text-sm font-semibold ${
-                          paymentMethod === method.id
-                            ? 'text-kiwi-700 dark:text-kiwi-400'
-                            : 'text-surface-700 dark:text-surface-300'
-                        }`}>
+                        <span
+                          className={`text-sm font-semibold ${
+                            paymentMethod === method.id
+                              ? 'text-kiwi-700 dark:text-kiwi-400'
+                              : 'text-surface-700 dark:text-surface-300'
+                          }`}
+                        >
                           {method.label}
                         </span>
                         <span className="text-xs text-surface-400 dark:text-surface-500">
@@ -747,10 +809,10 @@ export default function MenuPage() {
 
                   {/* Crypto Options */}
                   <div className="grid grid-cols-2 gap-3 mt-3">
-                    {([
+                    {[
                       { id: 'crypto_usdc' as const, icon: '💵', label: 'USDC', desc: 'Stellar' },
                       { id: 'crypto_usdt' as const, icon: '💲', label: 'USDT', desc: 'Stellar' },
-                    ]).map((method) => (
+                    ].map((method) => (
                       <motion.button
                         key={method.id}
                         type="button"
@@ -764,11 +826,13 @@ export default function MenuPage() {
                       >
                         <span className="text-xl">{method.icon}</span>
                         <div className="text-left">
-                          <span className={`text-sm font-semibold ${
-                            paymentMethod === method.id
-                              ? 'text-purple-700 dark:text-purple-400'
-                              : 'text-surface-700 dark:text-surface-300'
-                          }`}>
+                          <span
+                            className={`text-sm font-semibold ${
+                              paymentMethod === method.id
+                                ? 'text-purple-700 dark:text-purple-400'
+                                : 'text-surface-700 dark:text-surface-300'
+                            }`}
+                          >
                             {method.label}
                           </span>
                           <span className="text-xs text-surface-400 dark:text-surface-500 block">
@@ -789,7 +853,9 @@ export default function MenuPage() {
                       <input
                         type="tel"
                         value={deliveryInfo.phone}
-                        onChange={(e) => setDeliveryInfo({ ...deliveryInfo, phone: e.target.value })}
+                        onChange={(e) =>
+                          setDeliveryInfo({ ...deliveryInfo, phone: e.target.value })
+                        }
                         placeholder="Número SINPE (8888-1234)"
                         className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:border-kiwi-500 focus:ring-2 focus:ring-kiwi-500/20 transition-all"
                       />
@@ -831,11 +897,19 @@ export default function MenuPage() {
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-surface-500 dark:text-surface-400">Subtotal</span>
-                      <span className="text-surface-800 dark:text-surface-200">₡{cartTotal.toLocaleString()}</span>
+                      <span className="text-surface-800 dark:text-surface-200">
+                        ₡{cartTotal.toLocaleString()}
+                      </span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-surface-500 dark:text-surface-400">Envío</span>
-                      <span className={deliveryFee === 0 ? 'text-kiwi-600 dark:text-kiwi-400 font-medium' : 'text-surface-800 dark:text-surface-200'}>
+                      <span
+                        className={
+                          deliveryFee === 0
+                            ? 'text-kiwi-600 dark:text-kiwi-400 font-medium'
+                            : 'text-surface-800 dark:text-surface-200'
+                        }
+                      >
                         {deliveryFee === 0 ? 'Gratis 🎉' : `₡${deliveryFee.toLocaleString()}`}
                       </span>
                     </div>
@@ -846,7 +920,9 @@ export default function MenuPage() {
                     )}
                     <div className="border-t border-surface-200 dark:border-surface-700 pt-2 mt-2">
                       <div className="flex justify-between">
-                        <span className="font-semibold text-surface-800 dark:text-surface-200">Total</span>
+                        <span className="font-semibold text-surface-800 dark:text-surface-200">
+                          Total
+                        </span>
                         <span className="text-xl font-bold text-kiwi-600 dark:text-kiwi-400">
                           ₡{totalWithDelivery.toLocaleString()}
                         </span>
@@ -864,7 +940,12 @@ export default function MenuPage() {
                 >
                   {checkingOut ? (
                     <span className="flex items-center justify-center gap-2">
-                      <motion.span animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}>⏳</motion.span>
+                      <motion.span
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                      >
+                        ⏳
+                      </motion.span>
                       Creando pedido...
                     </span>
                   ) : (
@@ -886,14 +967,14 @@ export default function MenuPage() {
       {/* Payment Modal */}
       <AnimatePresence>
         {paymentPending && paymentIntent && (
-          <motion.div 
+          <motion.div
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
             {/* Backdrop */}
-            <motion.div 
+            <motion.div
               className="absolute inset-0 bg-black/50 backdrop-blur-sm"
               onClick={() => {
                 setPaymentPending(false);
@@ -902,13 +983,13 @@ export default function MenuPage() {
             />
 
             {/* Payment Component */}
-            <motion.div 
+            <motion.div
               className="relative w-full max-w-md"
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
             >
-              {(paymentMethod === 'crypto_usdc' || paymentMethod === 'crypto_usdt') ? (
+              {paymentMethod === 'crypto_usdc' || paymentMethod === 'crypto_usdt' ? (
                 <CryptoCheckout
                   walletAddress={paymentIntent.walletAddress || ''}
                   amount={totalWithDelivery}
@@ -940,7 +1021,7 @@ export default function MenuPage() {
 
       {/* Closed Store Banner */}
       {!merchant.isOpen && (
-        <motion.div 
+        <motion.div
           className="fixed bottom-0 left-0 right-0 bg-red-500/90 text-white p-4 text-center backdrop-blur-xl"
           initial={{ y: 100 }}
           animate={{ y: 0 }}

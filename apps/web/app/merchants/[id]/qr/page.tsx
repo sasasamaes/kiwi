@@ -57,7 +57,7 @@ export default function MerchantQRPage() {
 
   if (loading || authLoading) {
     return (
-      <div className="min-h-screen bg-bg-light dark:bg-surface-950 flex items-center justify-center">
+      <div className="min-h-[100dvh] bg-bg-light dark:bg-surface-950 flex items-center justify-center">
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
@@ -71,7 +71,7 @@ export default function MerchantQRPage() {
 
   if (!merchant) {
     return (
-      <div className="min-h-screen bg-bg-light dark:bg-surface-950 flex items-center justify-center">
+      <div className="min-h-[100dvh] bg-bg-light dark:bg-surface-950 flex items-center justify-center">
         <div className="text-center">
           <span className="text-5xl mb-4 block">❌</span>
           <p className="text-surface-500 dark:text-surface-400">Comercio no encontrado</p>
@@ -84,7 +84,7 @@ export default function MerchantQRPage() {
   }
 
   return (
-    <div className="min-h-screen bg-bg-light dark:bg-surface-950">
+    <div className="min-h-[100dvh] bg-bg-light dark:bg-surface-950">
       {/* Header */}
       <motion.header
         className="sticky top-0 z-50 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl"
@@ -193,9 +193,7 @@ export default function MerchantQRPage() {
                   <p className="font-medium text-surface-800 dark:text-surface-200">
                     {item.icon} {item.title}
                   </p>
-                  <p className="text-sm text-surface-500 dark:text-surface-400">
-                    {item.desc}
-                  </p>
+                  <p className="text-sm text-surface-500 dark:text-surface-400">{item.desc}</p>
                 </div>
               </div>
             ))}

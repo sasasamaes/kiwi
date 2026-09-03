@@ -4,25 +4,53 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { 
-  AnimatedButton, 
-  TrackingMap, 
-  Skeleton,
-  useSocket,
-  api,
-  Order 
-} from '@kiwi/ui';
+import { AnimatedButton, TrackingMap, Skeleton, useSocket, api, Order } from '@kiwi/ui';
 
-type OrderStatus = 'pending' | 'assigned' | 'in_transit_to_pickup' | 'picked_up' | 'in_transit_to_delivery' | 'delivered' | 'cancelled';
+type OrderStatus =
+  | 'pending'
+  | 'assigned'
+  | 'in_transit_to_pickup'
+  | 'picked_up'
+  | 'in_transit_to_delivery'
+  | 'delivered'
+  | 'cancelled';
 
-const statusConfig: Record<OrderStatus, { label: string; icon: string; description: string; progress: number }> = {
+const statusConfig: Record<
+  OrderStatus,
+  { label: string; icon: string; description: string; progress: number }
+> = {
   pending: { label: 'Pendiente', icon: '⏳', description: 'Esperando repartidor', progress: 10 },
   assigned: { label: 'Asignado', icon: '✅', description: 'Repartidor asignado', progress: 20 },
-  in_transit_to_pickup: { label: 'En camino a recoger', icon: '🛵', description: 'El repartidor va al comercio', progress: 40 },
-  picked_up: { label: 'Recogido', icon: '📦', description: 'El repartidor recogió tu pedido', progress: 60 },
-  in_transit_to_delivery: { label: 'En camino', icon: '🚀', description: 'Tu pedido va en camino', progress: 80 },
-  delivered: { label: 'Entregado', icon: '🎉', description: '¡Recibiste tu pedido!', progress: 100 },
-  cancelled: { label: 'Cancelado', icon: '❌', description: 'El pedido fue cancelado', progress: 0 },
+  in_transit_to_pickup: {
+    label: 'En camino a recoger',
+    icon: '🛵',
+    description: 'El repartidor va al comercio',
+    progress: 40,
+  },
+  picked_up: {
+    label: 'Recogido',
+    icon: '📦',
+    description: 'El repartidor recogió tu pedido',
+    progress: 60,
+  },
+  in_transit_to_delivery: {
+    label: 'En camino',
+    icon: '🚀',
+    description: 'Tu pedido va en camino',
+    progress: 80,
+  },
+  delivered: {
+    label: 'Entregado',
+    icon: '🎉',
+    description: '¡Recibiste tu pedido!',
+    progress: 100,
+  },
+  cancelled: {
+    label: 'Cancelado',
+    icon: '❌',
+    description: 'El pedido fue cancelado',
+    progress: 0,
+  },
 };
 
 export default function TrackingPage() {
@@ -35,7 +63,9 @@ export default function TrackingPage() {
   const [error, setError] = useState<string | null>(null);
   const [driverLocation, setDriverLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [eta, setEta] = useState<number | null>(null);
-  const [statusHistory, setStatusHistory] = useState<{ status: string; timestamp: Date; message: string }[]>([]);
+  const [statusHistory, setStatusHistory] = useState<
+    { status: string; timestamp: Date; message: string }[]
+  >([]);
 
   // Socket for real-time updates
   const { isConnected, on, emit } = useSocket({
@@ -69,11 +99,11 @@ export default function TrackingPage() {
     const cleanup = on('order:statusChanged', (data: any) => {
       if (data.orderId === orderId) {
         setCurrentStatus(data.status as OrderStatus);
-        setStatusHistory(prev => [
+        setStatusHistory((prev) => [
           { status: data.status, timestamp: new Date(), message: data.message },
           ...prev,
         ]);
-        
+
         // Update eta based on status
         if (data.status === 'in_transit_to_delivery') {
           setEta(15);
@@ -103,7 +133,7 @@ export default function TrackingPage() {
   useEffect(() => {
     const cleanup = on('order:assigned', (data: any) => {
       if (data.orderId === orderId) {
-        setStatusHistory(prev => [
+        setStatusHistory((prev) => [
           { status: 'assigned', timestamp: new Date(), message: data.message },
           ...prev,
         ]);
@@ -118,7 +148,7 @@ export default function TrackingPage() {
     if (eta === null || eta <= 0) return;
 
     const interval = setInterval(() => {
-      setEta(prev => (prev !== null && prev > 0 ? prev - 1 : 0));
+      setEta((prev) => (prev !== null && prev > 0 ? prev - 1 : 0));
     }, 60000); // Update every minute
 
     return () => clearInterval(interval);
@@ -128,7 +158,7 @@ export default function TrackingPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-bg-light dark:bg-surface-950">
+      <div className="min-h-[100dvh] bg-bg-light dark:bg-surface-950">
         <div className="sticky top-0 z-40 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl">
           <div className="mx-auto max-w-lg px-4 py-4">
             <Skeleton className="h-6 w-48" />
@@ -144,7 +174,7 @@ export default function TrackingPage() {
 
   if (error || !order) {
     return (
-      <div className="min-h-screen bg-bg-light dark:bg-surface-950 flex items-center justify-center">
+      <div className="min-h-[100dvh] bg-bg-light dark:bg-surface-950 flex items-center justify-center">
         <div className="text-center">
           <span className="text-6xl mb-4 block">❌</span>
           <h2 className="text-xl font-semibold text-surface-800 dark:text-surface-100 mb-2">
@@ -159,20 +189,25 @@ export default function TrackingPage() {
   }
 
   return (
-    <main className="min-h-screen bg-bg-light dark:bg-surface-950">
+    <main className="min-h-[100dvh] bg-bg-light dark:bg-surface-950">
       {/* Header */}
-      <motion.header 
+      <motion.header
         className="sticky top-0 z-40 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
       >
         <div className="mx-auto max-w-lg px-4 py-4">
           <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2 text-surface-600 dark:text-surface-400">
+            <Link
+              href="/"
+              className="flex items-center gap-2 text-surface-600 dark:text-surface-400"
+            >
               <motion.span whileHover={{ x: -4 }}>←</motion.span>
               <span className="text-sm font-medium">Volver</span>
             </Link>
-            <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">Rastrear Pedido</h1>
+            <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
+              Rastrear Pedido
+            </h1>
             <div className="w-16" />
           </div>
         </div>
@@ -199,7 +234,7 @@ export default function TrackingPage() {
         {/* Connection Status */}
         <motion.div
           className={`mb-4 px-3 py-1.5 rounded-full text-xs font-medium inline-flex items-center gap-1.5 ${
-            isConnected 
+            isConnected
               ? 'bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400'
               : 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400'
           }`}
@@ -244,7 +279,9 @@ export default function TrackingPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
             >
-              <span className="text-sm text-surface-500 dark:text-surface-400">Tiempo estimado:</span>
+              <span className="text-sm text-surface-500 dark:text-surface-400">
+                Tiempo estimado:
+              </span>
               <span className="text-lg font-bold text-kiwi-600 dark:text-kiwi-400">{eta} min</span>
             </motion.div>
           )}
@@ -257,11 +294,15 @@ export default function TrackingPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
-          <h3 className="font-semibold text-surface-800 dark:text-surface-100 mb-3">Detalles del pedido</h3>
+          <h3 className="font-semibold text-surface-800 dark:text-surface-100 mb-3">
+            Detalles del pedido
+          </h3>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-surface-500 dark:text-surface-400">Pedido</span>
-              <span className="text-surface-700 dark:text-surface-200 font-medium">#{orderId.slice(0, 8)}</span>
+              <span className="text-surface-700 dark:text-surface-200 font-medium">
+                #{orderId.slice(0, 8)}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-surface-500 dark:text-surface-400">Estado</span>
@@ -317,9 +358,7 @@ export default function TrackingPage() {
           </Link>
           {currentStatus === 'delivered' && (
             <Link href={`/order/${orderId}/rate`} className="flex-1">
-              <AnimatedButton className="w-full">
-                ⭐ Calificar
-              </AnimatedButton>
+              <AnimatedButton className="w-full">⭐ Calificar</AnimatedButton>
             </Link>
           )}
         </div>

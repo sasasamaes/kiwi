@@ -34,15 +34,15 @@ export default function DriverRegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-kiwi-50 via-white to-kiwi-100 flex flex-col">
+    <div className="min-h-[100dvh] bg-gradient-to-br from-kiwi-50 via-white to-kiwi-100 flex flex-col">
       {/* Background decorations */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <motion.div 
+        <motion.div
           className="absolute -top-40 -left-40 w-80 h-80 rounded-full bg-kiwi-200/30"
           animate={{ scale: [1, 1.2, 1], rotate: [0, 180, 360] }}
           transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
         />
-        <motion.div 
+        <motion.div
           className="absolute -bottom-40 -right-40 w-96 h-96 rounded-full bg-kiwi-300/20"
           animate={{ scale: [1.2, 1, 1.2], rotate: [360, 180, 0] }}
           transition={{ duration: 25, repeat: Infinity, ease: 'linear' }}
@@ -50,12 +50,15 @@ export default function DriverRegisterPage() {
       </div>
 
       {/* Header */}
-      <motion.header 
+      <motion.header
         className="relative z-10 p-4"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <Link href="/" className="inline-flex items-center gap-2 text-surface-600 hover:text-surface-800">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 text-surface-600 hover:text-surface-800"
+        >
           <span>←</span>
           <span className="text-sm font-medium">Volver</span>
         </Link>
@@ -63,8 +66,8 @@ export default function DriverRegisterPage() {
 
       {/* Main Content */}
       <main className="relative z-10 flex-1 flex items-center justify-center p-4">
-        <AuthForm 
-          type="register" 
+        <AuthForm
+          type="register"
           role="driver"
           onSubmit={handleSubmit}
           onToggle={() => router.push('/login')}
@@ -74,7 +77,7 @@ export default function DriverRegisterPage() {
       </main>
 
       {/* Footer */}
-      <motion.footer 
+      <motion.footer
         className="relative z-10 p-4 text-center"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -82,9 +85,13 @@ export default function DriverRegisterPage() {
       >
         <p className="text-xs text-surface-400">
           Al registrarte, aceptas nuestros{' '}
-          <a href="#" className="text-kiwi-600 hover:underline">Términos</a>
-          {' '}y{' '}
-          <a href="#" className="text-kiwi-600 hover:underline">Privacidad</a>
+          <a href="#" className="text-kiwi-600 hover:underline">
+            Términos
+          </a>{' '}
+          y{' '}
+          <a href="#" className="text-kiwi-600 hover:underline">
+            Privacidad
+          </a>
         </p>
       </motion.footer>
     </div>

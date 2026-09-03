@@ -97,16 +97,16 @@ export default function DriverAnalyticsPage() {
 
   // Calculate max for chart scaling
   const maxDailyEarnings = analytics?.earnings?.daily
-    ? Math.max(...analytics.earnings.daily.map(d => d.value), 1)
+    ? Math.max(...analytics.earnings.daily.map((d) => d.value), 1)
     : 1;
 
   const maxDailyDeliveries = analytics?.deliveries?.daily
-    ? Math.max(...analytics.deliveries.daily.map(d => d.value), 1)
+    ? Math.max(...analytics.deliveries.daily.map((d) => d.value), 1)
     : 1;
 
   if (loading && !analytics) {
     return (
-      <main className="min-h-screen bg-bg-light dark:bg-surface-950">
+      <main className="min-h-[100dvh] bg-bg-light dark:bg-surface-950">
         <div className="sticky top-0 z-40 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl">
           <div className="mx-auto max-w-lg px-4 py-4">
             <Skeleton className="h-6 w-32" />
@@ -123,13 +123,13 @@ export default function DriverAnalyticsPage() {
 
   if (error && !analytics) {
     return (
-      <main className="min-h-screen bg-bg-light dark:bg-surface-950 flex items-center justify-center">
-        <motion.div 
+      <main className="min-h-[100dvh] bg-bg-light dark:bg-surface-950 flex items-center justify-center">
+        <motion.div
           className="text-center"
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
         >
-          <motion.div 
+          <motion.div
             className="text-6xl mb-4"
             animate={{ y: [0, -10, 0] }}
             transition={{ duration: 2, repeat: Infinity }}
@@ -154,20 +154,25 @@ export default function DriverAnalyticsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-bg-light dark:bg-surface-950 pb-24">
+    <main className="min-h-[100dvh] bg-bg-light dark:bg-surface-950 pb-24">
       {/* Header */}
-      <motion.header 
+      <motion.header
         className="sticky top-0 z-40 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
       >
         <div className="mx-auto max-w-lg px-4 py-4">
           <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2 text-surface-600 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200">
+            <Link
+              href="/"
+              className="flex items-center gap-2 text-surface-600 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200"
+            >
               <span>←</span>
               <span className="text-sm font-medium">Volver</span>
             </Link>
-            <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">📊 Mis Analytics</h1>
+            <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
+              📊 Mis Analytics
+            </h1>
             <div className="w-16" />
           </div>
         </div>
@@ -175,7 +180,7 @@ export default function DriverAnalyticsPage() {
 
       <div className="mx-auto max-w-lg px-4 py-6">
         {/* Period Selector */}
-        <motion.div 
+        <motion.div
           className="mb-6 flex gap-2 rounded-xl bg-surface-100 dark:bg-surface-800 p-1"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -200,14 +205,17 @@ export default function DriverAnalyticsPage() {
         {/* Overview Stats */}
         <StaggerContainer className="grid grid-cols-2 gap-3 mb-6">
           <StaggerItem>
-            <motion.div 
+            <motion.div
               className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
               whileHover={{ y: -2 }}
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-2xl">📦</span>
-                <span className={`text-xs font-medium ${getGrowthColor(analytics?.trend?.deliveriesGrowth || 0)}`}>
-                  {getGrowthIcon(analytics?.trend?.deliveriesGrowth || 0)} {Math.abs(analytics?.trend?.deliveriesGrowth || 0)}%
+                <span
+                  className={`text-xs font-medium ${getGrowthColor(analytics?.trend?.deliveriesGrowth || 0)}`}
+                >
+                  {getGrowthIcon(analytics?.trend?.deliveriesGrowth || 0)}{' '}
+                  {Math.abs(analytics?.trend?.deliveriesGrowth || 0)}%
                 </span>
               </div>
               <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
@@ -218,14 +226,17 @@ export default function DriverAnalyticsPage() {
           </StaggerItem>
 
           <StaggerItem>
-            <motion.div 
+            <motion.div
               className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
               whileHover={{ y: -2 }}
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-2xl">💰</span>
-                <span className={`text-xs font-medium ${getGrowthColor(analytics?.trend?.earningsGrowth || 0)}`}>
-                  {getGrowthIcon(analytics?.trend?.earningsGrowth || 0)} {Math.abs(analytics?.trend?.earningsGrowth || 0)}%
+                <span
+                  className={`text-xs font-medium ${getGrowthColor(analytics?.trend?.earningsGrowth || 0)}`}
+                >
+                  {getGrowthIcon(analytics?.trend?.earningsGrowth || 0)}{' '}
+                  {Math.abs(analytics?.trend?.earningsGrowth || 0)}%
                 </span>
               </div>
               <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
@@ -236,13 +247,15 @@ export default function DriverAnalyticsPage() {
           </StaggerItem>
 
           <StaggerItem>
-            <motion.div 
+            <motion.div
               className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
               whileHover={{ y: -2 }}
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-2xl">📊</span>
-                <span className="text-xs font-medium text-surface-500 dark:text-surface-400">Promedio</span>
+                <span className="text-xs font-medium text-surface-500 dark:text-surface-400">
+                  Promedio
+                </span>
               </div>
               <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
                 {formatCurrency(analytics?.overview?.averageEarningPerDelivery || 0)}
@@ -252,14 +265,17 @@ export default function DriverAnalyticsPage() {
           </StaggerItem>
 
           <StaggerItem>
-            <motion.div 
+            <motion.div
               className="rounded-2xl bg-kiwi-50 dark:bg-kiwi-900/30 p-4 shadow-soft dark:shadow-dark border border-kiwi-200 dark:border-kiwi-800"
               whileHover={{ y: -2 }}
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-2xl">⭐</span>
-                <span className={`text-xs font-medium ${getGrowthColor(analytics?.trend?.ratingGrowth || 0)}`}>
-                  {getGrowthIcon(analytics?.trend?.ratingGrowth || 0)} {Math.abs(analytics?.trend?.ratingGrowth || 0)}
+                <span
+                  className={`text-xs font-medium ${getGrowthColor(analytics?.trend?.ratingGrowth || 0)}`}
+                >
+                  {getGrowthIcon(analytics?.trend?.ratingGrowth || 0)}{' '}
+                  {Math.abs(analytics?.trend?.ratingGrowth || 0)}
                 </span>
               </div>
               <p className="text-2xl font-bold text-kiwi-700 dark:text-kiwi-300">
@@ -360,11 +376,15 @@ export default function DriverAnalyticsPage() {
           </h3>
           <div className="space-y-3">
             {(analytics?.earnings?.breakdown || []).map((item) => {
-              const percentage = analytics?.earnings?.total ? (item.amount / analytics.earnings.total) * 100 : 0;
+              const percentage = analytics?.earnings?.total
+                ? (item.amount / analytics.earnings.total) * 100
+                : 0;
               return (
                 <div key={item.type}>
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm text-surface-600 dark:text-surface-400">{item.type}</span>
+                    <span className="text-sm text-surface-600 dark:text-surface-400">
+                      {item.type}
+                    </span>
                     <span className="text-sm font-medium text-surface-800 dark:text-surface-200">
                       {formatCurrency(item.amount)}
                     </span>
@@ -445,7 +465,7 @@ export default function DriverAnalyticsPage() {
               {(analytics?.ratings?.distribution || []).map((rating) => {
                 const total = analytics?.ratings?.total || 1;
                 const percentage = (rating.count / total) * 100;
-                
+
                 return (
                   <div key={rating.stars} className="flex items-center gap-2">
                     <span className="text-xs text-surface-500 dark:text-surface-400 w-8">
@@ -476,9 +496,7 @@ export default function DriverAnalyticsPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.7 }}
         >
-          <h3 className="text-lg font-display font-semibold mb-4">
-            💡 Consejos para Ganar Más
-          </h3>
+          <h3 className="text-lg font-display font-semibold mb-4">💡 Consejos para Ganar Más</h3>
           <div className="space-y-3">
             <div className="bg-white/20 rounded-xl p-3">
               <p className="font-medium">🌅 Trabaja en horas pico</p>
@@ -486,11 +504,15 @@ export default function DriverAnalyticsPage() {
             </div>
             <div className="bg-white/20 rounded-xl p-3">
               <p className="font-medium">⭐ Mantén alta calificación</p>
-              <p className="text-sm text-white/80">Los repartidores top reciben más pedidos premium</p>
+              <p className="text-sm text-white/80">
+                Los repartidores top reciben más pedidos premium
+              </p>
             </div>
             <div className="bg-white/20 rounded-xl p-3">
               <p className="font-medium">🎯 Sé consistente</p>
-              <p className="text-sm text-white/80">Trabaja al menos 5 días a la semana para bonos</p>
+              <p className="text-sm text-white/80">
+                Trabaja al menos 5 días a la semana para bonos
+              </p>
             </div>
           </div>
         </motion.div>
@@ -499,23 +521,38 @@ export default function DriverAnalyticsPage() {
       {/* Bottom Navigation */}
       <nav className="sticky bottom-0 border-t border-surface-200/50 dark:border-surface-700/50 bg-white/80 dark:bg-surface-900/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-lg items-center justify-around py-2">
-          <Link href="/" className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300">
+          <Link
+            href="/"
+            className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
+          >
             <span className="text-xl">🏠</span>
             <span className="text-xs font-medium">Inicio</span>
           </Link>
-          <Link href="/active" className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300">
+          <Link
+            href="/active"
+            className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
+          >
             <span className="text-xl">📦</span>
             <span className="text-xs font-medium">Activos</span>
           </Link>
-          <Link href="/earnings" className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300">
+          <Link
+            href="/earnings"
+            className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
+          >
             <span className="text-xl">💰</span>
             <span className="text-xs font-medium">Ganancias</span>
           </Link>
-          <Link href="/analytics" className="flex flex-col items-center gap-1 px-4 py-2 text-kiwi-600 dark:text-kiwi-400">
+          <Link
+            href="/analytics"
+            className="flex flex-col items-center gap-1 px-4 py-2 text-kiwi-600 dark:text-kiwi-400"
+          >
             <span className="text-xl">📊</span>
             <span className="text-xs font-medium">Analytics</span>
           </Link>
-          <Link href="/profile" className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300">
+          <Link
+            href="/profile"
+            className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
+          >
             <span className="text-xl">👤</span>
             <span className="text-xs font-medium">Perfil</span>
           </Link>

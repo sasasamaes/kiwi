@@ -4,15 +4,15 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
-import { 
-  AnimatedButton, 
-  StaggerContainer, 
+import {
+  AnimatedButton,
+  StaggerContainer,
   StaggerItem,
   Skeleton,
   ThemeToggle,
   useAuth,
   api,
-  MenuItem
+  MenuItem,
 } from '@kiwi/ui';
 import { MenuItemForm } from '../../components/ui/MenuItemForm';
 
@@ -37,7 +37,7 @@ export default function MenuManagementPage() {
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [togglingAvailability, setTogglingAvailability] = useState<string | null>(null);
-  
+
   // New state for improvements
   const [selectedCategory, setSelectedCategory] = useState('Todos');
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
@@ -97,11 +97,9 @@ export default function MenuManagementPage() {
 
   const handleBulkDelete = async () => {
     if (selectedItems.size === 0) return;
-    
+
     try {
-      await Promise.all(
-        Array.from(selectedItems).map(id => api.deleteMenuItem(id))
-      );
+      await Promise.all(Array.from(selectedItems).map((id) => api.deleteMenuItem(id)));
       setSelectedItems(new Set());
       setShowBulkActions(false);
       await fetchMenuItems();
@@ -112,12 +110,10 @@ export default function MenuManagementPage() {
 
   const handleBulkToggleAvailability = async (available: boolean) => {
     if (selectedItems.size === 0) return;
-    
+
     try {
       await Promise.all(
-        Array.from(selectedItems).map(id => 
-          api.updateMenuItem(id, { isAvailable: available })
-        )
+        Array.from(selectedItems).map((id) => api.updateMenuItem(id, { isAvailable: available })),
       );
       setSelectedItems(new Set());
       setShowBulkActions(false);
@@ -165,7 +161,7 @@ export default function MenuManagementPage() {
     try {
       // Update local state immediately for smooth UX
       setMenuItems(reorderedItems);
-      
+
       // TODO: Implement backend reorder endpoint
       // await api.reorderMenuItems(reorderedItems.map(i => i.id));
     } catch (error) {
@@ -191,7 +187,7 @@ export default function MenuManagementPage() {
       setSelectedItems(new Set());
       setShowBulkActions(false);
     } else {
-      setSelectedItems(new Set(filteredItems.map(i => i.id)));
+      setSelectedItems(new Set(filteredItems.map((i) => i.id)));
       setShowBulkActions(true);
     }
   };
@@ -214,43 +210,45 @@ export default function MenuManagementPage() {
   };
 
   const removeCategory = (category: string) => {
-    setCustomCategories(customCategories.filter(c => c !== category));
+    setCustomCategories(customCategories.filter((c) => c !== category));
   };
 
   const getFilteredItems = () => {
     if (selectedCategory === 'Todos') {
       return menuItems;
     }
-    return menuItems.filter(item => item.category === selectedCategory);
+    return menuItems.filter((item) => item.category === selectedCategory);
   };
 
   const getAllCategories = () => {
-    const menuCategories = [...new Set(menuItems.map(item => item.category))];
-    return [...CATEGORIES, ...customCategories.filter(c => !menuCategories.includes(c))];
+    const menuCategories = [...new Set(menuItems.map((item) => item.category))];
+    return [...CATEGORIES, ...customCategories.filter((c) => !menuCategories.includes(c))];
   };
 
   const getItemStats = () => {
     const total = menuItems.length;
-    const available = menuItems.filter(i => i.isAvailable).length;
-    const popular = menuItems.filter(i => i.isPopular).length;
-    const avgPrice = total > 0 
-      ? Math.round(menuItems.reduce((sum, i) => sum + i.price, 0) / total)
-      : 0;
-    
+    const available = menuItems.filter((i) => i.isAvailable).length;
+    const popular = menuItems.filter((i) => i.isPopular).length;
+    const avgPrice =
+      total > 0 ? Math.round(menuItems.reduce((sum, i) => sum + i.price, 0) / total) : 0;
+
     return { total, available, popular, avgPrice };
   };
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-bg-light dark:bg-surface-950">
+      <div className="min-h-[100dvh] bg-bg-light dark:bg-surface-950">
         <div className="sticky top-0 z-50 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl">
           <div className="mx-auto max-w-4xl px-4 py-4">
             <Skeleton className="h-6 w-32" />
           </div>
         </div>
         <div className="mx-auto max-w-4xl px-4 py-8 space-y-4">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
+            >
               <div className="flex gap-4">
                 <Skeleton className="h-16 w-16 rounded-xl" />
                 <div className="flex-1">
@@ -270,9 +268,9 @@ export default function MenuManagementPage() {
   const filteredItems = getFilteredItems();
 
   return (
-    <div className="min-h-screen bg-bg-light dark:bg-surface-950">
+    <div className="min-h-[100dvh] bg-bg-light dark:bg-surface-950">
       {/* Header */}
-      <motion.header 
+      <motion.header
         className="sticky top-0 z-50 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
@@ -280,11 +278,16 @@ export default function MenuManagementPage() {
       >
         <div className="mx-auto max-w-4xl px-4 py-4">
           <div className="flex items-center justify-between">
-            <Link href="/dashboard" className="flex items-center gap-2 text-surface-600 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200">
+            <Link
+              href="/dashboard"
+              className="flex items-center gap-2 text-surface-600 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200"
+            >
               <motion.span whileHover={{ x: -4 }}>←</motion.span>
               <span className="text-sm font-medium">Dashboard</span>
             </Link>
-            <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">🍽️ Mi Menú</h1>
+            <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
+              🍽️ Mi Menú
+            </h1>
             <div className="flex items-center gap-2">
               <motion.button
                 className="p-2 rounded-xl bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400 hover:bg-surface-200 dark:hover:bg-surface-600 transition-colors"
@@ -361,7 +364,7 @@ export default function MenuManagementPage() {
                   ✕
                 </motion.button>
               </div>
-              
+
               <div className="flex gap-2 mb-4">
                 <input
                   type="text"
@@ -415,11 +418,7 @@ export default function MenuManagementPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
           >
-            <AnimatedButton
-              variant="gradient"
-              className="w-full"
-              onClick={() => setShowForm(true)}
-            >
+            <AnimatedButton variant="gradient" className="w-full" onClick={() => setShowForm(true)}>
               ➕ Agregar Nuevo Producto
             </AnimatedButton>
           </motion.div>
@@ -435,19 +434,23 @@ export default function MenuManagementPage() {
               exit={{ opacity: 0, height: 0 }}
             >
               <MenuItemForm
-                initialData={editingItem ? {
-                  name: editingItem.name,
-                  description: editingItem.description,
-                  price: editingItem.price,
-                  category: editingItem.category,
-                  image: editingItem.image,
-                  isPopular: editingItem.isPopular,
-                  isAvailable: editingItem.isAvailable,
-                } : undefined}
+                initialData={
+                  editingItem
+                    ? {
+                        name: editingItem.name,
+                        description: editingItem.description,
+                        price: editingItem.price,
+                        category: editingItem.category,
+                        image: editingItem.image,
+                        isPopular: editingItem.isPopular,
+                        isAvailable: editingItem.isAvailable,
+                      }
+                    : undefined
+                }
                 onSubmit={editingItem ? handleUpdate : handleCreate}
                 onCancel={closeForm}
                 isEditing={!!editingItem}
-                categories={getAllCategories().filter(c => c !== 'Todos')}
+                categories={getAllCategories().filter((c) => c !== 'Todos')}
               />
             </motion.div>
           )}
@@ -481,11 +484,7 @@ export default function MenuManagementPage() {
                   >
                     ❌ Agotado
                   </AnimatedButton>
-                  <AnimatedButton
-                    variant="danger"
-                    size="sm"
-                    onClick={handleBulkDelete}
-                  >
+                  <AnimatedButton variant="danger" size="sm" onClick={handleBulkDelete}>
                     🗑️ Eliminar
                   </AnimatedButton>
                   <AnimatedButton
@@ -546,7 +545,9 @@ export default function MenuManagementPage() {
                   onClick={selectAllItems}
                   whileTap={{ scale: 0.95 }}
                 >
-                  {selectedItems.size === filteredItems.length ? '☐ Deseleccionar' : '☑️ Seleccionar todo'}
+                  {selectedItems.size === filteredItems.length
+                    ? '☐ Deseleccionar'
+                    : '☑️ Seleccionar todo'}
                 </motion.button>
               )}
             </div>
@@ -587,17 +588,16 @@ export default function MenuManagementPage() {
                 🍽️
               </motion.div>
               <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-2">
-                {selectedCategory === 'Todos' ? 'Tu menú está vacío' : `No hay productos en ${selectedCategory}`}
+                {selectedCategory === 'Todos'
+                  ? 'Tu menú está vacío'
+                  : `No hay productos en ${selectedCategory}`}
               </h3>
               <p className="text-surface-500 dark:text-surface-400 mb-6">
-                {selectedCategory === 'Todos' 
+                {selectedCategory === 'Todos'
                   ? 'Agrega productos para que los clientes puedan ver tu menú'
                   : 'Agrega productos a esta categoría'}
               </p>
-              <AnimatedButton
-                variant="gradient"
-                onClick={() => setShowForm(true)}
-              >
+              <AnimatedButton variant="gradient" onClick={() => setShowForm(true)}>
                 ➕ Agregar Producto
               </AnimatedButton>
             </motion.div>
@@ -721,7 +721,11 @@ export default function MenuManagementPage() {
                               disabled={togglingAvailability === item.id}
                               whileTap={{ scale: 0.95 }}
                             >
-                              {togglingAvailability === item.id ? '⏳' : item.isAvailable ? '✅ Disponible' : '❌ Agotado'}
+                              {togglingAvailability === item.id
+                                ? '⏳'
+                                : item.isAvailable
+                                  ? '✅ Disponible'
+                                  : '❌ Agotado'}
                             </motion.button>
 
                             {/* Duplicate */}
@@ -818,11 +822,15 @@ export default function MenuManagementPage() {
                 <p className="text-xs text-surface-500 dark:text-surface-400">Populares</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-surface-600 dark:text-surface-400">{stats.available}</p>
+                <p className="text-2xl font-bold text-surface-600 dark:text-surface-400">
+                  {stats.available}
+                </p>
                 <p className="text-xs text-surface-500 dark:text-surface-400">Disponibles</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-blue-600">₡{stats.avgPrice.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-blue-600">
+                  ₡{stats.avgPrice.toLocaleString()}
+                </p>
                 <p className="text-xs text-surface-500 dark:text-surface-400">Precio Prom.</p>
               </div>
             </div>

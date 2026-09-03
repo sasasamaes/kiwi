@@ -84,20 +84,17 @@ export default function MerchantTrafficSettings() {
     }
   };
 
-  const updateSetting = <K extends keyof TrafficSettings>(
-    key: K,
-    value: TrafficSettings[K]
-  ) => {
-    setSettings(prev => ({ ...prev, [key]: value }));
+  const updateSetting = <K extends keyof TrafficSettings>(key: K, value: TrafficSettings[K]) => {
+    setSettings((prev) => ({ ...prev, [key]: value }));
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-surface-50 to-surface-100 dark:from-surface-900 dark:to-surface-800">
+      <div className="min-h-[100dvh] bg-gradient-to-br from-surface-50 to-surface-100 dark:from-surface-900 dark:to-surface-800">
         <div className="max-w-3xl mx-auto px-4 py-8">
           <div className="animate-pulse space-y-6">
             <div className="h-8 bg-surface-200 dark:bg-surface-700 rounded w-64" />
-            {[1, 2, 3, 4].map(i => (
+            {[1, 2, 3, 4].map((i) => (
               <div key={i} className="h-32 bg-surface-200 dark:bg-surface-700 rounded-2xl" />
             ))}
           </div>
@@ -107,7 +104,7 @@ export default function MerchantTrafficSettings() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-surface-50 to-surface-100 dark:from-surface-900 dark:to-surface-800">
+    <div className="min-h-[100dvh] bg-gradient-to-br from-surface-50 to-surface-100 dark:from-surface-900 dark:to-surface-800">
       {/* Header */}
       <div className="bg-white/80 dark:bg-surface-800/80 backdrop-blur-xl border-b border-surface-200 dark:border-surface-700 sticky top-0 z-40">
         <div className="max-w-3xl mx-auto px-4 py-4">
@@ -117,8 +114,18 @@ export default function MerchantTrafficSettings() {
                 href="/settings"
                 className="p-2 hover:bg-surface-100 dark:hover:bg-surface-700 rounded-xl transition-colors"
               >
-                <svg className="w-5 h-5 text-surface-600 dark:text-surface-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                <svg
+                  className="w-5 h-5 text-surface-600 dark:text-surface-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 19l-7-7 7-7"
+                  />
                 </svg>
               </Link>
               <div>
@@ -366,7 +373,9 @@ export default function MerchantTrafficSettings() {
                       max="2.0"
                       step="0.1"
                       value={settings.peakHoursMultiplier}
-                      onChange={(e) => updateSetting('peakHoursMultiplier', parseFloat(e.target.value))}
+                      onChange={(e) =>
+                        updateSetting('peakHoursMultiplier', parseFloat(e.target.value))
+                      }
                       className="w-full h-2 bg-surface-200 dark:bg-surface-700 rounded-lg appearance-none cursor-pointer accent-kiwi-500"
                     />
                     <div className="flex justify-between text-xs text-surface-500 dark:text-surface-400 mt-1">
@@ -389,7 +398,7 @@ export default function MerchantTrafficSettings() {
                           key={period.id}
                           onClick={() => {
                             const newPeakHours = settings.peakHours.includes(period.id)
-                              ? settings.peakHours.filter(h => h !== period.id)
+                              ? settings.peakHours.filter((h) => h !== period.id)
                               : [...settings.peakHours, period.id];
                             updateSetting('peakHours', newPeakHours);
                           }}
@@ -533,11 +542,36 @@ export default function MerchantTrafficSettings() {
               >
                 <div className="space-y-3">
                   {[
-                    { key: 'predictionAlerts', icon: '🔮', label: 'Alertas de predicción', desc: 'Niveles de tráfico actuales' },
-                    { key: 'bestTimeAlerts', icon: '💡', label: 'Mejores horas', desc: 'Momentos óptimos para entregas' },
-                    { key: 'peakHourWarnings', icon: '⚠️', label: 'Aviso de hora pico', desc: 'Cuando se acerca una hora pico' },
-                    { key: 'delayWarnings', icon: '⏱️', label: 'Avisos de retraso', desc: 'Cuando un pedido se retrasa' },
-                    { key: 'routeRecommendations', icon: '🗺️', label: 'Recomendaciones de ruta', desc: 'Mejores rutas disponibles' },
+                    {
+                      key: 'predictionAlerts',
+                      icon: '🔮',
+                      label: 'Alertas de predicción',
+                      desc: 'Niveles de tráfico actuales',
+                    },
+                    {
+                      key: 'bestTimeAlerts',
+                      icon: '💡',
+                      label: 'Mejores horas',
+                      desc: 'Momentos óptimos para entregas',
+                    },
+                    {
+                      key: 'peakHourWarnings',
+                      icon: '⚠️',
+                      label: 'Aviso de hora pico',
+                      desc: 'Cuando se acerca una hora pico',
+                    },
+                    {
+                      key: 'delayWarnings',
+                      icon: '⏱️',
+                      label: 'Avisos de retraso',
+                      desc: 'Cuando un pedido se retrasa',
+                    },
+                    {
+                      key: 'routeRecommendations',
+                      icon: '🗺️',
+                      label: 'Recomendaciones de ruta',
+                      desc: 'Mejores rutas disponibles',
+                    },
                   ].map((item) => (
                     <div
                       key={item.key}
@@ -555,9 +589,16 @@ export default function MerchantTrafficSettings() {
                         </div>
                       </div>
                       <button
-                        onClick={() => updateSetting(item.key as keyof TrafficSettings, !(settings as any)[item.key])}
+                        onClick={() =>
+                          updateSetting(
+                            item.key as keyof TrafficSettings,
+                            !(settings as any)[item.key],
+                          )
+                        }
                         className={`relative w-10 h-5 rounded-full transition-colors ${
-                          (settings as any)[item.key] ? 'bg-kiwi-500' : 'bg-surface-300 dark:bg-surface-600'
+                          (settings as any)[item.key]
+                            ? 'bg-kiwi-500'
+                            : 'bg-surface-300 dark:bg-surface-600'
                         }`}
                       >
                         <motion.div

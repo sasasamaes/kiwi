@@ -15,11 +15,7 @@ const menuItems = [
   { href: '/admin/settings', icon: '⚙️', label: 'Configuración' },
 ];
 
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
@@ -29,7 +25,7 @@ export default function AdminLayout({
   };
 
   return (
-    <div className="min-h-screen bg-bg-light dark:bg-surface-950 flex">
+    <div className="min-h-[100dvh] bg-bg-light dark:bg-surface-950 flex">
       {/* Sidebar */}
       <motion.aside
         className={`fixed left-0 top-0 h-full bg-white dark:bg-surface-900 border-r border-surface-200 dark:border-surface-700 z-50 ${
@@ -41,7 +37,7 @@ export default function AdminLayout({
         {/* Logo */}
         <div className="p-4 border-b border-surface-200 dark:border-surface-700">
           <Link href="/admin" className="flex items-center gap-3">
-            <motion.span 
+            <motion.span
               className="text-3xl"
               animate={{ rotate: [0, -10, 10, -10, 0] }}
               transition={{ duration: 0.5, delay: 0.5 }}
@@ -49,10 +45,7 @@ export default function AdminLayout({
               🥝
             </motion.span>
             {sidebarOpen && (
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-              >
+              <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
                 <h1 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100">
                   Kiwi Admin
                 </h1>
@@ -98,10 +91,7 @@ export default function AdminLayout({
           onClick={() => setSidebarOpen(!sidebarOpen)}
           className="absolute bottom-4 left-1/2 -translate-x-1/2 p-2 rounded-full bg-surface-100 dark:bg-surface-800 hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors"
         >
-          <motion.span
-            animate={{ rotate: sidebarOpen ? 0 : 180 }}
-            className="text-xl"
-          >
+          <motion.span animate={{ rotate: sidebarOpen ? 0 : 180 }} className="text-xl">
             ←
           </motion.span>
         </button>
@@ -114,7 +104,7 @@ export default function AdminLayout({
           <div className="flex items-center justify-between px-6 py-4">
             <div>
               <h2 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100">
-                {menuItems.find(item => isActive(item.href, item.exact))?.label || 'Admin'}
+                {menuItems.find((item) => isActive(item.href, item.exact))?.label || 'Admin'}
               </h2>
             </div>
             <div className="flex items-center gap-4">
@@ -124,7 +114,9 @@ export default function AdminLayout({
                   A
                 </div>
                 <div className="hidden sm:block">
-                  <p className="text-sm font-medium text-surface-800 dark:text-surface-100">Admin</p>
+                  <p className="text-sm font-medium text-surface-800 dark:text-surface-100">
+                    Admin
+                  </p>
                   <p className="text-xs text-surface-500 dark:text-surface-400">Super Admin</p>
                 </div>
               </div>
@@ -133,9 +125,7 @@ export default function AdminLayout({
         </header>
 
         {/* Page Content */}
-        <main className="p-6">
-          {children}
-        </main>
+        <main className="p-6">{children}</main>
       </div>
     </div>
   );

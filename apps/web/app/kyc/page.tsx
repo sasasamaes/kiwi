@@ -9,25 +9,26 @@ import { KYCVerification, KYCStatusBadge } from '@kiwi/ui';
 export default function MerchantKYCPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [kycStatus, setKycStatus] = useState<'pending' | 'documents_submitted' | 'under_review' | 'approved' | 'rejected'>('pending');
+  const [kycStatus, setKycStatus] = useState<
+    'pending' | 'documents_submitted' | 'under_review' | 'approved' | 'rejected'
+  >('pending');
 
   const handleSubmit = async (data: any) => {
     setLoading(true);
-    
+
     try {
       // Mock API call - replace with real backend
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
       console.log('KYC submitted:', data);
-      
+
       // Update status to submitted
       setKycStatus('documents_submitted');
-      
+
       // After a while, simulate review
       setTimeout(() => {
         setKycStatus('under_review');
       }, 3000);
-      
     } catch (error) {
       console.error('KYC error:', error);
     } finally {
@@ -36,16 +37,19 @@ export default function MerchantKYCPage() {
   };
 
   return (
-    <div className="min-h-screen bg-bg-light">
+    <div className="min-h-[100dvh] bg-bg-light">
       {/* Header */}
-      <motion.header 
+      <motion.header
         className="sticky top-0 z-50 border-b border-surface-200/50 bg-white/70 backdrop-blur-xl"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
       >
         <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
-            <Link href="/dashboard" className="flex items-center gap-2 text-surface-600 hover:text-surface-800">
+            <Link
+              href="/dashboard"
+              className="flex items-center gap-2 text-surface-600 hover:text-surface-800"
+            >
               <span>←</span>
               <span className="text-sm font-medium">Dashboard</span>
             </Link>
@@ -57,7 +61,7 @@ export default function MerchantKYCPage() {
 
       <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Info Banner */}
-        <motion.div 
+        <motion.div
           className="mb-8 rounded-2xl bg-gradient-to-r from-kiwi-500 to-kiwi-600 p-6 text-white"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -67,21 +71,23 @@ export default function MerchantKYCPage() {
             <div>
               <h2 className="text-xl font-display font-bold mb-2">Verifica tu Negocio</h2>
               <p className="text-white/80 text-sm">
-                Para usar Kiwi como comerciante, necesitamos verificar tu identidad y la existencia de tu negocio. 
-                Esto genera confianza entre los repartidores y clientes.
+                Para usar Kiwi como comerciante, necesitamos verificar tu identidad y la existencia
+                de tu negocio. Esto genera confianza entre los repartidores y clientes.
               </p>
             </div>
           </div>
         </motion.div>
 
         {/* Requirements */}
-        <motion.div 
+        <motion.div
           className="mb-8 rounded-2xl bg-white p-6 shadow-soft"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <h3 className="font-display font-semibold text-surface-800 mb-4">📋 Documentos Requeridos</h3>
+          <h3 className="font-display font-semibold text-surface-800 mb-4">
+            📋 Documentos Requeridos
+          </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex items-start gap-3 p-4 rounded-xl bg-surface-50">
               <span className="text-2xl">🪪</span>
@@ -115,12 +121,12 @@ export default function MerchantKYCPage() {
         </motion.div>
 
         {/* KYC Form */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <KYCVerification 
+          <KYCVerification
             role="merchant"
             kycData={kycStatus === 'pending' ? undefined : { status: kycStatus }}
             onSubmit={handleSubmit}
@@ -129,17 +135,23 @@ export default function MerchantKYCPage() {
         </motion.div>
 
         {/* Help Section */}
-        <motion.div 
+        <motion.div
           className="mt-8 rounded-2xl bg-white p-6 shadow-soft"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
-          <h3 className="font-display font-semibold text-surface-800 mb-4">❓ Preguntas Frecuentes</h3>
+          <h3 className="font-display font-semibold text-surface-800 mb-4">
+            ❓ Preguntas Frecuentes
+          </h3>
           <div className="space-y-4">
             <div>
-              <p className="font-medium text-surface-700">¿Por qué necesito verificar mi identidad?</p>
-              <p className="text-sm text-surface-500">Para garantizar la seguridad de todos los usuarios de la plataforma.</p>
+              <p className="font-medium text-surface-700">
+                ¿Por qué necesito verificar mi identidad?
+              </p>
+              <p className="text-sm text-surface-500">
+                Para garantizar la seguridad de todos los usuarios de la plataforma.
+              </p>
             </div>
             <div>
               <p className="font-medium text-surface-700">¿Cuánto tiempo toma la verificación?</p>
@@ -147,13 +159,15 @@ export default function MerchantKYCPage() {
             </div>
             <div>
               <p className="font-medium text-surface-700">¿Mis datos están seguros?</p>
-              <p className="text-sm text-surface-500">Sí, utilizamos encriptación de grado bancario para proteger tu información.</p>
+              <p className="text-sm text-surface-500">
+                Sí, utilizamos encriptación de grado bancario para proteger tu información.
+              </p>
             </div>
           </div>
         </motion.div>
 
         {/* Contact Support */}
-        <motion.div 
+        <motion.div
           className="mt-6 text-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
