@@ -193,10 +193,10 @@ export default function UsersPage() {
                           👁️
                         </button>
                         <button className="p-2 text-surface-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors">
-                          ✏️
+                          Pencil
                         </button>
                         <button className="p-2 text-surface-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors">
-                          🗑️
+                          Trash2
                         </button>
                       </div>
                     </td>
@@ -280,7 +280,7 @@ export default function UsersPage() {
                     <div className="flex justify-between items-center">
                       <span className="text-surface-600 dark:text-surface-400">Rating</span>
                       <span className="font-semibold text-kiwi-600 dark:text-kiwi-400">
-                        ⭐ {selectedUser.rating}
+                        Star {selectedUser.rating}
                       </span>
                     </div>
                     <div className="flex justify-between items-center mt-2">
@@ -294,15 +294,15 @@ export default function UsersPage() {
 
                 <div className="flex gap-3 pt-4">
                   <button className="flex-1 py-2 px-4 text-sm font-medium bg-surface-100 dark:bg-surface-700 text-surface-700 dark:text-surface-300 rounded-lg hover:bg-surface-200 dark:hover:bg-surface-600 transition-colors">
-                    ✏️ Editar
+                    Pencil Editar
                   </button>
                   {selectedUser.kycStatus === 'pending' && (
                     <button className="flex-1 py-2 px-4 text-sm font-medium bg-kiwi-500 text-white rounded-lg hover:bg-kiwi-600 transition-colors">
-                      ✅ Aprobar KYC
+                      Check Aprobar KYC
                     </button>
                   )}
                   <button className="py-2 px-4 text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors">
-                    🗑️
+                    Trash2
                   </button>
                 </div>
               </div>

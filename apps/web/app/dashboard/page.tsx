@@ -48,7 +48,7 @@ export default function Dashboard() {
   const { isConnected, onOrderAccepted, onOrderStatusChanged } = useSocket({
     onConnect: () => console.log('🟢 Connected to real-time updates'),
     onOrderAccepted: (data) => {
-      console.log('📦 Order accepted:', data);
+      console.log('Package Order accepted:', data);
       setNotifications((prev) => [
         ...prev,
         { type: 'success', message: data.message, time: new Date() },
@@ -57,7 +57,7 @@ export default function Dashboard() {
       fetchOrders();
     },
     onOrderStatusChanged: (data) => {
-      console.log('🔄 Order status changed:', data);
+      console.log('RefreshCw Order status changed:', data);
       setNotifications((prev) => [
         ...prev,
         { type: 'info', message: data.message, time: new Date() },
@@ -112,7 +112,7 @@ export default function Dashboard() {
           transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
           className="text-4xl"
         >
-          ⏳
+          Clock
         </motion.div>
       </div>
     );
@@ -145,7 +145,7 @@ export default function Dashboard() {
                 animate={{ rotate: [0, -10, 10, -10, 0] }}
                 transition={{ duration: 0.5, delay: 0.5 }}
               >
-                🥝
+                
               </motion.span>
               <h1 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100">
                 Kiwi
@@ -170,7 +170,7 @@ export default function Dashboard() {
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                 >
-                  <span className="text-xl">🔔</span>
+                  <span className="text-xl">Bell</span>
                   {unreadCount > 0 && (
                     <motion.span
                       className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-kiwi-500 text-white text-xs font-bold flex items-center justify-center"
@@ -225,7 +225,7 @@ export default function Dashboard() {
               value={String(todayOrders.length)}
               change={`${orders.length} total`}
               changeType="neutral"
-              icon={<span className="text-2xl">📦</span>}
+              icon={<span className="text-2xl">Package</span>}
               color="kiwi"
             />
           </StaggerItem>
@@ -235,7 +235,7 @@ export default function Dashboard() {
               value={`₡${totalRevenue.toLocaleString()}`}
               change={`${deliveredOrders.length} entregados`}
               changeType="positive"
-              icon={<span className="text-2xl">💰</span>}
+              icon={<span className="text-2xl">Coins</span>}
               color="gold"
             />
           </StaggerItem>
@@ -245,7 +245,7 @@ export default function Dashboard() {
               value={String(pendingOrders.length)}
               change={pendingOrders.length > 0 ? 'Esperando repartidor' : 'Todo al día'}
               changeType={pendingOrders.length > 0 ? 'negative' : 'positive'}
-              icon={<span className="text-2xl">⏳</span>}
+              icon={<span className="text-2xl">Clock</span>}
               color="blue"
             />
           </StaggerItem>
@@ -255,7 +255,7 @@ export default function Dashboard() {
               value={`${orders.length > 0 ? Math.round((deliveredOrders.length / orders.length) * 100) : 100}%`}
               change="de pedidos"
               changeType="positive"
-              icon={<span className="text-2xl">✅</span>}
+              icon={<span className="text-2xl">Check</span>}
               color="bark"
             />
           </StaggerItem>
@@ -304,7 +304,7 @@ export default function Dashboard() {
                     whileHover={{ rotate: -90 }}
                     transition={{ type: 'spring', stiffness: 260, damping: 20 }}
                   >
-                    <span className="text-2xl">🍽️</span>
+                    <span className="text-2xl">Utensils</span>
                   </motion.div>
                   <div>
                     <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">
@@ -333,7 +333,7 @@ export default function Dashboard() {
                     whileHover={{ scale: 1.1 }}
                     transition={{ type: 'spring', stiffness: 260, damping: 20 }}
                   >
-                    <span className="text-2xl">🛵</span>
+                    <span className="text-2xl">Bike</span>
                   </motion.div>
                   <div>
                     <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">
@@ -359,7 +359,7 @@ export default function Dashboard() {
                     whileHover={{ scale: 1.1 }}
                     transition={{ type: 'spring', stiffness: 260, damping: 20 }}
                   >
-                    <span className="text-2xl">📅</span>
+                    <span className="text-2xl">Calendar</span>
                   </motion.div>
                   <div>
                     <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">
@@ -385,7 +385,7 @@ export default function Dashboard() {
                     whileHover={{ scale: 1.1 }}
                     transition={{ type: 'spring', stiffness: 260, damping: 20 }}
                   >
-                    <span className="text-2xl">📊</span>
+                    <span className="text-2xl">BarChart3</span>
                   </motion.div>
                   <div>
                     <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">
@@ -431,7 +431,7 @@ export default function Dashboard() {
                   animate={{ y: [0, -10, 0] }}
                   transition={{ duration: 2, repeat: Infinity }}
                 >
-                  📦
+                  Package
                 </motion.div>
                 <p className="text-surface-500 dark:text-surface-400">Aún no hay pedidos</p>
                 <p className="text-xs text-surface-400 mt-1">Crea tu primer pedido para empezar</p>
@@ -482,7 +482,7 @@ export default function Dashboard() {
                             </p>
                             <div className="flex items-center gap-2">
                               <p className="text-sm text-surface-400">
-                                {order.driver ? '🛵 Asignado' : '⏳ Sin repartidor'}
+                                {order.driver ? 'Bike Asignado' : 'Clock Sin repartidor'}
                               </p>
                               {order.driver && (
                                 <VehicleBadge

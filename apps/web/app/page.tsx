@@ -46,7 +46,7 @@ export default function Home() {
                 animate={{ y: [-10, 10, -10] }}
                 transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
               >
-                🥝
+                
               </motion.div>
             </div>
           </motion.div>
@@ -92,7 +92,7 @@ export default function Home() {
             </Link>
             <Link href="/register">
               <AnimatedButton variant="glass" size="lg" className="min-w-[200px]">
-                📝 Crear Cuenta
+                FileText Crear Cuenta
               </AnimatedButton>
             </Link>
           </motion.div>
@@ -105,9 +105,9 @@ export default function Home() {
             transition={{ delay: 0.7 }}
           >
             {[
-              { icon: '✅', text: '100+ comercios' },
-              { icon: '⭐', text: '4.9 calificación' },
-              { icon: '🚗', text: '50+ repartidores' },
+              { icon: 'Check', text: '100+ comercios' },
+              { icon: 'Star', text: '4.9 calificación' },
+              { icon: 'Car', text: '50+ repartidores' },
             ].map((item, i) => (
               <motion.div
                 key={i}
@@ -149,7 +149,7 @@ export default function Home() {
                   whileHover={{ rotate: 10, scale: 1.1 }}
                   transition={{ type: 'spring', stiffness: 260, damping: 20 }}
                 >
-                  <span className="text-3xl">📅</span>
+                  <span className="text-3xl">Calendar</span>
                 </motion.div>
                 <h3 className="mb-2 text-lg font-display font-semibold text-surface-800">
                   Pedidos Programados
@@ -171,7 +171,7 @@ export default function Home() {
                   whileHover={{ rotate: -10, scale: 1.1 }}
                   transition={{ type: 'spring', stiffness: 260, damping: 20 }}
                 >
-                  <span className="text-3xl">⭐</span>
+                  <span className="text-3xl">Star</span>
                 </motion.div>
                 <h3 className="mb-2 text-lg font-display font-semibold text-surface-800">
                   Calidad, No Precio
@@ -309,7 +309,7 @@ export default function Home() {
                 animate={{ y: [-5, 5, -5] }}
                 transition={{ duration: 2, repeat: Infinity }}
               >
-                🥝
+                
               </motion.div>
               <h2 className="mb-4 text-3xl font-display font-bold text-white">
                 ¿Listo para empezar?
@@ -335,7 +335,7 @@ export default function Home() {
       <footer className="border-t border-surface-200 bg-white px-6 py-8 lg:px-8">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 md:flex-row">
           <motion.div className="flex items-center gap-2" whileHover={{ scale: 1.05 }}>
-            <span className="text-2xl">🥝</span>
+            <span className="text-2xl"></span>
             <span className="font-display font-bold text-surface-800">Kiwi</span>
           </motion.div>
           <p className="text-sm text-surface-400">

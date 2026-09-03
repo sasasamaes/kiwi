@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from './utils';
+import { Smartphone, CreditCard, DollarSign, AlertTriangle, Loader, Copy, Check, Lock, Info } from 'lucide-react';
 
 export type PaymentMethod = 'onvopay_sinpe' | 'onvopay_card' | 'crypto_usdc' | 'crypto_usdt' | 'cash';
 
@@ -32,35 +33,35 @@ const paymentOptions: PaymentOption[] = [
   {
     id: 'onvopay_sinpe',
     name: 'SINPE Móvil',
-    icon: '📱',
+    icon: 'sinpe',
     description: 'Transferencia instantánea',
     type: 'fiat',
   },
   {
     id: 'onvopay_card',
     name: 'Tarjeta',
-    icon: '💳',
+    icon: 'card',
     description: 'Crédito o débito',
     type: 'fiat',
   },
   {
     id: 'crypto_usdc',
     name: 'USDC',
-    icon: '💵',
+    icon: 'usdc',
     description: 'Stablecoin USD (Stellar)',
     type: 'crypto',
   },
   {
     id: 'crypto_usdt',
     name: 'USDT',
-    icon: '💲',
+    icon: 'usdt',
     description: 'Tether USD (Stellar)',
     type: 'crypto',
   },
   {
     id: 'cash',
     name: 'Efectivo',
-    icon: '💵',
+    icon: 'cash',
     description: 'Pagar al repartidor',
     type: 'cash',
   },
@@ -119,7 +120,12 @@ export function PaymentSelector({ selected, onSelect, amount, onCryptoQuote }: P
             whileTap={{ scale: 0.98 }}
           >
             <div className="flex items-center gap-4">
-              <span className="text-2xl">{option.icon}</span>
+              <span className="text-2xl">
+                {option.id === 'onvopay_sinpe' && <Smartphone className="h-6 w-6" />}
+                {option.id === 'onvopay_card' && <CreditCard className="h-6 w-6" />}
+                {(option.id === 'crypto_usdc' || option.id === 'crypto_usdt') && <DollarSign className="h-6 w-6" />}
+                {option.id === 'cash' && <DollarSign className="h-6 w-6" />}
+              </span>
               <div className="text-left">
                 <p className="font-medium text-surface-800 dark:text-surface-200">{option.name}</p>
                 <p className="text-sm text-surface-500 dark:text-surface-400">{option.description}</p>
@@ -156,7 +162,7 @@ export function PaymentSelector({ selected, onSelect, amount, onCryptoQuote }: P
           >
             <div className="rounded-xl bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 p-4">
               <h4 className="font-medium text-purple-800 dark:text-purple-200 mb-3">
-                💳 Pago con Cripto
+                Pago con Cripto
               </h4>
               
               {loadingQuote ? (
@@ -164,9 +170,8 @@ export function PaymentSelector({ selected, onSelect, amount, onCryptoQuote }: P
                   <motion.div
                     animate={{ rotate: 360 }}
                     transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                    className="text-2xl"
                   >
-                    ⏳
+                    <Loader className="h-6 w-6 text-surface-400" />
                   </motion.div>
                 </div>
               ) : cryptoQuote ? (
@@ -192,7 +197,7 @@ export function PaymentSelector({ selected, onSelect, amount, onCryptoQuote }: P
                     </span>
                   </div>
                   <p className="text-xs text-purple-600 dark:text-purple-400">
-                    📌 Envía exactamente este monto a la dirección que se mostrará después
+                    Envia exactamente este monto a la direccion que se mostrara despues
                   </p>
                 </div>
               ) : null}
@@ -226,8 +231,8 @@ export function PaymentSelector({ selected, onSelect, amount, onCryptoQuote }: P
                     <div className="bg-white dark:bg-surface-800 rounded-lg p-3">
                       <p className="text-xs text-surface-500 dark:text-surface-400 mb-1">Importante</p>
                       <p className="text-xs text-amber-600 dark:text-amber-400">
-                        ⚠️ Solo envía {selected === 'crypto_usdc' ? 'USDC' : 'USDT'} por la red Stellar. 
-                        Enviar otros tokens puede resultar en pérdida permanente.
+                        Solo envia {selected === 'crypto_usdc' ? 'USDC' : 'USDT'} por la red Stellar.
+                        Enviar otros tokens puede resultar en perdida permanente.
                       </p>
                     </div>
                   </motion.div>
@@ -266,7 +271,7 @@ export function CryptoQR({ address, amount, coin }: CryptoQRProps) {
       {/* QR Code Placeholder */}
       <div className="mx-auto w-48 h-48 bg-surface-100 dark:bg-surface-700 rounded-xl flex items-center justify-center mb-4">
         <div className="text-center">
-          <span className="text-6xl">📱</span>
+          <Smartphone className="h-16 w-16 text-surface-400" />
           <p className="text-xs text-surface-400 mt-2">QR Code</p>
         </div>
       </div>
@@ -296,14 +301,14 @@ export function CryptoQR({ address, amount, coin }: CryptoQRProps) {
             onClick={copyAddress}
             whileTap={{ scale: 0.95 }}
           >
-            {copied ? '✓' : '📋'}
+            {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
           </motion.button>
         </div>
       </div>
 
       <div className="text-xs text-surface-400 space-y-1">
-        <p>🔒 La confirmación tarda ~1 minuto</p>
-        <p>⚠️ Envía solo {coin} por la red Stellar</p>
+        <p className="flex items-center gap-1"><Lock className="h-3 w-3" /> La confirmacion tarda ~1 minuto</p>
+        <p className="flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> Envia solo {coin} por la red Stellar</p>
       </div>
     </div>
   );

@@ -135,7 +135,7 @@ export function RouteOptimizer({
 
   const getStopIcon = (type: string, index: number) => {
     if (type === 'pickup') return '🏪';
-    return '🏠';
+    return 'home';
   };
 
   const getStopColor = (type: string) => {
@@ -147,7 +147,7 @@ export function RouteOptimizer({
     return (
       <div className={`rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark ${className}`}>
         <div className="text-center py-4">
-          <span className="text-3xl block mb-2">📦</span>
+          <span className="text-3xl block mb-2">Package</span>
           <p className="text-sm text-surface-500 dark:text-surface-400">
             No hay pedidos activos
           </p>
@@ -161,7 +161,7 @@ export function RouteOptimizer({
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-          🗺️ Ruta Optimizada
+          Map Ruta Optimizada
         </h3>
         <div className="flex items-center gap-2">
           <span className="px-2 py-1 rounded-full bg-kiwi-100 dark:bg-kiwi-900/50 text-xs font-medium text-kiwi-700 dark:text-kiwi-400">
@@ -177,7 +177,7 @@ export function RouteOptimizer({
               transition={{ duration: 1, repeat: loading ? Infinity : 0, ease: 'linear' }}
               className="block"
             >
-              🔄
+              RefreshCw
             </motion.span>
           </button>
         </div>
@@ -211,7 +211,7 @@ export function RouteOptimizer({
         <div className="flex items-center gap-3 pb-3">
           <div className="flex flex-col items-center">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500 text-white text-sm font-bold">
-              🛵
+              Bike
             </div>
             <div className="w-0.5 h-6 bg-surface-200 dark:bg-surface-700" />
           </div>
@@ -267,7 +267,7 @@ export function RouteOptimizer({
                     </span>
                     {route.legs[index] && (
                       <span className="text-xs text-surface-400 dark:text-surface-500">
-                        📍 {formatDistance(route.legs[index].distance)} • {formatDuration(route.legs[index].duration)}
+                        {formatDistance}{formatDistance(route.legs[index].distance)} • {formatDuration(route.legs[index].duration)}
                       </span>
                     )}
                   </div>

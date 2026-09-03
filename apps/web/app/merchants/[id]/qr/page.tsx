@@ -63,7 +63,7 @@ export default function MerchantQRPage() {
           transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
           className="text-4xl"
         >
-          ⏳
+          Clock
         </motion.div>
       </div>
     );
@@ -73,7 +73,7 @@ export default function MerchantQRPage() {
     return (
       <div className="min-h-[100dvh] bg-bg-light dark:bg-surface-950 flex items-center justify-center">
         <div className="text-center">
-          <span className="text-5xl mb-4 block">❌</span>
+          <span className="text-5xl mb-4 block">X</span>
           <p className="text-surface-500 dark:text-surface-400">Comercio no encontrado</p>
           <Link href="/dashboard" className="mt-4 inline-block text-kiwi-600 hover:text-kiwi-700">
             ← Volver al dashboard
@@ -123,7 +123,7 @@ export default function MerchantQRPage() {
               animate={{ rotate: [0, -5, 5, 0] }}
               transition={{ duration: 2, repeat: Infinity }}
             >
-              🥝
+              
             </motion.div>
             <h2 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100">
               {merchant.businessName}
@@ -150,37 +150,37 @@ export default function MerchantQRPage() {
           transition={{ delay: 0.2 }}
         >
           <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-            📋 ¿Cómo usar tu QR?
+            ClipboardList ¿Cómo usar tu QR?
           </h3>
           <div className="space-y-4">
             {[
               {
                 step: '1',
-                icon: '🖨️',
+                icon: 'Printer',
                 title: 'Imprime el QR',
                 desc: 'Descarga o imprime el código y ponlo en un lugar visible de tu negocio',
               },
               {
                 step: '2',
-                icon: '📱',
+                icon: 'Smartphone',
                 title: 'Cliente escanea',
                 desc: 'El cliente apunta su cámara al código QR con su teléfono',
               },
               {
                 step: '3',
-                icon: '📋',
+                icon: 'ClipboardList',
                 title: 'Ve el menú',
                 desc: 'Se abre tu menú digital con todos tus productos y precios',
               },
               {
                 step: '4',
-                icon: '🛒',
+                icon: 'ShoppingCart',
                 title: 'Cliente pide',
                 desc: 'El cliente selecciona sus productos y paga directamente desde el celular',
               },
               {
                 step: '5',
-                icon: '🛵',
+                icon: 'Bike',
                 title: 'Repartidor recoge',
                 desc: 'Recibes la comanda en tu sistema y un repartidor la lleva al cliente',
               },

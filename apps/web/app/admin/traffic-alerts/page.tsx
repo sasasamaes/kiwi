@@ -49,8 +49,8 @@ const ALERT_TYPES = [
   { id: 'accident', label: 'Accidente', icon: '🚑', color: '#ef4444' },
   { id: 'road_closed', label: 'Camino Cerrado', icon: '🚧', color: '#eab308' },
   { id: 'weather', label: 'Clima', icon: '🌧️', color: '#3b82f6' },
-  { id: 'event', label: 'Evento', icon: '🎉', color: '#8b5cf6' },
-  { id: 'alternative_route', label: 'Ruta Alternativa', icon: '🗺️', color: '#22c55e' },
+  { id: 'event', label: 'Evento', icon: 'PartyPopper', color: '#8b5cf6' },
+  { id: 'alternative_route', label: 'Ruta Alternativa', icon: 'Map', color: '#22c55e' },
 ];
 
 const SEVERITY_LEVELS = [
@@ -239,7 +239,7 @@ export default function AdminTrafficAlertsPage() {
               <span className="text-sm font-medium">Admin</span>
             </Link>
             <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-              🚨 Alertas de Tráfico
+              Alertas de Trafico
             </h1>
             <ThemeToggle />
           </div>
@@ -257,7 +257,7 @@ export default function AdminTrafficAlertsPage() {
             <div className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark">
               <div className="flex items-center gap-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-100 dark:bg-orange-900/30">
-                  <span className="text-2xl">🚨</span>
+                  <span className="text-2xl">AlertTriangle</span>
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
@@ -271,7 +271,7 @@ export default function AdminTrafficAlertsPage() {
             <div className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark">
               <div className="flex items-center gap-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-100 dark:bg-green-900/30">
-                  <span className="text-2xl">✅</span>
+                  <span className="text-2xl">Check</span>
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-green-600">{stats.active}</p>
@@ -323,7 +323,7 @@ export default function AdminTrafficAlertsPage() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="🔍 Buscar alertas..."
+              placeholder="Buscar alertas..."
               className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:border-kiwi-500 focus:ring-2 focus:ring-kiwi-500/20 transition-all"
             />
           </div>
@@ -376,7 +376,7 @@ export default function AdminTrafficAlertsPage() {
                 animate={{ y: [0, -10, 0] }}
                 transition={{ duration: 2, repeat: Infinity }}
               >
-                🚨
+                AlertTriangle
               </motion.div>
               <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-2">
                 No hay alertas
@@ -432,8 +432,8 @@ export default function AdminTrafficAlertsPage() {
                                 {alert.message}
                               </p>
                               <div className="flex items-center gap-4 text-xs text-surface-400 dark:text-surface-500">
-                                <span>📍 {alert.location.address}</span>
-                                <span>🔄 Radio: {alert.affectedArea.radius} km</span>
+                                <span>MapPin {alert.location.address}</span>
+                                <span>RefreshCw Radio: {alert.affectedArea.radius} km</span>
                                 <span>
                                   ⏰ Expira: {new Date(alert.expiresAt).toLocaleString('es-CR')}
                                 </span>
@@ -456,7 +456,7 @@ export default function AdminTrafficAlertsPage() {
                                 whileTap={{ scale: 0.95 }}
                                 title="Eliminar"
                               >
-                                🗑️
+                                Trash2
                               </motion.button>
                             </div>
                           </div>
@@ -465,7 +465,7 @@ export default function AdminTrafficAlertsPage() {
                           {alert.alternativeRoute && (
                             <div className="mt-3 p-2 rounded-lg bg-green-50 dark:bg-green-900/30">
                               <div className="flex items-center gap-2">
-                                <span>🗺️</span>
+                                <span>Map</span>
                                 <span className="text-xs font-medium text-green-700 dark:text-green-400">
                                   Ruta alternativa: {alert.alternativeRoute.description}
                                 </span>
@@ -512,7 +512,7 @@ export default function AdminTrafficAlertsPage() {
               <div className="sticky top-0 bg-white dark:bg-surface-800 p-6 border-b border-surface-100 dark:border-surface-700 rounded-t-3xl">
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100">
-                    🚨 Crear Alerta de Tráfico
+                    AlertTriangle Crear Alerta de Tráfico
                   </h2>
                   <motion.button
                     onClick={() => setShowCreateModal(false)}
@@ -683,7 +683,7 @@ export default function AdminTrafficAlertsPage() {
                 {/* Alternative Route */}
                 <div className="p-4 rounded-xl bg-surface-50 dark:bg-surface-900">
                   <h4 className="text-sm font-medium text-surface-600 dark:text-surface-400 mb-3">
-                    🗺️ Ruta Alternativa (Opcional)
+                    Map Ruta Alternativa (Opcional)
                   </h4>
                   <div className="space-y-3">
                     <input
@@ -734,7 +734,7 @@ export default function AdminTrafficAlertsPage() {
                     onClick={handleCreateAlert}
                     disabled={!formData.title || !formData.message}
                   >
-                    🚨 Crear Alerta
+                    AlertTriangle Crear Alerta
                   </AnimatedButton>
                 </div>
               </div>
@@ -804,13 +804,13 @@ export default function AdminTrafficAlertsPage() {
 
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-surface-500 dark:text-surface-400">📍 Ubicación</span>
+                    <span className="text-surface-500 dark:text-surface-400">MapPin Ubicación</span>
                     <span className="text-surface-800 dark:text-surface-200">
                       {selectedAlert.location.address}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-surface-500 dark:text-surface-400">🔄 Radio</span>
+                    <span className="text-surface-500 dark:text-surface-400">RefreshCw Radio</span>
                     <span className="text-surface-800 dark:text-surface-200">
                       {selectedAlert.affectedArea.radius} km
                     </span>
@@ -822,7 +822,7 @@ export default function AdminTrafficAlertsPage() {
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-surface-500 dark:text-surface-400">⏳ Expira</span>
+                    <span className="text-surface-500 dark:text-surface-400">Clock Expira</span>
                     <span className="text-surface-800 dark:text-surface-200">
                       {new Date(selectedAlert.expiresAt).toLocaleString('es-CR')}
                     </span>
@@ -832,7 +832,7 @@ export default function AdminTrafficAlertsPage() {
                 {selectedAlert.alternativeRoute && (
                   <div className="p-3 rounded-xl bg-green-50 dark:bg-green-900/30">
                     <p className="text-sm font-medium text-green-700 dark:text-green-400">
-                      🗺️ Ruta Alternativa
+                      Map Ruta Alternativa
                     </p>
                     <p className="text-sm text-green-600 dark:text-green-300">
                       {selectedAlert.alternativeRoute.description}
@@ -854,7 +854,7 @@ export default function AdminTrafficAlertsPage() {
                       setSelectedAlert(null);
                     }}
                   >
-                    🗑️ Eliminar
+                    Trash2 Eliminar
                   </AnimatedButton>
                   <AnimatedButton
                     variant="secondary"

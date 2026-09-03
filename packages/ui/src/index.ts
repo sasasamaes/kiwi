@@ -1,11 +1,16 @@
 /**
- * 🥝 KIWI UI COMPONENTS
- *
+ * Kiwi UI Components
  * Premium UI library with Silicon Valley level animations
  */
 
 // ============================================
-// 📦 CORE COMPONENTS
+// ICONS
+// ============================================
+export { Icon, iconMap } from './icons';
+export type { IconName } from './icons';
+
+// ============================================
+//   CORE COMPONENTS
 // ============================================
 export { Button } from './Button';
 export type { ButtonProps } from './Button';
@@ -25,7 +30,7 @@ export {
 export type { CardProps } from './Card';
 
 // ============================================
-// ✨ ANIMATED COMPONENTS
+//   ANIMATED COMPONENTS
 // ============================================
 export { AnimatedCard } from './AnimatedCard';
 export { AnimatedButton } from './AnimatedButton';
@@ -35,7 +40,7 @@ export { StaggerContainer, StaggerItem } from './StaggerContainer';
 export { Skeleton, OrderCardSkeleton, StatCardSkeleton } from './Skeleton';
 
 // ============================================
-// 🎬 ANIMATION VARIANTS
+//   ANIMATION VARIANTS
 // ============================================
 export {
   pageTransition,
@@ -65,42 +70,42 @@ export {
 } from './animations';
 
 // ============================================
-// 🎨 THEME
+//   THEME
 // ============================================
 export { kiwiPremiumTheme } from './theme-kiwi';
 
 // ============================================
-// 🔐 AUTH COMPONENTS
+//   AUTH COMPONENTS
 // ============================================
 export { AuthForm } from './AuthForm';
 export type { AuthFormProps, AuthFormData } from './AuthForm';
 
 // ============================================
-// 🪪 KYC COMPONENTS
+//   KYC COMPONENTS
 // ============================================
 export { KYCVerification, KYCStatusBadge } from './KYCVerification';
 export type { KYCData, KYCStatus } from './KYCVerification';
 
 // ============================================
-// 🌙 THEME COMPONENTS
+//   THEME COMPONENTS
 // ============================================
 export { ThemeProvider, ThemeToggle, useTheme } from './ThemeProvider';
 export type { Theme } from './ThemeProvider';
 
 // ============================================
-// 🚗 VEHICLE COMPONENTS
+//   VEHICLE COMPONENTS
 // ============================================
 export { VehicleSelector, VehicleBadge, vehicles } from './VehicleSelector';
 export type { Vehicle, VehicleType } from './VehicleSelector';
 
 // ============================================
-// 💳 PAYMENT COMPONENTS
+//   PAYMENT COMPONENTS
 // ============================================
 export { PaymentSelector, CryptoQR } from './PaymentSelector';
 export type { PaymentMethod } from './PaymentSelector';
 
 // ============================================
-// 📊 CHART COMPONENTS
+//   CHART COMPONENTS
 // ============================================
 export {
   LineChartComponent,
@@ -108,12 +113,11 @@ export {
   BarChartComponent,
   PieChartComponent,
   MultiLineChartComponent,
-  StatCard,
   PeriodSelector,
 } from './Charts';
 
 // ============================================
-// 🔌 API CLIENT
+//   API CLIENT
 // ============================================
 export { api } from './api-client';
 export type {
@@ -127,13 +131,13 @@ export type {
 } from './api-client';
 
 // ============================================
-// 📡 SOCKET.IO
+//   SOCKET.IO
 // ============================================
 export { socketClient } from './socket-client';
 export { useSocket } from './useSocket';
 
 // ============================================
-// 🔔 NOTIFICATIONS
+//   NOTIFICATIONS
 // ============================================
 export { NotificationToast, NotificationProvider, useNotifications } from './NotificationToast';
 export { NotificationPreferences } from './NotificationPreferences';
@@ -142,12 +146,12 @@ export { usePushNotifications } from './usePushNotifications';
 export { requestNotificationPermission, initializeFirebase } from './firebase';
 
 // ============================================
-// 🔐 AUTH CONTEXT
+//   AUTH CONTEXT
 // ============================================
 export { AuthProvider, useAuth } from './AuthContext';
 
 // ============================================
-// 🌍 i18n (Internationalization)
+//   i18n (Internationalization)
 // ============================================
 export {
   LanguageProvider,
@@ -159,7 +163,7 @@ export {
 export type { Locale, TranslationKeys } from './LanguageProvider';
 
 // ============================================
-// 🛠️ UTILS
+//  ️ UTILS
 // ============================================
 export {
   cn,
@@ -173,7 +177,7 @@ export {
 } from './utils';
 
 // ============================================
-// 📴 OFFLINE SUPPORT
+//   OFFLINE SUPPORT
 // ============================================
 export { offlineQueue, offlineFetch } from './offline-queue';
 export { OfflineIndicator, OfflineIndicatorCompact, OfflineBanner } from './OfflineIndicator';
@@ -197,7 +201,7 @@ export {
 export type { NetworkStatus, UseNetworkStatusOptions } from './useNetworkStatus';
 
 // ============================================
-// 🔄 BACKGROUND SYNC
+//   BACKGROUND SYNC
 // ============================================
 export { backgroundSync } from './background-sync';
 export type {
@@ -218,7 +222,7 @@ export type { UseBackgroundSyncOptions, UseBackgroundSyncResult } from './useBac
 export { SyncStatus, SyncIndicatorCompact, SyncBanner, SyncActionStatus } from './SyncStatus';
 
 // ============================================
-// 📦 OFFLINE ORDERS
+//   OFFLINE ORDERS
 // ============================================
 export { offlineOrders } from './offline-orders';
 export type {
@@ -242,7 +246,7 @@ export type {
 export { OfflineOrderForm, OfflineOrderTracker, OfflineOrderList } from './OfflineOrderForm';
 
 // ============================================
-// 🗜️ DATA COMPRESSION
+//  ️ DATA COMPRESSION
 // ============================================
 export { compression } from './compression';
 export type {
@@ -254,7 +258,7 @@ export type {
 export { StorageManager, StorageWarning, StorageIndicatorCompact } from './StorageManager';
 
 // ============================================
-// 🚀 CACHE WARMING
+//   CACHE WARMING
 // ============================================
 export { cacheWarming } from './cache-warming';
 export type {
@@ -269,7 +273,7 @@ export type { UseCacheWarmingOptions, UseCacheWarmingResult } from './useCacheWa
 export { StartupProgress, StartupProgressCompact, StartupSplash } from './StartupProgress';
 
 // ============================================
-// ⚠️ CONFLICT RESOLUTION
+//  ️ CONFLICT RESOLUTION
 // ============================================
 export { conflictResolution } from './conflict-resolution';
 export type {
@@ -289,7 +293,7 @@ export type {
 export { ConflictResolver, ConflictIndicator, ConflictBanner } from './ConflictResolver';
 
 // ============================================
-// 📊 SYNC PROGRESS
+//   SYNC PROGRESS
 // ============================================
 export { syncProgress } from './sync-progress';
 export type {
@@ -303,7 +307,7 @@ export type { UseSyncProgressOptions, UseSyncProgressResult } from './useSyncPro
 export { SyncProgressBar, SyncIndicator, SyncToast, SyncStatusPage } from './SyncProgressBar';
 
 // ============================================
-// 💳 OFFLINE PAYMENTS
+//   OFFLINE PAYMENTS
 // ============================================
 export { offlinePayments } from './offline-payments';
 export type {
@@ -323,31 +327,31 @@ export type {
 export { OfflinePaymentForm, PaymentReceipt } from './OfflinePaymentForm';
 
 // ============================================
-// 📱 QR CODE
+//   QR CODE
 // ============================================
 export { QRCodeGenerator, QRScanner } from './QRCodeGenerator';
 export type { QRCodeGeneratorProps, QRScannerProps } from './QRCodeGenerator';
 
 // ============================================
-// 🗺️ TRACKING MAP
+//  ️ TRACKING MAP
 // ============================================
 export { TrackingMap } from './TrackingMap';
 export type { TrackingMapProps } from './TrackingMap';
 
 // ============================================
-// 📍 ADDRESS INPUT
+//   ADDRESS INPUT
 // ============================================
 export { AddressInput } from './AddressInput';
 export type { AddressInputProps } from './AddressInput';
 
 // ============================================
-// 🗺️ ROUTE OPTIMIZER
+//  ️ ROUTE OPTIMIZER
 // ============================================
 export { RouteOptimizer } from './RouteOptimizer';
 export type { RouteOptimizerProps } from './RouteOptimizer';
 
 // ============================================
-// 💳 ONVOPAY CHECKOUT
+//   ONVOPAY CHECKOUT
 // ============================================
 export { OnvoPayCheckout, CryptoCheckout } from './OnvoPayCheckout';
 export type { OnvoPayCheckoutProps, CryptoCheckoutProps } from './OnvoPayCheckout';
@@ -363,7 +367,7 @@ export type {
 } from './TrafficIndicator';
 
 // ============================================
-// 🚨 TRAFFIC ALERTS
+//   TRAFFIC ALERTS
 // ============================================
 export {
   TrafficAlertBanner,
@@ -379,7 +383,7 @@ export type {
 } from './TrafficAlerts';
 
 // ============================================
-// 📊 TRAFFIC ANALYTICS
+//   TRAFFIC ANALYTICS
 // ============================================
 export { TrafficAnalytics, TrafficHeatmap } from './TrafficAnalytics';
 export type {
@@ -391,7 +395,7 @@ export type {
 } from './TrafficAnalytics';
 
 // ============================================
-// 🗺️ ROUTE SUGGESTIONS
+//  ️ ROUTE SUGGESTIONS
 // ============================================
 export {
   RouteSuggestionPanel,
@@ -407,7 +411,7 @@ export type {
 } from './RouteSuggestion';
 
 // ============================================
-// 🔮 TRAFFIC PREDICTIONS
+//   TRAFFIC PREDICTIONS
 // ============================================
 export { TrafficPredictions } from './TrafficPredictions';
 export type {
@@ -418,7 +422,7 @@ export type {
 } from './TrafficPredictions';
 
 // ============================================
-// 🗺️ OFFLINE NAVIGATION
+//  ️ OFFLINE NAVIGATION
 // ============================================
 export { offlineNavigation } from './offline-navigation';
 export type {
@@ -442,7 +446,7 @@ export type {
 export { OfflineNavigation, NavigationButton } from './OfflineNavigation';
 
 // ============================================
-// 💾 DATA EXPORT
+//   DATA EXPORT
 // ============================================
 export { dataExport } from './data-export';
 export type {
@@ -456,7 +460,7 @@ export { useDataExport } from './useDataExport';
 export { DataExport } from './DataExport';
 
 // ============================================
-// 🔔 PAYMENT NOTIFICATIONS
+//   PAYMENT NOTIFICATIONS
 // ============================================
 export { paymentNotifications } from './payment-notifications';
 export type {
@@ -481,7 +485,7 @@ export {
 } from './PaymentNotifications';
 
 // ============================================
-// 📊 ADMIN SYNC MONITORING
+//   ADMIN SYNC MONITORING
 // ============================================
 export { adminSyncMonitoring } from './admin-sync-monitor';
 export type {
@@ -495,7 +499,7 @@ export type {
 export { AdminSyncDashboard } from './AdminSyncDashboard';
 
 // ============================================
-// 📈 OFFLINE ANALYTICS
+//   OFFLINE ANALYTICS
 // ============================================
 export { offlineAnalytics } from './offline-analytics';
 export type {
@@ -507,22 +511,22 @@ export type {
 export { OfflineAnalyticsDashboard } from './OfflineAnalyticsDashboard';
 
 // ============================================
-// 📊 ANALYTICS TRACKING
+//   ANALYTICS TRACKING
 // ============================================
 export { analytics, events, trackPageView, trackPerformance, trackError } from './analytics';
 
 // ============================================
-// 🔍 ORDER SEARCH & FILTER
+// ORDER SEARCH & FILTER
 // ============================================
 export { OrderSearch } from './OrderSearch';
 
 // ============================================
-// 🔗 UNIFIED CACHE
+// UNIFIED CACHE
 // ============================================
 export { unifiedCache, useUnifiedCache } from './unified-cache';
 
 // ============================================
-// 🐛 SENTRY ERROR TRACKING
+// SENTRY ERROR TRACKING
 // ============================================
 export { SentryProvider } from './SentryProvider';
 export { initSentry, captureException, captureMessage, setSentryUser } from './sentry';

@@ -178,7 +178,7 @@ export function TrackingMap({
 
     // Add delivery marker
     if (delivery) {
-      const icon = createIcon('🏠', '#f59e0b');
+      const icon = createIcon('home', '#f59e0b');
       const marker = L.marker([delivery.lat, delivery.lng], { icon })
         .addTo(mapInstanceRef.current)
         .bindPopup('<b>Entrega</b><br>Dirección del cliente');
@@ -188,7 +188,7 @@ export function TrackingMap({
 
     // Add driver marker (animated)
     if (driverLocation) {
-      const icon = createIcon('🛵', '#3b82f6');
+      const icon = createIcon('bike', '#3b82f6');
       const marker = L.marker([driverLocation.lat, driverLocation.lng], { icon })
         .addTo(mapInstanceRef.current)
         .bindPopup('<b>Repartidor</b><br>En camino');
@@ -267,7 +267,7 @@ export function TrackingMap({
         style={{ height }}
       >
         <div className="text-center">
-          <span className="text-4xl block mb-2">🗺️</span>
+          <span className="text-4xl block mb-2">Map</span>
           <p className="text-sm text-surface-500 dark:text-surface-400">{error}</p>
         </div>
       </div>

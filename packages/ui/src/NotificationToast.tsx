@@ -68,14 +68,14 @@ function NotificationToast() {
 
   const getIcon = (type: string) => {
     switch (type) {
-      case 'new_order': return '📦';
-      case 'order_accepted': return '✅';
-      case 'order_status': return '📍';
-      case 'payment_received': return '💰';
-      case 'new_rating': return '⭐';
-      case 'withdrawal': return '💳';
+      case 'new_order': return 'package';
+      case 'order_accepted': return 'Check';
+      case 'order_status': return 'location';
+      case 'payment_received': return 'coins';
+      case 'new_rating': return 'star';
+      case 'withdrawal': return 'creditCard';
       case 'kyc': return '🪪';
-      default: return '🔔';
+      default: return 'bell';
     }
   };
 

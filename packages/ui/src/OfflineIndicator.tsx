@@ -84,7 +84,7 @@ export function OfflineIndicator({
               animate={{ opacity: [1, 0.5, 1] }}
               transition={{ duration: 2, repeat: Infinity }}
             >
-              📡
+              WifiOff
             </motion.span>
             <span className="text-sm">Sin conexión</span>
           </>
@@ -127,7 +127,7 @@ export function OfflineIndicator({
               {/* Header */}
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100">
-                  {isOffline ? '📡 Modo Offline' : '🟢 Estado de Conexión'}
+                  {isOffline ? 'WifiOff Modo Offline' : '🟢 Estado de Conexión'}
                 </h3>
                 <motion.button
                   className="text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
@@ -146,7 +146,7 @@ export function OfflineIndicator({
               }`}>
                 <div className="flex items-center gap-3">
                   <span className="text-3xl">
-                    {isOffline ? '📡' : '🟢'}
+                    {isOffline ? 'offline' : '🟢'}
                   </span>
                   <div>
                     <p className={`font-semibold ${
@@ -170,7 +170,7 @@ export function OfflineIndicator({
               {cacheStats && (
                 <div className="mb-6">
                   <h4 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-3">
-                    📦 Datos en Caché
+                    Package Datos en Caché
                   </h4>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="p-3 rounded-xl bg-surface-50 dark:bg-surface-900">
@@ -213,11 +213,11 @@ export function OfflineIndicator({
               {isOffline && (
                 <div className="mb-6">
                   <h4 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-3">
-                    🔄 Funcionalidades Disponibles
+                    RefreshCw Funcionalidades Disponibles
                   </h4>
                   <div className="space-y-2">
                     <div className="flex items-center gap-3 p-3 rounded-xl bg-surface-50 dark:bg-surface-900">
-                      <span className="text-lg">🗺️</span>
+                      <span className="text-lg">Map</span>
                       <div>
                         <p className="text-sm font-medium text-surface-800 dark:text-surface-200">
                           Predicciones de Tráfico
@@ -228,7 +228,7 @@ export function OfflineIndicator({
                       </div>
                     </div>
                     <div className="flex items-center gap-3 p-3 rounded-xl bg-surface-50 dark:bg-surface-900">
-                      <span className="text-lg">🚨</span>
+                      <span className="text-lg">AlertTriangle</span>
                       <div>
                         <p className="text-sm font-medium text-surface-800 dark:text-surface-200">
                           Alertas de Tráfico
@@ -239,7 +239,7 @@ export function OfflineIndicator({
                       </div>
                     </div>
                     <div className="flex items-center gap-3 p-3 rounded-xl bg-surface-50 dark:bg-surface-900">
-                      <span className="text-lg">📊</span>
+                      <span className="text-lg">BarChart3</span>
                       <div>
                         <p className="text-sm font-medium text-surface-800 dark:text-surface-200">
                           Análisis Histórico
@@ -268,7 +268,7 @@ export function OfflineIndicator({
                   onClick={handleClearCache}
                   whileTap={{ scale: 0.95 }}
                 >
-                  🗑️ Limpiar Todo el Caché
+                  Trash2 Limpiar Todo el Caché
                 </motion.button>
               </div>
 
@@ -319,7 +319,7 @@ export function OfflineIndicatorCompact({ className = '' }: { className?: string
         animate={{ opacity: [1, 0.5, 1] }}
         transition={{ duration: 2, repeat: Infinity }}
       >
-        📡
+        WifiOff
       </motion.span>
       <span>Offline</span>
     </motion.div>
@@ -367,7 +367,7 @@ export function OfflineBanner({ className = '' }: { className?: string }) {
             animate={{ opacity: [1, 0.5, 1] }}
             transition={{ duration: 2, repeat: Infinity }}
           >
-            📡
+            WifiOff
           </motion.span>
           <div>
             <p className="font-semibold">Sin conexión a internet</p>

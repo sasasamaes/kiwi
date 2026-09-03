@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useOfflinePayments, type CreatePaymentData } from './useOfflinePayments';
 import { useNetworkStatus } from './useNetworkStatus';
+import { DollarSign, Smartphone, CreditCard, Loader, WifiOff, Printer, Check } from 'lucide-react';
 
 interface OfflinePaymentFormProps {
   orderId: string;
@@ -92,7 +93,7 @@ export function OfflinePaymentForm({
             animate={{ scale: 1 }}
             transition={{ type: 'spring', stiffness: 500 }}
           >
-            ✅
+            <Check className="h-12 w-12 text-white" />
           </motion.div>
           <h2 className="text-xl font-display font-bold">Pago Completado</h2>
           <p className="text-sm opacity-90 mt-1">
@@ -104,7 +105,7 @@ export function OfflinePaymentForm({
         <div className="p-4">
           <div className="bg-surface-50 dark:bg-surface-900 rounded-xl p-4 font-mono text-sm">
             <div className="text-center mb-4">
-              <p className="font-bold text-lg">🥝 KIWI</p>
+              <p className="font-bold text-lg"> KIWI</p>
               <p className="text-xs text-surface-500">Tu app de delivery</p>
             </div>
 
@@ -162,7 +163,7 @@ export function OfflinePaymentForm({
               onClick={() => window.print()}
               className="w-full py-3 rounded-xl bg-surface-100 dark:bg-surface-700 text-surface-700 dark:text-surface-300 font-medium"
             >
-              🖨️ Imprimir Recibo
+              Imprimir Recibo
             </button>
             <button
               onClick={() => {
@@ -185,7 +186,7 @@ export function OfflinePaymentForm({
       <div className="p-4 border-b border-surface-100 dark:border-surface-700">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100">
-            💳 Procesar Pago
+            Procesar Pago
           </h2>
           {!isOnline && (
             <motion.div
@@ -193,7 +194,7 @@ export function OfflinePaymentForm({
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
             >
-              <span>📡</span>
+              <WifiOff className="h-3 w-3" />
               <span>Offline</span>
             </motion.div>
           )}
@@ -236,10 +237,10 @@ export function OfflinePaymentForm({
         </h3>
         <div className="space-y-2">
           {[
-            { id: 'cash', label: 'Efectivo', icon: '💵', desc: 'Pagar al repartidor' },
-            { id: 'sinpe', label: 'SINPE', icon: '📱', desc: 'Transferencia instantánea' },
-            { id: 'card', label: 'Tarjeta', icon: '💳', desc: 'Crédito/Débito' },
-            { id: 'crypto', label: 'Crypto', icon: '₿', desc: 'USDC/USDT' },
+            { id: 'cash', label: 'Efectivo', icon: 'cash', desc: 'Pagar al repartidor' },
+            { id: 'sinpe', label: 'SINPE', icon: 'sinpe', desc: 'Transferencia instantánea' },
+            { id: 'card', label: 'Tarjeta', icon: 'card', desc: 'Credito/Debito' },
+            { id: 'crypto', label: 'Crypto', icon: 'crypto', desc: 'USDC/USDT' },
           ].map((method) => (
             <motion.button
               key={method.id}
@@ -252,7 +253,12 @@ export function OfflinePaymentForm({
               whileTap={{ scale: 0.98 }}
             >
               <div className="flex items-center gap-3">
-                <span className="text-2xl">{method.icon}</span>
+                <span className="text-2xl">
+                  {method.id === 'cash' && <DollarSign className="h-6 w-6" />}
+                  {method.id === 'sinpe' && <Smartphone className="h-6 w-6" />}
+                  {method.id === 'card' && <CreditCard className="h-6 w-6" />}
+                  {method.id === 'crypto' && <DollarSign className="h-6 w-6" />}
+                </span>
                 <div>
                   <p className="font-medium text-surface-800 dark:text-surface-200">
                     {method.label}
@@ -285,18 +291,18 @@ export function OfflinePaymentForm({
                 animate={{ rotate: 360 }}
                 transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
               >
-                ⏳
+                <Loader className="h-4 w-4" />
               </motion.span>
               Procesando...
             </span>
           ) : (
-            `💳 Pagar ₡${total.toLocaleString()}`
+            `Pagar ₡${total.toLocaleString()}`
           )}
         </motion.button>
 
         {!isOnline && (
           <p className="text-xs text-center text-orange-500 mt-2">
-            📡 El pago se procesará localmente y se sincronizará cuando vuelva la conexión
+            El pago se procesara localmente y se sincronizara cuando vuelva la conexion
           </p>
         )}
       </div>
@@ -319,7 +325,7 @@ export function PaymentReceipt({
   return (
     <div className={`bg-white dark:bg-surface-800 rounded-2xl shadow-soft dark:shadow-dark overflow-hidden ${className}`}>
       <div className="p-4 bg-kiwi-500 text-white text-center">
-        <p className="font-bold text-lg">🥝 KIWI</p>
+        <p className="font-bold text-lg"> KIWI</p>
         <p className="text-xs opacity-90">Tu app de delivery</p>
       </div>
 

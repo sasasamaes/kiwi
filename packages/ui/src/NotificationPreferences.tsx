@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { Package, RefreshCw, Coins, Star, Gift, Settings, Save } from 'lucide-react';
 
 interface NotificationPreference {
   id: string;
@@ -21,42 +22,42 @@ export function NotificationPreferences({ onSave }: NotificationPreferencesProps
       id: 'new_orders',
       label: 'Nuevos pedidos',
       description: 'Cuando hay un nuevo pedido disponible',
-      icon: '📦',
+      icon: 'package',
       enabled: true,
     },
     {
       id: 'order_updates',
       label: 'Actualizaciones de pedido',
       description: 'Cambios de estado en tus pedidos',
-      icon: '🔄',
+      icon: 'refresh',
       enabled: true,
     },
     {
       id: 'payments',
       label: 'Pagos',
       description: 'Cuando recibes un pago',
-      icon: '💰',
+      icon: 'coins',
       enabled: true,
     },
     {
       id: 'ratings',
       label: 'Calificaciones',
       description: 'Cuando un cliente te califica',
-      icon: '⭐',
+      icon: 'star',
       enabled: true,
     },
     {
       id: 'promotions',
       label: 'Promociones',
       description: 'Ofertas y descuentos especiales',
-      icon: '🎁',
+      icon: 'gift',
       enabled: false,
     },
     {
       id: 'system',
       label: 'Sistema',
       description: 'Actualizaciones de la plataforma',
-      icon: '⚙️',
+      icon: 'settings',
       enabled: true,
     },
   ]);
@@ -85,7 +86,14 @@ export function NotificationPreferences({ onSave }: NotificationPreferencesProps
             whileHover={{ x: 4 }}
           >
             <div className="flex items-center gap-4">
-              <span className="text-2xl">{pref.icon}</span>
+              <span className="text-2xl">
+                {pref.icon === 'package' && <Package className="h-6 w-6" />}
+                {pref.icon === 'refresh' && <RefreshCw className="h-6 w-6" />}
+                {pref.icon === 'coins' && <Coins className="h-6 w-6" />}
+                {pref.icon === 'star' && <Star className="h-6 w-6" />}
+                {pref.icon === 'gift' && <Gift className="h-6 w-6" />}
+                {pref.icon === 'settings' && <Settings className="h-6 w-6" />}
+              </span>
               <div>
                 <p className="font-medium text-surface-800 dark:text-surface-200">{pref.label}</p>
                 <p className="text-sm text-surface-500 dark:text-surface-400">{pref.description}</p>
@@ -114,7 +122,7 @@ export function NotificationPreferences({ onSave }: NotificationPreferencesProps
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
       >
-        💾 Guardar Preferencias
+        Guardar Preferencias
       </motion.button>
     </div>
   );

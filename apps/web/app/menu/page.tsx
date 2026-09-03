@@ -286,7 +286,7 @@ export default function MenuManagementPage() {
               <span className="text-sm font-medium">Dashboard</span>
             </Link>
             <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-              🍽️ Mi Menú
+              Utensils Mi Menú
             </h1>
             <div className="flex items-center gap-2">
               <motion.button
@@ -323,7 +323,7 @@ export default function MenuManagementPage() {
                 />
                 <div className="relative flex items-center gap-4">
                   <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/20">
-                    <span className="text-3xl">📱</span>
+                    <span className="text-3xl">Smartphone</span>
                   </div>
                   <div className="flex-1">
                     <h3 className="font-display font-bold text-lg">Mi Código QR</h3>
@@ -475,17 +475,17 @@ export default function MenuManagementPage() {
                     size="sm"
                     onClick={() => handleBulkToggleAvailability(true)}
                   >
-                    ✅ Disponible
+                    Check Disponible
                   </AnimatedButton>
                   <AnimatedButton
                     variant="secondary"
                     size="sm"
                     onClick={() => handleBulkToggleAvailability(false)}
                   >
-                    ❌ Agotado
+                    X Agotado
                   </AnimatedButton>
                   <AnimatedButton variant="danger" size="sm" onClick={handleBulkDelete}>
-                    🗑️ Eliminar
+                    Trash2 Eliminar
                   </AnimatedButton>
                   <AnimatedButton
                     variant="ghost"
@@ -561,14 +561,14 @@ export default function MenuManagementPage() {
                 onClick={() => setIsReordering(!isReordering)}
                 whileTap={{ scale: 0.95 }}
               >
-                {isReordering ? '✅ Listo' : '🔄 Reordenar'}
+                {isReordering ? 'Check Listo' : 'RefreshCw Reordenar'}
               </motion.button>
               {user?.merchantProfile?.id && (
                 <Link
                   href={`/merchants/${user.merchantProfile.id}/qr`}
                   className="text-sm font-medium text-kiwi-600 hover:text-kiwi-700"
                 >
-                  📱 Ver mi QR →
+                  Smartphone Ver mi QR →
                 </Link>
               )}
             </div>
@@ -585,7 +585,7 @@ export default function MenuManagementPage() {
                 animate={{ y: [0, -10, 0] }}
                 transition={{ duration: 2, repeat: Infinity }}
               >
-                🍽️
+                Utensils
               </motion.div>
               <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-2">
                 {selectedCategory === 'Todos'
@@ -619,7 +619,7 @@ export default function MenuManagementPage() {
                   <div className="flex items-center gap-4">
                     <div className="text-surface-400 dark:text-surface-500">⋮⋮</div>
                     <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-surface-100 dark:bg-surface-700 text-2xl flex-shrink-0">
-                      {item.image || '🍽️'}
+                      {item.image || 'Utensils'}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
@@ -670,7 +670,7 @@ export default function MenuManagementPage() {
 
                       {/* Item Image */}
                       <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-surface-100 dark:bg-surface-700 text-3xl flex-shrink-0">
-                        {item.image || '🍽️'}
+                        {item.image || 'Utensils'}
                       </div>
 
                       {/* Item Info */}
@@ -722,10 +722,10 @@ export default function MenuManagementPage() {
                               whileTap={{ scale: 0.95 }}
                             >
                               {togglingAvailability === item.id
-                                ? '⏳'
+                                ? 'Clock'
                                 : item.isAvailable
-                                  ? '✅ Disponible'
-                                  : '❌ Agotado'}
+                                  ? 'Check Disponible'
+                                  : 'X Agotado'}
                             </motion.button>
 
                             {/* Duplicate */}
@@ -736,7 +736,7 @@ export default function MenuManagementPage() {
                               whileTap={{ scale: 0.95 }}
                               title="Duplicar"
                             >
-                              {duplicatingItem === item.id ? '⏳' : '📋'}
+                              {duplicatingItem === item.id ? 'Clock' : 'ClipboardList'}
                             </motion.button>
 
                             {/* Edit */}
@@ -745,7 +745,7 @@ export default function MenuManagementPage() {
                               onClick={() => openEditForm(item)}
                               whileTap={{ scale: 0.95 }}
                             >
-                              ✏️
+                              Pencil
                             </motion.button>
 
                             {/* Delete */}
@@ -754,7 +754,7 @@ export default function MenuManagementPage() {
                               onClick={() => setDeleteConfirm(item.id)}
                               whileTap={{ scale: 0.95 }}
                             >
-                              🗑️
+                              Trash2
                             </motion.button>
                           </div>
                         </div>
@@ -787,7 +787,7 @@ export default function MenuManagementPage() {
                                 size="sm"
                                 onClick={() => handleDelete(item.id)}
                               >
-                                🗑️ Eliminar
+                                Trash2 Eliminar
                               </AnimatedButton>
                             </div>
                           </div>
@@ -810,7 +810,7 @@ export default function MenuManagementPage() {
             transition={{ delay: 0.3 }}
           >
             <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-              📊 Resumen del Menú
+              BarChart3 Resumen del Menú
             </h3>
             <div className="grid grid-cols-4 gap-4">
               <div className="text-center">

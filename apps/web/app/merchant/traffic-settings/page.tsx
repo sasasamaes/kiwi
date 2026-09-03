@@ -130,7 +130,7 @@ export default function MerchantTrafficSettings() {
               </Link>
               <div>
                 <h1 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100">
-                  ⚙️ Configuración de Tráfico
+                  Settings Configuración de Tráfico
                 </h1>
                 <p className="text-sm text-surface-500 dark:text-surface-400">
                   Personaliza las entregas según el tráfico
@@ -163,7 +163,7 @@ export default function MerchantTrafficSettings() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 100 }}
           >
-            ✅ Configuración guardada
+            Check Configuración guardada
           </motion.div>
         )}
       </AnimatePresence>
@@ -178,7 +178,7 @@ export default function MerchantTrafficSettings() {
           transition={{ delay: 0.1 }}
         >
           <h2 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100 mb-4">
-            📍 Radio de Entrega
+            MapPin Radio de Entrega
           </h2>
 
           <div className="space-y-6">
@@ -298,7 +298,7 @@ export default function MerchantTrafficSettings() {
 
             <div className="flex items-center justify-between p-4 rounded-xl bg-surface-50 dark:bg-surface-900">
               <div className="flex items-center gap-3">
-                <span className="text-2xl">🔄</span>
+                <span className="text-2xl">RefreshCw</span>
                 <div>
                   <p className="font-medium text-surface-800 dark:text-surface-200">
                     Permitir rutas alternativas
@@ -427,7 +427,7 @@ export default function MerchantTrafficSettings() {
           transition={{ delay: 0.4 }}
         >
           <h2 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100 mb-4">
-            💰 Configuración de Precios
+            Coins Configuración de Precios
           </h2>
 
           <div className="space-y-4">
@@ -516,7 +516,7 @@ export default function MerchantTrafficSettings() {
         >
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100">
-              🔔 Notificaciones
+              Bell Notificaciones
             </h2>
             <button
               onClick={() => updateSetting('notificationsEnabled', !settings.notificationsEnabled)}
@@ -556,7 +556,7 @@ export default function MerchantTrafficSettings() {
                     },
                     {
                       key: 'peakHourWarnings',
-                      icon: '⚠️',
+                      icon: 'AlertTriangle',
                       label: 'Aviso de hora pico',
                       desc: 'Cuando se acerca una hora pico',
                     },
@@ -568,7 +568,7 @@ export default function MerchantTrafficSettings() {
                     },
                     {
                       key: 'routeRecommendations',
-                      icon: '🗺️',
+                      icon: 'Map',
                       label: 'Recomendaciones de ruta',
                       desc: 'Mejores rutas disponibles',
                     },
@@ -638,7 +638,7 @@ export default function MerchantTrafficSettings() {
                   animate={{ rotate: 360 }}
                   transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
                 >
-                  ⏳
+                  Clock
                 </motion.span>
                 Guardando...
               </span>

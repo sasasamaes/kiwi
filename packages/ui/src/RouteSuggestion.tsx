@@ -129,7 +129,7 @@ export function RouteSuggestionPanel({
   if (!comparison || comparison.routes.length === 0) {
     return (
       <div className={`rounded-2xl bg-white dark:bg-surface-800 p-8 text-center shadow-soft dark:shadow-dark ${className}`}>
-        <span className="text-4xl block mb-3">🗺️</span>
+        <span className="text-4xl block mb-3">Map</span>
         <p className="text-surface-500 dark:text-surface-400">
           No se encontraron rutas
         </p>
@@ -143,7 +143,7 @@ export function RouteSuggestionPanel({
       <div className="p-4 border-b border-surface-100 dark:border-surface-700">
         <div className="flex items-center justify-between">
           <h3 className="font-display font-bold text-surface-800 dark:text-surface-100">
-            🗺️ Rutas Disponibles
+            Map Rutas Disponibles
           </h3>
           <div className="flex items-center gap-2">
             <motion.div
@@ -295,7 +295,7 @@ function RouteCard({
               animate={{ rotate: [0, 10, -10, 0] }}
               transition={{ duration: 2, repeat: Infinity }}
             >
-              ⭐
+              Star
             </motion.span>
           ) : (
             <span className="text-xl">🛣️</span>
@@ -429,7 +429,7 @@ export function QuickSuggestionBanner({
           animate={{ rotate: [0, 5, -5, 0] }}
           transition={{ duration: 2, repeat: Infinity }}
         >
-          <span className="text-2xl">🗺️</span>
+          <span className="text-2xl">Map</span>
         </motion.div>
 
         <div className="flex-1">
@@ -475,7 +475,7 @@ export function RouteComparisonCard({
   return (
     <div className={`rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark ${className}`}>
       <h4 className="font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-        📊 Comparación de Rutas
+        BarChart3 Comparación de Rutas
       </h4>
 
       {/* Traffic Summary */}

@@ -69,7 +69,7 @@ export function DataExport({ className = '', onComplete }: DataExportProps) {
             className="p-2 rounded-xl bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400"
             whileTap={{ scale: 0.9 }}
           >
-            🔄
+            RefreshCw
           </motion.button>
         </div>
       </div>
@@ -122,7 +122,7 @@ export function DataExport({ className = '', onComplete }: DataExportProps) {
             whileTap={{ scale: 0.98 }}
           >
             <div className="flex items-center gap-3">
-              <span className="text-2xl">📦</span>
+              <span className="text-2xl">Package</span>
               <div>
                 <p className="font-medium text-surface-800 dark:text-surface-200">
                   Todos los datos
@@ -141,7 +141,7 @@ export function DataExport({ className = '', onComplete }: DataExportProps) {
               className="p-3 rounded-xl bg-surface-50 dark:bg-surface-900 text-center hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors"
               whileTap={{ scale: 0.98 }}
             >
-              <span className="text-xl">📋</span>
+              <span className="text-xl">ClipboardList</span>
               <p className="text-xs font-medium text-surface-700 dark:text-surface-300 mt-1">Pedidos</p>
             </motion.button>
 
@@ -151,7 +151,7 @@ export function DataExport({ className = '', onComplete }: DataExportProps) {
               className="p-3 rounded-xl bg-surface-50 dark:bg-surface-900 text-center hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors"
               whileTap={{ scale: 0.98 }}
             >
-              <span className="text-xl">💳</span>
+              <span className="text-xl">CreditCard</span>
               <p className="text-xs font-medium text-surface-700 dark:text-surface-300 mt-1">Pagos</p>
             </motion.button>
 
@@ -161,7 +161,7 @@ export function DataExport({ className = '', onComplete }: DataExportProps) {
               className="p-3 rounded-xl bg-surface-50 dark:bg-surface-900 text-center hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors"
               whileTap={{ scale: 0.98 }}
             >
-              <span className="text-xl">🗺️</span>
+              <span className="text-xl">Map</span>
               <p className="text-xs font-medium text-surface-700 dark:text-surface-300 mt-1">Rutas</p>
             </motion.button>
           </div>
@@ -178,7 +178,7 @@ export function DataExport({ className = '', onComplete }: DataExportProps) {
           whileTap={{ scale: 0.98 }}
         >
           <div className="flex items-center gap-3">
-            <span className="text-2xl">📊</span>
+            <span className="text-2xl">BarChart3</span>
             <div>
               <p className="font-medium text-surface-800 dark:text-surface-200">
                 Exportar CSV
@@ -201,7 +201,7 @@ export function DataExport({ className = '', onComplete }: DataExportProps) {
           whileTap={{ scale: 0.98 }}
         >
           <div className="flex items-center gap-3">
-            <span className="text-2xl">📥</span>
+            <span className="text-2xl">Download</span>
             <div>
               <p className="font-medium text-kiwi-700 dark:text-kiwi-400">
                 Importar respaldo
@@ -239,7 +239,7 @@ export function DataExport({ className = '', onComplete }: DataExportProps) {
                   ? 'text-kiwi-700 dark:text-kiwi-400'
                   : 'text-red-700 dark:text-red-400'
               }`}>
-                {importResult.success ? '✅ Importación exitosa' : '❌ Error en importación'}
+                {importResult.success ? 'Check Importación exitosa' : 'X Error en importación'}
               </p>
               <div className="text-sm mt-1">
                 <p>Pedidos: {importResult.imported.orders}</p>

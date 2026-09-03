@@ -77,7 +77,7 @@ export default function OrderDetailScreen({ route, navigation }: any) {
               setUpdating(true);
               await api.updateOrderStatus(order.id, nextStatus);
               await fetchOrder();
-              Alert.alert('✅ Estado actualizado', `Pedido: ${STATUS_CONFIG[nextStatus]?.label}`);
+              Alert.alert('Estado actualizado', `Pedido: ${STATUS_CONFIG[nextStatus]?.label}`);
             } catch (error: any) {
               Alert.alert('Error', error.response?.data?.message || 'No se pudo actualizar');
             } finally {
@@ -102,7 +102,7 @@ export default function OrderDetailScreen({ route, navigation }: any) {
 
   if (loading) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: isDark ? colors.surface[950] : colors.surface[50 }]}>
+      <SafeAreaView style={[styles.container, { backgroundColor: isDark ? colors.surface[950] : colors.surface[50] }]>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.kiwi[500]} />
         </View>
@@ -112,7 +112,7 @@ export default function OrderDetailScreen({ route, navigation }: any) {
 
   if (!order) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: isDark ? colors.surface[950] : colors.surface[50 }]}>
+      <SafeAreaView style={[styles.container, { backgroundColor: isDark ? colors.surface[950] : colors.surface[50] }]>
         <View style={styles.loadingContainer}>
           <Text style={{ color: isDark ? colors.surface[400] : colors.surface[600] }}>Pedido no encontrado</Text>
         </View>
@@ -153,7 +153,7 @@ export default function OrderDetailScreen({ route, navigation }: any) {
         {/* Route */}
         <View style={[styles.card, { backgroundColor: isDark ? colors.surface[800] : '#fff' }, shadows.soft]}>
           <Text style={[styles.cardTitle, { color: isDark ? colors.surface[100] : colors.surface[900] }]}>
-            🗺️ Ruta
+            Map Ruta
           </Text>
           
           <TouchableOpacity style={styles.routePoint} onPress={() => handleOpenMaps(order.pickupAddress)}>
@@ -181,7 +181,7 @@ export default function OrderDetailScreen({ route, navigation }: any) {
         {order.items && order.items.length > 0 && (
           <View style={[styles.card, { backgroundColor: isDark ? colors.surface[800] : '#fff' }, shadows.soft]}>
             <Text style={[styles.cardTitle, { color: isDark ? colors.surface[100] : colors.surface[900] }]}>
-              📦 Productos
+              Productos
             </Text>
             {order.items.map((item, index) => (
               <View key={item.id || index} style={styles.itemRow}>
@@ -198,7 +198,7 @@ export default function OrderDetailScreen({ route, navigation }: any) {
         {/* Payment */}
         <View style={[styles.card, { backgroundColor: isDark ? colors.surface[800] : '#fff' }, shadows.soft]}>
           <Text style={[styles.cardTitle, { color: isDark ? colors.surface[100] : colors.surface[900] }]}>
-            💳 Pago
+            CreditCard Pago
           </Text>
           <View style={styles.paymentRow}>
             <Text style={[styles.paymentLabel, { color: isDark ? colors.surface[400] : colors.surface[500] }]}>Tu ganancia</Text>
@@ -218,7 +218,7 @@ export default function OrderDetailScreen({ route, navigation }: any) {
         {order.specialInstructions && (
           <View style={[styles.card, { backgroundColor: isDark ? colors.surface[800] : '#fff' }, shadows.soft]}>
             <Text style={[styles.cardTitle, { color: isDark ? colors.surface[100] : colors.surface[900] }]}>
-              📝 Instrucciones
+              FileText Instrucciones
             </Text>
             <Text style={[styles.instructions, { color: isDark ? colors.surface[300] : colors.surface[600] }]}>
               {order.specialInstructions}

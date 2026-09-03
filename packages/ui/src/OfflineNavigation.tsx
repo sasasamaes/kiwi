@@ -46,9 +46,9 @@ function RouteCard({ route, isSelected, onSelect, onDelete, formatDistance, form
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <span className="text-lg">
-            {route.mode === 'motorcycle' ? '🛵' :
-             route.mode === 'car' ? '🚗' :
-             route.mode === 'cycling' ? '🚲' : '🚶'}
+            {route.mode === 'motorcycle' ? 'bike' :
+             route.mode === 'car' ? 'car' :
+             route.mode === 'cycling' ? 'bike' : '🚶'}
           </span>
           <span className="font-medium text-surface-800 dark:text-surface-200">
             {route.name}
@@ -57,7 +57,7 @@ function RouteCard({ route, isSelected, onSelect, onDelete, formatDistance, form
         
         {route.status === 'cached' && (
           <span className="text-xs px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
-            📥 Offline
+            Download Offline
           </span>
         )}
       </div>
@@ -85,7 +85,7 @@ function RouteCard({ route, isSelected, onSelect, onDelete, formatDistance, form
           }}
           className="mt-2 text-xs text-red-500 hover:text-red-600"
         >
-          🗑️ Eliminar
+          Trash2 Eliminar
         </button>
       )}
     </motion.div>
@@ -158,7 +158,7 @@ function NavigationPanel({
             >
               {currentStep.step.maneuver === 'turn-right' ? '➡️' :
                currentStep.step.maneuver === 'turn-left' ? '⬅️' :
-               currentStep.step.maneuver === 'arrive' ? '🏁' : '⬆️'}
+               currentStep.step.maneuver === 'arrive' ? 'flag' : '⬆️'}
             </motion.div>
             <div>
               <p className="font-semibold text-surface-800 dark:text-surface-200">
@@ -219,7 +219,7 @@ function NavigationPanel({
             }}
             className="flex-1 py-3 rounded-xl bg-kiwi-500 text-white font-medium"
           >
-            🗺️ Abrir en Maps
+            Map Abrir en Maps
           </button>
         </div>
       </div>
@@ -295,14 +295,14 @@ export function OfflineNavigation({
       <div className="p-4 border-b border-surface-100 dark:border-surface-700">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100">
-            🗺️ Navegación Offline
+            Map Navegación Offline
           </h2>
           <motion.button
             onClick={() => setShowSavedRoutes(!showSavedRoutes)}
             className="text-surface-500 hover:text-surface-700 dark:hover:text-surface-300"
             whileTap={{ scale: 0.9 }}
           >
-            {showSavedRoutes ? '✕' : '📥'}
+            {showSavedRoutes ? '✕' : 'download'}
           </motion.button>
         </div>
       </div>
@@ -391,7 +391,7 @@ export function OfflineNavigation({
               }}
               className="px-3 py-2 rounded-xl bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400"
             >
-              📍
+              MapPin
             </button>
           </div>
         </div>
@@ -422,9 +422,9 @@ export function OfflineNavigation({
           </label>
           <div className="flex gap-2">
             {[
-              { id: 'motorcycle', icon: '🛵', label: 'Moto' },
-              { id: 'car', icon: '🚗', label: 'Carro' },
-              { id: 'cycling', icon: '🚲', label: 'Bici' },
+              { id: 'motorcycle', icon: 'bike', label: 'Moto' },
+              { id: 'car', icon: 'car', label: 'Carro' },
+              { id: 'cycling', icon: 'bike', label: 'Bici' },
               { id: 'walking', icon: '🚶', label: 'Caminar' },
             ].map((m) => (
               <button
@@ -460,12 +460,12 @@ export function OfflineNavigation({
                 animate={{ rotate: 360 }}
                 transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
               >
-                ⏳
+                Clock
               </motion.span>
               Buscando ruta...
             </span>
           ) : (
-            '🔍 Buscar Ruta'
+            'Search Buscar Ruta'
           )}
         </motion.button>
       </div>
@@ -497,7 +497,7 @@ export function OfflineNavigation({
               className="px-4 py-3 rounded-xl bg-surface-100 dark:bg-surface-700 text-surface-700 dark:text-surface-300"
               whileTap={{ scale: 0.98 }}
             >
-              🗺️
+              Map
             </motion.button>
           </div>
         </div>
@@ -516,10 +516,10 @@ export function OfflineNavigation({
                 onClick={() => setEnd(wp.coordinates)}
                 className="flex-shrink-0 px-3 py-2 rounded-xl bg-surface-50 dark:bg-surface-900 text-sm text-surface-700 dark:text-surface-300"
               >
-                {wp.type === 'home' ? '🏠' :
+                {wp.type === 'home' ? 'home' :
                  wp.type === 'work' ? '💼' :
-                 wp.type === 'favorite' ? '⭐' :
-                 wp.type === 'merchant' ? '🏪' : '📍'}
+                 wp.type === 'favorite' ? 'star' :
+                 wp.type === 'merchant' ? '🏪' : 'location'}
                 {' '}
                 {wp.name}
               </button>
@@ -593,7 +593,7 @@ export function NavigationButton({
           className="w-full py-2 px-4 rounded-xl bg-kiwi-100 dark:bg-kiwi-900/30 text-kiwi-700 dark:text-kiwi-400 font-medium text-sm"
           whileTap={{ scale: 0.95 }}
         >
-          {isLoading ? '⏳' : '🗺️'} Cómo llegar
+          {isLoading ? 'clock' : 'map'} Cómo llegar
         </motion.button>
       ) : (
         <div className="p-3 rounded-xl bg-surface-50 dark:bg-surface-900">

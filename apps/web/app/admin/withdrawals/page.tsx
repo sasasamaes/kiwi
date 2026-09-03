@@ -34,19 +34,19 @@ interface Withdrawal {
 }
 
 const STATUS_CONFIG: Record<string, { label: string; icon: string; color: string }> = {
-  pending: { label: 'Pendiente', icon: '⏳', color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400' },
-  processing: { label: 'Procesando', icon: '🔄', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400' },
-  completed: { label: 'Completado', icon: '✅', color: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400' },
-  failed: { label: 'Cancelado', icon: '❌', color: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400' },
-  rejected: { label: 'Rechazado', icon: '❌', color: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400' },
+  pending: { label: 'Pendiente', icon: 'Clock', color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400' },
+  processing: { label: 'Procesando', icon: 'RefreshCw', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400' },
+  completed: { label: 'Completado', icon: 'Check', color: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400' },
+  failed: { label: 'Cancelado', icon: 'X', color: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400' },
+  rejected: { label: 'Rechazado', icon: 'X', color: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400' },
 };
 
 const FILTER_TABS = [
-  { id: 'all', label: 'Todos', icon: '📋' },
-  { id: 'pending', label: 'Pendientes', icon: '⏳' },
-  { id: 'processing', label: 'Procesando', icon: '🔄' },
-  { id: 'completed', label: 'Completados', icon: '✅' },
-  { id: 'rejected', label: 'Rechazados', icon: '❌' },
+  { id: 'all', label: 'Todos', icon: 'ClipboardList' },
+  { id: 'pending', label: 'Pendientes', icon: 'Clock' },
+  { id: 'processing', label: 'Procesando', icon: 'RefreshCw' },
+  { id: 'completed', label: 'Completados', icon: 'Check' },
+  { id: 'rejected', label: 'Rechazados', icon: 'X' },
 ];
 
 export default function AdminWithdrawalsPage() {
@@ -189,7 +189,7 @@ export default function AdminWithdrawalsPage() {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            🔄 Reintentar
+            RefreshCw Reintentar
           </motion.button>
         </motion.div>
       </div>
@@ -202,7 +202,7 @@ export default function AdminWithdrawalsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-display font-bold text-surface-800 dark:text-surface-100">
-            💰 Retiros
+            Coins Retiros
           </h1>
           <p className="text-surface-500 dark:text-surface-400">
             {withdrawals.filter(w => w.status === 'pending').length} pendientes de procesar
@@ -213,7 +213,7 @@ export default function AdminWithdrawalsPage() {
           className="px-4 py-2 text-sm font-medium bg-surface-100 dark:bg-surface-800 text-surface-700 dark:text-surface-300 rounded-lg hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors"
           whileTap={{ scale: 0.95 }}
         >
-          🔄 Actualizar
+          RefreshCw Actualizar
         </motion.button>
       </div>
 
@@ -288,7 +288,7 @@ export default function AdminWithdrawalsPage() {
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
                     <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-kiwi-100 dark:bg-kiwi-900/50 text-2xl">
-                      {withdrawal.paymentMethod === 'sinpe' ? '📱' : '🏦'}
+                      {withdrawal.paymentMethod === 'sinpe' ? 'Smartphone' : '🏦'}
                     </div>
                     <div>
                       <p className="font-semibold text-surface-800 dark:text-surface-100">
@@ -306,8 +306,8 @@ export default function AdminWithdrawalsPage() {
 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4 text-sm text-surface-500 dark:text-surface-400">
-                    <span>📅 {formatDate(withdrawal.createdAt)}</span>
-                    <span>{withdrawal.paymentMethod === 'sinpe' ? '📱 SINPE' : '🏦 Transferencia'}</span>
+                    <span>Calendar {formatDate(withdrawal.createdAt)}</span>
+                    <span>{withdrawal.paymentMethod === 'sinpe' ? 'Smartphone SINPE' : '🏦 Transferencia'}</span>
                   </div>
                   <span className="text-lg font-bold text-kiwi-600 dark:text-kiwi-400">
                     {formatCurrency(withdrawal.amount)}
@@ -325,7 +325,7 @@ export default function AdminWithdrawalsPage() {
                         setShowRejectModal(true);
                       }}
                     >
-                      ❌ Rechazar
+                      X Rechazar
                     </button>
                     <button
                       className="flex-1 py-2 text-sm font-medium bg-kiwi-500 text-white rounded-lg hover:bg-kiwi-600 transition-colors"
@@ -334,7 +334,7 @@ export default function AdminWithdrawalsPage() {
                         handleApprove(withdrawal.id);
                       }}
                     >
-                      ✅ Aprobar
+                      Check Aprobar
                     </button>
                   </div>
                 )}
@@ -365,7 +365,7 @@ export default function AdminWithdrawalsPage() {
               <div className="sticky top-0 bg-white dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700 p-6 z-10">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100">
-                    💰 Detalle del Retiro
+                    Coins Detalle del Retiro
                   </h3>
                   <button
                     onClick={() => setSelectedWithdrawal(null)}
@@ -400,7 +400,7 @@ export default function AdminWithdrawalsPage() {
                         {selectedWithdrawal.driver.fullName}
                       </p>
                       <p className="text-sm text-surface-500 dark:text-surface-400">
-                        {selectedWithdrawal.driver.user.email} • ⭐ {selectedWithdrawal.driver.rating}
+                        {selectedWithdrawal.driver.user.email} • Star {selectedWithdrawal.driver.rating}
                       </p>
                     </div>
                   </div>
@@ -409,7 +409,7 @@ export default function AdminWithdrawalsPage() {
                 {/* Payment Details */}
                 <div className="p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50">
                   <p className="text-sm text-surface-500 dark:text-surface-400 mb-2">
-                    {selectedWithdrawal.paymentMethod === 'sinpe' ? '📱 Datos SINPE' : '🏦 Datos Bancarios'}
+                    {selectedWithdrawal.paymentMethod === 'sinpe' ? 'Smartphone Datos SINPE' : '🏦 Datos Bancarios'}
                   </p>
                   {selectedWithdrawal.paymentMethod === 'sinpe' ? (
                     <div className="space-y-2">
@@ -513,14 +513,14 @@ export default function AdminWithdrawalsPage() {
                         onClick={() => setShowRejectModal(true)}
                         disabled={actionLoading}
                       >
-                        ❌ Rechazar
+                        X Rechazar
                       </button>
                       <button
                         className="flex-1 py-3 px-4 text-sm font-medium bg-kiwi-500 text-white rounded-xl hover:bg-kiwi-600 transition-colors"
                         onClick={() => handleApprove(selectedWithdrawal.id)}
                         disabled={actionLoading}
                       >
-                        {actionLoading ? 'Procesando...' : '✅ Aprobar'}
+                        {actionLoading ? 'Procesando...' : 'Check Aprobar'}
                       </button>
                     </div>
                   </div>
@@ -550,7 +550,7 @@ export default function AdminWithdrawalsPage() {
             >
               <div className="p-6">
                 <h3 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100 mb-4">
-                  ❌ Rechazar Retiro
+                  X Rechazar Retiro
                 </h3>
                 <p className="text-surface-500 dark:text-surface-400 mb-4">
                   Por favor, indica el motivo del rechazo:

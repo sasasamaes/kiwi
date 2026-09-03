@@ -53,7 +53,7 @@ export default function NotificationsPage() {
             onClick={() => setActiveTab('notifications')}
             whileTap={{ scale: 0.98 }}
           >
-            🔔 Notificaciones
+            Bell Notificaciones
           </motion.button>
           <motion.button
             className={`flex-1 py-3 rounded-xl text-sm font-medium transition-colors ${
@@ -64,7 +64,7 @@ export default function NotificationsPage() {
             onClick={() => setActiveTab('preferences')}
             whileTap={{ scale: 0.98 }}
           >
-            ⚙️ Preferencias
+            Settings Preferencias
           </motion.button>
         </div>
 

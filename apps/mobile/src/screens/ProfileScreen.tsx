@@ -97,7 +97,7 @@ export default function ProfileScreen({ navigation }: any) {
           
           <View style={styles.profileStats}>
             <View style={styles.profileStat}>
-              <Text style={styles.profileStatValue}>⭐ 4.9</Text>
+              <Text style={styles.profileStatValue}>Star 4.9</Text>
               <Text style={styles.profileStatLabel}>{t.driver.rating}</Text>
             </View>
             <View style={styles.profileStatDivider} />

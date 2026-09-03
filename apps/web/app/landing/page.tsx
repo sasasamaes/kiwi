@@ -6,27 +6,27 @@ import { AnimatedButton, StaggerContainer, StaggerItem } from '@kiwi/ui';
 
 const FEATURES = [
   {
-    icon: '📱',
+    icon: 'Smartphone',
     title: 'Menú QR',
     description: 'Escanea el código QR del comercio y ordena en segundos. Sin apps adicionales.',
   },
   {
-    icon: '🗺️',
+    icon: 'Map',
     title: 'Tracking en tiempo real',
     description: 'Sigue tu pedido en el mapa. Sabes exactamente dónde está tu repartidor.',
   },
   {
-    icon: '💳',
+    icon: 'CreditCard',
     title: 'Paga como quieras',
     description: 'SINPE, tarjeta, efectivo o cripto (USDC/USDT). Tú eliges.',
   },
   {
-    icon: '🛵',
+    icon: 'Bike',
     title: 'Trabaja cuando quieras',
     description: 'Tú decides tus horarios. Gana dinero extra con entregas.',
   },
   {
-    icon: '🔒',
+    icon: 'Lock',
     title: 'Seguro y verificado',
     description: 'Todos los usuarios pasan verificación KYC. Tu seguridad es nuestra prioridad.',
   },
@@ -48,19 +48,19 @@ const STEPS = [
     step: '2',
     title: 'Elige',
     description: 'Selecciona lo que quieres del menú',
-    icon: '🛒',
+    icon: 'ShoppingCart',
   },
   {
     step: '3',
     title: 'Paga',
     description: 'Elige tu método de pago favorito',
-    icon: '💰',
+    icon: 'Coins',
   },
   {
     step: '4',
     title: 'Recibe',
     description: 'Sigue tu pedido y recíbelo en minutos',
-    icon: '🎉',
+    icon: 'PartyPopper',
   },
 ];
 
@@ -84,7 +84,7 @@ export default function LandingPage() {
         <div className="mx-auto max-w-6xl px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="text-3xl">🥝</span>
+              <span className="text-3xl"></span>
               <span className="font-display font-bold text-xl text-surface-800 dark:text-surface-100">
                 Kiwi
               </span>
@@ -133,7 +133,7 @@ export default function LandingPage() {
                   animate={{ y: [0, -15, 0] }}
                   transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
                 >
-                  🥝
+                  
                 </motion.div>
 
                 <h1 className="text-5xl md:text-7xl font-display font-bold text-surface-800 dark:text-surface-100 mb-6">
@@ -152,7 +152,7 @@ export default function LandingPage() {
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                   <a href="#download">
                     <AnimatedButton size="lg" className="text-lg px-8">
-                      📱 Descargar Kiwi
+                      Descargar Kiwi
                     </AnimatedButton>
                   </a>
                   <a href="#how-it-works">
@@ -163,7 +163,7 @@ export default function LandingPage() {
                 </div>
 
                 <p className="mt-6 text-sm text-surface-500 dark:text-surface-400">
-                  🆓 Gratis para clientes • 💰 Genera dinero como repartidor
+                  🆓 Gratis para clientes • Genera dinero como repartidor
                 </p>
               </motion.div>
             </StaggerItem>
@@ -179,7 +179,7 @@ export default function LandingPage() {
               { value: '50+', label: 'Comercios' },
               { value: '200+', label: 'Repartidores' },
               { value: '1000+', label: 'Pedidos' },
-              { value: '4.9⭐', label: 'Calificación' },
+              { value: '4.9Star', label: 'Calificación' },
             ].map((stat, i) => (
               <motion.div
                 key={stat.label}
@@ -320,7 +320,7 @@ export default function LandingPage() {
       <section id="download" className="py-20 bg-gradient-to-br from-kiwi-500 to-kiwi-600">
         <div className="mx-auto max-w-4xl px-4 text-center">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}>
-            <span className="text-6xl mb-6 block">📱</span>
+            <span className="text-6xl mb-6 block">Smartphone</span>
             <h2 className="text-3xl md:text-4xl font-display font-bold text-white mb-4">
               Descarga Kiwi ahora
             </h2>
@@ -364,7 +364,7 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-4 gap-8">
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <span className="text-2xl">🥝</span>
+                <span className="text-2xl"></span>
                 <span className="font-display font-bold text-lg text-surface-800 dark:text-surface-100">
                   Kiwi
                 </span>
@@ -416,8 +416,8 @@ export default function LandingPage() {
               </h4>
               <ul className="space-y-2 text-sm text-surface-500 dark:text-surface-400">
                 <li>📧 soporte@kiwi.app</li>
-                <li>📱 +506 8888-5678</li>
-                <li>📍 Nicoya, Guanacaste</li>
+                <li>Smartphone +506 8888-5678</li>
+                <li>MapPin Nicoya, Guanacaste</li>
               </ul>
             </div>
           </div>

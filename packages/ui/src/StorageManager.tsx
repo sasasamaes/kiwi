@@ -101,7 +101,7 @@ export function StorageManager({
           </h3>
           <div className="flex items-center gap-2">
             {breakdown.storage.isCritical && (
-              <span className="text-red-500 animate-pulse">⚠️</span>
+              <span className="text-red-500 animate-pulse">AlertTriangle</span>
             )}
             <span className="text-sm font-medium text-surface-600 dark:text-surface-400">
               {compression.formatBytes(breakdown.storage.used)}
@@ -213,7 +213,7 @@ export function StorageManager({
                 <div className="p-3 rounded-xl bg-surface-50 dark:bg-surface-900">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-lg">📦</span>
+                      <span className="text-lg">Package</span>
                       <div>
                         <p className="font-medium text-surface-800 dark:text-surface-200">
                           Caché de tráfico
@@ -241,7 +241,7 @@ export function StorageManager({
                 <div className="p-3 rounded-xl bg-surface-50 dark:bg-surface-900">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-lg">🔄</span>
+                      <span className="text-lg">RefreshCw</span>
                       <div>
                         <p className="font-medium text-surface-800 dark:text-surface-200">
                           Cola de sincronización
@@ -271,7 +271,7 @@ export function StorageManager({
                 <div className="p-3 rounded-xl bg-surface-50 dark:bg-surface-900">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-lg">📋</span>
+                      <span className="text-lg">ClipboardList</span>
                       <div>
                         <p className="font-medium text-surface-800 dark:text-surface-200">
                           Pedidos offline
@@ -344,7 +344,7 @@ export function StorageManager({
                   onClick={loadStorageInfo}
                   whileTap={{ scale: 0.95 }}
                 >
-                  🔄 Actualizar
+                  RefreshCw Actualizar
                 </motion.button>
               </div>
             </motion.div>

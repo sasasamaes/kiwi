@@ -1,5 +1,5 @@
 /**
- * 🥝 KIWI TAILWIND DESIGN TOKENS
+ *  KIWI TAILWIND DESIGN TOKENS
  *
  * Tropical Pura Vida Night — Semantic design system for Stitch integration.
  * Import this in each app's tailwind.config.js:

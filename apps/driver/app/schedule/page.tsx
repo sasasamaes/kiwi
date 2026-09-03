@@ -12,7 +12,7 @@ const days = [
   { short: 'Mié', full: 'Miércoles', icon: '💼' },
   { short: 'Jue', full: 'Jueves', icon: '💼' },
   { short: 'Vie', full: 'Viernes', icon: '💼' },
-  { short: 'Sáb', full: 'Sábado', icon: '🎉' },
+  { short: 'Sáb', full: 'Sábado', icon: 'PartyPopper' },
 ];
 
 const hours = Array.from({ length: 15 }, (_, i) => i + 7); // 7am to 9pm
@@ -21,7 +21,7 @@ const presets = [
   { name: '🌅 Mañana', hours: [7, 8, 9, 10, 11, 12] },
   { name: '☀️ Tarde', hours: [13, 14, 15, 16, 17, 18] },
   { name: '🌙 Noche', hours: [18, 19, 20, 21] },
-  { name: '📅 Día completo', hours: [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18] },
+  { name: 'Calendar Día completo', hours: [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18] },
 ];
 
 export default function Schedule() {
@@ -211,7 +211,7 @@ export default function Schedule() {
             onClick={() => setShowCopyModal(true)}
             whileTap={{ scale: 0.95 }}
           >
-            📋 Copiar a...
+            ClipboardList Copiar a...
           </motion.button>
         </motion.div>
 
@@ -323,7 +323,7 @@ export default function Schedule() {
               });
             }}
           >
-            ✅ Seleccionar todo el día
+            Seleccionar todo el día
           </AnimatedButton>
 
           <AnimatedButton
@@ -336,7 +336,7 @@ export default function Schedule() {
               });
             }}
           >
-            ❌ Limpiar horario
+            Limpiar horario
           </AnimatedButton>
         </motion.div>
 
@@ -359,7 +359,7 @@ export default function Schedule() {
                 animate={{ scale: 1 }}
                 className="flex items-center justify-center gap-2"
               >
-                ✅ ¡Guardado!
+                Guardado
               </motion.span>
             ) : (
               '💾 Guardar Horario'
@@ -401,7 +401,7 @@ export default function Schedule() {
             >
               <div className="mb-6 flex items-center justify-between">
                 <h3 className="font-display text-lg font-semibold text-surface-800 dark:text-surface-100">
-                  📋 Copiar horario
+                  ClipboardList Copiar horario
                 </h3>
                 <button
                   onClick={() => setShowCopyModal(false)}
@@ -448,11 +448,11 @@ export default function Schedule() {
       <nav className="sticky bottom-0 border-t border-surface-200/50 dark:border-surface-700/50 bg-white/80 dark:bg-surface-900/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-lg items-center justify-around py-2">
           {[
-            { href: '/', icon: '🏠', label: 'Inicio', active: false },
-            { href: '/active', icon: '📦', label: 'Activos', active: false },
-            { href: '/earnings', icon: '💰', label: 'Ganancias', active: false },
-            { href: '/schedule', icon: '📅', label: 'Horario', active: true },
-            { href: '/profile', icon: '👤', label: 'Perfil', active: false },
+            { href: '/', icon: 'Home', label: 'Inicio', active: false },
+            { href: '/active', icon: 'Package', label: 'Activos', active: false },
+            { href: '/earnings', icon: 'Coins', label: 'Ganancias', active: false },
+            { href: '/schedule', icon: 'Calendar', label: 'Horario', active: true },
+            { href: '/profile', icon: 'User', label: 'Perfil', active: false },
           ].map((item) => (
             <Link key={item.href} href={item.href}>
               <motion.div

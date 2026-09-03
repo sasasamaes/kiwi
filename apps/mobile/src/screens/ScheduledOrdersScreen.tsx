@@ -51,19 +51,19 @@ export default function ScheduledOrdersScreen({ navigation }: any) {
   const setupSocket = () => {
     // Listen for new scheduled orders
     onSocket('order:scheduled', (data: any) => {
-      console.log('📅 New scheduled order:', data);
+      console.log('Calendar New scheduled order:', data);
       fetchScheduledOrders();
     });
 
     // Listen for proposal accepted/rejected
     onSocket('order:proposalAccepted', (data: any) => {
-      console.log('✅ Proposal accepted:', data);
-      Alert.alert('🎉 ¡Propuesta aceptada!', data.message || 'Tu propuesta fue seleccionada');
+      console.log('Check Proposal accepted:', data);
+      Alert.alert('PartyPopper ¡Propuesta aceptada!', data.message || 'Tu propuesta fue seleccionada');
       fetchScheduledOrders();
     });
 
     onSocket('order:proposalRejected', (data: any) => {
-      console.log('❌ Proposal rejected:', data);
+      console.log('X Proposal rejected:', data);
       fetchScheduledOrders();
     });
   };
@@ -109,7 +109,7 @@ export default function ScheduledOrdersScreen({ navigation }: any) {
       setShowProposalModal(false);
       setSelectedOrder(null);
       Alert.alert(
-        '✅ Propuesta enviada',
+        'Propuesta enviada',
         'El comerciante será notificado. Espera su respuesta.',
         [{ text: 'OK' }]
       );
@@ -134,7 +134,7 @@ export default function ScheduledOrdersScreen({ navigation }: any) {
 
   if (loading) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: isDark ? colors.surface[950] : colors.surface[50 }]}>
+      <SafeAreaView style={[styles.container, { backgroundColor: isDark ? colors.surface[950] : colors.surface[50] }]>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.kiwi[500]} />
         </View>

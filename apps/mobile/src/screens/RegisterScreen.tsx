@@ -18,10 +18,10 @@ import { useTheme } from '../hooks/useTheme';
 import { colors, gradients, shadows } from '../utils/theme';
 
 const VEHICLES = [
-  { id: 'motorcycle', label: 'Moto', icon: '🏍️' },
-  { id: 'bicycle', label: 'Bici', icon: '🚲' },
-  { id: 'car', label: 'Carro', icon: '🚗' },
-  { id: 'truck', label: 'Camión', icon: '🚛' },
+  { id: 'motorcycle', label: 'Moto', icon: 'Bike' },
+  { id: 'bicycle', label: 'Bici', icon: 'Bike' },
+  { id: 'car', label: 'Carro', icon: 'Car' },
+  { id: 'truck', label: 'Camión', icon: 'Truck' },
 ];
 
 export default function RegisterScreen({ navigation }: any) {
@@ -88,7 +88,7 @@ export default function RegisterScreen({ navigation }: any) {
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
           >
-            <Text style={styles.logoEmoji}>🥝</Text>
+            <Text style={styles.logoEmoji}></Text>
           </LinearGradient>
           <Text style={[styles.title, { color: isDark ? colors.surface[100] : colors.surface[900] }]}>
             Crear Cuenta

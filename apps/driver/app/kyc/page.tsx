@@ -86,7 +86,7 @@ export default function DriverKYCPage() {
           transition={{ delay: 0.1 }}
         >
           <h3 className="font-display font-semibold text-surface-800 mb-4">
-            📋 Documentos Requeridos
+            ClipboardList Documentos Requeridos
           </h3>
           <div className="space-y-3">
             <div className="flex items-start gap-3 p-4 rounded-xl bg-surface-50">
@@ -111,14 +111,14 @@ export default function DriverKYCPage() {
               </div>
             </div>
             <div className="flex items-start gap-3 p-4 rounded-xl bg-surface-50">
-              <span className="text-2xl">🚗</span>
+              <span className="text-2xl">Car</span>
               <div>
                 <p className="font-medium text-surface-700">Marchamo del Vehículo</p>
                 <p className="text-xs text-surface-400">Último año pagado</p>
               </div>
             </div>
             <div className="flex items-start gap-3 p-4 rounded-xl bg-surface-50">
-              <span className="text-2xl">🛡️</span>
+              <span className="text-2xl">Shield</span>
               <div>
                 <p className="font-medium text-surface-700">Seguro del Vehículo</p>
                 <p className="text-xs text-surface-400">Póliza vigente</p>

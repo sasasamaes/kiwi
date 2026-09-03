@@ -85,7 +85,7 @@ export default function ActiveOrders() {
           {/* Pickup Location */}
           <div className="mb-4 rounded-xl bg-kiwi-50 p-4">
             <div className="mb-2 flex items-center gap-2">
-              <span className="text-lg">📍</span>
+              <span className="text-lg">MapPin</span>
               <span className="text-sm font-semibold text-kiwi-700">
                 {orderStatus === 'pickup' ? 'Ir a recoger' : 'Recogido'}
               </span>
@@ -93,14 +93,14 @@ export default function ActiveOrders() {
             <p className="text-sm font-medium text-surface-800">Restaurante El Sabor</p>
             <p className="text-xs text-surface-500">Nicoya Centro, 200m</p>
             <button className="mt-3 w-full rounded-xl bg-kiwi-500 py-2.5 text-sm font-medium text-white shadow-kiwi hover:bg-kiwi-600 transition-colors">
-              🗺️ Abrir en Maps
+              Map Abrir en Maps
             </button>
           </div>
 
           {/* Delivery Location */}
           <div className="rounded-xl bg-gold-50 p-4">
             <div className="mb-2 flex items-center gap-2">
-              <span className="text-lg">🏠</span>
+              <span className="text-lg">Home</span>
               <span className="text-sm font-semibold text-gold-700">
                 {orderStatus === 'delivering'
                   ? 'Ir a entregar'
@@ -112,7 +112,7 @@ export default function ActiveOrders() {
             <p className="text-sm font-medium text-surface-800">Casa del Cliente</p>
             <p className="text-xs text-surface-500">Santa Cruz, 2.5 km</p>
             <button className="mt-3 w-full rounded-xl bg-gold-500 py-2.5 text-sm font-medium text-white shadow-gold hover:bg-gold-600 transition-colors">
-              🗺️ Abrir en Maps
+              Map Abrir en Maps
             </button>
           </div>
 
@@ -124,11 +124,11 @@ export default function ActiveOrders() {
               </div>
               <div>
                 <p className="text-sm font-medium text-surface-800">María C.</p>
-                <p className="text-xs text-surface-400">⭐ 4.8 • 23 pedidos</p>
+                <p className="text-xs text-surface-400">Star 4.8 • 23 pedidos</p>
               </div>
             </div>
             <button className="rounded-full bg-kiwi-100 p-2 text-kiwi-600 hover:bg-kiwi-200">
-              📞
+              Phone
             </button>
           </div>
         </div>
@@ -140,7 +140,7 @@ export default function ActiveOrders() {
               onClick={() => setOrderStatus('delivering')}
               className="w-full rounded-2xl bg-kiwi-gradient py-4 text-lg font-semibold text-white shadow-kiwi-lg hover:shadow-kiwi-xl transition-all active:scale-[0.98]"
             >
-              ✅ Recogí el pedido
+              Recogi el pedido
             </button>
           )}
 
@@ -149,7 +149,7 @@ export default function ActiveOrders() {
               onClick={() => setOrderStatus('delivered')}
               className="w-full rounded-2xl bg-kiwi-gradient py-4 text-lg font-semibold text-white shadow-kiwi-lg hover:shadow-kiwi-xl transition-all active:scale-[0.98]"
             >
-              📦 Entregué el pedido
+              Entregue el pedido
             </button>
           )}
 
@@ -158,12 +158,12 @@ export default function ActiveOrders() {
               href="/"
               className="block w-full rounded-2xl bg-kiwi-gradient py-4 text-center text-lg font-semibold text-white shadow-kiwi-lg hover:shadow-kiwi-xl transition-all active:scale-[0.98]"
             >
-              🎉 ¡Pedido completado!
+              PartyPopper ¡Pedido completado!
             </Link>
           )}
 
           <button className="w-full rounded-2xl border border-surface-200 bg-white py-3 text-sm font-medium text-surface-600 hover:bg-surface-50 transition-colors">
-            ❌ Cancelar pedido
+            Cancelar pedido
           </button>
         </div>
       </main>

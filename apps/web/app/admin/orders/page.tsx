@@ -231,7 +231,7 @@ export default function OrdersPage() {
                         👁️
                       </button>
                       <button className="p-2 text-surface-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors">
-                        📋
+                        ClipboardList
                       </button>
                     </div>
                   </td>

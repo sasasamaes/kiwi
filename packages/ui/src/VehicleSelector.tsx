@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { cn } from './utils';
+import { Bike, Truck, Car, Package, Weight } from 'lucide-react';
 
 export type VehicleType = 'motorcycle' | 'motorized_bike' | 'bicycle' | 'car' | 'truck';
 
@@ -19,7 +20,7 @@ export const vehicles: Vehicle[] = [
   {
     type: 'motorcycle',
     name: 'Moto',
-    icon: '🏍️',
+    icon: 'Moto',
     description: 'Rápida y ágil',
     capacity: 'Paquetes pequeños',
     maxWeight: 'Hasta 10 kg',
@@ -28,7 +29,7 @@ export const vehicles: Vehicle[] = [
   {
     type: 'motorized_bike',
     name: 'Bici Bota',
-    icon: '🛵',
+    icon: 'Bici Bota',
     description: 'Económica y práctica',
     capacity: 'Paquetes pequeños',
     maxWeight: 'Hasta 5 kg',
@@ -37,7 +38,7 @@ export const vehicles: Vehicle[] = [
   {
     type: 'bicycle',
     name: 'Bici',
-    icon: '🚲',
+    icon: 'Bici',
     description: 'Ecológica y gratis',
     capacity: 'Paquetes muy pequeños',
     maxWeight: 'Hasta 3 kg',
@@ -46,7 +47,7 @@ export const vehicles: Vehicle[] = [
   {
     type: 'car',
     name: 'Carro',
-    icon: '🚗',
+    icon: 'Carro',
     description: 'Amplio y cómodo',
     capacity: 'Paquetes medianos',
     maxWeight: 'Hasta 50 kg',
@@ -55,7 +56,7 @@ export const vehicles: Vehicle[] = [
   {
     type: 'truck',
     name: 'Camión',
-    icon: '🚛',
+    icon: 'Camion',
     description: 'Para cargas grandes',
     capacity: 'Fletes y carga pesada',
     maxWeight: 'Hasta 500 kg',
@@ -93,7 +94,11 @@ export function VehicleSelector({ selected, onSelect, showDetails = true }: Vehi
             animate={selected === vehicle.type ? { scale: [1, 1.1, 1] } : {}}
             transition={{ duration: 0.3 }}
           >
-            {vehicle.icon}
+            {vehicle.type === 'motorcycle' && <Bike className="h-6 w-6" />}
+            {vehicle.type === 'motorized_bike' && <Bike className="h-6 w-6" />}
+            {vehicle.type === 'bicycle' && <Bike className="h-6 w-6" />}
+            {vehicle.type === 'car' && <Car className="h-6 w-6" />}
+            {vehicle.type === 'truck' && <Truck className="h-6 w-6" />}
           </motion.div>
 
           {/* Info */}
@@ -114,8 +119,8 @@ export function VehicleSelector({ selected, onSelect, showDetails = true }: Vehi
             
             {showDetails && (
               <div className="mt-2 flex gap-3 text-xs text-surface-400">
-                <span>📦 {vehicle.capacity}</span>
-                <span>⚖️ {vehicle.maxWeight}</span>
+                <span className="flex items-center gap-1"><Package className="h-3 w-3" /> {vehicle.capacity}</span>
+                <span className="flex items-center gap-1"><Weight className="h-3 w-3" /> {vehicle.maxWeight}</span>
               </div>
             )}
           </div>
@@ -153,7 +158,7 @@ export function VehicleBadge({ type, size = 'md' }: VehicleBadgeProps) {
         sizes[size]
       )}
     >
-      <span>{vehicle?.icon}</span>
+      <span>{vehicle?.type === 'motorcycle' || vehicle?.type === 'motorized_bike' || vehicle?.type === 'bicycle' ? <Bike className="h-4 w-4" /> : vehicle?.type === 'car' ? <Car className="h-4 w-4" /> : <Truck className="h-4 w-4" />}</span>
       <span>{vehicle?.name}</span>
     </span>
   );

@@ -199,11 +199,11 @@ export default function DriversPage() {
                     onClick={() => setFilter(type as VehicleType)}
                     whileTap={{ scale: 0.95 }}
                   >
-                    {type === 'motorcycle' && '🏍️ Moto'}
-                    {type === 'motorized_bike' && '🛵 Bici Bota'}
-                    {type === 'bicycle' && '🚲 Bici'}
-                    {type === 'car' && '🚗 Carro'}
-                    {type === 'truck' && '🚛 Camión'}
+                    {type === 'motorcycle' && 'Moto'}
+                    {type === 'motorized_bike' && 'Bici Bota'}
+                    {type === 'bicycle' && 'Bici'}
+                    {type === 'car' && 'Carro'}
+                    {type === 'truck' && 'Camion'}
                   </motion.button>
                 ))}
               </div>
@@ -235,8 +235,8 @@ export default function DriversPage() {
                       <VehicleBadge type={driver.vehicleType} size="sm" />
                     </div>
                     <div className="flex items-center gap-4 mt-1 text-sm text-surface-500">
-                      <span>⭐ {driver.rating}</span>
-                      <span>📦 {driver.trips} viajes</span>
+                      <span>Star {driver.rating}</span>
+                      <span>Package {driver.trips} viajes</span>
                     </div>
                   </div>
 
@@ -271,7 +271,7 @@ export default function DriversPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
-            <span className="text-4xl">🔍</span>
+            <span className="text-4xl">Search</span>
             <p className="mt-4 font-medium text-surface-600">
               No hay repartidores con este vehículo
             </p>

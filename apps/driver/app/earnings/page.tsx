@@ -31,15 +31,15 @@ interface EarningsData {
 }
 
 const PERIODS = [
-  { id: 'today', label: 'Hoy', icon: '📅' },
+  { id: 'today', label: 'Hoy', icon: 'Calendar' },
   { id: 'week', label: 'Semana', icon: '📆' },
-  { id: 'month', label: 'Mes', icon: '🗓️' },
+  { id: 'month', label: 'Mes', icon: 'CalendarDays' },
   { id: 'all', label: 'Todo', icon: '♾️' },
 ];
 
 const ORDER_TYPE_ICONS: Record<string, string> = {
-  immediate: '📦',
-  scheduled: '📅',
+  immediate: 'Package',
+  scheduled: 'Calendar',
   freight: '🚚',
   trip: '🚕',
 };
@@ -106,7 +106,7 @@ export default function EarningsPage() {
                 <span className="text-sm font-medium">Volver</span>
               </Link>
               <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-                💰 Ganancias
+                Ganancias
               </h1>
               <div className="w-16" />
             </div>
@@ -143,7 +143,7 @@ export default function EarningsPage() {
                 <span className="text-sm font-medium">Volver</span>
               </Link>
               <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-                💰 Ganancias
+                Ganancias
               </h1>
               <div className="w-16" />
             </div>
@@ -173,7 +173,7 @@ export default function EarningsPage() {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
-              🔄 Reintentar
+              Reintentar
             </motion.button>
           </motion.div>
         </main>
@@ -195,7 +195,7 @@ export default function EarningsPage() {
               <span className="text-sm font-medium">Volver</span>
             </Link>
             <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-              💰 Ganancias
+              Ganancias
             </h1>
             <div className="w-16" />
           </div>
@@ -237,7 +237,7 @@ export default function EarningsPage() {
             </motion.p>
             <div className="mt-4 flex items-center gap-4 text-sm">
               <div className="flex items-center gap-1 text-white/80">
-                <span className="text-kiwi-200">📦</span>
+                <span className="text-kiwi-200">Package</span>
                 <span>{earnings?.totalTrips || 0} viajes</span>
               </div>
               <div className="flex items-center gap-1 text-white/80">
@@ -326,7 +326,7 @@ export default function EarningsPage() {
             transition={{ delay: 0.3 }}
           >
             <h3 className="mb-4 text-sm font-semibold text-surface-600 dark:text-surface-400">
-              📊 Ganancias Diarias
+              BarChart3 Ganancias Diarias
             </h3>
             <div className="flex items-end gap-1 h-32">
               {earnings.daily.slice(-7).map((day, index) => (
@@ -366,7 +366,7 @@ export default function EarningsPage() {
           transition={{ delay: 0.4 }}
         >
           <h3 className="mb-3 text-sm font-semibold text-surface-600 dark:text-surface-400">
-            📋 Transacciones Recientes
+            ClipboardList Transacciones Recientes
           </h3>
 
           {earnings?.transactions && earnings.transactions.length > 0 ? (
@@ -382,7 +382,7 @@ export default function EarningsPage() {
                   <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-kiwi-100 dark:bg-kiwi-900/50 text-kiwi-600 dark:text-kiwi-400">
                       <span className="text-lg">
-                        {ORDER_TYPE_ICONS[transaction.orderType] || '📦'}
+                        {ORDER_TYPE_ICONS[transaction.orderType] || 'Package'}
                       </span>
                     </div>
                     <div>
@@ -423,7 +423,7 @@ export default function EarningsPage() {
               whileHover={{ scale: 1.02, boxShadow: '0 16px 40px -8px rgba(34, 197, 94, 0.5)' }}
               whileTap={{ scale: 0.98 }}
             >
-              💳 Retirar Ganancias
+              Retirar Ganancias
             </motion.button>
           </Link>
           <p className="text-center text-xs text-surface-400 dark:text-surface-500 mt-2">
@@ -439,35 +439,35 @@ export default function EarningsPage() {
             href="/"
             className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
           >
-            <span className="text-xl">🏠</span>
+            <span className="text-xl">Home</span>
             <span className="text-xs font-medium">Inicio</span>
           </Link>
           <Link
             href="/active"
             className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
           >
-            <span className="text-xl">📦</span>
+            <span className="text-xl">Package</span>
             <span className="text-xs font-medium">Activos</span>
           </Link>
           <Link
             href="/earnings"
             className="flex flex-col items-center gap-1 px-4 py-2 text-kiwi-600 dark:text-kiwi-400"
           >
-            <span className="text-xl">💰</span>
+            <span className="text-xl">Coins</span>
             <span className="text-xs font-medium">Ganancias</span>
           </Link>
           <Link
             href="/schedule"
             className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
           >
-            <span className="text-xl">📅</span>
+            <span className="text-xl">Calendar</span>
             <span className="text-xs font-medium">Horario</span>
           </Link>
           <Link
             href="/profile"
             className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
           >
-            <span className="text-xl">👤</span>
+            <span className="text-xl">User</span>
             <span className="text-xs font-medium">Perfil</span>
           </Link>
         </div>

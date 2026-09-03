@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from './api-client';
+import { Package, CheckCircle, RefreshCw, Coins, Star, Gift, Settings, Bell, Loader } from 'lucide-react';
 
 interface Notification {
   id: string;
@@ -68,16 +69,16 @@ export function NotificationList({ onNotificationClick }: NotificationListProps)
   };
 
   const getNotificationIcon = (type: string) => {
-    const icons: Record<string, string> = {
-      new_order: '📦',
-      order_accepted: '✅',
-      order_status: '🔄',
-      payment_received: '💰',
-      new_rating: '⭐',
-      promotion: '🎁',
-      system: '⚙️',
+    const iconComponents: Record<string, string> = {
+      new_order: 'package',
+      order_accepted: 'check',
+      order_status: 'refresh',
+      payment_received: 'coins',
+      new_rating: 'star',
+      promotion: 'gift',
+      system: 'settings',
     };
-    return icons[type] || '🔔';
+    return iconComponents[type] || 'bell';
   };
 
   const formatTime = (dateString: string) => {
@@ -101,9 +102,8 @@ export function NotificationList({ onNotificationClick }: NotificationListProps)
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-          className="text-3xl"
         >
-          ⏳
+          <Loader className="h-8 w-8 text-surface-400" />
         </motion.div>
       </div>
     );
@@ -155,7 +155,7 @@ export function NotificationList({ onNotificationClick }: NotificationListProps)
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
             >
-              <span className="text-5xl mb-4 block">🔔</span>
+              <span className="mb-4 block"><Bell className="h-12 w-12 text-surface-300 mx-auto" /></span>
               <p className="text-surface-500 dark:text-surface-400">
                 {filter === 'unread' ? 'No hay notificaciones nuevas' : 'No hay notificaciones'}
               </p>
@@ -179,7 +179,15 @@ export function NotificationList({ onNotificationClick }: NotificationListProps)
                 }}
               >
                 <div className="flex items-start gap-3">
-                  <span className="text-2xl">{getNotificationIcon(notification.type)}</span>
+                  <span className="text-2xl">
+                    {notification.type === 'new_order' && <Package className="h-6 w-6" />}
+                    {notification.type === 'order_accepted' && <CheckCircle className="h-6 w-6" />}
+                    {notification.type === 'order_status' && <RefreshCw className="h-6 w-6" />}
+                    {notification.type === 'payment_received' && <Coins className="h-6 w-6" />}
+                    {notification.type === 'new_rating' && <Star className="h-6 w-6" />}
+                    {notification.type === 'promotion' && <Gift className="h-6 w-6" />}
+                    {notification.type === 'system' && <Settings className="h-6 w-6" />}
+                  </span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
                       <p className={`font-medium ${notification.read ? 'text-surface-600 dark:text-surface-400' : 'text-surface-800 dark:text-surface-200'}`}>

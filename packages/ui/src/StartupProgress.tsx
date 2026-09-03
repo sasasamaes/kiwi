@@ -70,7 +70,7 @@ export function StartupProgress({
                 animate={{ rotate: 360 }}
                 transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
               >
-                🔄
+                RefreshCw
               </motion.div>
             ) : isComplete ? (
               <motion.div
@@ -79,10 +79,10 @@ export function StartupProgress({
                 animate={{ scale: 1 }}
                 transition={{ type: 'spring', stiffness: 500 }}
               >
-                ✅
+                Check
               </motion.div>
             ) : (
-              <span className="text-2xl">🥝</span>
+              <span className="text-2xl"></span>
             )}
             <div>
               <h3 className="font-display font-bold text-surface-800 dark:text-surface-100">
@@ -127,7 +127,7 @@ export function StartupProgress({
           <div className="flex items-center gap-4">
             {progress.completed > 0 && (
               <span className="flex items-center gap-1 text-kiwi-600 dark:text-kiwi-400">
-                <span>✅</span>
+                <span>Check</span>
                 <span>{progress.completed}</span>
               </span>
             )}
@@ -139,7 +139,7 @@ export function StartupProgress({
             )}
             {progress.failed > 0 && (
               <span className="flex items-center gap-1 text-red-500">
-                <span>❌</span>
+                <span>X</span>
                 <span>{progress.failed}</span>
               </span>
             )}
@@ -182,9 +182,9 @@ export function StartupProgress({
                 >
                   <div className="flex items-center gap-2">
                     <span className="text-sm">
-                      {task.status === 'completed' ? '✅' :
-                       task.status === 'warming' ? '🔄' :
-                       task.status === 'failed' ? '❌' : '⏳'}
+                      {task.status === 'completed' ? 'Check' :
+                       task.status === 'warming' ? 'refresh' :
+                       task.status === 'failed' ? 'close' : 'clock'}
                     </span>
                     <span className="text-sm text-surface-700 dark:text-surface-300">
                       {task.name}
@@ -253,7 +253,7 @@ export function StartupProgressCompact({ className = '' }: { className?: string 
           transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
         />
       ) : (
-        <span className="text-sm">✅</span>
+        <span className="text-sm">Check</span>
       )}
       <span className="text-sm font-medium">
         {isComplete ? 'Listo' : `${Math.round(progressPercent)}%`}
@@ -305,7 +305,7 @@ export function StartupSplash({
           animate={{ scale: 1, rotate: 0 }}
           transition={{ type: 'spring', stiffness: 200, damping: 15 }}
         >
-          🥝
+          
         </motion.div>
 
         {/* App Name */}

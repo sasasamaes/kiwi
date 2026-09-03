@@ -176,10 +176,10 @@ export default function NewOrder() {
   };
 
   const steps = [
-    { num: 1, label: 'Recoger', icon: '📍' },
-    { num: 2, label: 'Entregar', icon: '🏠' },
-    { num: 3, label: 'Detalles', icon: '📦' },
-    { num: 4, label: 'Pagar', icon: '💳' },
+    { num: 1, label: 'Recoger', icon: 'MapPin' },
+    { num: 2, label: 'Entregar', icon: 'Home' },
+    { num: 3, label: 'Detalles', icon: 'Package' },
+    { num: 4, label: 'Pagar', icon: 'CreditCard' },
   ];
 
   // Order Created Success Screen
@@ -197,7 +197,7 @@ export default function NewOrder() {
             animate={{ scale: 1, rotate: 0 }}
             transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}
           >
-            🎉
+            PartyPopper
           </motion.div>
           <h1 className="text-2xl font-display font-bold text-surface-800 dark:text-surface-100 mb-2">
             ¡Pedido Creado!
@@ -217,7 +217,7 @@ export default function NewOrder() {
               <div className="flex justify-between">
                 <span className="text-surface-500 dark:text-surface-400">Tipo</span>
                 <span className="font-medium text-surface-800 dark:text-surface-200">
-                  {orderData.isScheduled ? '📅 Programado' : '⚡ Inmediato'}
+                  {orderData.isScheduled ? 'Calendar Programado' : '⚡ Inmediato'}
                 </span>
               </div>
               <div className="flex justify-between">
@@ -232,7 +232,7 @@ export default function NewOrder() {
           <div className="space-y-3">
             <Link href="/dashboard">
               <AnimatedButton variant="gradient" className="w-full">
-                📊 Volver al Dashboard
+                BarChart3 Volver al Dashboard
               </AnimatedButton>
             </Link>
             <AnimatedButton
@@ -331,7 +331,7 @@ export default function NewOrder() {
               exit={{ opacity: 0, x: -50 }}
             >
               <h2 className="mb-6 text-xl font-display font-semibold text-surface-800 dark:text-surface-100">
-                📍 ¿Dónde recoger?
+                MapPin ¿Dónde recoger?
               </h2>
 
               {/* Saved Addresses */}
@@ -410,7 +410,7 @@ export default function NewOrder() {
                   whileTap={{ scale: 0.98 }}
                 >
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl">📍</span>
+                    <span className="text-2xl">MapPin</span>
                     <div>
                       <p className="text-sm font-medium text-kiwi-700 dark:text-kiwi-400">
                         Usar ubicación actual
@@ -434,7 +434,7 @@ export default function NewOrder() {
               exit={{ opacity: 0, x: -50 }}
             >
               <h2 className="mb-6 text-xl font-display font-semibold text-surface-800 dark:text-surface-100">
-                🏠 ¿Dónde entregar?
+                Home ¿Dónde entregar?
               </h2>
 
               <div className="space-y-4">
@@ -515,7 +515,7 @@ export default function NewOrder() {
               exit={{ opacity: 0, x: -50 }}
             >
               <h2 className="mb-6 text-xl font-display font-semibold text-surface-800 dark:text-surface-100">
-                📦 Detalles del pedido
+                Package Detalles del pedido
               </h2>
 
               {/* Quick Add Section */}
@@ -677,7 +677,7 @@ export default function NewOrder() {
 
                 {orderData.items.length === 0 && (
                   <div className="rounded-xl bg-surface-50 dark:bg-surface-800 p-8 text-center">
-                    <span className="text-4xl">📦</span>
+                    <span className="text-4xl">Package</span>
                     <p className="mt-2 text-sm text-surface-500 dark:text-surface-400">
                       Agrega productos al pedido
                     </p>
@@ -706,7 +706,7 @@ export default function NewOrder() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-medium text-surface-800 dark:text-surface-200">
-                      📅 Programar para después
+                      Calendar Programar para después
                     </p>
                     <p className="text-xs text-surface-500 dark:text-surface-400">
                       Elige fecha y hora específica
@@ -771,7 +771,7 @@ export default function NewOrder() {
               exit={{ opacity: 0, x: -50 }}
             >
               <h2 className="mb-6 text-xl font-display font-semibold text-surface-800 dark:text-surface-100">
-                💳 Resumen y pago
+                CreditCard Resumen y pago
               </h2>
 
               {/* Order Summary */}
@@ -782,19 +782,19 @@ export default function NewOrder() {
 
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-surface-500 dark:text-surface-400">📍 Recoger:</span>
+                    <span className="text-surface-500 dark:text-surface-400">MapPin Recoger:</span>
                     <span className="font-medium text-surface-800 dark:text-surface-200 text-right max-w-[60%]">
                       {orderData.pickupName || 'No especificado'}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-surface-500 dark:text-surface-400">🏠 Entregar:</span>
+                    <span className="text-surface-500 dark:text-surface-400">Home Entregar:</span>
                     <span className="font-medium text-surface-800 dark:text-surface-200 text-right max-w-[60%]">
                       {orderData.deliveryName || 'No especificado'}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-surface-500 dark:text-surface-400">📦 Productos:</span>
+                    <span className="text-surface-500 dark:text-surface-400">Package Productos:</span>
                     <span className="font-medium text-surface-800 dark:text-surface-200">
                       {orderData.items.length} items (
                       {orderData.items.reduce((sum, i) => sum + i.quantity, 0)} uds)
@@ -802,7 +802,7 @@ export default function NewOrder() {
                   </div>
                   {orderData.isScheduled && (
                     <div className="flex justify-between">
-                      <span className="text-surface-500 dark:text-surface-400">📅 Programado:</span>
+                      <span className="text-surface-500 dark:text-surface-400">Calendar Programado:</span>
                       <span className="font-medium text-kiwi-600 dark:text-kiwi-400">
                         {orderData.scheduledDate} {orderData.scheduledTime}
                       </span>
@@ -835,7 +835,7 @@ export default function NewOrder() {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-surface-500 dark:text-surface-400">Envío</span>
-                    <span className="text-kiwi-600 dark:text-kiwi-400 font-medium">Gratis 🎉</span>
+                    <span className="text-kiwi-600 dark:text-kiwi-400 font-medium">Gratis PartyPopper</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-surface-500 dark:text-surface-400">
@@ -865,12 +865,12 @@ export default function NewOrder() {
                   {[
                     {
                       id: 'sinpe',
-                      icon: '📱',
+                      icon: 'Smartphone',
                       label: 'SINPE Móvil',
                       desc: 'Transferencia instantánea',
                     },
-                    { id: 'card', icon: '💳', label: 'Tarjeta', desc: 'Crédito o débito' },
-                    { id: 'cash', icon: '💵', label: 'Efectivo', desc: 'Pagar al repartidor' },
+                    { id: 'card', icon: 'CreditCard', label: 'Tarjeta', desc: 'Crédito o débito' },
+                    { id: 'cash', icon: 'DollarSign', label: 'Efectivo', desc: 'Pagar al repartidor' },
                   ].map((method) => (
                     <motion.button
                       key={method.id}
@@ -953,7 +953,7 @@ export default function NewOrder() {
                     animate={{ rotate: 360 }}
                     transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
                   >
-                    ⏳
+                    Clock
                   </motion.span>
                   Creando...
                 </span>

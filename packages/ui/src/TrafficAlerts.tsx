@@ -77,14 +77,14 @@ const ALERT_CONFIG = {
     borderColor: 'border-blue-200 dark:border-blue-800',
   },
   event: {
-    icon: '🎉',
+    icon: 'party',
     color: '#8b5cf6',
     bgColor: 'bg-purple-50 dark:bg-purple-900/30',
     textColor: 'text-purple-700 dark:text-purple-400',
     borderColor: 'border-purple-200 dark:border-purple-800',
   },
   alternative_route: {
-    icon: '🗺️',
+    icon: 'map',
     color: '#22c55e',
     bgColor: 'bg-green-50 dark:bg-green-900/30',
     textColor: 'text-green-700 dark:text-green-400',
@@ -148,7 +148,7 @@ export function TrafficAlertBanner({
 
           {/* Location */}
           <div className="flex items-center gap-1 text-xs opacity-75 mb-2">
-            <span>📍</span>
+            <span>MapPin</span>
             <span>{alert.location.address}</span>
             <span>•</span>
             <span>{t('traffic.maxDistance')}: {alert.affectedArea.radius} km</span>
@@ -158,7 +158,7 @@ export function TrafficAlertBanner({
           {alert.alternativeRoute && (
             <div className="rounded-lg bg-white/50 dark:bg-surface-800/50 p-2 mb-2">
               <div className="flex items-center gap-2">
-                <span className="text-sm">🗺️</span>
+                <span className="text-sm">Map</span>
                 <span className={`text-xs font-medium ${config.textColor}`}>
                   {t('traffic.alternativeRoute')}: {alert.alternativeRoute.description}
                 </span>
@@ -214,7 +214,7 @@ export function TrafficAlertList({
           animate={{ y: [0, -5, 0] }}
           transition={{ duration: 2, repeat: Infinity }}
         >
-          ✅
+          Check
         </motion.div>
         <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100 mb-1">
           {t('traffic.noAlerts')}
@@ -230,7 +230,7 @@ export function TrafficAlertList({
     <div className={`space-y-3 ${className}`}>
       <div className="flex items-center justify-between mb-2">
         <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-          🚨 Alertas Activas ({alerts.length})
+          AlertTriangle Alertas Activas ({alerts.length})
         </h3>
       </div>
 
@@ -309,7 +309,7 @@ export function TrafficAlertList({
                       {alert.alternativeRoute && (
                         <div className="rounded-lg bg-white/50 dark:bg-surface-800/50 p-3 mb-3">
                           <div className="flex items-center gap-2 mb-1">
-                            <span>🗺️</span>
+                            <span>Map</span>
                             <span className={`text-xs font-semibold ${config.textColor}`}>
                               {t('traffic.alternativeRoute')}
                             </span>
@@ -381,7 +381,7 @@ export function TrafficAlertBadge({
         animate={{ rotate: [0, -10, 10, 0] }}
         transition={{ duration: 0.5, repeat: Infinity, repeatDelay: 3 }}
       >
-        🚨
+        AlertTriangle
       </motion.span>
       <span className="text-sm">{count} {t('traffic.alerts')}</span>
       
@@ -498,7 +498,7 @@ export function TrafficAlertsPanel({
               {/* Header */}
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-display font-bold text-surface-800 dark:text-surface-100">
-                  🚨 {t('traffic.alerts')}
+                  AlertTriangle {t('traffic.alerts')}
                 </h3>
                 <motion.button
                   className="text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
@@ -525,7 +525,7 @@ export function TrafficAlertsPanel({
                 onClick={fetchAlerts}
                 whileTap={{ scale: 0.95 }}
               >
-                🔄 {t('phrases.syncData')}
+                RefreshCw {t('phrases.syncData')}
               </motion.button>
             </motion.div>
           </motion.div>

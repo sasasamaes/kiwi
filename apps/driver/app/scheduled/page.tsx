@@ -63,7 +63,7 @@ export default function ScheduledOrdersPage() {
   // Listen for new scheduled orders
   useEffect(() => {
     const cleanup = on('order:new', (data: any) => {
-      console.log('📅 New scheduled order:', data);
+      console.log('Calendar New scheduled order:', data);
       fetchScheduledOrders();
     });
 
@@ -142,7 +142,7 @@ export default function ScheduledOrdersPage() {
               <span className="text-sm font-medium">Inicio</span>
             </Link>
             <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-              📅 Pedidos Programados
+              Calendar Pedidos Programados
             </h1>
             <div className="w-16" />
           </div>
@@ -182,7 +182,7 @@ export default function ScheduledOrdersPage() {
               animate={{ y: [0, -10, 0] }}
               transition={{ duration: 2, repeat: Infinity }}
             >
-              📅
+              Calendar
             </motion.div>
             <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-2">
               No hay pedidos programados
@@ -207,7 +207,7 @@ export default function ScheduledOrdersPage() {
                     <div className="flex gap-4">
                       {/* Schedule Icon */}
                       <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-gold-100 dark:bg-gold-900/30 text-3xl flex-shrink-0">
-                        📅
+                        Calendar
                       </div>
 
                       {/* Order Info */}
@@ -230,7 +230,7 @@ export default function ScheduledOrdersPage() {
                           {/* Schedule Time */}
                           {order.scheduledDate && (
                             <span className="flex items-center gap-1 text-sm text-gold-600 dark:text-gold-400 font-medium">
-                              📅{' '}
+                              Calendar{' '}
                               {new Date(order.scheduledDate).toLocaleDateString('es-CR', {
                                 weekday: 'short',
                                 month: 'short',
@@ -243,7 +243,7 @@ export default function ScheduledOrdersPage() {
                           {/* Distance */}
                           {order.distanceKm && (
                             <span className="text-sm text-surface-500 dark:text-surface-400">
-                              📍 {order.distanceKm} km
+                              MapPin {order.distanceKm} km
                             </span>
                           )}
                         </div>
@@ -252,7 +252,7 @@ export default function ScheduledOrdersPage() {
                         <div className="mt-3">
                           {hasSubmitted ? (
                             <div className="flex items-center gap-2 text-kiwi-600 dark:text-kiwi-400">
-                              <span className="text-lg">✅</span>
+                              <span className="text-lg">Check</span>
                               <span className="text-sm font-medium">Propuesta enviada</span>
                             </div>
                           ) : (
@@ -327,20 +327,20 @@ export default function ScheduledOrdersPage() {
                 <div className="rounded-xl bg-surface-50 dark:bg-surface-900 p-4">
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span className="text-surface-500 dark:text-surface-400">📍 Recoger:</span>
+                      <span className="text-surface-500 dark:text-surface-400">MapPin Recoger:</span>
                       <span className="font-medium text-surface-800 dark:text-surface-200 text-right max-w-[60%]">
                         {selectedOrder.pickupAddress}
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-surface-500 dark:text-surface-400">🏠 Entregar:</span>
+                      <span className="text-surface-500 dark:text-surface-400">Home Entregar:</span>
                       <span className="font-medium text-surface-800 dark:text-surface-200 text-right max-w-[60%]">
                         {selectedOrder.deliveryAddress}
                       </span>
                     </div>
                     {selectedOrder.scheduledDate && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-surface-500 dark:text-surface-400">📅 Fecha:</span>
+                        <span className="text-surface-500 dark:text-surface-400">Calendar Fecha:</span>
                         <span className="font-medium text-gold-600 dark:text-gold-400">
                           {new Date(selectedOrder.scheduledDate).toLocaleDateString('es-CR', {
                             weekday: 'long',
@@ -352,7 +352,7 @@ export default function ScheduledOrdersPage() {
                       </div>
                     )}
                     <div className="flex justify-between text-sm">
-                      <span className="text-surface-500 dark:text-surface-400">💰 Pago:</span>
+                      <span className="text-surface-500 dark:text-surface-400">Coins Pago:</span>
                       <span className="font-bold text-kiwi-600 dark:text-kiwi-400">
                         ₡
                         {Number(
@@ -366,7 +366,7 @@ export default function ScheduledOrdersPage() {
                 {/* Estimated Arrival */}
                 <div>
                   <label className="mb-2 block text-sm font-medium text-surface-600 dark:text-surface-400">
-                    🕐 ¿Cuándo puedes llegar? *
+                    Clock ¿Cuándo puedes llegar? *
                   </label>
                   <input
                     type="text"
@@ -399,7 +399,7 @@ export default function ScheduledOrdersPage() {
                 {/* Message */}
                 <div>
                   <label className="mb-2 block text-sm font-medium text-surface-600 dark:text-surface-400">
-                    💬 Mensaje (opcional)
+                    MessageCircle Mensaje (opcional)
                   </label>
                   <textarea
                     value={proposalData.message}
@@ -423,7 +423,7 @@ export default function ScheduledOrdersPage() {
                         animate={{ rotate: 360 }}
                         transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
                       >
-                        ⏳
+                        Clock
                       </motion.span>
                       Enviando...
                     </span>

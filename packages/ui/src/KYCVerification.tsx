@@ -34,31 +34,31 @@ const statusConfig: Record<KYCStatus, { label: string; color: string; icon: stri
   pending: {
     label: 'Pendiente',
     color: 'bg-surface-100 text-surface-600',
-    icon: '📝',
+    icon: 'file',
     description: 'Sube tus documentos para verificar tu cuenta',
   },
   documents_submitted: {
     label: 'Documentos Enviados',
     color: 'bg-blue-100 text-blue-600',
-    icon: '📤',
+    icon: 'upload',
     description: 'Tus documentos están siendo revisados',
   },
   under_review: {
     label: 'En Revisión',
     color: 'bg-gold-100 text-gold-600',
-    icon: '🔍',
+    icon: 'search',
     description: 'Estamos verificando tu información',
   },
   approved: {
     label: 'Verificado',
     color: 'bg-kiwi-100 text-kiwi-600',
-    icon: '✅',
+    icon: 'Check',
     description: 'Tu cuenta ha sido verificada exitosamente',
   },
   rejected: {
     label: 'Rechazado',
     color: 'bg-red-100 text-red-600',
-    icon: '❌',
+    icon: 'close',
     description: 'Hubo un problema con tus documentos',
   },
   expired: {
@@ -110,7 +110,7 @@ export function KYCVerification({ role, kycData, onSubmit, loading = false }: KY
           animate={{ scale: [1, 1.2, 1] }}
           transition={{ duration: 0.5 }}
         >
-          ✅
+          Check
         </motion.div>
         <h3 className="text-lg font-display font-semibold text-kiwi-700 mb-2">
           Cuenta Verificada
@@ -131,7 +131,7 @@ export function KYCVerification({ role, kycData, onSubmit, loading = false }: KY
         animate={{ opacity: 1, scale: 1 }}
       >
         <div className="text-center mb-4">
-          <span className="text-4xl">❌</span>
+          <span className="text-4xl">X</span>
           <h3 className="text-lg font-display font-semibold text-red-700 mt-2">
             Verificación Rechazada
           </h3>
@@ -165,7 +165,7 @@ export function KYCVerification({ role, kycData, onSubmit, loading = false }: KY
           animate={{ rotate: [0, 10, -10, 0] }}
           transition={{ duration: 2, repeat: Infinity }}
         >
-          🔍
+          Search
         </motion.div>
         <h3 className="text-lg font-display font-semibold text-gold-700 mb-2">
           {config.label}
@@ -233,7 +233,7 @@ export function KYCVerification({ role, kycData, onSubmit, loading = false }: KY
           </div>
           <div className="bg-surface-50 rounded-xl p-4">
             <p className="text-xs text-surface-500">
-              📌 Tu número de documento será verificado con el Registro Civil
+              MapPin Tu número de documento será verificado con el Registro Civil
             </p>
           </div>
         </div>
@@ -364,7 +364,7 @@ export function KYCVerification({ role, kycData, onSubmit, loading = false }: KY
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
-              <span className="text-3xl mb-2 block">🚗</span>
+              <span className="text-3xl mb-2 block">Car</span>
               <p className="text-sm font-medium text-surface-700">Marchamo (registration)</p>
               <p className="text-xs text-surface-400">Foto o PDF</p>
             </motion.div>
@@ -373,7 +373,7 @@ export function KYCVerification({ role, kycData, onSubmit, loading = false }: KY
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
-              <span className="text-3xl mb-2 block">🛡️</span>
+              <span className="text-3xl mb-2 block">Shield</span>
               <p className="text-sm font-medium text-surface-700">Seguro del vehículo</p>
               <p className="text-xs text-surface-400">Foto o PDF</p>
             </motion.div>
@@ -430,7 +430,7 @@ export function KYCVerification({ role, kycData, onSubmit, loading = false }: KY
       <div className="space-y-4">
         <div className="bg-kiwi-50 rounded-xl p-4">
           <p className="text-sm text-kiwi-700 font-medium mb-2">
-            📋 Resumen de tu verificación:
+            ClipboardList Resumen de tu verificación:
           </p>
           <ul className="space-y-2 text-sm text-surface-600">
             <li className="flex items-center gap-2">
@@ -443,28 +443,28 @@ export function KYCVerification({ role, kycData, onSubmit, loading = false }: KY
             </li>
             <li className="flex items-center gap-2">
               <span className="text-kiwi-500">✓</span>
-              Foto del documento: {formData.idFront ? '✅ Subida' : '⏳ Pendiente'}
+              Foto del documento: {formData.idFront ? 'Check Subida' : 'Clock Pendiente'}
             </li>
             <li className="flex items-center gap-2">
               <span className="text-kiwi-500">✓</span>
-              Selfie: {formData.selfie ? '✅ Subida' : '⏳ Pendiente'}
+              Selfie: {formData.selfie ? 'Check Subida' : 'Clock Pendiente'}
             </li>
             {role === 'driver' && (
               <>
                 <li className="flex items-center gap-2">
                   <span className="text-kiwi-500">✓</span>
-                  Licencia: {formData.license ? '✅ Subida' : '⏳ Pendiente'}
+                  Licencia: {formData.license ? 'Check Subida' : 'Clock Pendiente'}
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="text-kiwi-500">✓</span>
-                  Documentos vehículo: {formData.vehicleRegister ? '✅ Subidos' : '⏳ Pendientes'}
+                  Documentos vehículo: {formData.vehicleRegister ? 'Check Subidos' : 'Clock Pendientes'}
                 </li>
               </>
             )}
             {role === 'merchant' && (
               <li className="flex items-center gap-2">
                 <span className="text-kiwi-500">✓</span>
-                Licencia comercial: {formData.businessLicense ? '✅ Subida' : '⏳ Pendiente'}
+                Licencia comercial: {formData.businessLicense ? 'Check Subida' : 'Clock Pendiente'}
               </li>
             )}
           </ul>
@@ -557,7 +557,7 @@ export function KYCVerification({ role, kycData, onSubmit, loading = false }: KY
                 animate={{ rotate: 360 }}
                 transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
               >
-                ⏳
+                Clock
               </motion.span>
               Enviando...
             </span>

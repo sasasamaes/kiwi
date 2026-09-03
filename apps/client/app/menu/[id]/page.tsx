@@ -30,9 +30,9 @@ interface DeliveryInfo {
 }
 
 const SAVED_ADDRESSES = [
-  { id: 'home', label: '🏠 Casa', address: '' },
+  { id: 'home', label: 'Home Casa', address: '' },
   { id: 'work', label: '💼 Trabajo', address: '' },
-  { id: 'other', label: '📍 Otro', address: '' },
+  { id: 'other', label: 'MapPin Otro', address: '' },
 ];
 
 export default function MenuPage() {
@@ -248,7 +248,7 @@ export default function MenuPage() {
             animate={{ scale: 1, rotate: 0 }}
             transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}
           >
-            🎉
+            PartyPopper
           </motion.div>
           <h1 className="text-2xl font-display font-bold text-surface-800 dark:text-surface-100 mb-2">
             ¡Pedido Creado!
@@ -283,12 +283,12 @@ export default function MenuPage() {
           <div className="space-y-3">
             <Link href={`/order/${orderSuccess}/tracking`}>
               <AnimatedButton variant="gradient" className="w-full">
-                📍 Rastrear Pedido
+                MapPin Rastrear Pedido
               </AnimatedButton>
             </Link>
             <Link href="/">
               <AnimatedButton variant="secondary" className="w-full">
-                🏠 Volver al inicio
+                Home Volver al inicio
               </AnimatedButton>
             </Link>
             <AnimatedButton
@@ -376,7 +376,7 @@ export default function MenuPage() {
               ← Volver
             </AnimatedButton>
             <AnimatedButton variant="gradient" onClick={fetchData}>
-              🔄 Reintentar
+              RefreshCw Reintentar
             </AnimatedButton>
           </div>
         </motion.div>
@@ -389,7 +389,7 @@ export default function MenuPage() {
     return (
       <main className="min-h-[100dvh] bg-bg-light dark:bg-surface-950 flex items-center justify-center">
         <div className="text-center">
-          <span className="text-5xl mb-4 block">❌</span>
+          <span className="text-5xl mb-4 block">X</span>
           <p className="text-surface-500 dark:text-surface-400">Comercio no encontrado</p>
           <Link href="/" className="mt-4 inline-block text-kiwi-600 hover:text-kiwi-700">
             ← Volver al inicio
@@ -441,10 +441,10 @@ export default function MenuPage() {
               </h2>
               <div className="flex items-center gap-3 mt-1">
                 <span className="text-sm text-surface-500 dark:text-surface-400">
-                  ⭐ {merchant.rating.toFixed(1)} ({merchant.totalRatings})
+                  Star {merchant.rating.toFixed(1)} ({merchant.totalRatings})
                 </span>
                 <span className="text-sm text-surface-500 dark:text-surface-400">
-                  📍 {merchant.address}
+                  MapPin {merchant.address}
                 </span>
                 <span
                   className={`px-2 py-0.5 rounded-full text-xs font-medium ${
@@ -495,7 +495,7 @@ export default function MenuPage() {
       >
         {filteredItems.length === 0 ? (
           <div className="text-center py-12">
-            <span className="text-5xl mb-4 block">🍽️</span>
+            <span className="text-5xl mb-4 block">Utensils</span>
             <p className="text-surface-500 dark:text-surface-400">
               No hay productos en esta categoría
             </p>
@@ -512,7 +512,7 @@ export default function MenuPage() {
                   >
                     <div className="flex gap-4">
                       <div className="flex h-20 w-20 items-center justify-center rounded-xl bg-surface-100 dark:bg-surface-700 text-3xl flex-shrink-0">
-                        {item.image || '🍽️'}
+                        {item.image || 'Utensils'}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between">
@@ -638,7 +638,7 @@ export default function MenuPage() {
                 <div className="w-12 h-1 bg-surface-300 dark:bg-surface-600 rounded-full mx-auto mb-3" />
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100">
-                    🛒 Tu Pedido
+                    ShoppingCart Tu Pedido
                   </h2>
                   <motion.button
                     onClick={() => setShowCheckout(false)}
@@ -655,13 +655,13 @@ export default function MenuPage() {
                 {/* Order Summary */}
                 <div>
                   <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-3">
-                    📦 Resumen
+                    Package Resumen
                   </h3>
                   <div className="space-y-2">
                     {cart.map((item) => (
                       <div key={item.id} className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <span className="text-xl">{item.image || '🍽️'}</span>
+                          <span className="text-xl">{item.image || 'Utensils'}</span>
                           <div>
                             <p className="text-sm font-medium text-surface-800 dark:text-surface-200">
                               {item.name}
@@ -680,7 +680,7 @@ export default function MenuPage() {
                 {/* Delivery Address */}
                 <div>
                   <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-3">
-                    📍 Dirección de entrega
+                    MapPin Dirección de entrega
                   </h3>
 
                   {/* Saved Addresses */}
@@ -706,7 +706,7 @@ export default function MenuPage() {
                     onChange={(address, coordinates) => {
                       setDeliveryInfo({ ...deliveryInfo, address });
                       if (coordinates) {
-                        console.log('📍 Address coordinates:', coordinates);
+                        console.log('MapPin Address coordinates:', coordinates);
                       }
                     }}
                     placeholder="Buscar dirección en Nicoya..."
@@ -718,7 +718,7 @@ export default function MenuPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-3">
-                      👤 Nombre
+                      User Nombre
                     </h3>
                     <input
                       type="text"
@@ -730,7 +730,7 @@ export default function MenuPage() {
                   </div>
                   <div>
                     <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-3">
-                      📱 Teléfono
+                      Smartphone Teléfono
                     </h3>
                     <input
                       type="tel"
@@ -745,7 +745,7 @@ export default function MenuPage() {
                 {/* Special Instructions */}
                 <div>
                   <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-3">
-                    📝 Instrucciones (opcional)
+                    FileText Instrucciones (opcional)
                   </h3>
                   <textarea
                     value={deliveryInfo.instructions}
@@ -761,13 +761,13 @@ export default function MenuPage() {
                 {/* Payment Method */}
                 <div>
                   <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-3">
-                    💳 Método de pago
+                    CreditCard Método de pago
                   </h3>
                   <div className="grid grid-cols-3 gap-3">
                     {[
-                      { id: 'sinpe' as const, icon: '📱', label: 'SINPE', desc: 'Transferencia' },
-                      { id: 'card' as const, icon: '💳', label: 'Tarjeta', desc: 'Crédito/Débito' },
-                      { id: 'cash' as const, icon: '💵', label: 'Efectivo', desc: 'Al repartidor' },
+                      { id: 'sinpe' as const, icon: 'Smartphone', label: 'SINPE', desc: 'Transferencia' },
+                      { id: 'card' as const, icon: 'CreditCard', label: 'Tarjeta', desc: 'Crédito/Débito' },
+                      { id: 'cash' as const, icon: 'DollarSign', label: 'Efectivo', desc: 'Al repartidor' },
                     ].map((method) => (
                       <motion.button
                         key={method.id}
@@ -810,8 +810,8 @@ export default function MenuPage() {
                   {/* Crypto Options */}
                   <div className="grid grid-cols-2 gap-3 mt-3">
                     {[
-                      { id: 'crypto_usdc' as const, icon: '💵', label: 'USDC', desc: 'Stellar' },
-                      { id: 'crypto_usdt' as const, icon: '💲', label: 'USDT', desc: 'Stellar' },
+                      { id: 'crypto_usdc' as const, icon: 'DollarSign', label: 'USDC', desc: 'Stellar' },
+                      { id: 'crypto_usdt' as const, icon: 'DollarSign', label: 'USDT', desc: 'Stellar' },
                     ].map((method) => (
                       <motion.button
                         key={method.id}
@@ -873,7 +873,7 @@ export default function MenuPage() {
                       className="mt-3 rounded-xl bg-gold-50 dark:bg-gold-900/30 p-3"
                     >
                       <p className="text-sm text-gold-700 dark:text-gold-400">
-                        💵 Paga en efectivo al repartidor cuando te entreguen tu pedido
+                        DollarSign Paga en efectivo al repartidor cuando te entreguen tu pedido
                       </p>
                     </motion.div>
                   )}
@@ -886,7 +886,7 @@ export default function MenuPage() {
                       className="mt-3 rounded-xl bg-blue-50 dark:bg-blue-900/30 p-3"
                     >
                       <p className="text-sm text-blue-700 dark:text-blue-400">
-                        💳 Se te redirigirá a OnvoPay para completar el pago seguro
+                        CreditCard Se te redirigirá a OnvoPay para completar el pago seguro
                       </p>
                     </motion.div>
                   )}
@@ -910,12 +910,12 @@ export default function MenuPage() {
                             : 'text-surface-800 dark:text-surface-200'
                         }
                       >
-                        {deliveryFee === 0 ? 'Gratis 🎉' : `₡${deliveryFee.toLocaleString()}`}
+                        {deliveryFee === 0 ? 'Gratis PartyPopper' : `₡${deliveryFee.toLocaleString()}`}
                       </span>
                     </div>
                     {cartTotal < 5000 && (
                       <p className="text-xs text-kiwi-600 dark:text-kiwi-400">
-                        🎉 Envío gratis en pedidos mayores a ₡5,000
+                        PartyPopper Envío gratis en pedidos mayores a ₡5,000
                       </p>
                     )}
                     <div className="border-t border-surface-200 dark:border-surface-700 pt-2 mt-2">
@@ -944,7 +944,7 @@ export default function MenuPage() {
                         animate={{ rotate: 360 }}
                         transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
                       >
-                        ⏳
+                        Clock
                       </motion.span>
                       Creando pedido...
                     </span>

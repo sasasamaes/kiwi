@@ -51,7 +51,7 @@ export function MenuItemForm({
     description: initialData?.description || '',
     price: initialData?.price || 0,
     category: initialData?.category || categories[0] || 'Bowls',
-    image: initialData?.image || '🍽️',
+    image: initialData?.image || 'Utensils',
     isPopular: initialData?.isPopular || false,
     isAvailable: initialData?.isAvailable ?? true,
   });
@@ -68,7 +68,7 @@ export function MenuItemForm({
         description: initialData.description || '',
         price: initialData.price || 0,
         category: initialData.category || categories[0] || 'Bowls',
-        image: initialData.image || '🍽️',
+        image: initialData.image || 'Utensils',
         isPopular: initialData.isPopular || false,
         isAvailable: initialData.isAvailable ?? true,
       });
@@ -128,7 +128,7 @@ export function MenuItemForm({
     >
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100">
-          {isEditing ? '✏️ Editar Producto' : '➕ Nuevo Producto'}
+          {isEditing ? 'Pencil Editar Producto' : '➕ Nuevo Producto'}
         </h2>
         <motion.button
           onClick={onCancel}
@@ -319,7 +319,7 @@ export function MenuItemForm({
           <div className="flex-1 rounded-xl bg-surface-50 dark:bg-surface-900 p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium text-surface-800 dark:text-surface-200">✅ Disponible</p>
+                <p className="font-medium text-surface-800 dark:text-surface-200">Check Disponible</p>
                 <p className="text-xs text-surface-500 dark:text-surface-400">En stock ahora</p>
               </div>
               <motion.button
@@ -387,7 +387,7 @@ export function MenuItemForm({
                   animate={{ rotate: 360 }}
                   transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
                 >
-                  ⏳
+                  Clock
                 </motion.span>
                 Guardando...
               </span>

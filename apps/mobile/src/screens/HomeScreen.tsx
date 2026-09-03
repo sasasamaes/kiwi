@@ -53,14 +53,14 @@ export default function HomeScreen({ navigation }: any) {
 
           // Listen for new orders assigned to this driver
           onSocket('order:assigned', (data: any) => {
-            console.log('📦 New order assigned:', data);
+            console.log('Package New order assigned:', data);
             fetchOrders();
-            Alert.alert('📦 Nuevo Pedido', data.message || 'Te asignaron un nuevo pedido');
+            Alert.alert('Nuevo Pedido', data.message || 'Te asignaron un nuevo pedido');
           });
 
           // Listen for order status changes
           onSocket('order:statusChanged', (data: any) => {
-            console.log('📋 Order status changed:', data);
+            console.log('ClipboardList Order status changed:', data);
             fetchOrders();
           });
         }
@@ -145,7 +145,7 @@ export default function HomeScreen({ navigation }: any) {
   const handleAcceptOrder = async (orderId: string) => {
     try {
       await api.acceptOrder(orderId);
-      Alert.alert('✅ Pedido aceptado', 'Ve a recoger el pedido', [
+      Alert.alert('Pedido aceptado', 'Ve a recoger el pedido', [
         { text: 'Ver detalle', onPress: () => navigation.navigate('OrderDetail', { orderId }) },
       ]);
       fetchOrders(); // Refresh available orders

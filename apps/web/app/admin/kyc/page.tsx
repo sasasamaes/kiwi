@@ -50,10 +50,10 @@ const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
 };
 
 const FILTER_TABS = [
-  { id: 'all', label: 'Todos', icon: '📋' },
-  { id: 'pending', label: 'Pendientes', icon: '⏳' },
-  { id: 'approved', label: 'Aprobados', icon: '✅' },
-  { id: 'rejected', label: 'Rechazados', icon: '❌' },
+  { id: 'all', label: 'Todos', icon: 'ClipboardList' },
+  { id: 'pending', label: 'Pendientes', icon: 'Clock' },
+  { id: 'approved', label: 'Aprobados', icon: 'Check' },
+  { id: 'rejected', label: 'Rechazados', icon: 'X' },
 ];
 
 export default function KYCPage() {
@@ -182,7 +182,7 @@ export default function KYCPage() {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            🔄 Reintentar
+            Reintentar
           </motion.button>
         </motion.div>
       </div>
@@ -206,7 +206,7 @@ export default function KYCPage() {
           className="px-4 py-2 text-sm font-medium bg-surface-100 dark:bg-surface-800 text-surface-700 dark:text-surface-300 rounded-lg hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors"
           whileTap={{ scale: 0.95 }}
         >
-          🔄 Actualizar
+          Actualizar
         </motion.button>
       </div>
 
@@ -307,7 +307,7 @@ export default function KYCPage() {
                         ? 'bg-kiwi-100 dark:bg-kiwi-900/30 text-kiwi-600 dark:text-kiwi-400'
                         : 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
                     }`}>
-                      {kyc.user.role === 'driver' ? '🛵' : '🏪'}
+                      {kyc.user.role === 'driver' ? 'Bike' : '🏪'}
                     </div>
                     <div>
                       <p className="font-semibold text-surface-800 dark:text-surface-100">
@@ -370,14 +370,14 @@ export default function KYCPage() {
 
                 {kyc.status === 'rejected' && kyc.rejectionReason && (
                   <div className="pt-2 border-t border-surface-100 dark:border-surface-700">
-                    <p className="text-sm text-red-500">❌ {kyc.rejectionReason}</p>
+                    <p className="text-sm text-red-500">X {kyc.rejectionReason}</p>
                   </div>
                 )}
 
                 {kyc.status === 'approved' && kyc.verifiedAt && (
                   <div className="pt-2 border-t border-surface-100 dark:border-surface-700">
                     <p className="text-sm text-green-500">
-                      ✅ Aprobado {formatDate(kyc.verifiedAt)}
+                      Aprobado {formatDate(kyc.verifiedAt)}
                     </p>
                   </div>
                 )}
@@ -413,7 +413,7 @@ export default function KYCPage() {
                         ? 'bg-kiwi-100 dark:bg-kiwi-900/30 text-kiwi-600 dark:text-kiwi-400'
                         : 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
                     }`}>
-                      {selectedKYC.user.role === 'driver' ? '🛵' : '🏪'}
+                      {selectedKYC.user.role === 'driver' ? 'Bike' : '🏪'}
                     </div>
                     <div>
                       <h3 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100">
@@ -496,7 +496,7 @@ export default function KYCPage() {
                     {selectedKYC.licenseUrl && (
                       <div className="rounded-xl bg-surface-100 dark:bg-surface-700 p-4">
                         <div className="aspect-video bg-surface-200 dark:bg-surface-600 rounded-lg flex items-center justify-center mb-2">
-                          <span className="text-4xl">🚗</span>
+                          <span className="text-4xl">Car</span>
                         </div>
                         <p className="text-sm text-surface-600 dark:text-surface-400">Licencia de conducir</p>
                       </div>
@@ -514,7 +514,7 @@ export default function KYCPage() {
                 {selectedKYC.user.role === 'driver' && selectedKYC.licenseNumber && (
                   <div>
                     <h4 className="font-semibold text-surface-800 dark:text-surface-100 mb-4">
-                      🚗 Licencia de Conducir
+                      Licencia de Conducir
                     </h4>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50">
@@ -569,7 +569,7 @@ export default function KYCPage() {
                       <span>{formatDate(selectedKYC.verifiedAt)}</span>
                     </div>
                     {selectedKYC.rejectionReason && (
-                      <p className="mt-2 text-sm text-red-500">❌ {selectedKYC.rejectionReason}</p>
+                      <p className="mt-2 text-sm text-red-500">X {selectedKYC.rejectionReason}</p>
                     )}
                   </div>
                 )}
@@ -582,14 +582,14 @@ export default function KYCPage() {
                       onClick={() => setShowRejectModal(true)}
                       disabled={actionLoading}
                     >
-                      ❌ Rechazar
+                      Rechazar
                     </button>
                     <button
                       className="flex-1 py-3 px-4 text-sm font-medium bg-kiwi-500 text-white rounded-xl hover:bg-kiwi-600 transition-colors"
                       onClick={() => handleApprove(selectedKYC.id)}
                       disabled={actionLoading}
                     >
-                      {actionLoading ? 'Procesando...' : '✅ Aprobar'}
+                      {actionLoading ? 'Procesando...' : 'Aprobar'}
                     </button>
                   </div>
                 )}
@@ -618,7 +618,7 @@ export default function KYCPage() {
             >
               <div className="p-6">
                 <h3 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100 mb-4">
-                  ❌ Rechazar Verificación
+                  Rechazar Verificación
                 </h3>
                 <p className="text-surface-500 dark:text-surface-400 mb-4">
                   Por favor, indica el motivo del rechazo:

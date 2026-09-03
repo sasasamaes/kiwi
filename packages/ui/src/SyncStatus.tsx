@@ -44,7 +44,7 @@ export function SyncStatus({
               animate={{ rotate: 360 }}
               transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
             >
-              🔄
+              RefreshCw
             </motion.span>
             <span className="text-sm">Sincronizando...</span>
           </>
@@ -55,7 +55,7 @@ export function SyncStatus({
               animate={{ opacity: [1, 0.5, 1] }}
               transition={{ duration: 2, repeat: Infinity }}
             >
-              ⏳
+              Clock
             </motion.span>
             <span className="text-sm">{stats.pending} pendiente{stats.pending !== 1 ? 's' : ''}</span>
           </>
@@ -93,7 +93,7 @@ export function SyncStatus({
               {/* Header */}
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100">
-                  🔄 Cola de Sincronización
+                  RefreshCw Cola de Sincronización
                 </h3>
                 <motion.button
                   className="text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
@@ -130,7 +130,7 @@ export function SyncStatus({
               {stats.failed > 0 && (
                 <div className="mb-6 p-4 rounded-xl bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800">
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl">⚠️</span>
+                    <span className="text-2xl">AlertTriangle</span>
                     <div>
                       <p className="font-medium text-red-700 dark:text-red-400">
                         {stats.failed} acciones fallidas
@@ -194,7 +194,7 @@ export function SyncStatus({
                 {!isOnline && (
                   <div className="p-3 rounded-xl bg-orange-50 dark:bg-orange-900/30 text-center">
                     <p className="text-sm text-orange-700 dark:text-orange-400">
-                      📡 Sin conexión - Las acciones se sincronizarán cuando vuelva la conexión
+                      WifiOff Sin conexión - Las acciones se sincronizarán cuando vuelva la conexión
                     </p>
                   </div>
                 )}
@@ -208,7 +208,7 @@ export function SyncStatus({
                     }}
                     whileTap={{ scale: 0.95 }}
                   >
-                    🔄 Sincronizar Ahora
+                    RefreshCw Sincronizar Ahora
                   </motion.button>
                 )}
 
@@ -258,10 +258,10 @@ export function SyncIndicatorCompact({ className = '' }: { className?: string })
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
         >
-          🔄
+          RefreshCw
         </motion.span>
       ) : (
-        <span>⏳</span>
+        <span>Clock</span>
       )}
       <span>{stats.pending + stats.syncing}</span>
     </motion.div>
@@ -294,10 +294,10 @@ export function SyncBanner({ className = '' }: { className?: string }) {
               animate={{ rotate: 360 }}
               transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
             >
-              🔄
+              RefreshCw
             </motion.span>
           ) : (
-            <span className="text-xl">⏳</span>
+            <span className="text-xl">Clock</span>
           )}
           <div>
             <p className="font-semibold">
@@ -379,7 +379,7 @@ export function SyncActionStatus({
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
         >
-          🔄
+          RefreshCw
         </motion.span>
       )}
       <span className="text-surface-600 dark:text-surface-400">

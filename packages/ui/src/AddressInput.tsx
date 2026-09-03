@@ -220,7 +220,7 @@ export function AddressInput({
     switch (type) {
       case 'house':
       case 'building':
-        return '🏠';
+        return 'home';
       case 'road':
       case 'street':
         return '🛣️';
@@ -232,7 +232,7 @@ export function AddressInput({
       case 'suburb':
         return '🏘️';
       default:
-        return '📍';
+        return 'location';
     }
   };
 
@@ -265,7 +265,7 @@ export function AddressInput({
               transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
             />
           ) : (
-            <span>🔍</span>
+            <span>Search</span>
           )}
         </div>
 
@@ -281,10 +281,10 @@ export function AddressInput({
               animate={{ rotate: 360 }}
               transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
             >
-              🔄
+              RefreshCw
             </motion.span>
           ) : (
-            '📍 Mi ubicación'
+            'MapPin Mi ubicación'
           )}
         </button>
       </div>
@@ -323,7 +323,7 @@ export function AddressInput({
                     </p>
                   </div>
                   <span className="text-xs text-surface-400 dark:text-surface-500 whitespace-nowrap">
-                    📍 {suggestion.lat.toFixed(4)}, {suggestion.lng.toFixed(4)}
+                    MapPin {suggestion.lat.toFixed(4)}, {suggestion.lng.toFixed(4)}
                   </span>
                 </motion.button>
               ))}
@@ -347,7 +347,7 @@ export function AddressInput({
           animate={{ opacity: 1, y: 0 }}
         >
           <div className="text-center">
-            <span className="text-2xl block mb-2">🔍</span>
+            <span className="text-2xl block mb-2">Search</span>
             <p className="text-sm text-surface-500 dark:text-surface-400">
               No se encontraron direcciones para "{query}"
             </p>

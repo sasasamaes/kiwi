@@ -31,27 +31,27 @@ interface Withdrawal {
 const STATUS_CONFIG: Record<string, { label: string; icon: string; color: string }> = {
   pending: {
     label: 'Pendiente',
-    icon: '⏳',
+    icon: 'Clock',
     color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400',
   },
   processing: {
     label: 'Procesando',
-    icon: '🔄',
+    icon: 'RefreshCw',
     color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400',
   },
   completed: {
     label: 'Completado',
-    icon: '✅',
+    icon: 'Check',
     color: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400',
   },
   failed: {
     label: 'Cancelado',
-    icon: '❌',
+    icon: 'X',
     color: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400',
   },
   rejected: {
     label: 'Rechazado',
-    icon: '❌',
+    icon: 'X',
     color: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400',
   },
 };
@@ -223,7 +223,7 @@ export default function WithdrawPage() {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            🔄 Reintentar
+            Reintentar
           </motion.button>
         </motion.div>
       </main>
@@ -248,7 +248,7 @@ export default function WithdrawPage() {
               <span className="text-sm font-medium">Volver</span>
             </Link>
             <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-              💰 Retirar
+              Retirar
             </h1>
             <div className="w-16" />
           </div>
@@ -309,7 +309,7 @@ export default function WithdrawPage() {
             whileHover={{ scale: 1.02, borderColor: '#22c55e' }}
             whileTap={{ scale: 0.98 }}
           >
-            💳 Solicitar Retiro
+            Solicitar Retiro
           </motion.button>
         )}
 
@@ -324,7 +324,7 @@ export default function WithdrawPage() {
             >
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-                  💳 Nuevo Retiro
+                  Nuevo Retiro
                 </h3>
                 <button
                   onClick={() => setShowForm(false)}
@@ -386,7 +386,7 @@ export default function WithdrawPage() {
                           : 'border-surface-200 dark:border-surface-700 hover:border-surface-300 dark:hover:border-surface-600'
                       }`}
                     >
-                      <span className="text-2xl block mb-1">📱</span>
+                      <span className="text-2xl block mb-1">Smartphone</span>
                       <span className="font-medium text-surface-800 dark:text-surface-100">
                         SINPE
                       </span>
@@ -503,8 +503,8 @@ export default function WithdrawPage() {
                   whileTap={{ scale: 0.98 }}
                 >
                   {submitting
-                    ? '🔄 Procesando...'
-                    : `💳 Retirar ${amount ? formatCurrency(parseInt(amount.replace(/[^0-9]/g, ''))) : ''}`}
+                    ? 'Procesando...'
+                    : `Retirar ${amount ? formatCurrency(parseInt(amount.replace(/[^0-9]/g, ''))) : ''}`}
                 </motion.button>
 
                 <p className="text-xs text-center text-surface-400 dark:text-surface-500">
@@ -523,7 +523,7 @@ export default function WithdrawPage() {
           transition={{ delay: 0.2 }}
         >
           <h3 className="mb-4 text-sm font-semibold text-surface-600 dark:text-surface-400">
-            📋 Historial de Retiros
+            ClipboardList Historial de Retiros
           </h3>
 
           {withdrawals.length === 0 ? (
@@ -555,7 +555,7 @@ export default function WithdrawPage() {
                           {formatCurrency(withdrawal.amount)}
                         </p>
                         <p className="text-xs text-surface-400 dark:text-surface-500">
-                          {withdrawal.paymentMethod === 'sinpe' ? '📱 SINPE' : '🏦 Transferencia'} •{' '}
+                          {withdrawal.paymentMethod === 'sinpe' ? 'SINPE' : 'Transferencia'} •{' '}
                           {formatDate(withdrawal.createdAt)}
                         </p>
                       </div>
@@ -590,35 +590,35 @@ export default function WithdrawPage() {
             href="/"
             className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
           >
-            <span className="text-xl">🏠</span>
+            <span className="text-xl">Home</span>
             <span className="text-xs font-medium">Inicio</span>
           </Link>
           <Link
             href="/active"
             className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
           >
-            <span className="text-xl">📦</span>
+            <span className="text-xl">Package</span>
             <span className="text-xs font-medium">Activos</span>
           </Link>
           <Link
             href="/earnings"
             className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
           >
-            <span className="text-xl">💰</span>
+            <span className="text-xl">Coins</span>
             <span className="text-xs font-medium">Ganancias</span>
           </Link>
           <Link
             href="/schedule"
             className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
           >
-            <span className="text-xl">📅</span>
+            <span className="text-xl">Calendar</span>
             <span className="text-xs font-medium">Horario</span>
           </Link>
           <Link
             href="/profile"
             className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
           >
-            <span className="text-xl">👤</span>
+            <span className="text-xl">User</span>
             <span className="text-xs font-medium">Perfil</span>
           </Link>
         </div>

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from './utils';
+import { Bike, Car, Truck, Smartphone, MessageCircle, Eye, EyeOff, Loader } from 'lucide-react';
 
 export interface AuthFormProps {
   type: 'login' | 'register';
@@ -68,7 +69,7 @@ export function AuthForm({
           animate={{ rotate: [0, -10, 10, -10, 0] }}
           transition={{ duration: 0.5, delay: 0.5 }}
         >
-          🥝
+          Kiwi
         </motion.span>
         <h1 className="text-3xl font-display font-bold text-surface-800 mt-4">
           Kiwi {role === 'merchant' ? 'Business' : 'Driver'}
@@ -150,11 +151,11 @@ export function AuthForm({
                 </label>
                 <div className="grid grid-cols-5 gap-2">
                   {[
-                    { type: 'motorcycle', icon: '🏍️', label: 'Moto' },
-                    { type: 'motorized_bike', icon: '🛵', label: 'Bici Bota' },
-                    { type: 'bicycle', icon: '🚲', label: 'Bici' },
-                    { type: 'car', icon: '🚗', label: 'Carro' },
-                    { type: 'truck', icon: '🚛', label: 'Camión' },
+                    { type: 'motorcycle', icon: 'motorcycle', label: 'Moto' },
+                    { type: 'motorized_bike', icon: 'bike', label: 'Bici Bota' },
+                    { type: 'bicycle', icon: 'bike', label: 'Bici' },
+                    { type: 'car', icon: 'car', label: 'Carro' },
+                    { type: 'truck', icon: 'truck', label: 'Camion' },
                   ].map((v) => (
                     <motion.button
                       key={v.type}
@@ -168,7 +169,12 @@ export function AuthForm({
                       onClick={() => updateField('vehicleType', v.type)}
                       whileTap={{ scale: 0.95 }}
                     >
-                      <span className="text-2xl">{v.icon}</span>
+                      <span className="text-2xl">
+                        {v.icon === 'motorcycle' && <Bike className="h-6 w-6" />}
+                        {v.icon === 'bike' && <Bike className="h-6 w-6" />}
+                        {v.icon === 'car' && <Car className="h-6 w-6" />}
+                        {v.icon === 'truck' && <Truck className="h-6 w-6" />}
+                      </span>
                       <span className="text-[10px] text-surface-600 mt-1">{v.label}</span>
                     </motion.button>
                   ))}
@@ -239,7 +245,7 @@ export function AuthForm({
                 onClick={() => setShowPassword(!showPassword)}
                 whileTap={{ scale: 0.9 }}
               >
-                {showPassword ? '👁️' : '👁️‍🗨️'}
+                {showPassword ? <Eye className="h-5 w-5" /> : <EyeOff className="h-5 w-5" />}
               </motion.button>
             </div>
           </div>
@@ -277,7 +283,7 @@ export function AuthForm({
                   transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
                   className="inline-block"
                 >
-                  ⏳
+                  <Loader className="h-4 w-4" />
                 </motion.span>
                 Procesando...
               </span>
@@ -346,7 +352,7 @@ export function AuthForm({
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            <span className="text-xl">📱</span>
+            <Smartphone className="h-5 w-5" />
             SINPE
           </motion.button>
           <motion.button
@@ -355,7 +361,7 @@ export function AuthForm({
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            <span className="text-xl">💬</span>
+            <MessageCircle className="h-5 w-5" />
             WhatsApp
           </motion.button>
         </div>

@@ -120,7 +120,7 @@ export default function ActiveOrdersScreen({ navigation }: any) {
             try {
               await api.updateOrderStatus(order.id, nextStatus);
               fetchOrders();
-              Alert.alert('✅ Estado actualizado', `Pedido marcado como: ${getStatusLabel(nextStatus)}`);
+              Alert.alert('Check Estado actualizado', `Pedido marcado como: ${getStatusLabel(nextStatus)}`);
             } catch (error: any) {
               Alert.alert('Error', error.response?.data?.message || 'No se pudo actualizar');
             }
@@ -150,7 +150,7 @@ export default function ActiveOrdersScreen({ navigation }: any) {
       <View style={styles.orderLocations}>
         <View style={styles.routePoint}>
           <View style={[styles.routeDot, { backgroundColor: colors.kiwi[500] }]} />
-          <Text style={[styles.routeText, { color: isDark ? colors.surface[300] : colors.surface[600 }]} numberOfLines={1}>
+          <Text style={[styles.routeText, { color: isDark ? colors.surface[300] : colors.surface[600] }] numberOfLines={1}>
             {item.pickupAddress}
           </Text>
         </View>

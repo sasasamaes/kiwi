@@ -255,7 +255,7 @@ export function DeliveryEstimate({
         </motion.p>
         <p className="text-sm text-surface-500 dark:text-surface-400">
           {estimate.estimatedMinutes <= 15 ? '⚡ Muy rápido' :
-           estimate.estimatedMinutes <= 30 ? '✅ Normal' :
+           estimate.estimatedMinutes <= 30 ? 'Check Normal' :
            '🐢 ' + t('traffic.heavy')}
         </p>
       </div>
@@ -263,7 +263,7 @@ export function DeliveryEstimate({
       {/* Breakdown */}
       <div className="space-y-2">
         <div className="flex justify-between text-sm">
-          <span className="text-surface-500 dark:text-surface-400">🚗 Manejo</span>
+          <span className="text-surface-500 dark:text-surface-400">Car Manejo</span>
           <span className="font-medium text-surface-700 dark:text-surface-300">
             {estimate.breakdown.driving} {t('traffic.minutes')}
           </span>
@@ -277,7 +277,7 @@ export function DeliveryEstimate({
           </div>
         )}
         <div className="flex justify-between text-sm">
-          <span className="text-surface-500 dark:text-surface-400">📦 Recolección</span>
+          <span className="text-surface-500 dark:text-surface-400">Package Recolección</span>
           <span className="font-medium text-surface-700 dark:text-surface-300">
             {estimate.breakdown.pickup} {t('traffic.minutes')}
           </span>
@@ -375,14 +375,14 @@ export function TrafficMapOverlay({ className = '' }: TrafficMapOverlayProps) {
     >
       <div className="flex items-center justify-between mb-3">
         <h4 className="text-sm font-semibold text-surface-800 dark:text-surface-100">
-          🗺️ {t('traffic.heatmap')}
+          Map {t('traffic.heatmap')}
         </h4>
         <motion.button
           className="text-xs text-kiwi-600 hover:text-kiwi-700 dark:text-kiwi-400"
           onClick={fetchTrafficData}
           whileTap={{ scale: 0.95 }}
         >
-          🔄 Actualizar
+          RefreshCw Actualizar
         </motion.button>
       </div>
 

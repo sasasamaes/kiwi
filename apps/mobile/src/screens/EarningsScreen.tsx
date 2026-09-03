@@ -48,7 +48,7 @@ export default function EarningsScreen({ navigation }: any) {
 
   if (loading && !earnings) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: isDark ? colors.surface[950] : colors.surface[50 }]}>
+      <SafeAreaView style={[styles.container, { backgroundColor: isDark ? colors.surface[950] : colors.surface[50] }]>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.kiwi[500]} />
         </View>

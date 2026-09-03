@@ -30,7 +30,7 @@ export default function OrderCard({ order, onAccept, onReject }: OrderCardProps)
       <View style={styles.header}>
         <View style={styles.badge}>
           <Ionicons name="cube" size={12} color={colors.kiwi[600]} />
-          <Text style={styles.badgeText}>📦 Delivery</Text>
+          <Text style={styles.badgeText}>Package Delivery</Text>
         </View>
         <Text style={styles.price}>₡{order.totalAmount.toLocaleString()}</Text>
       </View>
@@ -83,9 +83,9 @@ export default function OrderCard({ order, onAccept, onReject }: OrderCardProps)
         {order.vehicleType && (
           <View style={styles.infoItem}>
             <Text style={styles.vehicleIcon}>
-              {order.vehicleType === 'motorcycle' ? '🏍️' : 
-               order.vehicleType === 'bicycle' ? '🚲' :
-               order.vehicleType === 'car' ? '🚗' : '🚛'}
+              {order.vehicleType === 'motorcycle' ? 'Bike' : 
+               order.vehicleType === 'bicycle' ? 'Bike' :
+               order.vehicleType === 'car' ? 'Car' : 'Truck'}
             </Text>
             <Text style={[styles.infoText, { color: isDark ? colors.surface[400] : colors.surface[500] }]}>
               {order.vehicleType === 'motorcycle' ? 'Moto' :

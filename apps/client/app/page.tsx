@@ -86,7 +86,7 @@ export default function ClientHome() {
 
   const handleScan = useCallback(
     (merchantId: string, url: string) => {
-      console.log('📱 QR scanned:', merchantId, url);
+      console.log('Smartphone QR scanned:', merchantId, url);
       setShowScanner(false);
       setScannerActive(false);
       // Navigate to the merchant's menu

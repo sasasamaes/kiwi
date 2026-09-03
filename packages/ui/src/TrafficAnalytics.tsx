@@ -97,7 +97,7 @@ export function TrafficAnalytics({
   if (!report) {
     return (
       <div className={`rounded-2xl bg-white dark:bg-surface-800 p-8 text-center shadow-soft dark:shadow-dark ${className}`}>
-        <span className="text-4xl block mb-3">📊</span>
+        <span className="text-4xl block mb-3">BarChart3</span>
         <p className="text-surface-500 dark:text-surface-400">
           No hay datos de tráfico disponibles
         </p>
@@ -111,7 +111,7 @@ export function TrafficAnalytics({
       <div className="p-6 border-b border-surface-100 dark:border-surface-700">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-display font-bold text-surface-800 dark:text-surface-100">
-            📊 Análisis de Tráfico
+            BarChart3 Análisis de Tráfico
           </h3>
           <div className="flex gap-2">
             {(['day', 'week', 'month'] as const).map((p) => (
@@ -135,7 +135,7 @@ export function TrafficAnalytics({
         <div className="flex gap-1 bg-surface-100 dark:bg-surface-700 rounded-xl p-1">
           {[
             { id: 'overview' as const, label: 'Resumen', icon: '📈' },
-            { id: 'patterns' as const, label: 'Patrones', icon: '🕐' },
+            { id: 'patterns' as const, label: 'Patrones', icon: 'clock' },
             { id: 'recommendations' as const, label: 'Recomendaciones', icon: '💡' },
           ].map((tab) => (
             <motion.button
@@ -209,7 +209,7 @@ function OverviewTab({ report }: { report: MerchantTrafficReport }) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <p className="text-sm text-surface-500 dark:text-surface-400 mb-1">📦 Entregas</p>
+          <p className="text-sm text-surface-500 dark:text-surface-400 mb-1">Package Entregas</p>
           <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
             {summary.totalDeliveries}
           </p>
@@ -333,7 +333,7 @@ function PatternsTab({ patterns }: { patterns: TrafficPattern[] }) {
   return (
     <div className="space-y-4">
       <h4 className="font-semibold text-surface-800 dark:text-surface-100 mb-3">
-        🕐 Patrones por Día y Hora
+        Clock Patrones por Día y Hora
       </h4>
 
       {/* Heatmap Grid */}
@@ -403,7 +403,7 @@ function PatternsTab({ patterns }: { patterns: TrafficPattern[] }) {
       {/* Peak Hours */}
       <div className="mt-6">
         <h4 className="font-semibold text-surface-800 dark:text-surface-100 mb-3">
-          📊 Horas Pico
+          BarChart3 Horas Pico
         </h4>
         <div className="grid grid-cols-2 gap-3">
           <div className="rounded-lg bg-green-50 dark:bg-green-900/30 p-3">
@@ -438,7 +438,7 @@ function RecommendationsTab({ recommendations }: { recommendations: string[] }) 
 
       {recommendations.length === 0 ? (
         <div className="text-center py-8">
-          <span className="text-4xl block mb-3">✅</span>
+          <span className="text-4xl block mb-3">Check</span>
           <p className="text-surface-500 dark:text-surface-400">
             No hay recomendaciones en este momento
           </p>
@@ -490,7 +490,7 @@ function RecommendationsTab({ recommendations }: { recommendations: string[] }) 
       {/* Worst Times Card */}
       <div className="rounded-xl bg-red-50 dark:bg-red-900/30 p-4">
         <h5 className="font-semibold text-red-700 dark:text-red-400 mb-2">
-          ⚠️ Horarios a Evitar
+          AlertTriangle Horarios a Evitar
         </h5>
         <div className="grid grid-cols-3 gap-2">
           {[
@@ -527,7 +527,7 @@ export function TrafficHeatmap({
   if (data.length === 0) {
     return (
       <div className={`rounded-2xl bg-white dark:bg-surface-800 p-8 text-center shadow-soft dark:shadow-dark ${className}`}>
-        <span className="text-4xl block mb-3">🗺️</span>
+        <span className="text-4xl block mb-3">Map</span>
         <p className="text-surface-500 dark:text-surface-400">
           No hay datos de mapa de calor disponibles
         </p>
@@ -541,7 +541,7 @@ export function TrafficHeatmap({
   return (
     <div className={`rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark ${className}`}>
       <h4 className="font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-        🗺️ Mapa de Calor del Tráfico
+        Map Mapa de Calor del Tráfico
       </h4>
 
       <div className="relative h-64 bg-surface-100 dark:bg-surface-900 rounded-xl overflow-hidden">

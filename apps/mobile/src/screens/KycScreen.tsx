@@ -167,7 +167,7 @@ export default function KycScreen({ navigation }: any) {
 
       await api.submitKYC(formData);
       Alert.alert(
-        '✅ Documentos enviados',
+        'Documentos enviados',
         'Tus documentos están siendo revisados. Te notificaremos cuando sea aprobado.',
         [{ text: 'OK', onPress: () => navigation.goBack() }]
       );
@@ -215,7 +215,7 @@ export default function KycScreen({ navigation }: any) {
       
       <View style={[styles.infoCard, { backgroundColor: isDark ? colors.surface[800] : colors.surface[100] }]}>
         <Text style={[styles.infoTitle, { color: isDark ? colors.surface[100] : colors.surface[900] }]}>
-          📋 Documentos necesarios:
+          ClipboardList Documentos necesarios:
         </Text>
         <Text style={[styles.infoItem, { color: isDark ? colors.surface[300] : colors.surface[600] }]}>
           • Cédula de identidad (frente y reverso)
@@ -323,7 +323,7 @@ export default function KycScreen({ navigation }: any) {
   const renderLicenseStep = () => (
     <View style={styles.stepContent}>
       <Text style={[styles.stepTitle, { color: isDark ? colors.surface[100] : colors.surface[900] }]}>
-        🚗 Licencia de conducir
+        Car Licencia de conducir
       </Text>
       <Text style={[styles.stepSubtitle, { color: isDark ? colors.surface[400] : colors.surface[500] }]}>
         Sube tu licencia de conducir vigente
@@ -472,7 +472,7 @@ export default function KycScreen({ navigation }: any) {
   const renderReviewStep = () => (
     <View style={styles.stepContent}>
       <Text style={[styles.stepTitle, { color: isDark ? colors.surface[100] : colors.surface[900] }]}>
-        📋 Resumen
+        ClipboardList Resumen
       </Text>
       <Text style={[styles.stepSubtitle, { color: isDark ? colors.surface[400] : colors.surface[500] }]}>
         Revisa tu información antes de enviar
@@ -517,7 +517,7 @@ export default function KycScreen({ navigation }: any) {
         </LinearGradient>
       </View>
       <Text style={[styles.stepTitle, { color: isDark ? colors.surface[100] : colors.surface[900] }]}>
-        ✅ Verificado
+        Verificado
       </Text>
       <Text style={[styles.stepSubtitle, { color: isDark ? colors.surface[400] : colors.surface[500] }]}>
         Tu identidad ha sido verificada exitosamente. Ya puedes comenzar a trabajar en Kiwi.
@@ -527,7 +527,7 @@ export default function KycScreen({ navigation }: any) {
 
   if (loading) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: isDark ? colors.surface[950] : colors.surface[50 }]}>
+      <SafeAreaView style={[styles.container, { backgroundColor: isDark ? colors.surface[950] : colors.surface[50] }]>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.kiwi[500]} />
         </View>
@@ -585,7 +585,7 @@ function SummaryRow({ label, value, isDark }: { label: string; value: string; is
   return (
     <View style={styles.summaryRow}>
       <Text style={[styles.summaryLabel, { color: isDark ? colors.surface[400] : colors.surface[500] }]}>{label}</Text>
-      <Text style={[styles.summaryValue, { color: isDark ? colors.surface[100] : colors.surface[900 }]}>{value}</Text>
+      <Text style={[styles.summaryValue, { color: isDark ? colors.surface[100] : colors.surface[900]]}>{value}</Text>
     </View>
   );
 }

@@ -54,7 +54,7 @@ export function OfflineAnalyticsDashboard({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-display font-bold text-surface-800 dark:text-surface-100">
-            📊 Analíticas Offline
+            Analiticas Offline
           </h1>
           <p className="text-sm text-surface-500 dark:text-surface-400">
             Uso offline en los últimos {period} días
@@ -65,7 +65,7 @@ export function OfflineAnalyticsDashboard({
           className="px-4 py-2 rounded-xl bg-surface-100 dark:bg-surface-800 text-surface-700 dark:text-surface-300 font-medium"
           whileTap={{ scale: 0.95 }}
         >
-          🔄 Actualizar
+          Actualizar
         </motion.button>
       </div>
 
@@ -79,7 +79,7 @@ export function OfflineAnalyticsDashboard({
         >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-xl flex items-center justify-center text-xl">
-              📡
+              WifiOff
             </div>
             <div>
               <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
@@ -98,7 +98,7 @@ export function OfflineAnalyticsDashboard({
         >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center text-xl">
-              📦
+              Package
             </div>
             <div>
               <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
@@ -117,7 +117,7 @@ export function OfflineAnalyticsDashboard({
         >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-kiwi-100 dark:bg-kiwi-900/30 rounded-xl flex items-center justify-center text-xl">
-              💳
+              CreditCard
             </div>
             <div>
               <p className="text-2xl font-bold text-kiwi-600 dark:text-kiwi-400">
@@ -136,7 +136,7 @@ export function OfflineAnalyticsDashboard({
         >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center text-xl">
-              🔄
+              RefreshCw
             </div>
             <div>
               <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
@@ -303,27 +303,27 @@ export function OfflineAnalyticsDashboard({
           {stats.syncSuccessRate < 90 && (
             <div className="p-3 rounded-xl bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-800">
               <p className="text-sm text-orange-700 dark:text-orange-400">
-                ⚠️ La tasa de sincronización es {stats.syncSuccessRate.toFixed(0)}%. Considera mejorar la conectividad.
+                La tasa de sincronización es {stats.syncSuccessRate.toFixed(0)}%. Considera mejorar la conectividad.
               </p>
             </div>
           )}
           {stats.offlineOrders > stats.offlinePayments && (
             <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800">
               <p className="text-sm text-blue-700 dark:text-blue-400">
-                📦 Hay {stats.offlineOrders - stats.offlinePayments} pedidos offline sin pago procesado.
+                Hay {stats.offlineOrders - stats.offlinePayments} pedidos offline sin pago procesado.
               </p>
             </div>
           )}
           {stats.conflictsDetected > 0 && (
             <div className="p-3 rounded-xl bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800">
               <p className="text-sm text-purple-700 dark:text-purple-400">
-                ⚠️ Se detectaron {stats.conflictsDetected} conflictos. La resolución automática está funcionando.
+                Se detectaron {stats.conflictsDetected} conflictos. La resolución automática está funcionando.
               </p>
             </div>
           )}
           <div className="p-3 rounded-xl bg-kiwi-50 dark:bg-kiwi-900/30 border border-kiwi-200 dark:border-kiwi-800">
             <p className="text-sm text-kiwi-700 dark:text-kiwi-400">
-              ✅ Las rutas offline se han cacheado {stats.routesCached} veces, ahorrando datos y tiempo.
+              Las rutas offline se han cacheado {stats.routesCached} veces, ahorrando datos y tiempo.
             </p>
           </div>
         </div>

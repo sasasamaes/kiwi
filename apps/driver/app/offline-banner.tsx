@@ -80,7 +80,7 @@ export function OfflineBanner() {
                 animate={isOffline ? { rotate: [0, -10, 10, 0] } : {}}
                 transition={{ duration: 0.5, repeat: isOffline ? Infinity : 0, repeatDelay: 2 }}
               >
-                {isOffline ? '📴' : queuedCount > 0 ? '📤' : '🟢'}
+                {isOffline ? '📴' : queuedCount > 0 ? 'Upload' : '🟢'}
               </motion.div>
               <div>
                 <p className="font-semibold text-sm">

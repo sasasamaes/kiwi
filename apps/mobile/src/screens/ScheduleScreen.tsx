@@ -119,7 +119,7 @@ export default function ScheduleScreen() {
         isAvailable: s.isAvailable,
       }));
       await api.updateSchedule(scheduleData);
-      Alert.alert('✅ Horario guardado', 'Tu horario ha sido actualizado');
+      Alert.alert('Check Horario guardado', 'Tu horario ha sido actualizado');
     } catch (error: any) {
       Alert.alert('Error', error.response?.data?.message || 'No se pudo guardar el horario');
     } finally {
@@ -129,7 +129,7 @@ export default function ScheduleScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: isDark ? colors.surface[950] : colors.surface[50 }]}>
+      <SafeAreaView style={[styles.container, { backgroundColor: isDark ? colors.surface[950] : colors.surface[50] }]>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.kiwi[500]} />
         </View>

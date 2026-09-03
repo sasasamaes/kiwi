@@ -86,7 +86,7 @@ export default function MerchantKYCPage() {
           transition={{ delay: 0.1 }}
         >
           <h3 className="font-display font-semibold text-surface-800 mb-4">
-            📋 Documentos Requeridos
+            Documentos Requeridos
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex items-start gap-3 p-4 rounded-xl bg-surface-50">
@@ -111,7 +111,7 @@ export default function MerchantKYCPage() {
               </div>
             </div>
             <div className="flex items-start gap-3 p-4 rounded-xl bg-surface-50">
-              <span className="text-2xl">📍</span>
+              <span className="text-2xl">MapPin</span>
               <div>
                 <p className="font-medium text-surface-700">Foto del Local</p>
                 <p className="text-xs text-surface-400">Exterior del negocio con letrero visible</p>

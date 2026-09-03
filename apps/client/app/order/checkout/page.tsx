@@ -149,7 +149,7 @@ export default function CheckoutPage() {
             animate={{ scale: 1 }}
             transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}
           >
-            🎉
+            PartyPopper
           </motion.div>
           <h1 className="text-2xl font-display font-bold text-surface-800 dark:text-surface-100 mb-2">
             ¡Pedido creado!
@@ -166,7 +166,7 @@ export default function CheckoutPage() {
           <div className="space-y-3">
             {orderId && (
               <Link href={`/tracking/${orderId}`}>
-                <AnimatedButton className="w-full">🗺️ Rastrear pedido</AnimatedButton>
+                <AnimatedButton className="w-full">Map Rastrear pedido</AnimatedButton>
               </Link>
             )}
             <Link href="/">
@@ -336,9 +336,9 @@ export default function CheckoutPage() {
           <div className="grid grid-cols-2 gap-2">
             {(
               [
-                { id: 'cash', label: '💵 Efectivo', desc: 'Pagar al repartidor' },
-                { id: 'sinpe', label: '📱 SINPE', desc: 'Transferencia' },
-                { id: 'card', label: '💳 Tarjeta', desc: 'Crédito/Débito' },
+                { id: 'cash', label: 'DollarSign Efectivo', desc: 'Pagar al repartidor' },
+                { id: 'sinpe', label: 'Smartphone SINPE', desc: 'Transferencia' },
+                { id: 'card', label: 'CreditCard Tarjeta', desc: 'Crédito/Débito' },
                 { id: 'crypto_usdc', label: '💎 USDC', desc: 'Cripto' },
               ] as const
             ).map((method) => (
@@ -384,16 +384,16 @@ export default function CheckoutPage() {
           >
             {loading ? (
               <span className="flex items-center justify-center gap-2">
-                <span className="animate-spin">🔄</span> Procesando...
+                <span className="animate-spin">RefreshCw</span> Procesando...
               </span>
             ) : (
               `Ordenar — ₡${total.toLocaleString()}`
             )}
           </button>
           <p className="text-center text-xs text-surface-400 mt-3">
-            {paymentMethod === 'cash' && '💰 Pagas al repartidor al recibir tu pedido'}
-            {paymentMethod === 'sinpe' && '📱 Recibirás un link de pago por SINPE'}
-            {paymentMethod === 'card' && '💳 Serás redirigido al pago seguro'}
+            {paymentMethod === 'cash' && 'Coins Pagas al repartidor al recibir tu pedido'}
+            {paymentMethod === 'sinpe' && 'Smartphone Recibirás un link de pago por SINPE'}
+            {paymentMethod === 'card' && 'CreditCard Serás redirigido al pago seguro'}
             {paymentMethod === 'crypto_usdc' && '💎 Paga con USDC en la red Stellar'}
           </p>
         </motion.div>

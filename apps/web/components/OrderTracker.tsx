@@ -20,11 +20,11 @@ interface OrderTrackerProps {
 }
 
 const statusConfig = {
-  pending: { label: 'Esperando repartidor', icon: '⏳', color: 'bg-gold-100 text-gold-700' },
-  assigned: { label: 'Repartidor asignado', icon: '🛵', color: 'bg-blue-100 text-blue-700' },
-  pickup: { label: 'En camino a recoger', icon: '📍', color: 'bg-kiwi-100 text-kiwi-700' },
-  delivering: { label: 'En camino a entregar', icon: '🚗', color: 'bg-kiwi-500 text-white' },
-  delivered: { label: 'Entregado', icon: '✅', color: 'bg-green-100 text-green-700' },
+  pending: { label: 'Esperando repartidor', icon: 'Clock', color: 'bg-gold-100 text-gold-700' },
+  assigned: { label: 'Repartidor asignado', icon: 'Bike', color: 'bg-blue-100 text-blue-700' },
+  pickup: { label: 'En camino a recoger', icon: 'MapPin', color: 'bg-kiwi-100 text-kiwi-700' },
+  delivering: { label: 'En camino a entregar', icon: 'Car', color: 'bg-kiwi-500 text-white' },
+  delivered: { label: 'Entregado', icon: 'Check', color: 'bg-green-100 text-green-700' },
 };
 
 export function OrderTracker({ orderId, initialStatus = 'pending' }: OrderTrackerProps) {
@@ -125,14 +125,14 @@ export function OrderTracker({ orderId, initialStatus = 'pending' }: OrderTracke
           </div>
           <div className="flex-1">
             <p className="text-sm font-medium text-surface-800">Juan Carlos</p>
-            <p className="text-xs text-surface-400">⭐ 4.9 • 156 viajes</p>
+            <p className="text-xs text-surface-400">Star 4.9 • 156 viajes</p>
           </div>
           <motion.button 
             className="rounded-full bg-kiwi-100 p-2 text-kiwi-600 hover:bg-kiwi-200"
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
           >
-            📞
+            Phone
           </motion.button>
         </motion.div>
       )}
@@ -151,7 +151,7 @@ export function OrderTracker({ orderId, initialStatus = 'pending' }: OrderTracke
               animate={{ scale: [1, 1.2, 1] }}
               transition={{ duration: 0.5 }}
             >
-              🎉
+              PartyPopper
             </motion.span>
             <p className="mt-2 font-medium text-green-700">¡Pedido entregado con éxito!</p>
             <p className="text-sm text-green-600">Gracias por usar Kiwi</p>

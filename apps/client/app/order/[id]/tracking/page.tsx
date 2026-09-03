@@ -60,11 +60,11 @@ interface DriverLocation {
 }
 
 const STATUS_STEPS = [
-  { key: 'pending', label: 'Pedido creado', icon: '📦', description: 'Tu pedido fue recibido' },
+  { key: 'pending', label: 'Pedido creado', icon: 'Package', description: 'Tu pedido fue recibido' },
   {
     key: 'assigned',
     label: 'Repartidor asignado',
-    icon: '🛵',
+    icon: 'Bike',
     description: 'Un repartidor tomó tu pedido',
   },
   {
@@ -73,14 +73,14 @@ const STATUS_STEPS = [
     icon: '🏃',
     description: 'El repartidor va a recoger tu pedido',
   },
-  { key: 'picked_up', label: 'Pedido recogido', icon: '✅', description: 'Tu pedido fue recogido' },
+  { key: 'picked_up', label: 'Pedido recogido', icon: 'Check', description: 'Tu pedido fue recogido' },
   {
     key: 'in_transit_to_delivery',
     label: 'En camino',
     icon: '🚀',
     description: 'Tu pedido va camino a ti',
   },
-  { key: 'delivered', label: 'Entregado', icon: '🎉', description: '¡Tu pedido fue entregado!' },
+  { key: 'delivered', label: 'Entregado', icon: 'PartyPopper', description: '¡Tu pedido fue entregado!' },
 ];
 
 export default function OrderTrackingPage() {
@@ -240,7 +240,7 @@ export default function OrderTrackingPage() {
               onClick={fetchOrder}
               className="px-6 py-3 rounded-xl bg-kiwi-gradient text-white font-medium shadow-kiwi-lg"
             >
-              🔄 Reintentar
+              RefreshCw Reintentar
             </button>
           </div>
         </motion.div>
@@ -275,7 +275,7 @@ export default function OrderTrackingPage() {
               <span className="text-sm font-medium">Inicio</span>
             </Link>
             <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-              📍 Tracking
+              MapPin Tracking
             </h1>
             <div className="w-16" />
           </div>
@@ -379,10 +379,10 @@ export default function OrderTrackingPage() {
                 <p className="text-white/80 text-sm">Pedido #{order.id.slice(0, 8)}</p>
                 <h2 className="text-2xl font-display font-bold mt-1">
                   {isDelivered
-                    ? '🎉 Entregado'
+                    ? 'PartyPopper Entregado'
                     : isCancelled
-                      ? '❌ Cancelado'
-                      : STATUS_STEPS[currentStepIndex]?.icon || '📦'}{' '}
+                      ? 'X Cancelado'
+                      : STATUS_STEPS[currentStepIndex]?.icon || 'Package'}{' '}
                   {isDelivered
                     ? ''
                     : isCancelled
@@ -396,10 +396,10 @@ export default function OrderTrackingPage() {
                 transition={{ duration: 0.5, repeat: isDelivered ? Infinity : 0, repeatDelay: 2 }}
               >
                 {isDelivered
-                  ? '🎉'
+                  ? 'PartyPopper'
                   : isCancelled
-                    ? '❌'
-                    : STATUS_STEPS[currentStepIndex]?.icon || '📦'}
+                    ? 'X'
+                    : STATUS_STEPS[currentStepIndex]?.icon || 'Package'}
               </motion.div>
             </div>
 
@@ -433,7 +433,7 @@ export default function OrderTrackingPage() {
           transition={{ delay: 0.1 }}
         >
           <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-            📊 Estado del Pedido
+            BarChart3 Estado del Pedido
           </h3>
 
           <div className="space-y-0">
@@ -518,7 +518,7 @@ export default function OrderTrackingPage() {
             transition={{ delay: 0.2 }}
           >
             <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-              🛵 Tu Repartidor
+              Bike Tu Repartidor
             </h3>
 
             <div className="flex items-center gap-4">
@@ -531,7 +531,7 @@ export default function OrderTrackingPage() {
                     {order.driver.fullName}
                   </h4>
                   <div className="flex items-center gap-1">
-                    <span className="text-sm">⭐</span>
+                    <span className="text-sm">Star</span>
                     <span className="text-sm font-medium text-surface-600 dark:text-surface-400">
                       {order.driver.rating?.toFixed(1) || '5.0'}
                     </span>
@@ -540,11 +540,11 @@ export default function OrderTrackingPage() {
                 <div className="flex items-center gap-2 mt-1">
                   <span className="px-2 py-1 rounded-full bg-surface-100 dark:bg-surface-700 text-xs font-medium text-surface-600 dark:text-surface-400">
                     {order.driver.vehicleType === 'motorcycle'
-                      ? '🏍️ Moto'
+                      ? 'Bike Moto'
                       : order.driver.vehicleType === 'car'
-                        ? '🚗 Carro'
+                        ? 'Car Carro'
                         : order.driver.vehicleType === 'bicycle'
-                          ? '🚲 Bici'
+                          ? 'Bike Bici'
                           : order.driver.vehicleType}
                   </span>
                 </div>
@@ -561,7 +561,7 @@ export default function OrderTrackingPage() {
           transition={{ delay: 0.3 }}
         >
           <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-            📦 Detalles del Pedido
+            Package Detalles del Pedido
           </h3>
 
           <div className="space-y-3">
@@ -569,7 +569,7 @@ export default function OrderTrackingPage() {
             <div className="space-y-2">
               <div className="flex items-start gap-3">
                 <div className="flex h-6 w-6 items-center justify-center rounded-full bg-kiwi-100 dark:bg-kiwi-900/50 text-kiwi-600 flex-shrink-0 mt-0.5">
-                  <span className="text-xs">📍</span>
+                  <span className="text-xs">MapPin</span>
                 </div>
                 <div>
                   <p className="text-xs text-surface-400">Recoger en</p>
@@ -580,7 +580,7 @@ export default function OrderTrackingPage() {
               </div>
               <div className="flex items-start gap-3">
                 <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gold-100 dark:bg-gold-900/50 text-gold-600 flex-shrink-0 mt-0.5">
-                  <span className="text-xs">🏠</span>
+                  <span className="text-xs">Home</span>
                 </div>
                 <div>
                   <p className="text-xs text-surface-400">Entregar en</p>
@@ -627,7 +627,7 @@ export default function OrderTrackingPage() {
           {isDelivered && (
             <Link href="/">
               <button className="w-full py-4 rounded-xl bg-kiwi-gradient text-white font-semibold shadow-kiwi-lg">
-                🏠 Volver al inicio
+                Home Volver al inicio
               </button>
             </Link>
           )}
@@ -637,7 +637,7 @@ export default function OrderTrackingPage() {
               onClick={() => window.open(`tel:${order.driver.phone}`)}
               className="w-full py-4 rounded-xl bg-surface-100 dark:bg-surface-800 text-surface-700 dark:text-surface-300 font-medium"
             >
-              📞 Llamar al repartidor
+              Phone Llamar al repartidor
             </button>
           )}
 
@@ -655,7 +655,7 @@ export default function OrderTrackingPage() {
               }}
               className="w-full py-4 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-500 font-medium hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
             >
-              ❌ Cancelar pedido
+              X Cancelar pedido
             </button>
           )}
         </div>

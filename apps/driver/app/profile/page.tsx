@@ -69,7 +69,7 @@ export default function Profile() {
               <AnimatedCounter
                 value={4.9}
                 decimals={1}
-                prefix="⭐"
+                prefix="Star"
                 className="text-2xl font-bold"
               />
               <p className="text-xs text-white/70">Rating</p>
@@ -115,7 +115,7 @@ export default function Profile() {
         <StaggerContainer className="mb-6 grid grid-cols-2 gap-3">
           <StaggerItem>
             <div className="rounded-xl bg-white p-4 shadow-soft text-center">
-              <span className="text-2xl">📅</span>
+              <span className="text-2xl">Calendar</span>
               <p className="mt-2 text-xl font-bold text-surface-800">45</p>
               <p className="text-xs text-surface-500">Días activos</p>
             </div>
@@ -129,14 +129,14 @@ export default function Profile() {
           </StaggerItem>
           <StaggerItem>
             <div className="rounded-xl bg-white p-4 shadow-soft text-center">
-              <span className="text-2xl">💰</span>
+              <span className="text-2xl">Coins</span>
               <p className="mt-2 text-xl font-bold text-kiwi-600">₡468k</p>
               <p className="text-xs text-surface-500">Ganancias totales</p>
             </div>
           </StaggerItem>
           <StaggerItem>
             <div className="rounded-xl bg-white p-4 shadow-soft text-center">
-              <span className="text-2xl">🎯</span>
+              <span className="text-2xl">Target</span>
               <p className="mt-2 text-xl font-bold text-surface-800">98%</p>
               <p className="text-xs text-surface-500">Tasa de aceptación</p>
             </div>
@@ -150,19 +150,19 @@ export default function Profile() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
-          <h3 className="mb-4 font-display font-semibold text-surface-800">🎁 Mis Incentivos</h3>
+          <h3 className="mb-4 font-display font-semibold text-surface-800">Gift Mis Incentivos</h3>
           <div className="space-y-3">
             {[
               { icon: '🎒', name: 'Bolso térmico', status: 'active', date: 'Mar 2026' },
               { icon: '🧥', name: 'Capa de lluvia', status: 'active', date: 'Jun 2026' },
-              { icon: '📦', name: 'Cajón container', status: 'locked', date: 'Requiere 7 meses' },
+              { icon: 'Package', name: 'Cajón container', status: 'locked', date: 'Requiere 7 meses' },
               {
-                icon: '🔧',
+                icon: 'Wrench',
                 name: 'Mantenimiento moto',
                 status: 'locked',
                 date: 'Requiere 10 meses',
               },
-              { icon: '🏍️', name: 'Pago de marchamo', status: 'locked', date: 'Requiere 12 meses' },
+              { icon: 'Bike', name: 'Pago de marchamo', status: 'locked', date: 'Requiere 12 meses' },
             ].map((incentive, i) => (
               <motion.div
                 key={i}
@@ -187,7 +187,7 @@ export default function Profile() {
                     incentive.status === 'active' ? 'text-kiwi-600' : 'text-surface-400'
                   }`}
                 >
-                  {incentive.status === 'active' ? '✅ Activo' : '🔒 Bloqueado'}
+                  {incentive.status === 'active' ? 'Activo' : 'Bloqueado'}
                 </span>
               </motion.div>
             ))}
@@ -223,14 +223,14 @@ export default function Profile() {
           transition={{ delay: 0.4 }}
         >
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-display font-semibold text-surface-800">🚗 Mi Vehículo</h3>
+            <h3 className="font-display font-semibold text-surface-800">Car Mi Vehículo</h3>
             <AnimatedButton variant="ghost" size="sm" onClick={() => setShowVehicleModal(true)}>
               Editar
             </AnimatedButton>
           </div>
           <div className="flex items-center gap-4">
             <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-surface-100 text-3xl">
-              🏍️
+              Bike
             </div>
             <div>
               <p className="font-display font-semibold text-surface-800">Moto</p>
@@ -244,10 +244,10 @@ export default function Profile() {
         <div className="rounded-2xl bg-white shadow-soft overflow-hidden">
           <h3 className="p-4 pb-2 font-display font-semibold text-surface-800">Configuración</h3>
           {[
-            { icon: '👤', label: 'Editar perfil', href: '#' },
-            { icon: '🔔', label: 'Notificaciones', href: '#' },
-            { icon: '💳', label: 'Método de pago', href: '#' },
-            { icon: '🛡️', label: 'Seguridad', href: '#' },
+            { icon: 'User', label: 'Editar perfil', href: '#' },
+            { icon: 'Bell', label: 'Notificaciones', href: '#' },
+            { icon: 'CreditCard', label: 'Método de pago', href: '#' },
+            { icon: 'Shield', label: 'Seguridad', href: '#' },
             { icon: '❓', label: 'Ayuda', href: '#' },
           ].map((item, i) => (
             <Link key={i} href={item.href}>
@@ -333,11 +333,11 @@ export default function Profile() {
       <nav className="sticky bottom-0 border-t border-surface-200/50 bg-white/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-lg items-center justify-around py-2">
           {[
-            { href: '/', icon: '🏠', label: 'Inicio', active: false },
-            { href: '/active', icon: '📦', label: 'Activos', active: false },
-            { href: '/earnings', icon: '💰', label: 'Ganancias', active: false },
-            { href: '/schedule', icon: '📅', label: 'Horario', active: false },
-            { href: '/profile', icon: '👤', label: 'Perfil', active: true },
+            { href: '/', icon: 'Home', label: 'Inicio', active: false },
+            { href: '/active', icon: 'Package', label: 'Activos', active: false },
+            { href: '/earnings', icon: 'Coins', label: 'Ganancias', active: false },
+            { href: '/schedule', icon: 'Calendar', label: 'Horario', active: false },
+            { href: '/profile', icon: 'User', label: 'Perfil', active: true },
           ].map((item) => (
             <Link key={item.href} href={item.href}>
               <motion.div

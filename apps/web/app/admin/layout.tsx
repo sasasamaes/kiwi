@@ -7,12 +7,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ThemeToggle } from '@kiwi/ui';
 
 const menuItems = [
-  { href: '/admin', icon: '📊', label: 'Dashboard', exact: true },
+  { href: '/admin', icon: 'BarChart3', label: 'Dashboard', exact: true },
   { href: '/admin/users', icon: '👥', label: 'Usuarios' },
-  { href: '/admin/orders', icon: '📦', label: 'Pedidos' },
+  { href: '/admin/orders', icon: 'Package', label: 'Pedidos' },
   { href: '/admin/kyc', icon: '🪪', label: 'Verificaciones KYC' },
-  { href: '/admin/payments', icon: '💰', label: 'Pagos' },
-  { href: '/admin/settings', icon: '⚙️', label: 'Configuración' },
+  { href: '/admin/payments', icon: 'Coins', label: 'Pagos' },
+  { href: '/admin/settings', icon: 'Settings', label: 'Configuración' },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -42,7 +42,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               animate={{ rotate: [0, -10, 10, -10, 0] }}
               transition={{ duration: 0.5, delay: 0.5 }}
             >
-              🥝
+              
             </motion.span>
             {sidebarOpen && (
               <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>

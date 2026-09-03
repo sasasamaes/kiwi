@@ -121,7 +121,7 @@ export default function WithdrawScreen({ navigation }: any) {
       });
 
       Alert.alert(
-        '✅ Solicitud enviada',
+        'Solicitud enviada',
         'Tu solicitud de retiro está siendo procesada. Te notificaremos cuando se complete.',
         [{ text: 'OK', onPress: () => { resetForm(); fetchData(); } }]
       );
@@ -166,7 +166,7 @@ export default function WithdrawScreen({ navigation }: any) {
 
   if (loading) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: isDark ? colors.surface[950] : colors.surface[50 }]}>
+      <SafeAreaView style={[styles.container, { backgroundColor: isDark ? colors.surface[950] : colors.surface[50] }]>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.kiwi[500]} />
         </View>
@@ -275,7 +275,7 @@ export default function WithdrawScreen({ navigation }: any) {
             }]}
             onPress={() => setMethod('sinpe')}
           >
-            <Text style={styles.methodEmoji}>📱</Text>
+            <Text style={styles.methodEmoji}>Smartphone</Text>
             <Text style={[styles.methodLabel, { color: isDark ? colors.surface[100] : colors.surface[900] }]}>
               SINPE
             </Text>

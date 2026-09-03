@@ -39,7 +39,7 @@ export function OnvoPayCheckout({
       } else {
         // For embedded checkout, you would use the OnvoPay SDK
         // For now, we'll simulate the flow
-        console.log('💳 OnvoPay checkout:', { paymentIntentId, clientSecret });
+        console.log('CreditCard OnvoPay checkout:', { paymentIntentId, clientSecret });
         
         // In production, you would:
         // 1. Load OnvoPay.js SDK
@@ -67,7 +67,7 @@ export function OnvoPayCheckout({
       animate={{ opacity: 1, y: 0 }}
     >
       <div className="text-center mb-6">
-        <div className="text-4xl mb-3">💳</div>
+        <div className="text-4xl mb-3">CreditCard</div>
         <h3 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100">
           Pago Seguro con OnvoPay
         </h3>
@@ -114,12 +114,12 @@ export function OnvoPayCheckout({
               animate={{ rotate: 360 }}
               transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
             >
-              ⏳
+              Clock
             </motion.span>
             Procesando...
           </span>
         ) : (
-          '💳 Pagar Ahora'
+          'CreditCard Pagar Ahora'
         )}
       </motion.button>
 
@@ -135,7 +135,7 @@ export function OnvoPayCheckout({
       {/* Security Note */}
       <div className="mt-4 text-center">
         <p className="text-xs text-surface-400 dark:text-surface-500">
-          🔒 Pago seguro y encriptado por OnvoPay
+          Lock Pago seguro y encriptado por OnvoPay
         </p>
       </div>
     </motion.div>
@@ -204,7 +204,7 @@ export function CryptoCheckout({
           <div className="p-4 bg-white rounded-xl shadow-soft">
             {/* QR code would be rendered here using qrcode.react */}
             <div className="w-48 h-48 bg-surface-100 dark:bg-surface-700 rounded-lg flex items-center justify-center">
-              <span className="text-4xl">📱</span>
+              <span className="text-4xl">Smartphone</span>
             </div>
           </div>
         </div>
@@ -227,7 +227,7 @@ export function CryptoCheckout({
             onClick={copyAddress}
             whileTap={{ scale: 0.95 }}
           >
-            {copied ? '✅' : '📋'}
+            {copied ? 'Check' : 'clipboard'}
           </motion.button>
         </div>
       </div>

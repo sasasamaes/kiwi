@@ -64,11 +64,11 @@ export default function PaymentsPage() {
 
   const getMethodIcon = (method: string) => {
     switch (method) {
-      case 'sinpe': return '📱';
-      case 'card': return '💳';
-      case 'cash': return '💵';
+      case 'sinpe': return 'Smartphone';
+      case 'card': return 'CreditCard';
+      case 'cash': return 'DollarSign';
       case 'crypto': return '₿';
-      default: return '💰';
+      default: return 'Coins';
     }
   };
 
@@ -89,7 +89,7 @@ export default function PaymentsPage() {
         <StatCard
           title="Ingresos Totales"
           value={`₡${stats.totalRevenue.toLocaleString()}`}
-          icon="💰"
+          icon="Coins"
           color="#22c55e"
         />
         <StatCard
@@ -101,13 +101,13 @@ export default function PaymentsPage() {
         <StatCard
           title="Pagos a Repartidores"
           value={`₡${stats.totalPayouts.toLocaleString()}`}
-          icon="🛵"
+          icon="Bike"
           color="#8b5cf6"
         />
         <StatCard
           title="Pagos Pendientes"
           value={`₡${stats.pendingPayouts.toLocaleString()}`}
-          icon="⏳"
+          icon="Clock"
           color="#f59e0b"
         />
       </div>
@@ -120,7 +120,7 @@ export default function PaymentsPage() {
           animate={{ opacity: 1, y: 0 }}
         >
           <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-            💰 Ingresos Diarios
+            Ingresos Diarios
           </h3>
           <AreaChartComponent data={dailyRevenue} height={250} />
         </motion.div>
@@ -132,7 +132,7 @@ export default function PaymentsPage() {
           transition={{ delay: 0.1 }}
         >
           <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-            💳 Métodos de Pago
+            Metodos de Pago
           </h3>
           <PieChartComponent data={paymentMethods} height={200} />
         </motion.div>

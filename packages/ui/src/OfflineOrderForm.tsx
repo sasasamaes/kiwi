@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useOfflineOrders, type CreateOrderData } from './useOfflineOrders';
 import { useNetworkStatus } from './useNetworkStatus';
 import { OfflineIndicator } from './OfflineIndicator';
+import { Package, WifiOff, RefreshCw, DollarSign, Smartphone, CreditCard, Loader } from 'lucide-react';
 
 interface OfflineOrderFormProps {
   merchantId: string;
@@ -131,7 +132,7 @@ export function OfflineOrderForm({
       <div className="p-4 border-b border-surface-100 dark:border-surface-700">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100">
-            📦 Nuevo Pedido
+            Nuevo Pedido
           </h2>
           <div className="flex items-center gap-2">
             {!isOnline && (
@@ -140,7 +141,7 @@ export function OfflineOrderForm({
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
               >
-                <span>📡</span>
+                <WifiOff className="h-3 w-3" />
                 <span>Offline</span>
               </motion.div>
             )}
@@ -150,7 +151,7 @@ export function OfflineOrderForm({
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
               >
-                <span>🔄</span>
+                <RefreshCw className="h-3 w-3" />
                 <span>{unsyncedCount} pendiente{unsyncedCount !== 1 ? 's' : ''}</span>
               </motion.div>
             )}
@@ -343,10 +344,10 @@ export function OfflineOrderForm({
 
               <div className="space-y-2">
                 {[
-                  { id: 'cash', label: 'Efectivo', icon: '💵', desc: 'Pagar al repartidor' },
-                  { id: 'sinpe', label: 'SINPE', icon: '📱', desc: 'Transferencia instantánea' },
-                  { id: 'card', label: 'Tarjeta', icon: '💳', desc: 'Crédito/Débito' },
-                  { id: 'crypto', label: 'Crypto', icon: '₿', desc: 'USDC/USDT' },
+                  { id: 'cash', label: 'Efectivo', icon: 'cash', desc: 'Pagar al repartidor' },
+                  { id: 'sinpe', label: 'SINPE', icon: 'sinpe', desc: 'Transferencia instantánea' },
+                  { id: 'card', label: 'Tarjeta', icon: 'card', desc: 'Credito/Debito' },
+                  { id: 'crypto', label: 'Crypto', icon: 'crypto', desc: 'USDC/USDT' },
                 ].map((method) => (
                   <button
                     key={method.id}
@@ -358,7 +359,12 @@ export function OfflineOrderForm({
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <span className="text-2xl">{method.icon}</span>
+                      <span className="text-2xl">
+                      {method.id === 'cash' && <DollarSign className="h-6 w-6" />}
+                      {method.id === 'sinpe' && <Smartphone className="h-6 w-6" />}
+                      {method.id === 'card' && <CreditCard className="h-6 w-6" />}
+                      {method.id === 'crypto' && <DollarSign className="h-6 w-6" />}
+                    </span>
                       <div>
                         <p className="font-medium text-surface-800 dark:text-surface-200">
                           {method.label}
@@ -416,7 +422,7 @@ export function OfflineOrderForm({
               {!isOnline && (
                 <div className="p-4 rounded-xl bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-800">
                   <div className="flex items-start gap-3">
-                    <span className="text-2xl">📡</span>
+                    <span className="text-2xl"><WifiOff className="h-6 w-6" /></span>
                     <div>
                       <p className="font-medium text-orange-700 dark:text-orange-400">
                         Modo Offline
@@ -510,12 +516,12 @@ export function OfflineOrderForm({
                     animate={{ rotate: 360 }}
                     transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
                   >
-                    ⏳
+                    <Loader className="h-4 w-4" />
                   </motion.span>
                   Creando...
                 </span>
               ) : (
-                `📦 Crear Pedido ₡${total.toLocaleString()}`
+                `Crear Pedido ₡${total.toLocaleString()}`
               )}
             </motion.button>
           ) : (

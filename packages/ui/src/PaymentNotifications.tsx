@@ -23,14 +23,14 @@ function NotificationItem({ notification, onRead, onDismiss, onDelete, onClick }
   const [isExpanded, setIsExpanded] = useState(false);
 
   const getIcon = (type: string) => {
-    if (type.includes('completed')) return '✅';
-    if (type.includes('failed')) return '❌';
-    if (type.includes('processing')) return '⏳';
-    if (type.includes('refunded')) return '💰';
-    if (type.includes('received')) return '💰';
-    if (type.includes('pending')) return '⏳';
+    if (type.includes('completed')) return 'Check';
+    if (type.includes('failed')) return 'close';
+    if (type.includes('processing')) return 'clock';
+    if (type.includes('refunded')) return 'coins';
+    if (type.includes('received')) return 'coins';
+    if (type.includes('pending')) return 'clock';
     if (type.includes('expired')) return '⏰';
-    return '💳';
+    return 'creditCard';
   };
 
   const getPriorityColor = (priority: string) => {
@@ -189,7 +189,7 @@ export function PaymentNotifications({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <h2 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100">
-              🔔 Notificaciones
+              Bell Notificaciones
             </h2>
             {unreadCount > 0 && (
               <span className="px-2 py-0.5 rounded-full bg-kiwi-500 text-white text-xs font-medium">
@@ -205,7 +205,7 @@ export function PaymentNotifications({
                 className="px-3 py-1.5 rounded-lg text-xs font-medium bg-kiwi-100 dark:bg-kiwi-900/30 text-kiwi-700 dark:text-kiwi-400"
                 whileTap={{ scale: 0.95 }}
               >
-                🔔 Activar
+                Bell Activar
               </motion.button>
             )}
 
@@ -237,7 +237,7 @@ export function PaymentNotifications({
               animate={{ y: [0, -5, 0] }}
               transition={{ duration: 2, repeat: Infinity }}
             >
-              🔔
+              Bell
             </motion.div>
             <h3 className="font-semibold text-surface-800 dark:text-surface-100 mb-1">
               Sin notificaciones
@@ -281,7 +281,7 @@ export function PaymentNotifications({
             className="w-full mt-2 py-2 rounded-xl text-red-500 hover:text-red-600 text-sm font-medium"
             whileTap={{ scale: 0.98 }}
           >
-            🗑️ Limpiar notificaciones
+            Trash2 Limpiar notificaciones
           </motion.button>
         )}
       </div>
@@ -315,7 +315,7 @@ export function NotificationBadge({
       animate={{ scale: 1 }}
       transition={{ type: 'spring', stiffness: 500 }}
     >
-      <span className="text-xl">🔔</span>
+      <span className="text-xl">Bell</span>
       <motion.div
         className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center"
         animate={{ scale: [1, 1.2, 1] }}
@@ -364,10 +364,10 @@ export function PaymentNotificationToast({
   }
 
   const getIcon = (type: string) => {
-    if (type.includes('completed')) return '✅';
-    if (type.includes('failed')) return '❌';
-    if (type.includes('processing')) return '⏳';
-    return '💳';
+    if (type.includes('completed')) return 'Check';
+    if (type.includes('failed')) return 'close';
+    if (type.includes('processing')) return 'clock';
+    return 'creditCard';
   };
 
   return (

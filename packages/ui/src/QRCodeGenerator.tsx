@@ -22,7 +22,7 @@ export interface QRCodeGeneratorProps {
 }
 
 /**
- * 🥝 QR Code Generator for Kiwi Merchant Menus
+ *  QR Code Generator for Kiwi Merchant Menus
  * 
  * Generates scannable QR codes that link to the merchant's menu page.
  * When a client scans the code, they see the menu and can order directly.
@@ -77,7 +77,7 @@ export function QRCodeGenerator({
     ctx.fillStyle = '#22c55e';
     ctx.font = '12px system-ui, -apple-system, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('🥝 Kiwi Delivery', downloadCanvas.width / 2, downloadCanvas.height - 10);
+    ctx.fillText(' Kiwi Delivery', downloadCanvas.width / 2, downloadCanvas.height - 10);
 
     // Download
     const link = document.createElement('a');
@@ -149,8 +149,8 @@ export function QRCodeGenerator({
             <img src="${qrDataUrl}" width="${size}" height="${size}" />
             ${businessName ? `<div class="business-name">${businessName}</div>` : ''}
             <div class="subtitle">Escanea para ver el menú</div>
-            <div class="instruction">📱 Abre la cámara y apunta al código</div>
-            <div class="brand">🥝 Kiwi Delivery - Nicoya</div>
+            <div class="instruction">Smartphone Abre la cámara y apunta al código</div>
+            <div class="brand"> Kiwi Delivery - Nicoya</div>
           </div>
         </body>
       </html>
@@ -165,7 +165,7 @@ export function QRCodeGenerator({
   const handleCopyLink = useCallback(() => {
     navigator.clipboard.writeText(menuUrl).then(() => {
       // Could show a toast here
-      console.log('📋 Menu link copied to clipboard');
+      console.log('ClipboardList Menu link copied to clipboard');
     });
   }, [menuUrl]);
 
@@ -210,7 +210,7 @@ export function QRCodeGenerator({
         {/* Kiwi branding in corner */}
         {branded && (
           <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-kiwi-500 px-3 py-1 text-xs font-bold text-white shadow-md">
-            🥝 Kiwi
+             Kiwi
           </div>
         )}
       </motion.div>
@@ -246,7 +246,7 @@ export function QRCodeGenerator({
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
-            📥 Descargar PNG
+            Download Descargar PNG
           </motion.button>
 
           <motion.button
@@ -255,7 +255,7 @@ export function QRCodeGenerator({
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
-            🖨️ Imprimir
+            Printer Imprimir
           </motion.button>
 
           <motion.button
@@ -264,7 +264,7 @@ export function QRCodeGenerator({
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
-            📋 Copiar enlace
+            ClipboardList Copiar enlace
           </motion.button>
         </motion.div>
       )}
@@ -283,7 +283,7 @@ export function QRCodeGenerator({
 }
 
 /**
- * 🥝 QR Code Scanner
+ *  QR Code Scanner
  * 
  * Scans QR codes and navigates to the merchant's menu page.
  */

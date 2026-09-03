@@ -19,17 +19,17 @@ const statusConfig: Record<
   OrderStatus,
   { label: string; icon: string; description: string; progress: number }
 > = {
-  pending: { label: 'Pendiente', icon: '⏳', description: 'Esperando repartidor', progress: 10 },
-  assigned: { label: 'Asignado', icon: '✅', description: 'Repartidor asignado', progress: 20 },
+  pending: { label: 'Pendiente', icon: 'Clock', description: 'Esperando repartidor', progress: 10 },
+  assigned: { label: 'Asignado', icon: 'Check', description: 'Repartidor asignado', progress: 20 },
   in_transit_to_pickup: {
     label: 'En camino a recoger',
-    icon: '🛵',
+    icon: 'Bike',
     description: 'El repartidor va al comercio',
     progress: 40,
   },
   picked_up: {
     label: 'Recogido',
-    icon: '📦',
+    icon: 'Package',
     description: 'El repartidor recogió tu pedido',
     progress: 60,
   },
@@ -41,13 +41,13 @@ const statusConfig: Record<
   },
   delivered: {
     label: 'Entregado',
-    icon: '🎉',
+    icon: 'PartyPopper',
     description: '¡Recibiste tu pedido!',
     progress: 100,
   },
   cancelled: {
     label: 'Cancelado',
-    icon: '❌',
+    icon: 'X',
     description: 'El pedido fue cancelado',
     progress: 0,
   },
@@ -176,7 +176,7 @@ export default function TrackingPage() {
     return (
       <div className="min-h-[100dvh] bg-bg-light dark:bg-surface-950 flex items-center justify-center">
         <div className="text-center">
-          <span className="text-6xl mb-4 block">❌</span>
+          <span className="text-6xl mb-4 block">X</span>
           <h2 className="text-xl font-semibold text-surface-800 dark:text-surface-100 mb-2">
             {error || 'Pedido no encontrado'}
           </h2>
@@ -358,7 +358,7 @@ export default function TrackingPage() {
           </Link>
           {currentStatus === 'delivered' && (
             <Link href={`/order/${orderId}/rate`} className="flex-1">
-              <AnimatedButton className="w-full">⭐ Calificar</AnimatedButton>
+              <AnimatedButton className="w-full">Star Calificar</AnimatedButton>
             </Link>
           )}
         </div>

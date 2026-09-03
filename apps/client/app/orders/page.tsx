@@ -32,12 +32,12 @@ interface OrderHistory {
 const STATUS_CONFIG: Record<string, { label: string; icon: string; color: string }> = {
   delivered: {
     label: 'Entregado',
-    icon: '✅',
+    icon: 'Check',
     color: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400',
   },
   cancelled: {
     label: 'Cancelado',
-    icon: '❌',
+    icon: 'X',
     color: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400',
   },
   in_transit_to_delivery: {
@@ -47,21 +47,21 @@ const STATUS_CONFIG: Record<string, { label: string; icon: string; color: string
   },
   assigned: {
     label: 'Asignado',
-    icon: '🛵',
+    icon: 'Bike',
     color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400',
   },
   pending: {
     label: 'Pendiente',
-    icon: '⏳',
+    icon: 'Clock',
     color: 'bg-surface-100 text-surface-700 dark:bg-surface-700 dark:text-surface-300',
   },
 };
 
 const FILTER_TABS = [
-  { id: 'all', label: 'Todos', icon: '📋' },
-  { id: 'active', label: 'Activos', icon: '🔄' },
-  { id: 'delivered', label: 'Entregados', icon: '✅' },
-  { id: 'cancelled', label: 'Cancelados', icon: '❌' },
+  { id: 'all', label: 'Todos', icon: 'ClipboardList' },
+  { id: 'active', label: 'Activos', icon: 'RefreshCw' },
+  { id: 'delivered', label: 'Entregados', icon: 'Check' },
+  { id: 'cancelled', label: 'Cancelados', icon: 'X' },
 ];
 
 export default function OrderHistoryPage() {
@@ -161,7 +161,7 @@ export default function OrderHistoryPage() {
               onClick={fetchOrders}
               className="px-6 py-3 rounded-xl bg-kiwi-gradient text-white font-medium shadow-kiwi-lg"
             >
-              🔄 Reintentar
+              RefreshCw Reintentar
             </button>
           </div>
         </motion.div>
@@ -187,7 +187,7 @@ export default function OrderHistoryPage() {
               <span className="text-sm font-medium">Inicio</span>
             </Link>
             <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-              📋 Mis Pedidos
+              ClipboardList Mis Pedidos
             </h1>
             <div className="w-16" />
           </div>
@@ -242,7 +242,7 @@ export default function OrderHistoryPage() {
             </p>
             <Link href="/">
               <button className="px-6 py-3 rounded-xl bg-kiwi-gradient text-white font-medium shadow-kiwi-lg">
-                📱 Escanear QR
+                Smartphone Escanear QR
               </button>
             </Link>
           </motion.div>
@@ -290,27 +290,27 @@ export default function OrderHistoryPage() {
 
                         <div className="space-y-2 mb-3">
                           <div className="flex items-center gap-2 text-sm">
-                            <span className="text-surface-400">📍</span>
+                            <span className="text-surface-400">MapPin</span>
                             <span className="text-surface-600 dark:text-surface-400 truncate">
                               {order.deliveryAddress}
                             </span>
                           </div>
                           {order.driver && (
                             <div className="flex items-center gap-2 text-sm">
-                              <span className="text-surface-400">🛵</span>
+                              <span className="text-surface-400">Bike</span>
                               <span className="text-surface-600 dark:text-surface-400">
                                 {order.driver.fullName}
                               </span>
                               <span className="text-surface-400">•</span>
-                              <span className="text-yellow-500">⭐ {order.driver.rating}</span>
+                              <span className="text-yellow-500">Star {order.driver.rating}</span>
                             </div>
                           )}
                         </div>
 
                         <div className="flex items-center justify-between pt-3 border-t border-surface-100 dark:border-surface-700">
                           <div className="flex items-center gap-4 text-sm text-surface-500 dark:text-surface-400">
-                            <span>📅 {formatDate(order.createdAt)}</span>
-                            <span>🕐 {formatTime(order.createdAt)}</span>
+                            <span>Calendar {formatDate(order.createdAt)}</span>
+                            <span>Clock {formatTime(order.createdAt)}</span>
                           </div>
                           <span className="text-lg font-bold text-kiwi-600 dark:text-kiwi-400">
                             {formatCurrency(order.totalAmount)}
@@ -347,21 +347,21 @@ export default function OrderHistoryPage() {
             href="/"
             className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
           >
-            <span className="text-xl">🏠</span>
+            <span className="text-xl">Home</span>
             <span className="text-xs font-medium">Inicio</span>
           </Link>
           <Link
             href="/orders"
             className="flex flex-col items-center gap-1 px-4 py-2 text-kiwi-600 dark:text-kiwi-400"
           >
-            <span className="text-xl">📋</span>
+            <span className="text-xl">ClipboardList</span>
             <span className="text-xs font-medium">Pedidos</span>
           </Link>
           <Link
             href="/tracking"
             className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
           >
-            <span className="text-xl">📍</span>
+            <span className="text-xl">MapPin</span>
             <span className="text-xs font-medium">Tracking</span>
           </Link>
         </div>

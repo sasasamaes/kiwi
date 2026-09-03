@@ -21,21 +21,21 @@ const STATUS_CONFIG: Record<OrderStatus, {
 }> = {
   draft: {
     label: 'Borrador',
-    icon: '📝',
+    icon: 'file',
     color: 'text-surface-600',
     bgColor: 'bg-surface-100',
     description: 'Pedido creado localmente',
   },
   pending: {
     label: 'Pendiente',
-    icon: '⏳',
+    icon: 'clock',
     color: 'text-orange-600',
     bgColor: 'bg-orange-100',
     description: 'Esperando repartidor',
   },
   accepted: {
     label: 'Aceptado',
-    icon: '✅',
+    icon: 'Check',
     color: 'text-blue-600',
     bgColor: 'bg-blue-100',
     description: 'Repartidor asignado',
@@ -49,35 +49,35 @@ const STATUS_CONFIG: Record<OrderStatus, {
   },
   ready: {
     label: 'Listo',
-    icon: '📦',
+    icon: 'package',
     color: 'text-purple-600',
     bgColor: 'bg-purple-100',
     description: 'Listo para recoger',
   },
   picked_up: {
     label: 'Recogido',
-    icon: '🛵',
+    icon: 'bike',
     color: 'text-blue-600',
     bgColor: 'bg-blue-100',
     description: 'Repartidor en camino',
   },
   in_transit: {
     label: 'En camino',
-    icon: '🗺️',
+    icon: 'map',
     color: 'text-kiwi-600',
     bgColor: 'bg-kiwi-100',
     description: 'Casi llegando',
   },
   delivered: {
     label: 'Entregado',
-    icon: '🎉',
+    icon: 'party',
     color: 'text-kiwi-600',
     bgColor: 'bg-kiwi-100',
     description: 'Pedido entregado',
   },
   cancelled: {
     label: 'Cancelado',
-    icon: '❌',
+    icon: 'close',
     color: 'text-red-600',
     bgColor: 'bg-red-100',
     description: 'Pedido cancelado',
@@ -135,7 +135,7 @@ export function OfflineOrderTracker({
   if (!order) {
     return (
       <div className={`p-4 text-center ${className}`}>
-        <span className="text-4xl">❌</span>
+        <span className="text-4xl">X</span>
         <p className="text-surface-500 dark:text-surface-400">Pedido no encontrado</p>
       </div>
     );
@@ -182,14 +182,14 @@ export function OfflineOrderTracker({
               />
             )}
             {order.syncStatus === 'pending' && !isOnline && (
-              <span className="text-orange-500">📡</span>
+              <span className="text-orange-500">WifiOff</span>
             )}
             {order.syncStatus === 'failed' && (
               <button
                 onClick={handleSync}
                 className="text-red-500 hover:text-red-600"
               >
-                🔄
+                RefreshCw
               </button>
             )}
           </div>
@@ -200,7 +200,7 @@ export function OfflineOrderTracker({
       <div className="p-4 space-y-3">
         {/* Customer Info */}
         <div className="flex items-center gap-3">
-          <span className="text-xl">👤</span>
+          <span className="text-xl">User</span>
           <div>
             <p className="font-medium text-surface-800 dark:text-surface-200">
               {order.customerName}
@@ -213,7 +213,7 @@ export function OfflineOrderTracker({
 
         {/* Delivery Address */}
         <div className="flex items-center gap-3">
-          <span className="text-xl">📍</span>
+          <span className="text-xl">MapPin</span>
           <div>
             <p className="text-sm text-surface-500 dark:text-surface-400">Entregar en</p>
             <p className="font-medium text-surface-800 dark:text-surface-200">
@@ -253,7 +253,7 @@ export function OfflineOrderTracker({
         {/* Driver Info */}
         {order.driverName && (
           <div className="flex items-center gap-3">
-            <span className="text-xl">🛵</span>
+            <span className="text-xl">Bike</span>
             <div>
               <p className="text-sm text-surface-500 dark:text-surface-400">Repartidor</p>
               <p className="font-medium text-surface-800 dark:text-surface-200">
@@ -294,7 +294,7 @@ export function OfflineOrderTracker({
               onClick={() => handleStatusUpdate('pending')}
               className="flex-1 py-2 rounded-xl bg-kiwi-500 text-white font-medium"
             >
-              📤 Enviar Pedido
+              Enviar Pedido
             </button>
           )}
 
@@ -303,7 +303,7 @@ export function OfflineOrderTracker({
               onClick={() => handleStatusUpdate('cancelled')}
               className="flex-1 py-2 rounded-xl bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 font-medium"
             >
-              ❌ Cancelar
+              Cancelar
             </button>
           )}
 
@@ -321,7 +321,7 @@ export function OfflineOrderTracker({
               onClick={() => handleStatusUpdate('ready')}
               className="flex-1 py-2 rounded-xl bg-purple-500 text-white font-medium"
             >
-              📦 Marcar Listo
+              Marcar Listo
             </button>
           )}
 
@@ -330,7 +330,7 @@ export function OfflineOrderTracker({
               onClick={() => handleStatusUpdate('picked_up')}
               className="flex-1 py-2 rounded-xl bg-blue-500 text-white font-medium"
             >
-              🛵 Recogido
+              Recogido
             </button>
           )}
 
@@ -339,7 +339,7 @@ export function OfflineOrderTracker({
               onClick={() => handleStatusUpdate('in_transit')}
               className="flex-1 py-2 rounded-xl bg-kiwi-500 text-white font-medium"
             >
-              🗺️ En Camino
+              Map En Camino
             </button>
           )}
 
@@ -348,7 +348,7 @@ export function OfflineOrderTracker({
               onClick={() => handleStatusUpdate('delivered')}
               className="flex-1 py-2 rounded-xl bg-kiwi-500 text-white font-medium"
             >
-              ✅ Entregado
+              Entregado
             </button>
           )}
 
@@ -358,7 +358,7 @@ export function OfflineOrderTracker({
               onClick={handleSync}
               className="px-4 py-2 rounded-xl bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-medium"
             >
-              🔄
+              RefreshCw
             </button>
           )}
         </div>
@@ -401,7 +401,7 @@ export function OfflineOrderList({
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <span className="text-2xl">🔄</span>
+              <span className="text-2xl">RefreshCw</span>
               <div>
                 <p className="font-medium text-blue-700 dark:text-blue-400">
                   {unsyncedCount} pedido{unsyncedCount !== 1 ? 's' : ''} pendiente{unsyncedCount !== 1 ? 's' : ''}
@@ -426,7 +426,7 @@ export function OfflineOrderList({
       {/* Orders */}
       {orders.length === 0 ? (
         <div className="text-center py-12">
-          <span className="text-5xl block mb-4">📦</span>
+          <span className="text-5xl block mb-4">Package</span>
           <h3 className="text-lg font-semibold text-surface-800 dark:text-surface-100 mb-2">
             No hay pedidos
           </h3>

@@ -32,11 +32,11 @@ export default function DriverLanding() {
             transition={{ type: 'spring', stiffness: 260, damping: 20 }}
           >
             <motion.div
-              className="text-8xl inline-block"
+              className="inline-flex h-20 w-20 items-center justify-center rounded-2xl bg-kiwi-gradient shadow-kiwi-lg"
               animate={{ y: [-10, 10, -10] }}
               transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
             >
-              🥝
+              <span className="text-4xl font-bold text-white">K</span>
             </motion.div>
           </motion.div>
 
@@ -63,7 +63,7 @@ export default function DriverLanding() {
           <StaggerContainer className="mb-8 space-y-4">
             <StaggerItem>
               <div className="flex items-center gap-4 text-left p-4 rounded-xl bg-white/70 backdrop-blur-sm">
-                <span className="text-3xl">📅</span>
+                <span className="text-3xl">Calendar</span>
                 <div>
                   <p className="font-semibold text-surface-800">Horario flexible</p>
                   <p className="text-sm text-surface-500">Trabaja cuando quieras</p>
@@ -72,7 +72,7 @@ export default function DriverLanding() {
             </StaggerItem>
             <StaggerItem>
               <div className="flex items-center gap-4 text-left p-4 rounded-xl bg-white/70 backdrop-blur-sm">
-                <span className="text-3xl">🚗</span>
+                <span className="text-3xl">Car</span>
                 <div>
                   <p className="font-semibold text-surface-800">Cualquier vehículo</p>
                   <p className="text-sm text-surface-500">Moto, bici, carro o camión</p>
@@ -81,7 +81,7 @@ export default function DriverLanding() {
             </StaggerItem>
             <StaggerItem>
               <div className="flex items-center gap-4 text-left p-4 rounded-xl bg-white/70 backdrop-blur-sm">
-                <span className="text-3xl">💰</span>
+                <span className="text-3xl">Coins</span>
                 <div>
                   <p className="font-semibold text-surface-800">Gana por viaje</p>
                   <p className="text-sm text-surface-500">Tú eliges los pedidos</p>

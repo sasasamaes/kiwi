@@ -92,8 +92,8 @@ export function TrafficPredictions({
         {/* Tabs */}
         <div className="flex gap-1 bg-surface-100 dark:bg-surface-700 rounded-xl p-1">
           {[
-            { id: 'hourly' as const, label: t('traffic.hourly'), icon: '🕐' },
-            { id: 'daily' as const, label: t('traffic.daily'), icon: '📅' },
+            { id: 'hourly' as const, label: t('traffic.hourly'), icon: 'clock' },
+            { id: 'daily' as const, label: t('traffic.daily'), icon: 'calendar' },
             { id: 'insights' as const, label: t('traffic.insights'), icon: '💡' },
           ].map((tab) => (
             <motion.button
@@ -439,7 +439,7 @@ function InsightsTab({ lat, lng }: { lat: number; lng: number }) {
       {insights.patterns.length > 0 && (
         <div>
           <h4 className="font-semibold text-surface-800 dark:text-surface-100 mb-3">
-            📊 {t('traffic.patterns')}
+            BarChart3 {t('traffic.patterns')}
           </h4>
           <div className="space-y-2">
             {insights.patterns.map((pattern, index) => (
@@ -471,7 +471,7 @@ function InsightsTab({ lat, lng }: { lat: number; lng: number }) {
       {insights.anomalies.length > 0 && (
         <div>
           <h4 className="font-semibold text-surface-800 dark:text-surface-100 mb-3">
-            ⚠️ {t('traffic.incidents')}
+            AlertTriangle {t('traffic.incidents')}
           </h4>
           <div className="space-y-2">
             {insights.anomalies.map((anomaly, index) => (

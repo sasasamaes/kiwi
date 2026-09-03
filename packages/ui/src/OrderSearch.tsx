@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Search, Settings } from 'lucide-react';
 
 interface Order {
   id: string;
@@ -23,14 +24,14 @@ interface OrderSearchProps {
 }
 
 const STATUS_OPTIONS = [
-  { value: 'all', label: 'Todos', icon: '📋', color: 'bg-surface-100 text-surface-700' },
-  { value: 'pending', label: 'Pendiente', icon: '⏳', color: 'bg-yellow-100 text-yellow-700' },
-  { value: 'assigned', label: 'Asignado', icon: '✅', color: 'bg-blue-100 text-blue-700' },
-  { value: 'in_transit_to_pickup', label: 'En camino', icon: '🛵', color: 'bg-purple-100 text-purple-700' },
-  { value: 'picked_up', label: 'Recogido', icon: '📦', color: 'bg-indigo-100 text-indigo-700' },
-  { value: 'in_transit_to_delivery', label: 'Entregando', icon: '🚀', color: 'bg-cyan-100 text-cyan-700' },
-  { value: 'delivered', label: 'Entregado', icon: '🎉', color: 'bg-green-100 text-green-700' },
-  { value: 'cancelled', label: 'Cancelado', icon: '❌', color: 'bg-red-100 text-red-700' },
+  { value: 'all', label: 'Todos', icon: 'clipboard', color: 'bg-surface-100 text-surface-700' },
+  { value: 'pending', label: 'Pendiente', icon: 'clock', color: 'bg-yellow-100 text-yellow-700' },
+  { value: 'assigned', label: 'Asignado', icon: 'check', color: 'bg-blue-100 text-blue-700' },
+  { value: 'in_transit_to_pickup', label: 'En camino', icon: 'bike', color: 'bg-purple-100 text-purple-700' },
+  { value: 'picked_up', label: 'Recogido', icon: 'package', color: 'bg-indigo-100 text-indigo-700' },
+  { value: 'in_transit_to_delivery', label: 'Entregando', icon: 'zap', color: 'bg-cyan-100 text-cyan-700' },
+  { value: 'delivered', label: 'Entregado', icon: 'party', color: 'bg-green-100 text-green-700' },
+  { value: 'cancelled', label: 'Cancelado', icon: 'close', color: 'bg-red-100 text-red-700' },
 ];
 
 const SORT_OPTIONS = [
@@ -115,7 +116,7 @@ export function OrderSearch({ orders, onFilterChange, showMerchant = true, showD
       {/* Search Bar */}
       <div className="relative">
         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-          <span className="text-surface-400">🔍</span>
+          <span className="text-surface-400"><Search className="h-4 w-4" /></span>
         </div>
         <input
           type="text"
@@ -140,7 +141,7 @@ export function OrderSearch({ orders, onFilterChange, showMerchant = true, showD
           onClick={() => setShowFilters(!showFilters)}
           className="flex items-center gap-2 px-4 py-2 bg-surface-100 dark:bg-surface-800 rounded-lg text-sm font-medium text-surface-700 dark:text-surface-300 hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors"
         >
-          <span>⚙️</span>
+          <span><Settings className="h-4 w-4" /></span>
           Filtros
           {activeFilterCount > 0 && (
             <span className="px-2 py-0.5 bg-kiwi-500 text-white text-xs rounded-full">
@@ -182,7 +183,7 @@ export function OrderSearch({ orders, onFilterChange, showMerchant = true, showD
                           : 'bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400 hover:bg-surface-200 dark:hover:bg-surface-600'
                       }`}
                     >
-                      {option.icon} {option.label}
+                      {option.label}
                     </button>
                   ))}
                 </div>

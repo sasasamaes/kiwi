@@ -26,11 +26,11 @@ interface SyncItemProps {
 function SyncItem({ item, onCancel }: SyncItemProps) {
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'syncing': return '🔄';
-      case 'completed': return '✅';
-      case 'failed': return '❌';
+      case 'syncing': return 'refresh';
+      case 'completed': return 'Check';
+      case 'failed': return 'close';
       case 'paused': return '⏸️';
-      default: return '⏳';
+      default: return 'clock';
     }
   };
 
@@ -83,7 +83,7 @@ function SyncItem({ item, onCancel }: SyncItemProps) {
         {/* Details */}
         <div className="flex items-center justify-between text-xs text-surface-500 dark:text-surface-400">
           <span>
-            {item.operation === 'upload' ? '⬆️' : item.operation === 'download' ? '⬇️' : '🔄'}
+            {item.operation === 'upload' ? '⬆️' : item.operation === 'download' ? '⬇️' : 'refresh'}
             {' '}
             {item.speed > 0 && `${(item.speed / 1024).toFixed(1)} KB/s`}
           </span>
@@ -182,7 +182,7 @@ export function SyncProgressBar({
                 transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
               />
             ) : (
-              <span className="text-lg">✅</span>
+              <span className="text-lg">Check</span>
             )}
             <span className="text-sm font-medium text-surface-800 dark:text-surface-200">
               {isSyncing ? 'Sincronizando...' : 'Sincronización completa'}
@@ -328,11 +328,11 @@ export function SyncToast({ className = '' }: { className?: string }) {
       setToastMessage(`Sincronizando... ${formattedProgress}`);
       setShowToast(true);
     } else if (completedCount > 0) {
-      setToastMessage(`✅ ${completedCount} elementos sincronizados`);
+      setToastMessage(`Check ${completedCount} elementos sincronizados`);
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
     } else if (failedCount > 0) {
-      setToastMessage(`❌ ${failedCount} elementos fallidos`);
+      setToastMessage(`X ${failedCount} elementos fallidos`);
       setShowToast(true);
       setTimeout(() => setShowToast(false), 5000);
     }
@@ -358,7 +358,7 @@ export function SyncToast({ className = '' }: { className?: string }) {
           />
         ) : (
           <span className="text-lg">
-            {failedCount > 0 ? '❌' : '✅'}
+            {failedCount > 0 ? 'close' : 'Check'}
           </span>
         )}
         <span className="text-sm">{toastMessage}</span>
@@ -396,7 +396,7 @@ export function SyncStatusPage({ className = '' }: { className?: string }) {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-display font-bold text-surface-800 dark:text-surface-100">
-            🔄 Estado de Sincronización
+            RefreshCw Estado de Sincronización
           </h1>
           <p className="text-sm text-surface-500 dark:text-surface-400">
             {isSyncing ? 'Sincronizando datos...' : 'Todo sincronizado'}
@@ -407,7 +407,7 @@ export function SyncStatusPage({ className = '' }: { className?: string }) {
           className="px-4 py-2 rounded-xl bg-surface-100 dark:bg-surface-800 text-surface-700 dark:text-surface-300 font-medium"
           whileTap={{ scale: 0.95 }}
         >
-          🔄 Actualizar
+          RefreshCw Actualizar
         </motion.button>
       </div>
 

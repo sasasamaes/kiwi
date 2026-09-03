@@ -59,7 +59,7 @@ export function AdminSyncDashboard({ className = '', refreshInterval = 5000 }: A
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-display font-bold text-surface-800 dark:text-surface-100">
-            📊 Monitor de Sincronización
+            BarChart3 Monitor de Sincronización
           </h1>
           <p className="text-sm text-surface-500 dark:text-surface-400">
             Estado en tiempo real de todos los dispositivos
@@ -85,7 +85,7 @@ export function AdminSyncDashboard({ className = '', refreshInterval = 5000 }: A
         >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center text-xl">
-              📱
+              Smartphone
             </div>
             <div>
               <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
@@ -123,7 +123,7 @@ export function AdminSyncDashboard({ className = '', refreshInterval = 5000 }: A
         >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-xl flex items-center justify-center text-xl">
-              ⏳
+              Clock
             </div>
             <div>
               <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
@@ -142,7 +142,7 @@ export function AdminSyncDashboard({ className = '', refreshInterval = 5000 }: A
         >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-xl flex items-center justify-center text-xl">
-              ❌
+              X
             </div>
             <div>
               <p className="text-2xl font-bold text-red-600 dark:text-red-400">
@@ -200,7 +200,7 @@ export function AdminSyncDashboard({ className = '', refreshInterval = 5000 }: A
               <div key={type} className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="text-lg">
-                    {type === 'merchant' ? '🏪' : type === 'driver' ? '🛵' : '👤'}
+                    {type === 'merchant' ? '🏪' : type === 'driver' ? 'bike' : 'user'}
                   </span>
                   <span className="text-sm text-surface-600 dark:text-surface-400 capitalize">
                     {type === 'merchant' ? 'Comerciantes' :
@@ -239,7 +239,7 @@ export function AdminSyncDashboard({ className = '', refreshInterval = 5000 }: A
                 >
                   {f === 'all' ? 'Todos' :
                    f === 'merchant' ? '🏪 Comerciantes' :
-                   f === 'driver' ? '🛵 Repartidores' : '👤 Clientes'}
+                   f === 'driver' ? 'Bike Repartidores' : 'User Clientes'}
                 </button>
               ))}
             </div>
@@ -261,7 +261,7 @@ export function AdminSyncDashboard({ className = '', refreshInterval = 5000 }: A
                   <div className="relative">
                     <span className="text-2xl">
                       {device.userType === 'merchant' ? '🏪' :
-                       device.userType === 'driver' ? '🛵' : '👤'}
+                       device.userType === 'driver' ? 'bike' : 'user'}
                     </span>
                     <div
                       className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white dark:border-surface-800"
