@@ -16,7 +16,7 @@ import { useTranslation } from '../hooks/useTranslations';
 import { colors, gradients, shadows } from '../utils/theme';
 import { locales, Locale } from '@kiwi/i18n';
 
-export default function ProfileScreen() {
+export default function ProfileScreen({ navigation }: any) {
   const { user, logout } = useAuth();
   const { isDark, theme, setTheme } = useTheme();
   const { t, locale, setLocale } = useTranslation();
@@ -53,7 +53,8 @@ export default function ProfileScreen() {
   const menuItems = [
     { icon: 'person-outline', label: t.profile.editProfile, onPress: () => {} },
     { icon: 'car-outline', label: t.profile.myVehicle, onPress: () => {} },
-    { icon: 'document-text-outline', label: t.profile.documents, onPress: () => {} },
+    { icon: 'shield-checkmark-outline', label: 'Verificación KYC', onPress: () => navigation.navigate('KYC') },
+    { icon: 'wallet-outline', label: 'Retirar ganancias', onPress: () => navigation.navigate('Withdraw') },
     { icon: 'notifications-outline', label: t.profile.notifications, onPress: () => {} },
     { icon: 'language-outline', label: t.settings.language, onPress: handleLanguageChange },
     { icon: 'moon-outline', label: t.profile.darkMode, onPress: () => setTheme(theme === 'dark' ? 'light' : 'dark') },

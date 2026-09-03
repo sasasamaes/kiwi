@@ -15,6 +15,8 @@ import EarningsScreen from '../screens/EarningsScreen';
 import ScheduleScreen from '../screens/ScheduleScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import OrderDetailScreen from '../screens/OrderDetailScreen';
+import KycScreen from '../screens/KycScreen';
+import WithdrawScreen from '../screens/WithdrawScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -110,6 +112,8 @@ export default function AppNavigator() {
               animation: 'slide_from_bottom',
             }}
           />
+          <Stack.Screen name="KYC" component={KycScreen} />
+          <Stack.Screen name="Withdraw" component={WithdrawScreen} />
         </>
       )}
     </Stack.Navigator>
