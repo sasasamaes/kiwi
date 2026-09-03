@@ -2,9 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ============================================
-   🥝 KIWI GLOBAL STYLES - DARK MODE SUPPORT
-   ============================================ */
+/* ═══════════════════════════════════════════
+   🥝 KIWI GLOBAL STYLES — Tropical Pura Vida Night
+   ═══════════════════════════════════════════ */
 
 :root {
   /* Light mode colors */
@@ -19,15 +19,15 @@
 }
 
 .dark {
-  /* Dark mode colors */
-  --bg-primary: #09090b;
-  --bg-secondary: #18181b;
-  --bg-tertiary: #27272a;
-  --text-primary: #fafafa;
-  --text-secondary: #a1a1aa;
-  --text-tertiary: #71717a;
-  --border-color: #3f3f46;
-  --shadow-color: rgba(0, 0, 0, 0.3);
+  /* Dark mode — Midnight Canvas */
+  --bg-primary: #0b1326;
+  --bg-secondary: rgba(30, 41, 59, 0.75);
+  --bg-tertiary: rgba(51, 65, 85, 0.6);
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-tertiary: #64748b;
+  --border-color: rgba(51, 65, 85, 0.6);
+  --shadow-color: rgba(0, 0, 0, 0.5);
 }
 
 /* Base styles with smooth transitions */
@@ -45,7 +45,8 @@ body {
 }
 
 .dark body {
-  @apply bg-surface-950 text-surface-100;
+  @apply text-canvas-50;
+  background-color: #0b1326;
 }
 
 /* Background colors */
@@ -57,48 +58,42 @@ body {
   background-color: var(--bg-primary);
 }
 
-/* Card styles */
+/* ============================================
+   GLASSMORPHISM
+   ============================================ */
+
 .card-glass {
   @apply bg-white/70 backdrop-blur-xl border border-white/30;
 }
 
 .dark .card-glass {
-  @apply bg-surface-800/70 border-surface-700/30;
+  background: rgba(30, 41, 59, 0.75);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(51, 65, 85, 0.6);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
 }
 
-/* Glass morphism */
 .glass {
   @apply bg-white/80 backdrop-blur-xl;
 }
 
 .dark .glass {
-  @apply bg-surface-900/80;
+  background: rgba(30, 41, 59, 0.75);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(51, 65, 85, 0.6);
 }
 
 /* Text colors */
-.text-primary {
-  color: var(--text-primary);
-}
-
-.text-secondary {
-  color: var(--text-secondary);
-}
-
-.text-tertiary {
-  color: var(--text-tertiary);
-}
+.text-primary { color: var(--text-primary); }
+.text-secondary { color: var(--text-secondary); }
+.text-tertiary { color: var(--text-tertiary); }
 
 /* Border colors */
-.border-light {
-  border-color: var(--border-color);
-}
-
-.dark .border-light {
-  border-color: var(--border-color);
-}
+.border-light { border-color: var(--border-color); }
+.dark .border-light { border-color: var(--border-color); }
 
 /* ============================================
-   🎨 COMPONENT STYLES
+   COMPONENT STYLES
    ============================================ */
 
 /* Button styles */
@@ -120,8 +115,18 @@ body {
 }
 
 .dark .input-kiwi {
-  @apply bg-surface-800 border-surface-700 text-surface-100 
-         placeholder-surface-500 focus:ring-kiwi-400;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(51, 65, 85, 0.8);
+  color: #f8fafc;
+}
+
+.dark .input-kiwi::placeholder {
+  color: #64748b;
+}
+
+.dark .input-kiwi:focus {
+  border-color: #22c55e;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
 }
 
 /* Card styles */
@@ -131,7 +136,9 @@ body {
 }
 
 .dark .card-kiwi {
-  @apply bg-surface-800 shadow-dark hover:shadow-dark-lg;
+  background: rgba(30, 41, 59, 0.75);
+  border: 1px solid rgba(51, 65, 85, 0.6);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
 }
 
 /* Navigation */
@@ -140,7 +147,9 @@ body {
 }
 
 .dark .nav-kiwi {
-  @apply border-surface-800 bg-surface-900/80;
+  border-color: rgba(51, 65, 85, 0.6);
+  background: rgba(15, 23, 42, 0.92);
+  backdrop-filter: blur(16px);
 }
 
 /* Header */
@@ -149,19 +158,19 @@ body {
 }
 
 .dark .header-kiwi {
-  @apply border-surface-800 bg-surface-900/70;
+  border-color: rgba(51, 65, 85, 0.6);
+  background: rgba(15, 23, 42, 0.92);
+  backdrop-filter: blur(16px);
 }
 
 /* ============================================
-   ✨ ANIMATION UTILITIES
+   ANIMATION UTILITIES
    ============================================ */
 
-/* Smooth page transitions */
 .page-transition {
   @apply transition-all duration-300 ease-in-out;
 }
 
-/* Hover effects */
 .hover-lift {
   @apply transition-all duration-300 ease-out;
 }
@@ -170,13 +179,12 @@ body {
   @apply -translate-y-1;
 }
 
-/* Glow effect */
 .glow-kiwi {
-  box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
+  box-shadow: 0 0 20px -2px rgba(34, 197, 94, 0.35);
 }
 
 .dark .glow-kiwi {
-  box-shadow: 0 0 30px rgba(34, 197, 94, 0.4);
+  box-shadow: 0 8px 20px -4px rgba(34, 197, 94, 0.4);
 }
 
 /* Shimmer loading */
@@ -197,10 +205,9 @@ body {
 }
 
 /* ============================================
-   🌙 DARK MODE TRANSITIONS
+   DARK MODE TRANSITIONS
    ============================================ */
 
-/* Ensure smooth transitions when toggling */
 html.transitioning *,
 html.transitioning *::before,
 html.transitioning *::after {
@@ -214,7 +221,8 @@ html.transitioning *::after {
 }
 
 .dark .badge-online {
-  @apply bg-kiwi-900/50 text-kiwi-400;
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
 }
 
 .badge-offline {
@@ -222,7 +230,8 @@ html.transitioning *::after {
 }
 
 .dark .badge-offline {
-  @apply bg-surface-800 text-surface-400;
+  background: rgba(51, 65, 85, 0.5);
+  color: #94a3b8;
 }
 
 .badge-busy {
@@ -230,11 +239,12 @@ html.transitioning *::after {
 }
 
 .dark .badge-busy {
-  @apply bg-gold-900/50 text-gold-400;
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
 }
 
 /* ============================================
-   📱 SCROLLBAR STYLES
+   SCROLLBAR STYLES
    ============================================ */
 
 ::-webkit-scrollbar {
@@ -243,11 +253,11 @@ html.transitioning *::after {
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-surface-100;
+  background: #f0fdf4;
 }
 
 .dark ::-webkit-scrollbar-track {
-  @apply bg-surface-800;
+  background: rgba(30, 41, 59, 0.5);
 }
 
 ::-webkit-scrollbar-thumb {
@@ -255,7 +265,7 @@ html.transitioning *::after {
 }
 
 .dark ::-webkit-scrollbar-thumb {
-  @apply bg-surface-600;
+  background: rgba(51, 65, 85, 0.6);
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -263,46 +273,43 @@ html.transitioning *::after {
 }
 
 .dark ::-webkit-scrollbar-thumb:hover {
-  @apply bg-surface-500;
+  background: rgba(71, 85, 105, 0.8);
 }
 
 /* ============================================
-   🎯 UTILITY CLASSES
+   UTILITY CLASSES
    ============================================ */
 
-/* Dark mode text contrast */
 .dark .text-high-contrast {
   @apply text-white;
 }
 
 .dark .text-medium-contrast {
-  @apply text-surface-300;
+  @apply text-canvas-200;
 }
 
 .dark .text-low-contrast {
-  @apply text-surface-400;
+  @apply text-canvas-400;
 }
 
-/* Dark mode backgrounds */
 .dark .bg-elevated {
-  @apply bg-surface-800;
+  background: rgba(30, 41, 59, 0.75);
 }
 
 .dark .bg-sunken {
-  @apply bg-surface-950;
+  background-color: #0b1326;
 }
 
-/* Focus states */
 .focus-kiwi {
   @apply focus:outline-none focus:ring-2 focus:ring-kiwi-500 focus:ring-offset-2;
 }
 
 .dark .focus-kiwi {
-  @apply focus:ring-offset-surface-900;
+  @apply focus:ring-offset-canvas-950;
 }
 
 /* ============================================
-   🖨️ PRINT STYLES
+   PRINT STYLES
    ============================================ */
 
 @media print {

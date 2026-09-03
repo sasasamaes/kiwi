@@ -1,22 +1,26 @@
 import type { Metadata } from 'next';
-import { Inter, Poppins } from 'next/font/google';
+import { Geist, Geist_Mono, Inter } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider, AuthProvider, NotificationProvider } from '@kiwi/ui';
 import { OfflineBanner } from './offline-banner';
 
-const inter = Inter({ 
+const geist = Geist({
+  subsets: ['latin'],
+  variable: '--font-geist',
+});
+
+const geistMono = Geist_Mono({
+  subsets: ['latin'],
+  variable: '--font-geist-mono',
+});
+
+const inter = Inter({
   subsets: ['latin'],
   variable: '--font-inter',
 });
 
-const poppins = Poppins({ 
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-poppins',
-});
-
 export const metadata: Metadata = {
-  title: '🛵 Kiwi Driver - Repartidor',
+  title: 'Kiwi Driver - Repartidor',
   description: 'App de repartidores Kiwi - Nicoya, Costa Rica',
   manifest: '/manifest.json',
   themeColor: '#22c55e',
@@ -28,19 +32,22 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es" className={`${inter.variable} ${poppins.variable}`} suppressHydrationWarning>
+    <html
+      lang="es"
+      className={`${geist.variable} ${geistMono.variable} ${inter.variable}`}
+      suppressHydrationWarning
+    >
       <head>
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
       </head>
-      <body className="font-sans antialiased bg-bg-light min-h-screen dark:bg-surface-950 dark:text-surface-100">
+      <body
+        className="font-sans antialiased min-h-screen dark:bg-[#0b1326] dark:text-[#f8fafc]"
+        style={{ background: 'var(--bg-gradient)' }}
+      >
         <ThemeProvider>
           <AuthProvider>
             <NotificationProvider>

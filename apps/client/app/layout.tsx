@@ -1,21 +1,25 @@
 import type { Metadata } from 'next';
-import { Inter, Poppins } from 'next/font/google';
+import { Geist, Geist_Mono, Inter } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider, NotificationProvider } from '@kiwi/ui';
 
-const inter = Inter({ 
+const geist = Geist({
+  subsets: ['latin'],
+  variable: '--font-geist',
+});
+
+const geistMono = Geist_Mono({
+  subsets: ['latin'],
+  variable: '--font-geist-mono',
+});
+
+const inter = Inter({
   subsets: ['latin'],
   variable: '--font-inter',
 });
 
-const poppins = Poppins({ 
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-poppins',
-});
-
 export const metadata: Metadata = {
-  title: '🥝 Kiwi - Menú',
+  title: 'Kiwi - Menu',
   description: 'Ordena desde tu restaurante favorito',
   manifest: '/manifest.json',
   themeColor: '#22c55e',
@@ -27,18 +31,16 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es" className={`${inter.variable} ${poppins.variable}`} suppressHydrationWarning>
-      <body className="font-sans antialiased bg-bg-light dark:bg-surface-950 dark:text-surface-100 min-h-screen">
+    <html
+      lang="es"
+      className={`${geist.variable} ${geistMono.variable} ${inter.variable}`}
+      suppressHydrationWarning
+    >
+      <body className="font-sans antialiased bg-bg-light dark:bg-[#0b1326] dark:text-[#f8fafc] min-h-screen">
         <ThemeProvider>
-          <NotificationProvider>
-            {children}
-          </NotificationProvider>
+          <NotificationProvider>{children}</NotificationProvider>
         </ThemeProvider>
       </body>
     </html>
