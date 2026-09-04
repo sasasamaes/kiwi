@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Bowl &amp; Cafe - QR Menu</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&amp;family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&amp;family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "text-primary": "#f8fafc",
+                        "on-background": "#dbe2fd",
+                        "surface-container-highest": "#2d3449",
+                        "inverse-on-surface": "#283044",
+                        "error-container": "#93000a",
+                        "on-tertiary-container": "#004a31",
+                        "on-secondary": "#003919",
+                        "sinpe-blue": "#0284c7",
+                        "tertiary-fixed-dim": "#4edea3",
+                        "surface-dim": "#0b1326",
+                        "on-primary-fixed-variant": "#005321",
+                        "surface": "#0b1326",
+                        "error": "#ffb4ab",
+                        "surface-container": "#171f33",
+                        "surface-container-high": "#222a3e",
+                        "surface-container-lowest": "#060d20",
+                        "surface-tint": "#4ae176",
+                        "on-primary-container": "#004b1e",
+                        "outline": "#869585",
+                        "on-error": "#690005",
+                        "inverse-primary": "#006e2f",
+                        "primary-fixed": "#6bff8f",
+                        "on-secondary-fixed-variant": "#005227",
+                        "tertiary-container": "#28c38a",
+                        "border-deep": "rgba(51, 65, 85, 0.6)",
+                        "amber-sunburst": "#f59e0b",
+                        "on-secondary-fixed": "#00210c",
+                        "canvas": "#0b1326",
+                        "inverse-surface": "#dbe2fd",
+                        "primary-fixed-dim": "#4ae176",
+                        "primary": "#4be277",
+                        "on-error-container": "#ffdad6",
+                        "secondary-fixed-dim": "#4de082",
+                        "surface-glass": "rgba(30, 41, 59, 0.75)",
+                        "secondary": "#4de082",
+                        "on-secondary-container": "#003e1c",
+                        "text-muted": "#94a3b8",
+                        "primary-container": "#22c55e",
+                        "on-surface": "#dbe2fd",
+                        "tertiary": "#50dfa4",
+                        "surface-container-low": "#131b2e",
+                        "secondary-container": "#00b55d",
+                        "on-tertiary": "#003824",
+                        "on-tertiary-fixed-variant": "#005236",
+                        "on-primary-fixed": "#002109",
+                        "secondary-fixed": "#6dfe9c",
+                        "surface-variant": "#2d3449",
+                        "on-tertiary-fixed": "#002113",
+                        "tertiary-fixed": "#6ffbbe",
+                        "surface-bright": "#31394e",
+                        "outline-variant": "#3d4a3d",
+                        "error-crimson": "#ffb4ab",
+                        "background": "#0b1326",
+                        "on-surface-variant": "#bccbb9",
+                        "on-primary": "#003915"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "touch-target-min": "44px",
+                        "gutter-mobile": "0.75rem",
+                        "gap-dense": "0.5rem",
+                        "container-max-desktop": "1200px",
+                        "margin-mobile": "1rem"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Geist"],
+                        "numbers-lg": ["JetBrains Mono"],
+                        "label-sm": ["Geist"],
+                        "headline-sm": ["Geist"],
+                        "body-md": ["Inter"],
+                        "headline-lg": ["Geist"],
+                        "label-md": ["Geist"],
+                        "numbers-md": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", { "lineHeight": "1.2", "letterSpacing": "-0.03em", "fontWeight": "600" }],
+                        "numbers-lg": ["22px", { "lineHeight": "1", "fontWeight": "800" }],
+                        "label-sm": ["11px", { "lineHeight": "1", "letterSpacing": "0.06em", "fontWeight": "600" }],
+                        "headline-sm": ["20px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "1.1", "letterSpacing": "-0.03em", "fontWeight": "700" }],
+                        "label-md": ["13px", { "lineHeight": "1", "letterSpacing": "0.04em", "fontWeight": "600" }],
+                        "numbers-md": ["16px", { "lineHeight": "1", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        
+        /* Smooth transitions for glass cards */
+        .glass-card {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass-card:active {
+            transform: scale(0.98);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-text-primary min-h-[884px] pb-32 font-body-md text-body-md antialiased overflow-x-hidden selection:bg-primary-container selection:text-on-primary-container">
+<!-- Top Navigation (Shared Component) -->
+<header class="w-full sticky top-0 backdrop-blur-xl border-b border-outline-variant bg-surface-glass dark:bg-surface-glass z-40">
+<div class="flex items-center justify-between px-margin-mobile py-4 w-full">
+<div class="flex items-center gap-3">
+<img class="w-10 h-10 rounded-full object-cover border border-outline-variant" data-alt="A portrait photograph of a confident Costa Rican restaurant owner standing in front of a lush, dimly lit tropical cafe at dusk. The owner is warmly lit with a soft amber key light, contrasting against the dark, high-contrast background filled with deep jungle greens and slate grays, capturing a professional and welcoming atmosphere." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAGl9LgE7kbR41O8pkkXRGaSgd2ivmaktsK-6hhxAcwK71SBFifLiMPzOSFJYis3jQrC-RRbyMhny4BXWQFh7xi_EdN4yh3LhTy-uE_YVhfYIPl7s-yRdLtSmGNdQOawjj1RhMGPdODhJNymAcJLDg8rTt63tl1dTebRhdI3W5TCOErAiwJiM9_cIiXlfdcZK_nMECNW-88pP1oqE01i8zAdumRk0lI5DM8S1Ze2dGK0LHhMx0UxmzezgzW3inLYPECB6QPWVQsIn0"/>
+<h1 class="font-headline-md text-headline-md text-primary dark:text-primary tracking-tight">Bowl &amp; Cafe</h1>
+</div>
+<button class="w-touch-target-min h-touch-target-min flex items-center justify-center rounded-full hover:bg-surface-container-high transition-colors text-on-surface-variant hover:opacity-80">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
+</button>
+</div>
+</header>
+<!-- Header Section -->
+<section class="px-margin-mobile pt-6 pb-4">
+<div class="flex flex-col gap-1">
+<h2 class="font-headline-lg text-headline-lg text-text-primary">Bowl &amp; Cafe</h2>
+<div class="flex items-center gap-2 text-text-muted">
+<span class="font-label-md text-label-md">Luis Alfredo</span>
+<div class="flex items-center text-amber-sunburst">
+<span class="font-numbers-md text-numbers-md">4.8</span>
+<span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+</div>
+<p class="font-label-md text-label-md text-outline mt-2">15-25 min | ₡1,000 envio</p>
+</div>
+</section>
+<!-- Category Navigation -->
+<section class="sticky top-[73px] z-30 bg-background/95 backdrop-blur-md py-3 px-margin-mobile border-b border-border-deep">
+<div class="flex overflow-x-auto gap-3 no-scrollbar scroll-smooth snap-x">
+<button class="snap-start shrink-0 px-5 py-2 rounded-full bg-primary-container text-on-primary-container font-label-md text-label-md transition-transform active:scale-95 shadow-[0_0_15px_rgba(34,197,94,0.15)]">
+                Popular
+            </button>
+<button class="snap-start shrink-0 px-5 py-2 rounded-full border border-outline-variant text-text-muted font-label-md text-label-md hover:border-primary hover:text-primary transition-all active:scale-95">
+                Bowls
+            </button>
+<button class="snap-start shrink-0 px-5 py-2 rounded-full border border-outline-variant text-text-muted font-label-md text-label-md hover:border-primary hover:text-primary transition-all active:scale-95">
+                Cafe
+            </button>
+<button class="snap-start shrink-0 px-5 py-2 rounded-full border border-outline-variant text-text-muted font-label-md text-label-md hover:border-primary hover:text-primary transition-all active:scale-95">
+                Bebidas
+            </button>
+<button class="snap-start shrink-0 px-5 py-2 rounded-full border border-outline-variant text-text-muted font-label-md text-label-md hover:border-primary hover:text-primary transition-all active:scale-95">
+                Postres
+            </button>
+</div>
+</section>
+<!-- Menu Items Grid (Dense Layout) -->
+<main class="px-margin-mobile py-6 flex flex-col gap-4 max-w-container-max-desktop mx-auto">
+<!-- Item 1: Bowl Tropikal (Featured) -->
+<article class="glass-card relative flex flex-col gap-3 p-4 rounded-xl bg-surface-container-high/50 backdrop-blur-xl border-t border-border-deep shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] overflow-hidden">
+<!-- Decorative ambient glow -->
+<div class="absolute -top-10 -right-10 w-32 h-32 bg-primary/10 rounded-full blur-3xl pointer-events-none"></div>
+<div class="flex gap-4">
+<div class="flex-1 flex flex-col justify-between">
+<div>
+<div class="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-numbers-md font-bold tracking-wider bg-amber-sunburst/20 text-amber-sunburst mb-2 uppercase border border-amber-sunburst/30">
+                            POPULAR
+                        </div>
+<h3 class="font-headline-sm text-headline-sm text-text-primary mb-1">Bowl Tropikal</h3>
+<p class="text-text-muted font-body-md text-body-md line-clamp-2">Açaí base, fresas, banano, granola artesanal, miel y coco rallado.</p>
+</div>
+<div class="mt-4 flex items-center justify-between">
+<span class="font-numbers-lg text-numbers-lg text-primary">₡4,500</span>
+</div>
+</div>
+<div class="w-28 h-28 shrink-0 rounded-lg overflow-hidden relative border border-outline-variant/50">
+<img class="w-full h-full object-cover" data-alt="A macro, top-down shot of a vibrant açaí fruit bowl in a dark ceramic dish, sitting on a sleek slate surface. The bowl is meticulously arranged with sliced strawberries, bananas, artisan granola, and a drizzle of honey. The lighting is moody and dramatic with deep shadows and a soft, crisp top light that makes the fresh fruit glisten, reflecting a premium tropical minimalism aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDeHz4-xdpId_DCRy7u2ZCpzaOY1ribVmd3XShLCbZx6craWHyLw5g61_MXKDpYoNQPoQNIOh4ojC1GD1neZgL4-_WVErbbeFVjy4M36kvZ7Kj9rmZ-j2qhvBBiJqvJXRYT1Ng_M50w_W2ewwWHiwkeS7zvTTYtRuIAetecSUYPjAaj7gBkg25DVAu4A5qlr8nBMDFLnEDMP_WH5pQ7LA5L1Z5p5SWxLK3V4V4jTSRqenwvZUIIMsdUqWQglBdPTOpIrTE7i3exFtY"/>
+<button class="absolute bottom-1 right-1 w-8 h-8 flex items-center justify-center bg-primary-container text-on-primary-container rounded-full shadow-lg active:scale-90 transition-transform shadow-[0_0_10px_rgba(34,197,94,0.3)]">
+<span class="material-symbols-outlined text-[20px]">add</span>
+</button>
+</div>
+</div>
+</article>
+<!-- Dense List Items (1px dividers instead of full cards to save space) -->
+<!-- Item 2 -->
+<article class="glass-card flex gap-4 py-4 border-t border-outline-variant/30">
+<div class="flex-1 flex flex-col justify-between">
+<div>
+<h3 class="font-headline-sm text-headline-sm text-text-primary mb-1">Bowl Verde</h3>
+<p class="text-text-muted font-body-md text-body-md line-clamp-2 text-sm">Espinaca, kale, mango, piña, espirulina y topping de semillas de chía.</p>
+</div>
+<div class="mt-3 flex items-center justify-between">
+<span class="font-numbers-lg text-numbers-lg text-text-primary">₡4,200</span>
+</div>
+</div>
+<div class="w-24 h-24 shrink-0 rounded-lg overflow-hidden bg-surface-container flex items-center justify-center relative border border-outline-variant/30">
+<img class="w-full h-full object-cover opacity-80" data-alt="A close-up studio shot of a bright green smoothie bowl topped with chia seeds, mango chunks, and kale leaves in a dark stone bowl. Set against a dark, moody background with subtle edge lighting that highlights the vibrant, electric greens of the food, embodying a confident tropical minimal style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBEoOhNq_wFpXwawv_Qu16a4WpVC6u5eoygNfr9G181tNKAs-LXs_HwCGVetu2ZjbEp-Gx65KWvZsViriyWzy0q4hLkbVG5KEUXd0Lx-MH4vuhLamKUrWwHhhyZRBl6q-T0oxfqLMijgedUWB3s6E4F0Aui0WsttGkRmPO-TToIJHcfZifMTx0KoQAqCRYvBUsGo55A06ZjIf3kNl0tg14JWp8jtG-25h_hLDc6e-mNCzcCsd_2uPpk1Iuv5lgvNJ91n2_oHbeZWhM"/>
+<button class="absolute bottom-1 right-1 w-8 h-8 flex items-center justify-center bg-primary-container text-on-primary-container rounded-full shadow-lg active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-[20px]">add</span>
+</button>
+</div>
+</article>
+<!-- Item 3 -->
+<article class="glass-card flex gap-4 py-4 border-t border-outline-variant/30">
+<div class="flex-1 flex flex-col justify-center">
+<h3 class="font-headline-sm text-headline-sm text-text-primary mb-1">Cafe Americano</h3>
+<p class="text-text-muted font-body-md text-body-md line-clamp-1 text-sm">Café de especialidad Tarrazú.</p>
+<div class="mt-2 flex items-center justify-between">
+<span class="font-numbers-lg text-numbers-lg text-text-primary">₡1,200</span>
+</div>
+</div>
+<div class="w-16 h-16 shrink-0 flex items-center justify-center relative">
+<button class="w-10 h-10 flex items-center justify-center border border-primary/50 text-primary rounded-full hover:bg-primary/10 active:scale-90 transition-all">
+<span class="material-symbols-outlined">add</span>
+</button>
+</div>
+</article>
+<!-- Item 4 -->
+<article class="glass-card flex gap-4 py-4 border-t border-outline-variant/30">
+<div class="flex-1 flex flex-col justify-center">
+<h3 class="font-headline-sm text-headline-sm text-text-primary mb-1">Smoothie de Frutas</h3>
+<p class="text-text-muted font-body-md text-body-md line-clamp-1 text-sm">Fresa, banano, y jugo de naranja.</p>
+<div class="mt-2 flex items-center justify-between">
+<span class="font-numbers-lg text-numbers-lg text-text-primary">₡2,500</span>
+</div>
+</div>
+<div class="w-16 h-16 shrink-0 flex items-center justify-center relative">
+<button class="w-10 h-10 flex items-center justify-center border border-primary/50 text-primary rounded-full hover:bg-primary/10 active:scale-90 transition-all">
+<span class="material-symbols-outlined">add</span>
+</button>
+</div>
+</article>
+<!-- Item 5 -->
+<article class="glass-card flex gap-4 py-4 border-t border-outline-variant/30">
+<div class="flex-1 flex flex-col justify-center">
+<h3 class="font-headline-sm text-headline-sm text-text-primary mb-1">Patacones</h3>
+<p class="text-text-muted font-body-md text-body-md line-clamp-1 text-sm">Con frijoles molidos y pico de gallo.</p>
+<div class="mt-2 flex items-center justify-between">
+<span class="font-numbers-lg text-numbers-lg text-text-primary">₡1,800</span>
+</div>
+</div>
+<div class="w-16 h-16 shrink-0 flex items-center justify-center relative">
+<button class="w-10 h-10 flex items-center justify-center border border-primary/50 text-primary rounded-full hover:bg-primary/10 active:scale-90 transition-all">
+<span class="material-symbols-outlined">add</span>
+</button>
+</div>
+</article>
+</main>
+<!-- Sticky Bottom Action Button -->
+<div class="fixed bottom-0 left-0 w-full p-4 bg-gradient-to-t from-background via-background/90 to-transparent z-50 pb-safe">
+<button class="w-full h-[52px] bg-primary-container text-on-primary-container rounded-xl flex items-center justify-between px-6 shadow-[0_0_20px_rgba(34,197,94,0.2)] active:scale-[0.98] active:-translate-y-[1px] transition-all duration-200">
+<span class="font-headline-sm text-headline-sm">Ver carrito (2)</span>
+<span class="font-numbers-lg text-numbers-lg tracking-tight">₡6,700</span>
+</button>
+</div>
+</body></html>

@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Pura Vida Dash - Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+              "on-error": "#690005",
+              "surface-bright": "#31394e",
+              "on-primary-fixed-variant": "#005321",
+              "tertiary-container": "#28c38a",
+              "on-secondary-fixed": "#00210c",
+              "tertiary-fixed": "#6ffbbe",
+              "on-secondary-container": "#003e1c",
+              "error": "#ffb4ab",
+              "on-primary-container": "#004b1e",
+              "error-container": "#93000a",
+              "on-tertiary-fixed": "#002113",
+              "outline-variant": "#3d4a3d",
+              "on-primary": "#003915",
+              "on-background": "#dbe2fd",
+              "surface-tint": "#4ae176",
+              "tertiary-fixed-dim": "#4edea3",
+              "sinpe-blue": "#0284c7",
+              "amber-sunburst": "#f59e0b",
+              "primary-container": "#22c55e",
+              "secondary": "#4de082",
+              "surface-container-high": "#222a3e",
+              "error-crimson": "#ffb4ab",
+              "primary-fixed": "#6bff8f",
+              "on-tertiary": "#003824",
+              "inverse-surface": "#dbe2fd",
+              "inverse-on-surface": "#283044",
+              "outline": "#869585",
+              "surface-variant": "#2d3449",
+              "on-secondary-fixed-variant": "#005227",
+              "on-surface": "#dbe2fd",
+              "secondary-fixed-dim": "#4de082",
+              "inverse-primary": "#006e2f",
+              "surface-container-low": "#131b2e",
+              "on-secondary": "#003919",
+              "border-deep": "rgba(51, 65, 85, 0.6)",
+              "secondary-container": "#00b55d",
+              "on-primary-fixed": "#002109",
+              "surface-glass": "rgba(30, 41, 59, 0.75)",
+              "on-surface-variant": "#bccbb9",
+              "canvas": "#0b1326",
+              "text-primary": "#f8fafc",
+              "surface-container-highest": "#2d3449",
+              "tertiary": "#50dfa4",
+              "surface": "#0b1326",
+              "secondary-fixed": "#6dfe9c",
+              "primary-fixed-dim": "#4ae176",
+              "on-tertiary-container": "#004a31",
+              "on-error-container": "#ffdad6",
+              "surface-container-lowest": "#060d20",
+              "text-muted": "#94a3b8",
+              "surface-dim": "#0b1326",
+              "surface-container": "#171f33",
+              "background": "#0b1326",
+              "on-tertiary-fixed-variant": "#005236",
+              "primary": "#4be277"
+            },
+            "borderRadius": {
+              "DEFAULT": "0.25rem",
+              "lg": "0.5rem",
+              "xl": "0.75rem",
+              "full": "9999px"
+            },
+            "spacing": {
+              "margin-mobile": "1rem",
+              "gutter-mobile": "0.75rem",
+              "touch-target-min": "44px",
+              "gap-dense": "0.5rem",
+              "container-max-desktop": "1200px"
+            },
+            "fontFamily": {
+              "label-sm": ["Geist"],
+              "numbers-md": ["JetBrains Mono"],
+              "label-md": ["Geist"],
+              "headline-md": ["Geist"],
+              "body-md": ["Inter"],
+              "numbers-lg": ["JetBrains Mono"],
+              "headline-sm": ["Geist"],
+              "headline-lg": ["Geist"]
+            },
+            "fontSize": {
+              "label-sm": ["11px", {"lineHeight": "1", "letterSpacing": "0.06em", "fontWeight": "600"}],
+              "numbers-md": ["16px", {"lineHeight": "1", "fontWeight": "700"}],
+              "label-md": ["13px", {"lineHeight": "1", "letterSpacing": "0.04em", "fontWeight": "600"}],
+              "headline-md": ["24px", {"lineHeight": "1.2", "letterSpacing": "-0.03em", "fontWeight": "600"}],
+              "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+              "numbers-lg": ["22px", {"lineHeight": "1", "fontWeight": "800"}],
+              "headline-sm": ["20px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+              "headline-lg": ["32px", {"lineHeight": "1.1", "letterSpacing": "-0.03em", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background text-text-primary font-body-md min-h-[100dvh] flex">
+<!-- SideNavBar -->
+<nav class="hidden md:flex bg-surface-glass backdrop-blur-xl fixed left-0 top-0 h-full w-[260px] border-r border-border-deep shadow-none flex-col gap-2 py-6 z-50">
+<div class="px-6 mb-8 flex items-center gap-3">
+<img alt="Pura Vida Dash Logo" class="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1VpL9u1k2lomBpVThyOVfBDY0U0HbtQwjuNm2JUjMTQaDQRxhqOrHBCDllgRpEueK2YaP_qWFihs4HM_0nQSiG28L4MyTAMBolst1uaFUvXg0y6-BnYVY4bhrJOjqLrJDoS5u8gvgbtyNdmzN69Bbso043dMz8pdzgj3QtTN3t-UbAPkZeEMFArpgRkl0-IH0QDy_Ap6tIhxKGBBY3L-QyKuV1GHy63FglG9zKCcPmKfETnkOtFArBFh-M"/>
+<div>
+<div class="font-headline-md text-headline-md font-bold text-primary">Pura Vida Dash</div>
+<div class="text-text-muted text-xs font-label-md">Delivery Admin Portal</div>
+</div>
+</div>
+<div class="flex flex-col gap-1">
+<a class="flex items-center gap-3 px-4 py-3 text-primary bg-primary-container/10 border-r-2 border-primary active:scale-[0.98] transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" data-weight="fill" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="font-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-variant/50 hover:text-primary transition-colors active:scale-[0.98] duration-200" href="#">
+<span class="material-symbols-outlined">storefront</span>
+<span class="font-label-md">Comercios</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-variant/50 hover:text-primary transition-colors active:scale-[0.98] duration-200" href="#">
+<span class="material-symbols-outlined">delivery_dining</span>
+<span class="font-label-md">Repartidores</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-variant/50 hover:text-primary transition-colors active:scale-[0.98] duration-200" href="#">
+<span class="material-symbols-outlined">package_2</span>
+<span class="font-label-md">Pedidos</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-variant/50 hover:text-primary transition-colors active:scale-[0.98] duration-200" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="font-label-md">Pagos</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-variant/50 hover:text-primary transition-colors active:scale-[0.98] duration-200" href="#">
+<span class="material-symbols-outlined">verified_user</span>
+<span class="font-label-md">KYC</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-variant/50 hover:text-primary transition-colors active:scale-[0.98] duration-200 mt-auto" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md">Configuracion</span>
+</a>
+</div>
+</nav>
+<!-- Main Wrapper -->
+<div class="flex-1 md:ml-[260px] flex flex-col min-h-screen">
+<!-- TopAppBar -->
+<header class="bg-surface-glass backdrop-blur-xl border-b border-border-deep shadow-none flex justify-between items-center px-8 h-16 sticky top-0 z-40">
+<div class="flex items-center gap-6">
+<h1 class="font-headline-sm text-headline-sm text-primary font-bold">Dashboard</h1>
+<!-- Search Bar -->
+<div class="hidden md:flex relative w-64 items-center">
+<span class="material-symbols-outlined absolute left-3 text-text-muted text-sm">search</span>
+<input class="w-full bg-surface-container-highest border-border-deep rounded-lg py-1.5 pl-9 pr-3 text-sm focus:ring-1 focus:ring-primary focus:border-primary transition-colors placeholder:text-text-muted text-text-primary" placeholder="Buscar..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant hover:text-primary transition-colors active:opacity-80 relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-0 right-0 w-2 h-2 bg-primary rounded-full"></span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors active:opacity-80">
+<span class="material-symbols-outlined">help_outline</span>
+</button>
+<div class="h-8 w-8 rounded-full bg-surface-container-highest border border-border-deep overflow-hidden ml-2">
+<img alt="Admin Profile" class="w-full h-full object-cover" data-alt="A close up, high resolution portrait of a professional administrator in a modern office setting. The lighting is subtle and moody with a neon green accent light reflecting off their features. Professional aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBWQpHV1rA-IeGqSvi4CsrVwLD_pAkOiwNbikdEQfe-hL6an1XJXTI3yUqVqCui-3gcgpQX3mbPyc_AARomE1Zy0_d0iLgng8UcE1fWImYUx_yU3qIWB52vxhebJxmpjdCZZIuHwf1QOcTDno2286pKKDJ2NbGHLjuWGRtD2DvDxG2AHDLqD5DwMTcHNNDRJZoFhe9TJRXYs5IymMQ4cBb64u-1ln4mjC86ExzkEKWYf8Pj6xSe02Wt_Y0YhGyQyzGx-vhdrhN-DUk"/>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-1 p-6 md:p-8 flex flex-col gap-8 max-w-container-max-desktop mx-auto w-full">
+<!-- Stats Row -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+<!-- Stat 1 -->
+<div class="bg-surface-glass backdrop-blur-xl border border-border-deep rounded-xl p-5 flex flex-col gap-2 relative overflow-hidden">
+<div class="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
+<span class="font-label-sm text-label-sm text-text-muted uppercase">Pedidos Hoy</span>
+<div class="flex items-end justify-between mt-1">
+<span class="font-numbers-lg text-numbers-lg text-text-primary">47</span>
+<span class="font-label-md text-label-md text-primary flex items-center"><span class="material-symbols-outlined text-[16px] mr-1">trending_up</span> +8%</span>
+</div>
+</div>
+<!-- Stat 2 -->
+<div class="bg-surface-glass backdrop-blur-xl border border-border-deep rounded-xl p-5 flex flex-col gap-2 relative overflow-hidden">
+<div class="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/20 to-transparent"></div>
+<span class="font-label-sm text-label-sm text-text-muted uppercase">Comercios Activos</span>
+<div class="flex items-end justify-between mt-1">
+<span class="font-numbers-lg text-numbers-lg text-text-primary">12</span>
+</div>
+</div>
+<!-- Stat 3 -->
+<div class="bg-surface-glass backdrop-blur-xl border border-border-deep rounded-xl p-5 flex flex-col gap-2 relative overflow-hidden">
+<div class="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/20 to-transparent"></div>
+<div class="flex items-center gap-2">
+<span class="font-label-sm text-label-sm text-text-muted uppercase">Repartidores Online</span>
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.5)]"></span>
+</div>
+<div class="flex items-end justify-between mt-1">
+<span class="font-numbers-lg text-numbers-lg text-text-primary">8</span>
+</div>
+</div>
+<!-- Stat 4 -->
+<div class="bg-surface-glass backdrop-blur-xl border border-border-deep rounded-xl p-5 flex flex-col gap-2 relative overflow-hidden border-b-2 border-b-primary/20">
+<div class="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/40 to-transparent"></div>
+<span class="font-label-sm text-label-sm text-text-muted uppercase">Ingresos</span>
+<div class="flex items-end justify-between mt-1">
+<span class="font-numbers-lg text-numbers-lg text-primary">₡284,500</span>
+</div>
+</div>
+</div>
+<!-- Content Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+<!-- Left Col: Pedidos Recientes (60%) -->
+<div class="lg:col-span-7 xl:col-span-8 flex flex-col gap-4">
+<h2 class="font-headline-sm text-headline-sm text-text-primary">Pedidos Recientes</h2>
+<div class="bg-surface-glass backdrop-blur-xl border border-border-deep rounded-xl overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="border-b border-border-deep bg-surface-container-highest/30">
+<th class="px-5 py-4 font-label-sm text-label-sm text-text-muted uppercase">ID</th>
+<th class="px-5 py-4 font-label-sm text-label-sm text-text-muted uppercase">Comercio</th>
+<th class="px-5 py-4 font-label-sm text-label-sm text-text-muted uppercase">Repartidor</th>
+<th class="px-5 py-4 font-label-sm text-label-sm text-text-muted uppercase">Estado</th>
+<th class="px-5 py-4 font-label-sm text-label-sm text-text-muted uppercase text-right">Monto</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border-deep/50">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-variant/20 transition-colors">
+<td class="px-5 py-4 font-numbers-md text-numbers-md text-text-muted text-sm">#KW-8842</td>
+<td class="px-5 py-4 text-sm font-medium">Soda La Parada</td>
+<td class="px-5 py-4 text-sm text-text-muted">Luis Alfredo</td>
+<td class="px-5 py-4">
+<span class="inline-flex items-center px-2 py-1 rounded bg-primary/10 text-primary font-label-sm text-[10px] border border-primary/20 uppercase tracking-wider">
+                                                En Camino
+                                            </span>
+</td>
+<td class="px-5 py-4 font-numbers-md text-numbers-md text-sm text-right">₡4,200</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-variant/20 transition-colors">
+<td class="px-5 py-4 font-numbers-md text-numbers-md text-text-muted text-sm">#KW-8841</td>
+<td class="px-5 py-4 text-sm font-medium">Pizzeria Napoli</td>
+<td class="px-5 py-4 text-sm text-text-muted">-</td>
+<td class="px-5 py-4">
+<span class="inline-flex items-center px-2 py-1 rounded bg-amber-sunburst/10 text-amber-sunburst font-label-sm text-[10px] border border-amber-sunburst/20 uppercase tracking-wider">
+                                                Pendiente
+                                            </span>
+</td>
+<td class="px-5 py-4 font-numbers-md text-numbers-md text-sm text-right">₡12,500</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-variant/20 transition-colors">
+<td class="px-5 py-4 font-numbers-md text-numbers-md text-text-muted text-sm">#KW-8840</td>
+<td class="px-5 py-4 text-sm font-medium">Cafeteria Central</td>
+<td class="px-5 py-4 text-sm text-text-muted">Maria F.</td>
+<td class="px-5 py-4">
+<span class="inline-flex items-center px-2 py-1 rounded bg-secondary-container/10 text-secondary-container font-label-sm text-[10px] border border-secondary-container/20 uppercase tracking-wider">
+                                                Entregado
+                                            </span>
+</td>
+<td class="px-5 py-4 font-numbers-md text-numbers-md text-sm text-right">₡3,800</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<!-- Right Col: Top Repartidores (40%) -->
+<div class="lg:col-span-5 xl:col-span-4 flex flex-col gap-4">
+<h2 class="font-headline-sm text-headline-sm text-text-primary">Top Repartidores</h2>
+<div class="bg-surface-glass backdrop-blur-xl border border-border-deep rounded-xl flex flex-col">
+<!-- Repartidor 1 -->
+<div class="p-5 flex items-center justify-between border-b border-border-deep hover:bg-surface-variant/20 transition-colors">
+<div class="flex items-center gap-4">
+<div class="relative">
+<img alt="Juan Carlos" class="w-10 h-10 rounded-full object-cover border border-border-deep" data-alt="A portrait of a male delivery driver wearing a green helmet and dark jacket, slightly smiling, set against a blurred neon city street at night. High quality, dramatic lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD6qPaKy7_JKUcxpX8glsvWoeOYHM-q7dRJU5gDJrR0EbR_3bcjZW4JSD6gYh4nTGygl3ZfS4xtvQJzk4BF43Sd47o47XvA089OFeH0HkcxnGZQ8vQN8ixnEfoEg-tzZkpT9uIcZ0fDl6t0JjSsQPQ8uhpErrompIAgiBBK2TvtJ-SIR0YMznUiruG0OB2WX2mnlyUdvh8ArscA3pJ0pKQ42-fgiGA8qFniMLP-CgwGF1dnbu1lLYN9HnGLIm-fXhfySJkSGcL00Hk"/>
+<span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-primary rounded-full border-2 border-surface"></span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md">Juan Carlos</span>
+<span class="text-xs text-text-muted">12 viajes</span>
+</div>
+</div>
+<div class="font-numbers-md text-numbers-md text-primary">
+                                ₡18,600
+                            </div>
+</div>
+<!-- Repartidor 2 -->
+<div class="p-5 flex items-center justify-between hover:bg-surface-variant/20 transition-colors">
+<div class="flex items-center gap-4">
+<div class="relative">
+<img alt="Fran" class="w-10 h-10 rounded-full object-cover border border-border-deep" data-alt="A portrait of a young male delivery driver with a focused expression, wearing dark athletic gear, illuminated by the glow of a smartphone screen in a dark, moody outdoor environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDy3iwfmdt1ru7_xF8CPjIg_4szZc6-o4NKPbb0RTWJ5HDNkkOdNW1frlB0bGEPIBZf2u9UlPqb00EWNTrGzU0O1k-cSFyujbJ1Dl_PSMEhcuZX-CvARQmIXKUFX0qdpXFv4FTnjyzs1BFvBiifXJeFPMpggyQ-5Ee3TxLcwaYbS_K7uNSwTEZwSd2h61zXgNIYweTFP_81CDvMmQX2cWbluOI1-cIDxMJPvilhIGdIUnHHoRry4KODaVt7eBGz1Hvx66yKaC7LDYE"/>
+<span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-primary rounded-full border-2 border-surface"></span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md">Fran</span>
+<span class="text-xs text-text-muted">9 viajes</span>
+</div>
+</div>
+<div class="font-numbers-md text-numbers-md text-primary">
+                                ₡14,200
+                            </div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kiwi — Prototypes Gallery</title>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;600;700;800&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0b1326;
+      color: #f8fafc;
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+    .header h1 {
+      font-family: 'Geist', sans-serif;
+      font-size: 48px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      background: linear-gradient(135deg, #22c55e, #4ade80);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 8px;
+    }
+    .header p {
+      color: #94a3b8;
+      font-size: 16px;
+    }
+    .header .badge {
+      display: inline-block;
+      margin-top: 12px;
+      padding: 6px 16px;
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      border-radius: 9999px;
+      color: #4ade80;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 24px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    .card {
+      background: rgba(30, 41, 59, 0.75);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(51, 65, 85, 0.6);
+      border-radius: 16px;
+      overflow: hidden;
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      cursor: pointer;
+    }
+    .card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(34, 197, 94, 0.4);
+      box-shadow: 0 8px 20px -4px rgba(34, 197, 94, 0.2);
+    }
+    .card img {
+      width: 100%;
+      height: 400px;
+      object-fit: contain;
+      background: #0f172a;
+    }
+    .card .info {
+      padding: 16px;
+    }
+    .card .info h3 {
+      font-family: 'Geist', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .card .info p {
+      color: #94a3b8;
+      font-size: 13px;
+    }
+    .card .tag {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 3px 10px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .tag-client { background: rgba(34, 197, 94, 0.15); color: #4ade80; }
+    .tag-driver { background: rgba(2, 132, 199, 0.15); color: #38bdf8; }
+    .tag-merchant { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+    .tag-admin { background: rgba(168, 85, 247, 0.15); color: #c084fc; }
+    .tag-auth { background: rgba(148, 163, 184, 0.15); color: #cbd5e1; }
+    .footer {
+      text-align: center;
+      margin-top: 60px;
+      color: #64748b;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Kiwi</h1>
+    <p>Prototipos generados con Google Stitch — Tropical Pura Vida Night</p>
+    <span class="badge">9 screens | Stitch MCP</span>
+  </div>
+
+  <div class="grid">
+    <a class="card" href="login.html" target="_blank">
+      <img src="login.png" alt="Login" loading="lazy">
+      <div class="info">
+        <h3>Login</h3>
+        <p>Pantalla de inicio de sesion con email y password</p>
+        <span class="tag tag-auth">Auth</span>
+      </div>
+    </a>
+
+    <a class="card" href="register.html" target="_blank">
+      <img src="register.png" alt="Register" loading="lazy">
+      <div class="info">
+        <h3>Registro</h3>
+        <p>Seleccion de rol: Comerciante o Repartidor</p>
+        <span class="tag tag-auth">Auth</span>
+      </div>
+    </a>
+
+    <a class="card" href="home-screen.html" target="_blank">
+      <img src="home-screen.png" alt="Home" loading="lazy">
+      <div class="info">
+        <h3>Inicio Cliente</h3>
+        <p>Restaurantes cercanos, escaner QR, busqueda</p>
+        <span class="tag tag-client">Cliente</span>
+      </div>
+    </a>
+
+    <a class="card" href="qr-menu-client.html" target="_blank">
+      <img src="qr-menu-client.png" alt="QR Menu" loading="lazy">
+      <div class="info">
+        <h3>Menu QR</h3>
+        <p>Menu del restaurante escaneado con QR</p>
+        <span class="tag tag-client">Cliente</span>
+      </div>
+    </a>
+
+    <a class="card" href="checkout.html" target="_blank">
+      <img src="checkout.png" alt="Checkout" loading="lazy">
+      <div class="info">
+        <h3>Checkout</h3>
+        <p>Resumen de pedido y metodo de pago SINPE/efectivo</p>
+        <span class="tag tag-client">Cliente</span>
+      </div>
+    </a>
+
+    <a class="card" href="order-tracking.html" target="_blank">
+      <img src="order-tracking.png" alt="Tracking" loading="lazy">
+      <div class="info">
+        <h3>Seguimiento</h3>
+        <p>Mapa en tiempo real y estado del pedido</p>
+        <span class="tag tag-client">Cliente</span>
+      </div>
+    </a>
+
+    <a class="card" href="driver-home.html" target="_blank">
+      <img src="driver-home.png" alt="Driver Home" loading="lazy">
+      <div class="info">
+        <h3>Inicio Repartidor</h3>
+        <p>Toggle online/offline, pedidos disponibles</p>
+        <span class="tag tag-driver">Repartidor</span>
+      </div>
+    </a>
+
+    <a class="card" href="driver-active.html" target="_blank">
+      <img src="driver-active.png" alt="Driver Active" loading="lazy">
+      <div class="info">
+        <h3>Pedidos Activos</h3>
+        <p>Vista de entregas en curso y pendientes</p>
+        <span class="tag tag-driver">Repartidor</span>
+      </div>
+    </a>
+
+    <a class="card" href="driver-earnings.html" target="_blank">
+      <img src="driver-earnings.png" alt="Driver Earnings" loading="lazy">
+      <div class="info">
+        <h3>Ganancias</h3>
+        <p>Dashboard de ganancias diarias y semanales</p>
+        <span class="tag tag-driver">Repartidor</span>
+      </div>
+    </a>
+
+    <a class="card" href="driver-schedule.html" target="_blank">
+      <img src="driver-schedule.png" alt="Driver Schedule" loading="lazy">
+      <div class="info">
+        <h3>Horario</h3>
+        <p>Configuracion de horas disponibles por dia</p>
+        <span class="tag tag-driver">Repartidor</span>
+      </div>
+    </a>
+
+    <a class="card" href="scheduled-proposal.html" target="_blank">
+      <img src="scheduled-proposal.png" alt="Scheduled" loading="lazy">
+      <div class="info">
+        <h3>Pedidos Programados</h3>
+        <p>Propuestas de repartidores para pedidos futuros</p>
+        <span class="tag tag-driver">Repartidor</span>
+      </div>
+    </a>
+
+    <a class="card" href="merchant-dashboard.html" target="_blank">
+      <img src="merchant-dashboard.png" alt="Merchant" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <h3>Dashboard Comerciante</h3>
+        <p>Vista general de pedidos y ganancias del comercio</p>
+        <span class="tag tag-merchant">Comerciante</span>
+      </div>
+    </a>
+
+    <a class="card" href="merchant-menu.html" target="_blank">
+      <img src="merchant-menu.png" alt="Menu Management" loading="lazy">
+      <div class="info">
+        <h3>Gestionar Menu</h3>
+        <p>CRUD de items del menu con precios en colones</p>
+        <span class="tag tag-merchant">Comerciante</span>
+      </div>
+    </a>
+
+    <a class="card" href="admin-dashboard.html" target="_blank">
+      <img src="admin-dashboard.png" alt="Admin" loading="lazy">
+      <div class="info">
+        <h3>Admin Dashboard</h3>
+        <p>Vista de administrador con metricas de la plataforma</p>
+        <span class="tag tag-admin">Admin</span>
+      </div>
+    </a>
+  </div>
+
+  <div class="footer">
+    <p>Generado con Google Stitch MCP — Kiwi Delivery App — Nicoya, Guanacaste, Costa Rica</p>
+  </div>
+</body>
+</html>

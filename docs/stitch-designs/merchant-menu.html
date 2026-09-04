@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Mi Menú - Bowl &amp; Cafe</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;600;700&amp;family=Inter:wght@400&amp;family=JetBrains+Mono:wght@700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+              "surface-container-highest": "#2d3449",
+              "on-secondary-fixed": "#00210c",
+              "inverse-primary": "#006e2f",
+              "text-primary": "#f8fafc",
+              "surface-container": "#171f33",
+              "primary": "#4be277",
+              "tertiary-container": "#28c38a",
+              "outline-variant": "#3d4a3d",
+              "inverse-surface": "#dbe2fd",
+              "surface": "#0b1326",
+              "on-secondary-container": "#003e1c",
+              "on-surface-variant": "#bccbb9",
+              "canvas": "#0b1326",
+              "surface-bright": "#31394e",
+              "surface-container-low": "#131b2e",
+              "primary-fixed": "#6bff8f",
+              "on-tertiary-container": "#004a31",
+              "surface-glass": "rgba(30, 41, 59, 0.75)",
+              "on-surface": "#dbe2fd",
+              "on-error-container": "#ffdad6",
+              "secondary": "#4de082",
+              "on-error": "#690005",
+              "surface-container-high": "#222a3e",
+              "on-primary-container": "#004b1e",
+              "tertiary-fixed": "#6ffbbe",
+              "on-secondary-fixed-variant": "#005227",
+              "on-tertiary-fixed": "#002113",
+              "error-container": "#93000a",
+              "surface-tint": "#4ae176",
+              "text-muted": "#94a3b8",
+              "secondary-fixed": "#6dfe9c",
+              "sinpe-blue": "#0284c7",
+              "on-tertiary-fixed-variant": "#005236",
+              "border-deep": "rgba(51, 65, 85, 0.6)",
+              "outline": "#869585",
+              "inverse-on-surface": "#283044",
+              "surface-container-lowest": "#060d20",
+              "secondary-container": "#00b55d",
+              "surface-variant": "#2d3449",
+              "on-tertiary": "#003824",
+              "primary-fixed-dim": "#4ae176",
+              "error-crimson": "#ffb4ab",
+              "on-secondary": "#003919",
+              "background": "#0b1326",
+              "tertiary-fixed-dim": "#4edea3",
+              "on-primary": "#003915",
+              "on-background": "#dbe2fd",
+              "secondary-fixed-dim": "#4de082",
+              "tertiary": "#50dfa4",
+              "amber-sunburst": "#f59e0b",
+              "surface-dim": "#0b1326",
+              "error": "#ffb4ab",
+              "on-primary-fixed-variant": "#005321",
+              "primary-container": "#22c55e",
+              "on-primary-fixed": "#002109"
+            },
+            "borderRadius": {
+              "DEFAULT": "0.25rem",
+              "lg": "0.5rem",
+              "xl": "0.75rem",
+              "full": "9999px"
+            },
+            "spacing": {
+              "gutter-mobile": "0.75rem",
+              "margin-mobile": "1rem",
+              "gap-dense": "0.5rem",
+              "touch-target-min": "44px",
+              "container-max-desktop": "1200px"
+            },
+            "fontFamily": {
+              "headline-lg": ["Geist"],
+              "label-sm": ["Geist"],
+              "headline-md": ["Geist"],
+              "numbers-lg": ["JetBrains Mono"],
+              "label-md": ["Geist"],
+              "body-md": ["Inter"],
+              "numbers-md": ["JetBrains Mono"],
+              "headline-sm": ["Geist"]
+            },
+            "fontSize": {
+              "headline-lg": ["32px", {"lineHeight": "1.1", "letterSpacing": "-0.03em", "fontWeight": "700"}],
+              "label-sm": ["11px", {"lineHeight": "1", "letterSpacing": "0.06em", "fontWeight": "600"}],
+              "headline-md": ["24px", {"lineHeight": "1.2", "letterSpacing": "-0.03em", "fontWeight": "600"}],
+              "numbers-lg": ["22px", {"lineHeight": "1", "fontWeight": "800"}],
+              "label-md": ["13px", {"lineHeight": "1", "letterSpacing": "0.04em", "fontWeight": "600"}],
+              "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+              "numbers-md": ["16px", {"lineHeight": "1", "fontWeight": "700"}],
+              "headline-sm": ["20px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+      body {
+        background-color: theme('colors.canvas');
+        color: theme('colors.text-primary');
+        -webkit-font-smoothing: antialiased;
+      }
+      .glass-card {
+        background: theme('colors.surface-glass');
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+        border: 1px solid theme('colors.border-deep');
+      }
+      .glass-card-dense {
+        background: theme('colors.surface-glass');
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-top: 1px solid theme('colors.border-deep');
+      }
+      
+      /* Custom Toggle Switch Styles */
+      .toggle-checkbox:checked {
+        right: 0;
+        border-color: theme('colors.primary');
+      }
+      .toggle-checkbox:checked + .toggle-label {
+        background-color: theme('colors.primary');
+      }
+      
+      /* Hide scrollbar for horizontal scrolling but keep functionality */
+      .hide-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      .hide-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="min-h-[884px] flex flex-col relative pb-[80px]">
+<!-- TopAppBar -->
+<header class="w-full sticky top-0 z-40 backdrop-blur-xl border-b border-outline-variant bg-surface-glass dark:bg-surface-glass transition-opacity duration-200">
+<div class="flex items-center justify-between px-margin-mobile py-4 w-full md:max-w-[1200px] md:mx-auto">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-container-high border border-outline-variant overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Close up portrait of a confident young professional restaurant owner standing in a modern, dimly lit cafe. Cinematic lighting with deep shadows and neon green accents. Minimalist and sleek aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCcRVF7G1TC5w05orBlDxLjn68th6N5kNBqdk1PfaFcmDND4los39HGagB3vZ9uI99ER0ktpwjzI2roDOutRXZoGz0UnjTpieP9DQDctguQ71KahGi1s5zcmyIhDdvmFYKXaD1z9r5zYylSkzHPLpbNb5QaOL8VjSrajpq82ep23kGPkFAcAKLzNZHOdCawlDDpIbZqNDVv9yBSJwIVsUA1dK9xTen53HQccrSoQB4AgOKmDJJ68BEg5xzjnkPwtObIJYywJuWguLI"/>
+</div>
+<h1 class="font-headline-md text-headline-md text-primary dark:text-primary tracking-tight">Mi Menú</h1>
+</div>
+<button class="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center hover:opacity-80 active:scale-95 transition-all shadow-[0_0_15px_rgba(75,226,119,0.3)]">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">add</span>
+</button>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-1 w-full md:max-w-[720px] md:mx-auto px-margin-mobile py-4 flex flex-col gap-6">
+<!-- Category Filter Chips -->
+<div class="flex gap-3 overflow-x-auto hide-scrollbar pb-2 -mx-margin-mobile px-margin-mobile snap-x">
+<button class="snap-start whitespace-nowrap px-5 py-2 rounded-full bg-primary text-on-primary font-label-md text-label-md transition-all active:scale-95">Todos</button>
+<button class="snap-start whitespace-nowrap px-5 py-2 rounded-full border border-outline-variant bg-surface-container/50 text-text-primary font-label-md text-label-md hover:border-primary/50 transition-all active:scale-95">Bowls</button>
+<button class="snap-start whitespace-nowrap px-5 py-2 rounded-full border border-outline-variant bg-surface-container/50 text-text-primary font-label-md text-label-md hover:border-primary/50 transition-all active:scale-95">Café</button>
+<button class="snap-start whitespace-nowrap px-5 py-2 rounded-full border border-outline-variant bg-surface-container/50 text-text-primary font-label-md text-label-md hover:border-primary/50 transition-all active:scale-95">Bebidas</button>
+<button class="snap-start whitespace-nowrap px-5 py-2 rounded-full border border-outline-variant bg-surface-container/50 text-text-primary font-label-md text-label-md hover:border-primary/50 transition-all active:scale-95">Postres</button>
+</div>
+<!-- Menu List (High-Density Glass Cards) -->
+<div class="flex flex-col gap-3">
+<!-- Item 1: Bowl Tropikal (Popular) -->
+<div class="glass-card rounded-xl p-3 flex gap-4 items-center">
+<div class="w-20 h-20 rounded-lg bg-surface-container-high overflow-hidden shrink-0 relative">
+<img class="w-full h-full object-cover" data-alt="A vibrant, fresh tropical fruit bowl with sliced mango, kiwi, berries, and a dark acai base. Served in a minimalist dark ceramic bowl on a slate table. Moody, high-contrast lighting with lush green accents in the background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDBSLF_GEyp52l0Xs6FkByYbUvjnbyeJ2bmzHNdlXfHqf0V5HjcJ4di1Y696NZ1-toPKNvni6uFIjD5b4EBTck8YE5wu6OPWLubXQTJF6FR3Op02Lo3VMN6SWjosR1QG4kcq9gTQVHLMWigbWDVnuAH-fh83eNgmbINA1TGLYgJhXAbvk_JivkgMx1r-LfI-PBhhor3j9Uk-_Vw9cRBtUuDBfJ8-F6n-S9yKTQjOZfqCKbXWvaka7wpKQquJIESbCDvd-Vsc5icW-A"/>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start mb-1">
+<h3 class="font-headline-sm text-headline-sm truncate pr-2">Bowl Tropikal</h3>
+<span class="bg-amber-sunburst/20 text-amber-sunburst border border-amber-sunburst/30 px-2 py-0.5 rounded text-[9px] font-numbers-md tracking-wider">POPULAR</span>
+</div>
+<div class="font-numbers-md text-numbers-md text-primary mb-2">₡4,500</div>
+<div class="flex items-center justify-between mt-auto">
+<!-- Toggle Switch -->
+<div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer z-10 transition-transform duration-200 ease-in-out transform translate-x-5 border-primary" id="toggle1" name="toggle1" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-5 rounded-full bg-primary cursor-pointer transition-colors duration-200 ease-in-out" for="toggle1"></label>
+</div>
+<div class="flex gap-2">
+<button class="w-8 h-8 rounded-full flex items-center justify-center text-text-muted hover:text-primary transition-colors bg-surface-container-high/50 border border-outline-variant/30">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+<button class="w-8 h-8 rounded-full flex items-center justify-center text-text-muted hover:text-error transition-colors bg-surface-container-high/50 border border-outline-variant/30">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Item 2: Bowl Verde -->
+<div class="glass-card rounded-xl p-3 flex gap-4 items-center">
+<div class="w-20 h-20 rounded-lg bg-surface-container-high overflow-hidden shrink-0">
+<img class="w-full h-full object-cover" data-alt="A healthy green salad bowl with avocado, spinach, quinoa, and a light dressing in a sleek dark bowl. Shot from above on a dark textured surface. Moody, crisp lighting highlighting the vibrant greens." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBePTxAHu2-8YSYyPh_3X2ZSOhGoMaUCN0xNb-BZXgUZOTt8gv7WdDlCKijVD_gMIy43i4kehb17wlnkkV2eGR6Tou6vblxYYVvOFttoLipTEhTRCMxkchSgXatRz3mH0ftyAhjohLN7SDCz5wZ5rnHWYvQzP5ls5xqo4MitjotqGIL3B3mA16rMd2vS3Fur6qlrP4OHQm26y_KQpZoQjzd5VFk3XuqIp7D_dPuVRpJQwOtr6IIZKn_AHnkWZBLQyITi-jBAqiVmYA"/>
+</div>
+<div class="flex-1 min-w-0">
+<h3 class="font-headline-sm text-headline-sm truncate mb-1">Bowl Verde</h3>
+<div class="font-numbers-md text-numbers-md text-primary mb-2">₡4,200</div>
+<div class="flex items-center justify-between mt-auto">
+<div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer z-10 transition-transform duration-200 ease-in-out transform translate-x-5 border-primary" id="toggle2" name="toggle2" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-5 rounded-full bg-primary cursor-pointer transition-colors duration-200 ease-in-out" for="toggle2"></label>
+</div>
+<div class="flex gap-2">
+<button class="w-8 h-8 rounded-full flex items-center justify-center text-text-muted hover:text-primary transition-colors bg-surface-container-high/50 border border-outline-variant/30">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+<button class="w-8 h-8 rounded-full flex items-center justify-center text-text-muted hover:text-error transition-colors bg-surface-container-high/50 border border-outline-variant/30">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Item 3: Café Americano -->
+<div class="glass-card rounded-xl p-3 flex gap-4 items-center">
+<div class="w-20 h-20 rounded-lg bg-surface-container-high flex items-center justify-center shrink-0 border border-outline-variant/30">
+<span class="material-symbols-outlined text-[32px] text-text-muted">local_cafe</span>
+</div>
+<div class="flex-1 min-w-0">
+<h3 class="font-headline-sm text-headline-sm truncate mb-1">Café Americano</h3>
+<div class="font-numbers-md text-numbers-md text-primary mb-2">₡1,200</div>
+<div class="flex items-center justify-between mt-auto">
+<div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer z-10 transition-transform duration-200 ease-in-out transform translate-x-5 border-primary" id="toggle3" name="toggle3" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-5 rounded-full bg-primary cursor-pointer transition-colors duration-200 ease-in-out" for="toggle3"></label>
+</div>
+<div class="flex gap-2">
+<button class="w-8 h-8 rounded-full flex items-center justify-center text-text-muted hover:text-primary transition-colors bg-surface-container-high/50 border border-outline-variant/30">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+<button class="w-8 h-8 rounded-full flex items-center justify-center text-text-muted hover:text-error transition-colors bg-surface-container-high/50 border border-outline-variant/30">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Item 4: Smoothie de Frutas (Disabled) -->
+<div class="glass-card rounded-xl p-3 flex gap-4 items-center opacity-60 grayscale-[30%]">
+<div class="w-20 h-20 rounded-lg bg-surface-container-high flex items-center justify-center shrink-0 border border-outline-variant/30">
+<span class="material-symbols-outlined text-[32px] text-text-muted">blender</span>
+</div>
+<div class="flex-1 min-w-0">
+<h3 class="font-headline-sm text-headline-sm truncate mb-1 text-text-muted">Smoothie de Frutas</h3>
+<div class="font-numbers-md text-numbers-md text-text-muted mb-2">₡2,500</div>
+<div class="flex items-center justify-between mt-auto">
+<div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+<input class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-surface-variant border-4 border-outline-variant appearance-none cursor-pointer z-10 transition-transform duration-200 ease-in-out" id="toggle4" name="toggle4" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-5 rounded-full bg-surface-container-highest cursor-pointer transition-colors duration-200 ease-in-out" for="toggle4"></label>
+</div>
+<div class="flex gap-2">
+<button class="w-8 h-8 rounded-full flex items-center justify-center text-text-muted hover:text-primary transition-colors bg-surface-container-high/50 border border-outline-variant/30">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+<button class="w-8 h-8 rounded-full flex items-center justify-center text-text-muted hover:text-error transition-colors bg-surface-container-high/50 border border-outline-variant/30">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Item 5: Patacones -->
+<div class="glass-card rounded-xl p-3 flex gap-4 items-center">
+<div class="w-20 h-20 rounded-lg bg-surface-container-high overflow-hidden shrink-0">
+<img class="w-full h-full object-cover" data-alt="Golden fried patacones (smashed plantains) served with a small side of black bean dip in a dark matte bowl. Shot on a dark minimalist surface. Moody lighting highlighting the crispy texture of the plantains." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAzaUU6WDpcMbbwm7VIdlqld6fnqqKB71tYZlWtA_I_2oCmXIuaAHSzPadkzXBAR2vzM2L3BSvtKjO7pLZRp8quapK8Mqn4CQHU6YQ2fE6icL-BpuYwVICdiC4C_YcN_ZVc91Qmqh3pLuZ6xm_iD97sAdBrTufXDyMZKrhErc7aE7sorfSePts4uHZ-P2KWR1sML-it_5X-YqvdW19MgwcByB2FhLKgLupnfZaCQ_3KJDmbFcWWJ5BKz1j36sQloHUPv_Y_WCbXtWA"/>
+</div>
+<div class="flex-1 min-w-0">
+<h3 class="font-headline-sm text-headline-sm truncate mb-1">Patacones</h3>
+<div class="font-numbers-md text-numbers-md text-primary mb-2">₡1,800</div>
+<div class="flex items-center justify-between mt-auto">
+<div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer z-10 transition-transform duration-200 ease-in-out transform translate-x-5 border-primary" id="toggle5" name="toggle5" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-5 rounded-full bg-primary cursor-pointer transition-colors duration-200 ease-in-out" for="toggle5"></label>
+</div>
+<div class="flex gap-2">
+<button class="w-8 h-8 rounded-full flex items-center justify-center text-text-muted hover:text-primary transition-colors bg-surface-container-high/50 border border-outline-variant/30">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+<button class="w-8 h-8 rounded-full flex items-center justify-center text-text-muted hover:text-error transition-colors bg-surface-container-high/50 border border-outline-variant/30">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Floating Action Button (QR) -->
+<button class="fixed bottom-24 right-4 md:right-[calc(50%-360px+16px)] z-40 w-14 h-14 bg-primary text-on-primary rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(75,226,119,0.4)] hover:scale-105 active:scale-95 transition-transform duration-200">
+<span class="material-symbols-outlined text-[28px]" style="font-variation-settings: 'FILL' 1;">qr_code_scanner</span>
+</button>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 backdrop-blur-lg border-t border-outline-variant bg-surface-container-highest/80 dark:bg-surface-container-highest/80 md:hidden">
+<div class="flex justify-around items-center h-touch-target-min pb-safe px-gutter-mobile py-2">
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant hover:text-primary active:scale-95 transition-transform duration-150 w-16" href="#">
+<span class="material-symbols-outlined mb-1">dashboard</span>
+<span class="font-label-sm text-label-sm">Dashboard</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant hover:text-primary active:scale-95 transition-transform duration-150 w-16" href="#">
+<span class="material-symbols-outlined mb-1">receipt_long</span>
+<span class="font-label-sm text-label-sm">Pedidos</span>
+</a>
+<a class="flex flex-col items-center justify-center text-primary dark:text-primary bg-primary-container/20 rounded-xl px-3 py-1 active:scale-95 transition-transform duration-150 w-16" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">restaurant_menu</span>
+<span class="font-label-sm text-label-sm font-bold">Menú</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant hover:text-primary active:scale-95 transition-transform duration-150 w-16" href="#">
+<span class="material-symbols-outlined mb-1">person</span>
+<span class="font-label-sm text-label-sm">Perfil</span>
+</a>
+</div>
+</nav>
+<!-- Desktop Sidebar (Hidden on Mobile, serves as structural placeholder for md+ layout consistency per rules, though full implementation might vary) -->
+<aside class="hidden md:flex flex-col fixed left-0 top-0 h-screen w-[260px] bg-surface-container-highest border-r border-outline-variant p-6 z-50">
+<div class="text-headline-md font-headline-md text-primary mb-10">Bowl &amp; Cafe</div>
+<nav class="flex flex-col gap-2">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">receipt_long</span>
+<span class="font-label-md text-label-md">Pedidos</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary-container/20 text-primary transition-colors" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">restaurant_menu</span>
+<span class="font-label-md text-label-md font-bold">Menú</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-primary transition-colors mt-auto" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="font-label-md text-label-md">Perfil</span>
+</a>
+</nav>
+</aside>
+</body></html>

@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Pedidos Programados</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                "on-tertiary": "#003824",
+                "on-surface-variant": "#bccbb9",
+                "on-primary-fixed-variant": "#005321",
+                "tertiary-fixed": "#6ffbbe",
+                "primary": "#4be277",
+                "on-background": "#dbe2fd",
+                "on-surface": "#dbe2fd",
+                "secondary-container": "#00b55d",
+                "error-container": "#93000a",
+                "inverse-surface": "#dbe2fd",
+                "surface-container": "#171f33",
+                "on-error": "#690005",
+                "tertiary-fixed-dim": "#4edea3",
+                "surface-container-high": "#222a3e",
+                "on-secondary-container": "#003e1c",
+                "canvas": "#0b1326",
+                "text-muted": "#94a3b8",
+                "tertiary": "#50dfa4",
+                "surface-tint": "#4ae176",
+                "secondary": "#4de082",
+                "outline": "#869585",
+                "primary-container": "#22c55e",
+                "outline-variant": "#3d4a3d",
+                "on-tertiary-fixed-variant": "#005236",
+                "sinpe-blue": "#0284c7",
+                "surface-variant": "#2d3449",
+                "primary-fixed-dim": "#4ae176",
+                "surface-dim": "#0b1326",
+                "surface": "#0b1326",
+                "on-primary": "#003915",
+                "error": "#ffb4ab",
+                "surface-container-lowest": "#060d20",
+                "inverse-primary": "#006e2f",
+                "secondary-fixed": "#6dfe9c",
+                "on-error-container": "#ffdad6",
+                "error-crimson": "#ffb4ab",
+                "on-tertiary-fixed": "#002113",
+                "inverse-on-surface": "#283044",
+                "amber-sunburst": "#f59e0b",
+                "surface-glass": "rgba(30, 41, 59, 0.75)",
+                "on-secondary": "#003919",
+                "primary-fixed": "#6bff8f",
+                "on-primary-container": "#004b1e",
+                "surface-container-highest": "#2d3449",
+                "on-secondary-fixed-variant": "#005227",
+                "on-tertiary-container": "#004a31",
+                "surface-bright": "#31394e",
+                "background": "#0b1326",
+                "secondary-fixed-dim": "#4de082",
+                "border-deep": "rgba(51, 65, 85, 0.6)",
+                "surface-container-low": "#131b2e",
+                "text-primary": "#f8fafc",
+                "on-secondary-fixed": "#00210c",
+                "tertiary-container": "#28c38a",
+                "on-primary-fixed": "#002109"
+              },
+              "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px"
+              },
+              "spacing": {
+                "container-max-desktop": "1200px",
+                "touch-target-min": "44px",
+                "gutter-mobile": "0.75rem",
+                "gap-dense": "0.5rem",
+                "margin-mobile": "1rem"
+              },
+              "fontFamily": {
+                "label-md": ["Geist"],
+                "headline-md": ["Geist"],
+                "numbers-md": ["JetBrains Mono"],
+                "headline-sm": ["Geist"],
+                "body-md": ["Inter"],
+                "numbers-lg": ["JetBrains Mono"],
+                "label-sm": ["Geist"],
+                "headline-lg": ["Geist"]
+              },
+              "fontSize": {
+                "label-md": ["13px", {"lineHeight": "1", "letterSpacing": "0.04em", "fontWeight": "600"}],
+                "headline-md": ["24px", {"lineHeight": "1.2", "letterSpacing": "-0.03em", "fontWeight": "600"}],
+                "numbers-md": ["16px", {"lineHeight": "1", "fontWeight": "700"}],
+                "headline-sm": ["20px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                "numbers-lg": ["22px", {"lineHeight": "1", "fontWeight": "800"}],
+                "label-sm": ["11px", {"lineHeight": "1", "letterSpacing": "0.06em", "fontWeight": "600"}],
+                "headline-lg": ["32px", {"lineHeight": "1.1", "letterSpacing": "-0.03em", "fontWeight": "700"}]
+              }
+            }
+          }
+        }
+    </script>
+<style>
+        body { background-color: theme('colors.canvas'); color: theme('colors.text-primary'); min-height: 100dvh; display: flex; flex-direction: column; }
+        .glass-panel { background: theme('colors.surface-glass'); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+        .border-t-subtle { border-top: 1px solid theme('colors.border-deep'); }
+        .ambient-glow:focus-within { box-shadow: 0 0 0 2px rgba(75, 226, 119, 0.2); }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="relative overflow-x-hidden font-body-md text-body-md">
+<!-- Top App Bar -->
+<header class="w-full sticky top-0 backdrop-blur-md bg-surface-glass dark:bg-surface-glass border-b border-border-deep z-40">
+<div class="flex justify-between items-center px-margin-mobile h-touch-target-min">
+<div class="flex items-center gap-2 text-primary dark:text-primary-fixed hover:bg-surface-bright/20 active:scale-95 transition-transform rounded p-1 -ml-1">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">arrow_back</span>
+</div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary flex items-center gap-2">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">calendar_month</span>
+                Pedidos Programados
+            </h1>
+<div class="w-6 h-6 rounded-full overflow-hidden shrink-0 border border-border-deep">
+<img class="w-full h-full object-cover" data-alt="A small, stylized profile avatar of a delivery driver wearing a helmet, set against a dark tropical night background with subtle green neon accents. High-contrast, minimalist style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDmVy6SMryfZ4KWaaV6p0_3JO2JH2wS-wvR5BWGhBygXgr7gz5KJs2WUurckYmyiZfW6vHbu0l2azKwVoKK16ivp8NEYgwbRpP8f8mpP-N3-mNA14WUqOrgvdu3zhT9V_-EYPmzCAmx-cvPw8FwAknjBTOpGhSAvlIz8zcVS_1DPpboYkyHjwZow9Wnf-7E4NtHmMBLxfr-q-EYcID_wiaYto2ikMw_9vIwDzuTZ4diEnxZrGZflnk8X7jh_wN_3e3eFdE94QGuxmk"/>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow px-margin-mobile pt-6 pb-64 flex flex-col gap-gap-dense w-full max-w-container-max-desktop mx-auto md:max-w-3xl lg:max-w-4xl xl:max-w-6xl">
+<!-- List of Scheduled Deliveries -->
+<div class="flex flex-col gap-4 w-full">
+<!-- Card 1 (Elevated Glass with Amber Left Border) -->
+<article class="glass-panel rounded-lg border-l-4 border-amber-sunburst flex flex-col p-4 relative overflow-hidden group hover:bg-surface-bright/50 transition-colors">
+<div class="flex justify-between items-start mb-2">
+<span class="font-numbers-md text-numbers-md text-amber-sunburst tracking-tight">MAÑANA 10:00 AM</span>
+<span class="font-label-sm text-label-sm bg-amber-sunburst/20 text-amber-sunburst px-2 py-1 rounded-sm uppercase tracking-wider">3 PROPUESTAS</span>
+</div>
+<div class="flex flex-col gap-1 mb-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-text-muted" style="font-size: 16px;">storefront</span>
+<span class="font-bold text-on-surface">Bowl &amp; Cafe</span>
+</div>
+<div class="flex items-center gap-2 text-text-muted">
+<span class="material-symbols-outlined" style="font-size: 16px;">person</span>
+<span>Luis Alfredo</span>
+</div>
+</div>
+<div class="border-t-subtle pt-3 flex flex-col gap-2">
+<div class="flex items-start gap-2">
+<span class="material-symbols-outlined text-text-muted mt-0.5" style="font-size: 16px;">route</span>
+<span class="font-numbers-md text-numbers-md text-on-surface-variant break-words leading-tight">Route to Hotel Guanacaste, Playa del Coco (47km)</span>
+</div>
+<div class="flex justify-end items-center mt-2">
+<span class="font-numbers-lg text-numbers-lg text-primary tracking-tighter">₡3,500</span>
+</div>
+</div>
+</article>
+<!-- Card 2 (Standard Glass Card) -->
+<article class="glass-panel rounded-lg border border-border-deep flex flex-col p-4 relative overflow-hidden group hover:bg-surface-bright/50 transition-colors">
+<div class="flex justify-between items-start mb-2">
+<span class="font-numbers-md text-numbers-md text-text-primary tracking-tight">MAÑANA 2:00 PM</span>
+<span class="font-label-sm text-label-sm bg-surface-bright text-text-muted px-2 py-1 rounded-sm uppercase tracking-wider">SIN PROPUESTAS</span>
+</div>
+<div class="flex flex-col gap-1 mb-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-text-muted" style="font-size: 16px;">storefront</span>
+<span class="font-bold text-on-surface">Los Efes Cevicheria</span>
+</div>
+<div class="flex items-center gap-2 text-text-muted">
+<span class="material-symbols-outlined" style="font-size: 16px;">location_on</span>
+<span>Santa Cruz Centro</span>
+</div>
+</div>
+<div class="border-t-subtle pt-3 flex flex-col gap-2">
+<div class="flex items-start gap-2">
+<span class="material-symbols-outlined text-text-muted mt-0.5" style="font-size: 16px;">route</span>
+<span class="font-numbers-md text-numbers-md text-on-surface-variant break-words leading-tight">Ruta Directa (12km)</span>
+</div>
+<div class="flex justify-end items-center mt-2">
+<span class="font-numbers-lg text-numbers-lg text-primary tracking-tighter opacity-80">₡1,800</span>
+</div>
+</div>
+</article>
+</div>
+</main>
+<!-- Bottom Interactive Panel ('Mi Propuesta') -->
+<div class="fixed bottom-[72px] md:bottom-0 left-0 w-full z-40 px-margin-mobile pb-margin-mobile pt-4 glass-panel border-t-subtle pointer-events-auto">
+<div class="w-full max-w-md mx-auto flex flex-col gap-4">
+<div class="flex items-center gap-2 mb-1">
+<span class="material-symbols-outlined text-primary" style="font-size: 20px;">handshake</span>
+<h2 class="font-headline-sm text-headline-sm font-bold">Mi Propuesta</h2>
+</div>
+<div class="grid grid-cols-2 gap-3">
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm text-text-muted">TIEMPO ESTIMADO</label>
+<div class="relative ambient-glow rounded-lg">
+<input class="w-full bg-surface-container-high border-border-deep rounded-lg px-3 py-2 text-on-surface font-numbers-md text-numbers-md placeholder:text-text-muted focus:ring-1 focus:ring-primary focus:border-primary transition-all" placeholder="45 min" type="text"/>
+</div>
+</div>
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm text-text-muted">COSTO EXTRA (OPCIONAL)</label>
+<div class="relative ambient-glow rounded-lg">
+<input class="w-full bg-surface-container-high border-border-deep rounded-lg px-3 py-2 text-on-surface font-numbers-md text-numbers-md placeholder:text-text-muted focus:ring-1 focus:ring-primary focus:border-primary transition-all" placeholder="₡0" type="text"/>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm text-text-muted">NOTA PARA EL COMERCIANTE</label>
+<div class="relative ambient-glow rounded-lg">
+<textarea class="w-full bg-surface-container-high border-border-deep rounded-lg px-3 py-2 text-on-surface text-body-md placeholder:text-text-muted focus:ring-1 focus:ring-primary focus:border-primary transition-all resize-none" placeholder="Llevo caja térmica..." rows="2"></textarea>
+</div>
+</div>
+<p class="font-label-sm text-label-sm text-text-muted/60 leading-tight">
+                 El comerciante elige al mejor repartidor por servicio no por precio.
+             </p>
+<button class="w-full bg-primary text-on-primary h-[52px] rounded-full font-label-md text-label-md flex items-center justify-center gap-2 hover:brightness-110 active:-translate-y-[1px] transition-all shadow-[0_0_15px_rgba(75,226,119,0.3)]">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">send</span>
+                 ENVIAR PROPUESTA
+             </button>
+</div>
+</div>
+<!-- Bottom Nav Bar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-8 pt-2 bg-surface-container-low/80 dark:bg-surface-container-low/80 rounded-t-xl backdrop-blur-xl border-t border-border-deep shadow-lg md:hidden">
+<div class="flex flex-col items-center justify-center text-text-muted p-2 hover:text-primary transition-colors active:-translate-y-1 transition-all duration-200">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">route</span>
+<span class="font-label-sm text-label-sm mt-1">Route</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-secondary-container/20 text-secondary rounded-xl p-2 hover:text-primary transition-colors active:-translate-y-1 transition-all duration-200">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">inventory_2</span>
+<span class="font-label-sm text-label-sm mt-1">Orders</span>
+</div>
+<div class="flex flex-col items-center justify-center text-text-muted p-2 hover:text-primary transition-colors active:-translate-y-1 transition-all duration-200">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">payments</span>
+<span class="font-label-sm text-label-sm mt-1">Earnings</span>
+</div>
+<div class="flex flex-col items-center justify-center text-text-muted p-2 hover:text-primary transition-colors active:-translate-y-1 transition-all duration-200">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">person</span>
+<span class="font-label-sm text-label-sm mt-1">Profile</span>
+</div>
+</nav>
+<!-- Desktop Sidebar Placeholder (Hidden on mobile) -->
+<aside class="hidden md:flex h-full w-64 fixed left-0 top-0 bg-surface-container dark:bg-surface-container border-r border-border-deep shadow-2xl flex-col py-6 gap-2 z-50">
+<div class="px-6 mb-4 flex items-center gap-3">
+<div class="w-10 h-10 rounded-full overflow-hidden border border-border-deep">
+<img class="w-full h-full object-cover" data-alt="User profile avatar, delivery driver, detailed night tropical aesthetic" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA0EJQ3IRFR4XhP-MJ_TEDjm_dBTA0g3asi4jx_LK32AcFjBQSNFB0ru--BFNS9cB5pxpx7PoTeBLlCLygy5Tnk5tGO8QRMZTN8GTkWwBwSAEdJrSoEGfpqqUKnTYmL3fro4A_KjeynGiH9v3sqpa016Rmok5B9i_MNkmh7cwmjvghGp56aUtjMcME2oaVDVJr6wdDpusyPeQeHiXATLbLPLRe3Qrno0i1oQHk9mNBu9buPgPGU9p1aql-2sPOfNtIam7ms5dItKqw"/>
+</div>
+<div>
+<h2 class="font-headline-sm text-headline-sm font-bold text-primary">Kiwi Partner</h2>
+<p class="font-label-sm text-label-sm text-text-muted">Online • 4.98 Rating</p>
+</div>
+</div>
+<div class="flex flex-col gap-1 w-full">
+<a class="text-on-surface-variant px-4 py-3 hover:bg-surface-bright transition-all duration-150 flex items-center gap-3 mx-2 rounded-lg" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">timer</span>
+<span class="font-label-md text-label-md">Active Shift</span>
+</a>
+<!-- Orders is active -->
+<a class="bg-secondary-container text-on-secondary-container font-bold px-4 py-3 rounded-r-full hover:bg-surface-bright transition-all duration-150 flex items-center gap-3 mr-4" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">inventory_2</span>
+<span class="font-label-md text-label-md">Orders</span>
+</a>
+<a class="text-on-surface-variant px-4 py-3 hover:bg-surface-bright transition-all duration-150 flex items-center gap-3 mx-2 rounded-lg" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">local_shipping</span>
+<span class="font-label-md text-label-md">Vehicle Info</span>
+</a>
+<a class="text-on-surface-variant px-4 py-3 hover:bg-surface-bright transition-all duration-150 flex items-center gap-3 mx-2 rounded-lg" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">security</span>
+<span class="font-label-md text-label-md">Safety Center</span>
+</a>
+</div>
+</aside>
+</body></html>

@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Kiwi - Mi Horario</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;700;800&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Inter:wght@100..900&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                "on-error-container": "#ffdad6",
+                "surface": "#0b1326",
+                "on-tertiary-fixed-variant": "#005236",
+                "surface-glass": "rgba(30, 41, 59, 0.75)",
+                "surface-bright": "#31394e",
+                "on-primary-fixed-variant": "#005321",
+                "on-secondary-fixed": "#00210c",
+                "primary-container": "#22c55e",
+                "on-tertiary": "#003824",
+                "tertiary-container": "#28c38a",
+                "canvas": "#0b1326",
+                "secondary": "#4de082",
+                "on-primary-fixed": "#002109",
+                "on-error": "#690005",
+                "surface-tint": "#4ae176",
+                "surface-container-lowest": "#060d20",
+                "on-primary-container": "#004b1e",
+                "secondary-fixed": "#6dfe9c",
+                "primary-fixed-dim": "#4ae176",
+                "on-tertiary-fixed": "#002113",
+                "inverse-primary": "#006e2f",
+                "outline-variant": "#3d4a3d",
+                "surface-container-highest": "#2d3449",
+                "surface-container": "#171f33",
+                "on-secondary-fixed-variant": "#005227",
+                "on-secondary-container": "#003e1c",
+                "inverse-on-surface": "#283044",
+                "tertiary-fixed": "#6ffbbe",
+                "tertiary-fixed-dim": "#4edea3",
+                "on-surface": "#dbe2fd",
+                "primary-fixed": "#6bff8f",
+                "secondary-fixed-dim": "#4de082",
+                "tertiary": "#50dfa4",
+                "error": "#ffb4ab",
+                "background": "#0b1326",
+                "surface-variant": "#2d3449",
+                "inverse-surface": "#dbe2fd",
+                "primary": "#4be277",
+                "outline": "#869585",
+                "error-crimson": "#ffb4ab",
+                "surface-container-high": "#222a3e",
+                "text-muted": "#94a3b8",
+                "surface-container-low": "#131b2e",
+                "amber-sunburst": "#f59e0b",
+                "on-surface-variant": "#bccbb9",
+                "on-tertiary-container": "#004a31",
+                "error-container": "#93000a",
+                "text-primary": "#f8fafc",
+                "on-primary": "#003915",
+                "sinpe-blue": "#0284c7",
+                "secondary-container": "#00b55d",
+                "surface-dim": "#0b1326",
+                "border-deep": "rgba(51, 65, 85, 0.6)",
+                "on-secondary": "#003919",
+                "on-background": "#dbe2fd"
+              },
+              "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px"
+              },
+              "spacing": {
+                "touch-target-min": "44px",
+                "gap-dense": "0.5rem",
+                "container-max-desktop": "1200px",
+                "gutter-mobile": "0.75rem",
+                "margin-mobile": "1rem"
+              },
+              "fontFamily": {
+                "numbers-lg": ["JetBrains Mono"],
+                "headline-sm": ["Geist"],
+                "label-sm": ["Geist"],
+                "headline-lg": ["Geist"],
+                "label-md": ["Geist"],
+                "body-md": ["Inter"],
+                "numbers-md": ["JetBrains Mono"],
+                "headline-md": ["Geist"]
+              },
+              "fontSize": {
+                "numbers-lg": ["22px", {"lineHeight": "1", "fontWeight": "800"}],
+                "headline-sm": ["20px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                "label-sm": ["11px", {"lineHeight": "1", "letterSpacing": "0.06em", "fontWeight": "600"}],
+                "headline-lg": ["32px", {"lineHeight": "1.1", "letterSpacing": "-0.03em", "fontWeight": "700"}],
+                "label-md": ["13px", {"lineHeight": "1", "letterSpacing": "0.04em", "fontWeight": "600"}],
+                "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                "numbers-md": ["16px", {"lineHeight": "1", "fontWeight": "700"}],
+                "headline-md": ["24px", {"lineHeight": "1.2", "letterSpacing": "-0.03em", "fontWeight": "600"}]
+              }
+            }
+          }
+        }
+    </script>
+<style type="text/tailwindcss">
+        @layer utilities {
+            .glass-card {
+                @apply bg-surface-glass backdrop-blur-[20px] border-t border-border-deep rounded-xl;
+            }
+            .material-symbols-outlined {
+                font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            }
+            .material-symbols-outlined.fill {
+                font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            }
+            /* Hide scrollbar for horizontal scrolling */
+            .no-scrollbar::-webkit-scrollbar {
+                display: none;
+            }
+            .no-scrollbar {
+                -ms-overflow-style: none;  /* IE and Edge */
+                scrollbar-width: none;  /* Firefox */
+            }
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-text-primary min-h-[884px] pb-32 font-body-md text-body-md antialiased selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopAppBar -->
+<header class="w-full sticky top-0 backdrop-blur-md z-40 bg-surface-glass border-b border-border-deep flex justify-between items-center px-margin-mobile h-touch-target-min">
+<div class="flex items-center gap-3">
+<button class="w-8 h-8 rounded-full overflow-hidden active:scale-95 transition-transform">
+<img alt="Driver profile photo" class="w-full h-full object-cover" data-alt="A close up, cinematic portrait of a professional driver wearing a subtle, dark uniform, bathed in moody neon green and slate blue lighting. Tropical high-contrast aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDK6v46RsMjwdB_RJvc7GaPREHtuKbGfVCe59o7drvTkbQ1aktb36fr-nmcJIcT6gn5zRsKkTx9cpaSSVZl3gij8D8Fyg0J0mBYVLm1NgtJMl9mdO37NQqNqAy98qjeggf7VTFnFchJ3gUNT93COqaUvXJzngZUgukzIkWbMTYiyUU87t7-38dAX7loyjUugwNMDGMTABcfuxED5rPEHOUTv2XwBfObS6EfI6kK-vCdQDuuARVbhQRF9bwS3IIcnWzcb95AGf_Yowk"/>
+</button>
+<h1 class="font-headline-md text-headline-md font-bold text-primary tracking-tight">Mi Horario</h1>
+</div>
+<button class="font-label-md text-label-md text-primary-container uppercase tracking-wider active:scale-95 transition-transform hover:opacity-80 p-2">Guardar</button>
+</header>
+<main class="px-margin-mobile pt-6 space-y-8 max-w-lg mx-auto">
+<!-- Weekly Calendar -->
+<section>
+<div class="flex overflow-x-auto gap-3 pb-2 no-scrollbar snap-x">
+<!-- Day Pills -->
+<button class="snap-start shrink-0 flex flex-col items-center justify-center w-[52px] h-[64px] rounded-xl bg-surface-container-highest border border-border-deep relative active:scale-95 transition-all">
+<span class="font-label-sm text-label-sm text-text-muted">LUN</span>
+<span class="font-numbers-md text-numbers-md text-text-muted mt-1">12</span>
+</button>
+<button class="snap-start shrink-0 flex flex-col items-center justify-center w-[52px] h-[64px] rounded-xl bg-primary-container/20 border border-primary-container relative active:scale-95 transition-all ring-1 ring-primary-container/50">
+<span class="font-label-sm text-label-sm text-primary">MAR</span>
+<span class="font-numbers-md text-numbers-md text-primary mt-1">13</span>
+<div class="absolute bottom-1 w-1 h-1 rounded-full bg-primary"></div>
+</button>
+<button class="snap-start shrink-0 flex flex-col items-center justify-center w-[52px] h-[64px] rounded-xl bg-primary-container/20 border border-primary-container relative active:scale-95 transition-all ring-1 ring-primary-container/50">
+<span class="font-label-sm text-label-sm text-primary">MIE</span>
+<span class="font-numbers-md text-numbers-md text-primary mt-1">14</span>
+<div class="absolute bottom-1 w-1 h-1 rounded-full bg-primary"></div>
+</button>
+<button class="snap-start shrink-0 flex flex-col items-center justify-center w-[52px] h-[64px] rounded-xl bg-surface-container-highest border border-border-deep relative active:scale-95 transition-all">
+<span class="font-label-sm text-label-sm text-text-muted">JUE</span>
+<span class="font-numbers-md text-numbers-md text-text-muted mt-1">15</span>
+</button>
+<button class="snap-start shrink-0 flex flex-col items-center justify-center w-[52px] h-[64px] rounded-xl bg-primary-container/20 border border-primary-container relative active:scale-95 transition-all ring-1 ring-primary-container/50">
+<span class="font-label-sm text-label-sm text-primary">VIE</span>
+<span class="font-numbers-md text-numbers-md text-primary mt-1">16</span>
+<div class="absolute bottom-1 w-1 h-1 rounded-full bg-primary"></div>
+</button>
+<button class="snap-start shrink-0 flex flex-col items-center justify-center w-[52px] h-[64px] rounded-xl bg-surface-container-highest border border-border-deep relative active:scale-95 transition-all">
+<span class="font-label-sm text-label-sm text-text-muted">SAB</span>
+<span class="font-numbers-md text-numbers-md text-text-muted mt-1">17</span>
+</button>
+<button class="snap-start shrink-0 flex flex-col items-center justify-center w-[52px] h-[64px] rounded-xl bg-surface-container-highest border border-border-deep relative active:scale-95 transition-all">
+<span class="font-label-sm text-label-sm text-text-muted">DOM</span>
+<span class="font-numbers-md text-numbers-md text-text-muted mt-1">18</span>
+</button>
+</div>
+</section>
+<!-- Time Slots -->
+<section class="space-y-3">
+<h2 class="font-label-md text-label-md text-text-muted uppercase tracking-widest mb-2">Turnos Disponibles</h2>
+<!-- Shift 1 -->
+<div class="glass-card p-4 flex items-center justify-between">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="material-symbols-outlined text-amber-sunburst text-lg">light_mode</span>
+<span class="font-label-md text-label-md text-text-primary tracking-wider">MAÑANA</span>
+</div>
+<span class="font-numbers-md text-numbers-md text-text-muted block">06:00 - 12:00</span>
+</div>
+<!-- Toggle ON -->
+<button class="w-12 h-6 rounded-full bg-primary-container relative transition-colors duration-300 focus:outline-none ring-2 ring-transparent focus:ring-primary/50">
+<div class="w-5 h-5 bg-white rounded-full absolute top-0.5 right-0.5 shadow-sm transition-transform duration-300"></div>
+</button>
+</div>
+<!-- Shift 2 -->
+<div class="glass-card p-4 flex items-center justify-between">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="material-symbols-outlined text-secondary text-lg">partly_cloudy_day</span>
+<span class="font-label-md text-label-md text-text-primary tracking-wider">TARDE</span>
+</div>
+<span class="font-numbers-md text-numbers-md text-text-muted block">12:00 - 18:00</span>
+</div>
+<!-- Toggle ON -->
+<button class="w-12 h-6 rounded-full bg-primary-container relative transition-colors duration-300 focus:outline-none ring-2 ring-transparent focus:ring-primary/50">
+<div class="w-5 h-5 bg-white rounded-full absolute top-0.5 right-0.5 shadow-sm transition-transform duration-300"></div>
+</button>
+</div>
+<!-- Shift 3 -->
+<div class="glass-card p-4 flex items-center justify-between opacity-70">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="material-symbols-outlined text-text-muted text-lg">dark_mode</span>
+<span class="font-label-md text-label-md text-text-primary tracking-wider">NOCHE</span>
+</div>
+<span class="font-numbers-md text-numbers-md text-text-muted block">18:00 - 23:00</span>
+</div>
+<!-- Toggle OFF -->
+<button class="w-12 h-6 rounded-full bg-surface-container-highest relative transition-colors duration-300 focus:outline-none border border-border-deep">
+<div class="w-5 h-5 bg-text-muted rounded-full absolute top-0.5 left-0.5 shadow-sm transition-transform duration-300"></div>
+</button>
+</div>
+</section>
+<!-- Quick Actions -->
+<section>
+<div class="flex flex-wrap gap-2">
+<button class="px-4 py-2 rounded-full border border-border-deep bg-surface-container-highest font-label-md text-label-md text-text-primary hover:bg-surface-bright transition-colors">Horario completo</button>
+<button class="px-4 py-2 rounded-full border border-border-deep bg-surface-container-highest font-label-md text-label-md text-text-primary hover:bg-surface-bright transition-colors">Solo fines de semana</button>
+<button class="px-4 py-2 rounded-full border border-primary-container/30 bg-primary-container/10 font-label-md text-label-md text-primary hover:bg-primary-container/20 transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">tune</span> Personalizar
+                </button>
+</div>
+</section>
+<!-- Stats Section -->
+<section class="glass-card p-5 mt-4 border-l-4 border-l-secondary rounded-l-none">
+<div class="grid grid-cols-2 gap-4">
+<div>
+<span class="font-label-sm text-label-sm text-text-muted uppercase block mb-1">Semana actual</span>
+<div class="flex items-baseline gap-1">
+<span class="font-numbers-lg text-numbers-lg text-primary">32</span>
+<span class="font-label-md text-label-md text-text-muted">hrs</span>
+</div>
+</div>
+<div>
+<span class="font-label-sm text-label-sm text-text-muted uppercase block mb-1">Promedio diario</span>
+<div class="flex items-baseline gap-1">
+<span class="font-numbers-lg text-numbers-lg text-secondary">5.3</span>
+<span class="font-label-md text-label-md text-text-muted">hrs</span>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Actions Wrapper (above nav) -->
+<div class="fixed bottom-[88px] left-0 w-full px-margin-mobile pb-2 z-40 max-w-lg mx-auto right-0">
+<button class="w-full h-[52px] bg-primary text-on-primary font-headline-sm text-headline-sm rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(75,226,119,0.2)] active:-translate-y-[1px] transition-transform">
+            Aplicar horario
+        </button>
+</div>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-8 pt-2 bg-surface-container-low/80 dark:bg-surface-container-low/80 rounded-t-xl backdrop-blur-xl border-t border-border-deep shadow-lg">
+<button class="flex flex-col items-center justify-center text-text-muted p-2 hover:text-primary transition-colors active:-translate-y-1 transition-all duration-200">
+<span class="material-symbols-outlined text-2xl mb-1">route</span>
+<span class="font-label-sm text-label-sm">Route</span>
+</button>
+<button class="flex flex-col items-center justify-center text-text-muted p-2 hover:text-primary transition-colors active:-translate-y-1 transition-all duration-200">
+<span class="material-symbols-outlined text-2xl mb-1">inventory_2</span>
+<span class="font-label-sm text-label-sm">Orders</span>
+</button>
+<button class="flex flex-col items-center justify-center text-text-muted p-2 hover:text-primary transition-colors active:-translate-y-1 transition-all duration-200">
+<span class="material-symbols-outlined text-2xl mb-1">payments</span>
+<span class="font-label-sm text-label-sm">Earnings</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-secondary-container/20 text-secondary rounded-xl p-2 active:-translate-y-1 transition-all duration-200 w-16">
+<span class="material-symbols-outlined fill text-2xl mb-1">calendar_month</span>
+<span class="font-label-sm text-label-sm">Horario</span>
+</button>
+<button class="flex flex-col items-center justify-center text-text-muted p-2 hover:text-primary transition-colors active:-translate-y-1 transition-all duration-200">
+<span class="material-symbols-outlined text-2xl mb-1">person</span>
+<span class="font-label-sm text-label-sm">Profile</span>
+</button>
+</nav>
+</body></html>

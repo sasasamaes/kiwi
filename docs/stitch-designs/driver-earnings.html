@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Mis Ganancias - Kiwi</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-low": "#131b2e",
+                        "surface-bright": "#31394e",
+                        "text-primary": "#f8fafc",
+                        "on-secondary-container": "#003e1c",
+                        "tertiary-fixed": "#6ffbbe",
+                        "on-secondary-fixed-variant": "#005227",
+                        "inverse-surface": "#dbe2fd",
+                        "text-muted": "#94a3b8",
+                        "primary": "#4be277",
+                        "error": "#ffb4ab",
+                        "secondary-container": "#00b55d",
+                        "surface-dim": "#0b1326",
+                        "surface-container-high": "#222a3e",
+                        "primary-fixed-dim": "#4ae176",
+                        "inverse-primary": "#006e2f",
+                        "on-surface-variant": "#bccbb9",
+                        "on-secondary-fixed": "#00210c",
+                        "on-background": "#dbe2fd",
+                        "primary-fixed": "#6bff8f",
+                        "on-secondary": "#003919",
+                        "on-primary": "#003915",
+                        "error-container": "#93000a",
+                        "primary-container": "#22c55e",
+                        "tertiary-container": "#28c38a",
+                        "outline-variant": "#3d4a3d",
+                        "on-tertiary": "#003824",
+                        "on-tertiary-container": "#004a31",
+                        "on-tertiary-fixed": "#002113",
+                        "sinpe-blue": "#0284c7",
+                        "tertiary": "#50dfa4",
+                        "surface-container": "#171f33",
+                        "secondary-fixed": "#6dfe9c",
+                        "surface-glass": "rgba(30, 41, 59, 0.75)",
+                        "inverse-on-surface": "#283044",
+                        "secondary": "#4de082",
+                        "on-primary-container": "#004b1e",
+                        "surface-variant": "#2d3449",
+                        "amber-sunburst": "#f59e0b",
+                        "outline": "#869585",
+                        "on-tertiary-fixed-variant": "#005236",
+                        "tertiary-fixed-dim": "#4edea3",
+                        "border-deep": "rgba(51, 65, 85, 0.6)",
+                        "background": "#0b1326",
+                        "surface-container-lowest": "#060d20",
+                        "on-primary-fixed": "#002109",
+                        "surface-container-highest": "#2d3449",
+                        "on-surface": "#dbe2fd",
+                        "secondary-fixed-dim": "#4de082",
+                        "on-primary-fixed-variant": "#005321",
+                        "error-crimson": "#ffb4ab",
+                        "on-error": "#690005",
+                        "surface-tint": "#4ae176",
+                        "on-error-container": "#ffdad6",
+                        "canvas": "#0b1326",
+                        "surface": "#0b1326"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter-mobile": "0.75rem",
+                        "container-max-desktop": "1200px",
+                        "margin-mobile": "1rem",
+                        "touch-target-min": "44px",
+                        "gap-dense": "0.5rem"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Geist"],
+                        "headline-sm": ["Geist"],
+                        "headline-md": ["Geist"],
+                        "numbers-md": ["JetBrains Mono"],
+                        "numbers-lg": ["JetBrains Mono"],
+                        "body-md": ["Inter"],
+                        "label-md": ["Geist"],
+                        "label-sm": ["Geist"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["32px", { "lineHeight": "1.1", "letterSpacing": "-0.03em", "fontWeight": "700" }],
+                        "headline-sm": ["20px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "1.2", "letterSpacing": "-0.03em", "fontWeight": "600" }],
+                        "numbers-md": ["16px", { "lineHeight": "1", "fontWeight": "700" }],
+                        "numbers-lg": ["22px", { "lineHeight": "1", "fontWeight": "800" }],
+                        "body-md": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "label-md": ["13px", { "lineHeight": "1", "letterSpacing": "0.04em", "fontWeight": "600" }],
+                        "label-sm": ["11px", { "lineHeight": "1", "letterSpacing": "0.06em", "fontWeight": "600" }]
+                    }
+                }
+            }
+        };
+    </script>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@600;700&amp;family=Inter:wght@400&amp;family=JetBrains+Mono:wght@700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body {
+            background-color: theme('colors.background');
+            color: theme('colors.text-primary');
+            -webkit-tap-highlight-color: transparent;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Custom scrollbar for webkit */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: theme('colors.surface-bright');
+            border-radius: 4px;
+        }
+        .glass-card {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="antialiased min-h-[884px] flex flex-col pb-32">
+<!-- Top App Bar -->
+<header class="w-full sticky top-0 z-40 bg-surface-glass dark:bg-surface-glass backdrop-blur-md border-b border-border-deep flex justify-between items-center px-margin-mobile h-touch-target-min">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full overflow-hidden border border-border-deep">
+<img alt="Driver profile photo" class="w-full h-full object-cover" data-alt="A close up portrait of a male delivery driver wearing a green cap and a serious expression. Dark tropical lighting with neon green accents reflecting on his face. High quality, photorealistic, shallow depth of field." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCiDJV69EgCQc_whnD3e-Gn-Okmdrbejx1KPkfhsaqrCsjhUR2s4oLXIBzQ1W44eInvN-kjWiHx9XTgibIB5ijmbcGVPLaPhhX3HoP6xwW8uIx2BLOAjXrDzjBQNhepnQH670Y3rNFe7aGEO-5aAEEcrNTnAnnUyMd2VW2L5Ux99pjkSDS61Bo1W_HVqGoptLpM4mrC3TtYMVwlj3Y-VEqr6wyKKEP6l-6mkdTFgMzQjikCdrEdM4jMyjan_R9qXnoDKMUwhD4EY0g"/>
+</div>
+<span class="font-headline-md text-headline-md font-bold text-primary">Kiwi</span>
+</div>
+<button class="w-10 h-10 flex items-center justify-center text-primary dark:text-primary-fixed hover:bg-surface-bright/20 active:scale-95 transition-transform rounded-full">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+</header>
+<main class="flex-1 px-margin-mobile pt-6 pb-20 w-full max-w-[640px] mx-auto md:max-w-container-max-desktop">
+<h1 class="font-headline-lg text-headline-lg text-text-primary mb-6">Mis Ganancias</h1>
+<!-- Hero Earnings Card -->
+<section class="glass-card rounded-xl p-6 mb-6 relative overflow-hidden shadow-2xl">
+<!-- Ambient Glow -->
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
+<div class="flex justify-between items-start mb-2">
+<span class="font-label-md text-label-md text-text-muted uppercase tracking-widest">HOY</span>
+<div class="bg-primary-container/20 border border-primary/30 px-2 py-1 rounded-full flex items-center gap-1">
+<span class="material-symbols-outlined text-primary text-[14px]">trending_up</span>
+<span class="font-label-sm text-label-sm text-primary">+12% vs ayer</span>
+</div>
+</div>
+<div class="font-numbers-lg text-[40px] leading-none text-primary mb-6 font-extrabold" style="font-family: 'JetBrains Mono', monospace;">₡8,500</div>
+<!-- Stats Row -->
+<div class="grid grid-cols-3 gap-4 pt-4 border-t border-border-deep">
+<div>
+<div class="font-label-sm text-label-sm text-text-muted mb-1">VIAJES</div>
+<div class="font-numbers-md text-numbers-md text-text-primary">6</div>
+</div>
+<div>
+<div class="font-label-sm text-label-sm text-text-muted mb-1">KM</div>
+<div class="font-numbers-md text-numbers-md text-text-primary">23.4</div>
+</div>
+<div>
+<div class="font-label-sm text-label-sm text-text-muted mb-1">PROMEDIO</div>
+<div class="font-numbers-md text-numbers-md text-text-primary">₡1,417</div>
+</div>
+</div>
+</section>
+<!-- Weekly Chart (Bento layout element) -->
+<section class="glass-card rounded-xl p-5 mb-6">
+<div class="flex justify-between items-center mb-6">
+<h2 class="font-headline-sm text-headline-sm text-text-primary">Esta Semana</h2>
+<div class="text-right">
+<div class="font-label-sm text-label-sm text-text-muted">TOTAL</div>
+<div class="font-numbers-md text-numbers-md text-secondary">₡42,300</div>
+</div>
+</div>
+<div class="flex justify-between items-end h-32 pb-2">
+<!-- Bars (Mock data) -->
+<div class="flex flex-col items-center gap-2">
+<div class="w-8 bg-surface-bright rounded-t-sm h-12"></div>
+<span class="font-label-sm text-label-sm text-text-muted">L</span>
+</div>
+<div class="flex flex-col items-center gap-2">
+<div class="w-8 bg-surface-bright rounded-t-sm h-16"></div>
+<span class="font-label-sm text-label-sm text-text-muted">M</span>
+</div>
+<div class="flex flex-col items-center gap-2">
+<div class="w-8 bg-surface-bright rounded-t-sm h-10"></div>
+<span class="font-label-sm text-label-sm text-text-muted">K</span>
+</div>
+<div class="flex flex-col items-center gap-2">
+<!-- Current Day Highlighted -->
+<div class="w-8 bg-primary rounded-t-sm h-24 relative shadow-[0_0_15px_rgba(34,197,94,0.4)]">
+<div class="absolute -top-6 left-1/2 -translate-x-1/2 font-numbers-md text-[10px] text-primary whitespace-nowrap">₡8.5k</div>
+</div>
+<span class="font-label-sm text-label-sm text-text-primary">J</span>
+</div>
+<div class="flex flex-col items-center gap-2">
+<div class="w-8 bg-surface-bright/30 border border-border-deep border-dashed rounded-t-sm h-4"></div>
+<span class="font-label-sm text-label-sm text-text-muted/50">V</span>
+</div>
+<div class="flex flex-col items-center gap-2">
+<div class="w-8 bg-surface-bright/30 border border-border-deep border-dashed rounded-t-sm h-4"></div>
+<span class="font-label-sm text-label-sm text-text-muted/50">S</span>
+</div>
+<div class="flex flex-col items-center gap-2">
+<div class="w-8 bg-surface-bright/30 border border-border-deep border-dashed rounded-t-sm h-4"></div>
+<span class="font-label-sm text-label-sm text-text-muted/50">D</span>
+</div>
+</div>
+</section>
+<!-- Recent Deliveries List -->
+<section class="mb-24">
+<h2 class="font-headline-sm text-headline-sm text-text-primary mb-4 px-1">Entregas Recientes</h2>
+<div class="glass-card rounded-xl overflow-hidden flex flex-col">
+<!-- Item 1 -->
+<div class="p-4 border-b border-border-deep/50 flex items-center justify-between hover:bg-surface-bright/10 transition-colors">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-text-muted border border-border-deep">
+<span class="material-symbols-outlined" data-icon="restaurant">restaurant</span>
+</div>
+<div>
+<div class="font-body-md text-body-md text-text-primary font-medium">Bowl &amp; Cafe <span class="text-text-muted text-[14px]">→ Maria</span></div>
+<div class="font-label-sm text-label-sm text-text-muted mt-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">schedule</span> Hace 2h
+                            </div>
+</div>
+</div>
+<div class="font-numbers-md text-numbers-md text-secondary">₡4,500</div>
+</div>
+<!-- Item 2 -->
+<div class="p-4 border-b border-border-deep/50 flex items-center justify-between hover:bg-surface-bright/10 transition-colors">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-text-muted border border-border-deep">
+<span class="material-symbols-outlined" data-icon="local_pizza">local_pizza</span>
+</div>
+<div>
+<div class="font-body-md text-body-md text-text-primary font-medium">Los Efes <span class="text-text-muted text-[14px]">→ Carlos</span></div>
+<div class="font-label-sm text-label-sm text-text-muted mt-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">schedule</span> Hace 4h
+                            </div>
+</div>
+</div>
+<div class="font-numbers-md text-numbers-md text-text-primary">₡3,200</div>
+</div>
+<!-- Item 3 -->
+<div class="p-4 flex items-center justify-between hover:bg-surface-bright/10 transition-colors">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-text-muted border border-border-deep">
+<span class="material-symbols-outlined" data-icon="storefront">storefront</span>
+</div>
+<div>
+<div class="font-body-md text-body-md text-text-primary font-medium">Punto Acido <span class="text-text-muted text-[14px]">→ Ana</span></div>
+<div class="font-label-sm text-label-sm text-text-muted mt-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">schedule</span> Hace 6h
+                            </div>
+</div>
+</div>
+<div class="font-numbers-md text-numbers-md text-text-primary">₡2,800</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Fixed Action Button (Contextual for Earnings) -->
+<div class="fixed bottom-[96px] left-0 w-full px-margin-mobile z-40 md:hidden flex justify-center">
+<button class="w-full max-w-[640px] h-[52px] bg-primary text-on-primary font-label-md text-label-md rounded-xl flex items-center justify-center gap-2 shadow-[0_4px_20px_rgba(34,197,94,0.3)] active:translate-y-1 transition-all">
+<span class="material-symbols-outlined" data-icon="account_balance_wallet">account_balance_wallet</span>
+            Retirar fondos
+        </button>
+</div>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-8 pt-2 bg-surface-container-low/80 dark:bg-surface-container-low/80 rounded-t-xl backdrop-blur-xl border-t border-border-deep shadow-lg md:hidden">
+<!-- Tab 1 -->
+<a class="flex flex-col items-center justify-center text-text-muted p-2 hover:text-primary transition-colors active:-translate-y-1 transition-all duration-200" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="route">route</span>
+<span class="font-label-sm text-label-sm">Route</span>
+</a>
+<!-- Tab 2 -->
+<a class="flex flex-col items-center justify-center text-text-muted p-2 hover:text-primary transition-colors active:-translate-y-1 transition-all duration-200" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="inventory_2">inventory_2</span>
+<span class="font-label-sm text-label-sm">Orders</span>
+</a>
+<!-- Tab 3 (Active) -->
+<a class="flex flex-col items-center justify-center bg-secondary-container/20 text-secondary rounded-xl p-2 active:-translate-y-1 transition-all duration-200" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="payments" data-weight="fill">payments</span>
+<span class="font-label-sm text-label-sm">Earnings</span>
+</a>
+<!-- Tab 4 -->
+<a class="flex flex-col items-center justify-center text-text-muted p-2 hover:text-primary transition-colors active:-translate-y-1 transition-all duration-200" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="person">person</span>
+<span class="font-label-sm text-label-sm">Profile</span>
+</a>
+</nav>
+</body></html>

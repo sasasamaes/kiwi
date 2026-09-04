@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Kiwi - Iniciar sesión</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                "surface-container-highest": "#2d3449",
+                "surface-tint": "#4ae176",
+                "inverse-surface": "#dbe2fd",
+                "border-deep": "rgba(51, 65, 85, 0.6)",
+                "outline-variant": "#3d4a3d",
+                "on-primary-container": "#004b1e",
+                "tertiary-fixed": "#6ffbbe",
+                "primary-fixed": "#6bff8f",
+                "on-secondary-fixed": "#00210c",
+                "primary-fixed-dim": "#4ae176",
+                "surface-bright": "#31394e",
+                "sinpe-blue": "#0284c7",
+                "inverse-on-surface": "#283044",
+                "surface": "#0b1326",
+                "error": "#ffb4ab",
+                "primary": "#4be277",
+                "tertiary-fixed-dim": "#4edea3",
+                "secondary-container": "#00b55d",
+                "on-secondary": "#003919",
+                "secondary-fixed": "#6dfe9c",
+                "background": "#0b1326",
+                "on-primary-fixed": "#002109",
+                "text-muted": "#94a3b8",
+                "primary-container": "#22c55e",
+                "on-tertiary-fixed-variant": "#005236",
+                "inverse-primary": "#006e2f",
+                "text-primary": "#f8fafc",
+                "surface-variant": "#2d3449",
+                "surface-container": "#171f33",
+                "surface-container-high": "#222a3e",
+                "error-container": "#93000a",
+                "on-tertiary-container": "#004a31",
+                "on-secondary-fixed-variant": "#005227",
+                "on-error": "#690005",
+                "secondary": "#4de082",
+                "tertiary-container": "#28c38a",
+                "on-tertiary": "#003824",
+                "on-primary-fixed-variant": "#005321",
+                "on-secondary-container": "#003e1c",
+                "error-crimson": "#ffb4ab",
+                "on-primary": "#003915",
+                "on-background": "#dbe2fd",
+                "tertiary": "#50dfa4",
+                "on-tertiary-fixed": "#002113",
+                "amber-sunburst": "#f59e0b",
+                "surface-container-lowest": "#060d20",
+                "surface-glass": "rgba(30, 41, 59, 0.75)",
+                "on-error-container": "#ffdad6",
+                "secondary-fixed-dim": "#4de082",
+                "on-surface": "#dbe2fd",
+                "outline": "#869585",
+                "surface-container-low": "#131b2e",
+                "on-surface-variant": "#bccbb9",
+                "surface-dim": "#0b1326",
+                "canvas": "#0b1326"
+              },
+              "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px"
+              },
+              "spacing": {
+                "margin-mobile": "1rem",
+                "gap-dense": "0.5rem",
+                "gutter-mobile": "0.75rem",
+                "touch-target-min": "44px",
+                "container-max-desktop": "1200px"
+              },
+              "fontFamily": {
+                "label-sm": [
+                  "Geist"
+                ],
+                "body-md": [
+                  "Inter"
+                ],
+                "headline-lg": [
+                  "Geist"
+                ],
+                "headline-sm": [
+                  "Geist"
+                ],
+                "label-md": [
+                  "Geist"
+                ],
+                "numbers-md": [
+                  "JetBrains Mono"
+                ],
+                "numbers-lg": [
+                  "JetBrains Mono"
+                ],
+                "headline-md": [
+                  "Geist"
+                ]
+              },
+              "fontSize": {
+                "label-sm": [
+                  "11px",
+                  {
+                    "lineHeight": "1",
+                    "letterSpacing": "0.06em",
+                    "fontWeight": "600"
+                  }
+                ],
+                "body-md": [
+                  "16px",
+                  {
+                    "lineHeight": "1.6",
+                    "fontWeight": "400"
+                  }
+                ],
+                "headline-lg": [
+                  "32px",
+                  {
+                    "lineHeight": "1.1",
+                    "letterSpacing": "-0.03em",
+                    "fontWeight": "700"
+                  }
+                ],
+                "headline-sm": [
+                  "20px",
+                  {
+                    "lineHeight": "1.2",
+                    "letterSpacing": "-0.02em",
+                    "fontWeight": "600"
+                  }
+                ],
+                "label-md": [
+                  "13px",
+                  {
+                    "lineHeight": "1",
+                    "letterSpacing": "0.04em",
+                    "fontWeight": "600"
+                  }
+                ],
+                "numbers-md": [
+                  "16px",
+                  {
+                    "lineHeight": "1",
+                    "fontWeight": "700"
+                  }
+                ],
+                "numbers-lg": [
+                  "22px",
+                  {
+                    "lineHeight": "1",
+                    "fontWeight": "800"
+                  }
+                ],
+                "headline-md": [
+                  "24px",
+                  {
+                    "lineHeight": "1.2",
+                    "letterSpacing": "-0.03em",
+                    "fontWeight": "600"
+                  }
+                ]
+              }
+            },
+          },
+        }
+    </script>
+<style>
+        /* Base typography resets to ensure exact config match */
+        .font-headline-lg-mobile { font-family: 'Geist', sans-serif; font-size: 28px; line-height: 1.15; letter-spacing: -0.02em; font-weight: 700; }
+        .font-headline-sm-mobile { font-family: 'Geist', sans-serif; font-size: 18px; line-height: 1.25; letter-spacing: -0.01em; font-weight: 600; }
+        
+        /* Subtle glow effects */
+        .glow-primary {
+            box-shadow: 0 4px 20px -2px rgba(34, 197, 94, 0.4);
+        }
+        
+        /* Ambient Background Orbs */
+        .ambient-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.15;
+            z-index: 0;
+            pointer-events: none;
+        }
+        .orb-1 { top: -10%; left: -20%; width: 300px; height: 300px; background-color: #22c55e; }
+        .orb-2 { bottom: -10%; right: -10%; width: 250px; height: 250px; background-color: #4be277; }
+        
+        /* Interactive physics */
+        .spring-active:active {
+            transform: translateY(1px) scale(0.98);
+            transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+    </style>
+</head>
+<body class="bg-canvas text-on-surface min-h-[100dvh] overflow-hidden relative flex flex-col font-body-md text-body-md antialiased">
+<!-- Ambient Background -->
+<div class="ambient-orb orb-1"></div>
+<div class="ambient-orb orb-2"></div>
+<!-- Main Container -->
+<main class="flex-1 w-full max-w-container-desktop mx-auto px-margin-mobile flex flex-col justify-center relative z-10 sm:px-8">
+<!-- Hero Section (Left-aligned) -->
+<header class="mb-10 w-full text-left">
+<div class="flex items-center gap-3 mb-4">
+<img alt="Kiwi Logo" class="w-12 h-12 rounded-xl object-contain shadow-lg" src="https://lh3.googleusercontent.com/aida/AEtjO1VpL9u1k2lomBpVThyOVfBDY0U0HbtQwjuNm2JUjMTQaDQRxhqOrHBCDllgRpEueK2YaP_qWFihs4HM_0nQSiG28L4MyTAMBolst1uaFUvXg0y6-BnYVY4bhrJOjqLrJDoS5u8gvgbtyNdmzN69Bbso043dMz8pdzgj3QtTN3t-UbAPkZeEMFArpgRkl0-IH0QDy_Ap6tIhxKGBBY3L-QyKuV1GHy63FglG9zKCcPmKfETnkOtFArBFh-M"/>
+<h1 class="font-headline-lg font-headline-lg-mobile text-text-primary">Kiwi</h1>
+</div>
+<p class="font-body-md text-body-md text-text-muted">Del comercio a tu puerta.</p>
+</header>
+<!-- Login Form -->
+<form class="w-full flex flex-col gap-5 bg-surface-glass backdrop-blur-xl p-6 rounded-2xl border border-border-deep shadow-2xl">
+<!-- Email Input -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-md text-label-md text-on-surface-variant uppercase" for="email">Correo Electrónico</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-opacity-50">mail</span>
+<input class="w-full h-12 bg-surface-container-highest border border-border-deep rounded-lg pl-10 pr-4 text-text-primary font-body-md text-body-md placeholder:text-on-surface-variant focus:border-primary focus:ring-1 focus:ring-primary transition-colors" id="email" placeholder="tu@correo.com" type="email"/>
+</div>
+</div>
+<!-- Password Input -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-md text-label-md text-on-surface-variant uppercase" for="password">Contraseña</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-opacity-50">lock</span>
+<input class="w-full h-12 bg-surface-container-highest border border-border-deep rounded-lg pl-10 pr-12 text-text-primary font-numbers-md text-numbers-md placeholder:text-on-surface-variant focus:border-primary focus:ring-1 focus:ring-primary transition-colors" id="password" placeholder="••••••••" type="password"/>
+<button class="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary transition-colors" type="button">
+<span class="material-symbols-outlined">visibility</span>
+</button>
+</div>
+</div>
+<!-- Meta Row -->
+<div class="flex justify-between items-center mt-1">
+<label class="flex items-center gap-2 cursor-pointer group">
+<input class="w-5 h-5 rounded border-border-deep bg-surface-container-highest text-primary focus:ring-primary focus:ring-offset-background" type="checkbox"/>
+<span class="font-label-md text-label-md text-on-surface-variant group-hover:text-text-primary transition-colors">Recordarme</span>
+</label>
+<a class="font-label-md text-label-md text-primary hover:text-primary-fixed transition-colors" href="#">¿Olvidaste contraseña?</a>
+</div>
+<!-- Primary Action -->
+<button class="w-full h-[52px] mt-4 bg-primary-container text-on-primary-container font-headline-sm font-headline-sm-mobile rounded-full flex items-center justify-center gap-2 glow-primary spring-active hover:bg-primary transition-colors" type="submit">
+<span>Iniciar sesión</span>
+<span class="material-symbols-outlined">arrow_forward</span>
+</button>
+<!-- Divider -->
+<div class="flex items-center gap-4 my-2 opacity-50">
+<div class="flex-1 h-px bg-border-deep"></div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">O</span>
+<div class="flex-1 h-px bg-border-deep"></div>
+</div>
+<!-- Secondary Action -->
+<button class="w-full h-[52px] bg-transparent border border-outline-variant text-primary font-headline-sm font-headline-sm-mobile rounded-full flex items-center justify-center spring-active hover:bg-primary/10 transition-colors" type="button">
+                Crear cuenta
+            </button>
+</form>
+<!-- Footer -->
+<footer class="mt-8 text-center px-4">
+<p class="font-label-sm text-label-sm text-text-muted opacity-60">Al continuar, aceptas nuestros Términos y Política de Privacidad</p>
+</footer>
+</main>
+</body></html>
