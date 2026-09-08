@@ -2,24 +2,30 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useOfflineNavigation, type Route, type SavedWaypoint, type Coordinates, type TransportMode } from './useOfflineNavigation';
+import {
+  useOfflineNavigation,
+  type Route,
+  type SavedWaypoint,
+  type Coordinates,
+  type TransportMode,
+} from './useOfflineNavigation';
 
 interface OfflineNavigationProps {
   /** Initial start location */
   startLocation?: Coordinates;
-  
+
   /** Initial end location */
   endLocation?: Coordinates;
-  
+
   /** Callback when route is selected */
   onRouteSelect?: (route: Route) => void;
-  
+
   /** Callback when navigation starts */
   onNavigationStart?: (route: Route) => void;
-  
+
   /** Callback when navigation ends */
   onNavigationEnd?: () => void;
-  
+
   className?: string;
 }
 
@@ -32,7 +38,14 @@ interface RouteCardProps {
   formatDuration: (seconds: number) => string;
 }
 
-function RouteCard({ route, isSelected, onSelect, onDelete, formatDistance, formatDuration }: RouteCardProps) {
+function RouteCard({
+  route,
+  isSelected,
+  onSelect,
+  onDelete,
+  formatDistance,
+  formatDuration,
+}: RouteCardProps) {
   return (
     <motion.div
       className={`p-4 rounded-xl border-2 transition-colors ${
@@ -46,15 +59,17 @@ function RouteCard({ route, isSelected, onSelect, onDelete, formatDistance, form
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <span className="text-lg">
-            {route.mode === 'motorcycle' ? 'bike' :
-             route.mode === 'car' ? 'car' :
-             route.mode === 'cycling' ? 'bike' : '🚶'}
+            {route.mode === 'motorcycle'
+              ? 'bike'
+              : route.mode === 'driving'
+                ? 'car'
+                : route.mode === 'cycling'
+                  ? 'bike'
+                  : '🚶'}
           </span>
-          <span className="font-medium text-surface-800 dark:text-surface-200">
-            {route.name}
-          </span>
+          <span className="font-medium text-surface-800 dark:text-surface-200">{route.name}</span>
         </div>
-        
+
         {route.status === 'cached' && (
           <span className="text-xs px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
             Download Offline
@@ -63,18 +78,16 @@ function RouteCard({ route, isSelected, onSelect, onDelete, formatDistance, form
       </div>
 
       <div className="flex items-center gap-4 text-sm text-surface-600 dark:text-surface-400">
-        <span className="flex items-center gap-1">
-          📏 {formatDistance(route.distance)}
-        </span>
-        <span className="flex items-center gap-1">
-          ⏱️ {formatDuration(route.duration)}
-        </span>
+        <span className="flex items-center gap-1">📏 {formatDistance(route.distance)}</span>
+        <span className="flex items-center gap-1">⏱️ {formatDuration(route.duration)}</span>
       </div>
 
       <div className="mt-2 text-xs text-surface-500 dark:text-surface-400">
-        {route.start.address || `${route.start.coordinates.lat.toFixed(4)}, ${route.start.coordinates.lng.toFixed(4)}`}
+        {route.start.address ||
+          `${route.start.coordinates.lat.toFixed(4)}, ${route.start.coordinates.lng.toFixed(4)}`}
         {' → '}
-        {route.end.address || `${route.end.coordinates.lat.toFixed(4)}, ${route.end.coordinates.lng.toFixed(4)}`}
+        {route.end.address ||
+          `${route.end.coordinates.lat.toFixed(4)}, ${route.end.coordinates.lng.toFixed(4)}`}
       </div>
 
       {onDelete && (
@@ -156,9 +169,13 @@ function NavigationPanel({
               animate={{ scale: [1, 1.1, 1] }}
               transition={{ duration: 2, repeat: Infinity }}
             >
-              {currentStep.step.maneuver === 'turn-right' ? '➡️' :
-               currentStep.step.maneuver === 'turn-left' ? '⬅️' :
-               currentStep.step.maneuver === 'arrive' ? 'flag' : '⬆️'}
+              {currentStep.step.maneuver === 'turn-right'
+                ? '➡️'
+                : currentStep.step.maneuver === 'turn-left'
+                  ? '⬅️'
+                  : currentStep.step.maneuver === 'arrive'
+                    ? 'flag'
+                    : '⬆️'}
             </motion.div>
             <div>
               <p className="font-semibold text-surface-800 dark:text-surface-200">
@@ -194,9 +211,7 @@ function NavigationPanel({
               <span className="w-6 h-6 bg-surface-200 dark:bg-surface-700 rounded-full flex items-center justify-center text-xs font-medium">
                 {index + 1}
               </span>
-              <span className="text-sm text-surface-700 dark:text-surface-300">
-                {instruction}
-              </span>
+              <span className="text-sm text-surface-700 dark:text-surface-300">{instruction}</span>
             </motion.div>
           ))}
         </div>
@@ -264,7 +279,7 @@ export function OfflineNavigation({
   // Handle route search
   const handleSearch = async () => {
     if (!start || !end) return;
-    
+
     try {
       const foundRoute = await getRoute(start, end, mode);
       setSelectedRoute(foundRoute);
@@ -277,7 +292,7 @@ export function OfflineNavigation({
   // Handle start navigation
   const handleStartNavigation = () => {
     if (!selectedRoute) return;
-    
+
     startNavigation(selectedRoute);
     onNavigationStart?.(selectedRoute);
   };
@@ -322,10 +337,7 @@ export function OfflineNavigation({
                   Rutas guardadas ({routes.length})
                 </h3>
                 {routes.length > 0 && (
-                  <button
-                    onClick={clearRoutes}
-                    className="text-xs text-red-500 hover:text-red-600"
-                  >
+                  <button onClick={clearRoutes} className="text-xs text-red-500 hover:text-red-600">
                     Limpiar todo
                   </button>
                 )}
@@ -385,7 +397,7 @@ export function OfflineNavigation({
                 if (navigator.geolocation) {
                   navigator.geolocation.getCurrentPosition(
                     (pos) => setStart({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-                    (err) => console.error('Geolocation error:', err)
+                    (err) => console.error('Geolocation error:', err),
                   );
                 }
               }}
@@ -516,11 +528,15 @@ export function OfflineNavigation({
                 onClick={() => setEnd(wp.coordinates)}
                 className="flex-shrink-0 px-3 py-2 rounded-xl bg-surface-50 dark:bg-surface-900 text-sm text-surface-700 dark:text-surface-300"
               >
-                {wp.type === 'home' ? 'home' :
-                 wp.type === 'work' ? '💼' :
-                 wp.type === 'favorite' ? 'star' :
-                 wp.type === 'merchant' ? '🏪' : 'location'}
-                {' '}
+                {wp.type === 'home'
+                  ? 'home'
+                  : wp.type === 'work'
+                    ? '💼'
+                    : wp.type === 'favorite'
+                      ? 'star'
+                      : wp.type === 'merchant'
+                        ? '🏪'
+                        : 'location'}{' '}
                 {wp.name}
               </button>
             ))}
@@ -579,7 +595,7 @@ export function NavigationButton({
         (err) => {
           console.error('Geolocation error:', err);
           setIsLoading(false);
-        }
+        },
       );
     }
   };

@@ -139,7 +139,8 @@ export { useSocket } from './useSocket';
 // ============================================
 //   NOTIFICATIONS
 // ============================================
-export { NotificationToast, NotificationProvider, useNotifications } from './NotificationToast';
+export { NotificationProvider, useNotifications } from './NotificationToast';
+export { default as NotificationToast } from './NotificationToast';
 export { NotificationPreferences } from './NotificationPreferences';
 export { NotificationList } from './NotificationList';
 export { usePushNotifications } from './usePushNotifications';
@@ -209,7 +210,7 @@ export type {
   SyncQueueStats,
   BackgroundSyncOptions,
   SyncPriority,
-  SyncStatus,
+  SyncStatus as BackgroundSyncStatus,
   ActionType,
 } from './background-sync';
 export {
@@ -225,13 +226,7 @@ export { SyncStatus, SyncIndicatorCompact, SyncBanner, SyncActionStatus } from '
 //   OFFLINE ORDERS
 // ============================================
 export { offlineOrders } from './offline-orders';
-export type {
-  OfflineOrder,
-  OfflineOrderOptions,
-  OrderStatus,
-  PaymentMethod,
-  OrderItem,
-} from './offline-orders';
+export type { OfflineOrder, OfflineOrderOptions, OrderStatus, OrderItem } from './offline-orders';
 export {
   useOfflineOrders,
   useMerchantOrders,
@@ -243,7 +238,8 @@ export type {
   UseOfflineOrdersResult,
   CreateOrderData,
 } from './useOfflineOrders';
-export { OfflineOrderForm, OfflineOrderTracker, OfflineOrderList } from './OfflineOrderForm';
+export { OfflineOrderForm } from './OfflineOrderForm';
+export { OfflineOrderTracker, OfflineOrderList } from './OfflineOrderTracker';
 
 // ============================================
 //  ️ DATA COMPRESSION
@@ -314,7 +310,6 @@ export type {
   PaymentItem,
   ReceiptData,
   OfflinePaymentOptions,
-  PaymentMethod,
   PaymentStatus,
   PaymentType,
 } from './offline-payments';
@@ -492,7 +487,6 @@ export type {
   DeviceSyncInfo,
   SyncEvent,
   DevicePlatform,
-  SyncStatus,
   DeviceStatus,
   AdminSyncOptions,
 } from './admin-sync-monitor';

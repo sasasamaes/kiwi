@@ -2,7 +2,7 @@
 
 /**
  * 🥝 KIWI - Offline-First Order Creation Service
- * 
+ *
  * Creates and manages orders locally when offline,
  * then syncs to the server when reconnected.
  */
@@ -13,16 +13,16 @@ const DB_NAME = 'kiwi-offline-orders';
 const DB_VERSION = 1;
 const STORE_NAME = 'orders';
 
-export type OrderStatus = 
-  | 'draft'           // Created offline, not yet synced
-  | 'pending'         // Synced, waiting for driver
-  | 'accepted'        // Driver accepted
-  | 'preparing'       // Merchant preparing
-  | 'ready'           // Ready for pickup
-  | 'picked_up'       // Driver picked up
-  | 'in_transit'      // On the way
-  | 'delivered'       // Delivered
-  | 'cancelled';      // Cancelled
+export type OrderStatus =
+  | 'draft' // Created offline, not yet synced
+  | 'pending' // Synced, waiting for driver
+  | 'accepted' // Driver accepted
+  | 'preparing' // Merchant preparing
+  | 'ready' // Ready for pickup
+  | 'picked_up' // Driver picked up
+  | 'in_transit' // On the way
+  | 'delivered' // Delivered
+  | 'cancelled'; // Cancelled
 
 export type PaymentMethod = 'sinpe' | 'card' | 'cash' | 'crypto';
 
@@ -41,16 +41,16 @@ export interface OfflineOrder {
   localId: string;
   /** Server ID (after sync) */
   serverId?: string;
-  
+
   /** Merchant info */
   merchantId: string;
   merchantName: string;
-  
+
   /** Customer info */
   customerId?: string;
   customerName: string;
   customerPhone: string;
-  
+
   /** Delivery info */
   pickupAddress: string;
   pickupLat?: number;
@@ -58,17 +58,17 @@ export interface OfflineOrder {
   deliveryAddress: string;
   deliveryLat?: number;
   deliveryLng?: number;
-  
+
   /** Order items */
   items: OrderItem[];
   subtotal: number;
   deliveryFee: number;
   total: number;
-  
+
   /** Payment */
   paymentMethod: PaymentMethod;
   paymentStatus: 'pending' | 'paid' | 'failed';
-  
+
   /** Status */
   status: OrderStatus;
   statusHistory: Array<{
@@ -76,22 +76,22 @@ export interface OfflineOrder {
     timestamp: number;
     note?: string;
   }>;
-  
+
   /** Driver assignment */
   driverId?: string;
   driverName?: string;
   driverPhone?: string;
-  
+
   /** Timestamps */
   createdAt: number;
   updatedAt: number;
   scheduledFor?: number;
-  
+
   /** Sync status */
   syncStatus: 'pending' | 'syncing' | 'synced' | 'failed';
   syncError?: string;
   lastSyncAttempt?: number;
-  
+
   /** Metadata */
   notes?: string;
   metadata?: Record<string, any>;
@@ -100,10 +100,10 @@ export interface OfflineOrder {
 interface OfflineOrderOptions {
   /** Auto-sync when online */
   autoSync?: boolean;
-  
+
   /** Max local orders before warning */
   maxLocalOrders?: number;
-  
+
   /** Order expiration (ms) */
   orderExpiration?: number;
 }
@@ -165,7 +165,12 @@ class OfflineOrderService {
   /**
    * Create a new order (works offline)
    */
-  async createOrder(orderData: Omit<OfflineOrder, 'id' | 'localId' | 'createdAt' | 'updatedAt' | 'syncStatus' | 'status' | 'statusHistory'>): Promise<OfflineOrder> {
+  async createOrder(
+    orderData: Omit<
+      OfflineOrder,
+      'id' | 'localId' | 'createdAt' | 'updatedAt' | 'syncStatus' | 'status' | 'statusHistory'
+    >,
+  ): Promise<OfflineOrder> {
     await this.initialize();
 
     const now = Date.now();
@@ -179,9 +184,7 @@ class OfflineOrderService {
       syncStatus: 'pending',
       createdAt: now,
       updatedAt: now,
-      statusHistory: [
-        { status: 'draft', timestamp: now, note: 'Created offline' },
-      ],
+      statusHistory: [{ status: 'draft', timestamp: now, note: 'Created offline' }],
     };
 
     return new Promise((resolve, reject) => {
@@ -196,12 +199,12 @@ class OfflineOrderService {
 
       request.onsuccess = () => {
         console.log(`🥝 Created order: ${localId}`);
-        
+
         // Queue for sync if online
         if (navigator.onLine && this.options.autoSync) {
           this.syncOrder(localId);
         }
-        
+
         resolve(order);
       };
 
@@ -215,10 +218,7 @@ class OfflineOrderService {
   /**
    * Update an order
    */
-  async updateOrder(
-    localId: string, 
-    updates: Partial<OfflineOrder>
-  ): Promise<OfflineOrder> {
+  async updateOrder(localId: string, updates: Partial<OfflineOrder>): Promise<OfflineOrder> {
     await this.initialize();
 
     return new Promise((resolve, reject) => {
@@ -233,7 +233,7 @@ class OfflineOrderService {
 
       request.onsuccess = () => {
         const order = request.result as OfflineOrder;
-        
+
         if (!order) {
           reject(new Error('Order not found'));
           return;
@@ -250,8 +250,8 @@ class OfflineOrderService {
         if (updates.status && updates.status !== order.status) {
           updatedOrder.statusHistory = [
             ...order.statusHistory,
-            { 
-              status: updates.status, 
+            {
+              status: updates.status,
               timestamp: Date.now(),
               note: updates.notes,
             },
@@ -262,12 +262,12 @@ class OfflineOrderService {
 
         updateRequest.onsuccess = () => {
           console.log(`🥝 Updated order: ${localId}`);
-          
+
           // Queue for sync
           if (navigator.onLine && this.options.autoSync) {
             this.syncOrder(localId);
           }
-          
+
           resolve(updatedOrder);
         };
 
@@ -336,19 +336,19 @@ class OfflineOrderService {
         // Apply filters
         if (filters) {
           if (filters.merchantId) {
-            orders = orders.filter(o => o.merchantId === filters.merchantId);
+            orders = orders.filter((o) => o.merchantId === filters.merchantId);
           }
           if (filters.customerId) {
-            orders = orders.filter(o => o.customerId === filters.customerId);
+            orders = orders.filter((o) => o.customerId === filters.customerId);
           }
           if (filters.driverId) {
-            orders = orders.filter(o => o.driverId === filters.driverId);
+            orders = orders.filter((o) => o.driverId === filters.driverId);
           }
           if (filters.status) {
-            orders = orders.filter(o => o.status === filters.status);
+            orders = orders.filter((o) => o.status === filters.status);
           }
           if (filters.syncStatus) {
-            orders = orders.filter(o => o.syncStatus === filters.syncStatus);
+            orders = orders.filter((o) => o.syncStatus === filters.syncStatus);
           }
         }
 
@@ -384,7 +384,7 @@ class OfflineOrderService {
    */
   async syncOrder(localId: string): Promise<OfflineOrder> {
     const order = await this.getOrder(localId);
-    
+
     if (!order) {
       throw new Error('Order not found');
     }
@@ -413,7 +413,7 @@ class OfflineOrderService {
           }
 
           const result = await response.json();
-          
+
           // Update order with server ID
           await this.updateOrder(localId, {
             serverId: result.id,
@@ -427,7 +427,7 @@ class OfflineOrderService {
       return this.getOrder(localId) as Promise<OfflineOrder>;
     } catch (error) {
       // Mark as failed
-      await this.updateOrder(localId, { 
+      await this.updateOrder(localId, {
         syncStatus: 'failed',
         syncError: error instanceof Error ? error.message : 'Unknown error',
       });
@@ -470,9 +470,9 @@ class OfflineOrderService {
    * Update order status
    */
   async updateOrderStatus(
-    localId: string, 
+    localId: string,
     status: OrderStatus,
-    note?: string
+    note?: string,
   ): Promise<OfflineOrder> {
     return this.updateOrder(localId, {
       status,
@@ -487,7 +487,7 @@ class OfflineOrderService {
     localId: string,
     driverId: string,
     driverName: string,
-    driverPhone: string
+    driverPhone: string,
   ): Promise<OfflineOrder> {
     return this.updateOrder(localId, {
       driverId,
@@ -563,18 +563,18 @@ class OfflineOrderService {
     byStatus: Record<OrderStatus, number>;
   }> {
     const orders = await this.getOrders();
-    
+
     const stats = {
       total: orders.length,
-      draft: orders.filter(o => o.status === 'draft').length,
-      pending: orders.filter(o => o.syncStatus === 'pending').length,
-      synced: orders.filter(o => o.syncStatus === 'synced').length,
-      failed: orders.filter(o => o.syncStatus === 'failed').length,
+      draft: orders.filter((o) => o.status === 'draft').length,
+      pending: orders.filter((o) => o.syncStatus === 'pending').length,
+      synced: orders.filter((o) => o.syncStatus === 'synced').length,
+      failed: orders.filter((o) => o.syncStatus === 'failed').length,
       byStatus: {} as Record<OrderStatus, number>,
     };
 
     // Count by status
-    orders.forEach(order => {
+    orders.forEach((order) => {
       stats.byStatus[order.status] = (stats.byStatus[order.status] || 0) + 1;
     });
 
@@ -590,4 +590,4 @@ if (typeof window !== 'undefined') {
   offlineOrders.initialize().catch(console.error);
 }
 
-export type { OfflineOrder, OfflineOrderOptions };
+export type { OfflineOrderOptions };

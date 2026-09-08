@@ -1,15 +1,10 @@
 {
   "version": 2,
-  "name": "kiwi-merchant",
   "framework": "nextjs",
   "buildCommand": "next build",
   "outputDirectory": ".next",
   "installCommand": "npm install",
   "regions": ["iad1"],
-  "env": {
-    "NEXT_PUBLIC_API_URL": "@api-url",
-    "NEXT_PUBLIC_SOCKET_URL": "@socket-url"
-  },
   "headers": [
     {
       "source": "/api/(.*)",

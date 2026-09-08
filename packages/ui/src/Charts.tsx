@@ -39,12 +39,12 @@ export function LineChartComponent({ data, height = 300, className = '' }: Chart
       <ResponsiveContainer width="100%" height={height}>
         <LineChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" />
-          <XAxis 
-            dataKey="date" 
-            stroke="#71717a" 
+          <XAxis
+            dataKey="date"
+            stroke="#71717a"
             fontSize={12}
             tickFormatter={(value) => {
-              const date = new Date(value);
+              const date = new Date(Number(value));
               return date.toLocaleDateString('es-CR', { day: '2-digit', month: 'short' });
             }}
           />
@@ -57,8 +57,12 @@ export function LineChartComponent({ data, height = 300, className = '' }: Chart
               color: '#fafafa',
             }}
             labelFormatter={(value) => {
-              const date = new Date(value);
-              return date.toLocaleDateString('es-CR', { weekday: 'long', day: 'numeric', month: 'long' });
+              const date = new Date(Number(value));
+              return date.toLocaleDateString('es-CR', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+              });
             }}
           />
           <Line
@@ -92,17 +96,17 @@ export function AreaChartComponent({ data, height = 300, className = '' }: Chart
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" />
-          <XAxis 
-            dataKey="date" 
-            stroke="#71717a" 
+          <XAxis
+            dataKey="date"
+            stroke="#71717a"
             fontSize={12}
             tickFormatter={(value) => {
-              const date = new Date(value);
+              const date = new Date(Number(value));
               return date.toLocaleDateString('es-CR', { day: '2-digit', month: 'short' });
             }}
           />
-          <YAxis 
-            stroke="#71717a" 
+          <YAxis
+            stroke="#71717a"
             fontSize={12}
             tickFormatter={(value) => `₡${(value / 1000).toFixed(0)}k`}
           />
@@ -115,8 +119,12 @@ export function AreaChartComponent({ data, height = 300, className = '' }: Chart
             }}
             formatter={(value: number) => [`₡${value.toLocaleString()}`, 'Ingresos']}
             labelFormatter={(value) => {
-              const date = new Date(value);
-              return date.toLocaleDateString('es-CR', { weekday: 'long', day: 'numeric', month: 'long' });
+              const date = new Date(Number(value));
+              return date.toLocaleDateString('es-CR', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+              });
             }}
           />
           <Area
@@ -167,14 +175,22 @@ interface PieChartProps extends ChartProps {
   outerRadius?: number;
 }
 
-export function PieChartComponent({ 
-  data, 
-  height = 300, 
+export function PieChartComponent({
+  data,
+  height = 300,
   className = '',
   innerRadius = 60,
-  outerRadius = 100 
+  outerRadius = 100,
 }: PieChartProps) {
-  const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, name }: any) => {
+  const renderCustomizedLabel = ({
+    cx,
+    cy,
+    midAngle,
+    innerRadius,
+    outerRadius,
+    percent,
+    name,
+  }: any) => {
     const RADIAN = Math.PI / 180;
     const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
@@ -218,10 +234,12 @@ export function PieChartComponent({
               color: '#fafafa',
             }}
           />
-          <Legend 
-            verticalAlign="bottom" 
+          <Legend
+            verticalAlign="bottom"
             height={36}
-            formatter={(value) => <span className="text-surface-600 dark:text-surface-400">{value}</span>}
+            formatter={(value) => (
+              <span className="text-surface-600 dark:text-surface-400">{value}</span>
+            )}
           />
         </PieChart>
       </ResponsiveContainer>
@@ -237,11 +255,11 @@ interface MultiLineChartProps {
   className?: string;
 }
 
-export function MultiLineChartComponent({ 
-  data, 
-  lines, 
-  height = 300, 
-  className = '' 
+export function MultiLineChartComponent({
+  data,
+  lines,
+  height = 300,
+  className = '',
 }: MultiLineChartProps) {
   return (
     <motion.div
@@ -252,12 +270,12 @@ export function MultiLineChartComponent({
       <ResponsiveContainer width="100%" height={height}>
         <LineChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" />
-          <XAxis 
-            dataKey="date" 
-            stroke="#71717a" 
+          <XAxis
+            dataKey="date"
+            stroke="#71717a"
             fontSize={12}
             tickFormatter={(value) => {
-              const date = new Date(value);
+              const date = new Date(Number(value));
               return date.toLocaleDateString('es-CR', { day: '2-digit', month: 'short' });
             }}
           />
@@ -310,14 +328,16 @@ export function StatCard({ title, value, change, icon, color = '#22c55e' }: Stat
           <p className="text-sm text-surface-500 dark:text-surface-400">{title}</p>
           <p className="text-2xl font-bold text-surface-800 dark:text-surface-100 mt-1">{value}</p>
           {change !== undefined && (
-            <div className={`flex items-center gap-1 mt-2 text-sm ${change >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+            <div
+              className={`flex items-center gap-1 mt-2 text-sm ${change >= 0 ? 'text-green-500' : 'text-red-500'}`}
+            >
               <span>{change >= 0 ? '↑' : '↓'}</span>
               <span>{Math.abs(change)}%</span>
               <span className="text-surface-400 dark:text-surface-500">vs semana anterior</span>
             </div>
           )}
         </div>
-        <div 
+        <div
           className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
           style={{ backgroundColor: `${color}20` }}
         >

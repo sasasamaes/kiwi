@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-interface OnvoPayCheckoutProps {
+export interface OnvoPayCheckoutProps {
   paymentIntentId: string;
   clientSecret: string;
   checkoutUrl?: string;
@@ -40,12 +40,12 @@ export function OnvoPayCheckout({
         // For embedded checkout, you would use the OnvoPay SDK
         // For now, we'll simulate the flow
         console.log('CreditCard OnvoPay checkout:', { paymentIntentId, clientSecret });
-        
+
         // In production, you would:
         // 1. Load OnvoPay.js SDK
         // 2. Create card element
         // 3. Confirm payment with clientSecret
-        
+
         // Simulate success for demo
         setTimeout(() => {
           onSuccess(paymentIntentId);
@@ -142,7 +142,7 @@ export function OnvoPayCheckout({
   );
 }
 
-interface CryptoCheckoutProps {
+export interface CryptoCheckoutProps {
   walletAddress: string;
   amount: number;
   amountInCrypto: number;
@@ -239,7 +239,9 @@ export function CryptoCheckout({
         </h4>
         <ol className="text-sm text-blue-600 dark:text-blue-300 space-y-1 list-decimal list-inside">
           <li>Abre tu billetera {coin}</li>
-          <li>Envía exactamente {amountInCrypto.toFixed(6)} {coin}</li>
+          <li>
+            Envía exactamente {amountInCrypto.toFixed(6)} {coin}
+          </li>
           <li>A la dirección mostrada arriba</li>
           <li>El pago se confirmará automáticamente</li>
         </ol>

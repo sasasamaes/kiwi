@@ -34,25 +34,25 @@ export function usePushNotifications(options: UsePushNotificationsOptions = {}) 
 
     try {
       const fcmToken = await requestNotificationPermission();
-      
+
       if (fcmToken) {
         setToken(fcmToken);
         setPermission('granted');
-        
+
         // Register token with backend
         if (isAuthenticated && user) {
-          const platform = /iPhone|iPad|iPod/.test(navigator.userAgent) 
-            ? 'ios' 
-            : /Android/.test(navigator.userAgent) 
-              ? 'android' 
+          const platform = /iPhone|iPad|iPod/.test(navigator.userAgent)
+            ? 'ios'
+            : /Android/.test(navigator.userAgent)
+              ? 'android'
               : 'web';
-          
+
           await api.registerDeviceToken(fcmToken, platform);
         }
-        
+
         return true;
       }
-      
+
       return false;
     } catch (error) {
       console.error('Failed to request notification permission:', error);
@@ -64,9 +64,9 @@ export function usePushNotifications(options: UsePushNotificationsOptions = {}) 
   useEffect(() => {
     if (!enabled || !isSupported || permission !== 'granted') return;
 
-    const unsubscribe = onMessageListener((payload) => {
+    const unsubscribePromise = onMessageListener((payload) => {
       console.log('Foreground notification:', payload);
-      
+
       // Show in-app notification
       if (onNotification) {
         onNotification(payload);
@@ -89,7 +89,7 @@ export function usePushNotifications(options: UsePushNotificationsOptions = {}) 
     });
 
     return () => {
-      unsubscribe?.();
+      unsubscribePromise.then((unsubscribe) => unsubscribe?.());
     };
   }, [enabled, isSupported, permission, onNotification]);
 

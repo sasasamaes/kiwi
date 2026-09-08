@@ -1,7 +1,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-@import '../../packages/ui/src/design-system.css';
+@import '../../../packages/ui/src/design-system.css';
 
 /* ═══════════════════════════════════════════
    KIWI GLOBAL STYLES - Tropical Pura Vida Night

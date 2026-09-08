@@ -2,7 +2,7 @@
 
 /**
  * 🥝 KIWI - Background Sync Service
- * 
+ *
  * Queues actions when offline and syncs when reconnected.
  * Supports retry logic, priority queues, and conflict resolution.
  */
@@ -13,7 +13,7 @@ const STORE_NAME = 'sync-queue';
 
 export type SyncPriority = 'low' | 'normal' | 'high' | 'critical';
 export type SyncStatus = 'pending' | 'syncing' | 'completed' | 'failed' | 'cancelled';
-export type ActionType = 
+export type ActionType =
   | 'order:create'
   | 'order:update'
   | 'order:cancel'
@@ -55,25 +55,25 @@ interface SyncQueueStats {
 interface BackgroundSyncOptions {
   /** Maximum number of concurrent syncs */
   maxConcurrent?: number;
-  
+
   /** Base delay for exponential backoff (ms) */
   retryBaseDelay?: number;
-  
+
   /** Maximum retry delay (ms) */
   maxRetryDelay?: number;
-  
+
   /** Maximum number of retry attempts */
   maxAttempts?: number;
-  
+
   /** How often to check for pending syncs (ms) */
   pollInterval?: number;
-  
+
   /** Callback when sync completes */
   onSyncComplete?: (action: SyncAction, result: any) => void;
-  
+
   /** Callback when sync fails */
   onSyncFailed?: (action: SyncAction, error: Error) => void;
-  
+
   /** Callback when queue changes */
   onQueueChange?: (stats: SyncQueueStats) => void;
 }
@@ -115,13 +115,13 @@ class BackgroundSyncService {
         this.db = request.result;
         this.isInitialized = true;
         console.log('🥝 Background sync initialized');
-        
+
         // Start polling for pending syncs
         this.startPolling();
-        
+
         // Listen for online/offline events
         this.setupNetworkListeners();
-        
+
         resolve();
       };
 
@@ -192,7 +192,7 @@ class BackgroundSyncService {
       maxAttempts?: number;
       metadata?: Record<string, any>;
       execute?: (data: T) => Promise<any>;
-    } = {}
+    } = {},
   ): Promise<SyncAction<T>> {
     await this.initialize();
 
@@ -246,16 +246,14 @@ class BackgroundSyncService {
 
     try {
       const pendingActions = await this.getPendingActions();
-      
+
       // Sort by priority
       const sortedActions = this.sortByPriority(pendingActions);
-      
+
       // Process up to maxConcurrent actions
       const toProcess = sortedActions.slice(0, this.options.maxConcurrent);
-      
-      const results = await Promise.allSettled(
-        toProcess.map(action => this.syncAction(action))
-      );
+
+      const results = await Promise.allSettled(toProcess.map((action) => this.syncAction(action)));
 
       // Check if more actions to process
       const remaining = await this.getPendingActions();
@@ -277,7 +275,7 @@ class BackgroundSyncService {
   private async syncAction(action: SyncAction): Promise<any> {
     try {
       // Update status to syncing
-      await this.updateAction(action.id, { 
+      await this.updateAction(action.id, {
         status: 'syncing',
         attempts: action.attempts + 1,
         updatedAt: Date.now(),
@@ -309,7 +307,7 @@ class BackgroundSyncService {
       return result;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      
+
       console.error(`❌ Failed to sync ${action.type}:`, errorMessage);
 
       // Calculate next retry time with exponential backoff
@@ -325,7 +323,9 @@ class BackgroundSyncService {
           updatedAt: Date.now(),
         });
 
-        console.log(`🔄 Will retry ${action.type} in ${Math.round((nextRetryAt - Date.now()) / 1000)}s`);
+        console.log(
+          `🔄 Will retry ${action.type} in ${Math.round((nextRetryAt - Date.now()) / 1000)}s`,
+        );
       } else {
         // Max attempts reached
         await this.updateAction(action.id, {
@@ -337,7 +337,10 @@ class BackgroundSyncService {
 
         console.error(`💀 ${action.type} failed permanently after ${action.maxAttempts} attempts`);
         this.emit('failed', { action, error: errorMessage });
-        this.options.onSyncFailed?.(action, error instanceof Error ? error : new Error(errorMessage));
+        this.options.onSyncFailed?.(
+          action,
+          error instanceof Error ? error : new Error(errorMessage),
+        );
       }
 
       this.notifyQueueChange();
@@ -355,7 +358,7 @@ class BackgroundSyncService {
       'order:cancel': `/api/orders/${action.data.id}/cancel`,
       'order:status': `/api/orders/${action.data.id}/status`,
       'payment:create': '/api/payments',
-      'payment:confirm': `/api/payments/confirm',
+      'payment:confirm': `/api/payments/confirm`,
       'location:update': '/api/driver/location',
       'rating:submit': '/api/ratings',
       'notification:register': '/api/notifications/device-token',
@@ -366,9 +369,13 @@ class BackgroundSyncService {
       throw new Error(`No default endpoint for action type: ${action.type}`);
     }
 
-    const method = action.type.includes('create') ? 'POST' : 
-                   action.type.includes('update') ? 'PUT' :
-                   action.type.includes('cancel') ? 'POST' : 'POST';
+    const method = action.type.includes('create')
+      ? 'POST'
+      : action.type.includes('update')
+        ? 'PUT'
+        : action.type.includes('cancel')
+          ? 'POST'
+          : 'POST';
 
     const response = await fetch(endpoint, {
       method,
@@ -389,9 +396,9 @@ class BackgroundSyncService {
   private calculateRetryTime(attempt: number): number {
     const delay = Math.min(
       this.options.retryBaseDelay! * Math.pow(2, attempt - 1),
-      this.options.maxRetryDelay!
+      this.options.maxRetryDelay!,
     );
-    
+
     // Add jitter (±20%)
     const jitter = delay * 0.2 * (Math.random() * 2 - 1);
     return Date.now() + delay + jitter;
@@ -416,12 +423,10 @@ class BackgroundSyncService {
 
       request.onsuccess = () => {
         const actions = request.result as SyncAction[];
-        
+
         // Filter out actions not ready for retry
-        const readyActions = actions.filter(action => 
-          action.nextRetryAt <= Date.now()
-        );
-        
+        const readyActions = actions.filter((action) => action.nextRetryAt <= Date.now());
+
         resolve(readyActions);
       };
 
@@ -504,7 +509,7 @@ class BackgroundSyncService {
       updatedAt: Date.now(),
     });
     this.notifyQueueChange();
-    
+
     if (navigator.onLine) {
       this.processQueue();
     }
@@ -525,15 +530,15 @@ class BackgroundSyncService {
       const transaction = this.db.transaction([STORE_NAME], 'readwrite');
       const store = transaction.objectStore(STORE_NAME);
       const index = store.index('status');
-      
+
       let deletedCount = 0;
-      
-      ['completed', 'failed', 'cancelled'].forEach(status => {
+
+      ['completed', 'failed', 'cancelled'].forEach((status) => {
         const request = index.openCursor(status);
-        
+
         request.onsuccess = (event) => {
           const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result;
-          
+
           if (cursor) {
             cursor.delete();
             deletedCount++;
@@ -566,24 +571,24 @@ class BackgroundSyncService {
 
       request.onsuccess = () => {
         const actions = request.result as SyncAction[];
-        
+
         const stats: SyncQueueStats = {
           total: actions.length,
-          pending: actions.filter(a => a.status === 'pending').length,
-          syncing: actions.filter(a => a.status === 'syncing').length,
-          completed: actions.filter(a => a.status === 'completed').length,
-          failed: actions.filter(a => a.status === 'failed').length,
+          pending: actions.filter((a) => a.status === 'pending').length,
+          syncing: actions.filter((a) => a.status === 'syncing').length,
+          completed: actions.filter((a) => a.status === 'completed').length,
+          failed: actions.filter((a) => a.status === 'failed').length,
           byPriority: {
-            low: actions.filter(a => a.priority === 'low').length,
-            normal: actions.filter(a => a.priority === 'normal').length,
-            high: actions.filter(a => a.priority === 'high').length,
-            critical: actions.filter(a => a.priority === 'critical').length,
+            low: actions.filter((a) => a.priority === 'low').length,
+            normal: actions.filter((a) => a.priority === 'normal').length,
+            high: actions.filter((a) => a.priority === 'high').length,
+            critical: actions.filter((a) => a.priority === 'critical').length,
           },
           byType: {},
         };
 
         // Count by type
-        actions.forEach(action => {
+        actions.forEach((action) => {
           const baseType = action.type.split(':')[0];
           stats.byType[baseType] = (stats.byType[baseType] || 0) + 1;
         });
@@ -636,7 +641,7 @@ class BackgroundSyncService {
   private emit(event: string, data?: any): void {
     const listeners = this.listeners.get(event);
     if (listeners) {
-      listeners.forEach(listener => listener(data));
+      listeners.forEach((listener) => listener(data));
     }
   }
 
@@ -684,5 +689,4 @@ if (typeof window !== 'undefined') {
   backgroundSync.initialize().catch(console.error);
 }
 
-export type { SyncAction, SyncQueueStats, BackgroundSyncOptions };
-export { SyncPriority, SyncStatus, ActionType };
+export type { SyncQueueStats, BackgroundSyncOptions };

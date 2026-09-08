@@ -1,5 +1,4 @@
 import * as Sentry from '@sentry/react';
-import { BrowserTracing } from '@sentry/tracing';
 
 /**
  * Initialize Sentry for React apps
@@ -13,25 +12,20 @@ import { BrowserTracing } from '@sentry/tracing';
  */
 
 export function initSentry() {
-  const dsn = import.meta.env?.VITE_SENTRY_DSN || process.env?.NEXT_PUBLIC_SENTRY_DSN;
+  const dsn = process.env?.NEXT_PUBLIC_SENTRY_DSN;
 
   if (!dsn) {
     console.log('🐛 Sentry DSN not configured, error tracking disabled');
     return;
   }
 
-  const environment = import.meta.env?.MODE || process.env?.NODE_ENV || 'development';
+  const environment = process.env?.NODE_ENV || 'development';
 
   Sentry.init({
     dsn,
     environment,
 
-    integrations: [
-      new BrowserTracing({
-        routingInstrumentation: Sentry.reactRouterV6Instrumentation(),
-        tracePropagationTargets: ['localhost', 'api.kiwi.app', /^https:\/\/.*\.kiwi\.app$/],
-      }),
-    ],
+    integrations: [Sentry.browserTracingIntegration()],
 
     // Performance monitoring
     tracesSampleRate: environment === 'production' ? 0.2 : 1.0,
@@ -46,7 +40,7 @@ export function initSentry() {
 
       // Remove sensitive data from events
       if (event.request?.data) {
-        const data = event.request.data;
+        const data = event.request.data as Record<string, unknown>;
         delete data.password;
         delete data.token;
         delete data.accessToken;

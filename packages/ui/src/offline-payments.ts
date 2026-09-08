@@ -2,7 +2,7 @@
 
 /**
  * 🥝 KIWI - Offline Payment Processing Service
- * 
+ *
  * Processes payments locally when offline and syncs when reconnected.
  * Generates local receipts for proof of payment.
  */
@@ -26,13 +26,13 @@ export interface PaymentItem {
   customerId?: string;
   customerName: string;
   customerPhone?: string;
-  
+
   /** Payment details */
   amount: number;
   currency: string;
   method: PaymentMethod;
   type: PaymentType;
-  
+
   /** Status */
   status: PaymentStatus;
   statusHistory: Array<{
@@ -40,18 +40,18 @@ export interface PaymentItem {
     timestamp: number;
     note?: string;
   }>;
-  
+
   /** Receipt data */
   receipt: ReceiptData;
-  
+
   /** Metadata */
   metadata?: Record<string, any>;
-  
+
   /** Timestamps */
   createdAt: number;
   updatedAt: number;
   completedAt?: number;
-  
+
   /** Sync status */
   syncStatus: 'pending' | 'syncing' | 'synced' | 'failed';
   syncError?: string;
@@ -61,10 +61,10 @@ export interface PaymentItem {
 export interface ReceiptData {
   /** Receipt number */
   receiptNumber: string;
-  
+
   /** Transaction ID */
   transactionId: string;
-  
+
   /** Items purchased */
   items: Array<{
     name: string;
@@ -72,39 +72,39 @@ export interface ReceiptData {
     price: number;
     total: number;
   }>;
-  
+
   /** Subtotal */
   subtotal: number;
-  
+
   /** Tax (if applicable) */
   tax: number;
-  
+
   /** Delivery fee */
   deliveryFee: number;
-  
+
   /** Total amount */
   total: number;
-  
+
   /** Payment method used */
   paymentMethod: string;
-  
+
   /** Merchant info */
   merchant: {
     name: string;
     address?: string;
     phone?: string;
   };
-  
+
   /** Customer info */
   customer: {
     name: string;
     phone?: string;
     address?: string;
   };
-  
+
   /** Timestamp */
   timestamp: number;
-  
+
   /** QR code data (for verification) */
   qrCode?: string;
 }
@@ -112,13 +112,13 @@ export interface ReceiptData {
 interface OfflinePaymentOptions {
   /** Auto-sync when online */
   autoSync?: boolean;
-  
+
   /** Generate QR code for receipts */
   generateQR?: boolean;
-  
+
   /** Receipt prefix */
   receiptPrefix?: string;
-  
+
   /** Enable payment verification */
   enableVerification?: boolean;
 }
@@ -242,7 +242,7 @@ class OfflinePaymentService {
     const receipt: ReceiptData = {
       receiptNumber,
       transactionId,
-      items: paymentData.items.map(item => ({
+      items: paymentData.items.map((item) => ({
         ...item,
         total: item.price * item.quantity,
       })),
@@ -279,9 +279,7 @@ class OfflinePaymentService {
       method: paymentData.method,
       type: paymentData.type || 'order',
       status: 'pending',
-      statusHistory: [
-        { status: 'pending', timestamp: now, note: 'Payment created offline' },
-      ],
+      statusHistory: [{ status: 'pending', timestamp: now, note: 'Payment created offline' }],
       receipt,
       metadata: paymentData.metadata,
       createdAt: now,
@@ -301,12 +299,12 @@ class OfflinePaymentService {
 
       request.onsuccess = () => {
         console.log(`🥝 Created payment: ${id}`);
-        
+
         // Queue for sync if online
         if (navigator.onLine && this.options.autoSync) {
           this.syncPayment(id);
         }
-        
+
         resolve(payment);
       };
 
@@ -334,12 +332,12 @@ class OfflinePaymentService {
     });
 
     // Simulate processing delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // For cash payments, complete immediately
     // For other methods, mark as pending sync
     const newStatus: PaymentStatus = payment.method === 'cash' ? 'completed' : 'pending';
-    
+
     return this.updatePayment(paymentId, {
       status: newStatus,
       completedAt: newStatus === 'completed' ? Date.now() : undefined,
@@ -385,8 +383,8 @@ class OfflinePaymentService {
       method: payment.method,
       type: 'refund',
       items: payment.receipt.items,
-      subtotal: -payment.subtotal,
-      tax: -payment.tax,
+      subtotal: -payment.receipt.subtotal,
+      tax: -payment.receipt.tax,
       deliveryFee: 0,
       metadata: {
         originalPaymentId: paymentId,
@@ -405,10 +403,7 @@ class OfflinePaymentService {
   /**
    * Update payment
    */
-  async updatePayment(
-    paymentId: string,
-    updates: Partial<PaymentItem>
-  ): Promise<PaymentItem> {
+  async updatePayment(paymentId: string, updates: Partial<PaymentItem>): Promise<PaymentItem> {
     await this.initialize();
 
     return new Promise((resolve, reject) => {
@@ -423,7 +418,7 @@ class OfflinePaymentService {
 
       request.onsuccess = () => {
         const payment = request.result as PaymentItem;
-        
+
         if (!payment) {
           reject(new Error('Payment not found'));
           return;
@@ -440,8 +435,8 @@ class OfflinePaymentService {
         if (updates.status && updates.status !== payment.status) {
           updatedPayment.statusHistory = [
             ...payment.statusHistory,
-            { 
-              status: updates.status, 
+            {
+              status: updates.status,
               timestamp: Date.now(),
             },
           ];
@@ -451,12 +446,12 @@ class OfflinePaymentService {
 
         updateRequest.onsuccess = () => {
           console.log(`🥝 Updated payment: ${paymentId}`);
-          
+
           // Queue for sync
           if (navigator.onLine && this.options.autoSync) {
             this.syncPayment(paymentId);
           }
-          
+
           resolve(updatedPayment);
         };
 
@@ -554,25 +549,25 @@ class OfflinePaymentService {
         // Apply filters
         if (filters) {
           if (filters.merchantId) {
-            payments = payments.filter(p => p.merchantId === filters.merchantId);
+            payments = payments.filter((p) => p.merchantId === filters.merchantId);
           }
           if (filters.customerId) {
-            payments = payments.filter(p => p.customerId === filters.customerId);
+            payments = payments.filter((p) => p.customerId === filters.customerId);
           }
           if (filters.orderId) {
-            payments = payments.filter(p => p.orderId === filters.orderId);
+            payments = payments.filter((p) => p.orderId === filters.orderId);
           }
           if (filters.status) {
-            payments = payments.filter(p => p.status === filters.status);
+            payments = payments.filter((p) => p.status === filters.status);
           }
           if (filters.syncStatus) {
-            payments = payments.filter(p => p.syncStatus === filters.syncStatus);
+            payments = payments.filter((p) => p.syncStatus === filters.syncStatus);
           }
           if (filters.startDate) {
-            payments = payments.filter(p => p.createdAt >= filters.startDate!);
+            payments = payments.filter((p) => p.createdAt >= filters.startDate!);
           }
           if (filters.endDate) {
-            payments = payments.filter(p => p.createdAt <= filters.endDate!);
+            payments = payments.filter((p) => p.createdAt <= filters.endDate!);
           }
         }
 
@@ -591,11 +586,7 @@ class OfflinePaymentService {
   /**
    * Get payment statistics
    */
-  async getStats(filters?: {
-    merchantId?: string;
-    startDate?: number;
-    endDate?: number;
-  }): Promise<{
+  async getStats(filters?: { merchantId?: string; startDate?: number; endDate?: number }): Promise<{
     total: number;
     totalAmount: number;
     completed: number;
@@ -606,7 +597,7 @@ class OfflinePaymentService {
     byMethod: Record<PaymentMethod, { count: number; amount: number }>;
   }> {
     const payments = await this.getPayments(filters);
-    
+
     const stats = {
       total: payments.length,
       totalAmount: 0,
@@ -623,9 +614,9 @@ class OfflinePaymentService {
       } as Record<PaymentMethod, { count: number; amount: number }>,
     };
 
-    payments.forEach(payment => {
+    payments.forEach((payment) => {
       stats.totalAmount += payment.amount;
-      
+
       if (payment.status === 'completed') {
         stats.completed++;
         stats.completedAmount += payment.amount;
@@ -649,7 +640,7 @@ class OfflinePaymentService {
    */
   async syncPayment(paymentId: string): Promise<PaymentItem> {
     const payment = await this.getPayment(paymentId);
-    
+
     if (!payment) {
       throw new Error('Payment not found');
     }
@@ -678,7 +669,7 @@ class OfflinePaymentService {
           }
 
           const result = await response.json();
-          
+
           // Update payment with server ID
           await this.updatePayment(paymentId, {
             serverPaymentId: result.id,
@@ -692,7 +683,7 @@ class OfflinePaymentService {
       return this.getPayment(paymentId) as Promise<PaymentItem>;
     } catch (error) {
       // Mark as failed
-      await this.updatePayment(paymentId, { 
+      await this.updatePayment(paymentId, {
         syncStatus: 'failed',
         syncError: error instanceof Error ? error.message : 'Unknown error',
       });
@@ -726,7 +717,7 @@ class OfflinePaymentService {
    */
   generateReceiptHTML(payment: PaymentItem): string {
     const receipt = payment.receipt;
-    
+
     return `
 <!DOCTYPE html>
 <html>
@@ -759,12 +750,16 @@ class OfflinePaymentService {
   
   <div class="items">
     <div><strong>Productos:</strong></div>
-    ${receipt.items.map(item => `
+    ${receipt.items
+      .map(
+        (item) => `
       <div class="item">
         <span>${item.quantity}x ${item.name}</span>
         <span>₡${item.total.toLocaleString()}</span>
       </div>
-    `).join('')}
+    `,
+      )
+      .join('')}
   </div>
   
   <div class="total">
@@ -772,12 +767,16 @@ class OfflinePaymentService {
       <span>Subtotal:</span>
       <span>₡${receipt.subtotal.toLocaleString()}</span>
     </div>
-    ${receipt.tax > 0 ? `
+    ${
+      receipt.tax > 0
+        ? `
     <div class="item">
       <span>Impuesto:</span>
       <span>₡${receipt.tax.toLocaleString()}</span>
     </div>
-    ` : ''}
+    `
+        : ''
+    }
     <div class="item">
       <span>Envío:</span>
       <span>${receipt.deliveryFee === 0 ? 'Gratis' : `₡${receipt.deliveryFee.toLocaleString()}`}</span>
@@ -793,12 +792,16 @@ class OfflinePaymentService {
     <div><strong>Cliente:</strong> ${receipt.customer.name}</div>
   </div>
   
-  ${receipt.qrCode ? `
+  ${
+    receipt.qrCode
+      ? `
   <div class="qr">
     <div>Código de verificación:</div>
     <div style="font-size: 8px; word-break: break-all;">${receipt.qrCode}</div>
   </div>
-  ` : ''}
+  `
+      : ''
+  }
   
   <div class="footer">
     <div>Gracias por su compra</div>
@@ -819,7 +822,7 @@ class OfflinePaymentService {
     }
 
     const html = this.generateReceiptHTML(payment);
-    
+
     // Open print window
     const printWindow = window.open('', '_blank');
     if (printWindow) {
@@ -846,9 +849,9 @@ class OfflinePaymentService {
   }> {
     try {
       const verificationData = JSON.parse(atob(qrCode));
-      
+
       const payment = await this.getPaymentByReceipt(verificationData.r);
-      
+
       if (!payment) {
         return { valid: false, error: 'Recibo no encontrado' };
       }
@@ -903,4 +906,4 @@ if (typeof window !== 'undefined') {
   offlinePayments.initialize().catch(console.error);
 }
 
-export type { PaymentItem, ReceiptData, OfflinePaymentOptions };
+export type { OfflinePaymentOptions };

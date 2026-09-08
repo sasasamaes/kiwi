@@ -1,6 +1,6 @@
 /**
  * 🥝 Kiwi API Client
- * 
+ *
  * Centralized API client for all frontend apps
  */
 
@@ -72,7 +72,7 @@ class ApiClient {
   // ============================================
   // 🔐 AUTH
   // ============================================
-  
+
   async register(data: {
     email: string;
     password: string;
@@ -134,7 +134,8 @@ class ApiClient {
   }
 
   async getMerchantMenuItems(merchantId: string, category?: string) {
-    const params = category && category !== 'Todos' ? `?category=${encodeURIComponent(category)}` : '';
+    const params =
+      category && category !== 'Todos' ? `?category=${encodeURIComponent(category)}` : '';
     return this.request<any>(`/menu/merchant/${merchantId}/items${params}`);
   }
 
@@ -611,12 +612,7 @@ class ApiClient {
     });
   }
 
-  async calculateRoute(
-    originLat: number,
-    originLng: number,
-    destLat: number,
-    destLng: number,
-  ) {
+  async calculateRoute(originLat: number, originLng: number, destLat: number, destLng: number) {
     const params = new URLSearchParams({
       originLat: String(originLat),
       originLng: String(originLng),
@@ -661,14 +657,16 @@ class ApiClient {
     return this.request<any>(`/routing/traffic/delivery-estimate?${params.toString()}`);
   }
 
-  async compareRouteTraffic(routes: Array<{
-    distance: number;
-    duration: number;
-    startLat: number;
-    startLng: number;
-    endLat: number;
-    endLng: number;
-  }>) {
+  async compareRouteTraffic(
+    routes: Array<{
+      distance: number;
+      duration: number;
+      startLat: number;
+      startLng: number;
+      endLat: number;
+      endLng: number;
+    }>,
+  ) {
     return this.request<any>('/routing/traffic/compare-routes', {
       method: 'POST',
       body: { routes },
@@ -820,12 +818,7 @@ class ApiClient {
     return this.request<any>(`/routing/suggestions?${params.toString()}`);
   }
 
-  async getQuickSuggestion(
-    originLat: number,
-    originLng: number,
-    destLat: number,
-    destLng: number,
-  ) {
+  async getQuickSuggestion(originLat: number, originLng: number, destLat: number, destLng: number) {
     const params = new URLSearchParams({
       originLat: String(originLat),
       originLng: String(originLng),
@@ -964,6 +957,8 @@ export interface Order {
   driverId?: string;
   status: string;
   orderType: string;
+  scheduledDate?: string;
+  scheduledTime?: string;
   pickupAddress: string;
   deliveryAddress: string;
   distanceKm?: number;
@@ -971,6 +966,7 @@ export interface Order {
   commission: number;
   driverPayout: number;
   totalAmount: number;
+  specialInstructions?: string;
   createdAt: string;
 }
 
@@ -1013,7 +1009,7 @@ export interface DriverProposal {
   driver?: {
     id: string;
     fullName: string;
-    vehicleType: string;
+    vehicleType: 'motorcycle' | 'motorized_bike' | 'bicycle' | 'car' | 'truck';
     rating: number;
     totalTrips: number;
   };

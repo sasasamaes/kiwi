@@ -2,7 +2,7 @@
 
 /**
  * 🥝 KIWI - Conflict Resolution Service
- * 
+ *
  * Handles concurrent edits when multiple users modify the same data
  * while offline, then sync when reconnected.
  */
@@ -14,25 +14,25 @@ export type MergeAction = 'keep-local' | 'keep-remote' | 'merge' | 'custom';
 export interface VersionedData<T = any> {
   /** Unique identifier */
   id: string;
-  
+
   /** Data payload */
   data: T;
-  
+
   /** Version number (incremented on each edit) */
   version: number;
-  
+
   /** Timestamp of last edit */
   lastModified: number;
-  
+
   /** User who made the edit */
   editedBy: string;
-  
+
   /** Device ID where edit was made */
   deviceId: string;
-  
+
   /** Checksum for integrity verification */
   checksum: string;
-  
+
   /** Parent version (for conflict detection) */
   parentVersion?: number;
 }
@@ -40,38 +40,38 @@ export interface VersionedData<T = any> {
 export interface Conflict<T = any> {
   /** Unique conflict identifier */
   id: string;
-  
+
   /** Data ID with conflict */
   dataId: string;
-  
+
   /** Data type (order, menu, etc.) */
   dataType: string;
-  
+
   /** Local version */
   local: VersionedData<T>;
-  
+
   /** Remote version */
   remote: VersionedData<T>;
-  
+
   /** Resolution strategy */
   strategy: ConflictStrategy;
-  
+
   /** Status */
   status: ConflictStatus;
-  
+
   /** Created timestamp */
   createdAt: number;
-  
+
   /** Resolved timestamp */
   resolvedAt?: number;
-  
+
   /** Resolution result */
   resolution?: {
     action: MergeAction;
     mergedData?: T;
     resolvedBy?: string;
   };
-  
+
   /** Auto-merge result (if auto-merge was used) */
   autoMergeResult?: T;
 }
@@ -79,19 +79,19 @@ export interface Conflict<T = any> {
 interface ConflictResolutionOptions {
   /** Default conflict strategy */
   defaultStrategy?: ConflictStrategy;
-  
+
   /** Fields to ignore when comparing (timestamps, etc.) */
   ignoreFields?: string[];
-  
+
   /** Callback when conflict is detected */
   onConflict?: (conflict: Conflict) => void;
-  
+
   /** Callback when conflict is resolved */
   onResolved?: (conflict: Conflict) => void;
-  
+
   /** Enable auto-merge for simple conflicts */
   enableAutoMerge?: boolean;
-  
+
   /** Maximum conflicts to auto-resolve */
   maxAutoResolve?: number;
 }
@@ -128,7 +128,7 @@ class ConflictResolutionService {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
       const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32bit integer
     }
     return hash.toString(36);
@@ -139,7 +139,7 @@ class ConflictResolutionService {
    */
   private getDeviceId(): string {
     if (typeof window === 'undefined') return 'server';
-    
+
     let deviceId = localStorage.getItem('kiwi-device-id');
     if (!deviceId) {
       deviceId = `device_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -155,7 +155,7 @@ class ConflictResolutionService {
     id: string,
     data: T,
     version: number = 1,
-    editedBy: string = 'anonymous'
+    editedBy: string = 'anonymous',
   ): VersionedData<T> {
     return {
       id,
@@ -173,7 +173,7 @@ class ConflictResolutionService {
    */
   private compareVersions<T>(
     local: VersionedData<T>,
-    remote: VersionedData<T>
+    remote: VersionedData<T>,
   ): {
     hasConflict: boolean;
     changedFields: string[];
@@ -181,24 +181,24 @@ class ConflictResolutionService {
   } {
     const localData = local.data as any;
     const remoteData = remote.data as any;
-    
+
     const changedFields: string[] = [];
     const allKeys = new Set([...Object.keys(localData), ...Object.keys(remoteData)]);
-    
+
     for (const key of allKeys) {
       // Skip ignored fields
       if (this.options.ignoreFields?.includes(key)) continue;
-      
+
       const localValue = JSON.stringify(localData[key]);
       const remoteValue = JSON.stringify(remoteData[key]);
-      
+
       if (localValue !== remoteValue) {
         changedFields.push(key);
       }
     }
 
     // Check if both modified from same parent
-    const bothModifiedFromSameParent = 
+    const bothModifiedFromSameParent =
       local.parentVersion !== undefined &&
       remote.parentVersion !== undefined &&
       local.parentVersion === remote.parentVersion;
@@ -223,7 +223,7 @@ class ConflictResolutionService {
     dataId: string,
     dataType: string,
     local: VersionedData<T>,
-    remote: VersionedData<T>
+    remote: VersionedData<T>,
   ): Conflict<T> | null {
     // Check if versions are the same
     if (local.version === remote.version && local.checksum === remote.checksum) {
@@ -233,9 +233,9 @@ class ConflictResolutionService {
     // Check if remote is newer (no conflict, just update)
     if (remote.version > local.version && remote.lastModified > local.lastModified) {
       // Check if local has uncommitted changes
-      const localModifiedAfterParent = local.parentVersion !== undefined && 
-        local.lastModified > (local.parentVersion || 0);
-      
+      const localModifiedAfterParent =
+        local.parentVersion !== undefined && local.lastModified > (local.parentVersion || 0);
+
       if (!localModifiedAfterParent) {
         return null; // Remote is newer, no conflict
       }
@@ -243,7 +243,7 @@ class ConflictResolutionService {
 
     // Compare versions
     const comparison = this.compareVersions(local, remote);
-    
+
     if (comparison.identical) {
       return null; // Same data, no conflict
     }
@@ -274,7 +274,7 @@ class ConflictResolutionService {
 
     // Store conflict
     this.conflicts.set(conflict.id, conflict);
-    
+
     // Notify listeners
     this.emit('conflictDetected', conflict);
     this.options.onConflict?.(conflict);
@@ -285,11 +285,7 @@ class ConflictResolutionService {
   /**
    * Try to auto-merge non-conflicting fields
    */
-  private tryAutoMerge<T>(
-    local: T,
-    remote: T,
-    changedFields: string[]
-  ): T | null {
+  private tryAutoMerge<T>(local: T, remote: T, changedFields: string[]): T | null {
     try {
       const localData = local as any;
       const remoteData = remote as any;
@@ -306,8 +302,10 @@ class ConflictResolutionService {
         }
         // If field is an object, deep merge
         else if (
-          typeof localValue === 'object' && localValue !== null &&
-          typeof remoteValue === 'object' && remoteValue !== null &&
+          typeof localValue === 'object' &&
+          localValue !== null &&
+          typeof remoteValue === 'object' &&
+          remoteValue !== null &&
           !Array.isArray(localValue)
         ) {
           merged[field] = this.deepMerge(localValue, remoteValue);
@@ -346,12 +344,14 @@ class ConflictResolutionService {
    * Deep merge two objects
    */
   private deepMerge<T extends Record<string, any>>(local: T, remote: T): T {
-    const result = { ...local };
+    const result = { ...local } as Record<string, any>;
 
     for (const key of Object.keys(remote)) {
       if (
-        typeof remote[key] === 'object' && remote[key] !== null &&
-        typeof local[key] === 'object' && local[key] !== null &&
+        typeof remote[key] === 'object' &&
+        remote[key] !== null &&
+        typeof local[key] === 'object' &&
+        local[key] !== null &&
         !Array.isArray(remote[key])
       ) {
         result[key] = this.deepMerge(local[key], remote[key]);
@@ -360,19 +360,15 @@ class ConflictResolutionService {
       }
     }
 
-    return result;
+    return result as T;
   }
 
   /**
    * Resolve a conflict
    */
-  resolveConflict<T>(
-    conflictId: string,
-    action: MergeAction,
-    customData?: T
-  ): Conflict<T> {
+  resolveConflict<T>(conflictId: string, action: MergeAction, customData?: T): Conflict<T> {
     const conflict = this.conflicts.get(conflictId) as Conflict<T>;
-    
+
     if (!conflict) {
       throw new Error(`Conflict not found: ${conflictId}`);
     }
@@ -383,11 +379,11 @@ class ConflictResolutionService {
       case 'keep-local':
         mergedData = conflict.local.data;
         break;
-      
+
       case 'keep-remote':
         mergedData = conflict.remote.data;
         break;
-      
+
       case 'merge':
         if (conflict.autoMergeResult) {
           mergedData = conflict.autoMergeResult;
@@ -395,14 +391,14 @@ class ConflictResolutionService {
           throw new Error('No auto-merge result available');
         }
         break;
-      
+
       case 'custom':
         if (!customData) {
           throw new Error('Custom data required for custom resolution');
         }
         mergedData = customData;
         break;
-      
+
       default:
         throw new Error(`Unknown action: ${action}`);
     }
@@ -420,7 +416,7 @@ class ConflictResolutionService {
     };
 
     this.conflicts.set(conflictId, resolvedConflict);
-    
+
     // Notify listeners
     this.emit('conflictResolved', resolvedConflict);
     this.options.onResolved?.(resolvedConflict);
@@ -433,7 +429,7 @@ class ConflictResolutionService {
    */
   applyStrategy<T>(conflictId: string): T {
     const conflict = this.conflicts.get(conflictId) as Conflict<T>;
-    
+
     if (!conflict) {
       throw new Error(`Conflict not found: ${conflictId}`);
     }
@@ -443,21 +439,21 @@ class ConflictResolutionService {
         return conflict.local.lastModified > conflict.remote.lastModified
           ? conflict.local.data
           : conflict.remote.data;
-      
+
       case 'first-write-wins':
         return conflict.local.lastModified < conflict.remote.lastModified
           ? conflict.local.data
           : conflict.remote.data;
-      
+
       case 'manual':
         throw new Error('Manual resolution required');
-      
+
       case 'auto-merge':
         if (conflict.autoMergeResult) {
           return conflict.autoMergeResult;
         }
         throw new Error('Auto-merge not available');
-      
+
       default:
         throw new Error(`Unknown strategy: ${conflict.strategy}`);
     }
@@ -468,7 +464,7 @@ class ConflictResolutionService {
    */
   dismissConflict(conflictId: string): void {
     const conflict = this.conflicts.get(conflictId);
-    
+
     if (!conflict) {
       throw new Error(`Conflict not found: ${conflictId}`);
     }
@@ -495,13 +491,13 @@ class ConflictResolutionService {
 
     if (filters) {
       if (filters.status) {
-        conflicts = conflicts.filter(c => c.status === filters.status);
+        conflicts = conflicts.filter((c) => c.status === filters.status);
       }
       if (filters.dataType) {
-        conflicts = conflicts.filter(c => c.dataType === filters.dataType);
+        conflicts = conflicts.filter((c) => c.dataType === filters.dataType);
       }
       if (filters.strategy) {
-        conflicts = conflicts.filter(c => c.strategy === filters.strategy);
+        conflicts = conflicts.filter((c) => c.strategy === filters.strategy);
       }
     }
 
@@ -527,28 +523,28 @@ class ConflictResolutionService {
    */
   getStats(): ConflictStats {
     const conflicts = Array.from(this.conflicts.values());
-    
+
     const stats: ConflictStats = {
       total: conflicts.length,
-      pending: conflicts.filter(c => c.status === 'pending').length,
-      resolved: conflicts.filter(c => c.status === 'resolved').length,
-      dismissed: conflicts.filter(c => c.status === 'dismissed').length,
+      pending: conflicts.filter((c) => c.status === 'pending').length,
+      resolved: conflicts.filter((c) => c.status === 'resolved').length,
+      dismissed: conflicts.filter((c) => c.status === 'dismissed').length,
       byType: {},
       byStrategy: {
         'last-write-wins': 0,
         'first-write-wins': 0,
-        'manual': 0,
+        manual: 0,
         'auto-merge': 0,
       },
     };
 
     // Count by type
-    conflicts.forEach(conflict => {
+    conflicts.forEach((conflict) => {
       stats.byType[conflict.dataType] = (stats.byType[conflict.dataType] || 0) + 1;
     });
 
     // Count by strategy
-    conflicts.forEach(conflict => {
+    conflicts.forEach((conflict) => {
       stats.byStrategy[conflict.strategy]++;
     });
 
@@ -561,8 +557,8 @@ class ConflictResolutionService {
   clearResolved(): number {
     const resolved = this.getConflicts({ status: 'resolved' });
     const dismissed = this.getConflicts({ status: 'dismissed' });
-    
-    [...resolved, ...dismissed].forEach(conflict => {
+
+    [...resolved, ...dismissed].forEach((conflict) => {
       this.conflicts.delete(conflict.id);
     });
 
@@ -583,7 +579,7 @@ class ConflictResolutionService {
   private emit(event: string, data?: any): void {
     const listeners = this.listeners.get(event);
     if (listeners) {
-      listeners.forEach(listener => listener(data));
+      listeners.forEach((listener) => listener(data));
     }
   }
 

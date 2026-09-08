@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-interface TrafficPattern {
+export interface TrafficPattern {
   hour: number;
   dayOfWeek: number;
   averageLevel: string;
@@ -11,7 +11,7 @@ interface TrafficPattern {
   sampleCount: number;
 }
 
-interface TrafficTrend {
+export interface TrafficTrend {
   period: string;
   current: number;
   previous: number;
@@ -19,14 +19,14 @@ interface TrafficTrend {
   changePercent: number;
 }
 
-interface TrafficHeatmapData {
+export interface TrafficHeatmapData {
   lat: number;
   lng: number;
   intensity: number;
   level: string;
 }
 
-interface MerchantTrafficReport {
+export interface MerchantTrafficReport {
   merchantId: string;
   period: 'day' | 'week' | 'month';
   summary: {
@@ -41,7 +41,7 @@ interface MerchantTrafficReport {
   recommendations: string[];
 }
 
-interface TrafficAnalyticsProps {
+export interface TrafficAnalyticsProps {
   merchantId: string;
   className?: string;
 }
@@ -58,14 +58,13 @@ const LEVEL_COLORS = {
 // Day names in Spanish
 const DAY_NAMES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
-export function TrafficAnalytics({
-  merchantId,
-  className = '',
-}: TrafficAnalyticsProps) {
+export function TrafficAnalytics({ merchantId, className = '' }: TrafficAnalyticsProps) {
   const [report, setReport] = useState<MerchantTrafficReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<'day' | 'week' | 'month'>('week');
-  const [activeTab, setActiveTab] = useState<'overview' | 'patterns' | 'recommendations'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'patterns' | 'recommendations'>(
+    'overview',
+  );
 
   useEffect(() => {
     fetchReport();
@@ -74,9 +73,7 @@ export function TrafficAnalytics({
   const fetchReport = async () => {
     try {
       setLoading(true);
-      const response = await fetch(
-        `/api/routing/history/merchant/${merchantId}?period=${period}`
-      );
+      const response = await fetch(`/api/routing/history/merchant/${merchantId}?period=${period}`);
       const data = await response.json();
       setReport(data);
     } catch (error) {
@@ -106,7 +103,9 @@ export function TrafficAnalytics({
   }
 
   return (
-    <div className={`rounded-2xl bg-white dark:bg-surface-800 shadow-soft dark:shadow-dark overflow-hidden ${className}`}>
+    <div
+      className={`rounded-2xl bg-white dark:bg-surface-800 shadow-soft dark:shadow-dark overflow-hidden ${className}`}
+    >
       {/* Header */}
       <div className="p-6 border-b border-surface-100 dark:border-surface-700">
         <div className="flex items-center justify-between mb-4">
@@ -198,7 +197,8 @@ export function TrafficAnalytics({
 // Overview Tab
 function OverviewTab({ report }: { report: MerchantTrafficReport }) {
   const { summary, trends } = report;
-  const levelColor = LEVEL_COLORS[summary.averageTrafficLevel as keyof typeof LEVEL_COLORS] || '#84cc16';
+  const levelColor =
+    LEVEL_COLORS[summary.averageTrafficLevel as keyof typeof LEVEL_COLORS] || '#84cc16';
 
   return (
     <div className="space-y-6">
@@ -235,10 +235,7 @@ function OverviewTab({ report }: { report: MerchantTrafficReport }) {
         >
           <p className="text-sm text-surface-500 dark:text-surface-400 mb-1">🚦 Tráfico Prom.</p>
           <div className="flex items-center gap-2">
-            <div
-              className="h-3 w-3 rounded-full"
-              style={{ backgroundColor: levelColor }}
-            />
+            <div className="h-3 w-3 rounded-full" style={{ backgroundColor: levelColor }} />
             <p className="text-lg font-bold capitalize" style={{ color: levelColor }}>
               {summary.averageTrafficLevel}
             </p>
@@ -252,9 +249,7 @@ function OverviewTab({ report }: { report: MerchantTrafficReport }) {
           transition={{ delay: 0.3 }}
         >
           <p className="text-sm text-surface-500 dark:text-surface-400 mb-1">🐢 Retrasos</p>
-          <p className="text-2xl font-bold text-orange-600">
-            {summary.trafficDelayedDeliveries}
-          </p>
+          <p className="text-2xl font-bold text-orange-600">{summary.trafficDelayedDeliveries}</p>
         </motion.div>
       </div>
 
@@ -389,10 +384,7 @@ function PatternsTab({ patterns }: { patterns: TrafficPattern[] }) {
       <div className="flex items-center justify-center gap-4 mt-4">
         {Object.entries(LEVEL_COLORS).map(([level, color]) => (
           <div key={level} className="flex items-center gap-1.5">
-            <div
-              className="h-3 w-3 rounded-sm"
-              style={{ backgroundColor: color }}
-            />
+            <div className="h-3 w-3 rounded-sm" style={{ backgroundColor: color }} />
             <span className="text-xs text-surface-500 dark:text-surface-400 capitalize">
               {level}
             </span>
@@ -410,17 +402,11 @@ function PatternsTab({ patterns }: { patterns: TrafficPattern[] }) {
             <p className="text-sm font-medium text-green-700 dark:text-green-400 mb-1">
               🟢 Mejores Horarios
             </p>
-            <p className="text-xs text-green-600 dark:text-green-300">
-              6-7 AM, 9-11 AM, 8-10 PM
-            </p>
+            <p className="text-xs text-green-600 dark:text-green-300">6-7 AM, 9-11 AM, 8-10 PM</p>
           </div>
           <div className="rounded-lg bg-red-50 dark:bg-red-900/30 p-3">
-            <p className="text-sm font-medium text-red-700 dark:text-red-400 mb-1">
-              🔴 Horas Pico
-            </p>
-            <p className="text-xs text-red-600 dark:text-red-300">
-              7-9 AM, 12-2 PM, 5-7 PM
-            </p>
+            <p className="text-sm font-medium text-red-700 dark:text-red-400 mb-1">🔴 Horas Pico</p>
+            <p className="text-xs text-red-600 dark:text-red-300">7-9 AM, 12-2 PM, 5-7 PM</p>
           </div>
         </div>
       </div>
@@ -453,9 +439,7 @@ function RecommendationsTab({ recommendations }: { recommendations: string[] }) 
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
             >
-              <p className="text-sm text-surface-700 dark:text-surface-300">
-                {rec}
-              </p>
+              <p className="text-sm text-surface-700 dark:text-surface-300">{rec}</p>
             </motion.div>
           ))}
         </div>
@@ -472,16 +456,11 @@ function RecommendationsTab({ recommendations }: { recommendations: string[] }) 
             { time: '9-11 AM', level: 'light', label: '🟡 Bueno' },
             { time: '8-10 PM', level: 'free', label: '🟢 Excelente' },
           ].map((slot, index) => (
-            <div
-              key={index}
-              className="text-center p-2 rounded-lg bg-white dark:bg-surface-800"
-            >
+            <div key={index} className="text-center p-2 rounded-lg bg-white dark:bg-surface-800">
               <p className="text-sm font-bold text-surface-800 dark:text-surface-100">
                 {slot.time}
               </p>
-              <p className="text-xs text-surface-500 dark:text-surface-400">
-                {slot.label}
-              </p>
+              <p className="text-xs text-surface-500 dark:text-surface-400">{slot.label}</p>
             </div>
           ))}
         </div>
@@ -498,16 +477,11 @@ function RecommendationsTab({ recommendations }: { recommendations: string[] }) 
             { time: '12-2 PM', level: 'heavy', label: '🟠 Pesado' },
             { time: '5-7 PM', level: 'heavy', label: '🟠 Pesado' },
           ].map((slot, index) => (
-            <div
-              key={index}
-              className="text-center p-2 rounded-lg bg-white dark:bg-surface-800"
-            >
+            <div key={index} className="text-center p-2 rounded-lg bg-white dark:bg-surface-800">
               <p className="text-sm font-bold text-surface-800 dark:text-surface-100">
                 {slot.time}
               </p>
-              <p className="text-xs text-surface-500 dark:text-surface-400">
-                {slot.label}
-              </p>
+              <p className="text-xs text-surface-500 dark:text-surface-400">{slot.label}</p>
             </div>
           ))}
         </div>
@@ -548,7 +522,7 @@ export function TrafficHeatmap({
         {data.map((point, index) => {
           const normalizedIntensity = point.intensity / maxIntensity;
           const color = LEVEL_COLORS[point.level as keyof typeof LEVEL_COLORS] || '#84cc16';
-          
+
           // Calculate position (simplified - in real app would use map projection)
           const x = ((point.lng + 85.46) / 0.02) * 100;
           const y = ((10.16 - point.lat) / 0.02) * 100;
@@ -587,17 +561,16 @@ export function TrafficHeatmap({
           <div className="h-3 w-3 rounded-full bg-kiwi-500" />
           <span className="text-xs text-surface-500 dark:text-surface-400">Nicoya Centro</span>
         </div>
-        {Object.entries(LEVEL_COLORS).slice(0, 3).map(([level, color]) => (
-          <div key={level} className="flex items-center gap-1.5">
-            <div
-              className="h-3 w-3 rounded-full opacity-60"
-              style={{ backgroundColor: color }}
-            />
-            <span className="text-xs text-surface-500 dark:text-surface-400 capitalize">
-              {level}
-            </span>
-          </div>
-        ))}
+        {Object.entries(LEVEL_COLORS)
+          .slice(0, 3)
+          .map(([level, color]) => (
+            <div key={level} className="flex items-center gap-1.5">
+              <div className="h-3 w-3 rounded-full opacity-60" style={{ backgroundColor: color }} />
+              <span className="text-xs text-surface-500 dark:text-surface-400 capitalize">
+                {level}
+              </span>
+            </div>
+          ))}
       </div>
     </div>
   );

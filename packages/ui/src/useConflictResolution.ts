@@ -1,21 +1,38 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { conflictResolution, type Conflict, type ConflictStatus, type ConflictStrategy, type MergeAction, type VersionedData, type ConflictStats } from './conflict-resolution';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import {
+  conflictResolution,
+  type Conflict,
+  type ConflictStatus,
+  type ConflictStrategy,
+  type MergeAction,
+  type VersionedData,
+  type ConflictStats,
+} from './conflict-resolution';
+
+export type {
+  Conflict,
+  ConflictStatus,
+  ConflictStrategy,
+  MergeAction,
+  VersionedData,
+  ConflictStats,
+};
 
 interface UseConflictResolutionOptions {
   /** Filter by data type */
   dataType?: string;
-  
+
   /** Filter by status */
   status?: ConflictStatus;
-  
+
   /** Auto-refresh interval (ms) */
   refreshInterval?: number;
-  
+
   /** Callback when conflict is detected */
   onConflict?: (conflict: Conflict) => void;
-  
+
   /** Callback when conflict is resolved */
   onResolved?: (conflict: Conflict) => void;
 }
@@ -23,49 +40,45 @@ interface UseConflictResolutionOptions {
 interface UseConflictResolutionResult {
   /** All conflicts matching filters */
   conflicts: Conflict[];
-  
+
   /** Pending conflicts count */
   pendingCount: number;
-  
+
   /** Conflict statistics */
   stats: ConflictStats;
-  
+
   /** Detect a conflict */
   detectConflict: <T>(
     dataId: string,
     dataType: string,
     local: VersionedData<T>,
-    remote: VersionedData<T>
+    remote: VersionedData<T>,
   ) => Conflict<T> | null;
-  
+
   /** Resolve a conflict */
-  resolveConflict: <T>(
-    conflictId: string,
-    action: MergeAction,
-    customData?: T
-  ) => Conflict<T>;
-  
+  resolveConflict: <T>(conflictId: string, action: MergeAction, customData?: T) => Conflict<T>;
+
   /** Dismiss a conflict */
   dismissConflict: (conflictId: string) => void;
-  
+
   /** Apply resolution strategy */
   applyStrategy: <T>(conflictId: string) => T;
-  
+
   /** Clear resolved conflicts */
   clearResolved: () => number;
-  
+
   /** Clear all conflicts */
   clearAll: () => void;
-  
+
   /** Refresh conflicts */
   refresh: () => void;
-  
+
   /** Whether there are pending conflicts */
   hasPendingConflicts: boolean;
 }
 
 export function useConflictResolution(
-  options: UseConflictResolutionOptions = {}
+  options: UseConflictResolutionOptions = {},
 ): UseConflictResolutionResult {
   const [conflicts, setConflicts] = useState<Conflict[]>([]);
   const [stats, setStats] = useState<ConflictStats>({
@@ -77,7 +90,7 @@ export function useConflictResolution(
     byStrategy: {
       'last-write-wins': 0,
       'first-write-wins': 0,
-      'manual': 0,
+      manual: 0,
       'auto-merge': 0,
     },
   });
@@ -100,41 +113,46 @@ export function useConflictResolution(
   /**
    * Detect a conflict
    */
-  const detectConflict = useCallback(<T>(
-    dataId: string,
-    dataType: string,
-    local: VersionedData<T>,
-    remote: VersionedData<T>
-  ): Conflict<T> | null => {
-    const conflict = conflictResolution.detectConflict(dataId, dataType, local, remote);
-    if (conflict) {
-      loadConflicts();
-      optionsRef.current.onConflict?.(conflict);
-    }
-    return conflict;
-  }, [loadConflicts]);
+  const detectConflict = useCallback(
+    <T>(
+      dataId: string,
+      dataType: string,
+      local: VersionedData<T>,
+      remote: VersionedData<T>,
+    ): Conflict<T> | null => {
+      const conflict = conflictResolution.detectConflict(dataId, dataType, local, remote);
+      if (conflict) {
+        loadConflicts();
+        optionsRef.current.onConflict?.(conflict);
+      }
+      return conflict;
+    },
+    [loadConflicts],
+  );
 
   /**
    * Resolve a conflict
    */
-  const resolveConflict = useCallback(<T>(
-    conflictId: string,
-    action: MergeAction,
-    customData?: T
-  ): Conflict<T> => {
-    const resolved = conflictResolution.resolveConflict(conflictId, action, customData);
-    loadConflicts();
-    optionsRef.current.onResolved?.(resolved);
-    return resolved;
-  }, [loadConflicts]);
+  const resolveConflict = useCallback(
+    <T>(conflictId: string, action: MergeAction, customData?: T): Conflict<T> => {
+      const resolved = conflictResolution.resolveConflict(conflictId, action, customData);
+      loadConflicts();
+      optionsRef.current.onResolved?.(resolved);
+      return resolved;
+    },
+    [loadConflicts],
+  );
 
   /**
    * Dismiss a conflict
    */
-  const dismissConflict = useCallback((conflictId: string) => {
-    conflictResolution.dismissConflict(conflictId);
-    loadConflicts();
-  }, [loadConflicts]);
+  const dismissConflict = useCallback(
+    (conflictId: string) => {
+      conflictResolution.dismissConflict(conflictId);
+      loadConflicts();
+    },
+    [loadConflicts],
+  );
 
   /**
    * Apply strategy
@@ -182,7 +200,7 @@ export function useConflictResolution(
     ];
 
     return () => {
-      unsubscribes.forEach(unsub => unsub());
+      unsubscribes.forEach((unsub) => unsub());
     };
   }, [loadConflicts]);
 
@@ -227,7 +245,7 @@ export function useConflict(conflictId: string | null) {
     ];
 
     return () => {
-      unsubscribes.forEach(unsub => unsub());
+      unsubscribes.forEach((unsub) => unsub());
     };
   }, [conflictId]);
 

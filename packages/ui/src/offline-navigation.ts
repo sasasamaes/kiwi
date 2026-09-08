@@ -2,7 +2,7 @@
 
 /**
  * 🥝 KIWI - Offline Navigation Service
- * 
+ *
  * Provides navigation with cached routes for offline use.
  * Caches routes for frequently visited locations.
  */
@@ -43,52 +43,52 @@ export interface RouteStep {
 export interface Route {
   /** Unique identifier */
   id: string;
-  
+
   /** Route name/description */
   name: string;
-  
+
   /** Transport mode */
   mode: TransportMode;
-  
+
   /** Start point */
   start: RoutePoint;
-  
+
   /** End point */
   end: RoutePoint;
-  
+
   /** Waypoints */
   waypoints: RoutePoint[];
-  
+
   /** Route steps (turn-by-turn) */
   steps: RouteStep[];
-  
+
   /** Total distance in meters */
   distance: number;
-  
+
   /** Total duration in seconds */
   duration: number;
-  
+
   /** Route coordinates for drawing on map */
   coordinates: Coordinates[];
-  
+
   /** Bounding box */
   bounds: {
     northeast: Coordinates;
     southwest: Coordinates;
   };
-  
+
   /** Status */
   status: RouteStatus;
-  
+
   /** Timestamps */
   createdAt: number;
   updatedAt: number;
   expiresAt: number;
-  
+
   /** Usage stats */
   usageCount: number;
   lastUsedAt?: number;
-  
+
   /** Sync status */
   syncStatus: 'pending' | 'syncing' | 'synced' | 'failed';
 }
@@ -108,13 +108,13 @@ export interface SavedWaypoint {
 interface OfflineNavigationOptions {
   /** Maximum cached routes */
   maxCachedRoutes?: number;
-  
+
   /** Route expiration time (ms) */
   routeExpiration?: number;
-  
+
   /** Enable route learning (cache frequent routes) */
   enableRouteLearning?: boolean;
-  
+
   /** Default transport mode */
   defaultMode?: TransportMode;
 }
@@ -212,7 +212,7 @@ class OfflineNavigationService {
   private async findCachedRoute(
     start: Coordinates,
     end: Coordinates,
-    mode: TransportMode
+    mode: TransportMode,
   ): Promise<Route | null> {
     await this.initialize();
 
@@ -224,44 +224,49 @@ class OfflineNavigationService {
 
       const transaction = this.db.transaction([ROUTES_STORE], 'readonly');
       const store = transaction.objectStore(ROUTES_STORE);
-      
+
       // Try exact match first
       const routeId = this.generateRouteId(start, end, mode);
       const request = store.get(routeId);
 
       request.onsuccess = () => {
         const route = request.result as Route;
-        
+
         if (route && Date.now() < route.expiresAt) {
           // Update usage stats
           route.usageCount++;
           route.lastUsedAt = Date.now();
-          
+
           const updateTransaction = this.db!.transaction([ROUTES_STORE], 'readwrite');
           const updateStore = updateTransaction.objectStore(ROUTES_STORE);
           updateStore.put(route);
-          
+
           resolve(route);
         } else {
           // Try to find similar route (within 100m)
           const allRequest = store.getAll();
           allRequest.onsuccess = () => {
             const allRoutes = allRequest.result as Route[];
-            const similarRoute = allRoutes.find(r => {
+            const similarRoute = allRoutes.find((r) => {
               const startDistance = this.calculateDistance(start, r.start.coordinates);
               const endDistance = this.calculateDistance(end, r.end.coordinates);
-              return startDistance < 100 && endDistance < 100 && r.mode === mode && Date.now() < r.expiresAt;
+              return (
+                startDistance < 100 &&
+                endDistance < 100 &&
+                r.mode === mode &&
+                Date.now() < r.expiresAt
+              );
             });
-            
+
             if (similarRoute) {
               similarRoute.usageCount++;
               similarRoute.lastUsedAt = Date.now();
-              
+
               const updateTransaction = this.db!.transaction([ROUTES_STORE], 'readwrite');
               const updateStore = updateTransaction.objectStore(ROUTES_STORE);
               updateStore.put(similarRoute);
             }
-            
+
             resolve(similarRoute || null);
           };
         }
@@ -307,20 +312,17 @@ class OfflineNavigationService {
     start: Coordinates,
     end: Coordinates,
     mode: TransportMode,
-    waypoints?: Coordinates[]
+    waypoints?: Coordinates[],
   ): Promise<Route> {
     try {
       // Try to fetch from OSRM
       const waypointCoords = [start, ...(waypoints || []), end];
-      const coordString = waypointCoords
-        .map(c => `${c.lng},${c.lat}`)
-        .join(';');
+      const coordString = waypointCoords.map((c) => `${c.lng},${c.lat}`).join(';');
 
-      const profile = mode === 'walking' ? 'foot' : 
-                      mode === 'cycling' ? 'bike' : 'car';
+      const profile = mode === 'walking' ? 'foot' : mode === 'cycling' ? 'bike' : 'car';
 
       const response = await fetch(
-        `https://router.project-osrm.org/route/v1/${profile}/${coordString}?overview=full&geometries=geojson&steps=true`
+        `https://router.project-osrm.org/route/v1/${profile}/${coordString}?overview=full&geometries=geojson&steps=true`,
       );
 
       if (!response.ok) {
@@ -342,10 +344,11 @@ class OfflineNavigationService {
         mode,
         start: { coordinates: start, type: 'start' },
         end: { coordinates: end, type: 'end' },
-        waypoints: waypoints?.map((wp, i) => ({
-          coordinates: wp,
-          type: 'waypoint' as const,
-        })) || [],
+        waypoints:
+          waypoints?.map((wp, i) => ({
+            coordinates: wp,
+            type: 'waypoint' as const,
+          })) || [],
         steps: this.parseOSRMSteps(osrmRoute.legs),
         distance: osrmRoute.distance,
         duration: osrmRoute.duration,
@@ -375,7 +378,7 @@ class OfflineNavigationService {
       return route;
     } catch (error) {
       console.warn('OSRM failed, using estimated route:', error);
-      
+
       // Create estimated route
       return this.createEstimatedRoute(start, end, mode);
     }
@@ -386,11 +389,11 @@ class OfflineNavigationService {
    */
   private parseOSRMSteps(legs: any[]): RouteStep[] {
     const steps: RouteStep[] = [];
-    
-    legs.forEach(leg => {
+
+    legs.forEach((leg) => {
       leg.steps?.forEach((step: any) => {
         steps.push({
-          instruction: step.maneuver?.modifier 
+          instruction: step.maneuver?.modifier
             ? `${step.maneuver.type} ${step.maneuver.modifier}`
             : step.maneuver?.type || 'continuar',
           distance: step.distance || 0,
@@ -415,13 +418,9 @@ class OfflineNavigationService {
   /**
    * Create estimated route (when OSRM is unavailable)
    */
-  private createEstimatedRoute(
-    start: Coordinates,
-    end: Coordinates,
-    mode: TransportMode
-  ): Route {
+  private createEstimatedRoute(start: Coordinates, end: Coordinates, mode: TransportMode): Route {
     const distance = this.calculateDistance(start, end);
-    
+
     // Estimate duration based on mode and distance
     const speedEstimates: Record<TransportMode, number> = {
       walking: 1.4, // m/s
@@ -498,7 +497,7 @@ class OfflineNavigationService {
     start: Coordinates,
     end: Coordinates,
     mode: TransportMode = this.options.defaultMode!,
-    waypoints?: Coordinates[]
+    waypoints?: Coordinates[],
   ): Promise<Route> {
     // Try cached route first
     const cached = await this.findCachedRoute(start, end, mode);
@@ -510,7 +509,7 @@ class OfflineNavigationService {
     // Fetch new route
     console.log('Kiwi: Fetching new route');
     const route = await this.fetchRoute(start, end, mode, waypoints);
-    
+
     // Cache the route
     await this.cacheRoute(route);
 
@@ -528,10 +527,7 @@ class OfflineNavigationService {
   /**
    * Get all cached routes
    */
-  async getRoutes(filters?: {
-    mode?: TransportMode;
-    status?: RouteStatus;
-  }): Promise<Route[]> {
+  async getRoutes(filters?: { mode?: TransportMode; status?: RouteStatus }): Promise<Route[]> {
     await this.initialize();
 
     return new Promise((resolve, reject) => {
@@ -546,17 +542,17 @@ class OfflineNavigationService {
 
       request.onsuccess = () => {
         let routes = request.result as Route[];
-        
+
         // Filter expired routes
-        routes = routes.filter(r => Date.now() < r.expiresAt);
+        routes = routes.filter((r) => Date.now() < r.expiresAt);
 
         // Apply filters
         if (filters) {
           if (filters.mode) {
-            routes = routes.filter(r => r.mode === filters.mode);
+            routes = routes.filter((r) => r.mode === filters.mode);
           }
           if (filters.status) {
-            routes = routes.filter(r => r.status === filters.status);
+            routes = routes.filter((r) => r.status === filters.status);
           }
         }
 
@@ -629,7 +625,9 @@ class OfflineNavigationService {
   /**
    * Save a waypoint
    */
-  async saveWaypoint(waypoint: Omit<SavedWaypoint, 'id' | 'createdAt' | 'usageCount'>): Promise<SavedWaypoint> {
+  async saveWaypoint(
+    waypoint: Omit<SavedWaypoint, 'id' | 'createdAt' | 'usageCount'>,
+  ): Promise<SavedWaypoint> {
     await this.initialize();
 
     const savedWaypoint: SavedWaypoint = {
@@ -680,7 +678,7 @@ class OfflineNavigationService {
         let waypoints = request.result as SavedWaypoint[];
 
         if (type) {
-          waypoints = waypoints.filter(w => w.type === type);
+          waypoints = waypoints.filter((w) => w.type === type);
         }
 
         waypoints.sort((a, b) => (b.lastUsedAt || b.createdAt) - (a.lastUsedAt || a.createdAt));
@@ -725,13 +723,16 @@ class OfflineNavigationService {
    * Get navigation instructions
    */
   getNavigationInstructions(route: Route): string[] {
-    return route.steps.map(step => step.instruction);
+    return route.steps.map((step) => step.instruction);
   }
 
   /**
    * Get current step based on position
    */
-  getCurrentStep(route: Route, currentPosition: Coordinates): {
+  getCurrentStep(
+    route: Route,
+    currentPosition: Coordinates,
+  ): {
     step: RouteStep;
     stepIndex: number;
     distanceToStep: number;
@@ -796,4 +797,4 @@ if (typeof window !== 'undefined') {
   offlineNavigation.initialize().catch(console.error);
 }
 
-export type { Route, SavedWaypoint, OfflineNavigationOptions, RouteStep, RoutePoint };
+export type { OfflineNavigationOptions };

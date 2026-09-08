@@ -33,46 +33,40 @@ export function useSocket(options: UseSocketOptions = {}) {
     const cleanupFunctions: (() => void)[] = [];
 
     if (optionsRef.current.onConnect) {
-      cleanupFunctions.push(
-        socketClient.on('socket:connected', optionsRef.current.onConnect)
-      );
+      cleanupFunctions.push(socketClient.on('socket:connected', optionsRef.current.onConnect));
     }
 
     if (optionsRef.current.onDisconnect) {
       cleanupFunctions.push(
-        socketClient.on('socket:disconnected', (data: any) => 
-          optionsRef.current.onDisconnect?.(data.reason)
-        )
+        socketClient.on('socket:disconnected', (data: any) =>
+          optionsRef.current.onDisconnect?.(data.reason),
+        ),
       );
     }
 
     if (optionsRef.current.onNewOrder) {
-      cleanupFunctions.push(
-        socketClient.on('order:new', optionsRef.current.onNewOrder)
-      );
+      cleanupFunctions.push(socketClient.on('order:new', optionsRef.current.onNewOrder));
     }
 
     if (optionsRef.current.onOrderAccepted) {
-      cleanupFunctions.push(
-        socketClient.on('order:accepted', optionsRef.current.onOrderAccepted)
-      );
+      cleanupFunctions.push(socketClient.on('order:accepted', optionsRef.current.onOrderAccepted));
     }
 
     if (optionsRef.current.onOrderStatusChanged) {
       cleanupFunctions.push(
-        socketClient.on('order:statusChanged', optionsRef.current.onOrderStatusChanged)
+        socketClient.on('order:statusChanged', optionsRef.current.onOrderStatusChanged),
       );
     }
 
     if (optionsRef.current.onDriverLocation) {
       cleanupFunctions.push(
-        socketClient.on('driver:location', optionsRef.current.onDriverLocation)
+        socketClient.on('driver:location', optionsRef.current.onDriverLocation),
       );
     }
 
     if (optionsRef.current.onDriverStatusChanged) {
       cleanupFunctions.push(
-        socketClient.on('driver:statusChanged', optionsRef.current.onDriverStatusChanged)
+        socketClient.on('driver:statusChanged', optionsRef.current.onDriverStatusChanged),
       );
     }
 
@@ -116,6 +110,9 @@ export function useSocket(options: UseSocketOptions = {}) {
     updateDriverLocation,
     updateDriverStatus,
     subscribeToTopics,
+    onNewOrder: optionsRef.current.onNewOrder,
+    onOrderAccepted: optionsRef.current.onOrderAccepted,
+    onOrderStatusChanged: optionsRef.current.onOrderStatusChanged,
     on: socketClient.on.bind(socketClient),
     off: socketClient.off.bind(socketClient),
   };

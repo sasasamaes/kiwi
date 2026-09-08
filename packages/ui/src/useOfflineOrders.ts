@@ -1,21 +1,26 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { offlineOrders, type OfflineOrder, type OrderStatus, type PaymentMethod } from './offline-orders';
+import {
+  offlineOrders,
+  type OfflineOrder,
+  type OrderStatus,
+  type PaymentMethod,
+} from './offline-orders';
 
 interface UseOfflineOrdersOptions {
   /** Filter by merchant ID */
   merchantId?: string;
-  
+
   /** Filter by customer ID */
   customerId?: string;
-  
+
   /** Filter by driver ID */
   driverId?: string;
-  
+
   /** Filter by status */
   status?: OrderStatus;
-  
+
   /** Auto-refresh interval (ms) */
   refreshInterval?: number;
 }
@@ -23,43 +28,51 @@ interface UseOfflineOrdersOptions {
 interface UseOfflineOrdersResult {
   /** All orders matching filters */
   orders: OfflineOrder[];
-  
+
   /** Loading state */
   isLoading: boolean;
-  
+
   /** Error message */
   error: string | null;
-  
+
   /** Create a new order */
   createOrder: (orderData: CreateOrderData) => Promise<OfflineOrder>;
-  
+
   /** Update an order */
   updateOrder: (localId: string, updates: Partial<OfflineOrder>) => Promise<OfflineOrder>;
-  
+
   /** Cancel an order */
   cancelOrder: (localId: string, reason?: string) => Promise<OfflineOrder>;
-  
+
   /** Assign driver */
-  assignDriver: (localId: string, driverId: string, driverName: string, driverPhone: string) => Promise<OfflineOrder>;
-  
+  assignDriver: (
+    localId: string,
+    driverId: string,
+    driverName: string,
+    driverPhone: string,
+  ) => Promise<OfflineOrder>;
+
   /** Update status */
   updateStatus: (localId: string, status: OrderStatus, note?: string) => Promise<OfflineOrder>;
-  
+
   /** Sync order to server */
   syncOrder: (localId: string) => Promise<OfflineOrder>;
-  
+
+  /** Get a single order by local id */
+  getOrder: (localId: string) => Promise<OfflineOrder | null>;
+
   /** Sync all pending orders */
   syncAll: () => Promise<{ synced: number; failed: number }>;
-  
+
   /** Delete an order */
   deleteOrder: (localId: string) => Promise<void>;
-  
+
   /** Refresh orders */
   refresh: () => Promise<void>;
-  
+
   /** Get unsynced count */
   unsyncedCount: number;
-  
+
   /** Stats */
   stats: {
     total: number;
@@ -92,13 +105,12 @@ interface CreateOrderData {
   deliveryFee: number;
   total: number;
   paymentMethod: PaymentMethod;
+  paymentStatus?: 'pending' | 'paid' | 'failed';
   notes?: string;
   scheduledFor?: number;
 }
 
-export function useOfflineOrders(
-  options: UseOfflineOrdersOptions = {}
-): UseOfflineOrdersResult {
+export function useOfflineOrders(options: UseOfflineOrdersOptions = {}): UseOfflineOrdersResult {
   const [orders, setOrders] = useState<OfflineOrder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -136,107 +148,129 @@ export function useOfflineOrders(
   /**
    * Create a new order
    */
-  const createOrder = useCallback(async (orderData: CreateOrderData): Promise<OfflineOrder> => {
-    try {
-      const order = await offlineOrders.createOrder(orderData);
-      await loadOrders();
-      return order;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to create order';
-      setError(errorMessage);
-      throw err;
-    }
-  }, [loadOrders]);
+  const createOrder = useCallback(
+    async (orderData: CreateOrderData): Promise<OfflineOrder> => {
+      try {
+        const order = await offlineOrders.createOrder({
+          ...orderData,
+          paymentStatus: orderData.paymentStatus ?? 'pending',
+          items: orderData.items.map((item, index) => ({
+            ...item,
+            id: `${Date.now()}_${index}`,
+          })),
+        } as any);
+        await loadOrders();
+        return order;
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to create order';
+        setError(errorMessage);
+        throw err;
+      }
+    },
+    [loadOrders],
+  );
 
   /**
    * Update an order
    */
-  const updateOrder = useCallback(async (
-    localId: string, 
-    updates: Partial<OfflineOrder>
-  ): Promise<OfflineOrder> => {
-    try {
-      const order = await offlineOrders.updateOrder(localId, updates);
-      await loadOrders();
-      return order;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to update order';
-      setError(errorMessage);
-      throw err;
-    }
-  }, [loadOrders]);
+  const updateOrder = useCallback(
+    async (localId: string, updates: Partial<OfflineOrder>): Promise<OfflineOrder> => {
+      try {
+        const order = await offlineOrders.updateOrder(localId, updates);
+        await loadOrders();
+        return order;
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to update order';
+        setError(errorMessage);
+        throw err;
+      }
+    },
+    [loadOrders],
+  );
 
   /**
    * Cancel an order
    */
-  const cancelOrder = useCallback(async (
-    localId: string, 
-    reason?: string
-  ): Promise<OfflineOrder> => {
-    try {
-      const order = await offlineOrders.cancelOrder(localId, reason);
-      await loadOrders();
-      return order;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to cancel order';
-      setError(errorMessage);
-      throw err;
-    }
-  }, [loadOrders]);
+  const cancelOrder = useCallback(
+    async (localId: string, reason?: string): Promise<OfflineOrder> => {
+      try {
+        const order = await offlineOrders.cancelOrder(localId, reason);
+        await loadOrders();
+        return order;
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to cancel order';
+        setError(errorMessage);
+        throw err;
+      }
+    },
+    [loadOrders],
+  );
 
   /**
    * Assign driver
    */
-  const assignDriver = useCallback(async (
-    localId: string,
-    driverId: string,
-    driverName: string,
-    driverPhone: string
-  ): Promise<OfflineOrder> => {
-    try {
-      const order = await offlineOrders.assignDriver(localId, driverId, driverName, driverPhone);
-      await loadOrders();
-      return order;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to assign driver';
-      setError(errorMessage);
-      throw err;
-    }
-  }, [loadOrders]);
+  const assignDriver = useCallback(
+    async (
+      localId: string,
+      driverId: string,
+      driverName: string,
+      driverPhone: string,
+    ): Promise<OfflineOrder> => {
+      try {
+        const order = await offlineOrders.assignDriver(localId, driverId, driverName, driverPhone);
+        await loadOrders();
+        return order;
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to assign driver';
+        setError(errorMessage);
+        throw err;
+      }
+    },
+    [loadOrders],
+  );
 
   /**
    * Update status
    */
-  const updateStatus = useCallback(async (
-    localId: string, 
-    status: OrderStatus,
-    note?: string
-  ): Promise<OfflineOrder> => {
-    try {
-      const order = await offlineOrders.updateOrderStatus(localId, status, note);
-      await loadOrders();
-      return order;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to update status';
-      setError(errorMessage);
-      throw err;
-    }
-  }, [loadOrders]);
+  const updateStatus = useCallback(
+    async (localId: string, status: OrderStatus, note?: string): Promise<OfflineOrder> => {
+      try {
+        const order = await offlineOrders.updateOrderStatus(localId, status, note);
+        await loadOrders();
+        return order;
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to update status';
+        setError(errorMessage);
+        throw err;
+      }
+    },
+    [loadOrders],
+  );
 
   /**
    * Sync order
    */
-  const syncOrder = useCallback(async (localId: string): Promise<OfflineOrder> => {
-    try {
-      const order = await offlineOrders.syncOrder(localId);
-      await loadOrders();
-      return order;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to sync order';
-      setError(errorMessage);
-      throw err;
-    }
-  }, [loadOrders]);
+  const syncOrder = useCallback(
+    async (localId: string): Promise<OfflineOrder> => {
+      try {
+        const order = await offlineOrders.syncOrder(localId);
+        await loadOrders();
+        return order;
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to sync order';
+        setError(errorMessage);
+        throw err;
+      }
+    },
+    [loadOrders],
+  );
+
+  /**
+   * Get a single order by local id
+   */
+  const getOrder = useCallback(async (localId: string): Promise<OfflineOrder | null> => {
+    return offlineOrders.getOrder(localId);
+  }, []);
 
   /**
    * Sync all pending
@@ -256,16 +290,19 @@ export function useOfflineOrders(
   /**
    * Delete order
    */
-  const deleteOrder = useCallback(async (localId: string): Promise<void> => {
-    try {
-      await offlineOrders.deleteOrder(localId);
-      await loadOrders();
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to delete order';
-      setError(errorMessage);
-      throw err;
-    }
-  }, [loadOrders]);
+  const deleteOrder = useCallback(
+    async (localId: string): Promise<void> => {
+      try {
+        await offlineOrders.deleteOrder(localId);
+        await loadOrders();
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to delete order';
+        setError(errorMessage);
+        throw err;
+      }
+    },
+    [loadOrders],
+  );
 
   // Initial load
   useEffect(() => {
@@ -301,6 +338,7 @@ export function useOfflineOrders(
     assignDriver,
     updateStatus,
     syncOrder,
+    getOrder,
     syncAll,
     deleteOrder,
     refresh: loadOrders,
@@ -331,3 +369,4 @@ export function useCustomerOrders(customerId: string) {
 }
 
 export type { UseOfflineOrdersOptions, UseOfflineOrdersResult, CreateOrderData };
+export type { OfflineOrder, OrderStatus, PaymentMethod };

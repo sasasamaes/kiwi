@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { dataExport, type ExportOptions, type ImportResult } from './data-export';
 
+export type { ExportOptions, ImportResult };
+
 interface UseDataExportResult {
   /** Export stats */
   stats: {
@@ -11,25 +13,25 @@ interface UseDataExportResult {
     routes: number;
     totalSize: number;
   } | null;
-  
+
   /** Loading state */
   isLoading: boolean;
-  
+
   /** Error message */
   error: string | null;
-  
+
   /** Export data */
   exportData: (options: ExportOptions) => Promise<string | Blob>;
-  
+
   /** Download export */
   downloadExport: (options: ExportOptions) => Promise<void>;
-  
+
   /** Import data */
   importData: (file: File) => Promise<ImportResult>;
-  
+
   /** Refresh stats */
   refreshStats: () => Promise<void>;
-  
+
   /** Format size */
   formatSize: (bytes: number) => string;
 }
@@ -76,21 +78,24 @@ export function useDataExport(): UseDataExportResult {
     }
   }, []);
 
-  const importData = useCallback(async (file: File) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const result = await dataExport.importData(file);
-      await loadStats();
-      return result;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Import failed';
-      setError(errorMessage);
-      throw err;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [loadStats]);
+  const importData = useCallback(
+    async (file: File) => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const result = await dataExport.importData(file);
+        await loadStats();
+        return result;
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Import failed';
+        setError(errorMessage);
+        throw err;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [loadStats],
+  );
 
   useEffect(() => {
     loadStats();

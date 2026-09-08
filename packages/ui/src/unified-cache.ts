@@ -2,13 +2,13 @@
 
 /**
  * 🥝 KIWI - Unified Cache Service
- * 
+ *
  * Integrates compression, cache warming, and offline storage
  * into a single cohesive system for optimal performance.
  */
 
-import { compressionService, CompressedData } from './compression';
-import { cacheWarmingService, WarmTask } from './cache-warming';
+import { compression, type CompressedData } from './compression';
+import { cacheWarming, WarmTask } from './cache-warming';
 import { offlineCache } from './offline-cache';
 
 // ============================================
@@ -57,7 +57,7 @@ class UnifiedCacheService {
   async get<T>(key: string): Promise<T | null> {
     try {
       const raw = await offlineCache.get(key);
-      
+
       if (!raw) {
         this.missCount++;
         this.updateHitRate();
@@ -71,8 +71,8 @@ class UnifiedCacheService {
       const data = raw as any;
       if (data && data.compressed && data.algorithm) {
         // Decompress
-        const decompressed = compressionService.decompress(data.data);
-        return JSON.parse(decompressed);
+        const decompressed = compression.decompress(data as CompressedData);
+        return JSON.parse(decompressed as string);
       }
 
       return raw as T;
@@ -82,21 +82,25 @@ class UnifiedCacheService {
     }
   }
 
-  async set<T>(key: string, value: T, options: {
-    compress?: boolean;
-    ttl?: number;
-    priority?: 'critical' | 'high' | 'normal' | 'low';
-  } = {}): Promise<void> {
+  async set<T>(
+    key: string,
+    value: T,
+    options: {
+      compress?: boolean;
+      ttl?: number;
+      priority?: 'critical' | 'high' | 'normal' | 'low';
+    } = {},
+  ): Promise<void> {
     try {
       const { compress = true, ttl, priority = 'normal' } = options;
-      
+
       let dataToStore: any = value;
 
       // Compress if enabled and data is large enough
       if (compress) {
         const serialized = JSON.stringify(value);
-        const compressed = compressionService.compress(serialized);
-        
+        const compressed = compression.compress(serialized);
+
         if (compressed.compressed) {
           dataToStore = {
             data: compressed.data,
@@ -110,8 +114,8 @@ class UnifiedCacheService {
       }
 
       // Store in offline cache
-      await offlineCache.set(key, dataToStore, ttl);
-      
+      await offlineCache.set(key, dataToStore, String(ttl));
+
       // Update stats
       this.stats.totalEntries++;
       this.stats.totalSize += JSON.stringify(value).length;
@@ -151,7 +155,7 @@ class UnifiedCacheService {
 
   private setupDefaultTasks() {
     // Critical: Current traffic data
-    cacheWarmingService.register({
+    cacheWarming.register({
       id: 'traffic-current',
       name: 'Tráfico actual',
       priority: 'critical',
@@ -163,11 +167,10 @@ class UnifiedCacheService {
       cacheType: 'traffic',
       skipIfCached: true,
       timeout: 5000,
-      status: 'pending',
     });
 
     // Critical: Merchant profile
-    cacheWarmingService.register({
+    cacheWarming.register({
       id: 'merchant-profile',
       name: 'Perfil del comerciante',
       priority: 'critical',
@@ -179,11 +182,10 @@ class UnifiedCacheService {
       cacheType: 'default',
       skipIfCached: true,
       timeout: 5000,
-      status: 'pending',
     });
 
     // High: Traffic predictions
-    cacheWarmingService.register({
+    cacheWarming.register({
       id: 'traffic-predictions',
       name: 'Predicciones de tráfico',
       priority: 'high',
@@ -195,11 +197,10 @@ class UnifiedCacheService {
       cacheType: 'predictions',
       skipIfCached: true,
       timeout: 8000,
-      status: 'pending',
     });
 
     // High: Traffic alerts
-    cacheWarmingService.register({
+    cacheWarming.register({
       id: 'traffic-alerts',
       name: 'Alertas de tráfico',
       priority: 'high',
@@ -211,11 +212,10 @@ class UnifiedCacheService {
       cacheType: 'alerts',
       skipIfCached: true,
       timeout: 5000,
-      status: 'pending',
     });
 
     // Normal: Route suggestions
-    cacheWarmingService.register({
+    cacheWarming.register({
       id: 'route-suggestions',
       name: 'Sugerencias de ruta',
       priority: 'normal',
@@ -224,14 +224,13 @@ class UnifiedCacheService {
         return [];
       },
       cacheKey: 'routes:suggestions',
-      cacheType: 'routes',
+      cacheType: 'suggestions',
       skipIfCached: false,
       timeout: 10000,
-      status: 'pending',
     });
 
     // Normal: Available drivers
-    cacheWarmingService.register({
+    cacheWarming.register({
       id: 'available-drivers',
       name: 'Repartidores disponibles',
       priority: 'normal',
@@ -243,7 +242,6 @@ class UnifiedCacheService {
       cacheType: 'default',
       skipIfCached: false,
       timeout: 5000,
-      status: 'pending',
     });
   }
 
@@ -255,7 +253,7 @@ class UnifiedCacheService {
     this.emit('warming:start');
 
     try {
-      await cacheWarmingService.warmAll();
+      await cacheWarming.warmAll();
       this.stats.lastWarmed = Date.now();
       this.stats.warmingStatus = 'completed';
       this.emit('warming:complete');
@@ -282,7 +280,7 @@ class UnifiedCacheService {
 
   private updateCompressionRatio() {
     if (this.stats.totalSize > 0) {
-      this.stats.compressionRatio = 1 - (this.stats.compressedSize / this.stats.totalSize);
+      this.stats.compressionRatio = 1 - this.stats.compressedSize / this.stats.totalSize;
     }
   }
 
@@ -295,14 +293,14 @@ class UnifiedCacheService {
       this.listeners.set(event, new Set());
     }
     this.listeners.get(event)!.add(callback);
-    
+
     return () => {
       this.listeners.get(event)?.delete(callback);
     };
   }
 
   private emit(event: string, ...args: any[]) {
-    this.listeners.get(event)?.forEach(callback => {
+    this.listeners.get(event)?.forEach((callback) => {
       try {
         callback(...args);
       } catch (error) {
@@ -316,7 +314,7 @@ class UnifiedCacheService {
   // ============================================
 
   async cleanup(maxAge: number = 7 * 24 * 60 * 60 * 1000): Promise<number> {
-    const cleaned = await offlineCache.cleanup(maxAge);
+    const cleaned = await offlineCache.cleanup();
     this.stats.totalEntries = Math.max(0, this.stats.totalEntries - cleaned);
     return cleaned;
   }
@@ -335,7 +333,7 @@ class UnifiedCacheService {
         return {
           used: estimate.usage || 0,
           available: estimate.quota || 0,
-          percentage: estimate.quota ? (estimate.usage || 0) / estimate.quota * 100 : 0,
+          percentage: estimate.quota ? ((estimate.usage || 0) / estimate.quota) * 100 : 0,
         };
       } catch {
         return { used: 0, available: 0, percentage: 0 };

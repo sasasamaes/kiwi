@@ -5,7 +5,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useOfflineOrders, type CreateOrderData } from './useOfflineOrders';
 import { useNetworkStatus } from './useNetworkStatus';
 import { OfflineIndicator } from './OfflineIndicator';
-import { Package, WifiOff, RefreshCw, DollarSign, Smartphone, CreditCard, Loader } from 'lucide-react';
+import {
+  Package,
+  WifiOff,
+  RefreshCw,
+  DollarSign,
+  Smartphone,
+  CreditCard,
+  Loader,
+} from 'lucide-react';
 
 interface OfflineOrderFormProps {
   merchantId: string;
@@ -32,10 +40,10 @@ export function OfflineOrderForm({
 }: OfflineOrderFormProps) {
   const { createOrder, unsyncedCount } = useOfflineOrders({ merchantId });
   const { isOnline, isSlowConnection } = useNetworkStatus();
-  
+
   const [step, setStep] = useState<'items' | 'details' | 'payment' | 'confirm'>('items');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // Order data
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
@@ -52,13 +60,11 @@ export function OfflineOrderForm({
   const total = subtotal + deliveryFee;
 
   const addItem = (item: OrderItem) => {
-    setItems(prev => {
-      const existing = prev.find(i => i.menuItemId === item.menuItemId);
+    setItems((prev) => {
+      const existing = prev.find((i) => i.menuItemId === item.menuItemId);
       if (existing) {
-        return prev.map(i => 
-          i.menuItemId === item.menuItemId 
-            ? { ...i, quantity: i.quantity + 1 }
-            : i
+        return prev.map((i) =>
+          i.menuItemId === item.menuItemId ? { ...i, quantity: i.quantity + 1 } : i,
         );
       }
       return [...prev, { ...item, quantity: 1 }];
@@ -67,11 +73,9 @@ export function OfflineOrderForm({
 
   const updateItemQuantity = (menuItemId: string, quantity: number) => {
     if (quantity <= 0) {
-      setItems(prev => prev.filter(i => i.menuItemId !== menuItemId));
+      setItems((prev) => prev.filter((i) => i.menuItemId !== menuItemId));
     } else {
-      setItems(prev => prev.map(i => 
-        i.menuItemId === menuItemId ? { ...i, quantity } : i
-      ));
+      setItems((prev) => prev.map((i) => (i.menuItemId === menuItemId ? { ...i, quantity } : i)));
     }
   };
 
@@ -101,14 +105,14 @@ export function OfflineOrderForm({
       };
 
       const order = await createOrder(orderData);
-      
+
       // Show success message
-      const syncMessage = isOnline 
+      const syncMessage = isOnline
         ? 'Pedido creado y sincronizado'
         : `Pedido guardado localmente (${unsyncedCount + 1} pendientes)`;
-      
+
       onSuccess?.(order);
-      
+
       // Reset form
       setStep('items');
       setCustomerName('');
@@ -152,12 +156,14 @@ export function OfflineOrderForm({
                 animate={{ opacity: 1, scale: 1 }}
               >
                 <RefreshCw className="h-3 w-3" />
-                <span>{unsyncedCount} pendiente{unsyncedCount !== 1 ? 's' : ''}</span>
+                <span>
+                  {unsyncedCount} pendiente{unsyncedCount !== 1 ? 's' : ''}
+                </span>
               </motion.div>
             )}
           </div>
         </div>
-        
+
         {/* Step Indicator */}
         <div className="flex gap-2 mt-4">
           {(['items', 'details', 'payment', 'confirm'] as const).map((s, i) => (
@@ -185,14 +191,20 @@ export function OfflineOrderForm({
               <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-4">
                 Selecciona los productos
               </h3>
-              
+
               {/* Sample menu items - in real app, fetch from API/cache */}
               <div className="space-y-2 mb-4">
                 {[
-                  { menuItemId: '1', name: 'Bowl Tropikal', price: 4500 },
-                  { menuItemId: '2', name: 'Bowl Verde', price: 4200 },
-                  { menuItemId: '3', name: 'Café Americano', price: 1200 },
-                  { menuItemId: '4', name: 'Smoothie de Frutas', price: 2500 },
+                  { id: '1', menuItemId: '1', name: 'Bowl Tropikal', price: 4500, quantity: 1 },
+                  { id: '2', menuItemId: '2', name: 'Bowl Verde', price: 4200, quantity: 1 },
+                  { id: '3', menuItemId: '3', name: 'Café Americano', price: 1200, quantity: 1 },
+                  {
+                    id: '4',
+                    menuItemId: '4',
+                    name: 'Smoothie de Frutas',
+                    price: 2500,
+                    quantity: 1,
+                  },
                 ].map((item) => (
                   <div
                     key={item.menuItemId}
@@ -207,19 +219,20 @@ export function OfflineOrderForm({
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
-                      {items.find(i => i.menuItemId === item.menuItemId) && (
+                      {items.find((i) => i.menuItemId === item.menuItemId) && (
                         <>
                           <button
                             onClick={() => {
-                              const current = items.find(i => i.menuItemId === item.menuItemId);
-                              if (current) updateItemQuantity(item.menuItemId, current.quantity - 1);
+                              const current = items.find((i) => i.menuItemId === item.menuItemId);
+                              if (current)
+                                updateItemQuantity(item.menuItemId, current.quantity - 1);
                             }}
                             className="w-8 h-8 rounded-full bg-surface-200 dark:bg-surface-700 text-surface-600 dark:text-surface-400"
                           >
                             -
                           </button>
                           <span className="w-6 text-center font-medium">
-                            {items.find(i => i.menuItemId === item.menuItemId)?.quantity || 0}
+                            {items.find((i) => i.menuItemId === item.menuItemId)?.quantity || 0}
                           </span>
                         </>
                       )}
@@ -360,11 +373,11 @@ export function OfflineOrderForm({
                   >
                     <div className="flex items-center gap-3">
                       <span className="text-2xl">
-                      {method.id === 'cash' && <DollarSign className="h-6 w-6" />}
-                      {method.id === 'sinpe' && <Smartphone className="h-6 w-6" />}
-                      {method.id === 'card' && <CreditCard className="h-6 w-6" />}
-                      {method.id === 'crypto' && <DollarSign className="h-6 w-6" />}
-                    </span>
+                        {method.id === 'cash' && <DollarSign className="h-6 w-6" />}
+                        {method.id === 'sinpe' && <Smartphone className="h-6 w-6" />}
+                        {method.id === 'card' && <CreditCard className="h-6 w-6" />}
+                        {method.id === 'crypto' && <DollarSign className="h-6 w-6" />}
+                      </span>
                       <div>
                         <p className="font-medium text-surface-800 dark:text-surface-200">
                           {method.label}
@@ -395,7 +408,9 @@ export function OfflineOrderForm({
                     </span>
                   </div>
                   <div className="flex justify-between pt-2 border-t border-surface-200 dark:border-surface-700">
-                    <span className="font-semibold text-surface-800 dark:text-surface-200">Total</span>
+                    <span className="font-semibold text-surface-800 dark:text-surface-200">
+                      Total
+                    </span>
                     <span className="font-bold text-lg text-kiwi-600 dark:text-kiwi-400">
                       ₡{total.toLocaleString()}
                     </span>
@@ -422,13 +437,16 @@ export function OfflineOrderForm({
               {!isOnline && (
                 <div className="p-4 rounded-xl bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-800">
                   <div className="flex items-start gap-3">
-                    <span className="text-2xl"><WifiOff className="h-6 w-6" /></span>
+                    <span className="text-2xl">
+                      <WifiOff className="h-6 w-6" />
+                    </span>
                     <div>
                       <p className="font-medium text-orange-700 dark:text-orange-400">
                         Modo Offline
                       </p>
                       <p className="text-sm text-orange-600 dark:text-orange-400">
-                        El pedido se guardará localmente y se sincronizará cuando vuelva la conexión.
+                        El pedido se guardará localmente y se sincronizará cuando vuelva la
+                        conexión.
                       </p>
                     </div>
                   </div>
@@ -439,23 +457,31 @@ export function OfflineOrderForm({
               <div className="space-y-3">
                 <div className="p-3 rounded-xl bg-surface-50 dark:bg-surface-900">
                   <p className="text-xs text-surface-500 dark:text-surface-400">Cliente</p>
-                  <p className="font-medium text-surface-800 dark:text-surface-200">{customerName}</p>
+                  <p className="font-medium text-surface-800 dark:text-surface-200">
+                    {customerName}
+                  </p>
                   <p className="text-sm text-surface-600 dark:text-surface-400">{customerPhone}</p>
                 </div>
 
                 <div className="p-3 rounded-xl bg-surface-50 dark:bg-surface-900">
                   <p className="text-xs text-surface-500 dark:text-surface-400">Entregar en</p>
-                  <p className="font-medium text-surface-800 dark:text-surface-200">{deliveryAddress}</p>
+                  <p className="font-medium text-surface-800 dark:text-surface-200">
+                    {deliveryAddress}
+                  </p>
                 </div>
 
                 <div className="p-3 rounded-xl bg-surface-50 dark:bg-surface-900">
-                  <p className="text-xs text-surface-500 dark:text-surface-400">Productos ({items.length})</p>
+                  <p className="text-xs text-surface-500 dark:text-surface-400">
+                    Productos ({items.length})
+                  </p>
                   {items.map((item) => (
                     <div key={item.menuItemId} className="flex justify-between text-sm">
                       <span className="text-surface-600 dark:text-surface-400">
                         {item.quantity}x {item.name}
                       </span>
-                      <span className="font-medium">₡{(item.price * item.quantity).toLocaleString()}</span>
+                      <span className="font-medium">
+                        ₡{(item.price * item.quantity).toLocaleString()}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -463,15 +489,21 @@ export function OfflineOrderForm({
                 <div className="p-3 rounded-xl bg-surface-50 dark:bg-surface-900">
                   <p className="text-xs text-surface-500 dark:text-surface-400">Pago</p>
                   <p className="font-medium text-surface-800 dark:text-surface-200 capitalize">
-                    {paymentMethod === 'sinpe' ? 'SINPE' : 
-                     paymentMethod === 'card' ? 'Tarjeta' :
-                     paymentMethod === 'crypto' ? 'Crypto' : 'Efectivo'}
+                    {paymentMethod === 'sinpe'
+                      ? 'SINPE'
+                      : paymentMethod === 'card'
+                        ? 'Tarjeta'
+                        : paymentMethod === 'crypto'
+                          ? 'Crypto'
+                          : 'Efectivo'}
                   </p>
                 </div>
 
                 <div className="p-3 rounded-xl bg-kiwi-50 dark:bg-kiwi-900/30 border border-kiwi-200 dark:border-kiwi-800">
                   <div className="flex justify-between">
-                    <span className="font-semibold text-surface-800 dark:text-surface-200">Total</span>
+                    <span className="font-semibold text-surface-800 dark:text-surface-200">
+                      Total
+                    </span>
                     <span className="font-bold text-xl text-kiwi-600 dark:text-kiwi-400">
                       ₡{total.toLocaleString()}
                     </span>
@@ -488,17 +520,19 @@ export function OfflineOrderForm({
         <div className="flex gap-2">
           {step !== 'items' && (
             <button
-              onClick={() => setStep(prev => {
-                const steps = ['items', 'details', 'payment', 'confirm'];
-                const currentIndex = steps.indexOf(prev);
-                return steps[currentIndex - 1] as any;
-              })}
+              onClick={() =>
+                setStep((prev) => {
+                  const steps = ['items', 'details', 'payment', 'confirm'];
+                  const currentIndex = steps.indexOf(prev);
+                  return steps[currentIndex - 1] as any;
+                })
+              }
               className="flex-1 py-3 rounded-xl bg-surface-100 dark:bg-surface-700 text-surface-700 dark:text-surface-300 font-medium"
             >
               ← Atrás
             </button>
           )}
-          
+
           {step === 'confirm' ? (
             <motion.button
               onClick={handleSubmit}
@@ -526,11 +560,13 @@ export function OfflineOrderForm({
             </motion.button>
           ) : (
             <button
-              onClick={() => setStep(prev => {
-                const steps = ['items', 'details', 'payment', 'confirm'];
-                const currentIndex = steps.indexOf(prev);
-                return steps[currentIndex + 1] as any;
-              })}
+              onClick={() =>
+                setStep((prev) => {
+                  const steps = ['items', 'details', 'payment', 'confirm'];
+                  const currentIndex = steps.indexOf(prev);
+                  return steps[currentIndex + 1] as any;
+                })
+              }
               disabled={
                 (step === 'items' && items.length === 0) ||
                 (step === 'details' && (!customerName || !customerPhone || !deliveryAddress))

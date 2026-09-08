@@ -6,13 +6,13 @@ import { cacheWarming, type WarmTask, type WarmProgress, type WarmPriority } fro
 interface UseCacheWarmingOptions {
   /** Auto-start warming on mount */
   autoStart?: boolean;
-  
+
   /** Callback when warming completes */
   onComplete?: (progress: WarmProgress) => void;
-  
+
   /** Callback for progress updates */
   onProgress?: (completed: number, total: number) => void;
-  
+
   /** Callback when a task completes */
   onTaskComplete?: (task: WarmTask) => void;
 }
@@ -20,41 +20,39 @@ interface UseCacheWarmingOptions {
 interface UseCacheWarmingResult {
   /** Current progress */
   progress: WarmProgress;
-  
+
   /** Whether warming is in progress */
   isWarming: boolean;
-  
+
   /** Whether warming is complete */
   isComplete: boolean;
-  
+
   /** Start warming */
   startWarming: () => Promise<WarmProgress>;
-  
+
   /** Register a warming task */
   registerTask: (task: Omit<WarmTask, 'status'>) => void;
-  
+
   /** Register multiple tasks */
   registerTasks: (tasks: Array<Omit<WarmTask, 'status'>>) => void;
-  
+
   /** Get task status */
   getTask: (id: string) => WarmTask | undefined;
-  
+
   /** All tasks */
   tasks: WarmTask[];
-  
+
   /** Progress percentage */
   progressPercent: number;
-  
+
   /** Elapsed time in ms */
   elapsedTime: number;
-  
+
   /** Estimated time remaining in ms */
   estimatedRemaining: number;
 }
 
-export function useCacheWarming(
-  options: UseCacheWarmingOptions = {}
-): UseCacheWarmingResult {
+export function useCacheWarming(options: UseCacheWarmingOptions = {}): UseCacheWarmingResult {
   const [progress, setProgress] = useState<WarmProgress>({
     total: 0,
     completed: 0,
@@ -65,7 +63,7 @@ export function useCacheWarming(
   });
   const [tasks, setTasks] = useState<WarmTask[]>([]);
   const [elapsedTime, setElapsedTime] = useState(0);
-  
+
   const optionsRef = useRef(options);
   optionsRef.current = options;
 
@@ -95,7 +93,7 @@ export function useCacheWarming(
     updateProgress();
 
     return () => {
-      unsubscribes.forEach(unsub => unsub());
+      unsubscribes.forEach((unsub) => unsub());
     };
   }, []);
 
@@ -113,14 +111,17 @@ export function useCacheWarming(
   }, [progress.status, progress.startedAt]);
 
   // Calculate progress percentage
-  const progressPercent = progress.total > 0
-    ? ((progress.completed + progress.failed + progress.skipped) / progress.total) * 100
-    : 0;
+  const progressPercent =
+    progress.total > 0
+      ? ((progress.completed + progress.failed + progress.skipped) / progress.total) * 100
+      : 0;
 
   // Calculate estimated time remaining
-  const estimatedRemaining = progress.completed > 0 && progress.startedAt
-    ? ((elapsedTime / progress.completed) * (progress.total - progress.completed - progress.inProgress))
-    : 0;
+  const estimatedRemaining =
+    progress.completed > 0 && progress.startedAt
+      ? (elapsedTime / progress.completed) *
+        (progress.total - progress.completed - progress.inProgress)
+      : 0;
 
   // Start warming
   const startWarming = useCallback(async (): Promise<WarmProgress> => {
@@ -282,20 +283,20 @@ export function useCacheWarmingProgress() {
     if (isComplete) {
       return '¡Datos listos!';
     }
-    
+
     if (isWarming) {
       if (progress.inProgress > 0) {
         return `Cargando ${progress.inProgress} elemento${progress.inProgress > 1 ? 's' : ''}...`;
       }
       return 'Preparando datos...';
     }
-    
+
     return 'Inicializando...';
   };
 
   const getProgressMessage = (): string => {
     if (progress.total === 0) return '';
-    
+
     const completed = progress.completed + progress.failed + progress.skipped;
     return `${completed} de ${progress.total}`;
   };
@@ -308,10 +309,12 @@ export function useCacheWarmingProgress() {
     estimatedRemaining,
     statusMessage: getStatusMessage(),
     progressMessage: getProgressMessage(),
-    progressPercent: progress.total > 0 
-      ? ((progress.completed + progress.failed + progress.skipped) / progress.total) * 100
-      : 0,
+    progressPercent:
+      progress.total > 0
+        ? ((progress.completed + progress.failed + progress.skipped) / progress.total) * 100
+        : 0,
   };
 }
 
 export type { UseCacheWarmingOptions, UseCacheWarmingResult };
+export type { WarmTask, WarmProgress, WarmPriority };

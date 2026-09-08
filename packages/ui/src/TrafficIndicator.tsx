@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useTranslations } from '../LanguageProvider';
+import { useTranslations } from './LanguageProvider';
 
 interface TrafficCondition {
   level: 'free' | 'light' | 'moderate' | 'heavy' | 'severe';
@@ -11,7 +11,7 @@ interface TrafficCondition {
   color: string;
 }
 
-interface TrafficIndicatorProps {
+export interface TrafficIndicatorProps {
   lat?: number;
   lng?: number;
   showDetails?: boolean;
@@ -163,7 +163,7 @@ export function TrafficIndicator({
   );
 }
 
-interface DeliveryEstimateProps {
+export interface DeliveryEstimateProps {
   pickupLat: number;
   pickupLng: number;
   deliveryLat: number;
@@ -254,9 +254,11 @@ export function DeliveryEstimate({
           {estimate.estimatedMinutes} min
         </motion.p>
         <p className="text-sm text-surface-500 dark:text-surface-400">
-          {estimate.estimatedMinutes <= 15 ? '⚡ Muy rápido' :
-           estimate.estimatedMinutes <= 30 ? 'Check Normal' :
-           '🐢 ' + t('traffic.heavy')}
+          {estimate.estimatedMinutes <= 15
+            ? '⚡ Muy rápido'
+            : estimate.estimatedMinutes <= 30
+              ? 'Check Normal'
+              : '🐢 ' + t('traffic.heavy')}
         </p>
       </div>
 
@@ -297,7 +299,9 @@ export function DeliveryEstimate({
             className="h-full rounded-full"
             style={{ backgroundColor: estimate.trafficColor }}
             initial={{ width: 0 }}
-            animate={{ width: `${(1 - estimate.breakdown.traffic / estimate.estimatedMinutes) * 100}%` }}
+            animate={{
+              width: `${(1 - estimate.breakdown.traffic / estimate.estimatedMinutes) * 100}%`,
+            }}
             transition={{ duration: 1, ease: 'easeOut' }}
           />
         </div>
@@ -310,18 +314,20 @@ export function DeliveryEstimate({
   );
 }
 
-interface TrafficMapOverlayProps {
+export interface TrafficMapOverlayProps {
   className?: string;
 }
 
 export function TrafficMapOverlay({ className = '' }: TrafficMapOverlayProps) {
   const { t } = useTranslations();
-  const [trafficData, setTrafficData] = useState<Array<{
-    lat: number;
-    lng: number;
-    level: string;
-    color: string;
-  }>>([]);
+  const [trafficData, setTrafficData] = useState<
+    Array<{
+      lat: number;
+      lng: number;
+      level: string;
+      color: string;
+    }>
+  >([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -333,10 +339,10 @@ export function TrafficMapOverlay({ className = '' }: TrafficMapOverlayProps) {
       // Get traffic for Nicoya center and surrounding areas
       const points = [
         { lat: 10.1483, lng: -85.4527 }, // Centro
-        { lat: 10.1490, lng: -85.4520 }, // Mercado
-        { lat: 10.1470, lng: -85.4540 }, // Hospital
-        { lat: 10.1500, lng: -85.4500 }, // Norte
-        { lat: 10.1460, lng: -85.4550 }, // Sur
+        { lat: 10.149, lng: -85.452 }, // Mercado
+        { lat: 10.147, lng: -85.454 }, // Hospital
+        { lat: 10.15, lng: -85.45 }, // Norte
+        { lat: 10.146, lng: -85.455 }, // Sur
       ];
 
       const response = await fetch('/api/routing/traffic/updates', {
@@ -346,12 +352,14 @@ export function TrafficMapOverlay({ className = '' }: TrafficMapOverlayProps) {
       });
 
       const data = await response.json();
-      setTrafficData(data.map((d: any) => ({
-        lat: d.point.lat,
-        lng: d.point.lng,
-        level: d.traffic.level,
-        color: d.traffic.color,
-      })));
+      setTrafficData(
+        data.map((d: any) => ({
+          lat: d.point.lat,
+          lng: d.point.lng,
+          level: d.traffic.level,
+          color: d.traffic.color,
+        })),
+      );
     } catch (error) {
       console.error('Failed to fetch traffic data:', error);
     } finally {
@@ -396,10 +404,7 @@ export function TrafficMapOverlay({ className = '' }: TrafficMapOverlayProps) {
           { level: 'severe', label: t('traffic.severe'), color: '#ef4444' },
         ].map((item) => (
           <div key={item.level} className="flex items-center gap-1.5 text-xs">
-            <div
-              className="h-2 w-2 rounded-full"
-              style={{ backgroundColor: item.color }}
-            />
+            <div className="h-2 w-2 rounded-full" style={{ backgroundColor: item.color }} />
             <span className="text-surface-500 dark:text-surface-400">{item.label}</span>
           </div>
         ))}
@@ -416,15 +421,17 @@ export function TrafficMapOverlay({ className = '' }: TrafficMapOverlayProps) {
             transition={{ delay: index * 0.1 }}
           >
             <div className="flex items-center gap-2">
-              <div
-                className="h-3 w-3 rounded-full"
-                style={{ backgroundColor: point.color }}
-              />
+              <div className="h-3 w-3 rounded-full" style={{ backgroundColor: point.color }} />
               <span className="text-sm text-surface-700 dark:text-surface-300">
-                {index === 0 ? 'Centro' :
-                 index === 1 ? 'Mercado' :
-                 index === 2 ? 'Hospital' :
-                 index === 3 ? 'Norte' : 'Sur'}
+                {index === 0
+                  ? 'Centro'
+                  : index === 1
+                    ? 'Mercado'
+                    : index === 2
+                      ? 'Hospital'
+                      : index === 3
+                        ? 'Norte'
+                        : 'Sur'}
               </span>
             </div>
             <span className="text-xs font-medium capitalize" style={{ color: point.color }}>

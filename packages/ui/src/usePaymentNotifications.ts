@@ -1,18 +1,22 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { paymentNotifications, type PaymentNotification, type NotificationType } from './payment-notifications';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import {
+  paymentNotifications,
+  type PaymentNotification,
+  type NotificationType,
+} from './payment-notifications';
 
 interface UsePaymentNotificationsOptions {
   /** Recipient ID to filter notifications */
   recipientId?: string;
-  
+
   /** Auto-refresh interval (ms) */
   refreshInterval?: number;
-  
+
   /** Callback when notification received */
   onNotification?: (notification: PaymentNotification) => void;
-  
+
   /** Callback when notification clicked */
   onNotificationClick?: (notification: PaymentNotification) => void;
 }
@@ -20,16 +24,16 @@ interface UsePaymentNotificationsOptions {
 interface UsePaymentNotificationsResult {
   /** All notifications */
   notifications: PaymentNotification[];
-  
+
   /** Unread notifications */
   unreadNotifications: PaymentNotification[];
-  
+
   /** Unread count */
   unreadCount: number;
-  
+
   /** Loading state */
   isLoading: boolean;
-  
+
   /** Create a notification */
   createNotification: (
     type: NotificationType,
@@ -42,36 +46,36 @@ interface UsePaymentNotificationsResult {
       recipientId: string;
       recipientType: 'customer' | 'merchant' | 'driver';
     },
-    additionalData?: Record<string, any>
+    additionalData?: Record<string, any>,
   ) => Promise<PaymentNotification>;
-  
+
   /** Mark as read */
   markAsRead: (notificationId: string) => Promise<void>;
-  
+
   /** Mark all as read */
   markAllAsRead: () => Promise<number>;
-  
+
   /** Dismiss notification */
   dismissNotification: (notificationId: string) => Promise<void>;
-  
+
   /** Delete notification */
   deleteNotification: (notificationId: string) => Promise<void>;
-  
+
   /** Clear all */
   clearAll: () => Promise<number>;
-  
+
   /** Refresh notifications */
   refresh: () => Promise<void>;
-  
+
   /** Request notification permission */
   requestPermission: () => Promise<NotificationPermission>;
-  
+
   /** Permission status */
   permission: NotificationPermission;
 }
 
 export function usePaymentNotifications(
-  options: UsePaymentNotificationsOptions = {}
+  options: UsePaymentNotificationsOptions = {},
 ): UsePaymentNotificationsResult {
   const [notifications, setNotifications] = useState<PaymentNotification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -108,31 +112,41 @@ export function usePaymentNotifications(
   /**
    * Create notification
    */
-  const createNotification = useCallback(async (
-    type: NotificationType,
-    paymentData: {
-      paymentId: string;
-      orderId: string;
-      amount: number;
-      currency: string;
-      method: string;
-      recipientId: string;
-      recipientType: 'customer' | 'merchant' | 'driver';
+  const createNotification = useCallback(
+    async (
+      type: NotificationType,
+      paymentData: {
+        paymentId: string;
+        orderId: string;
+        amount: number;
+        currency: string;
+        method: string;
+        recipientId: string;
+        recipientType: 'customer' | 'merchant' | 'driver';
+      },
+      additionalData?: Record<string, any>,
+    ) => {
+      const notification = await paymentNotifications.createNotification(
+        type,
+        paymentData,
+        additionalData,
+      );
+      await loadNotifications();
+      return notification;
     },
-    additionalData?: Record<string, any>
-  ) => {
-    const notification = await paymentNotifications.createNotification(type, paymentData, additionalData);
-    await loadNotifications();
-    return notification;
-  }, [loadNotifications]);
+    [loadNotifications],
+  );
 
   /**
    * Mark as read
    */
-  const markAsRead = useCallback(async (notificationId: string) => {
-    await paymentNotifications.markAsRead(notificationId);
-    await loadNotifications();
-  }, [loadNotifications]);
+  const markAsRead = useCallback(
+    async (notificationId: string) => {
+      await paymentNotifications.markAsRead(notificationId);
+      await loadNotifications();
+    },
+    [loadNotifications],
+  );
 
   /**
    * Mark all as read
@@ -146,18 +160,24 @@ export function usePaymentNotifications(
   /**
    * Dismiss notification
    */
-  const dismissNotification = useCallback(async (notificationId: string) => {
-    await paymentNotifications.dismissNotification(notificationId);
-    await loadNotifications();
-  }, [loadNotifications]);
+  const dismissNotification = useCallback(
+    async (notificationId: string) => {
+      await paymentNotifications.dismissNotification(notificationId);
+      await loadNotifications();
+    },
+    [loadNotifications],
+  );
 
   /**
    * Delete notification
    */
-  const deleteNotification = useCallback(async (notificationId: string) => {
-    await paymentNotifications.deleteNotification(notificationId);
-    await loadNotifications();
-  }, [loadNotifications]);
+  const deleteNotification = useCallback(
+    async (notificationId: string) => {
+      await paymentNotifications.deleteNotification(notificationId);
+      await loadNotifications();
+    },
+    [loadNotifications],
+  );
 
   /**
    * Clear all
@@ -178,7 +198,7 @@ export function usePaymentNotifications(
   }, []);
 
   // Unread notifications
-  const unreadNotifications = notifications.filter(n => !n.read && !n.dismissed);
+  const unreadNotifications = notifications.filter((n) => !n.read && !n.dismissed);
   const unreadCount = unreadNotifications.length;
 
   // Initial load
@@ -245,3 +265,4 @@ export function useCustomerPaymentNotifications(customerId: string) {
 }
 
 export type { UsePaymentNotificationsOptions, UsePaymentNotificationsResult };
+export type { PaymentNotification, NotificationType };

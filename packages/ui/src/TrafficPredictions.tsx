@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useTranslations } from '../LanguageProvider';
+import { useTranslations } from './LanguageProvider';
 
-interface TrafficPrediction {
+export interface TrafficPrediction {
   timestamp: string;
   predictedLevel: string;
   predictedSpeed: number;
@@ -18,14 +18,14 @@ interface TrafficPrediction {
   };
 }
 
-interface HourlyForecast {
+export interface HourlyForecast {
   hour: number;
   level: string;
   speed: number;
   confidence: number;
 }
 
-interface DailyForecast {
+export interface DailyForecast {
   date: string;
   dayOfWeek: string;
   hourlyForecast: HourlyForecast[];
@@ -35,7 +35,7 @@ interface DailyForecast {
   bestDeliveryHours: number[];
 }
 
-interface TrafficPredictionsProps {
+export interface TrafficPredictionsProps {
   lat: number;
   lng: number;
   className?: string;
@@ -50,11 +50,7 @@ const LEVEL_COLORS = {
   severe: '#ef4444',
 };
 
-export function TrafficPredictions({
-  lat,
-  lng,
-  className = '',
-}: TrafficPredictionsProps) {
+export function TrafficPredictions({ lat, lng, className = '' }: TrafficPredictionsProps) {
   const { t } = useTranslations();
   const [activeTab, setActiveTab] = useState<'hourly' | 'daily' | 'insights'>('hourly');
   const [loading, setLoading] = useState(true);
@@ -72,7 +68,9 @@ export function TrafficPredictions({
   }
 
   return (
-    <div className={`rounded-2xl bg-white dark:bg-surface-800 shadow-soft dark:shadow-dark overflow-hidden ${className}`}>
+    <div
+      className={`rounded-2xl bg-white dark:bg-surface-800 shadow-soft dark:shadow-dark overflow-hidden ${className}`}
+    >
       {/* Header */}
       <div className="p-4 border-b border-surface-100 dark:border-surface-700">
         <div className="flex items-center justify-between mb-3">
@@ -85,7 +83,9 @@ export function TrafficPredictions({
               animate={{ scale: [1, 1.2, 1] }}
               transition={{ duration: 2, repeat: Infinity }}
             />
-            <span className="text-xs text-surface-500 dark:text-surface-400">ML {t('phrases.connected')}</span>
+            <span className="text-xs text-surface-500 dark:text-surface-400">
+              ML {t('phrases.connected')}
+            </span>
           </div>
         </div>
 
@@ -155,6 +155,7 @@ export function TrafficPredictions({
 
 // Hourly Forecast Tab
 function HourlyForecastTab({ lat, lng }: { lat: number; lng: number }) {
+  const { t } = useTranslations();
   const [forecast, setForecast] = useState<HourlyForecast[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -182,32 +183,35 @@ function HourlyForecastTab({ lat, lng }: { lat: number; lng: number }) {
   const currentHour = new Date().getHours();
 
   return (
-    <div className="space-y-4">          {/* Current Hour Highlight */}
+    <div className="space-y-4">
+      {' '}
+      {/* Current Hour Highlight */}
       <div className="p-4 rounded-xl bg-kiwi-50 dark:bg-kiwi-900/30">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm text-kiwi-700 dark:text-kiwi-400 font-medium">
               {t('traffic.predictions')}
             </p>
-            <p className="text-2xl font-bold text-kiwi-800 dark:text-kiwi-300">
-              {currentHour}:00
-            </p>
+            <p className="text-2xl font-bold text-kiwi-800 dark:text-kiwi-300">{currentHour}:00</p>
           </div>
           <div className="text-right">
             <div
               className="h-4 w-4 rounded-full mb-1 ml-auto"
               style={{ backgroundColor: LEVEL_COLORS[forecast[currentHour]?.level || 'free'] }}
             />
-            <p className="text-sm font-medium capitalize" style={{ color: LEVEL_COLORS[forecast[currentHour]?.level || 'free'] }}>
+            <p
+              className="text-sm font-medium capitalize"
+              style={{ color: LEVEL_COLORS[forecast[currentHour]?.level || 'free'] }}
+            >
               {forecast[currentHour]?.level || 'free'}
             </p>
             <p className="text-xs text-surface-500 dark:text-surface-400">
-              {t('traffic.confidence')}: {Math.round((forecast[currentHour]?.confidence || 0) * 100)}%
+              {t('traffic.confidence')}:{' '}
+              {Math.round((forecast[currentHour]?.confidence || 0) * 100)}%
             </p>
           </div>
         </div>
       </div>
-
       {/* Hourly Chart */}
       <div className="overflow-x-auto">
         <div className="flex gap-1 min-w-[600px]">
@@ -240,13 +244,14 @@ function HourlyForecastTab({ lat, lng }: { lat: number; lng: number }) {
           ))}
         </div>
       </div>
-
       {/* Legend */}
       <div className="flex items-center justify-center gap-4">
         {Object.entries(LEVEL_COLORS).map(([level, color]) => (
           <div key={level} className="flex items-center gap-1.5">
             <div className="h-2 w-2 rounded-full" style={{ backgroundColor: color }} />
-            <span className="text-xs text-surface-500 dark:text-surface-400 capitalize">{level}</span>
+            <span className="text-xs text-surface-500 dark:text-surface-400 capitalize">
+              {level}
+            </span>
           </div>
         ))}
       </div>
@@ -256,6 +261,7 @@ function HourlyForecastTab({ lat, lng }: { lat: number; lng: number }) {
 
 // Daily Forecast Tab
 function DailyForecastTab({ lat, lng }: { lat: number; lng: number }) {
+  const { t } = useTranslations();
   const [forecast, setForecast] = useState<DailyForecast[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDay, setSelectedDay] = useState<number>(0);
@@ -325,7 +331,10 @@ function DailyForecastTab({ lat, lng }: { lat: number; lng: number }) {
                 className="h-4 w-4 rounded-full mb-1 ml-auto"
                 style={{ backgroundColor: LEVEL_COLORS[forecast[selectedDay].averageLevel] }}
               />
-              <p className="text-sm font-medium capitalize" style={{ color: LEVEL_COLORS[forecast[selectedDay].averageLevel] }}>
+              <p
+                className="text-sm font-medium capitalize"
+                style={{ color: LEVEL_COLORS[forecast[selectedDay].averageLevel] }}
+              >
                 {forecast[selectedDay].averageLevel}
               </p>
             </div>
@@ -337,7 +346,7 @@ function DailyForecastTab({ lat, lng }: { lat: number; lng: number }) {
               🔴 {t('traffic.peakHours')} ({t('traffic.worstTimes')})
             </p>
             <div className="flex gap-2">
-              {forecast[selectedDay].peakHours.map(hour => (
+              {forecast[selectedDay].peakHours.map((hour) => (
                 <div
                   key={hour}
                   className="px-3 py-1 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs font-medium"
@@ -354,7 +363,7 @@ function DailyForecastTab({ lat, lng }: { lat: number; lng: number }) {
               🟢 {t('traffic.bestTimes')} ({t('traffic.recommendations')})
             </p>
             <div className="flex gap-2">
-              {forecast[selectedDay].bestDeliveryHours.map(hour => (
+              {forecast[selectedDay].bestDeliveryHours.map((hour) => (
                 <div
                   key={hour}
                   className="px-3 py-1 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-medium"
@@ -369,10 +378,7 @@ function DailyForecastTab({ lat, lng }: { lat: number; lng: number }) {
           <div className="mt-4 pt-4 border-t border-surface-200 dark:border-surface-700">
             <div className="flex gap-1">
               {forecast[selectedDay].hourlyForecast.map((hour) => (
-                <div
-                  key={hour.hour}
-                  className="flex-1 flex flex-col items-center"
-                >
+                <div key={hour.hour} className="flex-1 flex flex-col items-center">
                   <div
                     className="w-full rounded-t"
                     style={{
@@ -396,6 +402,7 @@ function DailyForecastTab({ lat, lng }: { lat: number; lng: number }) {
 
 // Insights Tab
 function InsightsTab({ lat, lng }: { lat: number; lng: number }) {
+  const { t } = useTranslations();
   const [insights, setInsights] = useState<{
     patterns: Array<{ name: string; description: string; confidence: number }>;
     anomalies: Array<{ description: string; severity: string }>;
@@ -488,13 +495,15 @@ function InsightsTab({ lat, lng }: { lat: number; lng: number }) {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.1 }}
               >
-                <p className={`text-sm ${
-                  anomaly.severity === 'high'
-                    ? 'text-red-700 dark:text-red-400'
-                    : anomaly.severity === 'medium'
-                      ? 'text-yellow-700 dark:text-yellow-400'
-                      : 'text-surface-700 dark:text-surface-300'
-                }`}>
+                <p
+                  className={`text-sm ${
+                    anomaly.severity === 'high'
+                      ? 'text-red-700 dark:text-red-400'
+                      : anomaly.severity === 'medium'
+                        ? 'text-yellow-700 dark:text-yellow-400'
+                        : 'text-surface-700 dark:text-surface-300'
+                  }`}
+                >
                   {anomaly.description}
                 </p>
               </motion.div>
@@ -517,9 +526,7 @@ function InsightsTab({ lat, lng }: { lat: number; lng: number }) {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.1 }}
             >
-              <p className="text-sm text-kiwi-700 dark:text-kiwi-400">
-                {rec}
-              </p>
+              <p className="text-sm text-kiwi-700 dark:text-kiwi-400">{rec}</p>
             </motion.div>
           ))}
         </div>
@@ -540,9 +547,7 @@ function InsightsTab({ lat, lng }: { lat: number; lng: number }) {
             <p className="text-xs font-medium text-surface-500 dark:text-surface-400">
               {t('traffic.accuracy')}
             </p>
-            <p className="text-sm font-semibold text-kiwi-600 dark:text-kiwi-400">
-              82%
-            </p>
+            <p className="text-sm font-semibold text-kiwi-600 dark:text-kiwi-400">82%</p>
           </div>
         </div>
       </div>

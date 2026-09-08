@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-interface RouteSuggestion {
+export interface RouteSuggestion {
   id: string;
   name: string;
   description: string;
@@ -23,7 +23,7 @@ interface RouteSuggestion {
   advantages: string[];
 }
 
-interface RouteComparison {
+export interface RouteComparison {
   origin: { lat: number; lng: number; name?: string };
   destination: { lat: number; lng: number; name?: string };
   routes: RouteSuggestion[];
@@ -37,7 +37,7 @@ interface RouteComparison {
   estimatedSavings: number;
 }
 
-interface RouteSuggestionProps {
+export interface RouteSuggestionProps {
   originLat: number;
   originLng: number;
   destLat: number;
@@ -46,14 +46,14 @@ interface RouteSuggestionProps {
   className?: string;
 }
 
-interface RouteCardProps {
+export interface RouteCardProps {
   route: RouteSuggestion;
   isSelected: boolean;
   onSelect: () => void;
   className?: string;
 }
 
-interface QuickSuggestionProps {
+export interface QuickSuggestionProps {
   originLat: number;
   originLng: number;
   destLat: number;
@@ -101,7 +101,7 @@ export function RouteSuggestionPanel({
       const response = await fetch(`/api/routing/suggestions?${params.toString()}`);
       const data = await response.json();
       setComparison(data);
-      
+
       // Auto-select recommended route
       if (data.recommendedRouteId) {
         setSelectedRouteId(data.recommendedRouteId);
@@ -130,15 +130,15 @@ export function RouteSuggestionPanel({
     return (
       <div className={`rounded-2xl glass p-8 text-center ${className}`}>
         <span className="text-4xl block mb-3">Map</span>
-        <p className="text-surface-500 dark:text-surface-400">
-          No se encontraron rutas
-        </p>
+        <p className="text-surface-500 dark:text-surface-400">No se encontraron rutas</p>
       </div>
     );
   }
 
   return (
-    <div className={`rounded-2xl bg-white dark:bg-surface-800 shadow-soft dark:shadow-dark overflow-hidden ${className}`}>
+    <div
+      className={`rounded-2xl bg-white dark:bg-surface-800 shadow-soft dark:shadow-dark overflow-hidden ${className}`}
+    >
       {/* Header */}
       <div className="p-4 border-b border-surface-100 dark:border-surface-700">
         <div className="flex items-center justify-between">
@@ -152,7 +152,10 @@ export function RouteSuggestionPanel({
               animate={{ scale: [1, 1.2, 1] }}
               transition={{ duration: 2, repeat: Infinity }}
             />
-            <span className="text-xs font-medium" style={{ color: comparison.trafficSummary.color }}>
+            <span
+              className="text-xs font-medium"
+              style={{ color: comparison.trafficSummary.color }}
+            >
               {comparison.trafficSummary.description}
             </span>
           </div>
@@ -186,7 +189,7 @@ export function RouteSuggestionPanel({
               isSelected={selectedRouteId === route.id}
               onSelect={() => handleSelectRoute(route)}
             />
-            
+
             {/* Expandable Details */}
             <AnimatePresence>
               {showDetails === route.id && (
@@ -205,7 +208,10 @@ export function RouteSuggestionPanel({
                         </p>
                         <div className="space-y-1">
                           {route.waypoints.map((wp, i) => (
-                            <div key={i} className="flex items-center gap-2 text-xs text-surface-600 dark:text-surface-400">
+                            <div
+                              key={i}
+                              className="flex items-center gap-2 text-xs text-surface-600 dark:text-surface-400"
+                            >
                               <span className="w-1.5 h-1.5 rounded-full bg-surface-400" />
                               {wp.name || `Punto ${i + 1}`}
                             </div>
@@ -264,12 +270,7 @@ export function RouteSuggestionPanel({
   );
 }
 
-function RouteCard({
-  route,
-  isSelected,
-  onSelect,
-  className = '',
-}: RouteCardProps) {
+function RouteCard({ route, isSelected, onSelect, className = '' }: RouteCardProps) {
   const [showDetails, setShowDetails] = useState(false);
 
   return (
@@ -284,11 +285,13 @@ function RouteCard({
     >
       <div className="flex items-start gap-3">
         {/* Route Icon */}
-        <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${
-          route.isRecommended
-            ? 'bg-kiwi-100 dark:bg-kiwi-900/50'
-            : 'bg-surface-200 dark:bg-surface-700'
-        }`}>
+        <div
+          className={`flex h-12 w-12 items-center justify-center rounded-xl ${
+            route.isRecommended
+              ? 'bg-kiwi-100 dark:bg-kiwi-900/50'
+              : 'bg-surface-200 dark:bg-surface-700'
+          }`}
+        >
           {route.isRecommended ? (
             <motion.span
               className="text-xl"
@@ -305,27 +308,27 @@ function RouteCard({
         {/* Route Info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <h4 className="font-semibold text-surface-800 dark:text-surface-100">
-              {route.name}
-            </h4>
+            <h4 className="font-semibold text-surface-800 dark:text-surface-100">{route.name}</h4>
             {route.isRecommended && (
               <span className="px-2 py-0.5 rounded-full bg-kiwi-100 dark:bg-kiwi-900/50 text-xs font-medium text-kiwi-700 dark:text-kiwi-400">
                 Recomendada
               </span>
             )}
           </div>
-          
-          <p className="text-xs text-surface-500 dark:text-surface-400 mb-2">
-            {route.description}
-          </p>
+
+          <p className="text-xs text-surface-500 dark:text-surface-400 mb-2">{route.description}</p>
 
           <div className="flex items-center gap-4">
             {/* Duration */}
             <div className="flex items-center gap-1">
               <span className="text-sm">⏱️</span>
-              <span className={`text-sm font-semibold ${
-                route.savings > 0 ? 'text-green-600 dark:text-green-400' : 'text-surface-700 dark:text-surface-300'
-              }`}>
+              <span
+                className={`text-sm font-semibold ${
+                  route.savings > 0
+                    ? 'text-green-600 dark:text-green-400'
+                    : 'text-surface-700 dark:text-surface-300'
+                }`}
+              >
                 {route.trafficDuration} min
               </span>
               {route.savings > 0 && (
@@ -439,9 +442,7 @@ export function QuickSuggestionBanner({
               -{suggestion.timeSaved} min
             </span>
           </div>
-          <p className="text-sm text-white/80">
-            {suggestion.reason}
-          </p>
+          <p className="text-sm text-white/80">{suggestion.reason}</p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -512,14 +513,12 @@ export function RouteComparisonCard({
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-surface-200 dark:bg-surface-700 text-sm font-bold">
               {index + 1}
             </div>
-            
+
             <div className="flex-1">
               <p className="font-medium text-surface-800 dark:text-surface-100 text-sm">
                 {route.name}
               </p>
-              <p className="text-xs text-surface-500 dark:text-surface-400">
-                {route.distance} km
-              </p>
+              <p className="text-xs text-surface-500 dark:text-surface-400">{route.distance} km</p>
             </div>
 
             <div className="text-right">
@@ -527,16 +526,11 @@ export function RouteComparisonCard({
                 {route.trafficDuration} min
               </p>
               {route.savings > 0 && (
-                <p className="text-xs text-green-600 dark:text-green-400">
-                  -{route.savings} min
-                </p>
+                <p className="text-xs text-green-600 dark:text-green-400">-{route.savings} min</p>
               )}
             </div>
 
-            <div
-              className="h-2 w-8 rounded-full"
-              style={{ backgroundColor: route.trafficColor }}
-            />
+            <div className="h-2 w-8 rounded-full" style={{ backgroundColor: route.trafficColor }} />
           </div>
         ))}
       </div>

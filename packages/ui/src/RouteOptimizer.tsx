@@ -46,7 +46,7 @@ interface ActiveOrder {
   status: string;
 }
 
-interface RouteOptimizerProps {
+export interface RouteOptimizerProps {
   driverLocation: { lat: number; lng: number };
   activeOrders: ActiveOrder[];
   onRouteCalculated?: (route: OptimizedRoute) => void;
@@ -83,15 +83,15 @@ export function RouteOptimizer({
 
     try {
       // Prepare orders for optimization
-      const orders = activeOrders.map(order => ({
+      const orders = activeOrders.map((order) => ({
         orderId: order.id,
         pickup: {
           lat: order.pickupLat || order.merchant?.latitude || 10.1483,
           lng: order.pickupLng || order.merchant?.longitude || -85.4527,
         },
         delivery: {
-          lat: order.deliveryLat || 10.1500,
-          lng: order.deliveryLng || -85.4500,
+          lat: order.deliveryLat || 10.15,
+          lng: order.deliveryLng || -85.45,
         },
         pickupAddress: order.pickupAddress,
         deliveryAddress: order.deliveryAddress,
@@ -148,9 +148,7 @@ export function RouteOptimizer({
       <div className={`rounded-2xl glass p-4 ${className}`}>
         <div className="text-center py-4">
           <span className="text-3xl block mb-2">Package</span>
-          <p className="text-sm text-surface-500 dark:text-surface-400">
-            No hay pedidos activos
-          </p>
+          <p className="text-sm text-surface-500 dark:text-surface-400">No hay pedidos activos</p>
         </div>
       </div>
     );
@@ -219,9 +217,7 @@ export function RouteOptimizer({
             <p className="text-sm font-medium text-surface-800 dark:text-surface-100">
               Tu ubicación actual
             </p>
-            <p className="text-xs text-surface-500 dark:text-surface-400">
-              Punto de inicio
-            </p>
+            <p className="text-xs text-surface-500 dark:text-surface-400">Punto de inicio</p>
           </div>
         </div>
 
@@ -229,7 +225,7 @@ export function RouteOptimizer({
         <AnimatePresence>
           {route?.stops.map((stop, index) => {
             const isLast = index === route.stops.length - 1;
-            const order = activeOrders.find(o => o.id === stop.orderId);
+            const order = activeOrders.find((o) => o.id === stop.orderId);
 
             return (
               <motion.div
@@ -240,12 +236,12 @@ export function RouteOptimizer({
                 transition={{ delay: index * 0.1 }}
               >
                 <div className="flex flex-col items-center">
-                  <div className={`flex h-8 w-8 items-center justify-center rounded-full ${getStopColor(stop.type)} text-white text-sm`}>
+                  <div
+                    className={`flex h-8 w-8 items-center justify-center rounded-full ${getStopColor(stop.type)} text-white text-sm`}
+                  >
                     {index + 1}
                   </div>
-                  {!isLast && (
-                    <div className="w-0.5 h-6 bg-surface-200 dark:bg-surface-700" />
-                  )}
+                  {!isLast && <div className="w-0.5 h-6 bg-surface-200 dark:bg-surface-700" />}
                 </div>
 
                 <div className="flex-1 min-w-0">
@@ -253,7 +249,9 @@ export function RouteOptimizer({
                     <span className="text-lg">{getStopIcon(stop.type, index)}</span>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-surface-800 dark:text-surface-100 truncate">
-                        {stop.type === 'pickup' ? order?.merchant?.businessName || 'Recoger' : 'Entregar'}
+                        {stop.type === 'pickup'
+                          ? order?.merchant?.businessName || 'Recoger'
+                          : 'Entregar'}
                       </p>
                       <p className="text-xs text-surface-500 dark:text-surface-400 truncate">
                         {stop.type === 'pickup' ? order?.pickupAddress : order?.deliveryAddress}
@@ -267,7 +265,8 @@ export function RouteOptimizer({
                     </span>
                     {route.legs[index] && (
                       <span className="text-xs text-surface-400 dark:text-surface-500">
-                        {formatDistance}{formatDistance(route.legs[index].distance)} • {formatDuration(route.legs[index].duration)}
+                        {formatDistance(route.legs[index].distance)} •{' '}
+                        {formatDuration(route.legs[index].duration)}
                       </span>
                     )}
                   </div>
@@ -294,7 +293,8 @@ export function RouteOptimizer({
               Ruta completada
             </p>
             <p className="text-xs text-surface-500 dark:text-surface-400">
-              {route ? formatDuration(route.totalDuration) : '--'} • {route ? formatDistance(route.totalDistance) : '--'}
+              {route ? formatDuration(route.totalDuration) : '--'} •{' '}
+              {route ? formatDistance(route.totalDistance) : '--'}
             </p>
           </div>
         </div>

@@ -25,7 +25,7 @@ interface AddressResult {
   };
 }
 
-interface AddressInputProps {
+export interface AddressInputProps {
   value: string;
   onChange: (address: string, coordinates?: { lat: number; lng: number }) => void;
   placeholder?: string;
@@ -54,7 +54,7 @@ export function AddressInput({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [gettingLocation, setGettingLocation] = useState(false);
-  
+
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
@@ -79,32 +79,35 @@ export function AddressInput({
   }, []);
 
   // Debounced search
-  const searchAddresses = useCallback(async (searchQuery: string) => {
-    if (!searchQuery || searchQuery.trim().length < 2) {
-      setSuggestions([]);
-      return;
-    }
-
-    setLoading(true);
-    try {
-      let results: AddressResult[];
-      
-      if (nicoyaOnly) {
-        results = await api.searchNicoyaAddresses(searchQuery, 6);
-      } else {
-        results = await api.searchAddresses(searchQuery, 6, 'cr');
+  const searchAddresses = useCallback(
+    async (searchQuery: string) => {
+      if (!searchQuery || searchQuery.trim().length < 2) {
+        setSuggestions([]);
+        return;
       }
-      
-      setSuggestions(results);
-      setShowSuggestions(true);
-      setSelectedIndex(-1);
-    } catch (error) {
-      console.error('Geocoding search failed:', error);
-      setSuggestions([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [nicoyaOnly]);
+
+      setLoading(true);
+      try {
+        let results: AddressResult[];
+
+        if (nicoyaOnly) {
+          results = await api.searchNicoyaAddresses(searchQuery, 6);
+        } else {
+          results = await api.searchAddresses(searchQuery, 6, 'cr');
+        }
+
+        setSuggestions(results);
+        setShowSuggestions(true);
+        setSelectedIndex(-1);
+      } catch (error) {
+        console.error('Geocoding search failed:', error);
+        setSuggestions([]);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [nicoyaOnly],
+  );
 
   // Handle input change with debounce
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -129,7 +132,7 @@ export function AddressInput({
     onChange(suggestion.shortName, { lat: suggestion.lat, lng: suggestion.lng });
     setShowSuggestions(false);
     setSuggestions([]);
-    
+
     if (onLocationSelect) {
       onLocationSelect({
         lat: suggestion.lat,
@@ -146,15 +149,11 @@ export function AddressInput({
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
-        setSelectedIndex(prev => 
-          prev < suggestions.length - 1 ? prev + 1 : 0
-        );
+        setSelectedIndex((prev) => (prev < suggestions.length - 1 ? prev + 1 : 0));
         break;
       case 'ArrowUp':
         e.preventDefault();
-        setSelectedIndex(prev => 
-          prev > 0 ? prev - 1 : suggestions.length - 1
-        );
+        setSelectedIndex((prev) => (prev > 0 ? prev - 1 : suggestions.length - 1));
         break;
       case 'Enter':
         e.preventDefault();
@@ -176,7 +175,7 @@ export function AddressInput({
     }
 
     setGettingLocation(true);
-    
+
     try {
       const position = await new Promise<GeolocationPosition>((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(resolve, reject, {
@@ -187,14 +186,14 @@ export function AddressInput({
       });
 
       const { latitude, longitude } = position.coords;
-      
+
       // Reverse geocode to get address
       const result = await api.reverseGeocode(latitude, longitude);
-      
+
       if (result) {
         setQuery(result.shortName);
         onChange(result.shortName, { lat: latitude, lng: longitude });
-        
+
         if (onLocationSelect) {
           onLocationSelect({
             lat: latitude,
@@ -243,7 +242,7 @@ export function AddressInput({
           {label} {required && <span className="text-red-500">*</span>}
         </label>
       )}
-      
+
       <div className="relative">
         <input
           ref={inputRef}
@@ -255,7 +254,7 @@ export function AddressInput({
           placeholder={placeholder}
           className="w-full px-4 py-3 pl-10 pr-20 rounded-xl bg-surface-50 dark:bg-surface-700 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-kiwi-500 transition-all"
         />
-        
+
         {/* Search icon */}
         <div className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-400">
           {loading ? (
@@ -328,7 +327,7 @@ export function AddressInput({
                 </motion.button>
               ))}
             </div>
-            
+
             {/* Footer */}
             <div className="px-4 py-2 bg-surface-50 dark:bg-surface-700/50 border-t border-surface-200 dark:border-surface-700">
               <p className="text-xs text-surface-500 dark:text-surface-400 text-center">

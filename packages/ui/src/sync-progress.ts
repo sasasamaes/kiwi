@@ -2,7 +2,7 @@
 
 /**
  * 🥝 KIWI - Sync Progress Service
- * 
+ *
  * Tracks and reports sync progress across the app.
  * Provides real-time updates on data synchronization status.
  */
@@ -13,40 +13,40 @@ export type SyncProgressStatus = 'idle' | 'syncing' | 'completed' | 'failed' | '
 export interface SyncProgressItem {
   /** Unique identifier */
   id: string;
-  
+
   /** Human-readable name */
   name: string;
-  
+
   /** Operation type */
   operation: SyncOperation;
-  
+
   /** Status */
   status: SyncProgressStatus;
-  
+
   /** Progress percentage (0-100) */
   progress: number;
-  
+
   /** Bytes transferred */
   transferred: number;
-  
+
   /** Total bytes */
   total: number;
-  
+
   /** Transfer speed (bytes per second) */
   speed: number;
-  
+
   /** Estimated time remaining (ms) */
   estimatedRemaining: number;
-  
+
   /** Start timestamp */
   startedAt: number;
-  
+
   /** End timestamp */
   completedAt?: number;
-  
+
   /** Error message if failed */
   error?: string;
-  
+
   /** Metadata */
   metadata?: Record<string, any>;
 }
@@ -54,40 +54,40 @@ export interface SyncProgressItem {
 interface SyncProgressState {
   /** All sync items */
   items: Map<string, SyncProgressItem>;
-  
+
   /** Overall status */
   status: SyncProgressStatus;
-  
+
   /** Overall progress (0-100) */
   overallProgress: number;
-  
+
   /** Total items */
   totalItems: number;
-  
+
   /** Completed items */
   completedItems: number;
-  
+
   /** Failed items */
   failedItems: number;
-  
+
   /** Active items */
   activeItems: number;
-  
+
   /** Total bytes transferred */
   totalTransferred: number;
-  
+
   /** Total bytes */
   totalBytes: number;
-  
+
   /** Overall speed (bytes per second) */
   overallSpeed: number;
-  
+
   /** Overall estimated time remaining (ms) */
   estimatedRemaining: number;
-  
+
   /** Start timestamp */
   startedAt?: number;
-  
+
   /** Last update timestamp */
   lastUpdateAt: number;
 }
@@ -95,22 +95,22 @@ interface SyncProgressState {
 interface SyncProgressOptions {
   /** Update interval for progress (ms) */
   updateInterval?: number;
-  
+
   /** Callback for progress updates */
   onProgress?: (state: SyncProgressState) => void;
-  
+
   /** Callback when sync completes */
   onComplete?: (state: SyncProgressState) => void;
-  
+
   /** Callback when sync fails */
   onFailed?: (item: SyncProgressItem, error: string) => void;
-  
+
   /** Callback when item completes */
   onItemComplete?: (item: SyncProgressItem) => void;
-  
+
   /** Enable speed calculation */
   enableSpeedCalculation?: boolean;
-  
+
   /** Speed calculation window (ms) */
   speedCalculationWindow?: number;
 }
@@ -154,7 +154,7 @@ class SyncProgressService {
     name: string,
     operation: SyncOperation,
     totalBytes: number = 0,
-    metadata?: Record<string, any>
+    metadata?: Record<string, any>,
   ): SyncProgressItem {
     const item: SyncProgressItem = {
       id,
@@ -181,11 +181,7 @@ class SyncProgressService {
   /**
    * Update progress for a sync item
    */
-  updateProgress(
-    id: string,
-    transferred: number,
-    total?: number
-  ): void {
+  updateProgress(id: string, transferred: number, total?: number): void {
     const item = this.state.items.get(id);
     if (!item) return;
 
@@ -207,12 +203,12 @@ class SyncProgressService {
     if (this.options.enableSpeedCalculation) {
       const now = Date.now();
       const history = this.speedHistory.get(id) || [];
-      
+
       history.push({ timestamp: now, bytes: transferred });
-      
+
       // Keep only recent history
       const windowStart = now - this.options.speedCalculationWindow!;
-      const recentHistory = history.filter(h => h.timestamp >= windowStart);
+      const recentHistory = history.filter((h) => h.timestamp >= windowStart);
       this.speedHistory.set(id, recentHistory);
 
       // Calculate speed from recent history
@@ -221,7 +217,7 @@ class SyncProgressService {
         const last = recentHistory[recentHistory.length - 1];
         const timeDiff = (last.timestamp - first.timestamp) / 1000;
         const bytesDiff = last.bytes - first.bytes;
-        
+
         if (timeDiff > 0) {
           item.speed = bytesDiff / timeDiff;
         }
@@ -354,7 +350,7 @@ class SyncProgressService {
    */
   private checkAllComplete(): void {
     const allComplete = Array.from(this.state.items.values()).every(
-      item => item.status === 'completed' || item.status === 'failed'
+      (item) => item.status === 'completed' || item.status === 'failed',
     );
 
     if (allComplete && this.state.items.size > 0) {
@@ -370,11 +366,11 @@ class SyncProgressService {
    */
   private updateState(): void {
     const items = Array.from(this.state.items.values());
-    
+
     this.state.totalItems = items.length;
-    this.state.completedItems = items.filter(i => i.status === 'completed').length;
-    this.state.failedItems = items.filter(i => i.status === 'failed').length;
-    this.state.activeItems = items.filter(i => i.status === 'syncing').length;
+    this.state.completedItems = items.filter((i) => i.status === 'completed').length;
+    this.state.failedItems = items.filter((i) => i.status === 'failed').length;
+    this.state.activeItems = items.filter((i) => i.status === 'syncing').length;
     this.state.totalTransferred = items.reduce((sum, i) => sum + i.transferred, 0);
     this.state.totalBytes = items.reduce((sum, i) => sum + i.total, 0);
     this.state.lastUpdateAt = Date.now();
@@ -440,7 +436,7 @@ class SyncProgressService {
   reset(): void {
     this.stopUpdateTimer();
     this.speedHistory.clear();
-    
+
     this.state = {
       items: new Map(),
       status: 'idle',
@@ -465,7 +461,7 @@ class SyncProgressService {
   private emit(event: string, data?: any): void {
     const listeners = this.listeners.get(event);
     if (listeners) {
-      listeners.forEach(listener => listener(data));
+      listeners.forEach((listener) => listener(data));
     }
   }
 
@@ -532,4 +528,4 @@ class SyncProgressService {
 // Create singleton instance
 export const syncProgress = new SyncProgressService();
 
-export type { SyncProgressItem, SyncProgressState, SyncProgressOptions };
+export type { SyncProgressState, SyncProgressOptions };

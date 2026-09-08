@@ -1,18 +1,23 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { syncProgress, type SyncProgressItem, type SyncProgressState, type SyncOperation } from './sync-progress';
+import {
+  syncProgress,
+  type SyncProgressItem,
+  type SyncProgressState,
+  type SyncOperation,
+} from './sync-progress';
 
 interface UseSyncProgressOptions {
   /** Auto-refresh interval (ms) */
   refreshInterval?: number;
-  
+
   /** Callback for progress updates */
   onProgress?: (state: SyncProgressState) => void;
-  
+
   /** Callback when sync completes */
   onComplete?: (state: SyncProgressState) => void;
-  
+
   /** Callback when sync fails */
   onFailed?: (item: SyncProgressItem, error: string) => void;
 }
@@ -20,76 +25,74 @@ interface UseSyncProgressOptions {
 interface UseSyncProgressResult {
   /** Current sync state */
   state: SyncProgressState;
-  
+
   /** Whether sync is in progress */
   isSyncing: boolean;
-  
+
   /** Overall progress percentage */
   overallProgress: number;
-  
+
   /** Active items count */
   activeCount: number;
-  
+
   /** Completed items count */
   completedCount: number;
-  
+
   /** Failed items count */
   failedCount: number;
-  
+
   /** Total items count */
   totalCount: number;
-  
+
   /** Overall speed */
   speed: string;
-  
+
   /** Estimated time remaining */
   estimatedTime: string;
-  
+
   /** Start tracking a sync operation */
   startSync: (
     id: string,
     name: string,
     operation: SyncOperation,
     totalBytes?: number,
-    metadata?: Record<string, any>
+    metadata?: Record<string, any>,
   ) => SyncProgressItem;
-  
+
   /** Update progress for an item */
   updateProgress: (id: string, transferred: number, total?: number) => void;
-  
+
   /** Complete a sync item */
   completeSync: (id: string) => void;
-  
+
   /** Fail a sync item */
   failSync: (id: string, error: string) => void;
-  
+
   /** Cancel a sync item */
   cancelSync: (id: string) => void;
-  
+
   /** Get progress for a specific item */
   getItem: (id: string) => SyncProgressItem | undefined;
-  
+
   /** Get all items */
   getItems: () => SyncProgressItem[];
-  
+
   /** Reset all progress */
   reset: () => void;
-  
+
   /** Formatted overall progress */
   formattedProgress: string;
-  
+
   /** Formatted total transferred */
   formattedTransferred: string;
-  
+
   /** Formatted total bytes */
   formattedTotal: string;
 }
 
-export function useSyncProgress(
-  options: UseSyncProgressOptions = {}
-): UseSyncProgressResult {
+export function useSyncProgress(options: UseSyncProgressOptions = {}): UseSyncProgressResult {
   const [state, setState] = useState<SyncProgressState>(syncProgress.getState());
-  
+
   const optionsRef = useRef(options);
   optionsRef.current = options;
 
@@ -124,7 +127,7 @@ export function useSyncProgress(
     updateState();
 
     return () => {
-      unsubscribes.forEach(unsub => unsub());
+      unsubscribes.forEach((unsub) => unsub());
     };
   }, []);
 
@@ -153,15 +156,18 @@ export function useSyncProgress(
   const formattedTotal = syncProgress.formatBytes(state.totalBytes);
 
   // Actions
-  const startSync = useCallback((
-    id: string,
-    name: string,
-    operation: SyncOperation,
-    totalBytes?: number,
-    metadata?: Record<string, any>
-  ) => {
-    return syncProgress.startSync(id, name, operation, totalBytes, metadata);
-  }, []);
+  const startSync = useCallback(
+    (
+      id: string,
+      name: string,
+      operation: SyncOperation,
+      totalBytes?: number,
+      metadata?: Record<string, any>,
+    ) => {
+      return syncProgress.startSync(id, name, operation, totalBytes, metadata);
+    },
+    [],
+  );
 
   const updateProgress = useCallback((id: string, transferred: number, total?: number) => {
     syncProgress.updateProgress(id, transferred, total);
@@ -222,14 +228,17 @@ export function useSingleSyncProgress(id: string) {
   const { getItem, updateProgress, completeSync, failSync, cancelSync } = useSyncProgress();
   const item = getItem(id);
 
-  const start = useCallback((
-    name: string,
-    operation: SyncOperation,
-    totalBytes?: number,
-    metadata?: Record<string, any>
-  ) => {
-    return syncProgress.startSync(id, name, operation, totalBytes, metadata);
-  }, [id]);
+  const start = useCallback(
+    (
+      name: string,
+      operation: SyncOperation,
+      totalBytes?: number,
+      metadata?: Record<string, any>,
+    ) => {
+      return syncProgress.startSync(id, name, operation, totalBytes, metadata);
+    },
+    [id],
+  );
 
   return {
     item,
@@ -246,3 +255,4 @@ export function useSingleSyncProgress(id: string) {
 }
 
 export type { UseSyncProgressOptions, UseSyncProgressResult };
+export type { SyncProgressItem, SyncProgressState, SyncOperation };

@@ -2,24 +2,78 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  AreaChartComponent, 
-  PieChartComponent,
-  StatCard 
-} from '@kiwi/ui';
+import { AreaChartComponent, PieChartComponent, StatCard } from '@kiwi/ui';
 
 const mockPayments = [
-  { id: 'PAY-001', orderId: 'KIWI-1234', merchant: 'Bowl & Café Luis Alfredo', driver: 'Juan Carlos', amount: 5700, fee: 570, driverPayout: 5130, method: 'sinpe', status: 'completed', createdAt: '2024-03-20T11:05:00' },
-  { id: 'PAY-002', orderId: 'KIWI-1231', merchant: 'Twentis', driver: 'Joel', amount: 2800, fee: 280, driverPayout: 2520, method: 'card', status: 'completed', createdAt: '2024-03-20T10:00:00' },
-  { id: 'PAY-003', orderId: 'KIWI-1230', merchant: 'Bowl & Café Luis Alfredo', driver: null, amount: 3500, fee: 350, driverPayout: 0, method: 'cash', status: 'refunded', createdAt: '2024-03-20T09:15:00' },
-  { id: 'PAY-004', orderId: 'KIWI-1229', merchant: 'Punto Ácido', driver: 'Fran', amount: 4200, fee: 420, driverPayout: 3780, method: 'crypto', status: 'completed', createdAt: '2024-03-19T18:30:00' },
-  { id: 'PAY-005', orderId: 'KIWI-1228', merchant: 'Los Efes', driver: 'Juan Carlos', amount: 6500, fee: 650, driverPayout: 5850, method: 'sinpe', status: 'completed', createdAt: '2024-03-19T17:45:00' },
+  {
+    id: 'PAY-001',
+    orderId: 'KIWI-1234',
+    merchant: 'Bowl & Café Luis Alfredo',
+    driver: 'Juan Carlos',
+    amount: 5700,
+    fee: 570,
+    driverPayout: 5130,
+    method: 'sinpe',
+    status: 'completed',
+    createdAt: '2024-03-20T11:05:00',
+  },
+  {
+    id: 'PAY-002',
+    orderId: 'KIWI-1231',
+    merchant: 'Twentis',
+    driver: 'Joel',
+    amount: 2800,
+    fee: 280,
+    driverPayout: 2520,
+    method: 'card',
+    status: 'completed',
+    createdAt: '2024-03-20T10:00:00',
+  },
+  {
+    id: 'PAY-003',
+    orderId: 'KIWI-1230',
+    merchant: 'Bowl & Café Luis Alfredo',
+    driver: null,
+    amount: 3500,
+    fee: 350,
+    driverPayout: 0,
+    method: 'cash',
+    status: 'refunded',
+    createdAt: '2024-03-20T09:15:00',
+  },
+  {
+    id: 'PAY-004',
+    orderId: 'KIWI-1229',
+    merchant: 'Punto Ácido',
+    driver: 'Fran',
+    amount: 4200,
+    fee: 420,
+    driverPayout: 3780,
+    method: 'crypto',
+    status: 'completed',
+    createdAt: '2024-03-19T18:30:00',
+  },
+  {
+    id: 'PAY-005',
+    orderId: 'KIWI-1228',
+    merchant: 'Los Efes',
+    driver: 'Juan Carlos',
+    amount: 6500,
+    fee: 650,
+    driverPayout: 5850,
+    method: 'sinpe',
+    status: 'completed',
+    createdAt: '2024-03-19T17:45:00',
+  },
 ];
 
 const dailyRevenue = Array.from({ length: 30 }, (_, i) => {
   const date = new Date();
   date.setDate(date.getDate() - (29 - i));
-  return { date: date.toISOString().split('T')[0], value: Math.floor(Math.random() * 500000) + 100000 };
+  return {
+    date: date.toISOString().split('T')[0],
+    value: Math.floor(Math.random() * 500000) + 100000,
+  };
 });
 
 const paymentMethods = [
@@ -33,42 +87,59 @@ export default function PaymentsPage() {
   const [payments, setPayments] = useState(mockPayments);
   const [filter, setFilter] = useState<'all' | 'completed' | 'pending' | 'refunded'>('all');
 
-  const filteredPayments = payments.filter(p => 
-    filter === 'all' || p.status === filter
-  );
+  const filteredPayments = payments.filter((p) => filter === 'all' || p.status === filter);
 
   const stats = {
-    totalRevenue: payments.filter(p => p.status === 'completed').reduce((sum, p) => sum + p.amount, 0),
-    totalFees: payments.filter(p => p.status === 'completed').reduce((sum, p) => sum + p.fee, 0),
-    totalPayouts: payments.filter(p => p.status === 'completed').reduce((sum, p) => sum + p.driverPayout, 0),
-    pendingPayouts: payments.filter(p => p.status === 'pending').reduce((sum, p) => sum + p.driverPayout, 0),
+    totalRevenue: payments
+      .filter((p) => p.status === 'completed')
+      .reduce((sum, p) => sum + p.amount, 0),
+    totalFees: payments.filter((p) => p.status === 'completed').reduce((sum, p) => sum + p.fee, 0),
+    totalPayouts: payments
+      .filter((p) => p.status === 'completed')
+      .reduce((sum, p) => sum + p.driverPayout, 0),
+    pendingPayouts: payments
+      .filter((p) => p.status === 'pending')
+      .reduce((sum, p) => sum + p.driverPayout, 0),
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'completed': return 'bg-green-100 text-green-700';
-      case 'pending': return 'bg-yellow-100 text-yellow-700';
-      case 'refunded': return 'bg-red-100 text-red-700';
-      default: return 'bg-surface-100 text-surface-500';
+      case 'completed':
+        return 'bg-green-100 text-green-700';
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-700';
+      case 'refunded':
+        return 'bg-red-100 text-red-700';
+      default:
+        return 'bg-surface-100 text-surface-500';
     }
   };
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'completed': return 'Completado';
-      case 'pending': return 'Pendiente';
-      case 'refunded': return 'Reembolsado';
-      default: return status;
+      case 'completed':
+        return 'Completado';
+      case 'pending':
+        return 'Pendiente';
+      case 'refunded':
+        return 'Reembolsado';
+      default:
+        return status;
     }
   };
 
   const getMethodIcon = (method: string) => {
     switch (method) {
-      case 'sinpe': return 'Smartphone';
-      case 'card': return 'CreditCard';
-      case 'cash': return 'DollarSign';
-      case 'crypto': return '₿';
-      default: return 'Coins';
+      case 'sinpe':
+        return 'Smartphone';
+      case 'card':
+        return 'CreditCard';
+      case 'cash':
+        return 'DollarSign';
+      case 'crypto':
+        return '₿';
+      default:
+        return 'Coins';
     }
   };
 
@@ -79,9 +150,7 @@ export default function PaymentsPage() {
         <h1 className="text-2xl font-display font-bold text-surface-800 dark:text-surface-100">
           Gestión de Pagos
         </h1>
-        <p className="text-surface-500 dark:text-surface-400">
-          Resumen de transacciones y pagos
-        </p>
+        <p className="text-surface-500 dark:text-surface-400">Resumen de transacciones y pagos</p>
       </div>
 
       {/* Stats */}
@@ -90,25 +159,25 @@ export default function PaymentsPage() {
           title="Ingresos Totales"
           value={`₡${stats.totalRevenue.toLocaleString()}`}
           icon="Coins"
-          color="#22c55e"
+          color="kiwi"
         />
         <StatCard
           title="Comisiones"
           value={`₡${stats.totalFees.toLocaleString()}`}
           icon="🏦"
-          color="#3b82f6"
+          color="blue"
         />
         <StatCard
           title="Pagos a Repartidores"
           value={`₡${stats.totalPayouts.toLocaleString()}`}
           icon="Bike"
-          color="#8b5cf6"
+          color="bark"
         />
         <StatCard
           title="Pagos Pendientes"
           value={`₡${stats.pendingPayouts.toLocaleString()}`}
           icon="Clock"
-          color="#f59e0b"
+          color="gold"
         />
       </div>
 
@@ -219,7 +288,9 @@ export default function PaymentsPage() {
                     </span>
                   </td>
                   <td className="py-4 px-6">
-                    <span className="text-sm text-surface-800 dark:text-surface-200">{payment.merchant}</span>
+                    <span className="text-sm text-surface-800 dark:text-surface-200">
+                      {payment.merchant}
+                    </span>
                   </td>
                   <td className="py-4 px-6">
                     <span className="flex items-center gap-2">
@@ -245,7 +316,9 @@ export default function PaymentsPage() {
                     </span>
                   </td>
                   <td className="py-4 px-6">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(payment.status)}`}>
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(payment.status)}`}
+                    >
                       {getStatusLabel(payment.status)}
                     </span>
                   </td>

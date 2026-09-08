@@ -1,12 +1,18 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { offlineNavigation, type Route, type SavedWaypoint, type Coordinates, type TransportMode } from './offline-navigation';
+import {
+  offlineNavigation,
+  type Route,
+  type SavedWaypoint,
+  type Coordinates,
+  type TransportMode,
+} from './offline-navigation';
 
 interface UseOfflineNavigationOptions {
   /** Default transport mode */
   defaultMode?: TransportMode;
-  
+
   /** Auto-refresh routes list */
   refreshInterval?: number;
 }
@@ -14,45 +20,47 @@ interface UseOfflineNavigationOptions {
 interface UseOfflineNavigationResult {
   /** Current route */
   route: Route | null;
-  
+
   /** Loading state */
   isLoading: boolean;
-  
+
   /** Error message */
   error: string | null;
-  
+
   /** Get route between two points */
   getRoute: (
     start: Coordinates,
     end: Coordinates,
     mode?: TransportMode,
-    waypoints?: Coordinates[]
+    waypoints?: Coordinates[],
   ) => Promise<Route>;
-  
+
   /** All cached routes */
   routes: Route[];
-  
+
   /** Refresh routes list */
   refreshRoutes: () => Promise<void>;
-  
+
   /** Delete a route */
   deleteRoute: (routeId: string) => Promise<void>;
-  
+
   /** Clear all routes */
   clearRoutes: () => Promise<void>;
-  
+
   /** Saved waypoints */
   waypoints: SavedWaypoint[];
-  
+
   /** Save a waypoint */
-  saveWaypoint: (waypoint: Omit<SavedWaypoint, 'id' | 'createdAt' | 'usageCount'>) => Promise<SavedWaypoint>;
-  
+  saveWaypoint: (
+    waypoint: Omit<SavedWaypoint, 'id' | 'createdAt' | 'usageCount'>,
+  ) => Promise<SavedWaypoint>;
+
   /** Delete a waypoint */
   deleteWaypoint: (waypointId: string) => Promise<void>;
-  
+
   /** Get navigation instructions */
   getInstructions: () => string[];
-  
+
   /** Get current step */
   getCurrentStep: (position: Coordinates) => {
     step: any;
@@ -60,25 +68,25 @@ interface UseOfflineNavigationResult {
     distanceToStep: number;
     distanceToEnd: number;
   } | null;
-  
+
   /** Format distance */
   formatDistance: (meters: number) => string;
-  
+
   /** Format duration */
   formatDuration: (seconds: number) => string;
-  
+
   /** Is navigation active */
   isNavigating: boolean;
-  
+
   /** Start navigation */
   startNavigation: (route: Route) => void;
-  
+
   /** Stop navigation */
   stopNavigation: () => void;
 }
 
 export function useOfflineNavigation(
-  options: UseOfflineNavigationOptions = {}
+  options: UseOfflineNavigationOptions = {},
 ): UseOfflineNavigationResult {
   const [route, setRoute] = useState<Route | null>(null);
   const [routes, setRoutes] = useState<Route[]>([]);
@@ -114,40 +122,46 @@ export function useOfflineNavigation(
   /**
    * Get route
    */
-  const getRoute = useCallback(async (
-    start: Coordinates,
-    end: Coordinates,
-    mode: TransportMode = options.defaultMode || 'motorcycle',
-    waypoints?: Coordinates[]
-  ): Promise<Route> => {
-    setIsLoading(true);
-    setError(null);
+  const getRoute = useCallback(
+    async (
+      start: Coordinates,
+      end: Coordinates,
+      mode: TransportMode = options.defaultMode || 'motorcycle',
+      waypoints?: Coordinates[],
+    ): Promise<Route> => {
+      setIsLoading(true);
+      setError(null);
 
-    try {
-      const fetchedRoute = await offlineNavigation.getRoute(start, end, mode, waypoints);
-      setRoute(fetchedRoute);
-      await loadRoutes(); // Refresh routes list
-      return fetchedRoute;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to get route';
-      setError(errorMessage);
-      throw err;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [options.defaultMode, loadRoutes]);
+      try {
+        const fetchedRoute = await offlineNavigation.getRoute(start, end, mode, waypoints);
+        setRoute(fetchedRoute);
+        await loadRoutes(); // Refresh routes list
+        return fetchedRoute;
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to get route';
+        setError(errorMessage);
+        throw err;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [options.defaultMode, loadRoutes],
+  );
 
   /**
    * Delete route
    */
-  const deleteRoute = useCallback(async (routeId: string) => {
-    try {
-      await offlineNavigation.deleteRoute(routeId);
-      await loadRoutes();
-    } catch (err) {
-      console.error('Failed to delete route:', err);
-    }
-  }, [loadRoutes]);
+  const deleteRoute = useCallback(
+    async (routeId: string) => {
+      try {
+        await offlineNavigation.deleteRoute(routeId);
+        await loadRoutes();
+      } catch (err) {
+        console.error('Failed to delete route:', err);
+      }
+    },
+    [loadRoutes],
+  );
 
   /**
    * Clear routes
@@ -164,30 +178,36 @@ export function useOfflineNavigation(
   /**
    * Save waypoint
    */
-  const saveWaypoint = useCallback(async (
-    waypoint: Omit<SavedWaypoint, 'id' | 'createdAt' | 'usageCount'>
-  ): Promise<SavedWaypoint> => {
-    try {
-      const savedWaypoint = await offlineNavigation.saveWaypoint(waypoint);
-      await loadWaypoints();
-      return savedWaypoint;
-    } catch (err) {
-      console.error('Failed to save waypoint:', err);
-      throw err;
-    }
-  }, [loadWaypoints]);
+  const saveWaypoint = useCallback(
+    async (
+      waypoint: Omit<SavedWaypoint, 'id' | 'createdAt' | 'usageCount'>,
+    ): Promise<SavedWaypoint> => {
+      try {
+        const savedWaypoint = await offlineNavigation.saveWaypoint(waypoint);
+        await loadWaypoints();
+        return savedWaypoint;
+      } catch (err) {
+        console.error('Failed to save waypoint:', err);
+        throw err;
+      }
+    },
+    [loadWaypoints],
+  );
 
   /**
    * Delete waypoint
    */
-  const deleteWaypoint = useCallback(async (waypointId: string) => {
-    try {
-      await offlineNavigation.deleteWaypoint(waypointId);
-      await loadWaypoints();
-    } catch (err) {
-      console.error('Failed to delete waypoint:', err);
-    }
-  }, [loadWaypoints]);
+  const deleteWaypoint = useCallback(
+    async (waypointId: string) => {
+      try {
+        await offlineNavigation.deleteWaypoint(waypointId);
+        await loadWaypoints();
+      } catch (err) {
+        console.error('Failed to delete waypoint:', err);
+      }
+    },
+    [loadWaypoints],
+  );
 
   /**
    * Get navigation instructions
@@ -200,10 +220,13 @@ export function useOfflineNavigation(
   /**
    * Get current step
    */
-  const getCurrentStep = useCallback((position: Coordinates) => {
-    if (!route) return null;
-    return offlineNavigation.getCurrentStep(route, position);
-  }, [route]);
+  const getCurrentStep = useCallback(
+    (position: Coordinates) => {
+      if (!route) return null;
+      return offlineNavigation.getCurrentStep(route, position);
+    },
+    [route],
+  );
 
   /**
    * Start navigation
@@ -280,3 +303,4 @@ export function useCustomerTracking() {
 }
 
 export type { UseOfflineNavigationOptions, UseOfflineNavigationResult };
+export type { Route, SavedWaypoint, Coordinates, TransportMode };

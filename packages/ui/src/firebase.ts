@@ -1,6 +1,6 @@
 /**
  * 🥝 Kiwi Firebase Configuration
- * 
+ *
  * Firebase Cloud Messaging for push notifications
  */
 
@@ -19,15 +19,15 @@ let messaging: any = null;
 
 export async function initializeFirebase() {
   if (typeof window === 'undefined') return null;
-  
+
   try {
     // Dynamic import to avoid SSR issues
     const { initializeApp } = await import('firebase/app');
     const { getMessaging, getToken } = await import('firebase/messaging');
-    
+
     const app = initializeApp(firebaseConfig);
     messaging = getMessaging(app);
-    
+
     return { app, messaging };
   } catch (error) {
     console.error('Failed to initialize Firebase:', error);
@@ -45,7 +45,7 @@ export async function requestNotificationPermission(): Promise<string | null> {
 
     // Request permission
     const permission = await Notification.requestPermission();
-    
+
     if (permission !== 'granted') {
       console.log('Notification permission denied');
       return null;
@@ -68,17 +68,19 @@ export async function requestNotificationPermission(): Promise<string | null> {
   }
 }
 
-export async function onMessageListener(callback: (payload: any) => void) {
-  if (!messaging) return;
-  
+export async function onMessageListener(callback: (payload: any) => void): Promise<() => void> {
+  if (!messaging) return () => {};
+
   try {
     const { onMessage } = await import('firebase/messaging');
-    onMessage(messaging, (payload) => {
+    const unsubscribe = onMessage(messaging, (payload) => {
       console.log('Foreground message:', payload);
       callback(payload);
     });
+    return unsubscribe;
   } catch (error) {
     console.error('Failed to set up message listener:', error);
+    return () => {};
   }
 }
 

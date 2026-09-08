@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useTranslations } from '../LanguageProvider';
+import { useTranslations } from './LanguageProvider';
 
-interface TrafficAlert {
+export interface TrafficAlert {
   id: string;
   type: 'congestion' | 'accident' | 'road_closed' | 'weather' | 'event' | 'alternative_route';
   severity: 'low' | 'medium' | 'high' | 'critical';
@@ -26,21 +26,21 @@ interface TrafficAlert {
   createdAt: string;
 }
 
-interface TrafficAlertBannerProps {
+export interface TrafficAlertBannerProps {
   alert: TrafficAlert;
   onDismiss: (alertId: string) => void;
   onNavigate: (lat: number, lng: number) => void;
   className?: string;
 }
 
-interface TrafficAlertListProps {
+export interface TrafficAlertListProps {
   alerts: TrafficAlert[];
   onDismiss: (alertId: string) => void;
   onNavigate: (lat: number, lng: number) => void;
   className?: string;
 }
 
-interface TrafficAlertBadgeProps {
+export interface TrafficAlertBadgeProps {
   count: number;
   onClick: () => void;
   className?: string;
@@ -131,9 +131,7 @@ export function TrafficAlertBanner({
         {/* Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <h4 className={`font-semibold ${config.textColor}`}>
-              {alert.title}
-            </h4>
+            <h4 className={`font-semibold ${config.textColor}`}>{alert.title}</h4>
             <span
               className="px-2 py-0.5 rounded-full text-xs font-medium text-white"
               style={{ backgroundColor: severityConfig.color }}
@@ -141,17 +139,17 @@ export function TrafficAlertBanner({
               {severityConfig.label}
             </span>
           </div>
-          
-          <p className={`text-sm ${config.textColor} opacity-90 mb-2`}>
-            {alert.message}
-          </p>
+
+          <p className={`text-sm ${config.textColor} opacity-90 mb-2`}>{alert.message}</p>
 
           {/* Location */}
           <div className="flex items-center gap-1 text-xs opacity-75 mb-2">
             <span>MapPin</span>
             <span>{alert.location.address}</span>
             <span>•</span>
-            <span>{t('traffic.maxDistance')}: {alert.affectedArea.radius} km</span>
+            <span>
+              {t('traffic.maxDistance')}: {alert.affectedArea.radius} km
+            </span>
           </div>
 
           {/* Alternative Route */}
@@ -165,7 +163,8 @@ export function TrafficAlertBanner({
               </div>
               {alert.alternativeRoute.estimatedTimeSaved > 0 && (
                 <p className={`text-xs ${config.textColor} opacity-75 mt-1`}>
-                  ⏱️ {t('traffic.estimatedTimeSaved')}: ~{alert.alternativeRoute.estimatedTimeSaved} {t('traffic.minutes')}
+                  ⏱️ {t('traffic.estimatedTimeSaved')}: ~{alert.alternativeRoute.estimatedTimeSaved}{' '}
+                  {t('traffic.minutes')}
                 </p>
               )}
             </div>
@@ -200,6 +199,7 @@ export function TrafficAlertList({
   onNavigate,
   className = '',
 }: TrafficAlertListProps) {
+  const { t } = useTranslations();
   const [expandedAlert, setExpandedAlert] = useState<string | null>(null);
 
   if (alerts.length === 0) {
@@ -219,9 +219,7 @@ export function TrafficAlertList({
         <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100 mb-1">
           {t('traffic.noAlerts')}
         </h3>
-        <p className="text-sm text-surface-500 dark:text-surface-400">
-          {t('traffic.noAlerts')}
-        </p>
+        <p className="text-sm text-surface-500 dark:text-surface-400">{t('traffic.noAlerts')}</p>
       </motion.div>
     );
   }
@@ -267,9 +265,7 @@ export function TrafficAlertList({
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <h4 className={`font-semibold text-sm ${config.textColor}`}>
-                        {alert.title}
-                      </h4>
+                      <h4 className={`font-semibold text-sm ${config.textColor}`}>{alert.title}</h4>
                       <span
                         className="px-1.5 py-0.5 rounded text-[10px] font-medium text-white"
                         style={{ backgroundColor: severityConfig.color }}
@@ -301,9 +297,7 @@ export function TrafficAlertList({
                     className="border-t border-white/30 dark:border-surface-700/30"
                   >
                     <div className="p-4">
-                      <p className={`text-sm ${config.textColor} mb-3`}>
-                        {alert.message}
-                      </p>
+                      <p className={`text-sm ${config.textColor} mb-3`}>{alert.message}</p>
 
                       {/* Alternative Route */}
                       {alert.alternativeRoute && (
@@ -319,7 +313,8 @@ export function TrafficAlertList({
                           </p>
                           {alert.alternativeRoute.estimatedTimeSaved > 0 && (
                             <p className={`text-xs ${config.textColor} font-medium mt-1`}>
-                              ⏱️ {t('traffic.estimatedTimeSaved')}: ~{alert.alternativeRoute.estimatedTimeSaved} {t('traffic.minutes')}
+                              ⏱️ {t('traffic.estimatedTimeSaved')}: ~
+                              {alert.alternativeRoute.estimatedTimeSaved} {t('traffic.minutes')}
                             </p>
                           )}
                         </div>
@@ -345,7 +340,11 @@ export function TrafficAlertList({
 
                       {/* Expiry */}
                       <p className="text-[10px] text-surface-400 dark:text-surface-500 mt-2 text-center">
-                        Expira: {new Date(alert.expiresAt).toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' })}
+                        Expira:{' '}
+                        {new Date(alert.expiresAt).toLocaleTimeString('es-CR', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
                       </p>
                     </div>
                   </motion.div>
@@ -359,11 +358,7 @@ export function TrafficAlertList({
   );
 }
 
-export function TrafficAlertBadge({
-  count,
-  onClick,
-  className = '',
-}: TrafficAlertBadgeProps) {
+export function TrafficAlertBadge({ count, onClick, className = '' }: TrafficAlertBadgeProps) {
   const { t } = useTranslations();
   if (count === 0) return null;
 
@@ -383,8 +378,10 @@ export function TrafficAlertBadge({
       >
         AlertTriangle
       </motion.span>
-      <span className="text-sm">{count} {t('traffic.alerts')}</span>
-      
+      <span className="text-sm">
+        {count} {t('traffic.alerts')}
+      </span>
+
       {/* Badge */}
       <motion.div
         className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-orange-500 text-white text-xs font-bold flex items-center justify-center"
@@ -445,7 +442,7 @@ export function TrafficAlertsPanel({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ driverId }),
       });
-      setAlerts(alerts.filter(a => a.id !== alertId));
+      setAlerts(alerts.filter((a) => a.id !== alertId));
     } catch (error) {
       console.error('Failed to dismiss alert:', error);
     }
@@ -462,10 +459,7 @@ export function TrafficAlertsPanel({
   return (
     <div className={className}>
       {/* Alert Badge */}
-      <TrafficAlertBadge
-        count={alerts.length}
-        onClick={() => setShowPanel(!showPanel)}
-      />
+      <TrafficAlertBadge count={alerts.length} onClick={() => setShowPanel(!showPanel)} />
 
       {/* Alert Panel */}
       <AnimatePresence>

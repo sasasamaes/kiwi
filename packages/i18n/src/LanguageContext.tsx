@@ -2,12 +2,13 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { locales, defaultLocale, Locale, TranslationKeys } from './index';
+import { getNestedValue, interpolate } from './utils';
 
 interface LanguageContextType {
   locale: Locale;
   setLocale: (locale: Locale) => void;
   t: TranslationKeys;
-  localeConfig: typeof locales[Locale];
+  localeConfig: (typeof locales)[Locale];
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -42,11 +43,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     localeConfig: locales[locale],
   };
 
-  return (
-    <LanguageContext.Provider value={value}>
-      {children}
-    </LanguageContext.Provider>
-  );
+  return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 }
 
 export function useLanguage() {
@@ -58,7 +55,17 @@ export function useLanguage() {
 }
 
 // Helper hook for translations
+// Returns a translate function that resolves flat dot-path keys, e.g. t('traffic.free')
 export function useTranslations() {
-  const { t } = useLanguage();
-  return t;
+  const { t, locale } = useLanguage();
+
+  const translate = (key: string, variables?: Record<string, string | number>): string => {
+    const value = getNestedValue(t, key);
+    if (variables) {
+      return interpolate(value, variables);
+    }
+    return value;
+  };
+
+  return { t: translate, locale };
 }

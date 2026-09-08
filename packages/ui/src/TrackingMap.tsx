@@ -11,7 +11,7 @@ interface Location {
   lng: number;
 }
 
-interface TrackingMapProps {
+export interface TrackingMapProps {
   pickup?: Location;
   delivery?: Location;
   driverLocation?: Location;
@@ -45,7 +45,8 @@ const MARKER_SVGS = {
   delivery: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>`,
   driver: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/><path d="M12 17.5V14l-3.5-3.5 2-3 2 3 2-3 2 3 2-3 2 3V14l-2.5 3.5"/></svg>`,
   traffic: (level: string, color: string) => {
-    const icon = level === 'free' ? '●' : level === 'light' ? '◐' : level === 'moderate' ? '◑' : '●';
+    const icon =
+      level === 'free' ? '●' : level === 'light' ? '◐' : level === 'moderate' ? '◑' : '●';
     return `<div style="
       background: ${color}40;
       width: 60px;
@@ -84,7 +85,7 @@ export function TrackingMap({
     const initMap = async () => {
       try {
         L = await import('leaflet');
-        await import('leaflet/dist/leaflet.css');
+        await import('leaflet/dist/leaflet.css' as string);
 
         const map = L.map(mapRef.current, {
           center: [10.1483, -85.4527],

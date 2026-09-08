@@ -1,24 +1,30 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { backgroundSync, type SyncAction, type SyncQueueStats, type SyncPriority, type ActionType } from './background-sync';
+import {
+  backgroundSync,
+  type SyncAction,
+  type SyncQueueStats,
+  type SyncPriority,
+  type ActionType,
+} from './background-sync';
 
 interface UseBackgroundSyncOptions {
   /** Auto-process queue on mount */
   autoProcess?: boolean;
-  
+
   /** Poll interval for queue stats (ms) */
   pollInterval?: number;
-  
+
   /** Callback when action is enqueued */
   onEnqueued?: (action: SyncAction) => void;
-  
+
   /** Callback when action completes */
   onSyncComplete?: (action: SyncAction, result: any) => void;
-  
+
   /** Callback when action fails */
   onSyncFailed?: (action: SyncAction, error: Error) => void;
-  
+
   /** Callback when queue changes */
   onQueueChange?: (stats: SyncQueueStats) => void;
 }
@@ -26,13 +32,13 @@ interface UseBackgroundSyncOptions {
 interface UseBackgroundSyncResult {
   /** Queue statistics */
   stats: SyncQueueStats | null;
-  
+
   /** Whether sync is in progress */
   isSyncing: boolean;
-  
+
   /** Whether device is online */
   isOnline: boolean;
-  
+
   /** Enqueue a new action */
   enqueue: <T>(
     type: ActionType,
@@ -40,34 +46,32 @@ interface UseBackgroundSyncResult {
     options?: {
       priority?: SyncPriority;
       execute?: (data: T) => Promise<any>;
-    }
+    },
   ) => Promise<SyncAction<T>>;
-  
+
   /** Manually process the queue */
   processQueue: () => Promise<void>;
-  
+
   /** Cancel an action */
   cancel: (id: string) => Promise<void>;
-  
+
   /** Retry a failed action */
   retry: (id: string) => Promise<void>;
-  
+
   /** Clear completed actions */
   clearCompleted: () => Promise<number>;
-  
+
   /** Get all actions */
   getAllActions: () => Promise<SyncAction[]>;
-  
+
   /** Last synced action */
   lastSyncedAction: SyncAction | null;
-  
+
   /** Last error */
   lastError: Error | null;
 }
 
-export function useBackgroundSync(
-  options: UseBackgroundSyncOptions = {}
-): UseBackgroundSyncResult {
+export function useBackgroundSync(options: UseBackgroundSyncOptions = {}): UseBackgroundSyncResult {
   const [stats, setStats] = useState<SyncQueueStats | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
@@ -93,19 +97,22 @@ export function useBackgroundSync(
   /**
    * Enqueue an action
    */
-  const enqueue = useCallback(async <T>(
-    type: ActionType,
-    data: T,
-    actionOptions?: {
-      priority?: SyncPriority;
-      execute?: (data: T) => Promise<any>;
-    }
-  ): Promise<SyncAction<T>> => {
-    const action = await backgroundSync.enqueue(type, data, actionOptions);
-    optionsRef.current.onEnqueued?.(action);
-    await loadStats();
-    return action;
-  }, [loadStats]);
+  const enqueue = useCallback(
+    async <T>(
+      type: ActionType,
+      data: T,
+      actionOptions?: {
+        priority?: SyncPriority;
+        execute?: (data: T) => Promise<any>;
+      },
+    ): Promise<SyncAction<T>> => {
+      const action = await backgroundSync.enqueue(type, data, actionOptions);
+      optionsRef.current.onEnqueued?.(action);
+      await loadStats();
+      return action;
+    },
+    [loadStats],
+  );
 
   /**
    * Process the queue
@@ -118,18 +125,24 @@ export function useBackgroundSync(
   /**
    * Cancel an action
    */
-  const cancel = useCallback(async (id: string) => {
-    await backgroundSync.cancel(id);
-    await loadStats();
-  }, [loadStats]);
+  const cancel = useCallback(
+    async (id: string) => {
+      await backgroundSync.cancel(id);
+      await loadStats();
+    },
+    [loadStats],
+  );
 
   /**
    * Retry a failed action
    */
-  const retry = useCallback(async (id: string) => {
-    await backgroundSync.retry(id);
-    await loadStats();
-  }, [loadStats]);
+  const retry = useCallback(
+    async (id: string) => {
+      await backgroundSync.retry(id);
+      await loadStats();
+    },
+    [loadStats],
+  );
 
   /**
    * Clear completed actions
@@ -184,7 +197,7 @@ export function useBackgroundSync(
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
-      unsubscribes.forEach(unsub => unsub());
+      unsubscribes.forEach((unsub) => unsub());
       clearInterval(pollInterval);
     };
   }, [loadStats, options.pollInterval]);
@@ -221,11 +234,14 @@ export function useLocationSync() {
     pollInterval: 2000,
   });
 
-  const updateLocation = useCallback(async (location: { lat: number; lng: number }) => {
-    return enqueue('location:update', location, {
-      priority: 'low',
-    });
-  }, [enqueue]);
+  const updateLocation = useCallback(
+    async (location: { lat: number; lng: number }) => {
+      return enqueue('location:update', location, {
+        priority: 'low',
+      });
+    },
+    [enqueue],
+  );
 
   return {
     updateLocation,
@@ -243,3 +259,4 @@ export function usePaymentSync() {
 }
 
 export type { UseBackgroundSyncOptions, UseBackgroundSyncResult };
+export type { SyncQueueStats, SyncAction };

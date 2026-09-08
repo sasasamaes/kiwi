@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePaymentNotifications, type PaymentNotification } from './usePaymentNotifications';
 
@@ -19,7 +19,13 @@ interface NotificationItemProps {
   onClick?: (notification: PaymentNotification) => void;
 }
 
-function NotificationItem({ notification, onRead, onDismiss, onDelete, onClick }: NotificationItemProps) {
+function NotificationItem({
+  notification,
+  onRead,
+  onDismiss,
+  onDelete,
+  onClick,
+}: NotificationItemProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const getIcon = (type: string) => {
@@ -35,18 +41,23 @@ function NotificationItem({ notification, onRead, onDismiss, onDelete, onClick }
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'urgent': return 'border-red-500 bg-red-50 dark:bg-red-900/30';
-      case 'high': return 'border-orange-500 bg-orange-50 dark:bg-orange-900/30';
-      case 'normal': return 'border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800';
-      case 'low': return 'border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900';
-      default: return 'border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800';
+      case 'urgent':
+        return 'border-red-500 bg-red-50 dark:bg-red-900/30';
+      case 'high':
+        return 'border-orange-500 bg-orange-50 dark:bg-orange-900/30';
+      case 'normal':
+        return 'border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800';
+      case 'low':
+        return 'border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900';
+      default:
+        return 'border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800';
     }
   };
 
   const formatTime = (timestamp: number) => {
     const now = Date.now();
     const diff = now - timestamp;
-    
+
     if (diff < 60000) return 'Ahora';
     if (diff < 3600000) return `${Math.floor(diff / 60000)}m`;
     if (diff < 86400000) return `${Math.floor(diff / 3600000)}h`;
@@ -72,7 +83,7 @@ function NotificationItem({ notification, onRead, onDismiss, onDelete, onClick }
         }}
       >
         <span className="text-2xl">{getIcon(notification.type)}</span>
-        
+
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-1">
             <h4 className="font-medium text-surface-800 dark:text-surface-200 text-sm">
@@ -82,7 +93,7 @@ function NotificationItem({ notification, onRead, onDismiss, onDelete, onClick }
               {formatTime(notification.createdAt)}
             </span>
           </div>
-          
+
           <p className="text-sm text-surface-600 dark:text-surface-400 line-clamp-2">
             {notification.body}
           </p>
@@ -108,9 +119,7 @@ function NotificationItem({ notification, onRead, onDismiss, onDelete, onClick }
         </div>
 
         {/* Unread indicator */}
-        {!notification.read && (
-          <div className="w-2 h-2 bg-kiwi-500 rounded-full mt-1" />
-        )}
+        {!notification.read && <div className="w-2 h-2 bg-kiwi-500 rounded-full mt-1" />}
       </div>
 
       {/* Expanded Details */}
@@ -226,8 +235,11 @@ export function PaymentNotifications({
       <div className="p-4">
         {isLoading ? (
           <div className="space-y-3">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="animate-pulse h-20 bg-surface-200 dark:bg-surface-700 rounded-xl" />
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="animate-pulse h-20 bg-surface-200 dark:bg-surface-700 rounded-xl"
+              />
             ))}
           </div>
         ) : displayNotifications.length === 0 ? (
@@ -347,10 +359,10 @@ export function PaymentNotificationToast({
 
   // Show latest unread notification as toast
   useEffect(() => {
-    const latestUnread = unreadNotifications.find(n => !shownIds.has(n.id));
+    const latestUnread = unreadNotifications.find((n) => !shownIds.has(n.id));
     if (latestUnread && !currentToast) {
       setCurrentToast(latestUnread);
-      setShownIds(prev => new Set([...prev, latestUnread.id]));
+      setShownIds((prev) => new Set([...prev, latestUnread.id]));
 
       // Auto-dismiss after 5 seconds
       setTimeout(() => {
@@ -383,9 +395,7 @@ export function PaymentNotificationToast({
           <h4 className="font-semibold text-surface-800 dark:text-surface-200 text-sm">
             {currentToast.title}
           </h4>
-          <p className="text-sm text-surface-600 dark:text-surface-400 mt-1">
-            {currentToast.body}
-          </p>
+          <p className="text-sm text-surface-600 dark:text-surface-400 mt-1">{currentToast.body}</p>
         </div>
         <button
           onClick={() => setCurrentToast(null)}
