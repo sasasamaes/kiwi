@@ -33,7 +33,7 @@
     "deploy:client": "cd apps/client && vercel --prod",
     "deploy:admin": "cd apps/web && vercel --prod --name kiwi-admin",
     "preview": "turbo run dev --filter='./apps/*'",
-    "prepare": "husky"
+    "prepare": ""
   },
   "devDependencies": {
     "eslint": "^8.0.0",
