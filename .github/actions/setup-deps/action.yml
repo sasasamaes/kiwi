@@ -1,0 +1,33 @@
+name: 'Kiwi CI setup'
+description: 'Shared Node + dependency setup with two-layer caching: npm download cache and node_modules cache (skips npm ci on hit).'
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js 22
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+        cache: 'npm' # caches the ~/.npm download cache, keyed on lockfile hash
+
+    # Full node_modules (root + nested workspace copies) keyed on ALL
+    # lockfile-relevant inputs. On a hit, npm ci is skipped entirely
+    # (~2 min saved); on a miss, the npm download cache still speeds the
+    # install up.
+    - name: Cache node_modules
+      id: nm-cache
+      uses: actions/cache@v4
+      with:
+        path: |
+          node_modules
+          api/node_modules
+          apps/web/node_modules
+          apps/client/node_modules
+          apps/driver/node_modules
+          packages/ui/node_modules
+          packages/i18n/node_modules
+        key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+    - name: Install dependencies
+      if: steps.nm-cache.outputs.cache-hit != 'true'
+      run: npm ci --no-audit --no-fund
+      shell: bash
