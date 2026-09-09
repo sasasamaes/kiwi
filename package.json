@@ -17,6 +17,8 @@
     "build:driver": "cd apps/driver && npm run build",
     "build:client": "cd apps/client && npm run build",
     "test": "turbo run test",
+    "check:client-bundle": "node scripts/check-client-bundle.mjs",
+    "check:client-bundle:build": "node scripts/check-client-bundle.mjs --build",
     "test:watch": "turbo run test -- --watch",
     "lint": "turbo run lint",
     "lint:fix": "turbo run lint -- --fix",

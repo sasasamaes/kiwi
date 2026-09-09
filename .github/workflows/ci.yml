@@ -7,6 +7,26 @@ on:
     branches: [main]
 
 jobs:
+  client-bundle-safety:
+    name: Client Bundle Safety
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build client apps
+        run: npx turbo run build --filter='./apps/*'
+
+      - name: Check client bundles (source + built chunks)
+        run: npm run check:client-bundle
+
   test:
     name: Test & Build
     runs-on: ubuntu-latest
@@ -20,9 +40,6 @@ jobs:
 
       - name: Install API dependencies
         run: cd api && npm install --legacy-peer-deps
-        env:
-          npm_config_ignore_scripts: false
-          npm_config_allow_scripts: true
 
       - name: Generate Prisma client
         run: cd api && npx prisma generate
