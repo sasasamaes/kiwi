@@ -23,7 +23,7 @@ import {
   Truck,
   Loader2,
   MapPin,
-  Home,
+  Home as HomeIcon,
   Star,
   DollarSign,
   Target,
@@ -333,7 +333,7 @@ export default function Home() {
                       onClick={() => setActiveTab(tab.id)}
                       whileTap={{ scale: 0.95 }}
                     >
-                      {tab.icon} {tab.label}
+                      <tab.icon className="h-4 w-4" /> {tab.label}
                     </motion.button>
                   ))}
                 </div>
@@ -345,19 +345,13 @@ export default function Home() {
         {/* Today's Stats */}
         <StaggerContainer className="mb-6 grid grid-cols-3 gap-3">
           <StaggerItem>
-            <motion.div
-              className="rounded-xl glass p-4 text-center tactile"
-              whileHover={{ y: -2 }}
-            >
+            <motion.div className="rounded-xl glass p-4 text-center tactile" whileHover={{ y: -2 }}>
               <AnimatedCounter value={stats.trips} className="text-2xl font-bold text-kiwi-600" />
               <p className="text-xs text-surface-500 dark:text-surface-400">Viajes</p>
             </motion.div>
           </StaggerItem>
           <StaggerItem>
-            <motion.div
-              className="rounded-xl glass p-4 text-center tactile"
-              whileHover={{ y: -2 }}
-            >
+            <motion.div className="rounded-xl glass p-4 text-center tactile" whileHover={{ y: -2 }}>
               <div className="flex items-center justify-center gap-1">
                 <Star className="h-5 w-5 fill-gold-400 text-gold-400" />
                 <AnimatedCounter
@@ -370,10 +364,7 @@ export default function Home() {
             </motion.div>
           </StaggerItem>
           <StaggerItem>
-            <motion.div
-              className="rounded-xl glass p-4 text-center tactile"
-              whileHover={{ y: -2 }}
-            >
+            <motion.div className="rounded-xl glass p-4 text-center tactile" whileHover={{ y: -2 }}>
               <span className="text-2xl font-bold text-gold-600">{availableOrders.length}</span>
               <p className="text-xs text-surface-500 dark:text-surface-400">Disponibles</p>
             </motion.div>
@@ -402,10 +393,7 @@ export default function Home() {
 
                 return (
                   <StaggerItem key={order.id}>
-                    <motion.div
-                      className="rounded-2xl glass p-4 glow-kiwi"
-                      whileHover={{ y: -2 }}
-                    >
+                    <motion.div className="rounded-2xl glass p-4 glow-kiwi" whileHover={{ y: -2 }}>
                       <div className="mb-3 flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <motion.span
@@ -435,7 +423,7 @@ export default function Home() {
                         </div>
                         <div className="flex items-start gap-3">
                           <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gold-100 text-gold-600">
-                            <Home className="h-3 w-3" />
+                            <HomeIcon className="h-3 w-3" />
                           </div>
                           <div>
                             <p className="text-sm font-medium text-surface-800">
@@ -539,7 +527,7 @@ export default function Home() {
                       </div>
                       <div className="flex items-start gap-3">
                         <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gold-100 text-gold-600">
-                          <Home className="h-3 w-3" />
+                          <HomeIcon className="h-3 w-3" />
                         </div>
                         <div>
                           <p className="text-sm font-medium text-surface-800 dark:text-surface-200">
@@ -722,7 +710,7 @@ export default function Home() {
       >
         <div className="mx-auto flex max-w-lg items-center justify-around py-2">
           {[
-            { href: '/', icon: Home, label: 'Inicio', active: true },
+            { href: '/', icon: HomeIcon, label: 'Inicio', active: true },
             { href: '/active', icon: Package, label: 'Activos', active: false },
             { href: '/scheduled', icon: Calendar, label: 'Programados', active: false },
             { href: '/analytics', icon: BarChart3, label: 'Analytics', active: false },
