@@ -84,6 +84,12 @@ npm run lint                   # Lint todo
 
 ---
 
+## 🏗️ Arquitectura
+
+Ver [ARCHITECTURE.md](./ARCHITECTURE.md) — apps, paquetes, API, modelo de datos, flujos e infraestructura.
+
+---
+
 ## 📁 Structure
 
 ```
