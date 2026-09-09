@@ -121,6 +121,12 @@ npm run test:e2e
 
 ---
 
+## 🤝 Contribuir
+
+Ver [CONTRIBUTING.md](./CONTRIBUTING.md) — setup local, puertos, cuentas demo y trampas conocidas.
+
+---
+
 ## 🚀 Deploy
 
 - **Frontend:** Vercel
