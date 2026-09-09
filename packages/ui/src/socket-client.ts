@@ -1,6 +1,6 @@
 /**
  * 🥝 Kiwi Socket.io Client
- * 
+ *
  * Real-time communication client for all frontend apps
  */
 
@@ -12,18 +12,18 @@ interface SocketEvents {
   // Connection events
   connected: (data: { userId: string; role: string; message: string }) => void;
   disconnect: (reason: string) => void;
-  
+
   // Order events
   'order:new': (data: any) => void;
   'order:accepted': (data: any) => void;
   'order:statusChanged': (data: any) => void;
-  
+
   // Driver events
   'driver:location': (data: any) => void;
   'driver:statusChanged': (data: any) => void;
-  
+
   // Notification events
-  'notification': (data: any) => void;
+  notification: (data: any) => void;
 }
 
 class SocketClient {
@@ -67,7 +67,7 @@ class SocketClient {
     this.socket.on('connect_error', (error) => {
       console.error('❌ Socket connection error:', error.message);
       this.reconnectAttempts++;
-      
+
       if (this.reconnectAttempts >= this.maxReconnectAttempts) {
         this.emit('socket:maxRetriesReached', {});
       }
@@ -165,7 +165,7 @@ class SocketClient {
     this.socket?.off(event, callback as any);
   }
 
-  private emit(event: string, data: any) {
+  emit(event: string, data: any) {
     this.listeners.get(event)?.forEach((callback) => {
       try {
         callback(data);

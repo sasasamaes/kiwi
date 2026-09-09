@@ -16,50 +16,56 @@ type OrderStatus =
   | 'delivered'
   | 'cancelled';
 
-const statusConfig: Record<
-  OrderStatus,
-  { label: string; description: string; progress: number }
-> = {
-  pending: { label: 'Pendiente', description: 'Esperando repartidor', progress: 10 },
-  assigned: { label: 'Asignado', description: 'Repartidor asignado', progress: 20 },
-  in_transit_to_pickup: {
-    label: 'En camino a recoger',
-    description: 'El repartidor va al comercio',
-    progress: 40,
-  },
-  picked_up: {
-    label: 'Recogido',
-    description: 'El repartidor recogio tu pedido',
-    progress: 60,
-  },
-  in_transit_to_delivery: {
-    label: 'En camino',
-    description: 'Tu pedido va en camino',
-    progress: 80,
-  },
-  delivered: {
-    label: 'Entregado',
-    description: 'Recibiste tu pedido!',
-    progress: 100,
-  },
-  cancelled: {
-    label: 'Cancelado',
-    description: 'El pedido fue cancelado',
-    progress: 0,
-  },
-};
+const statusConfig: Record<OrderStatus, { label: string; description: string; progress: number }> =
+  {
+    pending: { label: 'Pendiente', description: 'Esperando repartidor', progress: 10 },
+    assigned: { label: 'Asignado', description: 'Repartidor asignado', progress: 20 },
+    in_transit_to_pickup: {
+      label: 'En camino a recoger',
+      description: 'El repartidor va al comercio',
+      progress: 40,
+    },
+    picked_up: {
+      label: 'Recogido',
+      description: 'El repartidor recogio tu pedido',
+      progress: 60,
+    },
+    in_transit_to_delivery: {
+      label: 'En camino',
+      description: 'Tu pedido va en camino',
+      progress: 80,
+    },
+    delivered: {
+      label: 'Entregado',
+      description: 'Recibiste tu pedido!',
+      progress: 100,
+    },
+    cancelled: {
+      label: 'Cancelado',
+      description: 'El pedido fue cancelado',
+      progress: 0,
+    },
+  };
 
 function StatusIcon({ status }: { status: OrderStatus }) {
   const iconClass = 'h-5 w-5';
   switch (status) {
-    case 'pending': return <Clock className={iconClass} />;
-    case 'assigned': return <Check className={iconClass} />;
-    case 'in_transit_to_pickup': return <Bike className={iconClass} />;
-    case 'picked_up': return <Package className={iconClass} />;
-    case 'in_transit_to_delivery': return <Rocket className={iconClass} />;
-    case 'delivered': return <PartyPopper className={iconClass} />;
-    case 'cancelled': return <X className={iconClass} />;
-    default: return <Clock className={iconClass} />;
+    case 'pending':
+      return <Clock className={iconClass} />;
+    case 'assigned':
+      return <Check className={iconClass} />;
+    case 'in_transit_to_pickup':
+      return <Bike className={iconClass} />;
+    case 'picked_up':
+      return <Package className={iconClass} />;
+    case 'in_transit_to_delivery':
+      return <Rocket className={iconClass} />;
+    case 'delivered':
+      return <PartyPopper className={iconClass} />;
+    case 'cancelled':
+      return <X className={iconClass} />;
+    default:
+      return <Clock className={iconClass} />;
   }
 }
 
@@ -86,7 +92,7 @@ export default function TrackingPage() {
   const fetchOrder = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await api.getOrder(orderId);
+      const data = await api.getOrderById(orderId);
       setOrder(data);
       setCurrentStatus(data.status as OrderStatus);
     } catch {
@@ -258,7 +264,9 @@ export default function TrackingPage() {
               <span className="text-sm text-surface-500 dark:text-surface-400">
                 Tiempo estimado:
               </span>
-              <span className="text-lg font-bold text-kiwi-600 dark:text-kiwi-400 font-mono">{eta} min</span>
+              <span className="text-lg font-bold text-kiwi-600 dark:text-kiwi-400 font-mono">
+                {eta} min
+              </span>
             </motion.div>
           )}
         </motion.div>

@@ -6,7 +6,18 @@ import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api, Skeleton, TrafficIndicator, DeliveryEstimate } from '@kiwi/ui';
 import dynamic from 'next/dynamic';
-import { Package, Bike, Check, PartyPopper, Rocket, User, MapPin, Home, Clock } from 'lucide-react';
+import {
+  Package,
+  Bike,
+  Check,
+  PartyPopper,
+  Rocket,
+  User,
+  MapPin,
+  Home,
+  Clock,
+  Footprints as Runner,
+} from 'lucide-react';
 
 // Dynamically import TrackingMap to avoid SSR issues with Leaflet
 const TrackingMap = dynamic(() => import('@kiwi/ui').then((mod) => mod.TrackingMap), {
@@ -74,14 +85,24 @@ const STATUS_STEPS = [
     icon: Runner,
     description: 'El repartidor va a recoger tu pedido',
   },
-  { key: 'picked_up', label: 'Pedido recogido', icon: Check, description: 'Tu pedido fue recogido' },
+  {
+    key: 'picked_up',
+    label: 'Pedido recogido',
+    icon: Check,
+    description: 'Tu pedido fue recogido',
+  },
   {
     key: 'in_transit_to_delivery',
     label: 'En camino',
     icon: Rocket,
     description: 'Tu pedido va camino a ti',
   },
-  { key: 'delivered', label: 'Entregado', icon: PartyPopper, description: '¡Tu pedido fue entregado!' },
+  {
+    key: 'delivered',
+    label: 'Entregado',
+    icon: PartyPopper,
+    description: '¡Tu pedido fue entregado!',
+  },
 ];
 
 export default function OrderTrackingPage() {
@@ -388,7 +409,8 @@ export default function OrderTrackingPage() {
                 transition={{ duration: 0.5, repeat: isDelivered ? Infinity : 0, repeatDelay: 2 }}
               >
                 {(() => {
-                  const IconComp = STATUS_STEPS[currentStepIndex]?.icon;
+                  const IconComp = STATUS_STEPS[currentStepIndex]?.icon as
+                    React.ComponentType<{ className?: string }> | undefined;
                   return IconComp ? <IconComp className="h-12 w-12 text-white" /> : null;
                 })()}
               </motion.div>
@@ -453,7 +475,11 @@ export default function OrderTrackingPage() {
                       animate={isCurrent ? { scale: [1, 1.1, 1] } : {}}
                       transition={{ duration: 2, repeat: Infinity }}
                     >
-                      {isCompleted && !isCurrent ? '✓' : step.icon}
+                      {isCompleted && !isCurrent
+                        ? '✓'
+                        : typeof step.icon === 'string'
+                          ? step.icon
+                          : null}
                     </motion.div>
                     {index < STATUS_STEPS.length - 1 && (
                       <div

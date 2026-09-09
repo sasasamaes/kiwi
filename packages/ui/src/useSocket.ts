@@ -115,5 +115,6 @@ export function useSocket(options: UseSocketOptions = {}) {
     onOrderStatusChanged: optionsRef.current.onOrderStatusChanged,
     on: socketClient.on.bind(socketClient),
     off: socketClient.off.bind(socketClient),
+    emit: socketClient.emit.bind(socketClient),
   };
 }

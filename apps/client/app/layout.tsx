@@ -1,17 +1,7 @@
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono, Inter } from 'next/font/google';
+import { Inter } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider, NotificationProvider } from '@kiwi/ui';
-
-const geist = Geist({
-  subsets: ['latin'],
-  variable: '--font-geist',
-});
-
-const geistMono = Geist_Mono({
-  subsets: ['latin'],
-  variable: '--font-geist-mono',
-});
 
 const inter = Inter({
   subsets: ['latin'],
@@ -33,11 +23,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html
-      lang="es"
-      className={`${geist.variable} ${geistMono.variable} ${inter.variable}`}
-      suppressHydrationWarning
-    >
+    <html lang="es" className={`${inter.variable}`} suppressHydrationWarning>
       <body className="font-sans antialiased bg-bg-light dark:bg-[#0b1326] dark:text-[#f8fafc] min-h-[100dvh]">
         <ThemeProvider>
           <NotificationProvider>{children}</NotificationProvider>
