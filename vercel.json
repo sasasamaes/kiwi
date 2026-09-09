@@ -1,25 +1,7 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
-  "name": "kiwi",
-  "buildCommand": "npm run build",
-  "outputDirectory": ".next",
-  "framework": "nextjs",
-  "installCommand": "npm install",
   "regions": ["iad1"],
-  "functions": {
-    "apps/web/app/**/*.tsx": {
-      "runtime": "edge"
-    },
-    "apps/client/app/**/*.tsx": {
-      "runtime": "edge"
-    }
-  },
-  "rewrites": [
-    {
-      "source": "/api/:path*",
-      "destination": "https://api.kiwi.app/:path*"
-    }
-  ],
   "headers": [
     {
       "source": "/(.*)",
