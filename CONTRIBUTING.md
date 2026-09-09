@@ -22,8 +22,8 @@ npm install
 
 # 2. Variables de entorno de la API
 cp api/.env.example api/.env
-#    Edita DATABASE_URL con tu Postgres local y, si quieres,
-#    cambia PORT (ver §3 sobre la colisión de puertos).
+#    Edita DATABASE_URL con tu Postgres local; la API ya escucha
+#    en el puerto 4000 por defecto (ver §3).
 
 # 3. Esquema + datos demo
 cd api
@@ -45,22 +45,16 @@ cd ..
 
 ---
 
-## 3. Puertos de desarrollo ⚠️
+## 3. Puertos de desarrollo
 
-| Servicio                            | Puerto                                          |
-| ----------------------------------- | ----------------------------------------------- |
-| `apps/web` (dashboard comerciantes) | 3000                                            |
-| `apps/driver` (app repartidor)      | 3001                                            |
-| `apps/client` (menú QR)             | 3002                                            |
-| `api`                               | **3000 por defecto — ¡colisiona con apps/web!** |
+| Servicio                            | Puerto                                    |
+| ----------------------------------- | ----------------------------------------- |
+| `apps/web` (dashboard comerciantes) | 3000                                      |
+| `apps/driver` (app repartidor)      | 3001                                      |
+| `apps/client` (menú QR)             | 3002                                      |
+| `api`                               | **4000** (evita la colisión con apps/web) |
 
-**Recomendación**: en tu `api/.env` local, pon `PORT=4000` y crea un `.env.local` en cada app que corras con:
-
-```bash
-NEXT_PUBLIC_API_URL=http://localhost:4000/api
-```
-
-(`socket-client` deriva la URL del socket de esa misma variable). Si prefieres dejar la API en 3000, arranca **solo la API** o cambia el puerto de la app web — nunca ambos en 3000.
+Los fallbacks de `packages/ui` (`api-client`, `socket-client`) ya apuntan a `http://localhost:4000/api`; en producción cada app usa `NEXT_PUBLIC_API_URL` de Vercel.
 
 ---
 
@@ -81,11 +75,12 @@ cd api && npm test             # 53 tests de la API (jest)
 
 # E2E contra tu API local (API corriendo en :3000/4000)
 node scripts/e2e-prod-flow.mjs http://localhost:4000
+#    (o el puerto que uses: la API local corre en 4000)
 #   → 31 pasos: login, CRUD de menú, ciclo completo de pedido
 
 # Chequeos que aplica CI en cada push
 npm run check:client-bundle    # process/import.meta.env en bundles cliente
-npm run check:dead-hosts       # referencias a hosts muertos (Railway/Supabase/kiwi.app)
+npm run check:dead-hosts       # referencias a hosts muertos (Railway/Supabase/dominio nunca registrado)
 ```
 
 **Swagger de la API local**: `http://localhost:<PORT>/docs`.
@@ -98,9 +93,9 @@ Estas reglas existen porque cada una rompió un build o producción real:
 
 1. **Nada de `process.env?.X` en código cliente** — el _optional chaining_ anula el inlining de Next y envía `process` crudo al navegador → `process is not defined` en toda la app. Solo `process.env.X` plano con prefijo `NEXT_PUBLIC_` (o `NODE_ENV`). CI lo bloquea (`check:client-bundle`).
 2. **Declara en el `package.json` de tu paquete todo lo que importas** — aunque npm lo hoistee y funcione local, el build de Vercel falla. Mantén además versiones alineadas de `lucide-react` y `@types/react` entre apps.
-3. **El esquema canónico es `api/prisma/schema.prisma`** — `packages/db/prisma/schema.prisma` es una copia legada que ya derivó; no la edites (y no uses `@kiwi/db`).
+3. **El esquema canónico es `api/prisma/schema.prisma`** — es el único; no crees copias del schema en otros paquetes (la copia de `packages/db` se eliminó por haber derivado).
 4. **No edites `apps/driver/public/sw.js`** — es un artefacto regenerado por next-pwa.
-5. **Nada de hosts muertos** (`*.kiwi.app`, Railway, Supabase) en código, docs o `.env.example` — el dominio nunca se registró y hay CI que lo bloquea. Las direcciones `@kiwi.app` en seeds/tests están bien (el check las excluye).
+5. **Nada de hosts muertos** (Railway, Supabase, el dominio propio nunca registrado) en código, docs o `.env.example` — hay CI que lo bloquea. Las direcciones `@` en seeds/tests están bien (el check excluye emails).
 6. **`useSearchParams()` exige un límite `<Suspense>`** en Next App Router (rompe el prerender si falta).
 7. **Lint NO corre durante `next build`** en los tres apps — corre `npm run lint` antes de pushear.
 8. **El gateway de sockets es null-safe** — puede invocarse desde flujos REST sin ningún cliente conectado; no le agregues suposiciones de conexión.

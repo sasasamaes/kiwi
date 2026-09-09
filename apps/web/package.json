@@ -19,7 +19,6 @@
     "react-dom": "^19.0.0",
     "@kiwi/ui": "*",
     "@kiwi/types": "*",
-    "@kiwi/db": "*",
     "framer-motion": "^11.0.0",
     "lucide-react": "^0.400.0",
     "clsx": "^2.0.0",

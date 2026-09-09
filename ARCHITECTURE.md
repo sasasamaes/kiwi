@@ -38,7 +38,7 @@ kiwi/
 │   ├── web/        # Dashboard comerciantes (Next.js, puerto 3000)
 │   ├── driver/     # App repartidores (Next.js PWA, puerto 3001)
 │   └── client/     # Menú QR clientes (Next.js, puerto 3002)
-├── api/            # Backend NestJS + Prisma (dev: PORT=3000, ¡colisiona con apps/web — arrancar web primero o cambiar PORT!)
+├── api/            # Backend NestJS + Prisma (dev: PORT=4000 para no chocar con apps/web)
 ├── packages/
 │   ├── ui/         # Componentes React + lógica offline compartida
 │   ├── i18n/       # Internacionalización (es/en) + useTranslation
@@ -80,13 +80,12 @@ No son solo componentes visuales — concentra la lógica transversal usada por 
 
 ## 4. Paquetes compartidos
 
-| Paquete        | Contenido                                               | Estado                                                                             |
-| -------------- | ------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `@kiwi/ui`     | Componentes + lógica offline/realtime/pagos             | Activo, usado por las 3 apps                                                       |
-| `@kiwi/i18n`   | `useTranslation`, locales `es`/`en`, `LanguageSwitcher` | Activo                                                                             |
-| `@kiwi/types`  | Tipos compartidos                                       | Activo                                                                             |
-| `@kiwi/db`     | Singleton de `PrismaClient`                             | **Legado**: nadie lo importa; su `schema.prisma` ha derivado del canónico (ver §6) |
-| `@kiwi/config` | Presets de eslint/typescript                            | Referenciado por configs                                                           |
+| Paquete        | Contenido                                               | Estado                       |
+| -------------- | ------------------------------------------------------- | ---------------------------- |
+| `@kiwi/ui`     | Componentes + lógica offline/realtime/pagos             | Activo, usado por las 3 apps |
+| `@kiwi/i18n`   | `useTranslation`, locales `es`/`en`, `LanguageSwitcher` | Activo                       |
+| `@kiwi/types`  | Tipos compartidos                                       | Activo                       |
+| `@kiwi/config` | Presets de eslint/typescript                            | Referenciado por configs     |
 
 ---
 
@@ -139,7 +138,7 @@ pending → (driver_proposals, solo pedidos scheduled) → assigned
 
 ## 6. Modelo de datos (Prisma)
 
-**Schema canónico: `api/prisma/schema.prisma`** (con migraciones en `api/prisma/migrations/`). El de `packages/db` es una copia derivada que **no** debe editarse.
+**Schema único: `api/prisma/schema.prisma`** (con migraciones en `api/prisma/migrations/`).
 
 Entidades principales:
 
@@ -198,7 +197,6 @@ Las acciones sin red (cambios de estado, formularios) entran a la cola local →
 
 ## 9. Deudas y notas conocidas
 
-- **`@kiwi/db`** es código muerto: nadie lo importa y su schema derivó (falta la relación `kycVerification` en `MerchantProfile`). Candidato a eliminar o re-unificar con `api/prisma`.
 - **CSP** usa `'unsafe-inline'`/`'unsafe-eval'` en `script-src` (requisito actual de Next sin nonce/middleware).
 - **Lint en builds**: los tres apps saltan el lint durante `next build` (errores preexistentes); el lint corre aparte vía `npm run lint`.
 - `apps/driver/public/sw.js` es un artefacto regenerable de next-pwa; no editar a mano.

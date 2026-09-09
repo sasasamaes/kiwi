@@ -30,11 +30,11 @@ npm run prisma:migrate
 npm run dev
 ```
 
-The API will be available at `http://localhost:3000`
+The API will be available at `http://localhost:4000`
 
 ### API Documentation
 
-Swagger documentation is available at `http://localhost:3000/docs`
+Swagger documentation is available at `http://localhost:4000/docs`
 
 ## 📁 Structure
 
@@ -64,24 +64,27 @@ Authorization: Bearer <your-jwt-token>
 
 ### Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/auth/register` | Register new user |
-| POST | `/api/auth/login` | Login user |
-| GET | `/api/auth/profile` | Get current user |
+| Method | Endpoint             | Description       |
+| ------ | -------------------- | ----------------- |
+| POST   | `/api/auth/register` | Register new user |
+| POST   | `/api/auth/login`    | Login user        |
+| GET    | `/api/auth/profile`  | Get current user  |
 
 ## 📦 API Endpoints
 
 ### Auth
+
 - `POST /api/auth/register` - Register (merchant or driver)
 - `POST /api/auth/login` - Login
 - `GET /api/auth/profile` - Get profile
 
 ### Users
+
 - `GET /api/users/me` - Get current user
 - `PUT /api/users/me` - Update profile
 
 ### Merchants
+
 - `GET /api/merchants/me` - Get merchant profile
 - `PUT /api/merchants/me` - Update merchant profile
 - `GET /api/merchants/me/favorites` - Get favorite drivers
@@ -89,6 +92,7 @@ Authorization: Bearer <your-jwt-token>
 - `DELETE /api/merchants/me/favorites/:driverId` - Remove favorite
 
 ### Drivers
+
 - `GET /api/drivers/me` - Get driver profile
 - `PUT /api/drivers/me` - Update driver profile
 - `PUT /api/drivers/me/status` - Update online status
@@ -97,6 +101,7 @@ Authorization: Bearer <your-jwt-token>
 - `GET /api/drivers/available` - Get available drivers
 
 ### Orders
+
 - `POST /api/orders` - Create order
 - `GET /api/orders/my` - Get my orders
 - `GET /api/orders/available` - Get available orders
@@ -107,6 +112,7 @@ Authorization: Bearer <your-jwt-token>
 - `PUT /api/orders/:orderId/proposals/:proposalId/accept` - Accept proposal
 
 ### KYC
+
 - `GET /api/kyc/status` - Get KYC status
 - `POST /api/kyc/submit` - Submit documents
 - `GET /api/kyc/pending` - Get pending (admin)

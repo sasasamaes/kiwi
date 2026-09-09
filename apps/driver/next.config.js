@@ -50,7 +50,7 @@ const withPWA = require('next-pwa')({
 });
 
 const nextConfig = {
-  transpilePackages: ['@kiwi/ui', '@kiwi/types', '@kiwi/db'],
+  transpilePackages: ['@kiwi/ui', '@kiwi/types'],
   eslint: {
     // Pre-existing lint issues; lint runs locally, skip during prod builds
     ignoreDuringBuilds: true,

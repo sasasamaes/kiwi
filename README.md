@@ -100,7 +100,7 @@ kiwi/
 │   └── client/        # Menú QR 📱
 ├── packages/
 │   ├── ui/            # Componentes compartidos
-│   ├── db/            # Prisma schema
+│   ├── i18n/          # Internacionalización
 │   ├── types/         # TypeScript types
 │   └── config/        # Configs compartidas
 ├── api/               # Backend NestJS
