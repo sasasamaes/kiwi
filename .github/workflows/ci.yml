@@ -7,6 +7,20 @@ on:
     branches: [main]
 
 jobs:
+  dead-hosts:
+    name: Dead Host Guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Check for dead infrastructure hosts
+        run: npm run check:dead-hosts
+
   client-bundle-safety:
     name: Client Bundle Safety
     runs-on: ubuntu-latest

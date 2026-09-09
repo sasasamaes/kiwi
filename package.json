@@ -19,6 +19,7 @@
     "test": "turbo run test",
     "check:client-bundle": "node scripts/check-client-bundle.mjs",
     "check:client-bundle:build": "node scripts/check-client-bundle.mjs --build",
+    "check:dead-hosts": "node scripts/check-dead-hosts.mjs",
     "test:watch": "turbo run test -- --watch",
     "lint": "turbo run lint",
     "lint:fix": "turbo run lint -- --fix",

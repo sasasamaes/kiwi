@@ -181,7 +181,7 @@ Las acciones sin red (cambios de estado, formularios) entran a la cola local →
 
 - **Security headers por app** en cada `vercel.json`: CSP con allowlist por dominio (API, socket, PostHog, Sentry, Firebase, tiles OSM; OSRM solo en driver), HSTS con preload, `X-Frame-Options`, `Permissions-Policy` por rol.
 - **Frontends → API**: variable `NEXT_PUBLIC_API_URL=https://kiwi-api-fe54.onrender.com/api` (los sockets derivan de la misma base quitando `/api`).
-- **CI (GitHub Actions)**: dos jobs — _Client Bundle Safety_ (build + escaneo de `process`/`import.meta.env` en bundles de cliente; ver `scripts/check-client-bundle.mjs`) y _Test & Build_ (`npm ci` → `prisma generate` → 53 tests → `nest build`).
+- **CI (GitHub Actions)**: tres jobs — _Dead Host Guard_ (falla si archivos rastreados referencian hosts muertos tipo Railway/Supabase/`*.kiwi.app`; `npm run check:dead-hosts`), _Client Bundle Safety_ (build + escaneo de `process`/`import.meta.env` en bundles de cliente; ver `scripts/check-client-bundle.mjs`) y _Test & Build_ (`npm ci` → `prisma generate` → 53 tests → `nest build`).
 - **Prueba E2E de producción**: `node scripts/e2e-prod-flow.mjs [url]` — login, CRUD de menú y ciclo completo de pedido contra cualquier entorno.
 
 ### Variables críticas

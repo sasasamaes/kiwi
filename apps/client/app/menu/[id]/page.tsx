@@ -176,7 +176,7 @@ export default function MenuPage() {
           method: paymentMethod === 'sinpe' ? 'onvopay_sinpe' : 'onvopay_card',
           amount: totalWithDelivery,
           customerPhone: deliveryInfo.phone,
-          customerEmail: deliveryInfo.phone + '@kiwi.app', // Temporary
+          customerEmail: deliveryInfo.phone + '@guest.checkout.invalid', // Temporary
         });
 
         if (paymentResult.checkoutUrl) {
@@ -331,10 +331,7 @@ export default function MenuPage() {
         <div className="mx-auto max-w-lg px-4">
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className="rounded-2xl glass p-4"
-              >
+              <div key={i} className="rounded-2xl glass p-4">
                 <div className="flex gap-4">
                   <Skeleton className="h-20 w-20 rounded-xl" />
                   <div className="flex-1">
@@ -506,10 +503,7 @@ export default function MenuPage() {
               const quantity = getItemQuantity(item.id);
               return (
                 <StaggerItem key={item.id}>
-                  <motion.div
-                    className="rounded-2xl glass p-4"
-                    whileHover={{ y: -2 }}
-                  >
+                  <motion.div className="rounded-2xl glass p-4" whileHover={{ y: -2 }}>
                     <div className="flex gap-4">
                       <div className="flex h-20 w-20 items-center justify-center rounded-xl bg-surface-100 dark:bg-surface-700 text-3xl flex-shrink-0">
                         {item.image || 'Utensils'}
@@ -765,9 +759,24 @@ export default function MenuPage() {
                   </h3>
                   <div className="grid grid-cols-3 gap-3">
                     {[
-                      { id: 'sinpe' as const, icon: 'Smartphone', label: 'SINPE', desc: 'Transferencia' },
-                      { id: 'card' as const, icon: 'CreditCard', label: 'Tarjeta', desc: 'Crédito/Débito' },
-                      { id: 'cash' as const, icon: 'DollarSign', label: 'Efectivo', desc: 'Al repartidor' },
+                      {
+                        id: 'sinpe' as const,
+                        icon: 'Smartphone',
+                        label: 'SINPE',
+                        desc: 'Transferencia',
+                      },
+                      {
+                        id: 'card' as const,
+                        icon: 'CreditCard',
+                        label: 'Tarjeta',
+                        desc: 'Crédito/Débito',
+                      },
+                      {
+                        id: 'cash' as const,
+                        icon: 'DollarSign',
+                        label: 'Efectivo',
+                        desc: 'Al repartidor',
+                      },
                     ].map((method) => (
                       <motion.button
                         key={method.id}
@@ -810,8 +819,18 @@ export default function MenuPage() {
                   {/* Crypto Options */}
                   <div className="grid grid-cols-2 gap-3 mt-3">
                     {[
-                      { id: 'crypto_usdc' as const, icon: 'DollarSign', label: 'USDC', desc: 'Stellar' },
-                      { id: 'crypto_usdt' as const, icon: 'DollarSign', label: 'USDT', desc: 'Stellar' },
+                      {
+                        id: 'crypto_usdc' as const,
+                        icon: 'DollarSign',
+                        label: 'USDC',
+                        desc: 'Stellar',
+                      },
+                      {
+                        id: 'crypto_usdt' as const,
+                        icon: 'DollarSign',
+                        label: 'USDT',
+                        desc: 'Stellar',
+                      },
                     ].map((method) => (
                       <motion.button
                         key={method.id}
@@ -910,7 +929,9 @@ export default function MenuPage() {
                             : 'text-surface-800 dark:text-surface-200'
                         }
                       >
-                        {deliveryFee === 0 ? 'Gratis PartyPopper' : `₡${deliveryFee.toLocaleString()}`}
+                        {deliveryFee === 0
+                          ? 'Gratis PartyPopper'
+                          : `₡${deliveryFee.toLocaleString()}`}
                       </span>
                     </div>
                     {cartTotal < 5000 && (

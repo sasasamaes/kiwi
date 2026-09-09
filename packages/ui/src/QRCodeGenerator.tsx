@@ -4,7 +4,7 @@ import { useRef, useCallback } from 'react';
 import { QRCodeSVG, QRCodeCanvas } from 'qrcode.react';
 import { motion } from 'framer-motion';
 
-const MENU_BASE_URL = process.env.NEXT_PUBLIC_MENU_URL || 'https://menu.kiwi.app/menu';
+const MENU_BASE_URL = process.env.NEXT_PUBLIC_MENU_URL || 'https://kiwi-client-tau.vercel.app/menu';
 
 export interface QRCodeGeneratorProps {
   /** Merchant ID to encode in the QR code */
@@ -23,7 +23,7 @@ export interface QRCodeGeneratorProps {
 
 /**
  *  QR Code Generator for Kiwi Merchant Menus
- * 
+ *
  * Generates scannable QR codes that link to the merchant's menu page.
  * When a client scans the code, they see the menu and can order directly.
  */
@@ -210,7 +210,7 @@ export function QRCodeGenerator({
         {/* Kiwi branding in corner */}
         {branded && (
           <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-kiwi-500 px-3 py-1 text-xs font-bold text-white shadow-md">
-             Kiwi
+            Kiwi
           </div>
         )}
       </motion.div>
@@ -226,9 +226,7 @@ export function QRCodeGenerator({
           <h3 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100">
             {businessName}
           </h3>
-          <p className="text-sm text-surface-500 dark:text-surface-400">
-            Escanea para ver el menú
-          </p>
+          <p className="text-sm text-surface-500 dark:text-surface-400">Escanea para ver el menú</p>
         </motion.div>
       )}
 
@@ -284,7 +282,7 @@ export function QRCodeGenerator({
 
 /**
  *  QR Code Scanner
- * 
+ *
  * Scans QR codes and navigates to the merchant's menu page.
  */
 export interface QRScannerProps {
@@ -296,18 +294,14 @@ export interface QRScannerProps {
   isActive?: boolean;
 }
 
-export function QRScanner({
-  onScan,
-  onError,
-  isActive = true,
-}: QRScannerProps) {
+export function QRScanner({ onScan, onError, isActive = true }: QRScannerProps) {
   const startScanner = useCallback(async () => {
     try {
       // Dynamic import for html5-qrcode (only runs on client)
       const { Html5Qrcode } = await import('html5-qrcode');
 
       const scanner = new Html5Qrcode('qr-reader');
-      
+
       await scanner.start(
         { facingMode: 'environment' },
         {
@@ -331,7 +325,7 @@ export function QRScanner({
         },
         () => {
           // QR code not found in frame - this is normal, ignore
-        }
+        },
       );
     } catch (error) {
       console.error('QR Scanner error:', error);

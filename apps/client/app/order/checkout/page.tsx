@@ -100,7 +100,7 @@ function CheckoutContent() {
             method: paymentMethod === 'sinpe' ? 'onvopay_sinpe' : 'onvopay_card',
             amount: total,
             customerPhone: phoneNumber,
-            customerEmail: `${phoneNumber}@kiwi.app`,
+            customerEmail: `${phoneNumber}@guest.checkout.invalid`,
           });
 
           if (paymentResult?.checkoutUrl) {

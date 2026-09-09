@@ -44,8 +44,8 @@ interface ReverseGeocodingResult {
 export class GeocodingService {
   private readonly logger = new Logger(GeocodingService.name);
   private readonly baseUrl = 'https://nominatim.openstreetmap.org';
-  private readonly userAgent = 'KiwiDeliveryApp/1.0 (https://kiwi.app)';
-  
+  private readonly userAgent = 'KiwiDeliveryApp/1.0 (https://kiwi-api-fe54.onrender.com)';
+
   // Cache for geocoding results (in production, use Redis)
   private cache = new Map<string, { data: any; timestamp: number }>();
   private readonly cacheTTL = 24 * 60 * 60 * 1000; // 24 hours
@@ -84,7 +84,7 @@ export class GeocodingService {
       const response = await fetch(`${this.baseUrl}/search?${params.toString()}`, {
         headers: {
           'User-Agent': this.userAgent,
-          'Accept': 'application/json',
+          Accept: 'application/json',
         },
       });
 
@@ -130,7 +130,7 @@ export class GeocodingService {
    */
   async searchCostaRica(query: string, limit: number = 5): Promise<GeocodingResult[]> {
     const results = await this.search(`${query}, Costa Rica`, limit);
-    return results.filter(r => r.address.countryCode === 'cr');
+    return results.filter((r) => r.address.countryCode === 'cr');
   }
 
   /**
@@ -138,15 +138,11 @@ export class GeocodingService {
    */
   async searchNicoya(query: string, limit: number = 5): Promise<GeocodingResult[]> {
     const results = await this.search(`${query}, Nicoya, Guanacaste, Costa Rica`, limit + 2);
-    
+
     // Prioritize Nicoya results
-    const nicoyaResults = results.filter(r => 
-      r.displayName.toLowerCase().includes('nicoya')
-    );
-    
-    const otherResults = results.filter(r => 
-      !r.displayName.toLowerCase().includes('nicoya')
-    );
+    const nicoyaResults = results.filter((r) => r.displayName.toLowerCase().includes('nicoya'));
+
+    const otherResults = results.filter((r) => !r.displayName.toLowerCase().includes('nicoya'));
 
     return [...nicoyaResults, ...otherResults].slice(0, limit);
   }
@@ -174,7 +170,7 @@ export class GeocodingService {
       const response = await fetch(`${this.baseUrl}/reverse?${params.toString()}`, {
         headers: {
           'User-Agent': this.userAgent,
-          'Accept': 'application/json',
+          Accept: 'application/json',
         },
       });
 
@@ -229,10 +225,12 @@ export class GeocodingService {
     const R = 6371; // Earth's radius in km
     const dLat = this.toRad(lat2 - lat1);
     const dLng = this.toRad(lng2 - lng1);
-    const a = 
+    const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(this.toRad(lat1)) * Math.cos(this.toRad(lat2)) *
-      Math.sin(dLng / 2) * Math.sin(dLng / 2);
+      Math.cos(this.toRad(lat1)) *
+        Math.cos(this.toRad(lat2)) *
+        Math.sin(dLng / 2) *
+        Math.sin(dLng / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   }
@@ -257,7 +255,11 @@ export class GeocodingService {
       parts.push(address.city || address.town || address.village);
     }
 
-    return parts.join(', ') || item.display_name?.split(',').slice(0, 2).join(',') || 'Dirección desconocida';
+    return (
+      parts.join(', ') ||
+      item.display_name?.split(',').slice(0, 2).join(',') ||
+      'Dirección desconocida'
+    );
   }
 
   private toRad(deg: number): number {
@@ -275,7 +277,7 @@ export class GeocodingService {
 
   private setCache(key: string, data: any): void {
     this.cache.set(key, { data, timestamp: Date.now() });
-    
+
     // Limit cache size
     if (this.cache.size > 1000) {
       const firstKey = this.cache.keys().next().value;

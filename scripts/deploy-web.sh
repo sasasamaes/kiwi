@@ -36,6 +36,6 @@ vercel --prod --name kiwi-client
 cd ../..
 
 echo -e "\n${GREEN}✅ All web apps deployed successfully!${NC}"
-echo -e "${GREEN}📍 Merchant: https://merchant.kiwi.app${NC}"
-echo -e "${GREEN}📍 Driver: https://driver.kiwi.app${NC}"
-echo -e "${GREEN}📍 Client: https://menu.kiwi.app${NC}"
+echo -e "${GREEN}📍 Merchant: https://kiwi-merchant.vercel.app${NC}"
+echo -e "${GREEN}📍 Driver: https://kiwi-driver.vercel.app${NC}"
+echo -e "${GREEN}📍 Client: https://kiwi-client-tau.vercel.app${NC}"

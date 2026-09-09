@@ -805,7 +805,6 @@ class OfflinePaymentService {
   
   <div class="footer">
     <div>Gracias por su compra</div>
-    <div>www.kiwi.app</div>
   </div>
 </body>
 </html>
