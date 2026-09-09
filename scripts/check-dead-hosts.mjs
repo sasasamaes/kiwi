@@ -2,13 +2,16 @@
 /**
  * Fails when tracked files reference dead infrastructure hosts.
  *
- * The project once planned to run on Railway (api.kiwi.app) and Supabase.
- * That setup was abandoned — production now runs on Render (API + Postgres)
- * and Vercel (frontends). Any reference to the dead hosts is a bug waiting
- * to happen (docs, env examples, fallbacks, deploy scripts), so CI fails.
+ * The project once planned to run on Railway and Supabase. That setup was
+ * abandoned — production now runs on Render (API + Postgres) and Vercel
+ * (frontends). Any reference to the dead hosts is a bug waiting to happen
+ * (docs, env examples, fallbacks, deploy scripts), so CI fails.
  *
  * - ERROR (exit 1): a dead host appears in a tracked file.
  * - WARN (exit 0): suspicious-but-allowed patterns, for visibility only.
+ *
+ * This script necessarily contains the host patterns itself, so it is
+ * excluded from its own scan (see SELF_FILE).
  *
  * Usage: node scripts/check-dead-hosts.mjs
  */
@@ -17,17 +20,7 @@ import { execSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
-// Hosts that must never appear in the repo again.
-const DEAD_HOSTS = [
-  'api.kiwi.app', // never-registered domain from the Railway plan
-  'railway.app', // abandoned Railway deployment
-  'railway.app'.replace('.', '\\.'),
-  'supabase.co', // paused/abandoned Supabase project
-  'supabase.com',
-  'neon.tech', // candidate DB host that was never used
-];
-
-// Paths that legitimately mention them or produce only noise.
+// Paths that legitimately mention the hosts or produce only noise.
 const EXCLUDED_PATHS = [
   /^package-lock\.json$/,
   /^node_modules\//,
@@ -39,10 +32,12 @@ const EXCLUDED_PATHS = [
   /^\.turbo\//,
 ];
 
-// @kiwi.app email addresses are demo/test data, not host references.
-const EMAIL_RE = /[\w.+-]+@kiwi\.app/gi;
-// Matches inside this file (self-referential host list).
+// This file defines the patterns, so scanning itself is meaningless.
 const SELF_FILE = 'scripts/check-dead-hosts.mjs';
+
+// Email addresses like demo accounts are data, not host references —
+// scrubbed before scanning so they never trip the host patterns.
+const EMAIL_RE = /[\w.+-]+@(kiwi\.app|guest\.checkout\.invalid|example\.com)/gi;
 
 const hostPatterns = [
   { host: 'kiwi.app', re: /\bkiwi\.app\b/gi }, // whole domain never registered (emails scrubbed first)
@@ -58,7 +53,7 @@ function listTrackedFiles() {
 }
 
 function isExcluded(relPath) {
-  return EXCLUDED_PATHS.some((re) => re.test(relPath));
+  return relPath === SELF_FILE || EXCLUDED_PATHS.some((re) => re.test(relPath));
 }
 
 const violations = [];
@@ -76,18 +71,19 @@ for (const relPath of files) {
     continue; // deleted from worktree but still tracked, binaries, etc.
   }
 
-  // Strip email addresses so @kiwi.app demo accounts don't trip the scan.
-  const scrubbed = relPath === SELF_FILE ? content : content.replace(EMAIL_RE, '<email>');
+  const scrubbed = content.replace(EMAIL_RE, '<email>');
 
   for (const { host, re } of hostPatterns) {
     re.lastIndex = 0;
     let m;
     while ((m = re.exec(scrubbed)) !== null) {
       const lineNo = scrubbed.slice(0, m.index).split('\n').length;
-      const lineText = scrubbed.split('\n')[lineNo - 1].trim().slice(0, 120);
-      // The word "railway"/"supabase" alone in prose (docs) is a warning,
-      // a URL/host-shaped reference anywhere is an error.
-      const isProseOnly = /\.(md|txt)$/i.test(relPath) && !/https?:\/\/|\w+\.(app|co|com|tech)\b/i.test(lineText);
+      const fullLine = scrubbed.split('\n')[lineNo - 1].trim();
+      const lineText = fullLine.slice(0, 120);
+      // Classification uses the FULL line (display is truncated above).
+      // The word alone in prose (docs) is a warning; a URL/host-shaped
+      // reference anywhere is an error.
+      const isProseOnly = /\.(md|txt)$/i.test(relPath) && !/https?:\/\/|\w+\.(app|co|com|tech)\b/i.test(fullLine);
       const key = `${relPath}:${lineNo}`;
       if (seen.has(key)) continue;
       seen.add(key);
