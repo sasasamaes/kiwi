@@ -7,8 +7,8 @@ on:
     branches: [main]
 
 jobs:
-  dead-hosts:
-    name: Dead Host Guard
+  hygiene:
+    name: Repo Hygiene
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -20,6 +20,9 @@ jobs:
 
       - name: Check for dead infrastructure hosts
         run: npm run check:dead-hosts
+
+      - name: Check Prisma schema invariant (exactly one schema)
+        run: npm run check:prisma-schema
 
   client-bundle-safety:
     name: Client Bundle Safety

@@ -81,6 +81,7 @@ node scripts/e2e-prod-flow.mjs http://localhost:4000
 # Chequeos que aplica CI en cada push
 npm run check:client-bundle    # process/import.meta.env en bundles cliente
 npm run check:dead-hosts       # referencias a hosts muertos (Railway/Supabase/dominio nunca registrado)
+npm run check:prisma-schema    # invariante: un único schema.prisma (api/prisma)
 ```
 
 **Swagger de la API local**: `http://localhost:<PORT>/docs`.
@@ -106,7 +107,7 @@ Estas reglas existen porque cada una rompió un build o producción real:
 
 | Job                      | Qué hace                                                                         |
 | ------------------------ | -------------------------------------------------------------------------------- |
-| Dead Host Guard          | Falla si hay hosts muertos en archivos rastreados (~10s)                         |
+| Repo Hygiene             | Hosts muertos + invariante de un único schema Prisma (~10s)                      |
 | Client Bundle Safety     | Builda los 3 apps y escanea los bundles por `process`/`import.meta.env` crudos   |
 | Test & Build             | `npm ci` → `prisma generate` → 53 tests → `nest build`                           |
 | E2E Flow (real Postgres) | Postgres efímero → migrate → seed → boot de la API → 31 pasos del flujo completo |
