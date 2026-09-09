@@ -13,11 +13,7 @@ import { PrismaService } from '../prisma/prisma.service';
 
 @WebSocketGateway({
   cors: {
-    origin: [
-      'http://localhost:3000',
-      'http://localhost:3001',
-      'http://localhost:3002',
-    ],
+    origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002'],
     credentials: true,
   },
   namespace: '/',
@@ -36,7 +32,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async handleConnection(client: Socket) {
     try {
       const token = client.handshake.auth?.token || client.handshake.query?.token;
-      
+
       if (!token) {
         client.disconnect();
         return;
@@ -51,7 +47,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       // Join user-specific room
       client.join(`user:${userId}`);
-      
+
       // Join role-specific room
       client.join(`role:${role}`);
 
@@ -78,10 +74,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   // ============================================
 
   @SubscribeMessage('order:create')
-  async handleOrderCreate(
-    @ConnectedSocket() client: Socket,
-    @MessageBody() data: any,
-  ) {
+  async handleOrderCreate(@ConnectedSocket() client: Socket, @MessageBody() data: any) {
     const userData = this.connectedUsers.get(client.id);
     if (!userData || userData.role !== 'merchant') {
       return { error: 'Unauthorized' };
@@ -257,24 +250,27 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   // 🔧 HELPER METHODS
   // ============================================
 
-  // Send notification to specific user
+  // Send notification to specific user.
+  // The socket server is null until the first client connects (Nest lifecycle),
+  // so every helper must be null-safe — a broadcast to zero connected sockets
+  // is a no-op, not a crash.
   sendToUser(userId: string, event: string, data: any) {
-    this.server.to(`user:${userId}`).emit(event, data);
+    this.server?.to(`user:${userId}`).emit(event, data);
   }
 
   // Send notification to all users with specific role
   sendToRole(role: string, event: string, data: any) {
-    this.server.to(`role:${role}`).emit(event, data);
+    this.server?.to(`role:${role}`).emit(event, data);
   }
 
   // Send notification to topic subscribers
   sendToTopic(topic: string, event: string, data: any) {
-    this.server.to(`topic:${topic}`).emit(event, data);
+    this.server?.to(`topic:${topic}`).emit(event, data);
   }
 
   // Broadcast to all connected clients
   broadcast(event: string, data: any) {
-    this.server.emit(event, data);
+    this.server?.emit(event, data);
   }
 
   // Get connected users count

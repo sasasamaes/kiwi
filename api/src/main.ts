@@ -3,6 +3,8 @@ import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import * as Sentry from '@sentry/nestjs';
 import { ProfilingIntegration } from '@sentry/profiling-node';
+import { execSync } from 'node:child_process';
+import { join } from 'node:path';
 import { AppModule } from './app.module';
 
 // Initialize Sentry before anything else
@@ -33,7 +35,65 @@ if (process.env.SENTRY_DSN) {
   });
 }
 
+/**
+ * Ensure the database is reachable, migrated and seeded before serving traffic.
+ *
+ * Render's deploy pipeline only runs `start:prod` — nothing applies Prisma
+ * migrations or seeds demo data, so a fresh database means every DB-backed
+ * route 500s (P2021/P2022 "table does not exist") until someone runs
+ * migrations by hand. This makes a fresh deploy self-heal instead.
+ */
+async function ensureDatabaseReady(): Promise<void> {
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) {
+    console.warn('⚠️  DATABASE_URL not set — skipping database bootstrap');
+    return;
+  }
+
+  const { PrismaClient } = await import('@prisma/client');
+  const prisma = new PrismaClient();
+  const apiRoot = join(__dirname, '..'); // prisma/ and package.json live at the api root
+
+  try {
+    // 1. Reachability + schema probe.
+    const userCount = await prisma.user.count();
+    console.log(`🗄️  Database reachable (${userCount} users)`);
+
+    // 2. Demo data: seed an empty database (fresh prod deploys, preview envs).
+    if (userCount === 0 && process.env.SEED_DEMO_DATA !== 'false') {
+      console.log('🌱 Empty database — seeding demo data...');
+      execSync('npx prisma db seed', { stdio: 'inherit', cwd: apiRoot });
+    }
+  } catch (error: any) {
+    // P2021/P2022: tables missing — apply migrations, then re-probe and seed.
+    const code = error?.code;
+    if (code === 'P2021' || code === 'P2022') {
+      console.log('🛠️  Schema missing — applying pending migrations...');
+      execSync('npx prisma migrate deploy', {
+        stdio: 'inherit',
+        cwd: join(__dirname, '..'), // prisma/ lives one level above dist/
+      });
+
+      const userCount = await prisma.user.count();
+      console.log(`🗄️  Migrations applied (${userCount} users)`);
+
+      if (userCount === 0 && process.env.SEED_DEMO_DATA !== 'false') {
+        console.log('🌱 Empty database — seeding demo data...');
+        execSync('npx prisma db seed', { stdio: 'inherit', cwd: join(__dirname, '..') });
+      }
+    } else {
+      // Unreachable DB, bad credentials, etc. Log loudly but keep serving so
+      // Render doesn't flap the deploy while the DB comes back online.
+      console.error(`❌ Database bootstrap failed (${code ?? 'unknown'}): ${error?.message}`);
+    }
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
 async function bootstrap() {
+  await ensureDatabaseReady();
+
   const app = await NestFactory.create(AppModule);
 
   // Sentry request handler (must be first middleware)
