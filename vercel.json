@@ -38,10 +38,5 @@
         }
       ]
     }
-  ],
-  "env": {
-    "NEXT_PUBLIC_API_URL": "@api-url",
-    "NEXT_PUBLIC_SOCKET_URL": "@socket-url",
-    "NEXT_PUBLIC_APP_URL": "@app-url"
-  }
+  ]
 }
