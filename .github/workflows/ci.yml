@@ -56,3 +56,68 @@ jobs:
 
       - name: Verify API builds
         run: test -f api/dist/main.js && echo "✅ API build OK" || echo "❌ API build failed"
+
+  e2e:
+    name: E2E Flow (real Postgres)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: kiwi
+          POSTGRES_PASSWORD: kiwi
+          POSTGRES_DB: kiwi_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U kiwi"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://kiwi:kiwi@localhost:5432/kiwi_ci
+      JWT_SECRET: ci-e2e-secret-not-for-production
+      NODE_ENV: test
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup dependencies (cached)
+        uses: ./.github/actions/setup-deps
+
+      - name: Generate Prisma client
+        run: cd api && npx prisma generate
+
+      - name: Apply database schema
+        run: cd api && npx prisma migrate deploy
+
+      - name: Seed demo data
+        run: cd api && npx prisma db seed
+
+      - name: Build API with NestJS
+        run: cd api && npx nest build
+
+      - name: Start API and wait for readiness
+        run: |
+          cd api
+          PORT=3000 npm run start:prod > /tmp/api.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:3000/api/payments/methods > /dev/null; then
+              echo "🥝 API ready after ${i}s"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "❌ API did not become ready in 60s"
+          tail -60 /tmp/api.log
+          exit 1
+
+      - name: Run E2E flow
+        run: node scripts/e2e-prod-flow.mjs http://localhost:3000
+
+      - name: API logs on failure
+        if: failure()
+        run: tail -100 /tmp/api.log
