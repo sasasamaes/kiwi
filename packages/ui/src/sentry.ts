@@ -12,14 +12,14 @@ import * as Sentry from '@sentry/react';
  */
 
 export function initSentry() {
-  const dsn = process.env?.NEXT_PUBLIC_SENTRY_DSN;
+  const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
 
   if (!dsn) {
     console.log('🐛 Sentry DSN not configured, error tracking disabled');
     return;
   }
 
-  const environment = process.env?.NODE_ENV || 'development';
+  const environment = process.env.NODE_ENV || 'development';
 
   Sentry.init({
     dsn,

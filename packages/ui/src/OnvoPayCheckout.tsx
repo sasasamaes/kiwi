@@ -250,7 +250,8 @@ export function CryptoCheckout({
       {/* Network Info */}
       <div className="mt-4 text-center">
         <p className="text-xs text-surface-400 dark:text-surface-500">
-          🔗 Red: Stellar {process.env.STELLAR_NETWORK === 'testnet' ? 'Testnet' : 'Mainnet'}
+          🔗 Red: Stellar{' '}
+          {process.env.NEXT_PUBLIC_STELLAR_NETWORK === 'testnet' ? 'Testnet' : 'Mainnet'}
         </p>
       </div>
     </motion.div>
