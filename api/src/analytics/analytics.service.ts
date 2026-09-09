@@ -53,9 +53,11 @@ export class AnalyticsService {
       overview: {
         totalDeliveries: deliveries.total,
         totalEarnings: earnings.total,
-        averageEarningPerDelivery: deliveries.total > 0 ? Math.round(earnings.total / deliveries.total) : 0,
+        averageEarningPerDelivery:
+          deliveries.total > 0 ? Math.round(earnings.total / deliveries.total) : 0,
         averageRating: ratings.average,
-        completionRate: deliveries.total > 0 ? Math.round((deliveries.completed / deliveries.total) * 100) : 0,
+        completionRate:
+          deliveries.total > 0 ? Math.round((deliveries.completed / deliveries.total) * 100) : 0,
         activeHours: schedule.activeHours,
       },
       deliveries,
@@ -154,7 +156,8 @@ export class AnalyticsService {
     let averageDeliveryTime = 0;
     if (deliveredOrders.length > 0) {
       const totalTime = deliveredOrders.reduce((sum, order) => {
-        const deliveryTime = new Date(order.deliveredAt!).getTime() - new Date(order.createdAt).getTime();
+        const deliveryTime =
+          new Date(order.deliveredAt!).getTime() - new Date(order.createdAt).getTime();
         return sum + deliveryTime / (1000 * 60); // Convert to minutes
       }, 0);
       averageDeliveryTime = Math.round(totalTime / deliveredOrders.length);
@@ -211,7 +214,7 @@ export class AnalyticsService {
       _sum: { amount: true },
     });
 
-    const byPaymentMethod = payments.map(p => ({
+    const byPaymentMethod = payments.map((p) => ({
       method: p.method,
       amount: Number(p._sum?.amount || 0),
     }));
@@ -228,7 +231,8 @@ export class AnalyticsService {
   }
 
   private async getTopItems(merchantId: string, dateRange: { start: Date; end: Date }) {
-    const topItems = await this.prisma.orderItem.groupBy({
+    // Top 10 by order count first…
+    const topByCount = await this.prisma.orderItem.groupBy({
       by: ['menuItemId', 'name'],
       where: {
         order: {
@@ -236,43 +240,78 @@ export class AnalyticsService {
           createdAt: { gte: dateRange.start, lte: dateRange.end },
         },
       },
-      _sum: { price: true, quantity: true },
       _count: { id: true },
       orderBy: { _count: { id: 'desc' } },
       take: 10,
     });
 
-    return topItems.map(item => ({
-      id: item.menuItemId,
-      name: item.name,
-      orders: item._count.id,
-      revenue: Number(item._sum?.price || 0) * Number(item._sum?.quantity || 1),
+    if (topByCount.length === 0) return [];
+
+    // …then revenue as Σ(price × quantity), NOT Σ(price) × Σ(quantity)
+    // (the old formula double-counted whenever prices varied).
+    const items = await this.prisma.orderItem.findMany({
+      where: {
+        menuItemId: { in: topByCount.map((t) => t.menuItemId) },
+        order: {
+          merchantId,
+          createdAt: { gte: dateRange.start, lte: dateRange.end },
+        },
+      },
+      select: { menuItemId: true, name: true, price: true, quantity: true },
+    });
+
+    const agg = new Map<string, { name: string; orders: number; revenue: number }>();
+    for (const row of items) {
+      const cur = agg.get(row.menuItemId) ?? { name: row.name, orders: 0, revenue: 0 };
+      cur.orders += 1;
+      cur.revenue += Number(row.price) * row.quantity;
+      agg.set(row.menuItemId, cur);
+    }
+
+    return topByCount.map((t) => ({
+      id: t.menuItemId,
+      name: t.name,
+      orders: agg.get(t.menuItemId)?.orders ?? t._count.id,
+      revenue: Math.round((agg.get(t.menuItemId)?.revenue ?? 0) * 100) / 100,
       image: '🍽️', // Default image
     }));
   }
 
   private async getPeakHours(merchantId: string, dateRange: { start: Date; end: Date }) {
-    const orders = await this.prisma.order.findMany({
-      where: {
-        merchantId,
-        createdAt: { gte: dateRange.start, lte: dateRange.end },
-      },
-      select: { createdAt: true, totalAmount: true },
-    });
-
     // Group by hour
     const hourlyData: Record<number, { orders: number; revenue: number }> = {};
     for (let h = 7; h <= 22; h++) {
       hourlyData[h] = { orders: 0, revenue: 0 };
     }
 
-    orders.forEach(order => {
-      const hour = new Date(order.createdAt).getHours();
-      if (hourlyData[hour]) {
-        hourlyData[hour].orders++;
-        hourlyData[hour].revenue += Number(order.totalAmount);
+    // Cursor-batched scan: the old findMany loaded every order in range
+    // into memory (OOM with volume). 500-row pages keep results exact.
+    const baseWhere = {
+      merchantId,
+      createdAt: { gte: dateRange.start, lte: dateRange.end },
+    };
+    let cursor: string | undefined;
+    for (;;) {
+      const page = await this.prisma.order.findMany({
+        where: baseWhere,
+        select: { id: true, createdAt: true, totalAmount: true },
+        orderBy: { id: 'asc' },
+        take: 500,
+        ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
+      });
+      if (page.length === 0) break;
+
+      for (const order of page) {
+        const hour = new Date(order.createdAt).getHours();
+        if (hourlyData[hour]) {
+          hourlyData[hour].orders++;
+          hourlyData[hour].revenue += Number(order.totalAmount);
+        }
       }
-    });
+
+      if (page.length < 500) break;
+      cursor = page[page.length - 1].id;
+    }
 
     return Object.entries(hourlyData).map(([hour, data]) => ({
       hour: parseInt(hour),
@@ -300,14 +339,13 @@ export class AnalyticsService {
       select: { rating: true },
     });
 
-    const averageRating = ratings.length > 0
-      ? ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length
-      : 0;
+    const averageRating =
+      ratings.length > 0 ? ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length : 0;
 
     // Rating distribution
-    const distribution = [5, 4, 3, 2, 1].map(stars => ({
+    const distribution = [5, 4, 3, 2, 1].map((stars) => ({
       stars,
-      count: ratings.filter(r => r.rating === stars).length,
+      count: ratings.filter((r) => r.rating === stars).length,
     }));
 
     return {
@@ -333,24 +371,32 @@ export class AnalyticsService {
         where: { merchantId, createdAt: { gte: previousStart, lte: previousEnd } },
       }),
       this.prisma.order.aggregate({
-        where: { merchantId, status: 'delivered', createdAt: { gte: dateRange.start, lte: dateRange.end } },
+        where: {
+          merchantId,
+          status: 'delivered',
+          createdAt: { gte: dateRange.start, lte: dateRange.end },
+        },
         _sum: { totalAmount: true },
       }),
       this.prisma.order.aggregate({
-        where: { merchantId, status: 'delivered', createdAt: { gte: previousStart, lte: previousEnd } },
+        where: {
+          merchantId,
+          status: 'delivered',
+          createdAt: { gte: previousStart, lte: previousEnd },
+        },
         _sum: { totalAmount: true },
       }),
     ]);
 
-    const ordersGrowth = previousOrders > 0
-      ? Math.round(((currentOrders - previousOrders) / previousOrders) * 100 * 10) / 10
-      : 0;
+    const ordersGrowth =
+      previousOrders > 0
+        ? Math.round(((currentOrders - previousOrders) / previousOrders) * 100 * 10) / 10
+        : 0;
 
     const currentRev = Number(currentRevenue._sum?.totalAmount || 0);
     const previousRev = Number(previousRevenue._sum?.totalAmount || 0);
-    const revenueGrowth = previousRev > 0
-      ? Math.round(((currentRev - previousRev) / previousRev) * 100 * 10) / 10
-      : 0;
+    const revenueGrowth =
+      previousRev > 0 ? Math.round(((currentRev - previousRev) / previousRev) * 100 * 10) / 10 : 0;
 
     return {
       ordersGrowth,
@@ -419,7 +465,7 @@ export class AnalyticsService {
       daily: dailyEarnings,
       breakdown: [
         { type: 'delivery_fee', amount: Math.round(total * 0.85) },
-        { type: 'tips', amount: Math.round(total * 0.10) },
+        { type: 'tips', amount: Math.round(total * 0.1) },
         { type: 'bonus', amount: Math.round(total * 0.05) },
       ],
     };
@@ -434,13 +480,12 @@ export class AnalyticsService {
       select: { rating: true },
     });
 
-    const average = ratings.length > 0
-      ? ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length
-      : 5.0;
+    const average =
+      ratings.length > 0 ? ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length : 5.0;
 
-    const distribution = [5, 4, 3, 2, 1].map(stars => ({
+    const distribution = [5, 4, 3, 2, 1].map((stars) => ({
       stars,
-      count: ratings.filter(r => r.rating === stars).length,
+      count: ratings.filter((r) => r.rating === stars).length,
     }));
 
     return {
@@ -457,7 +502,7 @@ export class AnalyticsService {
 
     // Calculate active hours per week
     let activeHoursPerWeek = 0;
-    schedules.forEach(schedule => {
+    schedules.forEach((schedule) => {
       const start = new Date(schedule.startTime);
       const end = new Date(schedule.endTime);
       const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
@@ -466,7 +511,7 @@ export class AnalyticsService {
 
     return {
       activeHours: Math.round(activeHoursPerWeek),
-      averageHoursPerDay: Math.round(activeHoursPerWeek / 7 * 10) / 10,
+      averageHoursPerDay: Math.round((activeHoursPerWeek / 7) * 10) / 10,
       mostActiveDay: 'Sábado', // Simplified
       utilizationRate: 75, // Estimated
     };
@@ -477,32 +522,52 @@ export class AnalyticsService {
     const previousStart = new Date(dateRange.start.getTime() - periodLength);
     const previousEnd = new Date(dateRange.start.getTime());
 
-    const [currentDeliveries, previousDeliveries, currentEarnings, previousEarnings] = await Promise.all([
-      this.prisma.order.count({
-        where: { driverId, status: 'delivered', createdAt: { gte: dateRange.start, lte: dateRange.end } },
-      }),
-      this.prisma.order.count({
-        where: { driverId, status: 'delivered', createdAt: { gte: previousStart, lte: previousEnd } },
-      }),
-      this.prisma.order.aggregate({
-        where: { driverId, status: 'delivered', createdAt: { gte: dateRange.start, lte: dateRange.end } },
-        _sum: { driverPayout: true },
-      }),
-      this.prisma.order.aggregate({
-        where: { driverId, status: 'delivered', createdAt: { gte: previousStart, lte: previousEnd } },
-        _sum: { driverPayout: true },
-      }),
-    ]);
+    const [currentDeliveries, previousDeliveries, currentEarnings, previousEarnings] =
+      await Promise.all([
+        this.prisma.order.count({
+          where: {
+            driverId,
+            status: 'delivered',
+            createdAt: { gte: dateRange.start, lte: dateRange.end },
+          },
+        }),
+        this.prisma.order.count({
+          where: {
+            driverId,
+            status: 'delivered',
+            createdAt: { gte: previousStart, lte: previousEnd },
+          },
+        }),
+        this.prisma.order.aggregate({
+          where: {
+            driverId,
+            status: 'delivered',
+            createdAt: { gte: dateRange.start, lte: dateRange.end },
+          },
+          _sum: { driverPayout: true },
+        }),
+        this.prisma.order.aggregate({
+          where: {
+            driverId,
+            status: 'delivered',
+            createdAt: { gte: previousStart, lte: previousEnd },
+          },
+          _sum: { driverPayout: true },
+        }),
+      ]);
 
-    const deliveriesGrowth = previousDeliveries > 0
-      ? Math.round(((currentDeliveries - previousDeliveries) / previousDeliveries) * 100 * 10) / 10
-      : 0;
+    const deliveriesGrowth =
+      previousDeliveries > 0
+        ? Math.round(((currentDeliveries - previousDeliveries) / previousDeliveries) * 100 * 10) /
+          10
+        : 0;
 
     const currentEarn = Number(currentEarnings._sum?.driverPayout || 0);
     const previousEarn = Number(previousEarnings._sum?.driverPayout || 0);
-    const earningsGrowth = previousEarn > 0
-      ? Math.round(((currentEarn - previousEarn) / previousEarn) * 100 * 10) / 10
-      : 0;
+    const earningsGrowth =
+      previousEarn > 0
+        ? Math.round(((currentEarn - previousEarn) / previousEarn) * 100 * 10) / 10
+        : 0;
 
     return {
       deliveriesGrowth,
@@ -542,7 +607,20 @@ export class AnalyticsService {
       this.prisma.order.count({ where }),
       this.prisma.order.count({ where: { ...where, status: 'delivered' } }),
       this.prisma.order.count({ where: { ...where, status: 'cancelled' } }),
-      this.prisma.order.count({ where: { ...where, status: { in: ['pending', 'assigned', 'in_transit_to_pickup', 'picked_up', 'in_transit_to_delivery'] } } }),
+      this.prisma.order.count({
+        where: {
+          ...where,
+          status: {
+            in: [
+              'pending',
+              'assigned',
+              'in_transit_to_pickup',
+              'picked_up',
+              'in_transit_to_delivery',
+            ],
+          },
+        },
+      }),
     ]);
 
     return { total, completed, cancelled, pending };
@@ -577,7 +655,14 @@ export class AnalyticsService {
     const previousStart = new Date(dateRange.start.getTime() - periodLength);
     const previousEnd = new Date(dateRange.start.getTime());
 
-    const [currentUsers, previousUsers, currentOrders, previousOrders, currentRevenue, previousRevenue] = await Promise.all([
+    const [
+      currentUsers,
+      previousUsers,
+      currentOrders,
+      previousOrders,
+      currentRevenue,
+      previousRevenue,
+    ] = await Promise.all([
       this.prisma.user.count({
         where: { createdAt: { gte: dateRange.start, lte: dateRange.end } },
       }),
@@ -609,14 +694,18 @@ export class AnalyticsService {
       orderGrowth: calculateGrowth(currentOrders, previousOrders),
       revenueGrowth: calculateGrowth(
         Number(currentRevenue._sum?.totalAmount || 0),
-        Number(previousRevenue._sum?.totalAmount || 0)
+        Number(previousRevenue._sum?.totalAmount || 0),
       ),
       merchantGrowth: 0, // Simplified
       driverGrowth: 0, // Simplified
     };
   }
 
-  private async getDailyBreakdown(merchantId: string, dateRange: { start: Date; end: Date }, type: 'orders' | 'revenue') {
+  private async getDailyBreakdown(
+    merchantId: string,
+    dateRange: { start: Date; end: Date },
+    type: 'orders' | 'revenue',
+  ) {
     const orders = await this.prisma.order.findMany({
       where: {
         merchantId,
@@ -627,7 +716,7 @@ export class AnalyticsService {
 
     const dailyData: Record<string, number> = {};
 
-    orders.forEach(order => {
+    orders.forEach((order) => {
       const date = new Date(order.createdAt).toISOString().split('T')[0];
       if (!dailyData[date]) dailyData[date] = 0;
 
@@ -643,7 +732,11 @@ export class AnalyticsService {
       .sort((a, b) => a.date.localeCompare(b.date));
   }
 
-  private async getDriverDailyBreakdown(driverId: string, dateRange: { start: Date; end: Date }, type: 'orders' | 'earnings') {
+  private async getDriverDailyBreakdown(
+    driverId: string,
+    dateRange: { start: Date; end: Date },
+    type: 'orders' | 'earnings',
+  ) {
     const orders = await this.prisma.order.findMany({
       where: {
         driverId,
@@ -655,7 +748,7 @@ export class AnalyticsService {
 
     const dailyData: Record<string, number> = {};
 
-    orders.forEach(order => {
+    orders.forEach((order) => {
       const date = new Date(order.createdAt).toISOString().split('T')[0];
       if (!dailyData[date]) dailyData[date] = 0;
 

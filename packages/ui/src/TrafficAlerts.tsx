@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslations } from './LanguageProvider';
+import { apiFetch } from './api-client';
 
 export interface TrafficAlert {
   id: string;
@@ -425,7 +426,7 @@ export function TrafficAlertsPanel({
       if (lat) params.append('lat', String(lat));
       if (lng) params.append('lng', String(lng));
 
-      const response = await fetch(`/api/routing/alerts?${params.toString()}`);
+      const response = await apiFetch(`/api/routing/alerts?${params.toString()}`);
       const data = await response.json();
       setAlerts(data);
     } catch (error) {
@@ -437,7 +438,7 @@ export function TrafficAlertsPanel({
 
   const handleDismiss = async (alertId: string) => {
     try {
-      await fetch(`/api/routing/alerts/${alertId}/dismiss`, {
+      await apiFetch(`/api/routing/alerts/${alertId}/dismiss`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ driverId }),

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslations } from './LanguageProvider';
+import { apiFetch } from './api-client';
 
 export interface TrafficPrediction {
   timestamp: string;
@@ -166,7 +167,7 @@ function HourlyForecastTab({ lat, lng }: { lat: number; lng: number }) {
   const fetchForecast = async () => {
     try {
       const params = new URLSearchParams({ lat: String(lat), lng: String(lng) });
-      const response = await fetch(`/api/routing/predictions/hourly?${params.toString()}`);
+      const response = await apiFetch(`/api/routing/predictions/hourly?${params.toString()}`);
       const data = await response.json();
       setForecast(data);
     } catch (error) {
@@ -273,7 +274,7 @@ function DailyForecastTab({ lat, lng }: { lat: number; lng: number }) {
   const fetchForecast = async () => {
     try {
       const params = new URLSearchParams({ lat: String(lat), lng: String(lng), days: '7' });
-      const response = await fetch(`/api/routing/predictions/daily?${params.toString()}`);
+      const response = await apiFetch(`/api/routing/predictions/daily?${params.toString()}`);
       const data = await response.json();
       setForecast(data);
     } catch (error) {
@@ -417,7 +418,7 @@ function InsightsTab({ lat, lng }: { lat: number; lng: number }) {
   const fetchInsights = async () => {
     try {
       const params = new URLSearchParams({ lat: String(lat), lng: String(lng) });
-      const response = await fetch(`/api/routing/predictions/insights?${params.toString()}`);
+      const response = await apiFetch(`/api/routing/predictions/insights?${params.toString()}`);
       const data = await response.json();
       setInsights(data);
     } catch (error) {

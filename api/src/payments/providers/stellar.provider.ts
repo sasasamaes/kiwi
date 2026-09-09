@@ -25,18 +25,18 @@ export class StellarProvider {
   private readonly issuerAddress: string;
 
   // Stellar USDC issuer on testnet
-  private readonly USDC_ISSUER_TESTNET = 'GBBD47IF6LWK7P7M7SC32N5GTF6I37YO7GUPGBVCDZJAZ3DMN4SXXEEJ4';
+  private readonly USDC_ISSUER_TESTNET =
+    'GBBD47IF6LWK7P7M7SC32N5GTF6I37YO7GUPGBVCDZJAZ3DMN4SXXEEJ4';
   private readonly USDC_ISSUER_MAINnet = 'GA5ZSEJYB37JDD5GUPFIU6IZYYGB7UJDM7M4ZSSAPQY3GTCEK4XZI5R';
-  
+
   // USDT on Stellar
   private readonly USDT_ISSUER_TESTNET = 'GB3Q6QDZYAD3VLO5CM6BMZOHQ3EFDQ6CDWQ7QCWRXFDQZYAQZKUZXMNF';
   private readonly USDT_ISSUER_MAINNET = 'GCQTGZYG67KU2XO2OOXPF6JKTZ7BWEVJ3WLDJ6QGNOVVD6ZGIVXVHFM4';
 
   constructor(private configService: ConfigService) {
     this.network = this.configService.get<string>('STELLAR_NETWORK', 'testnet');
-    this.issuerAddress = this.network === 'testnet' 
-      ? this.USDC_ISSUER_TESTNET 
-      : this.USDC_ISSUER_MAINnet;
+    this.issuerAddress =
+      this.network === 'testnet' ? this.USDC_ISSUER_TESTNET : this.USDC_ISSUER_MAINnet;
   }
 
   async createPaymentRequest(request: CryptoPaymentRequest): Promise<CryptoPaymentResponse> {
@@ -45,15 +45,16 @@ export class StellarProvider {
 
       // Get current exchange rate (CRC to USD)
       const exchangeRate = await this.getExchangeRate('CRC', 'USD');
-      
+
       // Convert amount to USD
       const amountInUSD = request.amount * exchangeRate;
-      
+
       // Get crypto equivalent
-      const cryptoRate = request.currency === 'USDC' 
-        ? 1 // USDC is 1:1 with USD
-        : await this.getExchangeRate('USD', 'USDT');
-      
+      const cryptoRate =
+        request.currency === 'USDC'
+          ? 1 // USDC is 1:1 with USD
+          : await this.getExchangeRate('USD', 'USDT');
+
       const amountInCrypto = amountInUSD / cryptoRate;
 
       // Generate unique payment address (in production, use Stellar account)
@@ -86,20 +87,33 @@ export class StellarProvider {
     try {
       this.logger.log(`Verifying crypto payment ${paymentId}`);
 
+      // Mock verification is dev-only. In production, failing closed is
+      // safer than randomly failing 20% of REAL payments.
+      const mockEnabled =
+        process.env.STELLAR_MOCK === 'true' || process.env.NODE_ENV !== 'production';
+      if (!mockEnabled) {
+        this.logger.error(
+          'Stellar on-chain verification not implemented — refusing to mark payment verified',
+        );
+        return { verified: false };
+      }
+
       // In production, this would check Stellar blockchain
       // For now, simulate verification
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
       // Simulate random verification (80% success rate for demo)
       const verified = Math.random() > 0.2;
 
       return {
         verified,
-        details: verified ? {
-          transactionHash: `tx_${Date.now()}_${Math.random().toString(36).substr(2, 16)}`,
-          confirmations: 1,
-          timestamp: new Date().toISOString(),
-        } : undefined,
+        details: verified
+          ? {
+              transactionHash: `tx_${Date.now()}_${Math.random().toString(36).substr(2, 16)}`,
+              confirmations: 1,
+              timestamp: new Date().toISOString(),
+            }
+          : undefined,
       };
     } catch (error) {
       this.logger.error('Payment verification failed:', error);
@@ -111,10 +125,10 @@ export class StellarProvider {
     // In production, call a price oracle or exchange API
     // For CRC to USD, approximate rate: 1 USD = 510 CRC
     const rates: Record<string, number> = {
-      'CRC_USD': 1 / 510,
-      'USD_CRC': 510,
-      'USD_USDC': 1,
-      'USD_USDT': 1,
+      CRC_USD: 1 / 510,
+      USD_CRC: 510,
+      USD_USDC: 1,
+      USD_USDT: 1,
     };
 
     const key = `${from}_${to}`;
@@ -124,12 +138,13 @@ export class StellarProvider {
   async getStellarAccountInfo(address: string): Promise<any> {
     try {
       // In production, query Stellar Horizon API
-      const horizonUrl = this.network === 'testnet'
-        ? 'https://horizon-testnet.stellar.org'
-        : 'https://horizon.stellar.org';
+      const horizonUrl =
+        this.network === 'testnet'
+          ? 'https://horizon-testnet.stellar.org'
+          : 'https://horizon.stellar.org';
 
       const response = await fetch(`${horizonUrl}/accounts/${address}`);
-      
+
       if (!response.ok) {
         return null;
       }
@@ -154,12 +169,15 @@ export class StellarProvider {
     // Format: stellar:address?amount=X&asset_code=USDC&asset_issuer=ISSUER
     const assetCode = currency;
     const issuer = currency === 'USDC' ? this.issuerAddress : this.USDT_ISSUER_TESTNET;
-    
+
     return `stellar:${address}?amount=${amount.toFixed(6)}&asset_code=${assetCode}&asset_issuer=${issuer}`;
   }
 
   // Convert CRC to crypto amount
-  async convertToCrypto(amountCRC: number, currency: 'USDC' | 'USDT'): Promise<{
+  async convertToCrypto(
+    amountCRC: number,
+    currency: 'USDC' | 'USDT',
+  ): Promise<{
     amountCRC: number;
     amountUSD: number;
     amountCrypto: number;

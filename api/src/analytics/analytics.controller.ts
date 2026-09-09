@@ -13,31 +13,25 @@ export class AnalyticsController {
 
   @Get('merchant')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('MERCHANT')
+  @Roles('merchant')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get merchant analytics' })
-  async getMerchantAnalytics(
-    @Request() req,
-    @Query() query: AnalyticsQueryDto,
-  ) {
-    return this.analyticsService.getMerchantAnalytics(req.user.id, query);
+  async getMerchantAnalytics(@Request() req, @Query() query: AnalyticsQueryDto) {
+    return this.analyticsService.getMerchantAnalytics(req.user.sub ?? req.user.id, query);
   }
 
   @Get('driver')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('DRIVER')
+  @Roles('driver')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get driver analytics' })
-  async getDriverAnalytics(
-    @Request() req,
-    @Query() query: AnalyticsQueryDto,
-  ) {
-    return this.analyticsService.getDriverAnalytics(req.user.id, query);
+  async getDriverAnalytics(@Request() req, @Query() query: AnalyticsQueryDto) {
+    return this.analyticsService.getDriverAnalytics(req.user.sub ?? req.user.id, query);
   }
 
   @Get('platform')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN')
+  @Roles('admin')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get platform analytics (admin only)' })
   async getPlatformAnalytics(@Query() query: AnalyticsQueryDto) {
@@ -50,10 +44,11 @@ export class AnalyticsController {
   @ApiOperation({ summary: 'Get analytics summary' })
   async getSummary(@Request() req) {
     const role = req.user.role;
-    if (role === 'MERCHANT') {
-      return this.analyticsService.getMerchantAnalytics(req.user.id, { period: 'week' });
-    } else if (role === 'DRIVER') {
-      return this.analyticsService.getDriverAnalytics(req.user.id, { period: 'week' });
+    const userId = req.user.sub ?? req.user.id;
+    if (role === 'merchant') {
+      return this.analyticsService.getMerchantAnalytics(userId, { period: 'week' });
+    } else if (role === 'driver') {
+      return this.analyticsService.getDriverAnalytics(userId, { period: 'week' });
     }
     return this.analyticsService.getPlatformAnalytics({ period: 'week' });
   }

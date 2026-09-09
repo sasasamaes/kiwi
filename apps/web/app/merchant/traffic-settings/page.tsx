@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import { apiFetch } from '@kiwi/ui';
 
 interface TrafficSettings {
   deliveryRadius: number;
@@ -55,7 +56,7 @@ export default function MerchantTrafficSettings() {
 
   const fetchSettings = async () => {
     try {
-      const response = await fetch('/api/merchant/traffic-settings');
+      const response = await apiFetch('/api/merchant/traffic-settings');
       if (response.ok) {
         const data = await response.json();
         setSettings(data);
@@ -70,11 +71,14 @@ export default function MerchantTrafficSettings() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await fetch('/api/merchant/traffic-settings', {
+      const response = await apiFetch('/api/merchant/traffic-settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(settings),
       });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
     } catch (error) {

@@ -1,21 +1,27 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { offlinePayments, type PaymentItem, type PaymentMethod, type PaymentStatus, type ReceiptData } from './offline-payments';
+import {
+  offlinePayments,
+  type PaymentItem,
+  type PaymentMethod,
+  type PaymentStatus,
+  type ReceiptData,
+} from './offline-payments';
 
 interface UseOfflinePaymentsOptions {
   /** Filter by merchant ID */
   merchantId?: string;
-  
+
   /** Filter by customer ID */
   customerId?: string;
-  
+
   /** Filter by order ID */
   orderId?: string;
-  
+
   /** Filter by status */
   status?: PaymentStatus;
-  
+
   /** Auto-refresh interval (ms) */
   refreshInterval?: number;
 }
@@ -23,52 +29,54 @@ interface UseOfflinePaymentsOptions {
 interface UseOfflinePaymentsResult {
   /** All payments matching filters */
   payments: PaymentItem[];
-  
+
   /** Loading state */
   isLoading: boolean;
-  
+
   /** Error message */
   error: string | null;
-  
+
   /** Create a new payment */
   createPayment: (paymentData: CreatePaymentData) => Promise<PaymentItem>;
-  
+
   /** Process payment */
   processPayment: (paymentId: string) => Promise<PaymentItem>;
-  
+
   /** Complete payment */
   completePayment: (paymentId: string) => Promise<PaymentItem>;
-  
+
   /** Fail payment */
   failPayment: (paymentId: string, reason: string) => Promise<PaymentItem>;
-  
+
   /** Refund payment */
   refundPayment: (paymentId: string, reason: string) => Promise<PaymentItem>;
-  
+
   /** Get payment by ID */
   getPayment: (paymentId: string) => Promise<PaymentItem | null>;
-  
+
   /** Get payment by receipt number */
   getPaymentByReceipt: (receiptNumber: string) => Promise<PaymentItem | null>;
-  
+
   /** Sync payment */
   syncPayment: (paymentId: string) => Promise<PaymentItem>;
-  
+
   /** Sync all pending */
   syncAll: () => Promise<{ synced: number; failed: number }>;
-  
+
   /** Print receipt */
   printReceipt: (paymentId: string) => Promise<void>;
-  
+
   /** Verify receipt */
-  verifyReceipt: (qrCode: string) => Promise<{ valid: boolean; payment?: PaymentItem; error?: string }>;
-  
+  verifyReceipt: (
+    qrCode: string,
+  ) => Promise<{ valid: boolean; payment?: PaymentItem; error?: string }>;
+
   /** Refresh payments */
   refresh: () => Promise<void>;
-  
+
   /** Unsynced count */
   unsyncedCount: number;
-  
+
   /** Stats */
   stats: {
     total: number;
@@ -103,7 +111,7 @@ interface CreatePaymentData {
 }
 
 export function useOfflinePayments(
-  options: UseOfflinePaymentsOptions = {}
+  options: UseOfflinePaymentsOptions = {},
 ): UseOfflinePaymentsResult {
   const [payments, setPayments] = useState<PaymentItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -133,7 +141,7 @@ export function useOfflinePayments(
         merchantId: options.merchantId,
       });
       setStats(paymentStats);
-      setUnsyncedCount(fetchedPayments.filter(p => p.syncStatus !== 'synced').length);
+      setUnsyncedCount(fetchedPayments.filter((p) => p.syncStatus !== 'synced').length);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load payments');
     } finally {
@@ -144,77 +152,92 @@ export function useOfflinePayments(
   /**
    * Create payment
    */
-  const createPayment = useCallback(async (paymentData: CreatePaymentData): Promise<PaymentItem> => {
-    try {
-      const payment = await offlinePayments.createPayment(paymentData);
-      await loadPayments();
-      return payment;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to create payment';
-      setError(errorMessage);
-      throw err;
-    }
-  }, [loadPayments]);
+  const createPayment = useCallback(
+    async (paymentData: CreatePaymentData): Promise<PaymentItem> => {
+      try {
+        const payment = await offlinePayments.createPayment(paymentData);
+        await loadPayments();
+        return payment;
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to create payment';
+        setError(errorMessage);
+        throw err;
+      }
+    },
+    [loadPayments],
+  );
 
   /**
    * Process payment
    */
-  const processPayment = useCallback(async (paymentId: string): Promise<PaymentItem> => {
-    try {
-      const payment = await offlinePayments.processPayment(paymentId);
-      await loadPayments();
-      return payment;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to process payment';
-      setError(errorMessage);
-      throw err;
-    }
-  }, [loadPayments]);
+  const processPayment = useCallback(
+    async (paymentId: string): Promise<PaymentItem> => {
+      try {
+        const payment = await offlinePayments.processPayment(paymentId);
+        await loadPayments();
+        return payment;
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to process payment';
+        setError(errorMessage);
+        throw err;
+      }
+    },
+    [loadPayments],
+  );
 
   /**
    * Complete payment
    */
-  const completePayment = useCallback(async (paymentId: string): Promise<PaymentItem> => {
-    try {
-      const payment = await offlinePayments.completePayment(paymentId);
-      await loadPayments();
-      return payment;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to complete payment';
-      setError(errorMessage);
-      throw err;
-    }
-  }, [loadPayments]);
+  const completePayment = useCallback(
+    async (paymentId: string): Promise<PaymentItem> => {
+      try {
+        const payment = await offlinePayments.completePayment(paymentId);
+        await loadPayments();
+        return payment;
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to complete payment';
+        setError(errorMessage);
+        throw err;
+      }
+    },
+    [loadPayments],
+  );
 
   /**
    * Fail payment
    */
-  const failPayment = useCallback(async (paymentId: string, reason: string): Promise<PaymentItem> => {
-    try {
-      const payment = await offlinePayments.failPayment(paymentId, reason);
-      await loadPayments();
-      return payment;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fail payment';
-      setError(errorMessage);
-      throw err;
-    }
-  }, [loadPayments]);
+  const failPayment = useCallback(
+    async (paymentId: string, reason: string): Promise<PaymentItem> => {
+      try {
+        const payment = await offlinePayments.failPayment(paymentId, reason);
+        await loadPayments();
+        return payment;
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to fail payment';
+        setError(errorMessage);
+        throw err;
+      }
+    },
+    [loadPayments],
+  );
 
   /**
    * Refund payment
    */
-  const refundPayment = useCallback(async (paymentId: string, reason: string): Promise<PaymentItem> => {
-    try {
-      const payment = await offlinePayments.refundPayment(paymentId, reason);
-      await loadPayments();
-      return payment;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to refund payment';
-      setError(errorMessage);
-      throw err;
-    }
-  }, [loadPayments]);
+  const refundPayment = useCallback(
+    async (paymentId: string, reason: string): Promise<PaymentItem> => {
+      try {
+        const payment = await offlinePayments.refundPayment(paymentId, reason);
+        await loadPayments();
+        return payment;
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to refund payment';
+        setError(errorMessage);
+        throw err;
+      }
+    },
+    [loadPayments],
+  );
 
   /**
    * Get payment
@@ -226,24 +249,31 @@ export function useOfflinePayments(
   /**
    * Get by receipt
    */
-  const getPaymentByReceipt = useCallback(async (receiptNumber: string): Promise<PaymentItem | null> => {
-    return offlinePayments.getPaymentByReceipt(receiptNumber);
-  }, []);
+  const getPaymentByReceipt = useCallback(
+    async (receiptNumber: string): Promise<PaymentItem | null> => {
+      return offlinePayments.getPaymentByReceipt(receiptNumber);
+    },
+    [],
+  );
 
   /**
    * Sync payment
    */
-  const syncPayment = useCallback(async (paymentId: string): Promise<PaymentItem> => {
-    try {
-      const payment = await offlinePayments.syncPayment(paymentId);
-      await loadPayments();
-      return payment;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to sync payment';
-      setError(errorMessage);
-      throw err;
-    }
-  }, [loadPayments]);
+  const syncPayment = useCallback(
+    async (paymentId: string): Promise<PaymentItem> => {
+      try {
+        const payment = await offlinePayments.syncPayment(paymentId);
+        if (!payment) throw new Error('Payment not found');
+        await loadPayments();
+        return payment;
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to sync payment';
+        setError(errorMessage);
+        throw err;
+      }
+    },
+    [loadPayments],
+  );
 
   /**
    * Sync all pending

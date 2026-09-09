@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import { apiFetch } from '@kiwi/ui';
 
 interface TrafficAnalytics {
   totalDeliveries: number;
@@ -45,12 +46,14 @@ export default function MerchantTrafficAnalytics() {
   const fetchAnalytics = async () => {
     try {
       // Fetch traffic analytics
-      const analyticsResponse = await fetch('/api/routing/history/merchant/current');
+      const analyticsResponse = await apiFetch('/api/routing/history/merchant/current');
+      if (!analyticsResponse.ok) throw new Error(`HTTP ${analyticsResponse.status}`);
       const analyticsData = await analyticsResponse.json();
       setAnalytics(analyticsData);
 
       // Fetch daily stats
-      const statsResponse = await fetch(`/api/routing/history?period=${selectedPeriod}`);
+      const statsResponse = await apiFetch(`/api/routing/history?period=${selectedPeriod}`);
+      if (!statsResponse.ok) throw new Error(`HTTP ${statsResponse.status}`);
       const statsData = await statsResponse.json();
       setDailyStats(statsData.dailyStats || []);
     } catch (error) {

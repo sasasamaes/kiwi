@@ -59,7 +59,7 @@ export class InputSanitizationMiddleware implements NestMiddleware {
     }
 
     if (Array.isArray(obj)) {
-      return obj.map(item => this.sanitizeObject(item));
+      return obj.map((item) => this.sanitizeObject(item));
     }
 
     if (obj && typeof obj === 'object') {
@@ -85,13 +85,10 @@ export class InputSanitizationMiddleware implements NestMiddleware {
       sanitized = sanitized.replace(pattern, '');
     }
 
-    // Escape HTML entities
-    sanitized = sanitized
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#x27;');
+    // NOTE: no HTML-entity escaping here. Escaping belongs at render time;
+    // doing it on input permanently corrupts stored data ("&" → "&amp;").
+    // Prisma parameterizes all queries, so SQL patterns need no blocking
+    // (they'd false-positive on normal text like "select your menu").
 
     // Limit string length (prevent DoS)
     if (sanitized.length > 10000) {
@@ -102,6 +99,6 @@ export class InputSanitizationMiddleware implements NestMiddleware {
   }
 
   private containsPathTraversal(url: string): boolean {
-    return this.pathTraversalPatterns.some(pattern => pattern.test(url));
+    return this.pathTraversalPatterns.some((pattern) => pattern.test(url));
   }
 }

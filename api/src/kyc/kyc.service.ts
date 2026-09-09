@@ -46,6 +46,12 @@ export class KYCService {
     });
   }
 
+  async getVerificationByUserId(userId: string) {
+    return this.prisma.kYCVerification.findUnique({
+      where: { userId },
+    });
+  }
+
   async getVerificationById(id: string) {
     const verification = await this.prisma.kYCVerification.findUnique({
       where: { id },
@@ -68,20 +74,23 @@ export class KYCService {
     return verification;
   }
 
-  async submitDocuments(userId: string, data: {
-    idType?: string;
-    idNumber?: string;
-    idFrontUrl?: string;
-    idBackUrl?: string;
-    selfieUrl?: string;
-    licenseNumber?: string;
-    licenseExpiry?: string;
-    licenseUrl?: string;
-    vehicleRegisterUrl?: string;
-    insuranceUrl?: string;
-    businessLicenseUrl?: string;
-    taxId?: string;
-  }) {
+  async submitDocuments(
+    userId: string,
+    data: {
+      idType?: string;
+      idNumber?: string;
+      idFrontUrl?: string;
+      idBackUrl?: string;
+      selfieUrl?: string;
+      licenseNumber?: string;
+      licenseExpiry?: string;
+      licenseUrl?: string;
+      vehicleRegisterUrl?: string;
+      insuranceUrl?: string;
+      businessLicenseUrl?: string;
+      taxId?: string;
+    },
+  ) {
     // Check if verification already exists
     const existing = await this.prisma.kYCVerification.findUnique({
       where: { userId },
@@ -91,14 +100,60 @@ export class KYCService {
       throw new BadRequestException('KYC ya está aprobado');
     }
 
+    const {
+      idType,
+      idNumber,
+      idFrontUrl,
+      idBackUrl,
+      selfieUrl,
+      licenseNumber,
+      licenseExpiry,
+      licenseUrl,
+      vehicleRegisterUrl,
+      insuranceUrl,
+      businessLicenseUrl,
+      taxId,
+    } = data;
+
+    const cleanData: any = {
+      idType,
+      idNumber,
+      idFrontUrl,
+      idBackUrl,
+      selfieUrl,
+      licenseNumber,
+      licenseUrl,
+      vehicleRegisterUrl,
+      insuranceUrl,
+      businessLicenseUrl,
+      taxId,
+    };
+    // Remove undefined so Prisma doesn't choke, parse date explicitly
+    Object.keys(cleanData).forEach((k) => cleanData[k] === undefined && delete cleanData[k]);
+    if (licenseExpiry) {
+      const parsed = new Date(licenseExpiry);
+      if (!isNaN(parsed.getTime())) cleanData.licenseExpiry = parsed;
+    }
+
     if (existing && existing.status === 'rejected') {
       // Allow resubmission after rejection
       return this.prisma.kYCVerification.update({
         where: { userId },
         data: {
-          ...data,
+          ...cleanData,
           status: 'documents_submitted',
           rejectionReason: null,
+        },
+      });
+    }
+
+    if (existing) {
+      // Update pending/in-progress verification instead of crashing with P2002
+      return this.prisma.kYCVerification.update({
+        where: { userId },
+        data: {
+          ...cleanData,
+          status: 'documents_submitted',
         },
       });
     }
@@ -107,7 +162,7 @@ export class KYCService {
     return this.prisma.kYCVerification.create({
       data: {
         userId,
-        ...data,
+        ...cleanData,
         status: 'documents_submitted',
       },
     });
@@ -128,42 +183,40 @@ export class KYCService {
     }
 
     // Update KYC status
-    const updated = await this.prisma.kYCVerification.update({
-      where: { id },
-      data: {
-        status: 'approved',
-        verifiedAt: new Date(),
-        verifiedBy: adminUserId,
-      },
-    });
-
-    // Update user's KYC status in profile
-    if (verification.user.role === 'driver') {
-      await this.prisma.driverProfile.update({
-        where: { userId: verification.userId },
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const verification = await tx.kYCVerification.update({
+        where: { id },
         data: {
-          kycStatus: 'approved',
-          kycVerifiedAt: new Date(),
+          status: 'approved',
+          verifiedAt: new Date(),
+          verifiedBy: adminUserId,
         },
       });
-    } else if (verification.user.role === 'merchant') {
-      await this.prisma.merchantProfile.update({
-        where: { userId: verification.userId },
+
+      // Update user's KYC status in profile (same tx: no verification
+      // without profile update, and P2025 aborts both instead of half-state)
+      if (verification.user.role === 'driver') {
+        await tx.driverProfile.update({
+          where: { userId: verification.userId },
+          data: { kycStatus: 'approved', kycVerifiedAt: new Date() },
+        });
+      } else if (verification.user.role === 'merchant') {
+        await tx.merchantProfile.update({
+          where: { userId: verification.userId },
+          data: { kycStatus: 'approved', kycVerifiedAt: new Date() },
+        });
+      }
+
+      await tx.notification.create({
         data: {
-          kycStatus: 'approved',
-          kycVerifiedAt: new Date(),
+          userId: verification.userId,
+          title: 'KYC Aprobado',
+          body: 'Tu verificación de identidad fue aprobada. ¡Ya puedes usar la plataforma!',
+          type: 'kyc_approved',
         },
       });
-    }
 
-    // Create notification
-    await this.prisma.notification.create({
-      data: {
-        userId: verification.userId,
-        title: 'KYC Aprobado',
-        body: 'Tu verificación de identidad fue aprobada. ¡Ya puedes usar la plataforma!',
-        type: 'kyc_approved',
-      },
+      return verification;
     });
 
     return updated;
@@ -183,26 +236,41 @@ export class KYCService {
       throw new BadRequestException('La verificación ya fue rechazada');
     }
 
-    // Update KYC status
-    const updated = await this.prisma.kYCVerification.update({
-      where: { id },
-      data: {
-        status: 'rejected',
-        rejectionReason: reason,
-        verifiedAt: new Date(),
-        verifiedBy: adminUserId,
-      },
-    });
+    // Update KYC status + profile + notification atomically (mirror approve)
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const rejected = await tx.kYCVerification.update({
+        where: { id },
+        data: {
+          status: 'rejected',
+          rejectionReason: reason,
+          verifiedAt: new Date(),
+          verifiedBy: adminUserId,
+        },
+      });
 
-    // Create notification
-    await this.prisma.notification.create({
-      data: {
-        userId: verification.userId,
-        title: 'KYC Rechazado',
-        body: `Tu verificación fue rechazada: ${reason}. Por favor, sube los documentos correctos.`,
-        type: 'kyc_rejected',
-        data: { reason },
-      },
+      if (verification.user.role === 'driver') {
+        await tx.driverProfile.update({
+          where: { userId: verification.userId },
+          data: { kycStatus: 'rejected' },
+        });
+      } else if (verification.user.role === 'merchant') {
+        await tx.merchantProfile.update({
+          where: { userId: verification.userId },
+          data: { kycStatus: 'rejected' },
+        });
+      }
+
+      await tx.notification.create({
+        data: {
+          userId: verification.userId,
+          title: 'KYC Rechazado',
+          body: `Tu verificación fue rechazada: ${reason}. Por favor, sube los documentos correctos.`,
+          type: 'kyc_rejected',
+          data: { reason },
+        },
+      });
+
+      return rejected;
     });
 
     return updated;
@@ -211,7 +279,9 @@ export class KYCService {
   async getVerificationStats() {
     const [total, pending, approved, rejected] = await Promise.all([
       this.prisma.kYCVerification.count(),
-      this.prisma.kYCVerification.count({ where: { status: { in: ['pending', 'documents_submitted', 'under_review'] } } }),
+      this.prisma.kYCVerification.count({
+        where: { status: { in: ['pending', 'documents_submitted', 'under_review'] } },
+      }),
       this.prisma.kYCVerification.count({ where: { status: 'approved' } }),
       this.prisma.kYCVerification.count({ where: { status: 'rejected' } }),
     ]);

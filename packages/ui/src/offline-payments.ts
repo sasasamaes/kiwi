@@ -8,10 +8,11 @@
  */
 
 import { backgroundSync } from './background-sync';
+import { apiFetch } from './api-client';
 import { offlineCache } from './offline-cache';
 
 const DB_NAME = 'kiwi-offline-payments';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_NAME = 'payments';
 
 export type PaymentMethod = 'sinpe' | 'card' | 'cash' | 'crypto';
@@ -170,8 +171,17 @@ class OfflinePaymentService {
           store.createIndex('status', 'status', { unique: false });
           store.createIndex('syncStatus', 'syncStatus', { unique: false });
           store.createIndex('createdAt', 'createdAt', { unique: false });
-          store.createIndex('receiptNumber', 'receiptNumber', { unique: true });
+          store.createIndex('receiptNumber', 'receipt.receiptNumber', { unique: true });
           console.log('🥝 Created payments store');
+        } else {
+          // v1 created the index on a top-level 'receiptNumber' that never
+          // exists (the field lives at receipt.receiptNumber): rebuild it.
+          const tx = (event.target as IDBOpenDBRequest).transaction!;
+          const store = tx.objectStore(STORE_NAME);
+          if (store.indexNames.contains('receiptNumber')) {
+            store.deleteIndex('receiptNumber');
+          }
+          store.createIndex('receiptNumber', 'receipt.receiptNumber', { unique: true });
         }
       };
     });
@@ -194,7 +204,8 @@ class OfflinePaymentService {
   }
 
   /**
-   * Generate QR code data for receipt verification
+   * Generate QR code data for receipt verification (UTF-8 safe base64:
+   * plain btoa() throws on names with emojis / non-Latin1 chars).
    */
   private generateQRData(receipt: ReceiptData): string {
     const verificationData = {
@@ -204,7 +215,13 @@ class OfflinePaymentService {
       m: receipt.merchant.name,
       ts: receipt.timestamp,
     };
-    return btoa(JSON.stringify(verificationData));
+    const json = JSON.stringify(verificationData);
+    const bytes = new TextEncoder().encode(json);
+    let binary = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    }
+    return btoa(binary);
   }
 
   /**
@@ -300,9 +317,11 @@ class OfflinePaymentService {
       request.onsuccess = () => {
         console.log(`🥝 Created payment: ${id}`);
 
-        // Queue for sync if online
+        // Queue for sync if online (fire-and-forget with rejection handler)
         if (navigator.onLine && this.options.autoSync) {
-          this.syncPayment(id);
+          this.syncPayment(id).catch((err) =>
+            console.error(`Failed to sync new payment ${id}:`, err),
+          );
         }
 
         resolve(payment);
@@ -334,13 +353,13 @@ class OfflinePaymentService {
     // Simulate processing delay
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    // For cash payments, complete immediately
-    // For other methods, mark as pending sync
-    const newStatus: PaymentStatus = payment.method === 'cash' ? 'completed' : 'pending';
+    // Cash is NOT auto-completed offline: the server must confirm it to
+    // prevent double-spend (two offline devices completing the same cash
+    // payment). All methods stay pending until sync confirms.
+    const newStatus: PaymentStatus = 'pending';
 
     return this.updatePayment(paymentId, {
       status: newStatus,
-      completedAt: newStatus === 'completed' ? Date.now() : undefined,
     });
   }
 
@@ -428,7 +447,9 @@ class OfflinePaymentService {
           ...payment,
           ...updates,
           updatedAt: Date.now(),
-          syncStatus: 'pending',
+          // Respect explicit syncStatus (syncing/synced/failed): forcing
+          // 'pending' erased the syncing marker and the failed marker.
+          syncStatus: updates.syncStatus ?? 'pending',
         };
 
         // Add status to history if status changed
@@ -447,9 +468,11 @@ class OfflinePaymentService {
         updateRequest.onsuccess = () => {
           console.log(`🥝 Updated payment: ${paymentId}`);
 
-          // Queue for sync
+          // Queue for sync (fire-and-forget with rejection handler)
           if (navigator.onLine && this.options.autoSync) {
-            this.syncPayment(paymentId);
+            this.syncPayment(paymentId).catch((err) =>
+              console.error(`Failed to sync updated payment ${paymentId}:`, err),
+            );
           }
 
           resolve(updatedPayment);
@@ -510,7 +533,20 @@ class OfflinePaymentService {
       const request = index.get(receiptNumber);
 
       request.onsuccess = () => {
-        resolve(request.result || null);
+        if (request.result) {
+          resolve(request.result);
+          return;
+        }
+        // Fallback scan: pre-v2 databases indexed a wrong keyPath,
+        // so a miss doesn't prove absence.
+        const scan = store.getAll();
+        scan.onsuccess = () => {
+          const found = (scan.result as PaymentItem[]).find(
+            (p) => p.receipt?.receiptNumber === receiptNumber,
+          );
+          resolve(found || null);
+        };
+        scan.onerror = () => reject(scan.error);
       };
 
       request.onerror = () => {
@@ -594,6 +630,8 @@ class OfflinePaymentService {
     pending: number;
     pendingAmount: number;
     failed: number;
+    refunded: number;
+    refundedAmount: number;
     byMethod: Record<PaymentMethod, { count: number; amount: number }>;
   }> {
     const payments = await this.getPayments(filters);
@@ -606,6 +644,8 @@ class OfflinePaymentService {
       pending: 0,
       pendingAmount: 0,
       failed: 0,
+      refunded: 0,
+      refundedAmount: 0,
       byMethod: {
         sinpe: { count: 0, amount: 0 },
         card: { count: 0, amount: 0 },
@@ -615,6 +655,14 @@ class OfflinePaymentService {
     };
 
     payments.forEach((payment) => {
+      // Refunds carry negative amounts: track separately so gross totals
+      // stay meaningful instead of silently shrinking.
+      if (payment.type === 'refund') {
+        stats.refunded++;
+        stats.refundedAmount += Math.abs(payment.amount);
+        return;
+      }
+
       stats.totalAmount += payment.amount;
 
       if (payment.status === 'completed') {
@@ -636,9 +684,10 @@ class OfflinePaymentService {
   }
 
   /**
-   * Sync payment to server
+   * Sync payment to server. Resolves with the latest LOCAL snapshot —
+   * the server round-trip completes in the background queue.
    */
-  async syncPayment(paymentId: string): Promise<PaymentItem> {
+  async syncPayment(paymentId: string): Promise<PaymentItem | null> {
     const payment = await this.getPayment(paymentId);
 
     if (!payment) {
@@ -658,7 +707,7 @@ class OfflinePaymentService {
         priority: 'critical',
         metadata: { paymentId: payment.id },
         execute: async (data: PaymentItem) => {
-          const response = await fetch('/api/payments', {
+          const response = await apiFetch('/api/payments', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data),
@@ -680,7 +729,7 @@ class OfflinePaymentService {
         },
       });
 
-      return this.getPayment(paymentId) as Promise<PaymentItem>;
+      return this.getPayment(paymentId);
     } catch (error) {
       // Mark as failed
       await this.updatePayment(paymentId, {
@@ -692,24 +741,28 @@ class OfflinePaymentService {
   }
 
   /**
-   * Sync all pending payments
+   * Sync all pending payments (including retryable failures)
    */
   async syncAllPending(): Promise<{ synced: number; failed: number }> {
-    const pending = await this.getPayments({ syncStatus: 'pending' });
+    const [pending, failed] = await Promise.all([
+      this.getPayments({ syncStatus: 'pending' }),
+      this.getPayments({ syncStatus: 'failed' }),
+    ]);
+    const queue = [...pending, ...failed];
     let synced = 0;
-    let failed = 0;
+    let failedCount = 0;
 
-    for (const payment of pending) {
+    for (const payment of queue) {
       try {
         await this.syncPayment(payment.id);
         synced++;
       } catch (error) {
-        failed++;
+        failedCount++;
         console.error(`Failed to sync payment ${payment.id}:`, error);
       }
     }
 
-    return { synced, failed };
+    return { synced, failed: failedCount };
   }
 
   /**

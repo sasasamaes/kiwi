@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { cacheWarming, type WarmTask, type WarmProgress, type WarmPriority } from './cache-warming';
+import { apiFetch } from './api-client';
 
 interface UseCacheWarmingOptions {
   /** Auto-start warming on mount */
@@ -181,7 +182,7 @@ export function useKiwiCacheWarming(options: UseCacheWarmingOptions = {}) {
         name: 'Tráfico actual',
         priority: 'critical',
         fetch: async () => {
-          const response = await fetch('/api/routing/traffic?lat=10.1483&lng=-85.4527');
+          const response = await apiFetch('/api/routing/traffic?lat=10.1483&lng=-85.4527');
           return response.json();
         },
         cacheKey: 'traffic-current-nicoya',
@@ -194,7 +195,9 @@ export function useKiwiCacheWarming(options: UseCacheWarmingOptions = {}) {
         name: 'Predicciones de tráfico',
         priority: 'high',
         fetch: async () => {
-          const response = await fetch('/api/routing/predictions/hourly?lat=10.1483&lng=-85.4527');
+          const response = await apiFetch(
+            '/api/routing/predictions/hourly?lat=10.1483&lng=-85.4527',
+          );
           return response.json();
         },
         cacheKey: 'traffic-predictions-nicoya',
@@ -207,7 +210,7 @@ export function useKiwiCacheWarming(options: UseCacheWarmingOptions = {}) {
         name: 'Alertas de tráfico',
         priority: 'high',
         fetch: async () => {
-          const response = await fetch('/api/routing/alerts?lat=10.1483&lng=-85.4527');
+          const response = await apiFetch('/api/routing/alerts?lat=10.1483&lng=-85.4527');
           return response.json();
         },
         cacheKey: 'traffic-alerts-nicoya',
@@ -220,7 +223,7 @@ export function useKiwiCacheWarming(options: UseCacheWarmingOptions = {}) {
         name: 'Sugerencias de ruta',
         priority: 'normal',
         fetch: async () => {
-          const response = await fetch('/api/routing/suggestions?lat=10.1483&lng=-85.4527');
+          const response = await apiFetch('/api/routing/suggestions?lat=10.1483&lng=-85.4527');
           return response.json();
         },
         cacheKey: 'route-suggestions-nicoya',
@@ -233,7 +236,7 @@ export function useKiwiCacheWarming(options: UseCacheWarmingOptions = {}) {
         name: 'Historial de tráfico',
         priority: 'normal',
         fetch: async () => {
-          const response = await fetch('/api/routing/history?period=week');
+          const response = await apiFetch('/api/routing/history?period=week');
           return response.json();
         },
         cacheKey: 'traffic-history-week',
@@ -246,7 +249,7 @@ export function useKiwiCacheWarming(options: UseCacheWarmingOptions = {}) {
         name: 'Perfil del comerciante',
         priority: 'critical',
         fetch: async () => {
-          const response = await fetch('/api/merchants/me');
+          const response = await apiFetch('/api/merchants/me');
           return response.json();
         },
         cacheKey: 'merchant-profile',

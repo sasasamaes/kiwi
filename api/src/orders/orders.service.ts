@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventsGateway } from '../events/events.gateway';
 
@@ -19,8 +24,33 @@ export class OrdersService {
       throw new NotFoundException('Perfil de comerciante no encontrado');
     }
 
+    // Validate inputs (all of these were Prisma 500s before).
+    const orderType = data.orderType || 'immediate';
+    if (orderType !== 'immediate' && orderType !== 'scheduled') {
+      throw new BadRequestException(`orderType inválido: ${data.orderType}`);
+    }
+    if (!data.pickupAddress || !data.deliveryAddress) {
+      throw new BadRequestException('pickupAddress y deliveryAddress son requeridos');
+    }
+    const distanceKm = Number(data.distanceKm ?? 0);
+    if (!Number.isFinite(distanceKm) || distanceKm < 0) {
+      throw new BadRequestException('distanceKm inválido');
+    }
+    if (distanceKm > 300) {
+      throw new BadRequestException('distanceKm fuera de rango (máx 300 km)');
+    }
+    let scheduledDate: Date | null = null;
+    if (data.scheduledDate) {
+      scheduledDate = new Date(data.scheduledDate);
+      if (isNaN(scheduledDate.getTime())) {
+        throw new BadRequestException('scheduledDate inválida');
+      }
+    }
+    if (orderType === 'scheduled' && !scheduledDate) {
+      throw new BadRequestException('Los pedidos programados requieren scheduledDate');
+    }
+
     // Calculate pricing based on distance
-    const distanceKm = data.distanceKm || 0;
     const basePrice = this.calculateBasePrice(distanceKm);
     const commission = basePrice * 0.05; // 5% commission (low for Nicoya launch)
     const driverPayout = basePrice - commission;
@@ -28,9 +58,9 @@ export class OrdersService {
     const order = await this.prisma.order.create({
       data: {
         merchantId: merchantProfile.id,
-        status: data.orderType === 'scheduled' ? 'driver_proposals' : 'pending',
-        orderType: data.orderType || 'immediate',
-        scheduledDate: data.scheduledDate ? new Date(data.scheduledDate) : null,
+        status: orderType === 'scheduled' ? 'driver_proposals' : 'pending',
+        orderType,
+        scheduledDate,
         scheduledTime: data.scheduledTime,
         pickupAddress: data.pickupAddress,
         pickupLat: data.pickupLat,
@@ -176,12 +206,18 @@ export class OrdersService {
       throw new NotFoundException('Pedido no encontrado');
     }
 
+    const isMerchantOwner = order.merchant?.userId === userId;
+    const isAssignedDriver = order.driver?.userId === userId;
+    if (!isMerchantOwner && !isAssignedDriver) {
+      throw new ForbiddenException('No tienes permiso para actualizar este pedido');
+    }
+
     // Validate status transition
     this.validateStatusTransition(order.status, status);
 
     // Update status with timestamp
     const updateData: any = { status };
-    
+
     if (status === 'assigned') {
       updateData.assignedAt = new Date();
     } else if (status === 'picked_up') {
@@ -251,20 +287,7 @@ export class OrdersService {
   }
 
   async assignDriver(orderId: string, driverId: string) {
-    const order = await this.prisma.order.findUnique({
-      where: { id: orderId },
-      include: { merchant: true },
-    });
-
-    if (!order) {
-      throw new NotFoundException('Pedido no encontrado');
-    }
-
-    if (order.status !== 'pending' && order.status !== 'driver_proposals') {
-      throw new BadRequestException('El pedido no está disponible');
-    }
-
-    // Verify driver exists
+    // Verify driver exists first (no state change yet)
     const driverProfile = await this.prisma.driverProfile.findUnique({
       where: { id: driverId },
     });
@@ -273,18 +296,32 @@ export class OrdersService {
       throw new NotFoundException('Repartidor no encontrado');
     }
 
-    const updatedOrder = await this.prisma.order.update({
-      where: { id: orderId },
+    // Atomic claim: only one winner even under concurrency
+    const claimed = await this.prisma.order.updateMany({
+      where: {
+        id: orderId,
+        status: { in: ['pending', 'driver_proposals'] },
+        driverId: null,
+      },
       data: {
         driverId,
         status: 'assigned',
         assignedAt: new Date(),
       },
-      include: {
-        merchant: true,
-        driver: true,
-      },
     });
+
+    if (claimed.count === 0) {
+      const existing = await this.prisma.order.findUnique({ where: { id: orderId } });
+      if (!existing) throw new NotFoundException('Pedido no encontrado');
+      throw new BadRequestException('El pedido no está disponible');
+    }
+
+    const updatedOrder = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { merchant: true, driver: true },
+    });
+
+    if (!updatedOrder) throw new NotFoundException('Pedido no encontrado');
 
     // Notify the assigned driver
     this.eventsGateway.sendToUser(driverProfile.userId, 'order:assigned', {
@@ -296,8 +333,8 @@ export class OrdersService {
     });
 
     // Notify merchant
-    if (order.merchant?.userId) {
-      this.eventsGateway.sendToUser(order.merchant.userId, 'order:driverAssigned', {
+    if (updatedOrder.merchant?.userId) {
+      this.eventsGateway.sendToUser(updatedOrder.merchant.userId, 'order:driverAssigned', {
         orderId: updatedOrder.id,
         driverName: driverProfile.fullName,
         message: `${driverProfile.fullName} fue asignado a tu pedido`,
@@ -333,12 +370,24 @@ export class OrdersService {
       throw new BadRequestException('Solo puedes proponer en pedidos programados');
     }
 
+    if (order.status !== 'driver_proposals') {
+      throw new BadRequestException('El pedido ya no acepta propuestas');
+    }
+
     const driverProfile = await this.prisma.driverProfile.findUnique({
       where: { userId: driverUserId },
     });
 
     if (!driverProfile) {
       throw new NotFoundException('Perfil de repartidor no encontrado');
+    }
+
+    const existingProposal = await this.prisma.driverProposal.findFirst({
+      where: { orderId, driverId: driverProfile.id },
+    });
+
+    if (existingProposal) {
+      throw new BadRequestException('Ya enviaste una propuesta para este pedido');
     }
 
     const proposal = await this.prisma.driverProposal.create({
@@ -394,34 +443,55 @@ export class OrdersService {
       throw new NotFoundException('Propuesta no encontrada');
     }
 
-    // Accept proposal and assign driver
-    await this.prisma.driverProposal.update({
-      where: { id: proposalId },
-      data: { status: 'accepted' },
+    if (proposal.orderId !== orderId) {
+      throw new BadRequestException('La propuesta no pertenece a este pedido');
+    }
+
+    if (proposal.status !== 'pending') {
+      throw new BadRequestException('La propuesta ya fue procesada');
+    }
+
+    if (order.status !== 'driver_proposals' && order.status !== 'pending') {
+      throw new BadRequestException('El pedido ya no está disponible');
+    }
+
+    // Accept proposal and assign driver atomically
+    const updatedOrder = await this.prisma.$transaction(async (tx) => {
+      await tx.driverProposal.update({
+        where: { id: proposalId },
+        data: { status: 'accepted' },
+      });
+
+      // Reject other proposals
+      await tx.driverProposal.updateMany({
+        where: {
+          orderId,
+          id: { not: proposalId },
+        },
+        data: { status: 'rejected' },
+      });
+
+      // Assign driver to order only if still unassigned
+      const claimed = await tx.order.updateMany({
+        where: { id: orderId, driverId: null, status: { in: ['pending', 'driver_proposals'] } },
+        data: {
+          driverId: proposal.driverId,
+          status: 'assigned',
+          assignedAt: new Date(),
+        },
+      });
+
+      if (claimed.count === 0) {
+        throw new BadRequestException('El pedido ya fue asignado');
+      }
+
+      return tx.order.findUnique({
+        where: { id: orderId },
+        include: { merchant: true, driver: true },
+      });
     });
 
-    // Reject other proposals
-    await this.prisma.driverProposal.updateMany({
-      where: {
-        orderId,
-        id: { not: proposalId },
-      },
-      data: { status: 'rejected' },
-    });
-
-    // Assign driver to order
-    const updatedOrder = await this.prisma.order.update({
-      where: { id: orderId },
-      data: {
-        driverId: proposal.driverId,
-        status: 'assigned',
-        assignedAt: new Date(),
-      },
-      include: {
-        merchant: true,
-        driver: true,
-      },
-    });
+    if (!updatedOrder) throw new NotFoundException('Pedido no encontrado');
 
     // Notify the winning driver
     this.eventsGateway.sendToUser(proposal.driver.userId, 'order:proposalAccepted', {
@@ -450,16 +520,9 @@ export class OrdersService {
   }
 
   async acceptOrderAsDriver(orderId: string, driverUserId: string) {
-    const order = await this.prisma.order.findUnique({
-      where: { id: orderId },
-      include: { merchant: true },
-    });
-
-    if (!order) {
-      throw new NotFoundException('Pedido no encontrado');
-    }
-
-    if (order.status !== 'pending') {
+    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+    if (!order) throw new NotFoundException('Pedido no encontrado');
+    if ((order as any).status !== 'pending' || (order as any).driverId) {
       throw new BadRequestException('El pedido ya fue tomado por otro repartidor');
     }
 
@@ -471,23 +534,33 @@ export class OrdersService {
       throw new NotFoundException('Perfil de repartidor no encontrado');
     }
 
-    // Assign driver
-    const updatedOrder = await this.prisma.order.update({
-      where: { id: orderId },
+    // Atomic claim: only pending orders with no driver can be taken
+    const claimed = await this.prisma.order.updateMany({
+      where: { id: orderId, status: 'pending', driverId: null },
       data: {
         driverId: driverProfile.id,
         status: 'assigned',
         assignedAt: new Date(),
       },
-      include: {
-        merchant: true,
-        driver: true,
-      },
     });
 
+    if (claimed.count === 0) {
+      const existing = await this.prisma.order.findUnique({ where: { id: orderId } });
+      if (!existing) throw new NotFoundException('Pedido no encontrado');
+      throw new BadRequestException('El pedido ya fue tomado por otro repartidor');
+    }
+
+    // Assign driver
+    const updatedOrder = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { merchant: true, driver: true },
+    });
+
+    if (!updatedOrder) throw new NotFoundException('Pedido no encontrado');
+
     // Notify merchant
-    if (order.merchant?.userId) {
-      this.eventsGateway.sendToUser(order.merchant.userId, 'order:accepted', {
+    if (updatedOrder.merchant?.userId) {
+      this.eventsGateway.sendToUser(updatedOrder.merchant.userId, 'order:accepted', {
         orderId: updatedOrder.id,
         driverId: driverProfile.id,
         driverName: driverProfile.fullName,
@@ -496,7 +569,7 @@ export class OrdersService {
       });
 
       await this.createNotification(
-        order.merchant.userId,
+        updatedOrder.merchant.userId,
         'Pedido Aceptado',
         `${driverProfile.fullName} aceptó tu pedido`,
         'order_accepted',

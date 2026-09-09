@@ -321,9 +321,17 @@ class OfflineNavigationService {
 
       const profile = mode === 'walking' ? 'foot' : mode === 'cycling' ? 'bike' : 'car';
 
-      const response = await fetch(
-        `https://router.project-osrm.org/route/v1/${profile}/${coordString}?overview=full&geometries=geojson&steps=true`,
-      );
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      let response: Response;
+      try {
+        response = await fetch(
+          `https://router.project-osrm.org/route/v1/${profile}/${coordString}?overview=full&geometries=geojson&steps=true`,
+          { signal: controller.signal },
+        );
+      } finally {
+        clearTimeout(timeoutId);
+      }
 
       if (!response.ok) {
         throw new Error('OSRM request failed');
@@ -336,6 +344,25 @@ class OfflineNavigationService {
       }
 
       const osrmRoute = data.routes[0];
+
+      const coordinates: Coordinates[] = (osrmRoute.geometry?.coordinates || []).map(
+        (c: number[]) => ({ lat: c[1], lng: c[0] }),
+      );
+
+      // OSRM /route/v1 has no `bounds` field (that's Mapbox): derive from
+      // the geometry instead of crashing on osrmRoute.bounds[3].
+      const lats = coordinates.map((c) => c.lat);
+      const lngs = coordinates.map((c) => c.lng);
+      const bounds = {
+        northeast: {
+          lat: lats.length ? Math.max(...lats) : end.lat,
+          lng: lngs.length ? Math.max(...lngs) : end.lng,
+        },
+        southwest: {
+          lat: lats.length ? Math.min(...lats) : start.lat,
+          lng: lngs.length ? Math.min(...lngs) : start.lng,
+        },
+      };
 
       // Parse OSRM response
       const route: Route = {
@@ -352,20 +379,8 @@ class OfflineNavigationService {
         steps: this.parseOSRMSteps(osrmRoute.legs),
         distance: osrmRoute.distance,
         duration: osrmRoute.duration,
-        coordinates: osrmRoute.geometry.coordinates.map((c: number[]) => ({
-          lat: c[1],
-          lng: c[0],
-        })),
-        bounds: {
-          northeast: {
-            lat: osrmRoute.bounds[3],
-            lng: osrmRoute.bounds[2],
-          },
-          southwest: {
-            lat: osrmRoute.bounds[1],
-            lng: osrmRoute.bounds[0],
-          },
-        },
+        coordinates,
+        bounds,
         status: 'synced',
         createdAt: Date.now(),
         updatedAt: Date.now(),
@@ -392,20 +407,26 @@ class OfflineNavigationService {
 
     legs.forEach((leg) => {
       leg.steps?.forEach((step: any) => {
+        const maneuverLoc = step.maneuver?.location;
+        const startLocation = {
+          lat: maneuverLoc?.[1] || 0,
+          lng: maneuverLoc?.[0] || 0,
+        };
+        // End = last point of this step's geometry (not a copy of start:
+        // maneuver.location is where the step BEGINS).
+        const stepCoords: number[][] = step.geometry?.coordinates || [];
+        const last = stepCoords.length > 0 ? stepCoords[stepCoords.length - 1] : null;
+        const endLocation = last
+          ? { lat: last[1] ?? startLocation.lat, lng: last[0] ?? startLocation.lng }
+          : { ...startLocation };
         steps.push({
           instruction: step.maneuver?.modifier
             ? `${step.maneuver.type} ${step.maneuver.modifier}`
             : step.maneuver?.type || 'continuar',
           distance: step.distance || 0,
           duration: step.duration || 0,
-          startLocation: {
-            lat: step.maneuver?.location?.[1] || 0,
-            lng: step.maneuver?.location?.[0] || 0,
-          },
-          endLocation: {
-            lat: step.maneuver?.location?.[1] || 0,
-            lng: step.maneuver?.location?.[0] || 0,
-          },
+          startLocation,
+          endLocation,
           maneuver: step.maneuver?.type || 'continue',
           roadName: step.name || undefined,
         });

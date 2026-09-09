@@ -7,6 +7,8 @@
  * Supports retry logic, priority queues, and conflict resolution.
  */
 
+import { apiFetch } from './api-client';
+
 const DB_NAME = 'kiwi-background-sync';
 const DB_VERSION = 1;
 const STORE_NAME = 'sync-queue';
@@ -82,9 +84,11 @@ class BackgroundSyncService {
   private db: IDBDatabase | null = null;
   private isInitialized = false;
   private isSyncing = false;
-  private syncInterval: NodeJS.Timeout | null = null;
+  private syncInterval: ReturnType<typeof setInterval> | null = null;
   private options: BackgroundSyncOptions;
   private listeners: Map<string, Set<Function>> = new Map();
+  /** In-memory executors: functions can't live in IndexedDB (DataCloneError) */
+  private executors: Map<string, (data: any) => Promise<any>> = new Map();
 
   constructor(options: BackgroundSyncOptions = {}) {
     this.options = {
@@ -102,6 +106,10 @@ class BackgroundSyncService {
    */
   async initialize(): Promise<void> {
     if (this.isInitialized) return;
+
+    if (typeof window === 'undefined' || typeof indexedDB === 'undefined') {
+      return Promise.reject(new Error('IndexedDB is not available (server-side)'));
+    }
 
     return new Promise((resolve, reject) => {
       const request = indexedDB.open(DB_NAME, DB_VERSION);
@@ -142,6 +150,13 @@ class BackgroundSyncService {
   }
 
   /**
+   * SSR-safe online check (navigator doesn't exist on the server).
+   */
+  private isOnline(): boolean {
+    return typeof navigator !== 'undefined' && navigator.onLine;
+  }
+
+  /**
    * Set up network event listeners
    */
   private setupNetworkListeners(): void {
@@ -165,7 +180,7 @@ class BackgroundSyncService {
     if (this.syncInterval) return;
 
     this.syncInterval = setInterval(() => {
-      if (navigator.onLine && !this.isSyncing) {
+      if (this.isOnline() && !this.isSyncing) {
         this.processQueue();
       }
     }, this.options.pollInterval);
@@ -208,8 +223,14 @@ class BackgroundSyncService {
       updatedAt: Date.now(),
       nextRetryAt: Date.now(),
       metadata: options.metadata,
-      execute: options.execute,
     };
+
+    // Keep custom executor in memory only — functions are not
+    // structured-cloneable and would make the IDB put throw DataCloneError.
+    if (options.execute) this.executors.set(action.id, options.execute as any);
+
+    // Persist a clone WITHOUT the function
+    const { execute: _omit, ...persistable } = action as any;
 
     return new Promise((resolve, reject) => {
       if (!this.db) {
@@ -219,7 +240,7 @@ class BackgroundSyncService {
 
       const transaction = this.db.transaction([STORE_NAME], 'readwrite');
       const store = transaction.objectStore(STORE_NAME);
-      const request = store.add(action);
+      const request = store.add(persistable);
 
       request.onsuccess = () => {
         console.log(`🥝 Enqueued ${type} action: ${action.id}`);
@@ -239,7 +260,7 @@ class BackgroundSyncService {
    * Process the sync queue
    */
   async processQueue(): Promise<void> {
-    if (this.isSyncing || !navigator.onLine) return;
+    if (this.isSyncing || !this.isOnline()) return;
 
     this.isSyncing = true;
     this.emit('syncStart');
@@ -285,9 +306,10 @@ class BackgroundSyncService {
 
       let result: any;
 
-      if (action.execute) {
-        // Use custom execute function
-        result = await action.execute(action.data);
+      const customExecute = this.executors.get(action.id);
+      if (customExecute) {
+        // Use in-memory custom execute function
+        result = await customExecute(action.data);
       } else {
         // Default API call based on action type
         result = await this.executeDefaultAction(action);
@@ -298,6 +320,7 @@ class BackgroundSyncService {
         status: 'completed',
         updatedAt: Date.now(),
       });
+      this.executors.delete(action.id);
 
       console.log(`✅ Synced ${action.type}: ${action.id}`);
       this.emit('synced', { action, result });
@@ -336,6 +359,7 @@ class BackgroundSyncService {
         });
 
         console.error(`💀 ${action.type} failed permanently after ${action.maxAttempts} attempts`);
+        this.executors.delete(action.id);
         this.emit('failed', { action, error: errorMessage });
         this.options.onSyncFailed?.(
           action,
@@ -369,15 +393,22 @@ class BackgroundSyncService {
       throw new Error(`No default endpoint for action type: ${action.type}`);
     }
 
-    const method = action.type.includes('create')
-      ? 'POST'
-      : action.type.includes('update')
-        ? 'PUT'
-        : action.type.includes('cancel')
-          ? 'POST'
-          : 'POST';
+    const methods: Record<ActionType, string> = {
+      'order:create': 'POST',
+      'order:update': 'PUT',
+      'order:cancel': 'POST',
+      'order:status': 'PUT',
+      'payment:create': 'POST',
+      'payment:confirm': 'POST',
+      'location:update': 'PUT',
+      'rating:submit': 'POST',
+      'notification:register': 'POST',
+      custom: 'POST',
+    };
 
-    const response = await fetch(endpoint, {
+    const method = methods[action.type] ?? 'POST';
+
+    const response = await apiFetch(endpoint, {
       method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(action.data),
@@ -510,13 +541,15 @@ class BackgroundSyncService {
     });
     this.notifyQueueChange();
 
-    if (navigator.onLine) {
+    if (this.isOnline()) {
       this.processQueue();
     }
   }
 
   /**
-   * Clear all completed/failed actions
+   * Clear all completed/failed actions. Resolves only after every status
+   * cursor exhausts (the old code resolved when the 'cancelled' cursor
+   * finished, undercounting or hanging when cursors finished out of order).
    */
   async clearCompleted(): Promise<number> {
     await this.initialize();
@@ -532,8 +565,10 @@ class BackgroundSyncService {
       const index = store.index('status');
 
       let deletedCount = 0;
+      const statuses = ['completed', 'failed', 'cancelled'];
+      let remaining = statuses.length;
 
-      ['completed', 'failed', 'cancelled'].forEach((status) => {
+      statuses.forEach((status) => {
         const request = index.openCursor(status);
 
         request.onsuccess = (event) => {
@@ -543,12 +578,14 @@ class BackgroundSyncService {
             cursor.delete();
             deletedCount++;
             cursor.continue();
-          } else if (status === 'cancelled') {
+          } else if (--remaining === 0) {
             console.log(`🧹 Cleared ${deletedCount} completed actions`);
             this.notifyQueueChange();
             resolve(deletedCount);
           }
         };
+
+        request.onerror = () => reject(request.error);
       });
     });
   }

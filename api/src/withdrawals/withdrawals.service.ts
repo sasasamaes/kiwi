@@ -53,15 +53,18 @@ export class WithdrawalsService {
     };
   }
 
-  async requestWithdrawal(driverUserId: string, data: {
-    amount: number;
-    paymentMethod: 'sinpe' | 'bank_transfer';
-    sinpePhone?: string;
-    sinpeName?: string;
-    bankName?: string;
-    accountNumber?: string;
-    accountHolder?: string;
-  }) {
+  async requestWithdrawal(
+    driverUserId: string,
+    data: {
+      amount: number;
+      paymentMethod: 'sinpe' | 'bank_transfer';
+      sinpePhone?: string;
+      sinpeName?: string;
+      bankName?: string;
+      accountNumber?: string;
+      accountHolder?: string;
+    },
+  ) {
     const driverProfile = await this.prisma.driverProfile.findUnique({
       where: { userId: driverUserId },
     });
@@ -79,7 +82,7 @@ export class WithdrawalsService {
     const balance = await this.getBalance(driverUserId);
 
     // Validate amount
-    if (data.amount <= 0) {
+    if (!Number.isFinite(data.amount) || data.amount <= 0) {
       throw new BadRequestException('El monto debe ser mayor a 0');
     }
 
@@ -103,20 +106,44 @@ export class WithdrawalsService {
       }
     }
 
-    // Create withdrawal request
-    const withdrawal = await this.prisma.withdrawal.create({
-      data: {
-        driverId: driverProfile.id,
-        amount: data.amount,
-        currency: 'CRC',
-        status: 'pending',
-        paymentMethod: data.paymentMethod,
-        sinpePhone: data.sinpePhone,
-        sinpeName: data.sinpeName,
-        bankName: data.bankName,
-        accountNumber: data.accountNumber,
-        accountHolder: data.accountHolder,
-      },
+    // Create withdrawal request atomically: re-check balance inside tx
+    // to narrow the TOCTOU window between getBalance() and create().
+    const withdrawal = await this.prisma.$transaction(async (tx) => {
+      const [earnings, withdrawn, pending] = await Promise.all([
+        tx.order.aggregate({
+          where: { driverId: driverProfile.id, status: 'delivered' },
+          _sum: { driverPayout: true },
+        }),
+        tx.withdrawal.aggregate({
+          where: { driverId: driverProfile.id, status: { in: ['completed', 'processing'] } },
+          _sum: { amount: true },
+        }),
+        tx.withdrawal.aggregate({
+          where: { driverId: driverProfile.id, status: 'pending' },
+          _sum: { amount: true },
+        }),
+      ]);
+      const available =
+        Number(earnings._sum?.driverPayout || 0) -
+        Number(withdrawn._sum?.amount || 0) -
+        Number(pending._sum?.amount || 0);
+      if (data.amount > available) {
+        throw new BadRequestException('Saldo insuficiente');
+      }
+      return tx.withdrawal.create({
+        data: {
+          driverId: driverProfile.id,
+          amount: data.amount,
+          currency: 'CRC',
+          status: 'pending',
+          paymentMethod: data.paymentMethod,
+          sinpePhone: data.sinpePhone,
+          sinpeName: data.sinpeName,
+          bankName: data.bankName,
+          accountNumber: data.accountNumber,
+          accountHolder: data.accountHolder,
+        },
+      });
     });
 
     // Create notification for admin

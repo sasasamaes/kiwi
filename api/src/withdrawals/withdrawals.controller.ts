@@ -20,7 +20,7 @@ export class WithdrawalsController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get driver balance' })
   async getBalance(@Request() req) {
-    return this.withdrawalsService.getBalance(req.user.id);
+    return this.withdrawalsService.getBalance(req.user.sub ?? req.user.id);
   }
 
   @Post('request')
@@ -28,16 +28,20 @@ export class WithdrawalsController {
   @Roles('driver')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Request withdrawal' })
-  async requestWithdrawal(@Request() req, @Body() data: {
-    amount: number;
-    paymentMethod: 'sinpe' | 'bank_transfer';
-    sinpePhone?: string;
-    sinpeName?: string;
-    bankName?: string;
-    accountNumber?: string;
-    accountHolder?: string;
-  }) {
-    return this.withdrawalsService.requestWithdrawal(req.user.id, data);
+  async requestWithdrawal(
+    @Request() req,
+    @Body()
+    data: {
+      amount: number;
+      paymentMethod: 'sinpe' | 'bank_transfer';
+      sinpePhone?: string;
+      sinpeName?: string;
+      bankName?: string;
+      accountNumber?: string;
+      accountHolder?: string;
+    },
+  ) {
+    return this.withdrawalsService.requestWithdrawal(req.user.sub ?? req.user.id, data);
   }
 
   @Get('my')
@@ -47,7 +51,7 @@ export class WithdrawalsController {
   @ApiOperation({ summary: 'Get my withdrawals' })
   @ApiQuery({ name: 'status', required: false })
   async getMyWithdrawals(@Request() req, @Query('status') status?: string) {
-    return this.withdrawalsService.getMyWithdrawals(req.user.id, status);
+    return this.withdrawalsService.getMyWithdrawals(req.user.sub ?? req.user.id, status);
   }
 
   @Get('my/:id')
@@ -56,7 +60,7 @@ export class WithdrawalsController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get withdrawal by ID' })
   async getWithdrawalById(@Param('id') id: string, @Request() req) {
-    return this.withdrawalsService.getWithdrawalById(id, req.user.id);
+    return this.withdrawalsService.getWithdrawalById(id, req.user.sub ?? req.user.id);
   }
 
   @Put('my/:id/cancel')
@@ -65,7 +69,7 @@ export class WithdrawalsController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Cancel withdrawal' })
   async cancelWithdrawal(@Param('id') id: string, @Request() req) {
-    return this.withdrawalsService.cancelWithdrawal(id, req.user.id);
+    return this.withdrawalsService.cancelWithdrawal(id, req.user.sub ?? req.user.id);
   }
 
   // ============================================
@@ -91,7 +95,11 @@ export class WithdrawalsController {
     @Request() req,
     @Body('transactionId') transactionId?: string,
   ) {
-    return this.withdrawalsService.approveWithdrawal(id, req.user.id, transactionId);
+    return this.withdrawalsService.approveWithdrawal(
+      id,
+      req.user.sub ?? req.user.id,
+      transactionId,
+    );
   }
 
   @Put('admin/:id/complete')
@@ -99,10 +107,7 @@ export class WithdrawalsController {
   @Roles('admin')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Complete withdrawal (admin)' })
-  async completeWithdrawal(
-    @Param('id') id: string,
-    @Body('transactionId') transactionId: string,
-  ) {
+  async completeWithdrawal(@Param('id') id: string, @Body('transactionId') transactionId: string) {
     return this.withdrawalsService.completeWithdrawal(id, transactionId);
   }
 
@@ -111,11 +116,7 @@ export class WithdrawalsController {
   @Roles('admin')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Reject withdrawal (admin)' })
-  async rejectWithdrawal(
-    @Param('id') id: string,
-    @Request() req,
-    @Body('reason') reason: string,
-  ) {
-    return this.withdrawalsService.rejectWithdrawal(id, req.user.id, reason);
+  async rejectWithdrawal(@Param('id') id: string, @Request() req, @Body('reason') reason: string) {
+    return this.withdrawalsService.rejectWithdrawal(id, req.user.sub ?? req.user.id, reason);
   }
 }

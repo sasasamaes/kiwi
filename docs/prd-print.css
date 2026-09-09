@@ -1,0 +1,118 @@
+/* Estilos de impresión para el PRD de Kiwi */
+@page {
+  size: A4;
+  margin: 18mm 16mm;
+}
+
+body {
+  font-family: -apple-system, "Helvetica Neue", Arial, sans-serif;
+  font-size: 10.5pt;
+  line-height: 1.5;
+  color: #1a1a1a;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+h1 {
+  color: #4a8a22;
+  font-size: 22pt;
+  border-bottom: 3px solid #6BB536;
+  padding-bottom: 8px;
+  margin-top: 0;
+}
+
+h2 {
+  color: #4a8a22;
+  font-size: 15pt;
+  border-bottom: 1.5px solid #cde5b8;
+  padding-bottom: 4px;
+  margin-top: 22px;
+}
+
+h3 {
+  color: #2f5d1a;
+  font-size: 12pt;
+  margin-top: 16px;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 10px 0;
+  font-size: 9pt;
+  page-break-inside: auto;
+}
+
+th {
+  background: #eaf5df;
+  color: #2f5d1a;
+  text-align: left;
+}
+
+th, td {
+  border: 1px solid #b8d39e;
+  padding: 5px 8px;
+  vertical-align: top;
+}
+
+tr {
+  page-break-inside: avoid;
+}
+
+pre {
+  background: #f6faf2;
+  border: 1px solid #cde5b8;
+  border-radius: 6px;
+  padding: 10px;
+  font-size: 8pt;
+  line-height: 1.35;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  page-break-inside: avoid;
+}
+
+code {
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-size: 8.5pt;
+  background: #eaf5df;
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+pre code {
+  background: none;
+  padding: 0;
+}
+
+blockquote {
+  border-left: 4px solid #6BB536;
+  margin: 10px 0;
+  padding: 6px 14px;
+  background: #f6faf2;
+  color: #3d5c28;
+  font-style: italic;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid #cde5b8;
+  margin: 18px 0;
+}
+
+ul, ol {
+  padding-left: 22px;
+}
+
+li {
+  margin: 3px 0;
+}
+
+a {
+  color: #4a8a22;
+  text-decoration: none;
+}
+
+strong {
+  color: #000;
+}

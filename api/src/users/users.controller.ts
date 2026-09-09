@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Body, UseGuards, Param } from '@nestjs/common';
+import { Controller, Get, Put, Body, UseGuards, Param, ForbiddenException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -29,7 +29,12 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get user by ID' })
-  async getUser(@Param('id') id: string) {
+  async getUser(@Param('id') id: string, @CurrentUser() user: any) {
+    // Users expose email/phone: only self or admin may read another profile.
+    const requesterId = user?.sub ?? user?.id;
+    if (id !== requesterId && user?.role !== 'admin') {
+      throw new ForbiddenException('No tienes permiso para ver este perfil');
+    }
     return this.usersService.findById(id);
   }
 }

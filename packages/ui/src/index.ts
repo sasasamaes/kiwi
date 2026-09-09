@@ -119,7 +119,7 @@ export {
 // ============================================
 //   API CLIENT
 // ============================================
-export { api } from './api-client';
+export { api, apiFetch, resolveApiUrl } from './api-client';
 export type {
   User,
   MerchantProfile,

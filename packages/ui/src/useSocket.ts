@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback, useRef, useState } from 'react';
 import { socketClient } from './socket-client';
 import { useAuth } from './AuthContext';
 
@@ -19,6 +19,8 @@ export function useSocket(options: UseSocketOptions = {}) {
   const { user } = useAuth();
   const optionsRef = useRef(options);
   optionsRef.current = options;
+  const [isConnected, setIsConnected] = useState(() => socketClient.isConnected());
+  const [socketId, setSocketId] = useState<string | undefined>(() => socketClient.getSocketId());
 
   useEffect(() => {
     if (!user || options.autoConnect === false) return;
@@ -28,9 +30,18 @@ export function useSocket(options: UseSocketOptions = {}) {
 
     // Connect to socket
     socketClient.connect(token);
+    setIsConnected(socketClient.isConnected());
+    setSocketId(socketClient.getSocketId());
 
     // Setup event listeners
     const cleanupFunctions: (() => void)[] = [];
+    const syncState = () => {
+      setIsConnected(socketClient.isConnected());
+      setSocketId(socketClient.getSocketId());
+    };
+
+    cleanupFunctions.push(socketClient.on('socket:connected', syncState));
+    cleanupFunctions.push(socketClient.on('socket:disconnected', syncState));
 
     if (optionsRef.current.onConnect) {
       cleanupFunctions.push(socketClient.on('socket:connected', optionsRef.current.onConnect));
@@ -72,7 +83,8 @@ export function useSocket(options: UseSocketOptions = {}) {
 
     return () => {
       cleanupFunctions.forEach((cleanup) => cleanup());
-      socketClient.disconnect();
+      // Don't disconnect the shared singleton here: other mounted
+      // components may still be using it. Disconnect on logout instead.
     };
   }, [user, options.autoConnect]);
 
@@ -102,8 +114,8 @@ export function useSocket(options: UseSocketOptions = {}) {
   }, []);
 
   return {
-    isConnected: socketClient.isConnected(),
-    socketId: socketClient.getSocketId(),
+    isConnected,
+    socketId,
     createOrder,
     acceptOrder,
     updateOrderStatus,

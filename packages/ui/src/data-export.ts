@@ -2,7 +2,7 @@
 
 /**
  * 🥝 KIWI - Data Export Service
- * 
+ *
  * Exports all local data for backup and import.
  * Supports JSON and CSV formats.
  */
@@ -56,7 +56,7 @@ class DataExportService {
    */
   private getDeviceId(): string {
     if (typeof window === 'undefined') return 'server';
-    
+
     let deviceId = localStorage.getItem('kiwi-device-id');
     if (!deviceId) {
       deviceId = `device_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -98,9 +98,10 @@ class DataExportService {
 
     if (options.includeMetadata) {
       exportData.data.metadata = {
-        userAgent: navigator.userAgent,
-        language: navigator.language,
-        platform: navigator.platform,
+        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'server',
+        language: typeof navigator !== 'undefined' ? navigator.language : 'es',
+        platform:
+          typeof navigator !== 'undefined' ? ((navigator as any).platform ?? 'unknown') : 'server',
       };
     }
 
@@ -117,11 +118,23 @@ class DataExportService {
    */
   private filterByDateRange(data: any[], dateRange?: { start: number; end: number }): any[] {
     if (!dateRange) return data;
-    
-    return data.filter(item => {
+
+    return data.filter((item) => {
       const itemDate = item.createdAt || item.updatedAt || 0;
       return itemDate >= dateRange.start && itemDate <= dateRange.end;
     });
+  }
+
+  /**
+   * Escape a single CSV cell (quotes, commas, newlines, formula injection).
+   */
+  private escapeCSVCell(value: unknown): string {
+    if (value === null || value === undefined) return '';
+    let cell = String(value);
+    // Neutralize spreadsheet formula injection (=, +, -, @, tab, CR).
+    if (/^[=+\-@\t\r]/.test(cell)) cell = `'${cell}`;
+    if (/[",\n\r]/.test(cell)) return `"${cell.replace(/"/g, '""')}"`;
+    return cell;
   }
 
   /**
@@ -129,12 +142,13 @@ class DataExportService {
    */
   private convertToCSV(data: ExportData): Blob {
     const lines: string[] = [];
-    
+    const row = (cells: unknown[]) => lines.push(cells.map((c) => this.escapeCSVCell(c)).join(','));
+
     // Orders
     if (data.data.orders && data.data.orders.length > 0) {
       lines.push('TYPE,ID,MERCHANT,CUSTOMER,TOTAL,STATUS,CREATED');
-      data.data.orders.forEach(order => {
-        lines.push([
+      data.data.orders.forEach((order) => {
+        row([
           'ORDER',
           order.id,
           order.merchantName,
@@ -142,15 +156,15 @@ class DataExportService {
           order.total,
           order.status,
           new Date(order.createdAt).toISOString(),
-        ].join(','));
+        ]);
       });
     }
 
     // Payments
     if (data.data.payments && data.data.payments.length > 0) {
       lines.push('TYPE,ID,ORDER_ID,AMOUNT,METHOD,STATUS,CREATED');
-      data.data.payments.forEach(payment => {
-        lines.push([
+      data.data.payments.forEach((payment) => {
+        row([
           'PAYMENT',
           payment.id,
           payment.orderId,
@@ -158,7 +172,7 @@ class DataExportService {
           payment.method,
           payment.status,
           new Date(payment.createdAt).toISOString(),
-        ].join(','));
+        ]);
       });
     }
 
@@ -170,9 +184,9 @@ class DataExportService {
    */
   async downloadExport(options: ExportOptions): Promise<void> {
     const data = await this.exportData(options);
-    
+
     const filename = `kiwi-backup-${new Date().toISOString().split('T')[0]}.${options.format}`;
-    
+
     if (data instanceof Blob) {
       // CSV
       const url = URL.createObjectURL(data);
@@ -256,7 +270,6 @@ class DataExportService {
           }
         }
       }
-
     } catch (error) {
       result.success = false;
       result.errors.push(`Import failed: ${error}`);

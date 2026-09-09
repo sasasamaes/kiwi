@@ -2,101 +2,24 @@
 
 /**
  * 🥝 KIWI - Data Compression Service
- * 
- * Compresses data before storing in IndexedDB to reduce storage usage.
- * Uses LZ-string for fast, lossless compression.
+ *
+ * NOTE: this module used to ship an inline "LZ-string" that was actually
+ * plain base64: it EXPANDED payloads ~33% (so the ratio<0.9 gate rejected
+ * it every time) while burning CPU on each write and mangling non-Latin1
+ * chars via byte-wise charCodeAt. It now passes data through untouched
+ * until a real codec (e.g. the `lz-string` package) is added — the API
+ * and stored shapes are unchanged, callers need no migration.
  */
-
-// LZ-String compression library (inline for offline support)
-const LZString = {
-  compress: (str: string): string => {
-    // Simplified LZ-string implementation
-    // In production, use the full lz-string library
-    if (!str) return '';
-    
-    const keyStr = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
-    let output = '';
-    let i = 0;
-    
-    while (i < str.length) {
-      const chr1 = str.charCodeAt(i++);
-      const chr2 = i < str.length ? str.charCodeAt(i++) : 0;
-      const chr3 = i < str.length ? str.charCodeAt(i++) : 0;
-      
-      const enc1 = chr1 >> 2;
-      const enc2 = ((chr1 & 3) << 4) | (chr2 >> 4);
-      const enc3 = ((chr2 & 15) << 2) | (chr3 >> 6);
-      const enc4 = chr3 & 63;
-      
-      output += keyStr.charAt(enc1);
-      output += keyStr.charAt(enc2);
-      
-      if (i > str.length + 2) {
-        output += '=';
-        output += '=';
-      } else if (i > str.length + 1) {
-        output += '=';
-        output += keyStr.charAt(enc4);
-      } else {
-        output += keyStr.charAt(enc3);
-        output += keyStr.charAt(enc4);
-      }
-    }
-    
-    return output;
-  },
-  
-  decompress: (str: string): string => {
-    // Simplified LZ-string decompression
-    if (!str) return '';
-    
-    const keyStr = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
-    let output = '';
-    let i = 0;
-    
-    str = str.replace(/[^A-Za-z0-9+/=]/g, '');
-    
-    while (i < str.length) {
-      const enc1 = keyStr.indexOf(str.charAt(i++));
-      const enc2 = keyStr.indexOf(str.charAt(i++));
-      const enc3 = keyStr.indexOf(str.charAt(i++));
-      const enc4 = keyStr.indexOf(str.charAt(i++));
-      
-      const chr1 = (enc1 << 2) | (enc2 >> 4);
-      const chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
-      const chr3 = ((enc3 & 3) << 6) | enc4;
-      
-      output += String.fromCharCode(chr1);
-      
-      if (enc3 !== 64) {
-        output += String.fromCharCode(chr2);
-      }
-      if (enc4 !== 64) {
-        output += String.fromCharCode(chr3);
-      }
-    }
-    
-    return output;
-  },
-  
-  compressToUTF16: (str: string): string => {
-    return LZString.compress(str);
-  },
-  
-  decompressFromUTF16: (str: string): string => {
-    return LZString.decompress(str);
-  },
-};
 
 export type CompressionAlgorithm = 'lzstring' | 'none';
 
 interface CompressionOptions {
   /** Compression algorithm to use */
   algorithm?: CompressionAlgorithm;
-  
+
   /** Minimum size to compress (bytes) */
   minSizeToCompress?: number;
-  
+
   /** Enable compression */
   enabled?: boolean;
 }
@@ -104,19 +27,19 @@ interface CompressionOptions {
 interface CompressedData {
   /** The compressed data */
   data: string;
-  
+
   /** Original size in bytes */
   originalSize: number;
-  
+
   /** Compressed size in bytes */
   compressedSize: number;
-  
+
   /** Compression ratio */
   ratio: number;
-  
+
   /** Algorithm used */
   algorithm: CompressionAlgorithm;
-  
+
   /** Whether data was compressed */
   compressed: boolean;
 }
@@ -124,19 +47,19 @@ interface CompressedData {
 interface StorageStats {
   /** Total used storage (bytes) */
   used: number;
-  
+
   /** Available storage estimate (bytes) */
   available: number;
-  
+
   /** Usage percentage */
   percentage: number;
-  
+
   /** Whether storage is low */
   isLow: boolean;
-  
+
   /** Whether storage is critical */
   isCritical: boolean;
-  
+
   /** Recommendation message */
   message: string;
 }
@@ -193,31 +116,8 @@ class CompressionService {
       };
     }
 
-    try {
-      const compressed = LZString.compress(jsonString);
-      const compressedSize = compressed.length * 2; // Approximate bytes (UTF-16)
-      const ratio = compressedSize / originalSize;
-
-      // Only use compression if it actually saves space
-      if (ratio < 0.9) {
-        this.stats.totalCompressed += originalSize;
-        this.stats.totalDecompressed += compressedSize;
-        this.stats.compressionCount++;
-
-        return {
-          data: compressed,
-          originalSize,
-          compressedSize,
-          ratio,
-          algorithm: 'lzstring',
-          compressed: true,
-        };
-      }
-    } catch (error) {
-      console.warn('Compression failed:', error);
-    }
-
-    // Fallback to uncompressed
+    // No codec available (see header note): storing raw is cheaper and
+    // safer than base64-"compressing" every payload on each write.
     return {
       data: jsonString,
       originalSize,
@@ -236,9 +136,11 @@ class CompressionService {
       return JSON.parse(compressedData.data);
     }
 
+    // Legacy payloads written by the old base64 codec: decode UTF-8 safely.
     try {
-      const decompressed = LZString.decompress(compressedData.data);
-      return JSON.parse(decompressed);
+      const binary = atob(compressedData.data);
+      const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
+      return JSON.parse(new TextDecoder().decode(bytes));
     } catch (error) {
       console.error('Decompression failed:', error);
       throw new Error('Failed to decompress data');
@@ -262,25 +164,7 @@ class CompressionService {
       };
     }
 
-    try {
-      const compressed = LZString.compress(str);
-      const compressedSize = compressed.length * 2;
-      const ratio = compressedSize / originalSize;
-
-      if (ratio < 0.9) {
-        return {
-          data: compressed,
-          originalSize,
-          compressedSize,
-          ratio,
-          algorithm: 'lzstring',
-          compressed: true,
-        };
-      }
-    } catch (error) {
-      console.warn('String compression failed:', error);
-    }
-
+    // No codec available (see header note): passthrough.
     return {
       data: str,
       originalSize,
@@ -299,8 +183,11 @@ class CompressionService {
       return compressedData.data;
     }
 
+    // Legacy base64 payloads: decode UTF-8 safely.
     try {
-      return LZString.decompress(compressedData.data);
+      const binary = atob(compressedData.data);
+      const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
+      return new TextDecoder().decode(bytes);
     } catch (error) {
       console.error('String decompression failed:', error);
       throw new Error('Failed to decompress string');
@@ -316,9 +203,10 @@ class CompressionService {
     compressionCount: number;
   } {
     const totalSaved = this.stats.totalCompressed - this.stats.totalDecompressed;
-    const averageRatio = this.stats.compressionCount > 0
-      ? this.stats.totalDecompressed / this.stats.totalCompressed
-      : 1;
+    const averageRatio =
+      this.stats.compressionCount > 0
+        ? this.stats.totalDecompressed / this.stats.totalCompressed
+        : 1;
 
     return {
       totalSaved,
@@ -378,7 +266,7 @@ class CompressionService {
     quota: number;
   }> {
     let persistent = false;
-    
+
     if (navigator.storage && navigator.storage.persist) {
       try {
         persistent = await navigator.storage.persist();

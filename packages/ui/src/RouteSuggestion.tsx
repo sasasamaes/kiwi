@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { apiFetch } from './api-client';
 
 export interface RouteSuggestion {
   id: string;
@@ -98,7 +99,7 @@ export function RouteSuggestionPanel({
         destLng: String(destLng),
       });
 
-      const response = await fetch(`/api/routing/suggestions?${params.toString()}`);
+      const response = await apiFetch(`/api/routing/suggestions?${params.toString()}`);
       const data = await response.json();
       setComparison(data);
 
@@ -405,7 +406,7 @@ export function QuickSuggestionBanner({
         destLng: String(destLng),
       });
 
-      const response = await fetch(`/api/routing/suggestions/quick?${params.toString()}`);
+      const response = await apiFetch(`/api/routing/suggestions/quick?${params.toString()}`);
       const data = await response.json();
       setSuggestion(data);
     } catch (error) {

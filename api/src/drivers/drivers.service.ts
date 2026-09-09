@@ -1,5 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+
+const VALID_DRIVER_STATUSES = ['offline', 'available', 'busy'] as const;
 
 @Injectable()
 export class DriversService {
@@ -78,6 +80,12 @@ export class DriversService {
   }
 
   async updateStatus(userId: string, status: string) {
+    if (!(VALID_DRIVER_STATUSES as readonly string[]).includes(status)) {
+      throw new BadRequestException(
+        `Estado inválido: ${status}. Válidos: ${VALID_DRIVER_STATUSES.join(', ')}`,
+      );
+    }
+
     const driver = await this.prisma.driverProfile.findUnique({
       where: { userId },
     });
@@ -120,20 +128,36 @@ export class DriversService {
       throw new NotFoundException('Perfil de repartidor no encontrado');
     }
 
-    // Delete existing schedules
-    await this.prisma.driverSchedule.deleteMany({
-      where: { driverId: driver.id },
+    // Validate before touching the DB: delete-then-create without a
+    // transaction would lose the whole agenda if the create fails.
+    const rows = schedules.map((schedule) => {
+      const dayOfWeek = Number(schedule.dayOfWeek);
+      const startTime = new Date(schedule.startTime);
+      const endTime = new Date(schedule.endTime);
+      if (!Number.isInteger(dayOfWeek) || dayOfWeek < 0 || dayOfWeek > 6) {
+        throw new BadRequestException(`dayOfWeek inválido: ${schedule.dayOfWeek} (0-6)`);
+      }
+      if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
+        throw new BadRequestException('Horario con fechas inválidas');
+      }
+      if (startTime >= endTime) {
+        throw new BadRequestException('startTime debe ser anterior a endTime');
+      }
+      return {
+        driverId: driver.id,
+        dayOfWeek,
+        startTime,
+        endTime,
+        isAvailable: schedule.isAvailable ?? true,
+      };
     });
 
-    // Create new schedules
-    return this.prisma.driverSchedule.createMany({
-      data: schedules.map((schedule) => ({
-        driverId: driver.id,
-        dayOfWeek: schedule.dayOfWeek,
-        startTime: new Date(schedule.startTime),
-        endTime: new Date(schedule.endTime),
-        isAvailable: schedule.isAvailable ?? true,
-      })),
+    return this.prisma.$transaction(async (tx) => {
+      await tx.driverSchedule.deleteMany({ where: { driverId: driver.id } });
+      if (rows.length > 0) {
+        return tx.driverSchedule.createMany({ data: rows });
+      }
+      return { count: 0 };
     });
   }
 
@@ -181,15 +205,17 @@ export class DriversService {
 
   async getLocation(driverId: string) {
     const location = this.driverLocations.get(driverId);
-    
+
     if (!location) {
-      // Return default location (Nicoya center) if no location stored
+      // No fix ever reported: coords are map-center fallback only.
+      // Consumers must check `known === false` / isStale before plotting.
       return {
         driverId,
         lat: 10.1483,
         lng: -85.4527,
         updatedAt: null,
         isStale: true,
+        known: false,
       };
     }
 
@@ -202,6 +228,7 @@ export class DriversService {
       lng: location.lng,
       updatedAt: location.updatedAt,
       isStale,
+      known: true,
     };
   }
 
@@ -241,9 +268,10 @@ export class DriversService {
       where.deliveredAt = { gte: startDate };
     }
 
-    // Get completed orders
+    // Get completed orders (merchant included for real names)
     const orders = await this.prisma.order.findMany({
       where,
+      include: { merchant: { select: { businessName: true } } },
       orderBy: { deliveredAt: 'desc' },
     });
 
@@ -268,12 +296,12 @@ export class DriversService {
     // Convert to array for chart
     const dailyData = Object.entries(dailyBreakdown)
       .map(([date, amount]) => ({ date, amount }))
-      .sort((a, b) => a.date.localeCompare(b.date))
+      .sort((a, b) => a.date.localeCompare(b.date));
 
     // Transaction list
     const transactions = orders.map((order) => ({
       id: order.id,
-      merchantName: 'Comercio',
+      merchantName: order.merchant?.businessName ?? 'Comercio',
       pickupAddress: order.pickupAddress,
       deliveryAddress: order.deliveryAddress,
       amount: Number(order.driverPayout),

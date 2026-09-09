@@ -2,12 +2,14 @@
 
 /**
  * 🥝 KIWI - Offline Cache Service for Traffic Features
- * 
+ *
  * Provides intelligent caching for traffic data to ensure the app works
  * in areas with poor internet connectivity (like rural Nicoya).
- * 
+ *
  * Uses IndexedDB for persistent storage with automatic expiration.
  */
+
+import { apiFetch } from './api-client';
 
 const DB_NAME = 'kiwi-traffic-cache';
 const DB_VERSION = 1;
@@ -51,6 +53,10 @@ class OfflineCacheService {
   async initialize(): Promise<void> {
     if (this.isInitialized) return;
     if (this.initPromise) return this.initPromise;
+
+    if (typeof window === 'undefined' || typeof indexedDB === 'undefined') {
+      return Promise.reject(new Error('IndexedDB is not available (server-side)'));
+    }
 
     this.initPromise = new Promise((resolve, reject) => {
       const request = indexedDB.open(DB_NAME, DB_VERSION);
@@ -111,7 +117,7 @@ class OfflineCacheService {
         // Check if entry has expired
         if (Date.now() > entry.expiresAt) {
           console.log(`🥝 Cache expired for key: ${key}`);
-          this.delete(key); // Delete expired entry asynchronously
+          this.delete(key).catch((err) => console.error('Failed to delete expired entry:', err));
           resolve(null);
           return;
         }
@@ -134,7 +140,7 @@ class OfflineCacheService {
     key: string,
     data: T,
     type: string = 'default',
-    metadata?: Record<string, any>
+    metadata?: Record<string, any>,
   ): Promise<void> {
     await this.initialize();
 
@@ -144,7 +150,8 @@ class OfflineCacheService {
         return;
       }
 
-      const expirationTime = CACHE_EXPIRATION[type as keyof typeof CACHE_EXPIRATION] || CACHE_EXPIRATION.default;
+      const expirationTime =
+        CACHE_EXPIRATION[type as keyof typeof CACHE_EXPIRATION] || CACHE_EXPIRATION.default;
 
       const entry: CacheEntry<T> = {
         key,
@@ -245,17 +252,19 @@ class OfflineCacheService {
 
       request.onsuccess = () => {
         const entries: CacheEntry[] = request.result || [];
-        
+
         const stats: CacheStats = {
           totalEntries: entries.length,
           totalSize: JSON.stringify(entries).length,
-          oldestEntry: entries.length > 0 ? new Date(Math.min(...entries.map(e => e.timestamp))) : null,
-          newestEntry: entries.length > 0 ? new Date(Math.max(...entries.map(e => e.timestamp))) : null,
+          oldestEntry:
+            entries.length > 0 ? new Date(Math.min(...entries.map((e) => e.timestamp))) : null,
+          newestEntry:
+            entries.length > 0 ? new Date(Math.max(...entries.map((e) => e.timestamp))) : null,
           entriesByType: {},
         };
 
         // Count entries by type
-        entries.forEach(entry => {
+        entries.forEach((entry) => {
           stats.entriesByType[entry.type] = (stats.entriesByType[entry.type] || 0) + 1;
         });
 
@@ -319,12 +328,12 @@ class OfflineCacheService {
     url: string,
     cacheKey: string,
     cacheType: string = 'default',
-    options?: RequestInit
+    options?: RequestInit,
   ): Promise<{ data: T; fromCache: boolean }> {
-    // Try network first
+    // Try network first (absolute URL + auth via apiFetch)
     try {
-      const response = await fetch(url, options);
-      
+      const response = await apiFetch(url, options);
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -393,14 +402,20 @@ class OfflineCacheService {
 // Create singleton instance
 export const offlineCache = new OfflineCacheService();
 
-// Auto-initialize on import (client-side only)
+// Auto-initialize on import (client-side only, once even across HMR re-imports)
 if (typeof window !== 'undefined') {
   offlineCache.initialize().catch(console.error);
-  
-  // Run cleanup every 5 minutes
-  setInterval(() => {
-    offlineCache.cleanup().catch(console.error);
-  }, 5 * 60 * 1000);
+
+  const g = globalThis as any;
+  if (!g.__kiwiCacheCleanupTimer) {
+    // Run cleanup every 5 minutes
+    g.__kiwiCacheCleanupTimer = setInterval(
+      () => {
+        offlineCache.cleanup().catch(console.error);
+      },
+      5 * 60 * 1000,
+    );
+  }
 }
 
 // Export types and utilities
@@ -416,7 +431,7 @@ export function withOfflineCache<T extends (...args: any[]) => Promise<any>>(
     cacheKey: (args: Parameters<T>) => string;
     cacheType?: string;
     staleWhileRevalidate?: boolean;
-  }
+  },
 ): T {
   return (async (...args: Parameters<T>) => {
     const key = options.cacheKey(args);
@@ -424,10 +439,10 @@ export function withOfflineCache<T extends (...args: any[]) => Promise<any>>(
     // Try to get fresh data
     try {
       const result = await fn(...args);
-      
+
       // Cache the result
       await offlineCache.set(key, result, options.cacheType || 'default');
-      
+
       return result;
     } catch (error) {
       // If network fails, try cache
@@ -438,7 +453,7 @@ export function withOfflineCache<T extends (...args: any[]) => Promise<any>>(
           return staleData;
         }
       }
-      
+
       throw error;
     }
   }) as T;

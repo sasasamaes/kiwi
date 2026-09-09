@@ -105,10 +105,11 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     // Notify merchant that order was accepted
     const order = await this.prisma.order.findUnique({
       where: { id: data.orderId },
+      include: { merchant: true },
     });
 
-    if (order) {
-      this.server.to(`user:${order.merchantId}`).emit('order:accepted', {
+    if (order?.merchant?.userId) {
+      this.server.to(`user:${order.merchant.userId}`).emit('order:accepted', {
         orderId: data.orderId,
         driverId: data.driverId,
         message: 'Tu pedido fue aceptado por un repartidor',
@@ -128,13 +129,21 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return { error: 'Unauthorized' };
     }
 
-    // Get order details
+    // Get order details with owner ids (merchantId/driverId are profile ids, not user ids)
     const order = await this.prisma.order.findUnique({
       where: { id: data.orderId },
+      include: { merchant: true, driver: true },
     });
 
     if (!order) {
       return { error: 'Order not found' };
+    }
+
+    const merchantUserId = order.merchant?.userId;
+    const driverUserId = order.driver?.userId;
+    const requester = userData.userId;
+    if (requester !== merchantUserId && requester !== driverUserId) {
+      return { error: 'Unauthorized' };
     }
 
     // Notify both merchant and driver
@@ -148,15 +157,17 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     };
 
     // Notify merchant
-    this.server.to(`user:${order.merchantId}`).emit('order:statusChanged', {
-      orderId: data.orderId,
-      status: data.status,
-      message: statusLabels[data.status] || 'Estado actualizado',
-    });
+    if (merchantUserId) {
+      this.server.to(`user:${merchantUserId}`).emit('order:statusChanged', {
+        orderId: data.orderId,
+        status: data.status,
+        message: statusLabels[data.status] || 'Estado actualizado',
+      });
+    }
 
     // Notify driver if assigned
-    if (order.driverId) {
-      this.server.to(`user:${order.driverId}`).emit('order:statusChanged', {
+    if (driverUserId) {
+      this.server.to(`user:${driverUserId}`).emit('order:statusChanged', {
         orderId: data.orderId,
         status: data.status,
         message: statusLabels[data.status] || 'Estado actualizado',
@@ -184,10 +195,11 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (data.orderId) {
       const order = await this.prisma.order.findUnique({
         where: { id: data.orderId },
+        include: { merchant: true },
       });
 
-      if (order) {
-        this.server.to(`user:${order.merchantId}`).emit('driver:location', {
+      if (order?.merchant?.userId) {
+        this.server.to(`user:${order.merchant.userId}`).emit('driver:location', {
           orderId: data.orderId,
           driverId: userData.userId,
           lat: data.lat,

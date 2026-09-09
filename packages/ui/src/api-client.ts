@@ -205,7 +205,7 @@ class ApiClient {
     });
   }
 
-  async updateDriverStatus(status: 'online' | 'offline' | 'busy') {
+  async updateDriverStatus(status: 'offline' | 'available' | 'busy') {
     return this.request<any>('/drivers/me/status', {
       method: 'PUT',
       body: { status },
@@ -229,8 +229,8 @@ class ApiClient {
 
   async getAvailableDrivers(lat?: number, lng?: number) {
     const params = new URLSearchParams();
-    if (lat) params.append('lat', String(lat));
-    if (lng) params.append('lng', String(lng));
+    if (lat != null) params.append('lat', String(lat));
+    if (lng != null) params.append('lng', String(lng));
     return this.request<any>(`/drivers/available?${params.toString()}`);
   }
 
@@ -267,8 +267,8 @@ class ApiClient {
 
   async getAvailableOrders(lat?: number, lng?: number) {
     const params = new URLSearchParams();
-    if (lat) params.append('lat', String(lat));
-    if (lng) params.append('lng', String(lng));
+    if (lat != null) params.append('lat', String(lat));
+    if (lng != null) params.append('lng', String(lng));
     return this.request<any>(`/orders/available?${params.toString()}`);
   }
 
@@ -471,9 +471,9 @@ class ApiClient {
   }
 
   async getCryptoQuote(amount: number, coin: 'USDC' | 'USDT') {
-    return this.request<any>('/payments/crypto/quote', {
+    const params = new URLSearchParams({ amount: String(amount), coin });
+    return this.request<any>(`/payments/crypto/quote?${params.toString()}`, {
       method: 'GET',
-      body: { amount, coin },
     });
   }
 
@@ -628,15 +628,15 @@ class ApiClient {
 
   async getTrafficConditions(lat?: number, lng?: number) {
     const params = new URLSearchParams();
-    if (lat) params.append('lat', String(lat));
-    if (lng) params.append('lng', String(lng));
+    if (lat != null) params.append('lat', String(lat));
+    if (lng != null) params.append('lng', String(lng));
     return this.request<any>(`/routing/traffic?${params.toString()}`);
   }
 
   async getTrafficAdjustedETA(duration: number, lat?: number, lng?: number) {
     const params = new URLSearchParams({ duration: String(duration) });
-    if (lat) params.append('lat', String(lat));
-    if (lng) params.append('lng', String(lng));
+    if (lat != null) params.append('lat', String(lat));
+    if (lng != null) params.append('lng', String(lng));
     return this.request<any>(`/routing/traffic/eta?${params.toString()}`);
   }
 
@@ -686,8 +686,8 @@ class ApiClient {
 
   async getTrafficAlerts(driverId: string, lat?: number, lng?: number) {
     const params = new URLSearchParams({ driverId });
-    if (lat) params.append('lat', String(lat));
-    if (lng) params.append('lng', String(lng));
+    if (lat != null) params.append('lat', String(lat));
+    if (lng != null) params.append('lng', String(lng));
     return this.request<any>(`/routing/alerts?${params.toString()}`);
   }
 
@@ -919,6 +919,35 @@ class ApiClient {
 
 // Export singleton instance
 export const api = new ApiClient(API_BASE_URL);
+
+/**
+ * Authenticated fetch against the API (base URL + JWT).
+ *
+ * Drop-in replacement for raw `fetch('/api/...')`, which 404s in prod
+ * (no Next rewrite proxies it) and goes out without Authorization.
+ */
+export function resolveApiUrl(path: string): string {
+  if (path.startsWith('http')) return path;
+  const base = API_BASE_URL.replace(/\/$/, '');
+  // API_BASE_URL already ends with /api: strip the Next-style prefix
+  // so '/api/orders' → '<base>/orders', not '<base>/api/orders'.
+  const normalized = path.replace(/^\/api(?=\/|$)/, '') || '/';
+  return `${base}${normalized.startsWith('/') ? '' : '/'}${normalized}`;
+}
+
+export async function apiFetch(path: string, init: RequestInit = {}): Promise<Response> {
+  const headers = new Headers(init.headers || undefined);
+  // Default JSON content-type only for string bodies: setting it on
+  // FormData/Blob would break the browser's multipart boundary.
+  if (typeof init.body === 'string' && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+  const token = api.getToken();
+  if (token && !headers.has('Authorization')) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+  return fetch(resolveApiUrl(path), { ...init, headers });
+}
 
 // Export types
 export interface User {

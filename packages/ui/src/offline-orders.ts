@@ -8,6 +8,7 @@
  */
 
 import { backgroundSync, type SyncAction } from './background-sync';
+import { apiFetch } from './api-client';
 
 const DB_NAME = 'kiwi-offline-orders';
 const DB_VERSION = 1;
@@ -200,9 +201,11 @@ class OfflineOrderService {
       request.onsuccess = () => {
         console.log(`🥝 Created order: ${localId}`);
 
-        // Queue for sync if online
+        // Queue for sync if online (fire-and-forget with rejection handler)
         if (navigator.onLine && this.options.autoSync) {
-          this.syncOrder(localId);
+          this.syncOrder(localId).catch((err) =>
+            console.error(`Failed to sync new order ${localId}:`, err),
+          );
         }
 
         resolve(order);
@@ -243,7 +246,10 @@ class OfflineOrderService {
           ...order,
           ...updates,
           updatedAt: Date.now(),
-          syncStatus: 'pending', // Mark for sync
+          // Respect an explicit syncStatus (syncing/synced/failed):
+          // forcing 'pending' here erased the syncing marker set by
+          // syncOrder and the failed marker set by its catch block.
+          syncStatus: updates.syncStatus ?? 'pending',
         };
 
         // Add status to history if status changed
@@ -263,9 +269,11 @@ class OfflineOrderService {
         updateRequest.onsuccess = () => {
           console.log(`🥝 Updated order: ${localId}`);
 
-          // Queue for sync
+          // Queue for sync (fire-and-forget with rejection handler)
           if (navigator.onLine && this.options.autoSync) {
-            this.syncOrder(localId);
+            this.syncOrder(localId).catch((err) =>
+              console.error(`Failed to sync updated order ${localId}:`, err),
+            );
           }
 
           resolve(updatedOrder);
@@ -365,24 +373,30 @@ class OfflineOrderService {
   }
 
   /**
-   * Get pending orders (not yet synced)
+   * Get pending orders (not yet synced, including retryable failures)
    */
   async getPendingOrders(): Promise<OfflineOrder[]> {
-    return this.getOrders({ syncStatus: 'pending' });
+    const [pending, failed] = await Promise.all([
+      this.getOrders({ syncStatus: 'pending' }),
+      this.getOrders({ syncStatus: 'failed' }),
+    ]);
+    return [...pending, ...failed].sort((a, b) => b.createdAt - a.createdAt);
   }
 
   /**
-   * Get unsynced count
+   * Get unsynced count (anything not confirmed by the server)
    */
   async getUnsyncedCount(): Promise<number> {
-    const pending = await this.getPendingOrders();
-    return pending.length;
+    const orders = await this.getOrders();
+    return orders.filter((o) => o.syncStatus !== 'synced').length;
   }
 
   /**
-   * Sync an order to the server
+   * Sync an order to the server. Resolves with the latest LOCAL snapshot —
+   * the server round-trip completes in the background queue, so callers
+   * must not treat the return value as server-confirmed.
    */
-  async syncOrder(localId: string): Promise<OfflineOrder> {
+  async syncOrder(localId: string): Promise<OfflineOrder | null> {
     const order = await this.getOrder(localId);
 
     if (!order) {
@@ -402,7 +416,7 @@ class OfflineOrderService {
         priority: 'high',
         metadata: { localId: order.localId },
         execute: async (data: OfflineOrder) => {
-          const response = await fetch('/api/orders', {
+          const response = await apiFetch('/api/orders', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data),
@@ -424,7 +438,7 @@ class OfflineOrderService {
         },
       });
 
-      return this.getOrder(localId) as Promise<OfflineOrder>;
+      return this.getOrder(localId);
     } catch (error) {
       // Mark as failed
       await this.updateOrder(localId, {

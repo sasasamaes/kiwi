@@ -6,7 +6,16 @@
 
 import { io, Socket } from 'socket.io-client';
 
-const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:4000';
+function resolveSocketUrl(): string {
+  const base =
+    typeof process !== 'undefined'
+      ? (process.env.NEXT_PUBLIC_API_URL as string | undefined)
+      : undefined;
+  if (base) return base.replace(/\/api\/?$/, '');
+  return 'http://localhost:4000';
+}
+
+const SOCKET_URL = resolveSocketUrl();
 
 interface SocketEvents {
   // Connection events
@@ -31,11 +40,16 @@ class SocketClient {
   private listeners: Map<string, Set<Function>> = new Map();
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
+  private currentToken: string | null = null;
 
   connect(token: string): Socket {
+    // Re-auth when user/token changes instead of reusing a stale socket
     if (this.socket?.connected) {
-      return this.socket;
+      if (this.currentToken === token) return this.socket;
+      this.socket.disconnect();
+      this.socket = null;
     }
+    this.currentToken = token;
 
     this.socket = io(SOCKET_URL, {
       auth: { token },
@@ -47,6 +61,12 @@ class SocketClient {
     });
 
     this.setupEventListeners();
+    // Re-attach local listeners registered before connect()
+    for (const [event, callbacks] of this.listeners) {
+      for (const cb of callbacks) {
+        this.socket.on(event, cb as any);
+      }
+    }
     return this.socket;
   }
 

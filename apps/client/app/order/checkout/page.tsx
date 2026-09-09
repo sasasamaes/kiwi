@@ -43,7 +43,26 @@ function CheckoutContent() {
 
     if (cartParam) {
       try {
-        setCart(JSON.parse(cartParam));
+        const parsed = JSON.parse(cartParam);
+        // Schema-guard: only well-formed items reach pricing/payment.
+        const valid = Array.isArray(parsed)
+          ? parsed
+              .filter(
+                (item: any) =>
+                  item &&
+                  (typeof item.menuItemId === 'string' || typeof item.id === 'string') &&
+                  typeof item.name === 'string' &&
+                  Number.isFinite(Number(item.price)) &&
+                  Number.isFinite(Number(item.quantity)) &&
+                  Number(item.quantity) > 0,
+              )
+              .map((item: any) => ({
+                ...item,
+                price: Number(item.price),
+                quantity: Number(item.quantity),
+              }))
+          : [];
+        setCart(valid);
       } catch {
         setCart([]);
       }
@@ -111,9 +130,21 @@ function CheckoutContent() {
           console.warn('Payment processing failed, order created:', paymentError);
           // Order is still created, payment can be completed later
         }
+      } else if (paymentMethod === 'crypto_usdc' || paymentMethod === 'crypto_usdt') {
+        // Create crypto payment record (server prices from the order total)
+        try {
+          await api.createPayment({
+            orderId: order.id,
+            method: 'crypto',
+            amount: total,
+            cryptoCoin: paymentMethod === 'crypto_usdc' ? 'USDC' : 'USDT',
+          });
+        } catch (paymentError) {
+          console.warn('Crypto payment record failed, order created:', paymentError);
+        }
       }
 
-      // For cash or crypto, order is placed successfully
+      // For cash (or after payment setup), order is placed successfully
       setOrderPlaced(true);
     } catch (err: any) {
       console.error('Error placing order:', err);

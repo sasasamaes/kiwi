@@ -47,7 +47,13 @@ const statusConfig: Record<OrderStatus, { label: string; description: string; pr
     },
   };
 
-function StatusIcon({ status }: { status: OrderStatus }) {
+const fallbackConfig = {
+  label: 'Actualizando',
+  description: 'Sincronizando estado…',
+  progress: 0,
+};
+
+function StatusIcon({ status }: { status: string }) {
   const iconClass = 'h-5 w-5';
   switch (status) {
     case 'pending':
@@ -71,7 +77,7 @@ function StatusIcon({ status }: { status: OrderStatus }) {
 
 export default function TrackingPage() {
   const params = useParams();
-  const orderId = params.id as string;
+  const orderId = (params.id as string) ?? '';
 
   const [order, setOrder] = useState<Order | null>(null);
   const [currentStatus, setCurrentStatus] = useState<OrderStatus>('pending');
@@ -90,6 +96,11 @@ export default function TrackingPage() {
   });
 
   const fetchOrder = useCallback(async () => {
+    if (!orderId) {
+      setError('Pedido no encontrado');
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       const data = await api.getOrderById(orderId);
@@ -139,7 +150,21 @@ export default function TrackingPage() {
     return () => clearInterval(interval);
   }, [eta]);
 
-  const config = statusConfig[currentStatus];
+  const config = statusConfig[currentStatus] ?? fallbackConfig;
+
+  // API may include real coords; fall back to Nicoya center when absent.
+  const numOr = (v: unknown, fb: number) => {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : fb;
+  };
+  const pickup = {
+    lat: numOr((order as any)?.pickupLat, 10.1483),
+    lng: numOr((order as any)?.pickupLng, -85.4527),
+  };
+  const delivery = {
+    lat: numOr((order as any)?.deliveryLat, 10.1583),
+    lng: numOr((order as any)?.deliveryLng, -85.4627),
+  };
 
   if (loading) {
     return (
@@ -205,8 +230,8 @@ export default function TrackingPage() {
           transition={{ delay: 0.1 }}
         >
           <TrackingMap
-            pickup={{ lat: 10.1483, lng: -85.4527 }}
-            delivery={{ lat: 10.1583, lng: -85.4627 }}
+            pickup={pickup}
+            delivery={delivery}
             driverLocation={driverLocation || undefined}
             height={300}
             showRoute={true}
@@ -284,7 +309,7 @@ export default function TrackingPage() {
             <div className="flex justify-between">
               <span className="text-surface-500 dark:text-surface-400">Pedido</span>
               <span className="text-surface-700 dark:text-surface-200 font-medium font-mono">
-                #{orderId.slice(0, 8)}
+                #{(orderId || '').slice(0, 8) || '—'}
               </span>
             </div>
             <div className="flex justify-between">

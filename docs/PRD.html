@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>PRD — Kiwi 🥝</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="prd-print.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">PRD — Kiwi 🥝</h1>
+</header>
+<h1 id="clipboard-prd--kiwi-kiwi_fruit">📋 PRD — Kiwi 🥝</h1>
+<h3
+id="product-requirements-document--plataforma-de-delivery-para-nicoya-costa-rica">Product
+Requirements Document — Plataforma de delivery para Nicoya, Costa
+Rica</h3>
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>Valor</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Producto</strong></td>
+<td>Kiwi — ecosistema de delivery (comercios + repartidores +
+clientes)</td>
+</tr>
+<tr>
+<td><strong>Versión del documento</strong></td>
+<td>1.0</td>
+</tr>
+<tr>
+<td><strong>Fecha</strong></td>
+<td>2026-09-07</td>
+</tr>
+<tr>
+<td><strong>Estado</strong></td>
+<td>En desarrollo activo (MVP funcional en progreso)</td>
+</tr>
+<tr>
+<td><strong>Mercado inicial</strong></td>
+<td>Nicoya, Guanacaste, Costa Rica</td>
+</tr>
+<tr>
+<td><strong>Documentos relacionados</strong></td>
+<td><code>README.md</code>, <code>ECOSYSTEM.md</code>,
+<code>docs/DESIGN.md</code>, <code>DEPLOYMENT.md</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="1-resumen-ejecutivo">1. Resumen ejecutivo</h2>
+<p>Kiwi es una plataforma que conecta <strong>comercios
+locales</strong>, <strong>repartidores independientes</strong> y
+<strong>clientes</strong> en Nicoya. El cliente escanea un QR en el
+local, pide y paga desde su teléfono; el comercio recibe el pedido en
+tiempo real y puede solicitar un repartidor on-demand cuando necesita
+envío; el repartidor acepta pedidos, entrega y cobra su comisión.</p>
+<p>El producto se compone de 4 superficies sobre un backend único:</p>
+<ol type="1">
+<li><strong>Menú QR del cliente</strong> (<code>apps/client</code>) —
+pedir y pagar sin instalar nada.</li>
+<li><strong>Dashboard del comercio</strong> (<code>apps/web</code>) —
+gestionar menú, pedidos, repartidores y analíticas.</li>
+<li><strong>App del repartidor</strong> (<code>apps/driver</code> como
+PWA offline-first, <code>apps/mobile</code> como app nativa Expo).</li>
+<li><strong>Panel de administración</strong> (módulo <code>/admin</code>
+en <code>apps/web</code>).</li>
+</ol>
+<blockquote>
+<p><strong>Visión:</strong> <em>"Comercios felices porque encuentran
+repartidores, repartidores felices porque encuentran trabajo y ganan
+dinero, y clientes felices porque piden fácil y rápido desde el
+QR."</em></p>
+</blockquote>
+<hr />
+<h2 id="2-problema-y-oportunidad">2. Problema y oportunidad</h2>
+<h3 id="problema">Problema</h3>
+<ul>
+<li>Los comercios de Nicoya no cuentan con repartidores propios ni con
+herramientas digitales de pedidos.</li>
+<li>Las plataformas internacionales de delivery tienen alta comisión,
+poca presencia local y no se adaptan a los métodos de pago
+costarricenses (SINPE Móvil, efectivo).</li>
+<li>Los repartidores independientes no tienen una fuente constante ni
+confiable de trabajo.</li>
+</ul>
+<h3 id="oportunidad">Oportunidad</h3>
+<ul>
+<li>Ecosistema local con comisiones justas (fee bajo de plataforma),
+pagos 100% locales + crypto, y selección de repartidores <strong>por
+calidad, no por precio</strong>.</li>
+<li>Modelo de red: más comercios → más clientes → más repartidores →
+mejor servicio (ciclo virtuoso).</li>
+</ul>
+<hr />
+<h2 id="3-objetivos-del-producto">3. Objetivos del producto</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Objetivo</th>
+<th>Métrica principal</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>O1</td>
+<td>Digitalizar el pedido y pago de comercios locales vía QR</td>
+<td>% de comercios con menú QR activo</td>
+</tr>
+<tr>
+<td>O2</td>
+<td>Dar a repartidores trabajo flexible con ingresos predecibles</td>
+<td>Pedidos/día por repartidor activo</td>
+</tr>
+<tr>
+<td>O3</td>
+<td>Entrega rápida y confiable</td>
+<td>Tiempo promedio de entrega; calificación ≥ 4.5</td>
+</tr>
+<tr>
+<td>O4</td>
+<td>Soportar los métodos de pago del mercado local</td>
+<td>% de pedidos pagados digitalmente</td>
+</tr>
+<tr>
+<td>O5</td>
+<td>Operar en zonas con conectividad intermitente</td>
+<td>Pedidos completados offline sin pérdida de datos</td>
+</tr>
+</tbody>
+</table>
+<h3 id="no-objetivos-para-esta-fase">No-objetivos (para esta fase)</h3>
+<ul>
+<li>❌ App nativa de cliente (el menú QR es web, sin instalación).</li>
+<li>❌ Expansión fuera de Guanacaste (Fase 4).</li>
+<li>❌ Marketplace de productos (no-groceries a escala) — el foco es
+pedidos de menú + envío.</li>
+</ul>
+<hr />
+<h2 id="4-usuarios-y-personas">4. Usuarios y personas</h2>
+<h3 id="bust_in_silhouette-cliente-sin-cuenta-obligatoria">👤 Cliente
+(sin cuenta obligatoria)</h3>
+<p>Escanea el QR del local. Quiere: pedir rápido, pagar como acostumbra
+(SINPE/tarjeta/efectivo/crypto), elegir recoger o envío, y seguir su
+pedido en tiempo real.</p>
+<h3 id="convenience_store-comercio">🏪 Comercio</h3>
+<p>Dueño o encargado de un local (ej. "Bowl &amp; Café Luis Alfredo").
+Quiere: recibir pedidos sin filas, menú digital profesional,
+repartidores on-demand sin contratar, y datos de venta.</p>
+<h3 id="motor_scooter-repartidor">🛵 Repartidor</h3>
+<p>Trabajador independiente con moto, bici, carro o camión. Quiere:
+flexibilidad total de horario, ver la ganancia antes de aceptar (₡),
+cobrar rápido (SINPE/transferencia) e ir subiendo de nivel (bronce →
+VIP).</p>
+<h3 id="shield-administrador-kiwi">🛡️ Administrador Kiwi</h3>
+<p>Opera la plataforma: aprueba KYC, gestiona usuarios, pagos, retiros,
+alertas de tráfico y parámetros del sistema.</p>
+<hr />
+<h2 id="5-alcance-por-superficie">5. Alcance por superficie</h2>
+<h3 id="51-menú-qr--cliente-appsclient-nextjs-puerto-3002">5.1 Menú QR —
+Cliente (<code>apps/client</code>, Next.js, puerto 3002)</h3>
+<blockquote>
+<p>Rutas existentes: <code>/</code>, <code>/menu/[id]</code>,
+<code>/order/checkout</code>, <code>/order/[id]/tracking</code>,
+<code>/tracking/[id]</code>, <code>/orders</code></p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requisito</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CL-01</td>
+<td>Escanear código QR del comercio (html5-qrcode) y abrir su menú sin
+registrarse</td>
+</tr>
+<tr>
+<td>CL-02</td>
+<td>Ver menú por categorías, con precios (₡), popularidad y
+disponibilidad</td>
+</tr>
+<tr>
+<td>CL-03</td>
+<td>Carrito: agregar/quitar ítems con cantidad y notas por ítem</td>
+</tr>
+<tr>
+<td>CL-04</td>
+<td>Elegir modalidad: <strong>Recoger en local</strong> (sin costo) o
+<strong>Envío a dirección</strong> (costo de envío dinámico)</td>
+</tr>
+<tr>
+<td>CL-05</td>
+<td>Checkout con métodos: <strong>SINPE, tarjeta (OnvoPay), efectivo,
+crypto (Stellar)</strong></td>
+</tr>
+<tr>
+<td>CL-06</td>
+<td>Pedidos <strong>inmediatos o programados</strong> (fecha + hora
+específica)</td>
+</tr>
+<tr>
+<td>CL-07</td>
+<td>Tracking en tiempo real del estado del pedido</td>
+</tr>
+<tr>
+<td>CL-08</td>
+<td>Historial de pedidos y calificación (⭐ + flags de
+puntualidad/cuidado)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="52-dashboard-del-comercio-appsweb-nextjs-15-puerto-3000">5.2
+Dashboard del Comercio (<code>apps/web</code>, Next.js 15, puerto
+3000)</h3>
+<blockquote>
+<p>Rutas existentes: <code>/dashboard</code>, <code>/menu</code>,
+<code>/orders/new</code>, <code>/orders/scheduled</code>,
+<code>/merchants/[id]/qr</code>, <code>/drivers</code>,
+<code>/analytics</code>, <code>/analytics/traffic</code>,
+<code>/merchant/traffic-settings</code>, <code>/notifications</code>,
+<code>/kyc</code>, <code>/register</code>, <code>/login</code></p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requisito</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ME-01</td>
+<td>Registro y login (JWT); onboarding con KYC de negocio (licencia,
+cédula tributaria)</td>
+</tr>
+<tr>
+<td>ME-02</td>
+<td>Gestión de menú: CRUD de ítems con imagen, categoría, precio,
+popularidad y disponibilidad</td>
+</tr>
+<tr>
+<td>ME-03</td>
+<td>Generación e impresión del <strong>QR por comercio</strong>
+(<code>/merchants/[id]/qr</code>)</td>
+</tr>
+<tr>
+<td>ME-04</td>
+<td>Recepción de pedidos en tiempo real (Socket.io + notificaciones FCM)
+con detalles e instrucciones especiales</td>
+</tr>
+<tr>
+<td>ME-05</td>
+<td>Gestión de pedidos inmediatos y programados; avance de estados</td>
+</tr>
+<tr>
+<td>ME-06</td>
+<td><strong>Solicitud de repartidor</strong>: broadcast a repartidores
+disponibles o a favoritos (<code>FavoriteDriver</code>)</td>
+</tr>
+<tr>
+<td>ME-07</td>
+<td>Selección de repartidor por calidad: ver nivel, calificación,
+vehículo y propuestas</td>
+</tr>
+<tr>
+<td>ME-08</td>
+<td>Analytics: ventas, ítems más vendidos, horas pico</td>
+</tr>
+<tr>
+<td>ME-09</td>
+<td><strong>Alertas de tráfico</strong> configurables por zona
+(<code>traffic-settings</code>) que ajustan tiempos/costos de envío</td>
+</tr>
+<tr>
+<td>ME-10</td>
+<td>Centro de notificaciones</td>
+</tr>
+</tbody>
+</table>
+<h3
+id="53-app-del-repartidor-appsdriver-pwa-puerto-3001--appsmobile-expo-nativa">5.3
+App del Repartidor (<code>apps/driver</code> PWA, puerto 3001 +
+<code>apps/mobile</code> Expo nativa)</h3>
+<blockquote>
+<p>Rutas PWA: <code>/landing</code>, <code>/register</code>,
+<code>/login</code>, <code>/kyc</code>, <code>/schedule</code>,
+<code>/active</code>, <code>/scheduled</code>, <code>/earnings</code>,
+<code>/withdraw</code>, <code>/analytics</code>,
+<code>/profile</code></p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requisito</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DR-01</td>
+<td>Registro con KYC completo: cédula (frente/reverso), selfie,
+licencia, registro vehicular y seguro</td>
+</tr>
+<tr>
+<td>DR-02</td>
+<td>Perfil con <strong>tipo de vehículo</strong> (moto, bici bota, bici,
+carro, camión), placa y nivel (bronce → plata → oro → diamante →
+VIP)</td>
+</tr>
+<tr>
+<td>DR-03</td>
+<td>Horarios semanales (<code>DriverSchedule</code>) y modo
+<strong>online/offline/ocupado</strong></td>
+</tr>
+<tr>
+<td>DR-04</td>
+<td>Feed de pedidos con: origen, destino, distancia, <strong>ganancia en
+₡</strong>; aceptar o rechazar</td>
+</tr>
+<tr>
+<td>DR-05</td>
+<td>Propuestas para pedidos <strong>programados</strong>
+(<code>DriverProposal</code>) con hora estimada de llegada</td>
+</tr>
+<tr>
+<td>DR-06</td>
+<td>Flujo de entrega guiado por estados: en camino a recoger → recogido
+→ en camino a entregar → entregado</td>
+</tr>
+<tr>
+<td>DR-07</td>
+<td><strong>Modo offline (PWA)</strong>: operar sin internet y
+sincronizar al reconectar (next-pwa)</td>
+</tr>
+<tr>
+<td>DR-08</td>
+<td>Navegación al comercio y al cliente (Google Maps en nativa)</td>
+</tr>
+<tr>
+<td>DR-09</td>
+<td>Ganancias y retiros: acumulado, histórico, solicitud de retiro por
+<strong>SINPE o transferencia bancaria</strong></td>
+</tr>
+<tr>
+<td>DR-10</td>
+<td><strong>Incentivos físicos</strong> por constancia y calificación:
+bolso, cubre-lluvia, caja, mantenimiento, marchamo</td>
+</tr>
+<tr>
+<td>DR-11</td>
+<td>Analytics personales: viajes, calificación, progreso de nivel</td>
+</tr>
+<tr>
+<td>DR-12</td>
+<td>App nativa (Expo) con notificaciones push, geolocalización en
+segundo plano y socket en tiempo real</td>
+</tr>
+</tbody>
+</table>
+<h3 id="54-panel-de-administración-módulo-admin-de-appsweb">5.4 Panel de
+Administración (módulo <code>/admin</code> de
+<code>apps/web</code>)</h3>
+<blockquote>
+<p>Rutas existentes: <code>/admin</code>, <code>/admin/orders</code>,
+<code>/admin/payments</code>, <code>/admin/withdrawals</code>,
+<code>/admin/kyc</code>, <code>/admin/users</code>,
+<code>/admin/traffic-alerts</code>, <code>/admin/settings</code></p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requisito</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>AD-01</td>
+<td>Dashboard operacional con métricas globales</td>
+</tr>
+<tr>
+<td>AD-02</td>
+<td>Gestión de pedidos: monitoreo y resolución de incidencias</td>
+</tr>
+<tr>
+<td>AD-03</td>
+<td>Conciliación de pagos (OnvoPay + crypto + efectivo) y
+reembolsos</td>
+</tr>
+<tr>
+<td>AD-04</td>
+<td>Aprobación/rechazo de <strong>retiros</strong> de repartidores con
+trazabilidad</td>
+</tr>
+<tr>
+<td>AD-05</td>
+<td>Revisión de <strong>KYC</strong> de comercios y repartidores
+(estados: pendiente → en revisión → aprobado/rechazado/expirado)</td>
+</tr>
+<tr>
+<td>AD-06</td>
+<td>Gestión de usuarios: activar, desactivar, auditar</td>
+</tr>
+<tr>
+<td>AD-07</td>
+<td>Emisión de <strong>alertas de tráfico</strong> zonales visibles para
+comercios y repartidores</td>
+</tr>
+<tr>
+<td>AD-08</td>
+<td>Configuración del sistema: comisiones, tarifas base, zonas</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="6-flujo-del-pedido-happy-path">6. Flujo del pedido (happy
+path)</h2>
+<pre><code>Cliente escanea QR → arma carrito → paga (SINPE/tarjeta/crypto/efectivo)
+  → Pedido creado (pending)
+  → Comercio recibe notificación y prepara
+  → Si es envío: solicitud de repartidor
+      → Inmediato: broadcast a disponibles → repartidor acepta (assigned)
+      → Programado: repartidores envían propuestas → comercio elige (driver_proposals → assigned)
+  → en_transit_to_pickup → picked_up → in_transit_to_delivery → delivered
+  → Cliente califica → Payouts: comercio, repartidor, fee Kiwi</code></pre>
+<p><strong>Estados del pedido</strong> (<code>OrderStatus</code>):
+<code>pending → driver_proposals → assigned → in_transit_to_pickup → picked_up → in_transit_to_delivery → delivered | cancelled</code></p>
+<hr />
+<h2 id="7-pagos">7. Pagos</h2>
+<table>
+<thead>
+<tr>
+<th>Método</th>
+<th>Proveedor</th>
+<th>Detalle</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tarjeta</td>
+<td><strong>OnvoPay</strong></td>
+<td>Checkout hosted + webhooks (<code>onvopay_card</code>)</td>
+</tr>
+<tr>
+<td>SINPE Móvil</td>
+<td><strong>OnvoPay</strong></td>
+<td>Cobro directo a teléfono costarricense
+(<code>onvopay_sinpe</code>)</td>
+</tr>
+<tr>
+<td>Crypto</td>
+<td><strong>Stellar</strong></td>
+<td>Moneda, red, wallet y tx hash registrados; tipo de cambio en el
+pago</td>
+</tr>
+<tr>
+<td>Efectivo</td>
+<td>—</td>
+<td>Registro manual, liquidación al comercio</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Retiros de repartidores:</strong> SINPE Móvil o transferencia
+bancaria, con aprobación de admin y trazabilidad completa
+(<code>Withdrawal</code>).</p>
+<hr />
+<h2 id="8-modelo-de-negocio">8. Modelo de negocio</h2>
+<p>Ejemplo de referencia (pedido ₡5,700 + envío ₡1,500 = ₡7,200):</p>
+<table>
+<thead>
+<tr>
+<th>Parte</th>
+<th>Recibe</th>
+<th>Comentario</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>🏪 Comercio</td>
+<td>₡5,700</td>
+<td>Valor íntegro de los productos</td>
+</tr>
+<tr>
+<td>🛵 Repartidor</td>
+<td>₡1,200</td>
+<td>~80% del costo de envío</td>
+</tr>
+<tr>
+<td>🥝 Kiwi</td>
+<td>₡300</td>
+<td>~20% del costo de envío (fee de plataforma)</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Proyección (100 pedidos/día): Kiwi ≈ ₡900,000/mes; repartidores ≈
+₡3.6M/mes; comercios ≈ ₡17.1M/mes.</li>
+<li><strong>Selección por calidad, no por precio:</strong> los
+repartidores no subastan el envío; el comercio elige por nivel y
+calificación.</li>
+<li>Incentivos no monetarios (equipo y mantenimiento) para retener
+repartidores.</li>
+</ul>
+<hr />
+<h2 id="9-requisitos-no-funcionales">9. Requisitos no funcionales</h2>
+<table>
+<thead>
+<tr>
+<th>Área</th>
+<th>Requisito</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Offline</strong></td>
+<td>La app del repartidor (PWA) debe funcionar sin conexión y
+sincronizar al reconectar; el menú QR debe cargar con red débil</td>
+</tr>
+<tr>
+<td><strong>Tiempo real</strong></td>
+<td>Notificaciones de pedidos &lt; 2s (Socket.io + FCM)</td>
+</tr>
+<tr>
+<td><strong>Seguridad</strong></td>
+<td>JWT + bcrypt; KYC obligatorio para comercios y repartidores; datos
+de documentos protegidos</td>
+</tr>
+<tr>
+<td><strong>Dispositivos</strong></td>
+<td>Cliente y comercio: web responsive; repartidor: PWA instalable + app
+nativa iOS/Android (EAS)</td>
+</tr>
+<tr>
+<td><strong>Monitoreo</strong></td>
+<td>Sentry en API y frontends; profiling en backend</td>
+</tr>
+<tr>
+<td><strong>Idioma/moneda</strong></td>
+<td>Español, colones (CRC) como moneda base</td>
+</tr>
+<tr>
+<td><strong>Escalabilidad</strong></td>
+<td>Stateless API (Railway/AWS), Postgres gestionado (Supabase/Neon),
+Vercel para frontends</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="10-arquitectura-técnica-implementada">10. Arquitectura técnica
+(implementada)</h2>
+<pre><code>kiwi/ (monorepo npm workspaces + Turborepo)
+├── apps/
+│   ├── web/      Next.js 15 + React 19 — Comercio + Admin   :3000
+│   ├── driver/   Next.js 15 + next-pwa  — Repartidor PWA    :3001
+│   ├── client/   Next.js 14 + html5-qrcode — Menú QR        :3002
+│   └── mobile/   Expo + React Native (socket.io, maps, FCM) — Repartidor nativo
+├── packages/     ui · db · types · config (compartidos)
+└── api/          NestJS + Prisma + PostgreSQL
+                  JWT auth · Socket.io · Firebase Admin (push) · Swagger · Sentry</code></pre>
+<p><strong>Modelo de datos (Prisma):</strong> <code>User</code> (roles
+merchant/driver/admin), <code>MerchantProfile</code>,
+<code>DriverProfile</code> (niveles, vehículo, estatus),
+<code>KYCVerification</code>, <code>DriverSchedule</code>,
+<code>Order</code> + <code>OrderItem</code>,
+<code>DriverProposal</code>, <code>Payment</code>, <code>Rating</code>,
+<code>FavoriteDriver</code>, <code>DriverIncentive</code>,
+<code>Withdrawal</code>, <code>MenuItem</code>,
+<code>Notification</code>.</p>
+<p><strong>Deploy:</strong> Frontends en Vercel; API en Railway/AWS; DB
+en Supabase/Neon.</p>
+<hr />
+<h2 id="11-roadmap">11. Roadmap</h2>
+<table>
+<thead>
+<tr>
+<th>Fase</th>
+<th>Alcance</th>
+<th>Estado</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>1. Validación (Nicoya)</strong></td>
+<td>5–10 comercios piloto, 10–15 repartidores, zona centro</td>
+<td>🔄 Actual</td>
+</tr>
+<tr>
+<td><strong>2. Crecimiento local</strong></td>
+<td>20–30 comercios, 30–50 repartidores, más barrios, features por
+feedback</td>
+<td>⏳</td>
+</tr>
+<tr>
+<td><strong>3. Expansión regional</strong></td>
+<td>Liberia, Santa Cruz, Cañas; marketing</td>
+<td>⏳</td>
+</tr>
+<tr>
+<td><strong>4. Nacional</strong></td>
+<td>Todo Guanacaste + Valle Central; app nativa completa</td>
+<td>⏳</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="12-métricas-de-éxito">12. Métricas de éxito</h2>
+<table>
+<thead>
+<tr>
+<th>Métrica</th>
+<th>Mes 1</th>
+<th>Mes 3</th>
+<th>Mes 6</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Comercios activos</td>
+<td>10</td>
+<td>30</td>
+<td>100</td>
+</tr>
+<tr>
+<td>Repartidores activos</td>
+<td>15</td>
+<td>50</td>
+<td>200</td>
+</tr>
+<tr>
+<td>Pedidos/día</td>
+<td>20</td>
+<td>100</td>
+<td>500</td>
+</tr>
+<tr>
+<td>Retención de clientes</td>
+<td>40%</td>
+<td>60%</td>
+<td>75%</td>
+</tr>
+<tr>
+<td>Retención de repartidores</td>
+<td>50%</td>
+<td>70%</td>
+<td>80%</td>
+</tr>
+<tr>
+<td>Calificación promedio</td>
+<td>4.5</td>
+<td>4.7</td>
+<td>4.8</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="13-riesgos-y-mitigaciones">13. Riesgos y mitigaciones</h2>
+<table>
+<thead>
+<tr>
+<th>Riesgo</th>
+<th>Mitigación</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Densidad inicial baja (pocos repartidores online)</td>
+<td>Zona piloto concentrada; favoritos por comercio; incentivos
+físicos</td>
+</tr>
+<tr>
+<td>Adopción de pago digital baja en zona rural</td>
+<td>Efectivo como opción de primera clase; SINPE nativo</td>
+</tr>
+<tr>
+<td>Conectividad intermitente</td>
+<td>Offline-first en repartidor; PWA en todas las superficies</td>
+</tr>
+<tr>
+<td>Fraude/KYC</td>
+<td>Verificación documental + selfie con revisión manual del admin</td>
+</tr>
+<tr>
+<td>Conciliación multi-método de pago</td>
+<td>Estados de pago explícitos y panel de conciliación de admin</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="14-gaps-detectados-pendientes-vs-este-prd">14. Gaps detectados
+(pendientes vs. este PRD)</h2>
+<ol type="1">
+<li><strong>Fee y tarifas dinámicas</strong> — el esquema tiene
+<code>basePrice</code>/<code>commission</code>/<code>driverPayout</code>,
+pero falta UI de admin (<code>/admin/settings</code>) conectada para
+parametrizar comisiones y tarifas por zona.</li>
+<li><strong>Tracking del cliente</strong> — la pantalla existe, pero hay
+que confirmar la actualización en vivo (socket) y el mapa.</li>
+<li><strong>Pagos crypto</strong> — modelo de datos listo (Stellar);
+falta confirmar el flujo completo de confirmación de tx.</li>
+<li><strong>Calificación bidireccional</strong> — <code>Rating</code>
+cubre cliente→repartidor/comercio; falta flujo repartidor→cliente si se
+desea.</li>
+<li><strong>Apps nativas en stores</strong> — configuración EAS lista;
+falta publicación y assets (ver
+<code>docs/APP_STORE_ASSETS.md</code>).</li>
+<li><strong>Notificaciones de comercio</strong> — centro de
+notificaciones existe; falta definir SLA de alertas de pedidos entrantes
+sin conexión.</li>
+</ol>
+<hr />
+<p><em>Documento generado a partir del código actual
+(<code>schema.prisma</code>, rutas de apps, <code>.env.example</code>) y
+de la visión en <code>ECOSYSTEM.md</code>. Última revisión:
+2026-09-07.</em></p>
+</body>
+</html>

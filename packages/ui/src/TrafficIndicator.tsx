@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslations } from './LanguageProvider';
+import { apiFetch } from './api-client';
 
 interface TrafficCondition {
   level: 'free' | 'light' | 'moderate' | 'heavy' | 'severe';
@@ -56,7 +57,7 @@ export function TrafficIndicator({
       if (lat) params.append('lat', String(lat));
       if (lng) params.append('lng', String(lng));
 
-      const response = await fetch(`/api/routing/traffic?${params.toString()}`);
+      const response = await apiFetch(`/api/routing/traffic?${params.toString()}`);
       const data = await response.json();
       setTraffic(data.conditions);
     } catch (error) {
@@ -198,7 +199,9 @@ export function DeliveryEstimate({
         distance: String(distance),
       });
 
-      const response = await fetch(`/api/routing/traffic/delivery-estimate?${params.toString()}`);
+      const response = await apiFetch(
+        `/api/routing/traffic/delivery-estimate?${params.toString()}`,
+      );
       const data = await response.json();
       setEstimate(data);
     } catch (error) {
@@ -345,7 +348,7 @@ export function TrafficMapOverlay({ className = '' }: TrafficMapOverlayProps) {
         { lat: 10.146, lng: -85.455 }, // Sur
       ];
 
-      const response = await fetch('/api/routing/traffic/updates', {
+      const response = await apiFetch('/api/routing/traffic/updates', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ points }),

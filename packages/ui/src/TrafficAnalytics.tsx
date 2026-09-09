@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { apiFetch } from './api-client';
 
 export interface TrafficPattern {
   hour: number;
@@ -73,7 +74,9 @@ export function TrafficAnalytics({ merchantId, className = '' }: TrafficAnalytic
   const fetchReport = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/routing/history/merchant/${merchantId}?period=${period}`);
+      const response = await apiFetch(
+        `/api/routing/history/merchant/${merchantId}?period=${period}`,
+      );
       const data = await response.json();
       setReport(data);
     } catch (error) {

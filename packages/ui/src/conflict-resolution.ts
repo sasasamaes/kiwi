@@ -121,10 +121,11 @@ class ConflictResolutionService {
   }
 
   /**
-   * Generate checksum for data integrity
+   * Generate checksum for data integrity (stable: sorts keys recursively,
+   * so key order never affects the hash and nested keys are never dropped).
    */
   private generateChecksum(data: any): string {
-    const str = JSON.stringify(data, Object.keys(data).sort());
+    const str = this.stableStringify(data);
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
       const char = str.charCodeAt(i);
@@ -132,6 +133,13 @@ class ConflictResolutionService {
       hash = hash & hash; // Convert to 32bit integer
     }
     return hash.toString(36);
+  }
+
+  private stableStringify(value: any): string {
+    if (value === null || typeof value !== 'object') return JSON.stringify(value);
+    if (Array.isArray(value)) return `[${value.map((v) => this.stableStringify(v)).join(',')}]`;
+    const keys = Object.keys(value).sort();
+    return `{${keys.map((k) => `${JSON.stringify(k)}:${this.stableStringify(value[k])}`).join(',')}}`;
   }
 
   /**
@@ -197,14 +205,13 @@ class ConflictResolutionService {
       }
     }
 
-    // Check if both modified from same parent
-    const bothModifiedFromSameParent =
-      local.parentVersion !== undefined &&
-      remote.parentVersion !== undefined &&
-      local.parentVersion === remote.parentVersion;
-
-    // Check if one is ancestor of other
-    const isAncestor = local.version < remote.version || remote.version < local.version;
+    // Ancestry means one version directly descends from the other.
+    // Version numbers alone can't prove that (any two differing numbers
+    // satisfied the old `a < b || b < a` check, so conflicts were never
+    // detected). Use parentVersion links instead.
+    const isAncestor =
+      (remote.parentVersion !== undefined && remote.parentVersion === local.version) ||
+      (local.parentVersion !== undefined && local.parentVersion === remote.version);
 
     const hasConflict = changedFields.length > 0 && !isAncestor;
     const identical = changedFields.length === 0;
@@ -232,9 +239,10 @@ class ConflictResolutionService {
 
     // Check if remote is newer (no conflict, just update)
     if (remote.version > local.version && remote.lastModified > local.lastModified) {
-      // Check if local has uncommitted changes
+      // Local has uncommitted changes only if it diverged from its parent
+      // (compare versions, not a ms timestamp against a version number).
       const localModifiedAfterParent =
-        local.parentVersion !== undefined && local.lastModified > (local.parentVersion || 0);
+        local.parentVersion !== undefined && local.version !== local.parentVersion;
 
       if (!localModifiedAfterParent) {
         return null; // Remote is newer, no conflict

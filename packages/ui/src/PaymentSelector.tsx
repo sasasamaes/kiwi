@@ -3,9 +3,21 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from './utils';
-import { Smartphone, CreditCard, DollarSign, AlertTriangle, Loader, Copy, Check, Lock, Info } from 'lucide-react';
+import { api } from './api-client';
+import {
+  Smartphone,
+  CreditCard,
+  DollarSign,
+  AlertTriangle,
+  Loader,
+  Copy,
+  Check,
+  Lock,
+  Info,
+} from 'lucide-react';
 
-export type PaymentMethod = 'onvopay_sinpe' | 'onvopay_card' | 'crypto_usdc' | 'crypto_usdt' | 'cash';
+export type PaymentMethod =
+  'onvopay_sinpe' | 'onvopay_card' | 'crypto_usdc' | 'crypto_usdt' | 'cash';
 
 interface PaymentOption {
   id: PaymentMethod;
@@ -67,7 +79,12 @@ const paymentOptions: PaymentOption[] = [
   },
 ];
 
-export function PaymentSelector({ selected, onSelect, amount, onCryptoQuote }: PaymentSelectorProps) {
+export function PaymentSelector({
+  selected,
+  onSelect,
+  amount,
+  onCryptoQuote,
+}: PaymentSelectorProps) {
   const [cryptoQuote, setCryptoQuote] = useState<CryptoQuote | null>(null);
   const [loadingQuote, setLoadingQuote] = useState(false);
   const [showCryptoDetails, setShowCryptoDetails] = useState(false);
@@ -81,23 +98,24 @@ export function PaymentSelector({ selected, onSelect, amount, onCryptoQuote }: P
   const fetchCryptoQuote = async () => {
     setLoadingQuote(true);
     try {
-      // Mock quote - in production, call API
+      // Real server quote (was a hardcoded rate=510 mock in prod).
       const coin = selected === 'crypto_usdc' ? 'USDC' : 'USDT';
-      const rate = 510; // CRC to USD
-      const amountUSD = amount / rate;
-      const cryptoRate = coin === 'USDC' ? 1 : 1;
-      
+      const serverQuote = await api.getCryptoQuote(amount, coin as 'USDC' | 'USDT');
+
       const quote: CryptoQuote = {
-        amountCRC: amount,
-        amountUSD: Math.round(amountUSD * 100) / 100,
-        amountCrypto: Math.round((amountUSD / cryptoRate) * 1000000) / 1000000,
-        rate: cryptoRate,
+        amountCRC: serverQuote.amountCRC,
+        amountUSD: serverQuote.amountUSD,
+        amountCrypto: serverQuote.amountCrypto,
+        rate: serverQuote.rate,
       };
-      
+
       setCryptoQuote(quote);
       onCryptoQuote?.(quote);
     } catch (error) {
+      // No fictional fallback: showing a mock rate as real money is worse
+      // than showing nothing.
       console.error('Failed to get crypto quote:', error);
+      setCryptoQuote(null);
     } finally {
       setLoadingQuote(false);
     }
@@ -114,7 +132,7 @@ export function PaymentSelector({ selected, onSelect, amount, onCryptoQuote }: P
               'w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all',
               selected === option.id
                 ? 'border-kiwi-500 bg-kiwi-50 dark:bg-kiwi-900/30'
-                : 'border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 hover:border-surface-300 dark:hover:border-surface-600'
+                : 'border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 hover:border-surface-300 dark:hover:border-surface-600',
             )}
             onClick={() => onSelect(option.id)}
             whileTap={{ scale: 0.98 }}
@@ -123,12 +141,16 @@ export function PaymentSelector({ selected, onSelect, amount, onCryptoQuote }: P
               <span className="text-2xl">
                 {option.id === 'onvopay_sinpe' && <Smartphone className="h-6 w-6" />}
                 {option.id === 'onvopay_card' && <CreditCard className="h-6 w-6" />}
-                {(option.id === 'crypto_usdc' || option.id === 'crypto_usdt') && <DollarSign className="h-6 w-6" />}
+                {(option.id === 'crypto_usdc' || option.id === 'crypto_usdt') && (
+                  <DollarSign className="h-6 w-6" />
+                )}
                 {option.id === 'cash' && <DollarSign className="h-6 w-6" />}
               </span>
               <div className="text-left">
                 <p className="font-medium text-surface-800 dark:text-surface-200">{option.name}</p>
-                <p className="text-sm text-surface-500 dark:text-surface-400">{option.description}</p>
+                <p className="text-sm text-surface-500 dark:text-surface-400">
+                  {option.description}
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -164,7 +186,7 @@ export function PaymentSelector({ selected, onSelect, amount, onCryptoQuote }: P
               <h4 className="font-medium text-purple-800 dark:text-purple-200 mb-3">
                 Pago con Cripto
               </h4>
-              
+
               {loadingQuote ? (
                 <div className="flex items-center justify-center py-4">
                   <motion.div
@@ -193,7 +215,8 @@ export function PaymentSelector({ selected, onSelect, amount, onCryptoQuote }: P
                       {selected === 'crypto_usdc' ? 'USDC' : 'USDT'} a enviar
                     </span>
                     <span className="font-bold text-purple-700 dark:text-purple-300">
-                      {cryptoQuote.amountCrypto.toFixed(6)} {selected === 'crypto_usdc' ? 'USDC' : 'USDT'}
+                      {cryptoQuote.amountCrypto.toFixed(6)}{' '}
+                      {selected === 'crypto_usdc' ? 'USDC' : 'USDT'}
                     </span>
                   </div>
                   <p className="text-xs text-purple-600 dark:text-purple-400">
@@ -220,7 +243,9 @@ export function PaymentSelector({ selected, onSelect, amount, onCryptoQuote }: P
                   >
                     <div className="bg-white dark:bg-surface-800 rounded-lg p-3">
                       <p className="text-xs text-surface-500 dark:text-surface-400 mb-1">Red</p>
-                      <p className="text-sm font-medium text-surface-800 dark:text-surface-200">Stellar</p>
+                      <p className="text-sm font-medium text-surface-800 dark:text-surface-200">
+                        Stellar
+                      </p>
                     </div>
                     <div className="bg-white dark:bg-surface-800 rounded-lg p-3">
                       <p className="text-xs text-surface-500 dark:text-surface-400 mb-1">Activo</p>
@@ -229,10 +254,12 @@ export function PaymentSelector({ selected, onSelect, amount, onCryptoQuote }: P
                       </p>
                     </div>
                     <div className="bg-white dark:bg-surface-800 rounded-lg p-3">
-                      <p className="text-xs text-surface-500 dark:text-surface-400 mb-1">Importante</p>
+                      <p className="text-xs text-surface-500 dark:text-surface-400 mb-1">
+                        Importante
+                      </p>
                       <p className="text-xs text-amber-600 dark:text-amber-400">
-                        Solo envia {selected === 'crypto_usdc' ? 'USDC' : 'USDT'} por la red Stellar.
-                        Enviar otros tokens puede resultar en perdida permanente.
+                        Solo envia {selected === 'crypto_usdc' ? 'USDC' : 'USDT'} por la red
+                        Stellar. Enviar otros tokens puede resultar en perdida permanente.
                       </p>
                     </div>
                   </motion.div>
@@ -267,7 +294,7 @@ export function CryptoQR({ address, amount, coin }: CryptoQRProps) {
       <h4 className="font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
         Escanea para pagar
       </h4>
-      
+
       {/* QR Code Placeholder */}
       <div className="mx-auto w-48 h-48 bg-surface-100 dark:bg-surface-700 rounded-xl flex items-center justify-center mb-4">
         <div className="text-center">
@@ -294,8 +321,8 @@ export function CryptoQR({ address, amount, coin }: CryptoQRProps) {
           />
           <motion.button
             className={`px-3 py-2 rounded-lg text-sm font-medium ${
-              copied 
-                ? 'bg-kiwi-100 text-kiwi-700' 
+              copied
+                ? 'bg-kiwi-100 text-kiwi-700'
                 : 'bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400'
             }`}
             onClick={copyAddress}
@@ -307,8 +334,12 @@ export function CryptoQR({ address, amount, coin }: CryptoQRProps) {
       </div>
 
       <div className="text-xs text-surface-400 space-y-1">
-        <p className="flex items-center gap-1"><Lock className="h-3 w-3" /> La confirmacion tarda ~1 minuto</p>
-        <p className="flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> Envia solo {coin} por la red Stellar</p>
+        <p className="flex items-center gap-1">
+          <Lock className="h-3 w-3" /> La confirmacion tarda ~1 minuto
+        </p>
+        <p className="flex items-center gap-1">
+          <AlertTriangle className="h-3 w-3" /> Envia solo {coin} por la red Stellar
+        </p>
       </div>
     </div>
   );

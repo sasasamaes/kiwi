@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from '../auth/auth.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 
@@ -17,7 +18,7 @@ describe('AuthService', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
-    
+
     prisma = {
       user: {
         findFirst: jest.fn(),
@@ -35,6 +36,7 @@ describe('AuthService', () => {
         AuthService,
         { provide: PrismaService, useValue: prisma },
         { provide: JwtService, useValue: jwtService },
+        { provide: ConfigService, useValue: { get: jest.fn().mockReturnValue('7d') } },
       ],
     }).compile();
 
@@ -123,7 +125,7 @@ describe('AuthService', () => {
         driverProfile: null,
       });
 
-(bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
       const result = await service.login({
         email: 'test@kiwi.app',
@@ -154,7 +156,7 @@ describe('AuthService', () => {
         status: 'active',
       });
 
-(bcrypt.compare as jest.Mock).mockResolvedValue(false);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
       await expect(
         service.login({

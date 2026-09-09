@@ -1,5 +1,6 @@
 import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
@@ -10,20 +11,22 @@ export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private configService: ConfigService,
   ) {}
 
   async register(registerDto: RegisterDto) {
     const { email, password, phone, fullName, role, businessName, vehicleType } = registerDto;
 
     // Check if user exists
-    const existingUser = await this.prisma.user.findFirst({
-      where: {
-        OR: [
-          { email },
-          { phone },
-        ],
-      },
-    });
+    const orConditions: Array<{ email?: string; phone?: string }> = [];
+    if (email) orConditions.push({ email });
+    if (phone) orConditions.push({ phone });
+
+    const existingUser = orConditions.length
+      ? await this.prisma.user.findFirst({
+          where: { OR: orConditions },
+        })
+      : null;
 
     if (existingUser) {
       throw new ConflictException('El correo o teléfono ya está registrado');
@@ -141,7 +144,7 @@ export class AuthService {
 
     return {
       accessToken,
-      expiresIn: '7d',
+      expiresIn: this.configService.get<string>('JWT_EXPIRES_IN', '7d'),
     };
   }
 

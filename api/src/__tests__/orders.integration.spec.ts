@@ -70,6 +70,7 @@ describe('Orders Integration: Full Lifecycle', () => {
         findUnique: jest.fn(),
         findMany: jest.fn(),
         update: jest.fn(),
+        updateMany: jest.fn(),
         aggregate: jest.fn(),
         count: jest.fn(),
       },
@@ -79,6 +80,7 @@ describe('Orders Integration: Full Lifecycle', () => {
       driverProposal: {
         create: jest.fn(),
         findUnique: jest.fn(),
+        findFirst: jest.fn(),
         findMany: jest.fn(),
         update: jest.fn(),
         updateMany: jest.fn(),
@@ -185,15 +187,20 @@ describe('Orders Integration: Full Lifecycle', () => {
     });
 
     it('Step 3: Driver accepts the order', async () => {
-      prisma.order.findUnique.mockResolvedValue({
-        id: ORDER_ID,
-        status: 'pending',
-        merchantId: MERCHANT_PROFILE_ID,
-        merchant: {
-          userId: MERCHANT_USER_ID,
-          businessName: 'Bowl & Café Luis Alfredo',
-        },
-      });
+      prisma.order.findUnique
+        .mockResolvedValueOnce({
+          id: ORDER_ID,
+          status: 'pending',
+          merchantId: MERCHANT_PROFILE_ID,
+        })
+        .mockResolvedValueOnce({
+          id: ORDER_ID,
+          status: 'assigned',
+          driverId: DRIVER_PROFILE_ID,
+          assignedAt: new Date(),
+          merchant: { userId: MERCHANT_USER_ID },
+          driver: { userId: DRIVER_USER_ID, fullName: 'Juan Carlos Rodríguez' },
+        });
 
       prisma.driverProfile.findUnique.mockResolvedValue({
         id: DRIVER_PROFILE_ID,
@@ -201,6 +208,8 @@ describe('Orders Integration: Full Lifecycle', () => {
         fullName: 'Juan Carlos Rodríguez',
         vehicleType: 'motorcycle',
       });
+
+      prisma.order.updateMany.mockResolvedValue({ count: 1 });
 
       prisma.order.update.mockResolvedValue({
         id: ORDER_ID,
@@ -357,8 +366,11 @@ describe('Orders Integration: Full Lifecycle', () => {
       prisma.order.findUnique.mockResolvedValue({
         id: ORDER_ID,
         orderType: 'scheduled',
+        status: 'driver_proposals',
         merchantId: MERCHANT_PROFILE_ID,
       });
+
+      prisma.driverProposal.findFirst.mockResolvedValue(null);
 
       prisma.driverProfile.findUnique.mockResolvedValue({
         id: DRIVER_PROFILE_ID,
@@ -434,6 +446,7 @@ describe('Orders Integration: Full Lifecycle', () => {
     it('Step 3: Merchant accepts Juan Carlos proposal', async () => {
       prisma.order.findUnique.mockResolvedValue({
         id: ORDER_ID,
+        status: 'driver_proposals',
         merchantId: MERCHANT_PROFILE_ID,
         merchant: { userId: MERCHANT_USER_ID },
       });
@@ -452,14 +465,25 @@ describe('Orders Integration: Full Lifecycle', () => {
       prisma.driverProposal.update.mockResolvedValue({ id: 'proposal-1', status: 'accepted' });
       prisma.driverProposal.updateMany.mockResolvedValue({ count: 1 });
 
-      prisma.order.update.mockResolvedValue({
+      const assignedOrder = {
         id: ORDER_ID,
         status: 'assigned',
         driverId: DRIVER_PROFILE_ID,
         assignedAt: new Date(),
         merchant: { userId: MERCHANT_USER_ID },
         driver: { userId: DRIVER_USER_ID, fullName: 'Juan Carlos Rodríguez' },
-      });
+      };
+      prisma.order.update.mockResolvedValue(assignedOrder);
+      (prisma as any).$transaction = jest.fn(async (cb: any) =>
+        cb({
+          driverProposal: prisma.driverProposal,
+          order: {
+            ...prisma.order,
+            updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+            findUnique: jest.fn().mockResolvedValue(assignedOrder),
+          },
+        }),
+      );
 
       // Mock rejected proposals for notification
       prisma.driverProposal.findMany.mockResolvedValue([

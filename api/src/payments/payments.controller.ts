@@ -1,13 +1,30 @@
-import { Controller, Post, Get, Body, Param, UseGuards, Req, HttpCode, Headers } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Req,
+  HttpCode,
+  Headers,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { PaymentsService } from './payments.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { OnvoPayProvider } from './providers/onvopay.provider';
+import { StellarProvider } from './providers/stellar.provider';
 
 @ApiTags('Payments')
 @Controller('payments')
 export class PaymentsController {
-  constructor(private readonly paymentsService: PaymentsService) {}
+  constructor(
+    private readonly paymentsService: PaymentsService,
+    private readonly onvopayProvider: OnvoPayProvider,
+    private readonly stellarProvider: StellarProvider,
+  ) {}
 
   @Post('create')
   @UseGuards(JwtAuthGuard)
@@ -15,7 +32,8 @@ export class PaymentsController {
   @ApiOperation({ summary: 'Create a payment' })
   async createPayment(
     @CurrentUser() user: any,
-    @Body() body: {
+    @Body()
+    body: {
       orderId: string;
       method: 'onvopay_card' | 'onvopay_sinpe' | 'crypto' | 'cash';
       amount: number;
@@ -25,10 +43,13 @@ export class PaymentsController {
       paymentMethodId?: string;
     },
   ) {
-    return this.paymentsService.createPayment({
-      ...body,
-      currency: body.cryptoCoin || 'CRC',
-    });
+    return this.paymentsService.createPayment(
+      {
+        ...body,
+        currency: body.cryptoCoin || 'CRC',
+      },
+      user?.sub ?? user?.id,
+    );
   }
 
   @Post('confirm/:paymentIntentId')
@@ -39,9 +60,7 @@ export class PaymentsController {
     @Param('paymentIntentId') paymentIntentId: string,
     @Body() body: { paymentMethodId: string },
   ) {
-    const { OnvoPayProvider } = await import('./providers/onvopay.provider');
-    const provider = new OnvoPayProvider(null as any);
-    return provider.confirmPaymentIntent(paymentIntentId, body.paymentMethodId);
+    return this.onvopayProvider.confirmPaymentIntent(paymentIntentId, body.paymentMethodId);
   }
 
   @Get('status/:orderId')
@@ -75,10 +94,9 @@ export class PaymentsController {
   @ApiOperation({ summary: 'Get crypto conversion quote' })
   async getCryptoQuote(
     @CurrentUser() user: any,
-    @Body() body: { amount: number; coin: 'USDC' | 'USDT' },
+    @Query('amount') amount: string,
+    @Query('coin') coin: 'USDC' | 'USDT',
   ) {
-    const { StellarProvider } = await import('./providers/stellar.provider');
-    const provider = new StellarProvider(null as any);
-    return provider.convertToCrypto(body.amount, body.coin);
+    return this.stellarProvider.convertToCrypto(Number(amount), coin);
   }
 }

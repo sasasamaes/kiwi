@@ -30,18 +30,18 @@ export class NotificationsService {
       // Try to import Firebase Admin SDK
       // In production, set FIREBASE_SERVICE_ACCOUNT env var with the service account JSON
       const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT;
-      
+
       if (serviceAccount) {
         const adminModule = await import('firebase-admin');
         const admin = adminModule.default || adminModule;
-        
+
         if (!(admin as any).apps?.length) {
           const serviceAccountJson = JSON.parse(serviceAccount);
           (admin as any).initializeApp({
             credential: (admin as any).credential?.cert(serviceAccountJson),
           });
         }
-        
+
         this.fcmAdmin = (admin as any).messaging();
         this.logger.log('Firebase Cloud Messaging initialized successfully');
       } else {
@@ -78,12 +78,12 @@ export class NotificationsService {
 
   async sendToMultipleUsers(userIds: string[], notification: PushNotification) {
     const results = await Promise.allSettled(
-      userIds.map(userId => this.sendToUser(userId, notification))
+      userIds.map((userId) => this.sendToUser(userId, notification)),
     );
 
     return {
-      success: results.filter(r => r.status === 'fulfilled').length,
-      failed: results.filter(r => r.status === 'rejected').length,
+      success: results.filter((r) => r.status === 'fulfilled').length,
+      failed: results.filter((r) => r.status === 'rejected').length,
     };
   }
 
@@ -93,7 +93,10 @@ export class NotificationsService {
       select: { id: true },
     });
 
-    return this.sendToMultipleUsers(users.map(u => u.id), notification);
+    return this.sendToMultipleUsers(
+      users.map((u) => u.id),
+      notification,
+    );
   }
 
   private async sendPushNotification(userId: string, notification: PushNotification) {
@@ -101,7 +104,7 @@ export class NotificationsService {
       // Get user's device tokens from database
       // In production, you'd have a device_tokens table
       // For now, we'll use a mock approach
-      
+
       if (!this.fcmAdmin) {
         this.logger.log(`Push notification would be sent to user ${userId}: ${notification.title}`);
         return;
@@ -126,7 +129,7 @@ export class NotificationsService {
       //       data: notification.data,
       //       webpush: {
       //         fcmOptions: {
-      //           link: notification.data?.orderId 
+      //           link: notification.data?.orderId
       //             ? `/order/${notification.data.orderId}/tracking`
       //             : '/',
       //         },
@@ -171,13 +174,14 @@ export class NotificationsService {
   }
 
   async markAsRead(notificationId: string, userId: string) {
-    return this.prisma.notification.update({
+    const updated = await this.prisma.notification.updateMany({
       where: {
         id: notificationId,
         userId, // Ensure user owns this notification
       },
       data: { read: true },
     });
+    return updated;
   }
 
   async markAllAsRead(userId: string) {
@@ -191,7 +195,7 @@ export class NotificationsService {
   }
 
   async deleteNotification(notificationId: string, userId: string) {
-    return this.prisma.notification.delete({
+    return this.prisma.notification.deleteMany({
       where: {
         id: notificationId,
         userId,
@@ -254,10 +258,22 @@ export class NotificationsService {
 
   async notifyWithdrawalStatus(userId: string, status: string, amount: number) {
     const messages: Record<string, { title: string; body: string }> = {
-      pending: { title: '⏳ Retiro solicitado', body: `Solicitaste retirar ₡${amount.toLocaleString()}` },
-      processing: { title: '🔄 Retiro en proceso', body: `Tu retiro de ₡${amount.toLocaleString()} está siendo procesado` },
-      completed: { title: '✅ Retiro completado', body: `Tu retiro de ₡${amount.toLocaleString()} fue completado` },
-      rejected: { title: '❌ Retiro rechazado', body: `Tu retiro de ₡${amount.toLocaleString()} fue rechazado` },
+      pending: {
+        title: '⏳ Retiro solicitado',
+        body: `Solicitaste retirar ₡${amount.toLocaleString()}`,
+      },
+      processing: {
+        title: '🔄 Retiro en proceso',
+        body: `Tu retiro de ₡${amount.toLocaleString()} está siendo procesado`,
+      },
+      completed: {
+        title: '✅ Retiro completado',
+        body: `Tu retiro de ₡${amount.toLocaleString()} fue completado`,
+      },
+      rejected: {
+        title: '❌ Retiro rechazado',
+        body: `Tu retiro de ₡${amount.toLocaleString()} fue rechazado`,
+      },
     };
 
     const message = messages[status] || { title: 'Retiro', body: `Estado: ${status}` };
@@ -275,25 +291,25 @@ export class NotificationsService {
   async registerDeviceToken(userId: string, token: string, platform: 'ios' | 'android' | 'web') {
     // Store device token for push notifications
     this.logger.log(`Device token registered for user ${userId}: ${platform}`);
-    
+
     // In production, store in a device_tokens table:
     // await this.prisma.deviceToken.upsert({
     //   where: { token },
     //   update: { userId, platform, lastUsedAt: new Date() },
     //   create: { userId, token, platform },
     // });
-    
+
     return { success: true };
   }
 
   async removeDeviceToken(userId: string, token: string) {
     this.logger.log(`Device token removed for user ${userId}`);
-    
+
     // In production, remove from device_tokens table:
     // await this.prisma.deviceToken.deleteMany({
     //   where: { userId, token },
     // });
-    
+
     return { success: true };
   }
 }

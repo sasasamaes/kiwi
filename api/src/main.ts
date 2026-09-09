@@ -60,7 +60,12 @@ async function ensureDatabaseReady(): Promise<void> {
     console.log(`🗄️  Database reachable (${userCount} users)`);
 
     // 2. Demo data: seed an empty database (fresh prod deploys, preview envs).
-    if (userCount === 0 && process.env.SEED_DEMO_DATA !== 'false') {
+    // Opt-IN in production (seeding wipes/replaces data) to avoid ever
+    // seeding demo rows into a real prod DB by accident; opt-out otherwise.
+    const seedFlag = process.env.SEED_DEMO_DATA;
+    const isProd = process.env.NODE_ENV === 'production';
+    const shouldSeed = seedFlag === 'true' || (!isProd && seedFlag !== 'false');
+    if (userCount === 0 && shouldSeed) {
       console.log('🌱 Empty database — seeding demo data...');
       execSync('npx prisma db seed', { stdio: 'inherit', cwd: apiRoot });
     }
@@ -77,7 +82,11 @@ async function ensureDatabaseReady(): Promise<void> {
       const userCount = await prisma.user.count();
       console.log(`🗄️  Migrations applied (${userCount} users)`);
 
-      if (userCount === 0 && process.env.SEED_DEMO_DATA !== 'false') {
+      const seedFlagAfter = process.env.SEED_DEMO_DATA;
+      const isProdAfter = process.env.NODE_ENV === 'production';
+      const shouldSeedAfter =
+        seedFlagAfter === 'true' || (!isProdAfter && seedFlagAfter !== 'false');
+      if (userCount === 0 && shouldSeedAfter) {
         console.log('🌱 Empty database — seeding demo data...');
         execSync('npx prisma db seed', { stdio: 'inherit', cwd: join(__dirname, '..') });
       }

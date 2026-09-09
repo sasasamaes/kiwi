@@ -31,16 +31,27 @@ export function OrderTracker({ orderId, initialStatus = 'pending' }: OrderTracke
   const [status, setStatus] = useState<OrderStatus['status']>(initialStatus);
   const [eta, setEta] = useState(15);
 
+  // Sync when the parent passes a new status (props are not state).
+  useEffect(() => {
+    setStatus(initialStatus);
+  }, [initialStatus]);
+
   // Simulate status changes for demo
   useEffect(() => {
-    const statuses: OrderStatus['status'][] = ['pending', 'assigned', 'pickup', 'delivering', 'delivered'];
+    const statuses: OrderStatus['status'][] = [
+      'pending',
+      'assigned',
+      'pickup',
+      'delivering',
+      'delivered',
+    ];
     let currentIndex = statuses.indexOf(initialStatus);
-    
+
     const interval = setInterval(() => {
       if (currentIndex < statuses.length - 1) {
         currentIndex++;
         setStatus(statuses[currentIndex]);
-        setEta(Math.max(0, eta - 5));
+        setEta((prev) => Math.max(0, prev - 5));
       }
     }, 5000);
 
@@ -50,13 +61,10 @@ export function OrderTracker({ orderId, initialStatus = 'pending' }: OrderTracke
   const config = statusConfig[status];
 
   return (
-    <motion.div 
-      className="rounded-2xl bg-white p-4 shadow-soft"
-      layout
-    >
+    <motion.div className="rounded-2xl bg-white p-4 shadow-soft" layout>
       <div className="mb-3 flex items-center justify-between">
         <span className="text-sm font-medium text-surface-600">Pedido #{orderId}</span>
-        <motion.span 
+        <motion.span
           className={`rounded-full px-3 py-1 text-xs font-medium ${config.color}`}
           key={status}
           initial={{ scale: 0.8, opacity: 0 }}
@@ -74,15 +82,20 @@ export function OrderTracker({ orderId, initialStatus = 'pending' }: OrderTracke
           <span>Entrega</span>
         </div>
         <div className="h-2 rounded-full bg-surface-100 overflow-hidden">
-          <motion.div 
+          <motion.div
             className="h-full bg-kiwi-gradient rounded-full"
             initial={{ width: '0%' }}
-            animate={{ 
-              width: status === 'pending' ? '10%' 
-                : status === 'assigned' ? '30%' 
-                : status === 'pickup' ? '50%' 
-                : status === 'delivering' ? '80%' 
-                : '100%' 
+            animate={{
+              width:
+                status === 'pending'
+                  ? '10%'
+                  : status === 'assigned'
+                    ? '30%'
+                    : status === 'pickup'
+                      ? '50%'
+                      : status === 'delivering'
+                        ? '80%'
+                        : '100%',
             }}
             transition={{ duration: 0.5, ease: 'easeOut' }}
           />
@@ -92,14 +105,14 @@ export function OrderTracker({ orderId, initialStatus = 'pending' }: OrderTracke
       {/* ETA */}
       <AnimatePresence mode="wait">
         {status !== 'delivered' && eta > 0 && (
-          <motion.div 
+          <motion.div
             key={eta}
             className="flex items-center justify-center gap-2 rounded-xl bg-kiwi-50 p-3"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
           >
-            <motion.span 
+            <motion.span
               className="text-lg"
               animate={{ rotate: [0, 10, -10, 0] }}
               transition={{ duration: 1, repeat: Infinity }}
@@ -115,7 +128,7 @@ export function OrderTracker({ orderId, initialStatus = 'pending' }: OrderTracke
 
       {/* Driver Info */}
       {status !== 'pending' && (
-        <motion.div 
+        <motion.div
           className="mt-3 flex items-center gap-3 rounded-xl bg-surface-50 p-3"
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: 'auto' }}
@@ -127,7 +140,7 @@ export function OrderTracker({ orderId, initialStatus = 'pending' }: OrderTracke
             <p className="text-sm font-medium text-surface-800">Juan Carlos</p>
             <p className="text-xs text-surface-400">Star 4.9 • 156 viajes</p>
           </div>
-          <motion.button 
+          <motion.button
             className="rounded-full bg-kiwi-100 p-2 text-kiwi-600 hover:bg-kiwi-200"
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
@@ -140,13 +153,13 @@ export function OrderTracker({ orderId, initialStatus = 'pending' }: OrderTracke
       {/* Delivered State */}
       <AnimatePresence>
         {status === 'delivered' && (
-          <motion.div 
+          <motion.div
             className="mt-3 rounded-xl bg-green-50 p-4 text-center"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ type: 'spring', stiffness: 300, damping: 20 }}
           >
-            <motion.span 
+            <motion.span
               className="text-4xl"
               animate={{ scale: [1, 1.2, 1] }}
               transition={{ duration: 0.5 }}

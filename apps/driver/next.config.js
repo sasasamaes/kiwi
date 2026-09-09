@@ -6,13 +6,25 @@ const withPWA = require('next-pwa')({
   disable: process.env.NODE_ENV === 'development',
   runtimeCaching: [
     {
-      urlPattern: /^https:\/\/api\.kiwi\.app\/.*/i,
+      // Real API host (was api.kiwi.app, which doesn't exist → rule never hit).
+      // Short TTL: these GETs can be authenticated, so a 24h cache risks
+      // stale cross-user data on shared devices.
+      urlPattern: (() => {
+        try {
+          const origin = new URL(
+            process.env.NEXT_PUBLIC_API_URL || 'https://kiwi-api-fe54.onrender.com/api',
+          ).origin.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          return new RegExp(`^${origin}/.*`, 'i');
+        } catch {
+          return /^https:\/\/kiwi-api-fe54\.onrender\.com\/.*/i;
+        }
+      })(),
       handler: 'NetworkFirst',
       options: {
         cacheName: 'api-cache',
         expiration: {
-          maxEntries: 100,
-          maxAgeSeconds: 60 * 60 * 24, // 24 hours
+          maxEntries: 50,
+          maxAgeSeconds: 60 * 5, // 5 minutes
         },
         networkTimeoutSeconds: 10,
       },

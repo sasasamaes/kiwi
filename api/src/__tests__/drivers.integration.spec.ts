@@ -93,12 +93,12 @@ describe('Drivers Integration: Profile, Earnings & Schedules', () => {
 
       prisma.driverProfile.update.mockResolvedValue({
         id: DRIVER_PROFILE_ID,
-        status: 'unavailable',
+        status: 'offline',
         isOnline: false,
       });
 
-      const result = await service.updateStatus(DRIVER_USER_ID, 'unavailable');
-      expect(result.status).toBe('unavailable');
+      const result = await service.updateStatus(DRIVER_USER_ID, 'offline');
+      expect(result.status).toBe('offline');
 
       // Go back online
       prisma.driverProfile.update.mockResolvedValue({
@@ -156,13 +156,16 @@ describe('Drivers Integration: Profile, Earnings & Schedules', () => {
 
       // Create new schedules
       prisma.driverSchedule.createMany.mockResolvedValue({ count: 5 });
+      (prisma as any).$transaction = jest.fn(async (cb: any) =>
+        cb({ driverSchedule: prisma.driverSchedule }),
+      );
 
       const schedules = [
-        { dayOfWeek: 1, startTime: '07:00', endTime: '18:00' },
-        { dayOfWeek: 2, startTime: '07:00', endTime: '18:00' },
-        { dayOfWeek: 3, startTime: '07:00', endTime: '18:00' },
-        { dayOfWeek: 4, startTime: '07:00', endTime: '18:00' },
-        { dayOfWeek: 5, startTime: '07:00', endTime: '18:00' },
+        { dayOfWeek: 1, startTime: '2026-09-07T07:00:00', endTime: '2026-09-07T18:00:00' },
+        { dayOfWeek: 2, startTime: '2026-09-08T07:00:00', endTime: '2026-09-08T18:00:00' },
+        { dayOfWeek: 3, startTime: '2026-09-09T07:00:00', endTime: '2026-09-09T18:00:00' },
+        { dayOfWeek: 4, startTime: '2026-09-10T07:00:00', endTime: '2026-09-10T18:00:00' },
+        { dayOfWeek: 5, startTime: '2026-09-11T07:00:00', endTime: '2026-09-11T18:00:00' },
       ];
 
       await service.updateSchedule(DRIVER_USER_ID, schedules);

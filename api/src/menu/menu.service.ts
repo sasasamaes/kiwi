@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -76,18 +81,14 @@ export class MenuService {
 
     const items = await this.prisma.menuItem.findMany({
       where,
-      orderBy: [
-        { sortOrder: 'asc' },
-        { isPopular: 'desc' },
-        { name: 'asc' },
-      ],
+      orderBy: [{ sortOrder: 'asc' }, { isPopular: 'desc' }, { name: 'asc' }],
     });
 
     // Group by category
-    const categories = [...new Set(items.map(item => item.category))];
+    const categories = [...new Set(items.map((item) => item.category))];
 
     return {
-      items: items.map(item => ({
+      items: items.map((item) => ({
         ...item,
         price: Number(item.price),
       })),
@@ -109,14 +110,10 @@ export class MenuService {
 
     const items = await this.prisma.menuItem.findMany({
       where: { merchantId: merchant.id },
-      orderBy: [
-        { category: 'asc' },
-        { sortOrder: 'asc' },
-        { name: 'asc' },
-      ],
+      orderBy: [{ category: 'asc' }, { sortOrder: 'asc' }, { name: 'asc' }],
     });
 
-    return items.map(item => ({
+    return items.map((item) => ({
       ...item,
       price: Number(item.price),
     }));
@@ -209,6 +206,17 @@ export class MenuService {
 
     if (!item || item.merchantId !== merchant.id) {
       throw new ForbiddenException('No puedes eliminar este artículo');
+    }
+
+    // OrderItems restrict-delete the menu item: check first to return 409
+    // instead of a P2003 500.
+    const referencingOrders = await this.prisma.orderItem.count({
+      where: { menuItemId: itemId },
+    });
+    if (referencingOrders > 0) {
+      throw new ConflictException(
+        'No se puede eliminar: el artículo está en pedidos existentes. Desactívalo en su lugar.',
+      );
     }
 
     await this.prisma.menuItem.delete({

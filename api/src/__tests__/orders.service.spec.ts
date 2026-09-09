@@ -109,6 +109,36 @@ describe('OrdersService', () => {
         }),
       ).rejects.toThrow(NotFoundException);
     });
+
+    it('should reject invalid orderType, addresses, distance and dates', async () => {
+      prisma.merchantProfile.findUnique.mockResolvedValue({
+        id: 'merchant-1',
+        userId: 'user-1',
+        businessName: 'Bowl & Café',
+      });
+
+      const base = { pickupAddress: 'A', deliveryAddress: 'B' };
+
+      await expect(service.create('user-1', { ...base, orderType: 'express' })).rejects.toThrow(
+        'orderType inválido',
+      );
+      await expect(service.create('user-1', { deliveryAddress: 'B' })).rejects.toThrow(
+        'pickupAddress y deliveryAddress son requeridos',
+      );
+      await expect(service.create('user-1', { ...base, distanceKm: -5 })).rejects.toThrow(
+        'distanceKm inválido',
+      );
+      await expect(service.create('user-1', { ...base, distanceKm: 9999 })).rejects.toThrow(
+        'distanceKm fuera de rango',
+      );
+      await expect(
+        service.create('user-1', { ...base, scheduledDate: 'not-a-date' }),
+      ).rejects.toThrow('scheduledDate inválida');
+      await expect(service.create('user-1', { ...base, orderType: 'scheduled' })).rejects.toThrow(
+        'requieren scheduledDate',
+      );
+      expect(prisma.order.create).not.toHaveBeenCalled();
+    });
   });
 
   describe('getAvailableOrders', () => {

@@ -254,6 +254,7 @@ export function useOfflineOrders(options: UseOfflineOrdersOptions = {}): UseOffl
     async (localId: string): Promise<OfflineOrder> => {
       try {
         const order = await offlineOrders.syncOrder(localId);
+        if (!order) throw new Error('Order not found');
         await loadOrders();
         return order;
       } catch (err) {

@@ -8,6 +8,7 @@
  */
 
 import { compression, type CompressedData } from './compression';
+import { apiFetch } from './api-client';
 import { cacheWarming, WarmTask } from './cache-warming';
 import { offlineCache } from './offline-cache';
 
@@ -70,9 +71,8 @@ class UnifiedCacheService {
       // Check if data is compressed
       const data = raw as any;
       if (data && data.compressed && data.algorithm) {
-        // Decompress
-        const decompressed = compression.decompress(data as CompressedData);
-        return JSON.parse(decompressed as string);
+        // Decompress (already returns the parsed object, no extra JSON.parse)
+        return compression.decompress<T>(data as CompressedData);
       }
 
       return raw as T;
@@ -96,10 +96,10 @@ class UnifiedCacheService {
 
       let dataToStore: any = value;
 
-      // Compress if enabled and data is large enough
+      // Compress if enabled and data is large enough.
+      // Pass value directly: compression.compress already stringifies once.
       if (compress) {
-        const serialized = JSON.stringify(value);
-        const compressed = compression.compress(serialized);
+        const compressed = compression.compress(value);
 
         if (compressed.compressed) {
           dataToStore = {
@@ -113,11 +113,14 @@ class UnifiedCacheService {
         }
       }
 
-      // Store in offline cache
-      await offlineCache.set(key, dataToStore, String(ttl));
+      // Store in offline cache. Third param is the cache TYPE (expiration
+      // preset), not a TTL — passing String(ttl) polluted the type index
+      // with values like "5000"/"undefined" and silently ignored TTL.
+      const prior = await offlineCache.get(key).catch(() => undefined);
+      await offlineCache.set(key, dataToStore, 'default');
 
-      // Update stats
-      this.stats.totalEntries++;
+      // Update stats (dedupe: only count new keys)
+      if (prior == null) this.stats.totalEntries++;
       this.stats.totalSize += JSON.stringify(value).length;
       if (dataToStore.compressed) {
         this.stats.compressedSize += dataToStore.compressedSize;
@@ -160,7 +163,7 @@ class UnifiedCacheService {
       name: 'Tráfico actual',
       priority: 'critical',
       fetch: async () => {
-        const response = await fetch('/api/routing/traffic');
+        const response = await apiFetch('/api/routing/traffic');
         return response.json();
       },
       cacheKey: 'traffic:current',
@@ -175,7 +178,7 @@ class UnifiedCacheService {
       name: 'Perfil del comerciante',
       priority: 'critical',
       fetch: async () => {
-        const response = await fetch('/api/merchants/me');
+        const response = await apiFetch('/api/merchants/me');
         return response.json();
       },
       cacheKey: 'merchant:profile',
@@ -190,7 +193,7 @@ class UnifiedCacheService {
       name: 'Predicciones de tráfico',
       priority: 'high',
       fetch: async () => {
-        const response = await fetch('/api/routing/traffic/eta');
+        const response = await apiFetch('/api/routing/traffic/eta');
         return response.json();
       },
       cacheKey: 'traffic:predictions',
@@ -205,7 +208,7 @@ class UnifiedCacheService {
       name: 'Alertas de tráfico',
       priority: 'high',
       fetch: async () => {
-        const response = await fetch('/api/routing/alerts');
+        const response = await apiFetch('/api/routing/alerts');
         return response.json();
       },
       cacheKey: 'traffic:alerts',
@@ -235,7 +238,7 @@ class UnifiedCacheService {
       name: 'Repartidores disponibles',
       priority: 'normal',
       fetch: async () => {
-        const response = await fetch('/api/drivers/available');
+        const response = await apiFetch('/api/drivers/available');
         return response.json();
       },
       cacheKey: 'drivers:available',

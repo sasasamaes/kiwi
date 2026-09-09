@@ -19,8 +19,8 @@ export class KYCController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get KYC status for current user' })
   async getStatus(@Request() req) {
-    const verifications = await this.kycService.getAllVerifications();
-    const userVerification = verifications.find(v => v.userId === req.user.id);
+    const userId = req.user.sub ?? req.user.id;
+    const userVerification = await this.kycService.getVerificationByUserId(userId);
     return userVerification || { status: 'not_submitted' };
   }
 
@@ -29,7 +29,7 @@ export class KYCController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Submit KYC documents' })
   async submitDocuments(@Request() req, @Body() data: any) {
-    return this.kycService.submitDocuments(req.user.id, data);
+    return this.kycService.submitDocuments(req.user.sub ?? req.user.id, data);
   }
 
   // ============================================
@@ -79,7 +79,7 @@ export class KYCController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Approve KYC verification (admin)' })
   async approveVerification(@Param('id') id: string, @Request() req) {
-    return this.kycService.approveVerification(id, req.user.id);
+    return this.kycService.approveVerification(id, req.user.sub ?? req.user.id);
   }
 
   @Put('admin/:id/reject')
@@ -92,6 +92,6 @@ export class KYCController {
     @Request() req,
     @Body('reason') reason: string,
   ) {
-    return this.kycService.rejectVerification(id, req.user.id, reason);
+    return this.kycService.rejectVerification(id, req.user.sub ?? req.user.id, reason);
   }
 }

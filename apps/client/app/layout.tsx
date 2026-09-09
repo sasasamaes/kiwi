@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
-import { ThemeProvider, NotificationProvider } from '@kiwi/ui';
+import { ThemeProvider, NotificationProvider, AuthProvider } from '@kiwi/ui';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -26,7 +26,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="es" className={`${inter.variable}`} suppressHydrationWarning>
       <body className="font-sans antialiased bg-bg-light dark:bg-[#0b1326] dark:text-[#f8fafc] min-h-[100dvh]">
         <ThemeProvider>
-          <NotificationProvider>{children}</NotificationProvider>
+          <AuthProvider>
+            <NotificationProvider>{children}</NotificationProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>
