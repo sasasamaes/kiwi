@@ -11,6 +11,7 @@
 **Kiwi** es la app que conecta comerciantes con repartidores en Nicoya y Guanacaste. Como el kiwi: fresco, rápido, y lleno de energía.
 
 ### Características:
+
 - 📅 **Pedidos programados** a hora específica
 - 🏍️ **Selección por calidad** (no por precio)
 - 📴 **Modo offline** (funciona sin internet)
@@ -36,25 +37,27 @@ npm run dev
 
 ## 📦 Apps
 
-| App | URL | Descripción |
-|-----|-----|-------------|
-| 🍃 `web` | http://localhost:3000 | Dashboard Comerciantes |
-| 🛵 `driver` | http://localhost:3001 | App Repartidores |
-| 📱 `client` | http://localhost:3002 | Menú QR Clientes |
+| App         | URL                   | Descripción            |
+| ----------- | --------------------- | ---------------------- |
+| 🍃 `web`    | http://localhost:3000 | Dashboard Comerciantes |
+| 🛵 `driver` | http://localhost:3001 | App Repartidores       |
+| 📱 `client` | http://localhost:3002 | Menú QR Clientes       |
 
 ---
 
 ## 🎨 Branding
 
 ### Colores:
-| Color | Hex | Uso |
-|-------|-----|-----|
-| 🟢 Kiwi Green | `#6BB536` | Primario |
-| 🟤 Kiwi Brown | `#8B5A2B` | Secundario |
-| 🟡 Kiwi Yellow | `#FFD700` | Acento |
-| ⚪ Kiwi White | `#FAFAFA` | Background |
+
+| Color          | Hex       | Uso        |
+| -------------- | --------- | ---------- |
+| 🟢 Kiwi Green  | `#6BB536` | Primario   |
+| 🟤 Kiwi Brown  | `#8B5A2B` | Secundario |
+| 🟡 Kiwi Yellow | `#FFD700` | Acento     |
+| ⚪ Kiwi White  | `#FAFAFA` | Background |
 
 ### Logo:
+
 - 🥝 Kiwi fresco como icono
 - Estilo moderno y limpio
 - Funciona en fondo claro y oscuro
@@ -115,8 +118,9 @@ npm run test:e2e
 ## 🚀 Deploy
 
 - **Frontend:** Vercel
-- **Backend:** Railway / AWS
-- **Database:** Supabase / Neon
+- **Backend:** Render (https://kiwi-api-fe54.onrender.com)
+- **Database:** Render PostgreSQL
+- Más detalles: [DEPLOYMENT.md](./DEPLOYMENT.md)
 
 ---
 

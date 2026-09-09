@@ -29,7 +29,6 @@
     "prisma:migrate": "cd api && npm run prisma:migrate",
     "prisma:studio": "cd api && npm run prisma:studio",
     "deploy": "./scripts/deploy.sh",
-    "deploy:api": "cd api && railway up",
     "deploy:web": "cd apps/web && vercel --prod",
     "deploy:driver": "cd apps/driver && vercel --prod",
     "deploy:client": "cd apps/client && vercel --prod",
