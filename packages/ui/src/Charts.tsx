@@ -117,7 +117,7 @@ export function AreaChartComponent({ data, height = 300, className = '' }: Chart
               borderRadius: '12px',
               color: '#fafafa',
             }}
-            formatter={(value: number) => [`₡${value.toLocaleString()}`, 'Ingresos']}
+            formatter={(value) => [`₡${Number(value ?? 0).toLocaleString()}`, 'Ingresos']}
             labelFormatter={(value) => {
               const date = new Date(Number(value));
               return date.toLocaleDateString('es-CR', {
