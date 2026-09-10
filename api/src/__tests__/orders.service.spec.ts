@@ -161,7 +161,7 @@ describe('OrdersService', () => {
       });
 
       expect(order.basePrice).toBe(2000);
-      expect(order.totalAmount).toBe(2000);
+      expect(order.totalAmount).toBe(2200);
     });
 
     it('charges flat ₡2000 without coords when distance is within the zone', async () => {
@@ -198,6 +198,63 @@ describe('OrdersService', () => {
 
       const result = await service.getAvailableOrders();
       expect(result).toHaveLength(2);
+    });
+  });
+
+  describe('flete pricing (trip + 10pct)', () => {
+    beforeEach(() => {
+      prisma.merchantProfile.findUnique.mockResolvedValue({
+        id: 'merchant-1',
+        userId: 'user-1',
+        businessName: 'Soda Nicoya',
+      });
+      prisma.order.create.mockImplementation(async ({ data }: any) => ({
+        id: 'order-1',
+        ...data,
+      }));
+    });
+
+    it('flete en zona: 2000 + 200, driver recibe 2000', async () => {
+      const order: any = await service.create('user-1', {
+        pickupAddress: 'Parque Nicoya',
+        pickupLat: 10.1467,
+        pickupLng: -85.452,
+        deliveryAddress: 'Barrio San Martín',
+        deliveryLat: 10.15,
+        deliveryLng: -85.455,
+        distanceKm: 2,
+        kind: 'freight',
+        packageDescription: 'Caja con repuestos',
+        packageSize: 'M',
+      });
+      expect(order.basePrice).toBe(2000);
+      expect(order.commission).toBe(200);
+      expect(order.driverPayout).toBe(2000);
+      expect(order.totalAmount).toBe(2200);
+    });
+
+    it('comida en zona: productos pass-through sin comision', async () => {
+      const order: any = await service.create('user-1', {
+        pickupAddress: 'Parque Nicoya',
+        deliveryAddress: 'Barrio San Martín',
+        distanceKm: 2.5,
+        kind: 'food',
+        productsTotal: 5000,
+      });
+      expect(order.basePrice).toBe(2000);
+      expect(order.commission).toBe(200);
+      expect(order.totalAmount).toBe(7200);
+    });
+
+    it('rechaza kind invalido y productsTotal negativo', async () => {
+      const base = { pickupAddress: 'A', deliveryAddress: 'B' };
+      await expect(service.create('user-1', { ...base, kind: 'drone' })).rejects.toThrow(
+        'kind inválido',
+      );
+      await expect(service.create('user-1', { ...base, productsTotal: -100 })).rejects.toThrow(
+        'productsTotal inválido',
+      );
+      expect(prisma.order.create).not.toHaveBeenCalled();
     });
   });
 });

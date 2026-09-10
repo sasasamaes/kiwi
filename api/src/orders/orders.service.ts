@@ -50,14 +50,27 @@ export class OrdersService {
       throw new BadRequestException('Los pedidos programados requieren scheduledDate');
     }
 
-    // Calculate pricing based on distance (flat ₡2000 inside Nicoya centro zone)
-    const basePrice = this.calculateBasePrice(
+    // Pricing: trip (zone flat or distance table) + 10% trip commission.
+    // Products pass through with 0% commission until phase 2.
+    const kind = data.kind ?? 'food';
+    if (kind !== 'food' && kind !== 'freight') {
+      throw new BadRequestException('kind inválido: use food o freight');
+    }
+    const productsTotal = Number(data.productsTotal ?? 0);
+    if (!Number.isFinite(productsTotal) || productsTotal < 0) {
+      throw new BadRequestException('productsTotal inválido');
+    }
+    const tripPrice = this.calculateBasePrice(
       distanceKm,
       { lat: data.pickupLat, lng: data.pickupLng },
       { lat: data.deliveryLat, lng: data.deliveryLng },
     );
-    const commission = basePrice * 0.05; // 5% commission (low for Nicoya launch)
-    const driverPayout = basePrice - commission;
+    const commission = Math.round(tripPrice * 0.1) + this.commissionForProducts(productsTotal);
+    const driverPayout = tripPrice;
+    const totalAmount = productsTotal + tripPrice + commission;
+    if (data.packageSize != null && !['S', 'M', 'L'].includes(data.packageSize)) {
+      throw new BadRequestException('packageSize inválido');
+    }
 
     const order = await this.prisma.order.create({
       data: {
@@ -73,10 +86,15 @@ export class OrdersService {
         deliveryLat: data.deliveryLat,
         deliveryLng: data.deliveryLng,
         distanceKm,
-        basePrice,
+        basePrice: tripPrice,
         commission,
         driverPayout,
-        totalAmount: basePrice,
+        totalAmount,
+        productsTotal,
+        kind,
+        packageDescription: data.packageDescription ?? null,
+        packageSize: data.packageSize ?? null,
+        declaredValue: data.declaredValue ?? null,
         specialInstructions: data.specialInstructions,
       },
       include: {
@@ -664,6 +682,11 @@ export class OrdersService {
         OrdersService.NICOYA_CENTRO_LNG,
       ) <= OrdersService.NICOYA_ZONE_KM
     );
+  }
+
+  /** Phase-2 seam: commission on products. Currently 0 (merchant keeps 100%). */
+  private commissionForProducts(_productsTotal: number): number {
+    return 0;
   }
 
   private calculateBasePrice(
