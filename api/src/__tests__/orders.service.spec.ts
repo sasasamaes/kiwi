@@ -141,6 +141,54 @@ describe('OrdersService', () => {
     });
   });
 
+  describe('Nicoya centro flat rate (₡2000 within 10 km)', () => {
+    const merchant = { id: 'merchant-1', userId: 'user-1', businessName: 'Soda Nicoya' };
+
+    beforeEach(() => {
+      prisma.merchantProfile.findUnique.mockResolvedValue(merchant);
+      prisma.order.create.mockImplementation(async ({ data }: any) => ({ id: 'order-1', ...data }));
+    });
+
+    it('charges flat ₡2000 for short trips inside the zone', async () => {
+      const order: any = await service.create('user-1', {
+        pickupAddress: 'Parque de Nicoya',
+        pickupLat: 10.1467,
+        pickupLng: -85.452,
+        deliveryAddress: 'Barrio San Martín',
+        deliveryLat: 10.15,
+        deliveryLng: -85.455,
+        distanceKm: 1.2,
+      });
+
+      expect(order.basePrice).toBe(2000);
+      expect(order.totalAmount).toBe(2000);
+    });
+
+    it('charges flat ₡2000 without coords when distance is within the zone', async () => {
+      const order: any = await service.create('user-1', {
+        pickupAddress: 'Nicoya Centro',
+        deliveryAddress: 'Barrio Los Ángeles',
+        distanceKm: 2.5,
+      });
+
+      expect(order.basePrice).toBe(2000);
+    });
+
+    it('uses distance pricing outside the zone', async () => {
+      const order: any = await service.create('user-1', {
+        pickupAddress: 'Santa Cruz',
+        pickupLat: 10.2617,
+        pickupLng: -85.584,
+        deliveryAddress: 'Santa Cruz centro',
+        deliveryLat: 10.265,
+        deliveryLng: -85.59,
+        distanceKm: 2.5,
+      });
+
+      expect(order.basePrice).toBe(1500);
+    });
+  });
+
   describe('getAvailableOrders', () => {
     it('should return available orders for drivers', async () => {
       prisma.order.findMany.mockResolvedValue([

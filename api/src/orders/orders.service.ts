@@ -50,8 +50,12 @@ export class OrdersService {
       throw new BadRequestException('Los pedidos programados requieren scheduledDate');
     }
 
-    // Calculate pricing based on distance
-    const basePrice = this.calculateBasePrice(distanceKm);
+    // Calculate pricing based on distance (flat ₡2000 inside Nicoya centro zone)
+    const basePrice = this.calculateBasePrice(
+      distanceKm,
+      { lat: data.pickupLat, lng: data.pickupLng },
+      { lat: data.deliveryLat, lng: data.deliveryLng },
+    );
     const commission = basePrice * 0.05; // 5% commission (low for Nicoya launch)
     const driverPayout = basePrice - commission;
 
@@ -620,8 +624,68 @@ export class OrdersService {
     return updatedOrder;
   }
 
-  private calculateBasePrice(distanceKm: number): number {
-    // Nicoya-specific pricing (colonial town, short distances)
+  // Tarifa plana de Nicoya centro: ₡2000 dentro de un radio de 10 km
+  // del centro de Nicoya (parque central, aprox. 10.1467, -85.4520).
+  private static readonly NICOYA_CENTRO_LAT = 10.1467;
+  private static readonly NICOYA_CENTRO_LNG = -85.452;
+  private static readonly NICOYA_ZONE_KM = 10;
+  private static readonly NICOYA_FLAT_PRICE = 2000;
+
+  private static toRadians(degrees: number): number {
+    return (degrees * Math.PI) / 180;
+  }
+
+  /** Distancia haversine en km entre dos puntos. */
+  private static haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+    const R = 6371;
+    const dLat = OrdersService.toRadians(lat2 - lat1);
+    const dLng = OrdersService.toRadians(lng2 - lng1);
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(OrdersService.toRadians(lat1)) *
+        Math.cos(OrdersService.toRadians(lat2)) *
+        Math.sin(dLng / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(a));
+  }
+
+  private static isFiniteCoord(value: unknown): value is number {
+    const n = Number(value);
+    return Number.isFinite(n);
+  }
+
+  /** true si el punto está dentro de la zona plana de Nicoya centro. */
+  private static isInNicoyaZone(lat: unknown, lng: unknown): boolean {
+    if (!OrdersService.isFiniteCoord(lat) || !OrdersService.isFiniteCoord(lng)) return false;
+    return (
+      OrdersService.haversineKm(
+        Number(lat),
+        Number(lng),
+        OrdersService.NICOYA_CENTRO_LAT,
+        OrdersService.NICOYA_CENTRO_LNG,
+      ) <= OrdersService.NICOYA_ZONE_KM
+    );
+  }
+
+  private calculateBasePrice(
+    distanceKm: number,
+    pickup?: { lat: unknown; lng: unknown },
+    delivery?: { lat: unknown; lng: unknown },
+  ): number {
+    // Zona Nicoya centro: tarifa plana ₡2000. Se evalúa el punto de entrega;
+    // si no hay coords de entrega se usa el pickup; sin coords se asume
+    // Nicoya (toda la operación) cuando la distancia no supera la zona.
+    const hasDeliveryCoords =
+      OrdersService.isFiniteCoord(delivery?.lat) && OrdersService.isFiniteCoord(delivery?.lng);
+    const hasPickupCoords =
+      OrdersService.isFiniteCoord(pickup?.lat) && OrdersService.isFiniteCoord(pickup?.lng);
+    const inZone = hasDeliveryCoords
+      ? OrdersService.isInNicoyaZone(delivery?.lat, delivery?.lng)
+      : hasPickupCoords
+        ? OrdersService.isInNicoyaZone(pickup?.lat, pickup?.lng)
+        : distanceKm <= OrdersService.NICOYA_ZONE_KM;
+    if (inZone) return OrdersService.NICOYA_FLAT_PRICE;
+
+    // Fuera de la zona: tabla por distancia (colonial town, short distances)
     if (distanceKm <= 1) return 800;
     if (distanceKm <= 2) return 1000;
     if (distanceKm <= 5) return 1500;
