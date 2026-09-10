@@ -50,11 +50,7 @@ export default function MerchantTrafficSettings() {
   const [saving, setSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  useEffect(() => {
-    fetchSettings();
-  }, []);
-
-  const fetchSettings = async () => {
+  async function fetchSettings() {
     try {
       const response = await apiFetch('/api/merchant/traffic-settings');
       if (response.ok) {
@@ -66,7 +62,11 @@ export default function MerchantTrafficSettings() {
     } finally {
       setLoading(false);
     }
-  };
+  }
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
 
   const handleSave = async () => {
     setSaving(true);

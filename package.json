@@ -21,6 +21,8 @@
     "check:client-bundle:build": "node scripts/check-client-bundle.mjs --build",
     "check:dead-hosts": "node scripts/check-dead-hosts.mjs",
     "check:prisma-schema": "node scripts/check-prisma-schema.mjs",
+    "check:lint": "turbo run lint:check",
+    "check:format": "prettier --check \"**/*.{ts,tsx,md,json,yml,yaml}\"",
     "test:watch": "turbo run test -- --watch",
     "lint": "turbo run lint",
     "lint:fix": "turbo run lint -- --fix",

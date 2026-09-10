@@ -279,28 +279,19 @@ export default function EarningsPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <motion.div
-            className="rounded-xl glass p-4"
-            whileHover={{ y: -2 }}
-          >
+          <motion.div className="rounded-xl glass p-4" whileHover={{ y: -2 }}>
             <p className="text-sm text-surface-500 dark:text-surface-400">Viajes</p>
             <p className="mt-1 text-2xl font-bold text-surface-800 dark:text-surface-100">
               {earnings?.totalTrips || 0}
             </p>
           </motion.div>
-          <motion.div
-            className="rounded-xl glass p-4"
-            whileHover={{ y: -2 }}
-          >
+          <motion.div className="rounded-xl glass p-4" whileHover={{ y: -2 }}>
             <p className="text-sm text-surface-500 dark:text-surface-400">Promedio/Viaje</p>
             <p className="mt-1 text-2xl font-bold text-surface-800 dark:text-surface-100">
               {formatCurrency(earnings?.averagePerTrip || 0)}
             </p>
           </motion.div>
-          <motion.div
-            className="rounded-xl glass p-4"
-            whileHover={{ y: -2 }}
-          >
+          <motion.div className="rounded-xl glass p-4" whileHover={{ y: -2 }}>
             <p className="text-sm text-surface-500 dark:text-surface-400">Horas</p>
             <p className="mt-1 text-2xl font-bold text-surface-800 dark:text-surface-100">
               {earnings?.totalHours?.toFixed(1) || '0'}h

@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
-interface TrafficPrediction {
+export interface TrafficPrediction {
   timestamp: Date;
   predictedLevel: string;
   predictedSpeed: number;
@@ -15,14 +15,14 @@ interface TrafficPrediction {
   };
 }
 
-interface HourlyForecast {
+export interface HourlyForecast {
   hour: number;
   level: string;
   speed: number;
   confidence: number;
 }
 
-interface DailyForecast {
+export interface DailyForecast {
   date: string;
   dayOfWeek: string;
   hourlyForecast: HourlyForecast[];
@@ -32,14 +32,14 @@ interface DailyForecast {
   bestDeliveryHours: number[];
 }
 
-interface PredictionAccuracy {
+export interface PredictionAccuracy {
   model: string;
   accuracy: number;
   lastTrained: Date;
   sampleSize: number;
 }
 
-interface TrafficTrend {
+export interface TrafficTrend {
   direction: 'increasing' | 'decreasing' | 'stable';
   magnitude: number;
   timeframe: string;
@@ -53,12 +53,32 @@ export class TrafficPredictionsService {
   private readonly modelWeights = {
     // Time of day weights (0-23 hours)
     timeOfDay: [
-      0.1, 0.1, 0.1, 0.1, 0.1, 0.2, // 0-5 AM (low traffic)
-      0.4, 0.7, 0.9, 0.8, 0.6, 0.7, // 6-11 AM (morning rush)
-      0.9, 0.8, 0.6, 0.5, 0.6, 0.9, // 12-5 PM (lunch + evening rush)
-      0.8, 0.6, 0.4, 0.3, 0.2, 0.1, // 6-11 PM (evening)
+      0.1,
+      0.1,
+      0.1,
+      0.1,
+      0.1,
+      0.2, // 0-5 AM (low traffic)
+      0.4,
+      0.7,
+      0.9,
+      0.8,
+      0.6,
+      0.7, // 6-11 AM (morning rush)
+      0.9,
+      0.8,
+      0.6,
+      0.5,
+      0.6,
+      0.9, // 12-5 PM (lunch + evening rush)
+      0.8,
+      0.6,
+      0.4,
+      0.3,
+      0.2,
+      0.1, // 6-11 PM (evening)
     ],
-    
+
     // Day of week weights (0=Sunday, 6=Saturday)
     dayOfWeek: [
       0.4, // Sunday
@@ -69,13 +89,23 @@ export class TrafficPredictionsService {
       0.8, // Friday
       0.5, // Saturday
     ],
-    
+
     // Seasonal factors (monthly)
     seasonal: [
-      1.0, 1.0, 0.9, 0.9, 0.8, 0.8, // Jan-Jun (dry season)
-      0.9, 0.9, 1.0, 1.0, 1.1, 1.1, // Jul-Dec (rainy season)
+      1.0,
+      1.0,
+      0.9,
+      0.9,
+      0.8,
+      0.8, // Jan-Jun (dry season)
+      0.9,
+      0.9,
+      1.0,
+      1.0,
+      1.1,
+      1.1, // Jul-Dec (rainy season)
     ],
-    
+
     // Weather impact
     weather: {
       sunny: 1.0,
@@ -94,30 +124,26 @@ export class TrafficPredictionsService {
   /**
    * Get traffic prediction for a specific time
    */
-  async getPrediction(
-    lat: number,
-    lng: number,
-    targetTime: Date,
-  ): Promise<TrafficPrediction> {
+  async getPrediction(lat: number, lng: number, targetTime: Date): Promise<TrafficPrediction> {
     const cacheKey = `prediction_${lat}_${lng}_${targetTime.toISOString()}`;
     const cached = this.patternCache.get(cacheKey);
-    
+
     if (cached && Date.now() - cached.timestamp < this.cacheExpiry) {
       return cached.prediction;
     }
 
     // Get historical data for this location
     const historicalData = await this.getHistoricalData(lat, lng);
-    
+
     // Calculate prediction factors
     const factors = this.calculatePredictionFactors(targetTime, historicalData);
-    
+
     // Calculate predicted speed
     const predictedSpeed = this.calculatePredictedSpeed(factors);
-    
+
     // Determine traffic level
     const predictedLevel = this.speedToLevel(predictedSpeed);
-    
+
     // Calculate confidence
     const confidence = this.calculateConfidence(historicalData, targetTime);
 
@@ -141,10 +167,7 @@ export class TrafficPredictionsService {
   /**
    * Get hourly forecast for today
    */
-  async getHourlyForecast(
-    lat: number,
-    lng: number,
-  ): Promise<HourlyForecast[]> {
+  async getHourlyForecast(lat: number, lng: number): Promise<HourlyForecast[]> {
     const now = new Date();
     const forecasts: HourlyForecast[] = [];
 
@@ -154,7 +177,7 @@ export class TrafficPredictionsService {
       targetTime.setHours(now.getHours() + i, 0, 0, 0);
 
       const prediction = await this.getPrediction(lat, lng, targetTime);
-      
+
       forecasts.push({
         hour: targetTime.getHours(),
         level: prediction.predictedLevel,
@@ -169,11 +192,7 @@ export class TrafficPredictionsService {
   /**
    * Get daily forecast for the week
    */
-  async getDailyForecast(
-    lat: number,
-    lng: number,
-    days: number = 7,
-  ): Promise<DailyForecast[]> {
+  async getDailyForecast(lat: number, lng: number, days: number = 7): Promise<DailyForecast[]> {
     const forecasts: DailyForecast[] = [];
     const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
@@ -192,7 +211,7 @@ export class TrafficPredictionsService {
         targetTime.setHours(hour);
 
         const prediction = await this.getPrediction(lat, lng, targetTime);
-        
+
         hourlyForecast.push({
           hour,
           level: prediction.predictedLevel,
@@ -207,14 +226,17 @@ export class TrafficPredictionsService {
       // Calculate daily statistics
       const averageSpeed = speeds.reduce((a, b) => a + b, 0) / speeds.length;
       const averageLevel = this.getMostCommonLevel(levels);
-      
+
       // Find peak hours (lowest speeds)
       const indexedSpeeds = speeds.map((speed, index) => ({ speed, hour: index }));
       indexedSpeeds.sort((a, b) => a.speed - b.speed);
-      const peakHours = indexedSpeeds.slice(0, 3).map(s => s.hour);
-      
+      const peakHours = indexedSpeeds.slice(0, 3).map((s) => s.hour);
+
       // Find best delivery hours (highest speeds)
-      const bestHours = indexedSpeeds.slice(-3).map(s => s.hour).reverse();
+      const bestHours = indexedSpeeds
+        .slice(-3)
+        .map((s) => s.hour)
+        .reverse();
 
       forecasts.push({
         date: targetDate.toISOString().split('T')[0],
@@ -237,13 +259,15 @@ export class TrafficPredictionsService {
     lat: number,
     lng: number,
     days: number = 7,
-  ): Promise<Array<{
-    day: string;
-    hour: number;
-    level: string;
-    speed: number;
-    recommendation: string;
-  }>> {
+  ): Promise<
+    Array<{
+      day: string;
+      hour: number;
+      level: string;
+      speed: number;
+      recommendation: string;
+    }>
+  > {
     const dailyForecast = await this.getDailyForecast(lat, lng, days);
     const bestTimes: Array<{
       day: string;
@@ -261,9 +285,10 @@ export class TrafficPredictionsService {
             hour: hourData.hour,
             level: hourData.level,
             speed: hourData.speed,
-            recommendation: hourData.level === 'free'
-              ? '🟢 Tráfico libre - Tiempo ideal'
-              : '🟡 Tráfico ligero - Buen momento',
+            recommendation:
+              hourData.level === 'free'
+                ? '🟢 Tráfico libre - Tiempo ideal'
+                : '🟡 Tráfico ligero - Buen momento',
           });
         }
       }
@@ -287,24 +312,27 @@ export class TrafficPredictionsService {
     let historicalData: any[] = [];
 
     switch (timeframe) {
-      case 'hour':
+      case 'hour': {
         // Compare current hour vs same hour yesterday
         const yesterday = new Date(now);
         yesterday.setDate(yesterday.getDate() - 1);
         historicalData = await this.getHistoricalDataForPeriod(lat, lng, yesterday, now);
         break;
-      case 'day':
+      }
+      case 'day': {
         // Compare today vs same day last week
         const lastWeek = new Date(now);
         lastWeek.setDate(lastWeek.getDate() - 7);
         historicalData = await this.getHistoricalDataForPeriod(lat, lng, lastWeek, now);
         break;
-      case 'week':
+      }
+      case 'week': {
         // Compare this week vs last week
         const twoWeeksAgo = new Date(now);
         twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
         historicalData = await this.getHistoricalDataForPeriod(lat, lng, twoWeeksAgo, now);
         break;
+      }
     }
 
     if (historicalData.length < 2) {
@@ -316,7 +344,7 @@ export class TrafficPredictionsService {
     }
 
     // Calculate trend
-    const speeds = historicalData.map(d => d.speedFactor);
+    const speeds = historicalData.map((d) => d.speedFactor);
     const recentSpeeds = speeds.slice(Math.floor(speeds.length / 2));
     const olderSpeeds = speeds.slice(0, Math.floor(speeds.length / 2));
 
@@ -419,10 +447,7 @@ export class TrafficPredictionsService {
     });
   }
 
-  private calculatePredictionFactors(
-    targetTime: Date,
-    historicalData: any[],
-  ): any {
+  private calculatePredictionFactors(targetTime: Date, historicalData: any[]): any {
     const hour = targetTime.getHours();
     const dayOfWeek = targetTime.getDay();
     const month = targetTime.getMonth();
@@ -437,11 +462,7 @@ export class TrafficPredictionsService {
     const seasonalFactor = this.modelWeights.seasonal[month];
 
     // Historical factor (average speed for this hour/day)
-    const historicalFactor = this.calculateHistoricalFactor(
-      hour,
-      dayOfWeek,
-      historicalData,
-    );
+    const historicalFactor = this.calculateHistoricalFactor(hour, dayOfWeek, historicalData);
 
     // Weather factor (default to sunny)
     const weatherFactor = this.modelWeights.weather.sunny;
@@ -465,7 +486,7 @@ export class TrafficPredictionsService {
     }
 
     // Filter data for similar hour and day
-    const similarData = historicalData.filter(d => {
+    const similarData = historicalData.filter((d) => {
       const date = new Date(d.timestamp);
       return date.getHours() === hour && date.getDay() === dayOfWeek;
     });
@@ -517,15 +538,15 @@ export class TrafficPredictionsService {
     const hoursFromNow = Math.abs(targetTime.getTime() - Date.now()) / (1000 * 60 * 60);
     const timeConfidence = Math.max(0, 1 - hoursFromNow / 168); // 7 days
 
-    return (dataConfidence * 0.6 + timeConfidence * 0.4);
+    return dataConfidence * 0.6 + timeConfidence * 0.4;
   }
 
   private getMostCommonLevel(levels: string[]): string {
     const counts: Record<string, number> = {};
-    levels.forEach(level => {
+    levels.forEach((level) => {
       counts[level] = (counts[level] || 0) + 1;
     });
-    return Object.entries(counts).reduce((a, b) => a[1] > b[1] ? a : b)[0];
+    return Object.entries(counts).reduce((a, b) => (a[1] > b[1] ? a : b))[0];
   }
 
   private analyzePatterns(data: any[]): Array<{
@@ -541,7 +562,7 @@ export class TrafficPredictionsService {
 
     // Analyze hourly patterns
     const hourlyAvg: Record<number, number> = {};
-    data.forEach(d => {
+    data.forEach((d) => {
       const hour = new Date(d.timestamp).getHours();
       if (!hourlyAvg[hour]) hourlyAvg[hour] = 0;
       hourlyAvg[hour] += d.speedFactor;
@@ -550,8 +571,8 @@ export class TrafficPredictionsService {
     // Find rush hours
     const rushHours = Object.entries(hourlyAvg)
       .map(([hour, total]) => ({ hour: parseInt(hour), avg: total / (data.length / 24) }))
-      .filter(h => h.avg < 0.5)
-      .map(h => h.hour);
+      .filter((h) => h.avg < 0.5)
+      .map((h) => h.hour);
 
     if (rushHours.length > 0) {
       patterns.push({
@@ -563,7 +584,7 @@ export class TrafficPredictionsService {
 
     // Analyze weekly patterns
     const dailyAvg: Record<number, number> = {};
-    data.forEach(d => {
+    data.forEach((d) => {
       const day = new Date(d.timestamp).getDay();
       if (!dailyAvg[day]) dailyAvg[day] = 0;
       dailyAvg[day] += d.speedFactor;
@@ -571,8 +592,10 @@ export class TrafficPredictionsService {
 
     const busyDays = Object.entries(dailyAvg)
       .map(([day, total]) => ({ day: parseInt(day), avg: total / (data.length / 7) }))
-      .filter(d => d.avg < 0.6)
-      .map(d => ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'][d.day]);
+      .filter((d) => d.avg < 0.6)
+      .map(
+        (d) => ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'][d.day],
+      );
 
     if (busyDays.length > 0) {
       patterns.push({
@@ -597,12 +620,12 @@ export class TrafficPredictionsService {
     // Calculate average speed
     const avgSpeed = data.reduce((sum, d) => sum + d.speedFactor, 0) / data.length;
     const stdDev = Math.sqrt(
-      data.reduce((sum, d) => sum + Math.pow(d.speedFactor - avgSpeed, 2), 0) / data.length
+      data.reduce((sum, d) => sum + Math.pow(d.speedFactor - avgSpeed, 2), 0) / data.length,
     );
 
     // Detect anomalies (speeds more than 2 standard deviations from mean)
-    const anomalies_count = data.filter(d => 
-      Math.abs(d.speedFactor - avgSpeed) > 2 * stdDev
+    const anomalies_count = data.filter(
+      (d) => Math.abs(d.speedFactor - avgSpeed) > 2 * stdDev,
     ).length;
 
     if (anomalies_count > 10) {
@@ -615,17 +638,14 @@ export class TrafficPredictionsService {
     return anomalies;
   }
 
-  private generateRecommendations(
-    patterns: any[],
-    anomalies: any[],
-  ): string[] {
+  private generateRecommendations(patterns: any[], anomalies: any[]): string[] {
     const recommendations: string[] = [];
 
-    if (patterns.some(p => p.name === 'Horas Pico')) {
+    if (patterns.some((p) => p.name === 'Horas Pico')) {
       recommendations.push('Evita enviar repartidores durante las horas pico identificadas');
     }
 
-    if (patterns.some(p => p.name === 'Días Ocupados')) {
+    if (patterns.some((p) => p.name === 'Días Ocupados')) {
       recommendations.push('Considera programar entregas en días con menos tráfico');
     }
 

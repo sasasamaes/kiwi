@@ -132,9 +132,7 @@ export default function LandingPage() {
                   className="text-8xl mb-6"
                   animate={{ y: [0, -15, 0] }}
                   transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-                >
-                  
-                </motion.div>
+                ></motion.div>
 
                 <h1 className="text-5xl md:text-7xl font-display font-bold text-surface-800 dark:text-surface-100 mb-6">
                   Delivery{' '}

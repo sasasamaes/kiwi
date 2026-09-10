@@ -22,8 +22,9 @@ Vibe: Silicon Valley quality, tropical Costa Rica warmth
 ## 📱 CLIENT APP (Customer-Facing)
 
 ### 1. Home + QR Scanner
+
 ```
-Design a mobile app home screen for a delivery app called "Kiwi". 
+Design a mobile app home screen for a delivery app called "Kiwi".
 
 Top: Kiwi logo 🥝 with greeting "¡Hola! 👋" and search bar with placeholder "Buscar restaurante o comida..."
 
@@ -38,6 +39,7 @@ Style: Glassmorphism cards, green accent #22c55e, rounded corners, soft shadows,
 ```
 
 ### 2. Merchant Menu Page
+
 ```
 Design a mobile food ordering menu page for a restaurant called "Bowl & Café Luis Alfredo" in a delivery app called "Kiwi".
 
@@ -59,6 +61,7 @@ Style: Clean food photography placeholders, green accents, glassmorphism, premiu
 ```
 
 ### 3. Checkout Page
+
 ```
 Design a mobile checkout/payment page for a delivery app called "Kiwi".
 
@@ -88,6 +91,7 @@ Style: Glassmorphism cards, green #22c55e accents, rounded 16px corners, premium
 ```
 
 ### 4. Order Tracking
+
 ```
 Design a mobile order tracking page for a delivery app called "Kiwi".
 
@@ -112,6 +116,7 @@ Style: Map placeholder with gradient overlay, glassmorphism cards, real-time fee
 ```
 
 ### 5. Order History
+
 ```
 Design a mobile order history page for a delivery app called "Kiwi".
 
@@ -137,6 +142,7 @@ Style: Clean list layout, status colors (green=delivered, blue=in progress, yell
 ## 🏪 MERCHANT WEB DASHBOARD
 
 ### 6. Merchant Dashboard
+
 ```
 Design a web dashboard for a restaurant merchant using a delivery app called "Kiwi".
 
@@ -169,6 +175,7 @@ Style: Clean admin dashboard, green accents, glassmorphism cards, modern SaaS fe
 ```
 
 ### 7. Menu Management
+
 ```
 Design a web page for managing restaurant menu items in a delivery app called "Kiwi".
 
@@ -196,6 +203,7 @@ Style: Clean product grid, green accents, glassmorphism, modern e-commerce feel.
 ```
 
 ### 8. Scheduled Orders (Merchant View)
+
 ```
 Design a web page for viewing scheduled order proposals in a delivery app called "Kiwi".
 
@@ -229,6 +237,7 @@ Style: Proposal cards with driver photos, green accept buttons, modern card layo
 ## 🛵 DRIVER APP
 
 ### 9. Driver Home (Online/Offline Toggle)
+
 ```
 Design a mobile driver app home screen for a delivery app called "Kiwi".
 
@@ -260,6 +269,7 @@ Style: Driver-focused, large touch targets, high contrast for outdoor use, green
 ```
 
 ### 10. Active Orders (Driver)
+
 ```
 Design a mobile driver app page showing active orders in a delivery app called "Kiwi".
 
@@ -290,6 +300,7 @@ Style: Large action buttons for gloved hands, status colors, driver-friendly UI.
 ```
 
 ### 11. Driver Earnings
+
 ```
 Design a mobile driver app earnings page for a delivery app called "Kiwi".
 
@@ -322,6 +333,7 @@ Style: Financial dashboard feel, green accents, clean numbers, glassmorphism.
 ```
 
 ### 12. Driver Schedule
+
 ```
 Design a mobile driver app schedule page for a delivery app called "Kiwi".
 
@@ -343,6 +355,7 @@ Style: Clean schedule UI, toggle switches, time picker chips, green accents.
 ```
 
 ### 13. Driver Proposals (Scheduled Orders)
+
 ```
 Design a mobile driver app page for submitting proposals on scheduled orders in a delivery app called "Kiwi".
 
@@ -374,6 +387,7 @@ Style: Bottom sheet modal, quick selection chips, clean form, driver-friendly.
 ## 🔧 ADMIN PANEL
 
 ### 14. Admin Dashboard
+
 ```
 Design a web admin dashboard for a delivery platform called "Kiwi".
 
@@ -393,7 +407,7 @@ Sidebar (dark):
 - ⚙️ Configuración
 
 Main content:
-Top stats: 
+Top stats:
 - 45 Usuarios totales
 - 12 Comercios activos
 - 20 Repartidores
@@ -411,6 +425,7 @@ Style: Clean admin SaaS dashboard, dark sidebar, data tables, charts, modern ent
 ```
 
 ### 15. KYC Admin Review
+
 ```
 Design a web admin page for reviewing KYC verification requests in a delivery platform called "Kiwi".
 
@@ -441,6 +456,7 @@ Style: Document review UI, image thumbnails, clear action buttons, admin workflo
 ## 🔄 SCAN-TO-ORDER FLOW
 
 ### 16. QR Code Display (Merchant)
+
 ```
 Design a web page showing a restaurant's QR code for customers to scan in a delivery app called "Kiwi".
 
@@ -465,6 +481,7 @@ Style: Clean QR display, printable format, green Kiwi branding.
 ## 🌙 DARK MODE VARIANTS
 
 For each screen above, Stitch should also generate a dark mode variant:
+
 ```
 Same design as above but in dark mode:
 - Background: #0f172a (surface-950)

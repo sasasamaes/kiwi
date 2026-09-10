@@ -42,11 +42,26 @@ interface KYCStats {
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-  pending: { label: 'Pendiente', color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400' },
-  documents_submitted: { label: 'Documentos Enviados', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400' },
-  under_review: { label: 'En Revisión', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-400' },
-  approved: { label: 'Aprobado', color: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400' },
-  rejected: { label: 'Rechazado', color: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400' },
+  pending: {
+    label: 'Pendiente',
+    color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400',
+  },
+  documents_submitted: {
+    label: 'Documentos Enviados',
+    color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400',
+  },
+  under_review: {
+    label: 'En Revisión',
+    color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-400',
+  },
+  approved: {
+    label: 'Aprobado',
+    color: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400',
+  },
+  rejected: {
+    label: 'Rechazado',
+    color: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400',
+  },
 };
 
 const FILTER_TABS = [
@@ -160,12 +175,12 @@ export default function KYCPage() {
   if (error) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <motion.div 
+        <motion.div
           className="text-center"
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
         >
-          <motion.div 
+          <motion.div
             className="text-6xl mb-4"
             animate={{ y: [0, -10, 0] }}
             transition={{ duration: 2, repeat: Infinity }}
@@ -212,16 +227,13 @@ export default function KYCPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <motion.div 
-          className="rounded-2xl glass p-4"
-          whileHover={{ y: -2 }}
-        >
+        <motion.div className="rounded-2xl glass p-4" whileHover={{ y: -2 }}>
           <p className="text-sm text-surface-500 dark:text-surface-400">Total</p>
           <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
             {stats?.total || 0}
           </p>
         </motion.div>
-        <motion.div 
+        <motion.div
           className="rounded-2xl bg-yellow-50 dark:bg-yellow-900/30 p-4 shadow-soft dark:shadow-dark border border-yellow-200 dark:border-yellow-800"
           whileHover={{ y: -2 }}
         >
@@ -230,7 +242,7 @@ export default function KYCPage() {
             {stats?.pending || 0}
           </p>
         </motion.div>
-        <motion.div 
+        <motion.div
           className="rounded-2xl bg-green-50 dark:bg-green-900/30 p-4 shadow-soft dark:shadow-dark border border-green-200 dark:border-green-800"
           whileHover={{ y: -2 }}
         >
@@ -239,7 +251,7 @@ export default function KYCPage() {
             {stats?.approved || 0}
           </p>
         </motion.div>
-        <motion.div 
+        <motion.div
           className="rounded-2xl bg-red-50 dark:bg-red-900/30 p-4 shadow-soft dark:shadow-dark border border-red-200 dark:border-red-800"
           whileHover={{ y: -2 }}
         >
@@ -271,11 +283,7 @@ export default function KYCPage() {
 
       {/* Verifications Grid */}
       {verifications.length === 0 ? (
-        <motion.div 
-          className="text-center py-12"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-        >
+        <motion.div className="text-center py-12" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
           <span className="text-5xl mb-4 block">📭</span>
           <p className="text-surface-500 dark:text-surface-400">
             No hay verificaciones en esta categoría
@@ -285,13 +293,13 @@ export default function KYCPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {verifications.map((kyc, index) => {
             const statusConfig = getStatusConfig(kyc.status);
-            
+
             return (
               <motion.div
                 key={kyc.id}
                 className={`rounded-2xl glass p-6 cursor-pointer hover:shadow-medium dark:hover:shadow-dark transition-all ${
                   kyc.status === 'pending' || kyc.status === 'documents_submitted'
-                    ? 'border-2 border-yellow-200 dark:border-yellow-800' 
+                    ? 'border-2 border-yellow-200 dark:border-yellow-800'
                     : ''
                 }`}
                 initial={{ opacity: 0, y: 20 }}
@@ -302,11 +310,13 @@ export default function KYCPage() {
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-semibold ${
-                      kyc.user.role === 'driver' 
-                        ? 'bg-kiwi-100 dark:bg-kiwi-900/30 text-kiwi-600 dark:text-kiwi-400'
-                        : 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                    }`}>
+                    <div
+                      className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-semibold ${
+                        kyc.user.role === 'driver'
+                          ? 'bg-kiwi-100 dark:bg-kiwi-900/30 text-kiwi-600 dark:text-kiwi-400'
+                          : 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                      }`}
+                    >
                       {kyc.user.role === 'driver' ? 'Bike' : '🏪'}
                     </div>
                     <div>
@@ -318,7 +328,9 @@ export default function KYCPage() {
                       </p>
                     </div>
                   </div>
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusConfig.color}`}>
+                  <span
+                    className={`px-3 py-1 rounded-full text-xs font-medium ${statusConfig.color}`}
+                  >
                     {statusConfig.label}
                   </span>
                 </div>
@@ -346,7 +358,7 @@ export default function KYCPage() {
 
                 {(kyc.status === 'pending' || kyc.status === 'documents_submitted') && (
                   <div className="flex gap-2 pt-2 border-t border-surface-100 dark:border-surface-700">
-                    <button 
+                    <button
                       className="flex-1 py-2 text-sm font-medium text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-700 rounded-lg transition-colors"
                       onClick={(e) => {
                         e.stopPropagation();
@@ -356,7 +368,7 @@ export default function KYCPage() {
                     >
                       Rechazar
                     </button>
-                    <button 
+                    <button
                       className="flex-1 py-2 text-sm font-medium bg-kiwi-500 text-white rounded-lg hover:bg-kiwi-600 transition-colors"
                       onClick={(e) => {
                         e.stopPropagation();
@@ -376,9 +388,7 @@ export default function KYCPage() {
 
                 {kyc.status === 'approved' && kyc.verifiedAt && (
                   <div className="pt-2 border-t border-surface-100 dark:border-surface-700">
-                    <p className="text-sm text-green-500">
-                      Aprobado {formatDate(kyc.verifiedAt)}
-                    </p>
+                    <p className="text-sm text-green-500">Aprobado {formatDate(kyc.verifiedAt)}</p>
                   </div>
                 )}
               </motion.div>
@@ -408,11 +418,13 @@ export default function KYCPage() {
               <div className="sticky top-0 bg-white dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700 p-6 z-10">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className={`w-14 h-14 rounded-full flex items-center justify-center text-xl font-semibold ${
-                      selectedKYC.user.role === 'driver' 
-                        ? 'bg-kiwi-100 dark:bg-kiwi-900/30 text-kiwi-600 dark:text-kiwi-400'
-                        : 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                    }`}>
+                    <div
+                      className={`w-14 h-14 rounded-full flex items-center justify-center text-xl font-semibold ${
+                        selectedKYC.user.role === 'driver'
+                          ? 'bg-kiwi-100 dark:bg-kiwi-900/30 text-kiwi-600 dark:text-kiwi-400'
+                          : 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                      }`}
+                    >
                       {selectedKYC.user.role === 'driver' ? 'Bike' : '🏪'}
                     </div>
                     <div>
@@ -420,7 +432,8 @@ export default function KYCPage() {
                         {selectedKYC.user.email}
                       </h3>
                       <p className="text-surface-500 dark:text-surface-400">
-                        {selectedKYC.user.phone || 'Sin teléfono'} • {selectedKYC.user.role === 'driver' ? 'Repartidor' : 'Comercio'}
+                        {selectedKYC.user.phone || 'Sin teléfono'} •{' '}
+                        {selectedKYC.user.role === 'driver' ? 'Repartidor' : 'Comercio'}
                       </p>
                     </div>
                   </div>
@@ -438,7 +451,9 @@ export default function KYCPage() {
                 {/* Document Info */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50">
-                    <p className="text-sm text-surface-500 dark:text-surface-400 mb-1">Tipo de documento</p>
+                    <p className="text-sm text-surface-500 dark:text-surface-400 mb-1">
+                      Tipo de documento
+                    </p>
                     <p className="font-semibold text-surface-800 dark:text-surface-100">
                       {selectedKYC.idType || 'No especificado'}
                     </p>
@@ -451,12 +466,16 @@ export default function KYCPage() {
                   </div>
                   <div className="p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50">
                     <p className="text-sm text-surface-500 dark:text-surface-400 mb-1">Estado</p>
-                    <p className={`font-semibold ${getStatusConfig(selectedKYC.status).color} px-2 py-1 rounded-lg inline-block`}>
+                    <p
+                      className={`font-semibold ${getStatusConfig(selectedKYC.status).color} px-2 py-1 rounded-lg inline-block`}
+                    >
                       {getStatusConfig(selectedKYC.status).label}
                     </p>
                   </div>
                   <div className="p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50">
-                    <p className="text-sm text-surface-500 dark:text-surface-400 mb-1">Fecha de envío</p>
+                    <p className="text-sm text-surface-500 dark:text-surface-400 mb-1">
+                      Fecha de envío
+                    </p>
                     <p className="font-semibold text-surface-800 dark:text-surface-100">
                       {formatDate(selectedKYC.createdAt)}
                     </p>
@@ -474,7 +493,9 @@ export default function KYCPage() {
                         <div className="aspect-video bg-surface-200 dark:bg-surface-600 rounded-lg flex items-center justify-center mb-2">
                           <span className="text-4xl">🪪</span>
                         </div>
-                        <p className="text-sm text-surface-600 dark:text-surface-400">Frente del documento</p>
+                        <p className="text-sm text-surface-600 dark:text-surface-400">
+                          Frente del documento
+                        </p>
                       </div>
                     )}
                     {selectedKYC.idBackUrl && (
@@ -482,7 +503,9 @@ export default function KYCPage() {
                         <div className="aspect-video bg-surface-200 dark:bg-surface-600 rounded-lg flex items-center justify-center mb-2">
                           <span className="text-4xl">🪪</span>
                         </div>
-                        <p className="text-sm text-surface-600 dark:text-surface-400">Reverso del documento</p>
+                        <p className="text-sm text-surface-600 dark:text-surface-400">
+                          Reverso del documento
+                        </p>
                       </div>
                     )}
                     {selectedKYC.selfieUrl && (
@@ -490,7 +513,9 @@ export default function KYCPage() {
                         <div className="aspect-video bg-surface-200 dark:bg-surface-600 rounded-lg flex items-center justify-center mb-2">
                           <span className="text-4xl">🤳</span>
                         </div>
-                        <p className="text-sm text-surface-600 dark:text-surface-400">Selfie de verificación</p>
+                        <p className="text-sm text-surface-600 dark:text-surface-400">
+                          Selfie de verificación
+                        </p>
                       </div>
                     )}
                     {selectedKYC.licenseUrl && (
@@ -498,15 +523,22 @@ export default function KYCPage() {
                         <div className="aspect-video bg-surface-200 dark:bg-surface-600 rounded-lg flex items-center justify-center mb-2">
                           <span className="text-4xl">Car</span>
                         </div>
-                        <p className="text-sm text-surface-600 dark:text-surface-400">Licencia de conducir</p>
+                        <p className="text-sm text-surface-600 dark:text-surface-400">
+                          Licencia de conducir
+                        </p>
                       </div>
                     )}
-                    {!selectedKYC.idFrontUrl && !selectedKYC.idBackUrl && !selectedKYC.selfieUrl && !selectedKYC.licenseUrl && (
-                      <div className="col-span-2 text-center py-8">
-                        <span className="text-4xl mb-2 block">📭</span>
-                        <p className="text-surface-500 dark:text-surface-400">No se han subido documentos</p>
-                      </div>
-                    )}
+                    {!selectedKYC.idFrontUrl &&
+                      !selectedKYC.idBackUrl &&
+                      !selectedKYC.selfieUrl &&
+                      !selectedKYC.licenseUrl && (
+                        <div className="col-span-2 text-center py-8">
+                          <span className="text-4xl mb-2 block">📭</span>
+                          <p className="text-surface-500 dark:text-surface-400">
+                            No se han subido documentos
+                          </p>
+                        </div>
+                      )}
                   </div>
                 </div>
 
@@ -518,14 +550,18 @@ export default function KYCPage() {
                     </h4>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50">
-                        <p className="text-sm text-surface-500 dark:text-surface-400 mb-1">Número</p>
+                        <p className="text-sm text-surface-500 dark:text-surface-400 mb-1">
+                          Número
+                        </p>
                         <p className="font-semibold text-surface-800 dark:text-surface-100">
                           {selectedKYC.licenseNumber}
                         </p>
                       </div>
                       {selectedKYC.licenseExpiry && (
                         <div className="p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50">
-                          <p className="text-sm text-surface-500 dark:text-surface-400 mb-1">Vencimiento</p>
+                          <p className="text-sm text-surface-500 dark:text-surface-400 mb-1">
+                            Vencimiento
+                          </p>
                           <p className="font-semibold text-surface-800 dark:text-surface-100">
                             {formatDate(selectedKYC.licenseExpiry)}
                           </p>
@@ -544,7 +580,9 @@ export default function KYCPage() {
                     <div className="grid grid-cols-2 gap-4">
                       {selectedKYC.taxId && (
                         <div className="p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50">
-                          <p className="text-sm text-surface-500 dark:text-surface-400 mb-1">Cédula Jurídica</p>
+                          <p className="text-sm text-surface-500 dark:text-surface-400 mb-1">
+                            Cédula Jurídica
+                          </p>
                           <p className="font-semibold text-surface-800 dark:text-surface-100">
                             {selectedKYC.taxId}
                           </p>
@@ -554,7 +592,9 @@ export default function KYCPage() {
                         <div className="aspect-video bg-surface-200 dark:bg-surface-600 rounded-lg flex items-center justify-center mb-2">
                           <span className="text-4xl">📄</span>
                         </div>
-                        <p className="text-sm text-surface-600 dark:text-surface-400">Patente comercial</p>
+                        <p className="text-sm text-surface-600 dark:text-surface-400">
+                          Patente comercial
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -575,7 +615,8 @@ export default function KYCPage() {
                 )}
 
                 {/* Action Buttons */}
-                {(selectedKYC.status === 'pending' || selectedKYC.status === 'documents_submitted') && (
+                {(selectedKYC.status === 'pending' ||
+                  selectedKYC.status === 'documents_submitted') && (
                   <div className="flex gap-4 pt-4 border-t border-surface-200 dark:border-surface-700">
                     <button
                       className="flex-1 py-3 px-4 text-sm font-medium border-2 border-red-500 text-red-500 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"

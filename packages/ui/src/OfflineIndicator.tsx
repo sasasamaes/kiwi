@@ -9,10 +9,7 @@ interface OfflineIndicatorProps {
   showDetails?: boolean;
 }
 
-export function OfflineIndicator({ 
-  className = '',
-  showDetails = false 
-}: OfflineIndicatorProps) {
+export function OfflineIndicator({ className = '', showDetails = false }: OfflineIndicatorProps) {
   const [isOffline, setIsOffline] = useState(false);
   const [cacheStats, setCacheStats] = useState<CacheStats | null>(null);
   const [showPanel, setShowPanel] = useState(false);
@@ -139,28 +136,27 @@ export function OfflineIndicator({
               </div>
 
               {/* Connection Status */}
-              <div className={`p-4 rounded-xl mb-6 ${
-                isOffline 
-                  ? 'bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-800'
-                  : 'bg-kiwi-50 dark:bg-kiwi-900/30 border border-kiwi-200 dark:border-kiwi-800'
-              }`}>
+              <div
+                className={`p-4 rounded-xl mb-6 ${
+                  isOffline
+                    ? 'bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-800'
+                    : 'bg-kiwi-50 dark:bg-kiwi-900/30 border border-kiwi-200 dark:border-kiwi-800'
+                }`}
+              >
                 <div className="flex items-center gap-3">
-                  <span className="text-3xl">
-                    {isOffline ? 'offline' : '🟢'}
-                  </span>
+                  <span className="text-3xl">{isOffline ? 'offline' : '🟢'}</span>
                   <div>
-                    <p className={`font-semibold ${
-                      isOffline 
-                        ? 'text-orange-700 dark:text-orange-400'
-                        : 'text-kiwi-700 dark:text-kiwi-400'
-                    }`}>
+                    <p
+                      className={`font-semibold ${
+                        isOffline
+                          ? 'text-orange-700 dark:text-orange-400'
+                          : 'text-kiwi-700 dark:text-kiwi-400'
+                      }`}
+                    >
                       {isOffline ? 'Sin conexión a internet' : 'Conectado a internet'}
                     </p>
                     <p className="text-sm text-surface-600 dark:text-surface-400">
-                      {isOffline 
-                        ? 'Usando datos en caché'
-                        : 'Datos actualizados en tiempo real'
-                      }
+                      {isOffline ? 'Usando datos en caché' : 'Datos actualizados en tiempo real'}
                     </p>
                   </div>
                 </div>
@@ -177,17 +173,13 @@ export function OfflineIndicator({
                       <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
                         {cacheStats.totalEntries}
                       </p>
-                      <p className="text-xs text-surface-500 dark:text-surface-400">
-                        Entradas
-                      </p>
+                      <p className="text-xs text-surface-500 dark:text-surface-400">Entradas</p>
                     </div>
                     <div className="p-3 rounded-xl bg-surface-50 dark:bg-surface-900">
                       <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
                         {Math.round(cacheStats.totalSize / 1024)} KB
                       </p>
-                      <p className="text-xs text-surface-500 dark:text-surface-400">
-                        Tamaño total
-                      </p>
+                      <p className="text-xs text-surface-500 dark:text-surface-400">Tamaño total</p>
                     </div>
                   </div>
 

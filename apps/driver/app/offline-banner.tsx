@@ -20,7 +20,9 @@ export function OfflineBanner() {
           const queue = JSON.parse(stored);
           setQueuedCount(queue.length);
         }
-      } catch {}
+      } catch {
+        // Ignore parse errors for offline queue count
+      }
     };
 
     loadQueueCount();
@@ -64,10 +66,10 @@ export function OfflineBanner() {
       >
         <motion.div
           className={`rounded-2xl p-4 shadow-2xl backdrop-blur-xl ${
-            isOffline 
-              ? 'bg-red-500/90 text-white' 
-              : queuedCount > 0 
-                ? 'bg-gold-500/90 text-white' 
+            isOffline
+              ? 'bg-red-500/90 text-white'
+              : queuedCount > 0
+                ? 'bg-gold-500/90 text-white'
                 : 'bg-kiwi-500/90 text-white'
           }`}
           whileTap={{ scale: 0.98 }}
@@ -87,16 +89,15 @@ export function OfflineBanner() {
                   {isOffline ? 'Sin conexión' : queuedCount > 0 ? 'Sincronizando...' : 'En línea'}
                 </p>
                 <p className="text-xs opacity-80">
-                  {isOffline 
+                  {isOffline
                     ? 'Los pedidos se enviarán cuando vuelva la conexión'
-                    : queuedCount > 0 
+                    : queuedCount > 0
                       ? `${queuedCount} pedidos pendientes`
-                      : 'Conectado al servidor'
-                  }
+                      : 'Conectado al servidor'}
                 </p>
               </div>
             </div>
-            
+
             {queuedCount > 0 && (
               <motion.div
                 className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-sm font-bold"

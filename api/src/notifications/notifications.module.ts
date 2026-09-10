@@ -7,11 +7,7 @@ import { RoutingModule } from '../routing/routing.module';
 
 @Module({
   imports: [RoutingModule],
-  providers: [
-    NotificationsService, 
-    TrafficNotificationService,
-    PrismaService,
-  ],
+  providers: [NotificationsService, TrafficNotificationService, PrismaService],
   controllers: [NotificationsController],
   exports: [NotificationsService, TrafficNotificationService],
 })

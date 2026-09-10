@@ -55,7 +55,7 @@ describe('Orders Integration: Full Lifecycle', () => {
 
     // Shared mock state that simulates a database
     const mockDb: Record<string, any> = {};
-    let idCounter = 1;
+    const idCounter = 1;
 
     prisma = {
       merchantProfile: {

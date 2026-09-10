@@ -229,8 +229,11 @@ function NavigationPanel({
           <button
             onClick={() => {
               // Open in external navigation app
-              const url = `https://www.google.com/maps/dir/?api=1&destination=${route.end.coordinates.lat},${route.end.coordinates.lng}`;
-              window.open(url, '_blank');
+              const lat = Number(route.end.coordinates.lat);
+              const lng = Number(route.end.coordinates.lng);
+              if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+              const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+              window.open(url, '_blank', 'noopener,noreferrer');
             }}
             className="flex-1 py-3 rounded-xl bg-kiwi-500 text-white font-medium"
           >
@@ -503,8 +506,11 @@ export function OfflineNavigation({
             </motion.button>
             <motion.button
               onClick={() => {
-                const url = `https://www.google.com/maps/dir/?api=1&destination=${selectedRoute.end.coordinates.lat},${selectedRoute.end.coordinates.lng}`;
-                window.open(url, '_blank');
+                const lat = Number(selectedRoute.end.coordinates.lat);
+                const lng = Number(selectedRoute.end.coordinates.lng);
+                if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+                const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+                window.open(url, '_blank', 'noopener,noreferrer');
               }}
               className="px-4 py-3 rounded-xl bg-surface-100 dark:bg-surface-700 text-surface-700 dark:text-surface-300"
               whileTap={{ scale: 0.98 }}

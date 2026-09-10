@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { TrafficService } from './traffic.service';
 import { RoutingService } from './routing.service';
 
-interface RouteSuggestion {
+export interface RouteSuggestion {
   id: string;
   name: string;
   description: string;
@@ -22,7 +22,7 @@ interface RouteSuggestion {
   advantages: string[];
 }
 
-interface RouteComparison {
+export interface RouteComparison {
   origin: { lat: number; lng: number; name?: string };
   destination: { lat: number; lng: number; name?: string };
   routes: RouteSuggestion[];
@@ -36,7 +36,7 @@ interface RouteComparison {
   estimatedSavings: number;
 }
 
-interface TrafficHotspot {
+export interface TrafficHotspot {
   lat: number;
   lng: number;
   radius: number; // km
@@ -55,9 +55,7 @@ export class RouteSuggestionsService {
       id: 'centro_direct',
       name: 'Ruta Centro Directa',
       description: 'Por el centro de Nicoya',
-      waypoints: [
-        { lat: 10.1483, lng: -85.4527, name: 'Centro Nicoya' },
-      ],
+      waypoints: [{ lat: 10.1483, lng: -85.4527, name: 'Centro Nicoya' }],
       distance: 2.5,
       baseDuration: 8,
     },
@@ -66,8 +64,8 @@ export class RouteSuggestionsService {
       name: 'Periferia Norte',
       description: 'Por la periferia norte (más rápido en hora pico)',
       waypoints: [
-        { lat: 10.1550, lng: -85.4527, name: 'Entrada Norte' },
-        { lat: 10.1520, lng: -85.4480, name: 'Zona Industrial' },
+        { lat: 10.155, lng: -85.4527, name: 'Entrada Norte' },
+        { lat: 10.152, lng: -85.448, name: 'Zona Industrial' },
       ],
       distance: 3.2,
       baseDuration: 10,
@@ -77,8 +75,8 @@ export class RouteSuggestionsService {
       name: 'Periferia Sur',
       description: 'Por la periferia sur (evita mercado)',
       waypoints: [
-        { lat: 10.1420, lng: -85.4500, name: 'Zona Sur' },
-        { lat: 10.1400, lng: -85.4480, name: 'Industrial' },
+        { lat: 10.142, lng: -85.45, name: 'Zona Sur' },
+        { lat: 10.14, lng: -85.448, name: 'Industrial' },
       ],
       distance: 3.0,
       baseDuration: 9,
@@ -88,8 +86,8 @@ export class RouteSuggestionsService {
       name: 'Vía Santa Cruz',
       description: 'Por la vía a Santa Cruz (alternativa larga pero libre)',
       waypoints: [
-        { lat: 10.1500, lng: -85.4600, name: 'Salida Oeste' },
-        { lat: 10.1450, lng: -85.4700, name: 'Vía Santa Cruz' },
+        { lat: 10.15, lng: -85.46, name: 'Salida Oeste' },
+        { lat: 10.145, lng: -85.47, name: 'Vía Santa Cruz' },
       ],
       distance: 5.5,
       baseDuration: 15,
@@ -99,8 +97,8 @@ export class RouteSuggestionsService {
       name: 'Vía Liberia',
       description: 'Por la vía a Liberia (para destinos lejanos)',
       waypoints: [
-        { lat: 10.1550, lng: -85.4527, name: 'Entrada Norte' },
-        { lat: 10.1600, lng: -85.4500, name: 'Vía Liberia' },
+        { lat: 10.155, lng: -85.4527, name: 'Entrada Norte' },
+        { lat: 10.16, lng: -85.45, name: 'Vía Liberia' },
       ],
       distance: 8.0,
       baseDuration: 20,
@@ -118,16 +116,16 @@ export class RouteSuggestionsService {
       affectedRoutes: ['centro_direct'],
     },
     {
-      lat: 10.1490,
-      lng: -85.4520,
+      lat: 10.149,
+      lng: -85.452,
       radius: 0.3,
       level: 'heavy',
       severity: 8,
       affectedRoutes: ['centro_direct'],
     },
     {
-      lat: 10.1470,
-      lng: -85.4540,
+      lat: 10.147,
+      lng: -85.454,
       radius: 0.4,
       level: 'moderate',
       severity: 5,
@@ -154,7 +152,9 @@ export class RouteSuggestionsService {
       vehicleType?: string;
     } = {},
   ): Promise<RouteComparison> {
-    this.logger.log(`Getting route suggestions from ${originLat},${originLng} to ${destLat},${destLng}`);
+    this.logger.log(
+      `Getting route suggestions from ${originLat},${originLng} to ${destLat},${destLng}`,
+    );
 
     // Get traffic conditions at origin, destination, and midpoint
     const midpointLat = (originLat + destLat) / 2;
@@ -184,7 +184,7 @@ export class RouteSuggestionsService {
     );
 
     // Find recommended route
-    const recommendedRoute = routes.find(r => r.isRecommended) || routes[0];
+    const recommendedRoute = routes.find((r) => r.isRecommended) || routes[0];
 
     return {
       origin: { lat: originLat, lng: originLng },
@@ -215,12 +215,7 @@ export class RouteSuggestionsService {
     reason: string;
     timeSaved: number;
   }> {
-    const comparison = await this.getRouteSuggestions(
-      originLat,
-      originLng,
-      destLat,
-      destLng,
-    );
+    const comparison = await this.getRouteSuggestions(originLat, originLng, destLat, destLng);
 
     if (comparison.routes.length <= 1) {
       return {
@@ -231,7 +226,7 @@ export class RouteSuggestionsService {
     }
 
     const mainRoute = comparison.routes[0];
-    const bestAlternative = comparison.routes.find(r => r.id !== mainRoute.id && r.savings > 0);
+    const bestAlternative = comparison.routes.find((r) => r.id !== mainRoute.id && r.savings > 0);
 
     if (bestAlternative && bestAlternative.savings >= 3) {
       return {
@@ -257,21 +252,18 @@ export class RouteSuggestionsService {
     originLng: number,
     destLat: number,
     destLng: number,
-  ): Promise<Array<{
-    routeId: string;
-    routeName: string;
-    eta: number;
-    trafficLevel: string;
-    isRecommended: boolean;
-  }>> {
-    const comparison = await this.getRouteSuggestions(
-      originLat,
-      originLng,
-      destLat,
-      destLng,
-    );
+  ): Promise<
+    Array<{
+      routeId: string;
+      routeName: string;
+      eta: number;
+      trafficLevel: string;
+      isRecommended: boolean;
+    }>
+  > {
+    const comparison = await this.getRouteSuggestions(originLat, originLng, destLat, destLng);
 
-    return comparison.routes.map(route => ({
+    return comparison.routes.map((route) => ({
       routeId: route.id,
       routeName: route.name,
       eta: route.trafficDuration,
@@ -293,14 +285,9 @@ export class RouteSuggestionsService {
     warnings: string[];
     tips: string[];
   }> {
-    const comparison = await this.getRouteSuggestions(
-      originLat,
-      originLng,
-      destLat,
-      destLng,
-    );
+    const comparison = await this.getRouteSuggestions(originLat, originLng, destLat, destLng);
 
-    const recommended = comparison.routes.find(r => r.isRecommended) || comparison.routes[0];
+    const recommended = comparison.routes.find((r) => r.isRecommended) || comparison.routes[0];
     const warnings = this.generateWarnings(comparison);
     const tips = this.generateTips(comparison);
 
@@ -325,20 +312,16 @@ export class RouteSuggestionsService {
     bestAlternative: RouteSuggestion;
     estimatedDetour: number;
   }> {
-    const comparison = await this.getRouteSuggestions(
-      originLat,
-      originLng,
-      destLat,
-      destLng,
-    );
+    const comparison = await this.getRouteSuggestions(originLat, originLng, destLat, destLng);
 
-    const alternatives = comparison.routes.filter(r => r.id !== blockedRouteId);
+    const alternatives = comparison.routes.filter((r) => r.id !== blockedRouteId);
     const bestAlternative = alternatives[0];
-    const blockedRoute = comparison.routes.find(r => r.id === blockedRouteId);
+    const blockedRoute = comparison.routes.find((r) => r.id === blockedRouteId);
 
-    const estimatedDetour = bestAlternative && blockedRoute
-      ? bestAlternative.trafficDuration - blockedRoute.trafficDuration
-      : 0;
+    const estimatedDetour =
+      bestAlternative && blockedRoute
+        ? bestAlternative.trafficDuration - blockedRoute.trafficDuration
+        : 0;
 
     return {
       alternatives,
@@ -427,13 +410,13 @@ export class RouteSuggestionsService {
     routes.sort((a, b) => a.trafficDuration - b.trafficDuration);
 
     // Mark the fastest as recommended if not already
-    if (routes.length > 0 && !routes.some(r => r.isRecommended)) {
+    if (routes.length > 0 && !routes.some((r) => r.isRecommended)) {
       routes[0].isRecommended = true;
     }
 
     // Calculate savings compared to slowest route
-    const slowestDuration = Math.max(...routes.map(r => r.trafficDuration));
-    routes.forEach(route => {
+    const slowestDuration = Math.max(...routes.map((r) => r.trafficDuration));
+    routes.forEach((route) => {
       route.savings = slowestDuration - route.trafficDuration;
     });
 
@@ -454,16 +437,18 @@ export class RouteSuggestionsService {
       ...waypoints,
     ];
 
-    const trafficPromises = locations.map(loc =>
-      this.trafficService.getTrafficConditions(loc.lat, loc.lng)
+    const trafficPromises = locations.map((loc) =>
+      this.trafficService.getTrafficConditions(loc.lat, loc.lng),
     );
 
     const trafficResults = await Promise.all(trafficPromises);
-    const levels = trafficResults.map(r => r.conditions.level);
+    const levels = trafficResults.map((r) => r.conditions.level);
 
     // Return worst traffic
     const worstLevel = this.getWorstLevel(levels);
-    const worstCondition = trafficResults.find(r => r.conditions.level === worstLevel)?.conditions;
+    const worstCondition = trafficResults.find(
+      (r) => r.conditions.level === worstLevel,
+    )?.conditions;
 
     return {
       level: worstLevel,
@@ -525,11 +510,7 @@ export class RouteSuggestionsService {
     return false;
   }
 
-  private generateRouteWarnings(
-    route: any,
-    traffic: any,
-    isAffected: boolean,
-  ): string[] {
+  private generateRouteWarnings(route: any, traffic: any, isAffected: boolean): string[] {
     const warnings: string[] = [];
 
     if (isAffected) {
@@ -547,11 +528,7 @@ export class RouteSuggestionsService {
     return warnings;
   }
 
-  private generateRouteAdvantages(
-    route: any,
-    duration: number,
-    isAffected: boolean,
-  ): string[] {
+  private generateRouteAdvantages(route: any, duration: number, isAffected: boolean): string[] {
     const advantages: string[] = [];
 
     if (!isAffected) {
@@ -599,8 +576,10 @@ export class RouteSuggestionsService {
     const dLng = this.toRad(lng2 - lng1);
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(this.toRad(lat1)) * Math.cos(this.toRad(lat2)) *
-      Math.sin(dLng / 2) * Math.sin(dLng / 2);
+      Math.cos(this.toRad(lat1)) *
+        Math.cos(this.toRad(lat2)) *
+        Math.sin(dLng / 2) *
+        Math.sin(dLng / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   }
@@ -643,7 +622,10 @@ export class RouteSuggestionsService {
   private generateWarnings(comparison: RouteComparison): string[] {
     const warnings: string[] = [];
 
-    if (comparison.trafficSummary.level === 'heavy' || comparison.trafficSummary.level === 'severe') {
+    if (
+      comparison.trafficSummary.level === 'heavy' ||
+      comparison.trafficSummary.level === 'severe'
+    ) {
       warnings.push(`🚦 Tráfico ${comparison.trafficSummary.description} en la zona`);
     }
 

@@ -1,4 +1,15 @@
-import { PrismaClient, Role, VehicleType, DriverLevel, DriverStatus, OrderStatus, OrderType, KYCStatus, PaymentMethod, PaymentStatus } from '@prisma/client';
+import {
+  PrismaClient,
+  Role,
+  VehicleType,
+  DriverLevel,
+  DriverStatus,
+  OrderStatus,
+  OrderType,
+  KYCStatus,
+  PaymentMethod,
+  PaymentStatus,
+} from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -136,7 +147,8 @@ async function main() {
       address: 'Nicoya Centro, 200m norte del parque, frente al banco',
       latitude: 10.1483,
       longitude: -85.4527,
-      description: 'Bowls frescos, café de especialidad y smoothies naturales. ¡Tu bowl favorito en Nicoya!',
+      description:
+        'Bowls frescos, café de especialidad y smoothies naturales. ¡Tu bowl favorito en Nicoya!',
       openingHours: {
         monday: { open: '06:00', close: '20:00' },
         tuesday: { open: '06:00', close: '20:00' },
@@ -216,7 +228,8 @@ async function main() {
       data: {
         merchantId: luisMerchant.id,
         name: 'Bowl Tropikal',
-        description: 'Arroz integral, pollo a la plancha, aguacate, mango fresco, leche de coco y semillas de ajonjolí',
+        description:
+          'Arroz integral, pollo a la plancha, aguacate, mango fresco, leche de coco y semillas de ajonjolí',
         price: 4500,
         image: '🥗',
         category: 'Bowls',
@@ -255,7 +268,8 @@ async function main() {
       data: {
         merchantId: luisMerchant.id,
         name: 'Bowl Proteína',
-        description: 'Arroz integral, res argentina, huevo pochado, aguacate, frijoles negros y pico de gallo',
+        description:
+          'Arroz integral, res argentina, huevo pochado, aguacate, frijoles negros y pico de gallo',
         price: 4800,
         image: '🥩',
         category: 'Bowls',
@@ -418,8 +432,8 @@ async function main() {
       orderType: OrderType.immediate,
       pickupAddress: 'Bowl & Café Luis Alfredo, Nicoya Centro',
       deliveryAddress: 'Barrio Los Ángeles, 200m norte del parque',
-      deliveryLat: 10.1500,
-      deliveryLng: -85.4500,
+      deliveryLat: 10.15,
+      deliveryLng: -85.45,
       distanceKm: 1.5,
       basePrice: 1000,
       commission: 50,
@@ -434,8 +448,20 @@ async function main() {
 
   await prisma.orderItem.createMany({
     data: [
-      { orderId: order1.id, menuItemId: menuItems[0].id, name: 'Bowl Tropikal', price: 4500, quantity: 1 },
-      { orderId: order1.id, menuItemId: menuItems[4].id, name: 'Café Americano', price: 1200, quantity: 1 },
+      {
+        orderId: order1.id,
+        menuItemId: menuItems[0].id,
+        name: 'Bowl Tropikal',
+        price: 4500,
+        quantity: 1,
+      },
+      {
+        orderId: order1.id,
+        menuItemId: menuItems[4].id,
+        name: 'Café Americano',
+        price: 1200,
+        quantity: 1,
+      },
     ],
   });
 
@@ -450,8 +476,8 @@ async function main() {
       orderType: OrderType.immediate,
       pickupAddress: 'Bowl & Café Luis Alfredo, Nicoya Centro',
       deliveryAddress: 'Santa Cruz, 500m sur del banco',
-      deliveryLat: 10.2000,
-      deliveryLng: -85.4800,
+      deliveryLat: 10.2,
+      deliveryLng: -85.48,
       distanceKm: 4.2,
       basePrice: 1500,
       commission: 75,
@@ -465,8 +491,20 @@ async function main() {
 
   await prisma.orderItem.createMany({
     data: [
-      { orderId: order2.id, menuItemId: menuItems[2].id, name: 'Bowl Hawaiian', price: 5500, quantity: 1 },
-      { orderId: order2.id, menuItemId: menuItems[8].id, name: 'Smoothie Verde', price: 2500, quantity: 1 },
+      {
+        orderId: order2.id,
+        menuItemId: menuItems[2].id,
+        name: 'Bowl Hawaiian',
+        price: 5500,
+        quantity: 1,
+      },
+      {
+        orderId: order2.id,
+        menuItemId: menuItems[8].id,
+        name: 'Smoothie Verde',
+        price: 2500,
+        quantity: 1,
+      },
     ],
   });
 
@@ -480,8 +518,8 @@ async function main() {
       orderType: OrderType.immediate,
       pickupAddress: 'Bowl & Café Luis Alfredo, Nicoya Centro',
       deliveryAddress: 'Barrio San José, 100m este del estadio',
-      deliveryLat: 10.1490,
-      deliveryLng: -85.4510,
+      deliveryLat: 10.149,
+      deliveryLng: -85.451,
       distanceKm: 0.8,
       basePrice: 800,
       commission: 40,
@@ -492,8 +530,20 @@ async function main() {
 
   await prisma.orderItem.createMany({
     data: [
-      { orderId: order3.id, menuItemId: menuItems[11].id, name: 'Patacones', price: 1800, quantity: 1 },
-      { orderId: order3.id, menuItemId: menuItems[9].id, name: 'Jugo de Guanábana', price: 1800, quantity: 1 },
+      {
+        orderId: order3.id,
+        menuItemId: menuItems[11].id,
+        name: 'Patacones',
+        price: 1800,
+        quantity: 1,
+      },
+      {
+        orderId: order3.id,
+        menuItemId: menuItems[9].id,
+        name: 'Jugo de Guanábana',
+        price: 1800,
+        quantity: 1,
+      },
     ],
   });
 
@@ -509,8 +559,8 @@ async function main() {
       scheduledTime: '12:00',
       pickupAddress: 'Bowl & Café Luis Alfredo, Nicoya Centro',
       deliveryAddress: 'Liberia, 1km sur del hospital',
-      deliveryLat: 10.6340,
-      deliveryLng: -85.4400,
+      deliveryLat: 10.634,
+      deliveryLng: -85.44,
       distanceKm: 25,
       basePrice: 6000,
       commission: 300,
@@ -522,7 +572,13 @@ async function main() {
 
   await prisma.orderItem.createMany({
     data: [
-      { orderId: order4.id, menuItemId: menuItems[0].id, name: 'Bowl Tropikal', price: 4500, quantity: 10 },
+      {
+        orderId: order4.id,
+        menuItemId: menuItems[0].id,
+        name: 'Bowl Tropikal',
+        price: 4500,
+        quantity: 10,
+      },
     ],
   });
 
@@ -551,7 +607,13 @@ async function main() {
 
   await prisma.orderItem.createMany({
     data: [
-      { orderId: order5.id, menuItemId: menuItems[3].id, name: 'Bowl Proteína', price: 4800, quantity: 1 },
+      {
+        orderId: order5.id,
+        menuItemId: menuItems[3].id,
+        name: 'Bowl Proteína',
+        price: 4800,
+        quantity: 1,
+      },
     ],
   });
 

@@ -2,7 +2,7 @@
 
 /**
  * 🥝 KIWI - Offline Usage Analytics Service
- * 
+ *
  * Tracks offline usage patterns for business insights.
  * Stores analytics locally and syncs when online.
  */
@@ -14,7 +14,7 @@ const DB_NAME = 'kiwi-offline-analytics';
 const DB_VERSION = 1;
 const STORE_NAME = 'analytics';
 
-export type AnalyticsEventType = 
+export type AnalyticsEventType =
   | 'offline:mode_entered'
   | 'offline:mode_exited'
   | 'offline:order_created'
@@ -33,28 +33,28 @@ export type AnalyticsEventType =
 export interface AnalyticsEvent {
   id: string;
   type: AnalyticsEventType;
-  
+
   /** User info */
   userId: string;
   userType: 'merchant' | 'driver' | 'customer';
-  
+
   /** Device info */
   deviceId: string;
   platform: string;
-  
+
   /** Event data */
   data?: Record<string, any>;
-  
+
   /** Location context */
   location?: { lat: number; lng: number };
-  
+
   /** Network state at event time */
   networkState: {
     isOnline: boolean;
     connectionType: string;
     speed: string;
   };
-  
+
   /** Timestamp */
   timestamp: number;
 }
@@ -62,43 +62,43 @@ export interface AnalyticsEvent {
 export interface OfflineUsageStats {
   /** Total offline time */
   totalOfflineTime: number;
-  
+
   /** Offline sessions count */
   offlineSessions: number;
-  
+
   /** Average offline session duration */
   avgOfflineSessionDuration: number;
-  
+
   /** Peak offline hours */
   peakOfflineHours: Array<{ hour: number; count: number }>;
-  
+
   /** Features used offline */
   offlineFeatureUsage: Record<string, number>;
-  
+
   /** Offline orders created */
   offlineOrders: number;
-  
+
   /** Offline payments processed */
   offlinePayments: number;
-  
+
   /** Routes cached for offline */
   routesCached: number;
-  
+
   /** Sync success rate */
   syncSuccessRate: number;
-  
+
   /** Conflicts detected */
   conflictsDetected: number;
-  
+
   /** Average sync time */
   avgSyncTime: number;
-  
+
   /** Data saved (bytes) */
   dataSavedOffline: number;
-  
+
   /** Network distribution */
   networkDistribution: Record<string, number>;
-  
+
   /** Daily trends */
   dailyTrends: Array<{
     date: string;
@@ -112,10 +112,10 @@ export interface OfflineUsageStats {
 interface OfflineAnalyticsOptions {
   /** Auto-sync analytics when online */
   autoSync?: boolean;
-  
+
   /** Retention period (ms) */
   retentionPeriod?: number;
-  
+
   /** Max events to store */
   maxEvents?: number;
 }
@@ -208,7 +208,7 @@ class OfflineAnalyticsService {
     type: AnalyticsEventType,
     data?: Record<string, any>,
     userId?: string,
-    userType?: 'merchant' | 'driver' | 'customer'
+    userType?: 'merchant' | 'driver' | 'customer',
   ): Promise<void> {
     await this.initialize();
 
@@ -242,7 +242,7 @@ class OfflineAnalyticsService {
    */
   private getDeviceId(): string {
     if (typeof window === 'undefined') return 'server';
-    
+
     let deviceId = localStorage.getItem('kiwi-device-id');
     if (!deviceId) {
       deviceId = `device_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -256,8 +256,11 @@ class OfflineAnalyticsService {
    */
   private async storeEvent(event: AnalyticsEvent): Promise<void> {
     return new Promise((resolve, reject) => {
-      if (!this.db) { reject(new Error('DB not initialized')); return; }
-      
+      if (!this.db) {
+        reject(new Error('DB not initialized'));
+        return;
+      }
+
       const tx = this.db.transaction([STORE_NAME], 'readwrite');
       const store = tx.objectStore(STORE_NAME);
       const request = store.add(event);
@@ -297,7 +300,7 @@ class OfflineAnalyticsService {
     let syncSuccesses = 0;
     let syncTotal = 0;
 
-    events.forEach(event => {
+    events.forEach((event) => {
       // Offline mode tracking
       if (event.type === 'offline:mode_entered') {
         stats.offlineSessions++;
@@ -309,7 +312,7 @@ class OfflineAnalyticsService {
 
       // Feature usage
       if (event.type === 'offline:feature_used' && event.data?.feature) {
-        stats.offlineFeatureUsage[event.data.feature] = 
+        stats.offlineFeatureUsage[event.data.feature] =
           (stats.offlineFeatureUsage[event.data.feature] || 0) + 1;
       }
 
@@ -336,7 +339,8 @@ class OfflineAnalyticsService {
 
     // Calculate averages
     if (offlineDurations.length > 0) {
-      stats.avgOfflineSessionDuration = offlineDurations.reduce((a, b) => a + b, 0) / offlineDurations.length;
+      stats.avgOfflineSessionDuration =
+        offlineDurations.reduce((a, b) => a + b, 0) / offlineDurations.length;
     }
     if (syncTimes.length > 0) {
       stats.avgSyncTime = syncTimes.reduce((a, b) => a + b, 0) / syncTimes.length;
@@ -344,8 +348,11 @@ class OfflineAnalyticsService {
     stats.syncSuccessRate = syncTotal > 0 ? (syncSuccesses / syncTotal) * 100 : 100;
 
     // Daily trends
-    const dailyMap = new Map<string, { offlineTime: number; orders: number; payments: number; syncs: number }>();
-    events.forEach(event => {
+    const dailyMap = new Map<
+      string,
+      { offlineTime: number; orders: number; payments: number; syncs: number }
+    >();
+    events.forEach((event) => {
       const date = new Date(event.timestamp).toISOString().split('T')[0];
       if (!dailyMap.has(date)) {
         dailyMap.set(date, { offlineTime: 0, orders: 0, payments: 0, syncs: 0 });
@@ -368,13 +375,16 @@ class OfflineAnalyticsService {
    */
   private async getEvents(since: number): Promise<AnalyticsEvent[]> {
     return new Promise((resolve, reject) => {
-      if (!this.db) { reject(new Error('DB not initialized')); return; }
-      
+      if (!this.db) {
+        reject(new Error('DB not initialized'));
+        return;
+      }
+
       const tx = this.db.transaction([STORE_NAME], 'readonly');
       const store = tx.objectStore(STORE_NAME);
       const index = store.index('timestamp');
       const request = index.getAll(IDBKeyRange.lowerBound(since));
-      
+
       request.onsuccess = () => resolve(request.result || []);
       request.onerror = () => reject(request.error);
     });
@@ -387,7 +397,7 @@ class OfflineAnalyticsService {
     const seconds = Math.floor(ms / 1000);
     const minutes = Math.floor(seconds / 60);
     const hours = Math.floor(minutes / 60);
-    
+
     if (hours > 0) return `${hours}h ${minutes % 60}m`;
     if (minutes > 0) return `${minutes}m ${seconds % 60}s`;
     return `${seconds}s`;

@@ -82,10 +82,7 @@ export class NotificationsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get traffic notification history' })
-  async getTrafficNotificationHistory(
-    @CurrentUser() user: any,
-    @Query('limit') limit?: string,
-  ) {
+  async getTrafficNotificationHistory(@CurrentUser() user: any, @Query('limit') limit?: string) {
     const limitNum = limit ? parseInt(limit) : 20;
     return this.trafficNotificationService.getNotificationHistory(user.sub, limitNum);
   }
@@ -104,7 +101,8 @@ export class NotificationsController {
   @ApiOperation({ summary: 'Update traffic notification preferences' })
   async updateTrafficPreferences(
     @CurrentUser() user: any,
-    @Body() body: {
+    @Body()
+    body: {
       enabled?: boolean;
       types?: Record<string, boolean>;
       minConfidence?: number;
@@ -139,16 +137,28 @@ export class NotificationsController {
   ) {
     switch (body.type) {
       case 'prediction':
-        await this.trafficNotificationService.sendPredictionNotification(user.sub, body.lat, body.lng);
+        await this.trafficNotificationService.sendPredictionNotification(
+          user.sub,
+          body.lat,
+          body.lng,
+        );
         break;
       case 'bestTime':
-        await this.trafficNotificationService.sendBestTimeNotification(user.sub, body.lat, body.lng);
+        await this.trafficNotificationService.sendBestTimeNotification(
+          user.sub,
+          body.lat,
+          body.lng,
+        );
         break;
       case 'peakHour':
         await this.trafficNotificationService.sendPeakHourWarning(user.sub, body.lat, body.lng);
         break;
       default:
-        await this.trafficNotificationService.sendPredictionNotification(user.sub, body.lat, body.lng);
+        await this.trafficNotificationService.sendPredictionNotification(
+          user.sub,
+          body.lat,
+          body.lng,
+        );
     }
     return { success: true };
   }

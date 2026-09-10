@@ -2,7 +2,7 @@
 
 /**
  * 🥝 KIWI - Admin Sync Monitoring Service
- * 
+ *
  * Monitors offline data sync across all devices.
  * Provides real-time status for admin dashboard.
  */
@@ -21,29 +21,29 @@ export interface DeviceSyncInfo {
   userName: string;
   userType: 'merchant' | 'driver' | 'customer';
   platform: DevicePlatform;
-  
+
   /** Sync status */
   syncStatus: SyncStatus;
   deviceStatus: DeviceStatus;
-  
+
   /** Data counts */
   pendingOrders: number;
   pendingPayments: number;
   pendingSync: number;
   totalCached: number;
-  
+
   /** Location */
   lastKnownLocation?: { lat: number; lng: number; address?: string };
-  
+
   /** Network */
   connectionType: string;
   isOnline: boolean;
-  
+
   /** Timestamps */
   lastSyncAt: number;
   lastSeenAt: number;
   registeredAt: number;
-  
+
   /** Version */
   appVersion: string;
   syncVersion: string;
@@ -60,13 +60,13 @@ export interface SyncEvent {
 interface AdminSyncOptions {
   /** Refresh interval for dashboard (ms) */
   refreshInterval?: number;
-  
+
   /** Stale threshold (ms) */
   staleThreshold?: number;
-  
+
   /** Callback for real-time updates */
   onDeviceUpdate?: (device: DeviceSyncInfo) => void;
-  
+
   /** Callback for sync events */
   onSyncEvent?: (event: SyncEvent) => void;
 }
@@ -131,7 +131,10 @@ class AdminSyncMonitoringService {
 
     // Store in IndexedDB
     return new Promise((resolve, reject) => {
-      if (!this.db) { reject(new Error('DB not initialized')); return; }
+      if (!this.db) {
+        reject(new Error('DB not initialized'));
+        return;
+      }
       const tx = this.db.transaction([STORE_NAME], 'readwrite');
       const store = tx.objectStore(STORE_NAME);
       const request = store.put(updated);
@@ -151,9 +154,9 @@ class AdminSyncMonitoringService {
     let devices = Array.from(this.devices.values());
 
     if (filters) {
-      if (filters.userType) devices = devices.filter(d => d.userType === filters.userType);
-      if (filters.syncStatus) devices = devices.filter(d => d.syncStatus === filters.syncStatus);
-      if (filters.platform) devices = devices.filter(d => d.platform === filters.platform);
+      if (filters.userType) devices = devices.filter((d) => d.userType === filters.userType);
+      if (filters.syncStatus) devices = devices.filter((d) => d.syncStatus === filters.syncStatus);
+      if (filters.platform) devices = devices.filter((d) => d.platform === filters.platform);
     }
 
     return devices.sort((a, b) => b.lastSeenAt - a.lastSeenAt);
@@ -192,11 +195,14 @@ class AdminSyncMonitoringService {
       totalPendingPayments: 0,
       byPlatform: { ios: 0, android: 0, web: 0, pwa: 0 } as Record<DevicePlatform, number>,
       byUserType: {} as Record<string, number>,
-      bySyncStatus: { synced: 0, syncing: 0, offline: 0, error: 0, stale: 0 } as Record<SyncStatus, number>,
+      bySyncStatus: { synced: 0, syncing: 0, offline: 0, error: 0, stale: 0 } as Record<
+        SyncStatus,
+        number
+      >,
       recentEvents: [] as SyncEvent[],
     };
 
-    devices.forEach(device => {
+    devices.forEach((device) => {
       // Count by status
       if (device.isOnline) stats.activeDevices++;
       else stats.offlineDevices++;
@@ -266,7 +272,7 @@ class AdminSyncMonitoringService {
 
   private emit(event: string, data?: any): void {
     const listeners = this.listeners.get(event);
-    if (listeners) listeners.forEach(cb => cb(data));
+    if (listeners) listeners.forEach((cb) => cb(data));
   }
 
   on(event: string, callback: Function): () => void {

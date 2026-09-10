@@ -2,7 +2,7 @@
 
 /**
  * 🥝 KIWI - Analytics Tracking Service
- * 
+ *
  * Tracks user behavior across the platform using PostHog.
  * Falls back gracefully when PostHog is not available.
  */
@@ -142,28 +142,22 @@ export const events = {
     viewed: (merchantId: string) => analytics.track('menu_viewed', { merchantId }),
     itemAdded: (itemId: string, name: string, price: number) =>
       analytics.track('menu_item_added_to_cart', { itemId, name, price }),
-    itemRemoved: (itemId: string) =>
-      analytics.track('menu_item_removed_from_cart', { itemId }),
-    qrScanned: (merchantId: string) =>
-      analytics.track('qr_code_scanned', { merchantId }),
+    itemRemoved: (itemId: string) => analytics.track('menu_item_removed_from_cart', { itemId }),
+    qrScanned: (merchantId: string) => analytics.track('qr_code_scanned', { merchantId }),
   },
 
   // Driver events
   drivers: {
     wentOnline: (driverId: string) => analytics.track('driver_online', { driverId }),
     wentOffline: (driverId: string) => analytics.track('driver_offline', { driverId }),
-    locationUpdated: (driverId: string) =>
-      analytics.track('driver_location_updated', { driverId }),
-    scheduleUpdated: (driverId: string) =>
-      analytics.track('driver_schedule_updated', { driverId }),
+    locationUpdated: (driverId: string) => analytics.track('driver_location_updated', { driverId }),
+    scheduleUpdated: (driverId: string) => analytics.track('driver_schedule_updated', { driverId }),
   },
 
   // Merchant events
   merchants: {
-    menuUpdated: (merchantId: string) =>
-      analytics.track('merchant_menu_updated', { merchantId }),
-    orderCreated: (merchantId: string) =>
-      analytics.track('merchant_order_created', { merchantId }),
+    menuUpdated: (merchantId: string) => analytics.track('merchant_menu_updated', { merchantId }),
+    orderCreated: (merchantId: string) => analytics.track('merchant_order_created', { merchantId }),
     favoriteAdded: (merchantId: string, driverId: string) =>
       analytics.track('merchant_favorite_added', { merchantId, driverId }),
   },
@@ -171,11 +165,9 @@ export const events = {
   // KYC events
   kyc: {
     started: (role: string) => analytics.track('kyc_started', { role }),
-    documentsSubmitted: (role: string) =>
-      analytics.track('kyc_documents_submitted', { role }),
+    documentsSubmitted: (role: string) => analytics.track('kyc_documents_submitted', { role }),
     approved: (role: string) => analytics.track('kyc_approved', { role }),
-    rejected: (role: string, reason: string) =>
-      analytics.track('kyc_rejected', { role, reason }),
+    rejected: (role: string, reason: string) => analytics.track('kyc_rejected', { role, reason }),
   },
 
   // Withdrawal events
@@ -188,14 +180,10 @@ export const events = {
 
   // Feature usage
   features: {
-    darkModeToggled: (enabled: boolean) =>
-      analytics.track('dark_mode_toggled', { enabled }),
-    languageChanged: (language: string) =>
-      analytics.track('language_changed', { language }),
-    offlineModeUsed: (feature: string) =>
-      analytics.track('offline_feature_used', { feature }),
-    pushNotificationEnabled: () =>
-      analytics.track('push_notification_enabled'),
+    darkModeToggled: (enabled: boolean) => analytics.track('dark_mode_toggled', { enabled }),
+    languageChanged: (language: string) => analytics.track('language_changed', { language }),
+    offlineModeUsed: (feature: string) => analytics.track('offline_feature_used', { feature }),
+    pushNotificationEnabled: () => analytics.track('push_notification_enabled'),
   },
 };
 

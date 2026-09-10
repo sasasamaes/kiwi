@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AnalyticsPeriod, AnalyticsQueryDto } from './dto/analytics-query.dto';
+import { OrderStatus, PaymentStatus, UserStatus } from '@prisma/client';
 
 @Injectable()
 export class AnalyticsService {
@@ -137,10 +138,10 @@ export class AnalyticsService {
 
     const [total, completed, cancelled, avgDelivery] = await Promise.all([
       this.prisma.order.count({ where }),
-      this.prisma.order.count({ where: { ...where, status: 'delivered' } }),
-      this.prisma.order.count({ where: { ...where, status: 'cancelled' } }),
+      this.prisma.order.count({ where: { ...where, status: OrderStatus.delivered } }),
+      this.prisma.order.count({ where: { ...where, status: OrderStatus.cancelled } }),
       this.prisma.order.aggregate({
-        where: { ...where, status: 'delivered', deliveredAt: { not: null } },
+        where: { ...where, status: OrderStatus.delivered, deliveredAt: { not: null } },
         _avg: {
           // Calculate average delivery time in minutes
         },
@@ -149,7 +150,7 @@ export class AnalyticsService {
 
     // Calculate average delivery time manually
     const deliveredOrders = await this.prisma.order.findMany({
-      where: { ...where, status: 'delivered', deliveredAt: { not: null } },
+      where: { ...where, status: OrderStatus.delivered, deliveredAt: { not: null } },
       select: { createdAt: true, deliveredAt: true },
     });
 
@@ -174,7 +175,7 @@ export class AnalyticsService {
       averageDeliveryTime,
       byStatus: [
         { status: 'completed', count: completed },
-        { status: 'cancelled', count: cancelled },
+        { status: OrderStatus.cancelled, count: cancelled },
         { status: 'pending', count: total - completed - cancelled },
       ],
       daily: dailyOrders,
@@ -184,7 +185,7 @@ export class AnalyticsService {
   private async getRevenueStats(merchantId: string, dateRange: { start: Date; end: Date }) {
     const where = {
       merchantId,
-      status: 'delivered',
+      status: OrderStatus.delivered,
       createdAt: { gte: dateRange.start, lte: dateRange.end },
     };
 
@@ -209,7 +210,7 @@ export class AnalyticsService {
       by: ['method'],
       where: {
         order: { merchantId, createdAt: { gte: dateRange.start, lte: dateRange.end } },
-        status: 'completed',
+        status: PaymentStatus.completed,
       },
       _sum: { amount: true },
     });
@@ -373,7 +374,7 @@ export class AnalyticsService {
       this.prisma.order.aggregate({
         where: {
           merchantId,
-          status: 'delivered',
+          status: OrderStatus.delivered,
           createdAt: { gte: dateRange.start, lte: dateRange.end },
         },
         _sum: { totalAmount: true },
@@ -381,7 +382,7 @@ export class AnalyticsService {
       this.prisma.order.aggregate({
         where: {
           merchantId,
-          status: 'delivered',
+          status: OrderStatus.delivered,
           createdAt: { gte: previousStart, lte: previousEnd },
         },
         _sum: { totalAmount: true },
@@ -414,8 +415,8 @@ export class AnalyticsService {
 
     const [total, completed, cancelled] = await Promise.all([
       this.prisma.order.count({ where }),
-      this.prisma.order.count({ where: { ...where, status: 'delivered' } }),
-      this.prisma.order.count({ where: { ...where, status: 'cancelled' } }),
+      this.prisma.order.count({ where: { ...where, status: OrderStatus.delivered } }),
+      this.prisma.order.count({ where: { ...where, status: OrderStatus.cancelled } }),
     ]);
 
     // Average distance
@@ -440,7 +441,7 @@ export class AnalyticsService {
   private async getEarningsStats(driverId: string, dateRange: { start: Date; end: Date }) {
     const where = {
       driverId,
-      status: 'delivered',
+      status: OrderStatus.delivered,
       createdAt: { gte: dateRange.start, lte: dateRange.end },
     };
 
@@ -527,21 +528,21 @@ export class AnalyticsService {
         this.prisma.order.count({
           where: {
             driverId,
-            status: 'delivered',
+            status: OrderStatus.delivered,
             createdAt: { gte: dateRange.start, lte: dateRange.end },
           },
         }),
         this.prisma.order.count({
           where: {
             driverId,
-            status: 'delivered',
+            status: OrderStatus.delivered,
             createdAt: { gte: previousStart, lte: previousEnd },
           },
         }),
         this.prisma.order.aggregate({
           where: {
             driverId,
-            status: 'delivered',
+            status: OrderStatus.delivered,
             createdAt: { gte: dateRange.start, lte: dateRange.end },
           },
           _sum: { driverPayout: true },
@@ -549,7 +550,7 @@ export class AnalyticsService {
         this.prisma.order.aggregate({
           where: {
             driverId,
-            status: 'delivered',
+            status: OrderStatus.delivered,
             createdAt: { gte: previousStart, lte: previousEnd },
           },
           _sum: { driverPayout: true },
@@ -586,7 +587,7 @@ export class AnalyticsService {
     ]);
 
     const active = await this.prisma.user.count({
-      where: { status: 'active' },
+      where: { status: UserStatus.active },
     });
 
     return {
@@ -605,18 +606,18 @@ export class AnalyticsService {
 
     const [total, completed, cancelled, pending] = await Promise.all([
       this.prisma.order.count({ where }),
-      this.prisma.order.count({ where: { ...where, status: 'delivered' } }),
-      this.prisma.order.count({ where: { ...where, status: 'cancelled' } }),
+      this.prisma.order.count({ where: { ...where, status: OrderStatus.delivered } }),
+      this.prisma.order.count({ where: { ...where, status: OrderStatus.cancelled } }),
       this.prisma.order.count({
         where: {
           ...where,
           status: {
             in: [
-              'pending',
-              'assigned',
-              'in_transit_to_pickup',
-              'picked_up',
-              'in_transit_to_delivery',
+              OrderStatus.pending,
+              OrderStatus.assigned,
+              OrderStatus.in_transit_to_pickup,
+              OrderStatus.picked_up,
+              OrderStatus.in_transit_to_delivery,
             ],
           },
         },
@@ -628,7 +629,7 @@ export class AnalyticsService {
 
   private async getPlatformRevenueStats(dateRange: { start: Date; end: Date }) {
     const where = {
-      status: 'delivered',
+      status: OrderStatus.delivered,
       createdAt: { gte: dateRange.start, lte: dateRange.end },
     };
 
@@ -676,11 +677,17 @@ export class AnalyticsService {
         where: { createdAt: { gte: previousStart, lte: previousEnd } },
       }),
       this.prisma.order.aggregate({
-        where: { status: 'delivered', createdAt: { gte: dateRange.start, lte: dateRange.end } },
+        where: {
+          status: OrderStatus.delivered,
+          createdAt: { gte: dateRange.start, lte: dateRange.end },
+        },
         _sum: { totalAmount: true },
       }),
       this.prisma.order.aggregate({
-        where: { status: 'delivered', createdAt: { gte: previousStart, lte: previousEnd } },
+        where: {
+          status: OrderStatus.delivered,
+          createdAt: { gte: previousStart, lte: previousEnd },
+        },
         _sum: { totalAmount: true },
       }),
     ]);
@@ -740,7 +747,7 @@ export class AnalyticsService {
     const orders = await this.prisma.order.findMany({
       where: {
         driverId,
-        status: 'delivered',
+        status: OrderStatus.delivered,
         createdAt: { gte: dateRange.start, lte: dateRange.end },
       },
       select: { createdAt: true, driverPayout: true },

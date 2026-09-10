@@ -2,7 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import * as Sentry from '@sentry/nestjs';
-import { ProfilingIntegration } from '@sentry/profiling-node';
+import { nodeProfilingIntegration } from '@sentry/profiling-node';
 import { execSync } from 'node:child_process';
 import { join } from 'node:path';
 import { AppModule } from './app.module';
@@ -13,9 +13,9 @@ if (process.env.SENTRY_DSN) {
     dsn: process.env.SENTRY_DSN,
     environment: process.env.NODE_ENV || 'development',
     integrations: [
-      new Sentry.Integrations.Http({ tracing: true }),
-      new Sentry.Integrations.Express(),
-      new ProfilingIntegration(),
+      Sentry.httpIntegration(),
+      Sentry.expressIntegration(),
+      nodeProfilingIntegration(),
     ],
     tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.2 : 1.0,
     profilesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
@@ -24,11 +24,13 @@ if (process.env.SENTRY_DSN) {
       if (process.env.NODE_ENV === 'test') return null;
       // Sanitize sensitive data
       if (event.request?.data) {
-        const data = event.request.data;
-        delete data.password;
-        delete data.passwordHash;
-        delete data.token;
-        delete data.accessToken;
+        const data = event.request.data as Record<string, unknown>;
+        if (data && typeof data === 'object') {
+          delete data['password'];
+          delete data['passwordHash'];
+          delete data['token'];
+          delete data['accessToken'];
+        }
       }
       return event;
     },
@@ -105,11 +107,8 @@ async function bootstrap() {
 
   const app = await NestFactory.create(AppModule);
 
-  // Sentry request handler (must be first middleware)
-  if (process.env.SENTRY_DSN) {
-    app.use(Sentry.Handlers.requestHandler());
-    app.use(Sentry.Handlers.tracingHandler());
-  }
+  // Sentry request handling is automatic via httpIntegration/expressIntegration.
+  // No manual request middleware needed in @sentry/nestjs v10.
 
   // Global prefix
   app.setGlobalPrefix('api');
@@ -148,7 +147,7 @@ async function bootstrap() {
 
   // Sentry error handler (must be after routes)
   if (process.env.SENTRY_DSN) {
-    app.use(Sentry.Handlers.errorHandler());
+    Sentry.setupExpressErrorHandler(app);
   }
 
   const port = parseInt(process.env.PORT, 10) || 3000;

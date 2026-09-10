@@ -16,10 +16,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="w-full">
         {label && (
-          <label
-            htmlFor={inputId}
-            className="mb-2 block text-sm font-medium text-gray-700"
-          >
+          <label htmlFor={inputId} className="mb-2 block text-sm font-medium text-gray-700">
             {label}
           </label>
         )}
@@ -30,7 +27,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             'focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500',
             'disabled:cursor-not-allowed disabled:bg-gray-100',
             error && 'border-red-500 focus:border-red-500 focus:ring-red-500',
-            className
+            className,
           )}
           ref={ref}
           aria-invalid={error ? 'true' : 'false'}
@@ -42,12 +39,10 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             {error}
           </p>
         )}
-        {helperText && !error && (
-          <p className="mt-1 text-sm text-gray-500">{helperText}</p>
-        )}
+        {helperText && !error && <p className="mt-1 text-sm text-gray-500">{helperText}</p>}
       </div>
     );
-  }
+  },
 );
 
 Input.displayName = 'Input';

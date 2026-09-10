@@ -183,8 +183,10 @@ export class KYCService {
     }
 
     // Update KYC status
+    const userRole = verification.user.role;
+    const verificationUserId = verification.userId;
     const updated = await this.prisma.$transaction(async (tx) => {
-      const verification = await tx.kYCVerification.update({
+      const updatedVerification = await tx.kYCVerification.update({
         where: { id },
         data: {
           status: 'approved',
@@ -195,28 +197,28 @@ export class KYCService {
 
       // Update user's KYC status in profile (same tx: no verification
       // without profile update, and P2025 aborts both instead of half-state)
-      if (verification.user.role === 'driver') {
+      if (userRole === 'driver') {
         await tx.driverProfile.update({
-          where: { userId: verification.userId },
+          where: { userId: verificationUserId },
           data: { kycStatus: 'approved', kycVerifiedAt: new Date() },
         });
-      } else if (verification.user.role === 'merchant') {
+      } else if (userRole === 'merchant') {
         await tx.merchantProfile.update({
-          where: { userId: verification.userId },
+          where: { userId: verificationUserId },
           data: { kycStatus: 'approved', kycVerifiedAt: new Date() },
         });
       }
 
       await tx.notification.create({
         data: {
-          userId: verification.userId,
+          userId: verificationUserId,
           title: 'KYC Aprobado',
           body: 'Tu verificación de identidad fue aprobada. ¡Ya puedes usar la plataforma!',
           type: 'kyc_approved',
         },
       });
 
-      return verification;
+      return updatedVerification;
     });
 
     return updated;

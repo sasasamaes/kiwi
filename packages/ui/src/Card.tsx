@@ -18,35 +18,11 @@ function Card({
   ...props
 }: CardProps) {
   const variants = {
-    default: cn(
-      'bg-white',
-      'shadow-soft',
-      'rounded-2xl'
-    ),
-    glass: cn(
-      'glass-strong',
-      'border border-white/30',
-      'shadow-soft-md',
-      'rounded-2xl'
-    ),
-    elevated: cn(
-      'bg-white',
-      'shadow-soft-lg',
-      'rounded-2xl',
-      'ring-1 ring-surface-100'
-    ),
-    bordered: cn(
-      'bg-white',
-      'border border-surface-200',
-      'shadow-soft',
-      'rounded-2xl'
-    ),
-    gradient: cn(
-      'bg-kiwi-gradient',
-      'text-white',
-      'shadow-kiwi',
-      'rounded-2xl'
-    ),
+    default: cn('bg-white', 'shadow-soft', 'rounded-2xl'),
+    glass: cn('glass-strong', 'border border-white/30', 'shadow-soft-md', 'rounded-2xl'),
+    elevated: cn('bg-white', 'shadow-soft-lg', 'rounded-2xl', 'ring-1 ring-surface-100'),
+    bordered: cn('bg-white', 'border border-surface-200', 'shadow-soft', 'rounded-2xl'),
+    gradient: cn('bg-kiwi-gradient', 'text-white', 'shadow-kiwi', 'rounded-2xl'),
   };
 
   const paddings = {
@@ -62,7 +38,7 @@ function Card({
         variants[variant],
         paddings[padding],
         hover && 'transition-all duration-300 hover:shadow-soft-xl hover:-translate-y-1',
-        className
+        className,
       )}
       {...props}
     >
@@ -81,10 +57,7 @@ function CardHeader({ className, children, ...props }: HTMLAttributes<HTMLDivEle
 
 function CardTitle({ className, children, ...props }: HTMLAttributes<HTMLHeadingElement>) {
   return (
-    <h3
-      className={cn('text-lg font-display font-semibold text-surface-800', className)}
-      {...props}
-    >
+    <h3 className={cn('text-lg font-display font-semibold text-surface-800', className)} {...props}>
       {children}
     </h3>
   );
@@ -171,12 +144,24 @@ function StatCard({
           <p className="text-sm font-medium text-surface-500">{title}</p>
           <p className="mt-2 text-3xl font-display font-bold text-surface-800">{value}</p>
           {change && (
-            <p className={cn('mt-2 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium', changeColors[changeType])}>
+            <p
+              className={cn(
+                'mt-2 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
+                changeColors[changeType],
+              )}
+            >
               {change}
             </p>
           )}
         </div>
-        <div className={cn('flex h-12 w-12 items-center justify-center rounded-xl ring-1', colors[color].bg, colors[color].ring, colors[color].icon)}>
+        <div
+          className={cn(
+            'flex h-12 w-12 items-center justify-center rounded-xl ring-1',
+            colors[color].bg,
+            colors[color].ring,
+            colors[color].icon,
+          )}
+        >
           {icon}
         </div>
       </div>

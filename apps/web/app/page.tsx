@@ -45,9 +45,7 @@ export default function Home() {
                 className="relative text-8xl"
                 animate={{ y: [-10, 10, -10] }}
                 transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-              >
-                
-              </motion.div>
+              ></motion.div>
             </div>
           </motion.div>
 
@@ -308,9 +306,7 @@ export default function Home() {
                 className="mb-4 text-6xl"
                 animate={{ y: [-5, 5, -5] }}
                 transition={{ duration: 2, repeat: Infinity }}
-              >
-                
-              </motion.div>
+              ></motion.div>
               <h2 className="mb-4 text-3xl font-display font-bold text-white">
                 ¿Listo para empezar?
               </h2>

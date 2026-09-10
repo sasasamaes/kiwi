@@ -4,43 +4,106 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 
 const mockOrders = [
-  { id: 'KIWI-1234', merchant: 'Bowl & Café Luis Alfredo', driver: 'Juan Carlos', customer: 'María García', status: 'delivered', amount: 5700, fee: 570, createdAt: '2024-03-20T10:30:00', deliveredAt: '2024-03-20T11:05:00' },
-  { id: 'KIWI-1233', merchant: 'Punto Ácido', driver: 'Fran', customer: 'Pedro López', status: 'in_transit', amount: 3200, fee: 320, createdAt: '2024-03-20T10:15:00', deliveredAt: null },
-  { id: 'KIWI-1232', merchant: 'Los Efes', driver: null, customer: 'Ana Rodríguez', status: 'pending', amount: 4500, fee: 450, createdAt: '2024-03-20T09:45:00', deliveredAt: null },
-  { id: 'KIWI-1231', merchant: 'Twentis', driver: 'Joel', customer: 'Carlos Mendoza', status: 'delivered', amount: 2800, fee: 280, createdAt: '2024-03-20T09:30:00', deliveredAt: '2024-03-20T10:00:00' },
-  { id: 'KIWI-1230', merchant: 'Bowl & Café Luis Alfredo', driver: 'Juan Carlos', customer: 'Laura Jiménez', status: 'cancelled', amount: 3500, fee: 0, createdAt: '2024-03-20T09:15:00', deliveredAt: null },
+  {
+    id: 'KIWI-1234',
+    merchant: 'Bowl & Café Luis Alfredo',
+    driver: 'Juan Carlos',
+    customer: 'María García',
+    status: 'delivered',
+    amount: 5700,
+    fee: 570,
+    createdAt: '2024-03-20T10:30:00',
+    deliveredAt: '2024-03-20T11:05:00',
+  },
+  {
+    id: 'KIWI-1233',
+    merchant: 'Punto Ácido',
+    driver: 'Fran',
+    customer: 'Pedro López',
+    status: 'in_transit',
+    amount: 3200,
+    fee: 320,
+    createdAt: '2024-03-20T10:15:00',
+    deliveredAt: null,
+  },
+  {
+    id: 'KIWI-1232',
+    merchant: 'Los Efes',
+    driver: null,
+    customer: 'Ana Rodríguez',
+    status: 'pending',
+    amount: 4500,
+    fee: 450,
+    createdAt: '2024-03-20T09:45:00',
+    deliveredAt: null,
+  },
+  {
+    id: 'KIWI-1231',
+    merchant: 'Twentis',
+    driver: 'Joel',
+    customer: 'Carlos Mendoza',
+    status: 'delivered',
+    amount: 2800,
+    fee: 280,
+    createdAt: '2024-03-20T09:30:00',
+    deliveredAt: '2024-03-20T10:00:00',
+  },
+  {
+    id: 'KIWI-1230',
+    merchant: 'Bowl & Café Luis Alfredo',
+    driver: 'Juan Carlos',
+    customer: 'Laura Jiménez',
+    status: 'cancelled',
+    amount: 3500,
+    fee: 0,
+    createdAt: '2024-03-20T09:15:00',
+    deliveredAt: null,
+  },
 ];
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState(mockOrders);
-  const [filter, setFilter] = useState<'all' | 'pending' | 'in_transit' | 'delivered' | 'cancelled'>('all');
+  const [filter, setFilter] = useState<
+    'all' | 'pending' | 'in_transit' | 'delivered' | 'cancelled'
+  >('all');
   const [search, setSearch] = useState('');
 
-  const filteredOrders = orders.filter(order => {
+  const filteredOrders = orders.filter((order) => {
     const matchesFilter = filter === 'all' || order.status === filter;
-    const matchesSearch = order.id.toLowerCase().includes(search.toLowerCase()) ||
-                         order.merchant.toLowerCase().includes(search.toLowerCase()) ||
-                         order.customer.toLowerCase().includes(search.toLowerCase());
+    const matchesSearch =
+      order.id.toLowerCase().includes(search.toLowerCase()) ||
+      order.merchant.toLowerCase().includes(search.toLowerCase()) ||
+      order.customer.toLowerCase().includes(search.toLowerCase());
     return matchesFilter && matchesSearch;
   });
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-700';
-      case 'in_transit': return 'bg-blue-100 text-blue-700';
-      case 'delivered': return 'bg-green-100 text-green-700';
-      case 'cancelled': return 'bg-red-100 text-red-700';
-      default: return 'bg-surface-100 text-surface-500';
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-700';
+      case 'in_transit':
+        return 'bg-blue-100 text-blue-700';
+      case 'delivered':
+        return 'bg-green-100 text-green-700';
+      case 'cancelled':
+        return 'bg-red-100 text-red-700';
+      default:
+        return 'bg-surface-100 text-surface-500';
     }
   };
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'pending': return 'Pendiente';
-      case 'in_transit': return 'En tránsito';
-      case 'delivered': return 'Entregado';
-      case 'cancelled': return 'Cancelado';
-      default: return status;
+      case 'pending':
+        return 'Pendiente';
+      case 'in_transit':
+        return 'En tránsito';
+      case 'delivered':
+        return 'Entregado';
+      case 'cancelled':
+        return 'Cancelado';
+      default:
+        return status;
     }
   };
 
@@ -48,10 +111,10 @@ export default function OrdersPage() {
     total: orders.length,
     totalRevenue: orders.reduce((sum, o) => sum + o.amount, 0),
     totalFees: orders.reduce((sum, o) => sum + o.fee, 0),
-    pending: orders.filter(o => o.status === 'pending').length,
-    inTransit: orders.filter(o => o.status === 'in_transit').length,
-    delivered: orders.filter(o => o.status === 'delivered').length,
-    cancelled: orders.filter(o => o.status === 'cancelled').length,
+    pending: orders.filter((o) => o.status === 'pending').length,
+    inTransit: orders.filter((o) => o.status === 'in_transit').length,
+    delivered: orders.filter((o) => o.status === 'delivered').length,
+    cancelled: orders.filter((o) => o.status === 'cancelled').length,
   };
 
   return (
@@ -61,9 +124,7 @@ export default function OrdersPage() {
         <h1 className="text-2xl font-display font-bold text-surface-800 dark:text-surface-100">
           Gestión de Pedidos
         </h1>
-        <p className="text-surface-500 dark:text-surface-400">
-          {orders.length} pedidos totales
-        </p>
+        <p className="text-surface-500 dark:text-surface-400">{orders.length} pedidos totales</p>
       </div>
 
       {/* Stats */}
@@ -195,18 +256,26 @@ export default function OrdersPage() {
                     </span>
                   </td>
                   <td className="py-4 px-6">
-                    <span className="text-sm text-surface-800 dark:text-surface-200">{order.merchant}</span>
+                    <span className="text-sm text-surface-800 dark:text-surface-200">
+                      {order.merchant}
+                    </span>
                   </td>
                   <td className="py-4 px-6">
-                    <span className="text-sm text-surface-800 dark:text-surface-200">{order.customer}</span>
+                    <span className="text-sm text-surface-800 dark:text-surface-200">
+                      {order.customer}
+                    </span>
                   </td>
                   <td className="py-4 px-6">
-                    <span className={`text-sm ${order.driver ? 'text-surface-800 dark:text-surface-200' : 'text-surface-400'}`}>
+                    <span
+                      className={`text-sm ${order.driver ? 'text-surface-800 dark:text-surface-200' : 'text-surface-400'}`}
+                    >
                       {order.driver || 'Sin asignar'}
                     </span>
                   </td>
                   <td className="py-4 px-6">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}
+                    >
                       {getStatusLabel(order.status)}
                     </span>
                   </td>

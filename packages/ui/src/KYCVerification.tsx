@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from './utils';
 
-export type KYCStatus = 'pending' | 'documents_submitted' | 'under_review' | 'approved' | 'rejected' | 'expired';
+export type KYCStatus =
+  'pending' | 'documents_submitted' | 'under_review' | 'approved' | 'rejected' | 'expired';
 
 export interface KYCData {
   status: KYCStatus;
@@ -30,7 +31,10 @@ interface KYCVerificationProps {
   loading?: boolean;
 }
 
-const statusConfig: Record<KYCStatus, { label: string; color: string; icon: string; description: string }> = {
+const statusConfig: Record<
+  KYCStatus,
+  { label: string; color: string; icon: string; description: string }
+> = {
   pending: {
     label: 'Pendiente',
     color: 'bg-surface-100 text-surface-600',
@@ -69,7 +73,12 @@ const statusConfig: Record<KYCStatus, { label: string; color: string; icon: stri
   },
 };
 
-export function KYCVerification({ role, kycData, onSubmit, loading = false }: KYCVerificationProps) {
+export function KYCVerification({
+  role,
+  kycData,
+  onSubmit,
+  loading = false,
+}: KYCVerificationProps) {
   const [step, setStep] = useState(0);
   const [formData, setFormData] = useState({
     idType: 'cedula',
@@ -94,27 +103,25 @@ export function KYCVerification({ role, kycData, onSubmit, loading = false }: KY
   };
 
   const updateField = (field: string, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   // If already approved, show success
   if (status === 'approved') {
     return (
-      <motion.div 
+      <motion.div
         className="rounded-2xl bg-kiwi-50 border border-kiwi-200 p-6 text-center"
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
       >
-        <motion.div 
+        <motion.div
           className="text-6xl mb-4"
           animate={{ scale: [1, 1.2, 1] }}
           transition={{ duration: 0.5 }}
         >
           Check
         </motion.div>
-        <h3 className="text-lg font-display font-semibold text-kiwi-700 mb-2">
-          Cuenta Verificada
-        </h3>
+        <h3 className="text-lg font-display font-semibold text-kiwi-700 mb-2">Cuenta Verificada</h3>
         <p className="text-sm text-kiwi-600">
           Tu identidad ha sido verificada. Ya puedes usar todas las funciones de Kiwi.
         </p>
@@ -125,7 +132,7 @@ export function KYCVerification({ role, kycData, onSubmit, loading = false }: KY
   // If rejected, show error with option to resubmit
   if (status === 'rejected') {
     return (
-      <motion.div 
+      <motion.div
         className="rounded-2xl bg-red-50 border border-red-200 p-6"
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -138,7 +145,9 @@ export function KYCVerification({ role, kycData, onSubmit, loading = false }: KY
         </div>
         <div className="bg-white rounded-xl p-4 mb-4">
           <p className="text-sm text-red-600 font-medium">Razón:</p>
-          <p className="text-sm text-surface-600">{kycData?.rejectionReason || 'Documentos no claros o incompletos'}</p>
+          <p className="text-sm text-surface-600">
+            {kycData?.rejectionReason || 'Documentos no claros o incompletos'}
+          </p>
         </div>
         <motion.button
           className="w-full py-3 rounded-xl bg-kiwi-gradient text-white font-semibold"
@@ -155,27 +164,21 @@ export function KYCVerification({ role, kycData, onSubmit, loading = false }: KY
   // If under review or submitted, show status
   if (status === 'under_review' || status === 'documents_submitted') {
     return (
-      <motion.div 
+      <motion.div
         className="rounded-2xl bg-gold-50 border border-gold-200 p-6 text-center"
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
       >
-        <motion.div 
+        <motion.div
           className="text-6xl mb-4"
           animate={{ rotate: [0, 10, -10, 0] }}
           transition={{ duration: 2, repeat: Infinity }}
         >
           Search
         </motion.div>
-        <h3 className="text-lg font-display font-semibold text-gold-700 mb-2">
-          {config.label}
-        </h3>
-        <p className="text-sm text-gold-600">
-          {config.description}
-        </p>
-        <p className="text-xs text-surface-400 mt-4">
-          Tiempo estimado: 24-48 horas
-        </p>
+        <h3 className="text-lg font-display font-semibold text-gold-700 mb-2">{config.label}</h3>
+        <p className="text-sm text-gold-600">{config.description}</p>
+        <p className="text-xs text-surface-400 mt-4">Tiempo estimado: 24-48 horas</p>
       </motion.div>
     );
   }
@@ -201,7 +204,7 @@ export function KYCVerification({ role, kycData, onSubmit, loading = false }: KY
                   'flex flex-col items-center p-4 rounded-xl border-2 transition-all',
                   formData.idType === type.value
                     ? 'border-kiwi-500 bg-kiwi-50'
-                    : 'border-surface-200 bg-white hover:border-surface-300'
+                    : 'border-surface-200 bg-white hover:border-surface-300',
                 )}
                 onClick={() => updateField('idType', type.value)}
                 whileTap={{ scale: 0.95 }}
@@ -249,7 +252,7 @@ export function KYCVerification({ role, kycData, onSubmit, loading = false }: KY
               📸 Toma una foto clara de la frente de tu documento
             </p>
           </div>
-          <motion.div 
+          <motion.div
             className="border-2 border-dashed border-surface-300 rounded-xl p-8 text-center hover:border-kiwi-400 transition-colors cursor-pointer"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
@@ -271,7 +274,7 @@ export function KYCVerification({ role, kycData, onSubmit, loading = false }: KY
               📸 Toma una foto clara del reverso de tu documento
             </p>
           </div>
-          <motion.div 
+          <motion.div
             className="border-2 border-dashed border-surface-300 rounded-xl p-8 text-center hover:border-kiwi-400 transition-colors cursor-pointer"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
@@ -293,7 +296,7 @@ export function KYCVerification({ role, kycData, onSubmit, loading = false }: KY
               🤳 Toma un selfie sosteniendo tu documento de identidad
             </p>
           </div>
-          <motion.div 
+          <motion.div
             className="border-2 border-dashed border-surface-300 rounded-xl p-8 text-center hover:border-kiwi-400 transition-colors cursor-pointer"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
@@ -338,7 +341,7 @@ export function KYCVerification({ role, kycData, onSubmit, loading = false }: KY
                 className="w-full px-4 py-3 rounded-xl bg-white border border-surface-200 text-surface-800 focus:outline-none focus:ring-2 focus:ring-kiwi-500"
               />
             </div>
-            <motion.div 
+            <motion.div
               className="border-2 border-dashed border-surface-300 rounded-xl p-6 text-center hover:border-kiwi-400 transition-colors cursor-pointer"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -355,11 +358,9 @@ export function KYCVerification({ role, kycData, onSubmit, loading = false }: KY
         content: (
           <div className="space-y-4">
             <div className="bg-surface-50 rounded-xl p-4 mb-4">
-              <p className="text-xs text-surface-500">
-                📄 Sube el marchamo y seguro del vehículo
-              </p>
+              <p className="text-xs text-surface-500">📄 Sube el marchamo y seguro del vehículo</p>
             </div>
-            <motion.div 
+            <motion.div
               className="border-2 border-dashed border-surface-300 rounded-xl p-6 text-center hover:border-kiwi-400 transition-colors cursor-pointer"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -368,7 +369,7 @@ export function KYCVerification({ role, kycData, onSubmit, loading = false }: KY
               <p className="text-sm font-medium text-surface-700">Marchamo (registration)</p>
               <p className="text-xs text-surface-400">Foto o PDF</p>
             </motion.div>
-            <motion.div 
+            <motion.div
               className="border-2 border-dashed border-surface-300 rounded-xl p-6 text-center hover:border-kiwi-400 transition-colors cursor-pointer"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -379,7 +380,7 @@ export function KYCVerification({ role, kycData, onSubmit, loading = false }: KY
             </motion.div>
           </div>
         ),
-      }
+      },
     );
   }
 
@@ -408,7 +409,7 @@ export function KYCVerification({ role, kycData, onSubmit, loading = false }: KY
                 placeholder="3-101-XXXXXX"
               />
             </div>
-            <motion.div 
+            <motion.div
               className="border-2 border-dashed border-surface-300 rounded-xl p-6 text-center hover:border-kiwi-400 transition-colors cursor-pointer"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -419,7 +420,7 @@ export function KYCVerification({ role, kycData, onSubmit, loading = false }: KY
             </motion.div>
           </div>
         ),
-      }
+      },
     );
   }
 
@@ -457,7 +458,8 @@ export function KYCVerification({ role, kycData, onSubmit, loading = false }: KY
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="text-kiwi-500">✓</span>
-                  Documentos vehículo: {formData.vehicleRegister ? 'Check Subidos' : 'Clock Pendientes'}
+                  Documentos vehículo:{' '}
+                  {formData.vehicleRegister ? 'Check Subidos' : 'Clock Pendientes'}
                 </li>
               </>
             )}
@@ -471,8 +473,8 @@ export function KYCVerification({ role, kycData, onSubmit, loading = false }: KY
         </div>
         <div className="bg-surface-50 rounded-xl p-4">
           <p className="text-xs text-surface-500">
-            ⏱️ La verificación toma 24-48 horas hábiles. 
-            Recibirás una notificación cuando sea completada.
+            ⏱️ La verificación toma 24-48 horas hábiles. Recibirás una notificación cuando sea
+            completada.
           </p>
         </div>
       </div>
@@ -482,7 +484,7 @@ export function KYCVerification({ role, kycData, onSubmit, loading = false }: KY
   return (
     <div className="max-w-md mx-auto">
       {/* Status Badge */}
-      <motion.div 
+      <motion.div
         className={cn('inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6', config.color)}
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -494,11 +496,13 @@ export function KYCVerification({ role, kycData, onSubmit, loading = false }: KY
       {/* Progress Bar */}
       <div className="mb-6">
         <div className="flex justify-between text-xs text-surface-400 mb-2">
-          <span>Paso {step + 1} de {steps.length}</span>
+          <span>
+            Paso {step + 1} de {steps.length}
+          </span>
           <span>{Math.round(((step + 1) / steps.length) * 100)}%</span>
         </div>
         <div className="h-2 bg-surface-100 rounded-full overflow-hidden">
-          <motion.div 
+          <motion.div
             className="h-2 bg-kiwi-gradient rounded-full"
             initial={{ width: 0 }}
             animate={{ width: `${((step + 1) / steps.length) * 100}%` }}
@@ -508,7 +512,7 @@ export function KYCVerification({ role, kycData, onSubmit, loading = false }: KY
       </div>
 
       {/* Step Content */}
-      <motion.div 
+      <motion.div
         className="bg-white rounded-2xl shadow-soft p-6 mb-6"
         key={step}
         initial={{ opacity: 0, x: 20 }}
@@ -536,9 +540,7 @@ export function KYCVerification({ role, kycData, onSubmit, loading = false }: KY
         <motion.button
           className={cn(
             'flex-1 py-3 rounded-xl font-medium text-white',
-            step === steps.length - 1 
-              ? 'bg-kiwi-gradient' 
-              : 'bg-surface-800'
+            step === steps.length - 1 ? 'bg-kiwi-gradient' : 'bg-surface-800',
           )}
           onClick={() => {
             if (step === steps.length - 1) {
@@ -580,7 +582,7 @@ interface KYCStatusBadgeProps {
 
 export function KYCStatusBadge({ status, size = 'md' }: KYCStatusBadgeProps) {
   const config = statusConfig[status];
-  
+
   const sizes = {
     sm: 'h-6 px-2 text-xs',
     md: 'h-8 px-3 text-sm',
@@ -592,7 +594,7 @@ export function KYCStatusBadge({ status, size = 'md' }: KYCStatusBadgeProps) {
       className={cn(
         'inline-flex items-center gap-1.5 rounded-full font-medium',
         config.color,
-        sizes[size]
+        sizes[size],
       )}
     >
       <span>{config.icon}</span>

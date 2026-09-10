@@ -10,9 +10,9 @@ import { PrismaService } from '../prisma/prisma.service';
 
 @Module({
   providers: [
-    RoutingService, 
-    TrafficService, 
-    TrafficAlertsService, 
+    RoutingService,
+    TrafficService,
+    TrafficAlertsService,
     TrafficHistoryService,
     RouteSuggestionsService,
     TrafficPredictionsService,
@@ -20,10 +20,10 @@ import { PrismaService } from '../prisma/prisma.service';
   ],
   controllers: [RoutingController],
   exports: [
-    RoutingService, 
-    TrafficService, 
-    TrafficAlertsService, 
-    TrafficHistoryService, 
+    RoutingService,
+    TrafficService,
+    TrafficAlertsService,
+    TrafficHistoryService,
     RouteSuggestionsService,
     TrafficPredictionsService,
   ],

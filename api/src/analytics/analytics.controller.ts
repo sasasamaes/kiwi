@@ -4,7 +4,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { AnalyticsService } from './analytics.service';
-import { AnalyticsQueryDto } from './dto/analytics-query.dto';
+import { AnalyticsPeriod, AnalyticsQueryDto } from './dto/analytics-query.dto';
 
 @ApiTags('Analytics')
 @Controller('analytics')
@@ -46,10 +46,10 @@ export class AnalyticsController {
     const role = req.user.role;
     const userId = req.user.sub ?? req.user.id;
     if (role === 'merchant') {
-      return this.analyticsService.getMerchantAnalytics(userId, { period: 'week' });
+      return this.analyticsService.getMerchantAnalytics(userId, { period: AnalyticsPeriod.WEEK });
     } else if (role === 'driver') {
-      return this.analyticsService.getDriverAnalytics(userId, { period: 'week' });
+      return this.analyticsService.getDriverAnalytics(userId, { period: AnalyticsPeriod.WEEK });
     }
-    return this.analyticsService.getPlatformAnalytics({ period: 'week' });
+    return this.analyticsService.getPlatformAnalytics({ period: AnalyticsPeriod.WEEK });
   }
 }

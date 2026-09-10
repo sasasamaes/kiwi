@@ -72,7 +72,9 @@ export default function Home() {
       try {
         const audio = new Audio('/notification.mp3');
         audio.play().catch(() => {});
-      } catch {}
+      } catch {
+        // Ignore audio playback errors
+      }
     },
     onOrderStatusChanged: (data) => {
       console.log('RefreshCw Order status changed:', data);

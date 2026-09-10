@@ -37,7 +37,7 @@ export function OfflineAnalyticsDashboard({
         <div className="animate-pulse space-y-4">
           <div className="h-8 bg-surface-200 dark:bg-surface-700 rounded w-64" />
           <div className="grid grid-cols-4 gap-4">
-            {[1, 2, 3, 4].map(i => (
+            {[1, 2, 3, 4].map((i) => (
               <div key={i} className="h-24 bg-surface-200 dark:bg-surface-700 rounded-2xl" />
             ))}
           </div>
@@ -46,7 +46,7 @@ export function OfflineAnalyticsDashboard({
     );
   }
 
-  const maxDailyOrders = Math.max(...stats.dailyTrends.map(d => d.orders), 1);
+  const maxDailyOrders = Math.max(...stats.dailyTrends.map((d) => d.orders), 1);
 
   return (
     <div className={`space-y-6 ${className}`}>
@@ -190,12 +190,14 @@ export function OfflineAnalyticsDashboard({
             {Object.entries(stats.networkDistribution).map(([network, count]) => {
               const total = Object.values(stats.networkDistribution).reduce((a, b) => a + b, 0);
               const percentage = total > 0 ? (count / total) * 100 : 0;
-              
+
               return (
                 <div key={network}>
                   <div className="flex justify-between text-sm mb-1">
                     <span className="text-surface-600 dark:text-surface-400">{network}</span>
-                    <span className="font-medium text-surface-800 dark:text-surface-200">{percentage.toFixed(0)}%</span>
+                    <span className="font-medium text-surface-800 dark:text-surface-200">
+                      {percentage.toFixed(0)}%
+                    </span>
                   </div>
                   <div className="h-2 bg-surface-100 dark:bg-surface-700 rounded-full overflow-hidden">
                     <motion.div
@@ -224,7 +226,10 @@ export function OfflineAnalyticsDashboard({
         </h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {Object.entries(stats.offlineFeatureUsage).map(([feature, count]) => (
-            <div key={feature} className="p-3 rounded-xl bg-surface-50 dark:bg-surface-900 text-center">
+            <div
+              key={feature}
+              className="p-3 rounded-xl bg-surface-50 dark:bg-surface-900 text-center"
+            >
               <p className="text-xl font-bold text-surface-800 dark:text-surface-100">{count}</p>
               <p className="text-xs text-surface-500 dark:text-surface-400 capitalize">
                 {feature.replace(/_/g, ' ')}
@@ -303,27 +308,31 @@ export function OfflineAnalyticsDashboard({
           {stats.syncSuccessRate < 90 && (
             <div className="p-3 rounded-xl bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-800">
               <p className="text-sm text-orange-700 dark:text-orange-400">
-                La tasa de sincronización es {stats.syncSuccessRate.toFixed(0)}%. Considera mejorar la conectividad.
+                La tasa de sincronización es {stats.syncSuccessRate.toFixed(0)}%. Considera mejorar
+                la conectividad.
               </p>
             </div>
           )}
           {stats.offlineOrders > stats.offlinePayments && (
             <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800">
               <p className="text-sm text-blue-700 dark:text-blue-400">
-                Hay {stats.offlineOrders - stats.offlinePayments} pedidos offline sin pago procesado.
+                Hay {stats.offlineOrders - stats.offlinePayments} pedidos offline sin pago
+                procesado.
               </p>
             </div>
           )}
           {stats.conflictsDetected > 0 && (
             <div className="p-3 rounded-xl bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800">
               <p className="text-sm text-purple-700 dark:text-purple-400">
-                Se detectaron {stats.conflictsDetected} conflictos. La resolución automática está funcionando.
+                Se detectaron {stats.conflictsDetected} conflictos. La resolución automática está
+                funcionando.
               </p>
             </div>
           )}
           <div className="p-3 rounded-xl bg-kiwi-50 dark:bg-kiwi-900/30 border border-kiwi-200 dark:border-kiwi-800">
             <p className="text-sm text-kiwi-700 dark:text-kiwi-400">
-              Las rutas offline se han cacheado {stats.routesCached} veces, ahorrando datos y tiempo.
+              Las rutas offline se han cacheado {stats.routesCached} veces, ahorrando datos y
+              tiempo.
             </p>
           </div>
         </div>

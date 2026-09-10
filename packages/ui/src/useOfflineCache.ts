@@ -6,31 +6,31 @@ import { offlineCache, CACHE_EXPIRATION } from './offline-cache';
 interface UseOfflineCacheOptions<T> {
   /** Cache key for storing the data */
   cacheKey: string;
-  
+
   /** Function to fetch fresh data */
   fetchFn: () => Promise<T>;
-  
+
   /** Cache type for expiration time */
   cacheType?: keyof typeof CACHE_EXPIRATION;
-  
+
   /** Auto-fetch on mount */
   autoFetch?: boolean;
-  
+
   /** Refetch interval in milliseconds */
   refetchInterval?: number;
-  
+
   /** Callback when data is fetched successfully */
   onSuccess?: (data: T, fromCache: boolean) => void;
-  
+
   /** Callback when fetch fails */
   onError?: (error: Error) => void;
-  
+
   /** Callback when cache is used */
   onCacheHit?: (data: T) => void;
-  
+
   /** Stale time in milliseconds (serve stale while revalidating) */
   staleTime?: number;
-  
+
   /** Enable/disable the query */
   enabled?: boolean;
 }
@@ -38,37 +38,37 @@ interface UseOfflineCacheOptions<T> {
 interface UseOfflineCacheResult<T> {
   /** The cached/fetched data */
   data: T | null;
-  
+
   /** Whether data is currently being fetched */
   isLoading: boolean;
-  
+
   /** Whether data is being revalidated in the background */
   isRevalidating: boolean;
-  
+
   /** Whether the data came from cache */
   fromCache: boolean;
-  
+
   /** Whether the device is currently offline */
   isOffline: boolean;
-  
+
   /** Whether the cache entry has expired */
   isStale: boolean;
-  
+
   /** Error message if fetch failed */
   error: string | null;
-  
+
   /** Manually refetch the data */
   refetch: () => Promise<void>;
-  
+
   /** Manually update the cache */
   setCache: (data: T) => Promise<void>;
-  
+
   /** Manually clear the cache */
   clearCache: () => Promise<void>;
-  
+
   /** Last time data was fetched */
   lastFetched: Date | null;
-  
+
   /** Time until cache expires */
   expiresAt: Date | null;
 }
@@ -103,64 +103,70 @@ export function useOfflineCache<T>({
   /**
    * Fetch data with cache fallback
    */
-  const fetchData = useCallback(async (showLoading = true) => {
-    if (!enabled) return;
+  const fetchData = useCallback(
+    async (showLoading = true) => {
+      if (!enabled) return;
 
-    try {
-      if (showLoading) {
-        setIsLoading(true);
-      } else {
-        setIsRevalidating(true);
-      }
-      setError(null);
-
-      // Try network first
       try {
-        const freshData = await fetchFnRef.current();
-        setData(freshData);
-        setFromCache(false);
-        setLastFetched(new Date());
-        
-        // Calculate expiration time
-        const expirationTime = CACHE_EXPIRATION[cacheType] || CACHE_EXPIRATION.default;
-        setExpiresAt(new Date(Date.now() + expirationTime));
-        
-        // Cache the fresh data
-        await offlineCache.set(cacheKey, freshData, cacheType);
-        
-        onSuccess?.(freshData, false);
-      } catch (fetchError) {
-        // Network failed, try cache
-        console.log(`🥝 Network failed for ${cacheKey}, trying cache...`);
-        
-        const cachedData = await offlineCache.get<T>(cacheKey);
-        
-        if (cachedData !== null) {
-          setData(cachedData);
-          setFromCache(true);
-          onCacheHit?.(cachedData);
-          onSuccess?.(cachedData, true);
+        if (showLoading) {
+          setIsLoading(true);
         } else {
-          throw fetchError;
+          setIsRevalidating(true);
         }
+        setError(null);
+
+        // Try network first
+        try {
+          const freshData = await fetchFnRef.current();
+          setData(freshData);
+          setFromCache(false);
+          setLastFetched(new Date());
+
+          // Calculate expiration time
+          const expirationTime = CACHE_EXPIRATION[cacheType] || CACHE_EXPIRATION.default;
+          setExpiresAt(new Date(Date.now() + expirationTime));
+
+          // Cache the fresh data
+          await offlineCache.set(cacheKey, freshData, cacheType);
+
+          onSuccess?.(freshData, false);
+        } catch (fetchError) {
+          // Network failed, try cache
+          console.log(`🥝 Network failed for ${cacheKey}, trying cache...`);
+
+          const cachedData = await offlineCache.get<T>(cacheKey);
+
+          if (cachedData !== null) {
+            setData(cachedData);
+            setFromCache(true);
+            onCacheHit?.(cachedData);
+            onSuccess?.(cachedData, true);
+          } else {
+            throw fetchError;
+          }
+        }
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        setError(errorMessage);
+        onError?.(err instanceof Error ? err : new Error(errorMessage));
+      } finally {
+        setIsLoading(false);
+        setIsRevalidating(false);
       }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      setError(errorMessage);
-      onError?.(err instanceof Error ? err : new Error(errorMessage));
-    } finally {
-      setIsLoading(false);
-      setIsRevalidating(false);
-    }
-  }, [cacheKey, cacheType, enabled, onSuccess, onError, onCacheHit, staleTime]);
+    },
+    [cacheKey, cacheType, enabled, onSuccess, onError, onCacheHit, staleTime],
+  );
 
   /**
    * Manually update the cache
    */
-  const setCache = useCallback(async (newData: T) => {
-    setData(newData);
-    await offlineCache.set(cacheKey, newData, cacheType);
-  }, [cacheKey, cacheType]);
+  const setCache = useCallback(
+    async (newData: T) => {
+      setData(newData);
+      await offlineCache.set(cacheKey, newData, cacheType);
+    },
+    [cacheKey, cacheType],
+  );
 
   /**
    * Manually clear the cache
@@ -238,7 +244,7 @@ export function useOfflineCache<T>({
 export function useTrafficCache<T>(
   cacheKey: string,
   fetchFn: () => Promise<T>,
-  options?: Partial<UseOfflineCacheOptions<T>>
+  options?: Partial<UseOfflineCacheOptions<T>>,
 ) {
   return useOfflineCache({
     cacheKey,
@@ -255,7 +261,7 @@ export function useTrafficCache<T>(
 export function useTrafficPredictionsCache<T>(
   cacheKey: string,
   fetchFn: () => Promise<T>,
-  options?: Partial<UseOfflineCacheOptions<T>>
+  options?: Partial<UseOfflineCacheOptions<T>>,
 ) {
   return useOfflineCache({
     cacheKey,
@@ -272,7 +278,7 @@ export function useTrafficPredictionsCache<T>(
 export function useTrafficAlertsCache<T>(
   cacheKey: string,
   fetchFn: () => Promise<T>,
-  options?: Partial<UseOfflineCacheOptions<T>>
+  options?: Partial<UseOfflineCacheOptions<T>>,
 ) {
   return useOfflineCache({
     cacheKey,

@@ -30,9 +30,9 @@ export class EmailSmsService {
       // - Mailgun: mailgun.js
       // - AWS SES: @aws-sdk/client-ses
       // - Resend: resend
-      
+
       this.logger.log(`📧 Email sent to ${payload.to}: ${payload.subject}`);
-      
+
       // TODO: Replace with real email provider
       // await this.sendGrid.send({
       //   to: payload.to,
@@ -59,9 +59,9 @@ export class EmailSmsService {
       // - Twilio: twilio
       // - MessageBird
       // - Vonage: @vonage/server-sdk
-      
+
       this.logger.log(`📱 SMS sent to ${payload.to}: ${payload.message.substring(0, 50)}...`);
-      
+
       // TODO: Replace with real SMS provider
       // await this.twilio.messages.create({
       //   body: payload.message,

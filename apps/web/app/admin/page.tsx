@@ -108,7 +108,10 @@ export default function AdminDashboard() {
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[...Array(8)].map((_, i) => (
-            <div key={i} className="h-32 rounded-2xl bg-surface-200 dark:bg-surface-800 animate-pulse" />
+            <div
+              key={i}
+              className="h-32 rounded-2xl bg-surface-200 dark:bg-surface-800 animate-pulse"
+            />
           ))}
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -122,12 +125,12 @@ export default function AdminDashboard() {
   if (error && !analytics) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <motion.div 
+        <motion.div
           className="text-center"
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
         >
-          <motion.div 
+          <motion.div
             className="text-6xl mb-4"
             animate={{ y: [0, -10, 0] }}
             transition={{ duration: 2, repeat: Infinity }}
@@ -137,9 +140,7 @@ export default function AdminDashboard() {
           <h2 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100 mb-2">
             No pudimos cargar las analíticas
           </h2>
-          <p className="text-surface-500 dark:text-surface-400 mb-6">
-            {error}
-          </p>
+          <p className="text-surface-500 dark:text-surface-400 mb-6">{error}</p>
           <motion.button
             onClick={() => fetchAnalytics(selectedPeriod)}
             className="px-6 py-3 rounded-xl bg-kiwi-gradient text-white font-semibold shadow-kiwi-lg"
@@ -177,7 +178,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Period Selector */}
-      <motion.div 
+      <motion.div
         className="flex gap-2 rounded-xl bg-surface-100 dark:bg-surface-800 p-1 overflow-x-auto"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -202,14 +203,14 @@ export default function AdminDashboard() {
       {/* Overview Stats */}
       <StaggerContainer className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StaggerItem>
-          <motion.div 
-            className="rounded-2xl glass p-4"
-            whileHover={{ y: -2 }}
-          >
+          <motion.div className="rounded-2xl glass p-4" whileHover={{ y: -2 }}>
             <div className="flex items-center justify-between mb-2">
               <span className="text-2xl">👥</span>
-              <span className={`text-xs font-medium ${getGrowthColor(analytics?.growth?.userGrowth || 0)}`}>
-                {getGrowthIcon(analytics?.growth?.userGrowth || 0)} {Math.abs(analytics?.growth?.userGrowth || 0)}%
+              <span
+                className={`text-xs font-medium ${getGrowthColor(analytics?.growth?.userGrowth || 0)}`}
+              >
+                {getGrowthIcon(analytics?.growth?.userGrowth || 0)}{' '}
+                {Math.abs(analytics?.growth?.userGrowth || 0)}%
               </span>
             </div>
             <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
@@ -220,10 +221,7 @@ export default function AdminDashboard() {
         </StaggerItem>
 
         <StaggerItem>
-          <motion.div 
-            className="rounded-2xl glass p-4"
-            whileHover={{ y: -2 }}
-          >
+          <motion.div className="rounded-2xl glass p-4" whileHover={{ y: -2 }}>
             <div className="flex items-center justify-between mb-2">
               <span className="text-2xl">🟢</span>
               <span className="text-xs font-medium text-kiwi-600 dark:text-kiwi-400">
@@ -238,14 +236,14 @@ export default function AdminDashboard() {
         </StaggerItem>
 
         <StaggerItem>
-          <motion.div 
-            className="rounded-2xl glass p-4"
-            whileHover={{ y: -2 }}
-          >
+          <motion.div className="rounded-2xl glass p-4" whileHover={{ y: -2 }}>
             <div className="flex items-center justify-between mb-2">
               <span className="text-2xl">Package</span>
-              <span className={`text-xs font-medium ${getGrowthColor(analytics?.growth?.orderGrowth || 0)}`}>
-                {getGrowthIcon(analytics?.growth?.orderGrowth || 0)} {Math.abs(analytics?.growth?.orderGrowth || 0)}%
+              <span
+                className={`text-xs font-medium ${getGrowthColor(analytics?.growth?.orderGrowth || 0)}`}
+              >
+                {getGrowthIcon(analytics?.growth?.orderGrowth || 0)}{' '}
+                {Math.abs(analytics?.growth?.orderGrowth || 0)}%
               </span>
             </div>
             <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
@@ -256,14 +254,14 @@ export default function AdminDashboard() {
         </StaggerItem>
 
         <StaggerItem>
-          <motion.div 
-            className="rounded-2xl glass p-4"
-            whileHover={{ y: -2 }}
-          >
+          <motion.div className="rounded-2xl glass p-4" whileHover={{ y: -2 }}>
             <div className="flex items-center justify-between mb-2">
               <span className="text-2xl">Coins</span>
-              <span className={`text-xs font-medium ${getGrowthColor(analytics?.growth?.revenueGrowth || 0)}`}>
-                {getGrowthIcon(analytics?.growth?.revenueGrowth || 0)} {Math.abs(analytics?.growth?.revenueGrowth || 0)}%
+              <span
+                className={`text-xs font-medium ${getGrowthColor(analytics?.growth?.revenueGrowth || 0)}`}
+              >
+                {getGrowthIcon(analytics?.growth?.revenueGrowth || 0)}{' '}
+                {Math.abs(analytics?.growth?.revenueGrowth || 0)}%
               </span>
             </div>
             <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
@@ -274,7 +272,7 @@ export default function AdminDashboard() {
         </StaggerItem>
 
         <StaggerItem>
-          <motion.div 
+          <motion.div
             className="rounded-2xl bg-kiwi-50 dark:bg-kiwi-900/30 p-4 shadow-soft dark:shadow-dark border border-kiwi-200 dark:border-kiwi-800"
             whileHover={{ y: -2 }}
           >
@@ -292,10 +290,7 @@ export default function AdminDashboard() {
         </StaggerItem>
 
         <StaggerItem>
-          <motion.div 
-            className="rounded-2xl glass p-4"
-            whileHover={{ y: -2 }}
-          >
+          <motion.div className="rounded-2xl glass p-4" whileHover={{ y: -2 }}>
             <div className="flex items-center justify-between mb-2">
               <span className="text-2xl">Bike</span>
               <span className="text-xs font-medium text-surface-500 dark:text-surface-400">
@@ -310,10 +305,7 @@ export default function AdminDashboard() {
         </StaggerItem>
 
         <StaggerItem>
-          <motion.div 
-            className="rounded-2xl glass p-4"
-            whileHover={{ y: -2 }}
-          >
+          <motion.div className="rounded-2xl glass p-4" whileHover={{ y: -2 }}>
             <div className="flex items-center justify-between mb-2">
               <span className="text-2xl">🏪</span>
               <span className="text-xs font-medium text-surface-500 dark:text-surface-400">
@@ -328,10 +320,7 @@ export default function AdminDashboard() {
         </StaggerItem>
 
         <StaggerItem>
-          <motion.div 
-            className="rounded-2xl glass p-4"
-            whileHover={{ y: -2 }}
-          >
+          <motion.div className="rounded-2xl glass p-4" whileHover={{ y: -2 }}>
             <div className="flex items-center justify-between mb-2">
               <span className="text-2xl">BarChart3</span>
               <span className="text-xs font-medium text-surface-500 dark:text-surface-400">
@@ -371,8 +360,8 @@ export default function AdminDashboard() {
                 <motion.div
                   className="h-full bg-kiwi-500 rounded-full"
                   initial={{ width: 0 }}
-                  animate={{ 
-                    width: `${((analytics?.orders?.completed || 0) / (analytics?.orders?.total || 1)) * 100}%` 
+                  animate={{
+                    width: `${((analytics?.orders?.completed || 0) / (analytics?.orders?.total || 1)) * 100}%`,
                   }}
                   transition={{ delay: 0.5, duration: 0.8 }}
                 />
@@ -391,8 +380,8 @@ export default function AdminDashboard() {
                 <motion.div
                   className="h-full bg-red-500 rounded-full"
                   initial={{ width: 0 }}
-                  animate={{ 
-                    width: `${((analytics?.orders?.cancelled || 0) / (analytics?.orders?.total || 1)) * 100}%` 
+                  animate={{
+                    width: `${((analytics?.orders?.cancelled || 0) / (analytics?.orders?.total || 1)) * 100}%`,
                   }}
                   transition={{ delay: 0.6, duration: 0.8 }}
                 />
@@ -411,8 +400,8 @@ export default function AdminDashboard() {
                 <motion.div
                   className="h-full bg-yellow-500 rounded-full"
                   initial={{ width: 0 }}
-                  animate={{ 
-                    width: `${((analytics?.orders?.pending || 0) / (analytics?.orders?.total || 1)) * 100}%` 
+                  animate={{
+                    width: `${((analytics?.orders?.pending || 0) / (analytics?.orders?.total || 1)) * 100}%`,
                   }}
                   transition={{ delay: 0.7, duration: 0.8 }}
                 />
@@ -426,8 +415,12 @@ export default function AdminDashboard() {
                   Tasa de Finalización
                 </span>
                 <span className="text-lg font-bold text-kiwi-600 dark:text-kiwi-400">
-                  {analytics?.orders?.total ? 
-                    Math.round(((analytics?.orders?.completed || 0) / analytics?.orders?.total) * 100) : 0}%
+                  {analytics?.orders?.total
+                    ? Math.round(
+                        ((analytics?.orders?.completed || 0) / analytics?.orders?.total) * 100,
+                      )
+                    : 0}
+                  %
                 </span>
               </div>
             </div>
@@ -458,8 +451,11 @@ export default function AdminDashboard() {
                   </p>
                 </div>
               </div>
-              <span className={`text-lg font-bold ${getGrowthColor(analytics?.growth?.userGrowth || 0)}`}>
-                {getGrowthIcon(analytics?.growth?.userGrowth || 0)} {Math.abs(analytics?.growth?.userGrowth || 0)}%
+              <span
+                className={`text-lg font-bold ${getGrowthColor(analytics?.growth?.userGrowth || 0)}`}
+              >
+                {getGrowthIcon(analytics?.growth?.userGrowth || 0)}{' '}
+                {Math.abs(analytics?.growth?.userGrowth || 0)}%
               </span>
             </div>
 
@@ -476,8 +472,11 @@ export default function AdminDashboard() {
                   </p>
                 </div>
               </div>
-              <span className={`text-lg font-bold ${getGrowthColor(analytics?.growth?.orderGrowth || 0)}`}>
-                {getGrowthIcon(analytics?.growth?.orderGrowth || 0)} {Math.abs(analytics?.growth?.orderGrowth || 0)}%
+              <span
+                className={`text-lg font-bold ${getGrowthColor(analytics?.growth?.orderGrowth || 0)}`}
+              >
+                {getGrowthIcon(analytics?.growth?.orderGrowth || 0)}{' '}
+                {Math.abs(analytics?.growth?.orderGrowth || 0)}%
               </span>
             </div>
 
@@ -494,8 +493,11 @@ export default function AdminDashboard() {
                   </p>
                 </div>
               </div>
-              <span className={`text-lg font-bold ${getGrowthColor(analytics?.growth?.revenueGrowth || 0)}`}>
-                {getGrowthIcon(analytics?.growth?.revenueGrowth || 0)} {Math.abs(analytics?.growth?.revenueGrowth || 0)}%
+              <span
+                className={`text-lg font-bold ${getGrowthColor(analytics?.growth?.revenueGrowth || 0)}`}
+              >
+                {getGrowthIcon(analytics?.growth?.revenueGrowth || 0)}{' '}
+                {Math.abs(analytics?.growth?.revenueGrowth || 0)}%
               </span>
             </div>
 
@@ -507,8 +509,12 @@ export default function AdminDashboard() {
                     <span className="text-lg">🏦</span>
                   </div>
                   <div>
-                    <p className="font-medium text-surface-800 dark:text-surface-200">Comisión Plataforma</p>
-                    <p className="text-sm text-surface-500 dark:text-surface-400">5% de cada pedido</p>
+                    <p className="font-medium text-surface-800 dark:text-surface-200">
+                      Comisión Plataforma
+                    </p>
+                    <p className="text-sm text-surface-500 dark:text-surface-400">
+                      5% de cada pedido
+                    </p>
                   </div>
                 </div>
                 <span className="text-lg font-bold text-kiwi-600 dark:text-kiwi-400">
@@ -532,7 +538,7 @@ export default function AdminDashboard() {
         </h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Link href="/admin/users">
-            <motion.button 
+            <motion.button
               className="w-full p-4 rounded-xl bg-kiwi-50 dark:bg-kiwi-900/30 text-kiwi-600 dark:text-kiwi-400 hover:bg-kiwi-100 dark:hover:bg-kiwi-900/50 transition-colors"
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.95 }}
@@ -542,7 +548,7 @@ export default function AdminDashboard() {
             </motion.button>
           </Link>
           <Link href="/admin/orders">
-            <motion.button 
+            <motion.button
               className="w-full p-4 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.95 }}
@@ -552,7 +558,7 @@ export default function AdminDashboard() {
             </motion.button>
           </Link>
           <Link href="/admin/kyc">
-            <motion.button 
+            <motion.button
               className="w-full p-4 rounded-xl bg-yellow-50 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-100 dark:hover:bg-yellow-900/50 transition-colors"
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.95 }}
@@ -562,7 +568,7 @@ export default function AdminDashboard() {
             </motion.button>
           </Link>
           <Link href="/admin/payments">
-            <motion.button 
+            <motion.button
               className="w-full p-4 rounded-xl bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors"
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.95 }}

@@ -10,10 +10,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     configService: ConfigService,
     private prisma: PrismaService,
   ) {
+    const secret = configService.get<string>('JWT_SECRET');
+    if (!secret && configService.get('NODE_ENV') === 'production') {
+      throw new Error('JWT_SECRET must be set in production');
+    }
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: configService.get<string>('JWT_SECRET') ?? 'REDACTED',
+      secretOrKey: secret ?? 'REDACTED',
     });
   }
 

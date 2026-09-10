@@ -37,7 +37,9 @@ export default function SettingsPage() {
     },
   });
 
-  const [activeTab, setActiveTab] = useState<'platform' | 'payments' | 'notifications' | 'security'>('platform');
+  const [activeTab, setActiveTab] = useState<
+    'platform' | 'payments' | 'notifications' | 'security'
+  >('platform');
 
   const handleSave = async () => {
     // Save settings
@@ -97,7 +99,7 @@ export default function SettingsPage() {
           <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-6">
             Configuracion de la Plataforma
           </h3>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
@@ -106,10 +108,12 @@ export default function SettingsPage() {
               <input
                 type="text"
                 value={settings.platform.name}
-                onChange={(e) => setSettings({
-                  ...settings,
-                  platform: { ...settings.platform, name: e.target.value }
-                })}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    platform: { ...settings.platform, name: e.target.value },
+                  })
+                }
                 className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-500"
               />
             </div>
@@ -121,10 +125,12 @@ export default function SettingsPage() {
               <input
                 type="number"
                 value={settings.platform.commission}
-                onChange={(e) => setSettings({
-                  ...settings,
-                  platform: { ...settings.platform, commission: Number(e.target.value) }
-                })}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    platform: { ...settings.platform, commission: Number(e.target.value) },
+                  })
+                }
                 className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-500"
               />
             </div>
@@ -136,10 +142,12 @@ export default function SettingsPage() {
               <input
                 type="number"
                 value={settings.platform.minimumOrder}
-                onChange={(e) => setSettings({
-                  ...settings,
-                  platform: { ...settings.platform, minimumOrder: Number(e.target.value) }
-                })}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    platform: { ...settings.platform, minimumOrder: Number(e.target.value) },
+                  })
+                }
                 className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-500"
               />
             </div>
@@ -151,10 +159,15 @@ export default function SettingsPage() {
               <input
                 type="number"
                 value={settings.platform.maximumDeliveryDistance}
-                onChange={(e) => setSettings({
-                  ...settings,
-                  platform: { ...settings.platform, maximumDeliveryDistance: Number(e.target.value) }
-                })}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    platform: {
+                      ...settings.platform,
+                      maximumDeliveryDistance: Number(e.target.value),
+                    },
+                  })
+                }
                 className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-500"
               />
             </div>
@@ -166,10 +179,15 @@ export default function SettingsPage() {
               <input
                 type="number"
                 value={settings.platform.freeDeliveryThreshold}
-                onChange={(e) => setSettings({
-                  ...settings,
-                  platform: { ...settings.platform, freeDeliveryThreshold: Number(e.target.value) }
-                })}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    platform: {
+                      ...settings.platform,
+                      freeDeliveryThreshold: Number(e.target.value),
+                    },
+                  })
+                }
                 className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-500"
               />
             </div>
@@ -187,10 +205,12 @@ export default function SettingsPage() {
           <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-6">
             Configuracion de Pagos
           </h3>
-          
+
           <div className="space-y-6">
             <div>
-              <h4 className="font-medium text-surface-800 dark:text-surface-100 mb-4">Métodos de pago</h4>
+              <h4 className="font-medium text-surface-800 dark:text-surface-100 mb-4">
+                Métodos de pago
+              </h4>
               <div className="space-y-3">
                 {[
                   { key: 'sinpeEnabled', label: 'SINPE Móvil', icon: 'Smartphone' },
@@ -198,7 +218,10 @@ export default function SettingsPage() {
                   { key: 'cashEnabled', label: 'Efectivo', icon: 'DollarSign' },
                   { key: 'cryptoEnabled', label: 'Criptomonedas (USDC/USDT)', icon: '₿' },
                 ].map((method) => (
-                  <div key={method.key} className="flex items-center justify-between p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50">
+                  <div
+                    key={method.key}
+                    className="flex items-center justify-between p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50"
+                  >
                     <div className="flex items-center gap-3">
                       <span className="text-xl">{method.icon}</span>
                       <span className="text-surface-800 dark:text-surface-200">{method.label}</span>
@@ -206,11 +229,15 @@ export default function SettingsPage() {
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
                         type="checkbox"
-                        checked={settings.payments[method.key as keyof typeof settings.payments] as boolean}
-                        onChange={(e) => setSettings({
-                          ...settings,
-                          payments: { ...settings.payments, [method.key]: e.target.checked }
-                        })}
+                        checked={
+                          settings.payments[method.key as keyof typeof settings.payments] as boolean
+                        }
+                        onChange={(e) =>
+                          setSettings({
+                            ...settings,
+                            payments: { ...settings.payments, [method.key]: e.target.checked },
+                          })
+                        }
                         className="sr-only peer"
                       />
                       <div className="w-11 h-6 bg-surface-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-kiwi-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-surface-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-kiwi-500"></div>
@@ -228,10 +255,12 @@ export default function SettingsPage() {
                 <input
                   type="text"
                   value={settings.payments.cryptoWallet}
-                  onChange={(e) => setSettings({
-                    ...settings,
-                    payments: { ...settings.payments, cryptoWallet: e.target.value }
-                  })}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      payments: { ...settings.payments, cryptoWallet: e.target.value },
+                    })
+                  }
                   className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 font-mono focus:outline-none focus:ring-2 focus:ring-kiwi-500"
                 />
               </div>
@@ -242,10 +271,12 @@ export default function SettingsPage() {
                 </label>
                 <select
                   value={settings.payments.payoutSchedule}
-                  onChange={(e) => setSettings({
-                    ...settings,
-                    payments: { ...settings.payments, payoutSchedule: e.target.value }
-                  })}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      payments: { ...settings.payments, payoutSchedule: e.target.value },
+                    })
+                  }
                   className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-500"
                 >
                   <option value="daily">Diario</option>
@@ -262,10 +293,12 @@ export default function SettingsPage() {
                 <input
                   type="number"
                   value={settings.payments.minimumPayout}
-                  onChange={(e) => setSettings({
-                    ...settings,
-                    payments: { ...settings.payments, minimumPayout: Number(e.target.value) }
-                  })}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      payments: { ...settings.payments, minimumPayout: Number(e.target.value) },
+                    })
+                  }
                   className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-500"
                 />
               </div>
@@ -284,32 +317,78 @@ export default function SettingsPage() {
           <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-6">
             Configuracion de Notificaciones
           </h3>
-          
+
           <div className="space-y-3">
             {[
-              { key: 'newOrder', label: 'Nuevo pedido disponible', description: 'Cuando un comercio crea un nuevo pedido', icon: 'Package' },
-              { key: 'orderAccepted', label: 'Pedido aceptado', description: 'Cuando un repartidor acepta un pedido', icon: 'Check' },
-              { key: 'orderStatus', label: 'Cambios de estado', description: 'Cuando el estado de un pedido cambia', icon: 'RefreshCw' },
-              { key: 'payment', label: 'Pagos', description: 'Cuando se procesa un pago', icon: 'Coins' },
-              { key: 'rating', label: 'Calificaciones', description: 'Cuando recibes una nueva calificación', icon: 'Star' },
-              { key: 'promotion', label: 'Promociones', description: 'Ofertas especiales y descuentos', icon: 'PartyPopper' },
+              {
+                key: 'newOrder',
+                label: 'Nuevo pedido disponible',
+                description: 'Cuando un comercio crea un nuevo pedido',
+                icon: 'Package',
+              },
+              {
+                key: 'orderAccepted',
+                label: 'Pedido aceptado',
+                description: 'Cuando un repartidor acepta un pedido',
+                icon: 'Check',
+              },
+              {
+                key: 'orderStatus',
+                label: 'Cambios de estado',
+                description: 'Cuando el estado de un pedido cambia',
+                icon: 'RefreshCw',
+              },
+              {
+                key: 'payment',
+                label: 'Pagos',
+                description: 'Cuando se procesa un pago',
+                icon: 'Coins',
+              },
+              {
+                key: 'rating',
+                label: 'Calificaciones',
+                description: 'Cuando recibes una nueva calificación',
+                icon: 'Star',
+              },
+              {
+                key: 'promotion',
+                label: 'Promociones',
+                description: 'Ofertas especiales y descuentos',
+                icon: 'PartyPopper',
+              },
             ].map((notification) => (
-              <div key={notification.key} className="flex items-center justify-between p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50">
+              <div
+                key={notification.key}
+                className="flex items-center justify-between p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50"
+              >
                 <div className="flex items-center gap-4">
                   <span className="text-2xl">{notification.icon}</span>
                   <div>
-                    <p className="font-medium text-surface-800 dark:text-surface-200">{notification.label}</p>
-                    <p className="text-sm text-surface-500 dark:text-surface-400">{notification.description}</p>
+                    <p className="font-medium text-surface-800 dark:text-surface-200">
+                      {notification.label}
+                    </p>
+                    <p className="text-sm text-surface-500 dark:text-surface-400">
+                      {notification.description}
+                    </p>
                   </div>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={settings.notifications[notification.key as keyof typeof settings.notifications] as boolean}
-                    onChange={(e) => setSettings({
-                      ...settings,
-                      notifications: { ...settings.notifications, [notification.key]: e.target.checked }
-                    })}
+                    checked={
+                      settings.notifications[
+                        notification.key as keyof typeof settings.notifications
+                      ] as boolean
+                    }
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        notifications: {
+                          ...settings.notifications,
+                          [notification.key]: e.target.checked,
+                        },
+                      })
+                    }
                     className="sr-only peer"
                   />
                   <div className="w-11 h-6 bg-surface-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-kiwi-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-surface-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-kiwi-500"></div>
@@ -330,30 +409,56 @@ export default function SettingsPage() {
           <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-6">
             Configuracion de Seguridad
           </h3>
-          
+
           <div className="space-y-6">
             <div className="space-y-3">
               {[
-                { key: 'requireKYC', label: 'Requerir KYC', description: 'Todos los usuarios deben verificar su identidad', icon: '🪪' },
-                { key: 'requirePhoneVerification', label: 'Verificación telefónica', description: 'Requerir verificación por SMS al registrarse', icon: 'Smartphone' },
-                { key: 'twoFactorAuth', label: 'Autenticación de dos factores', description: 'Habilitar 2FA para cuentas de administrador', icon: '🔐' },
+                {
+                  key: 'requireKYC',
+                  label: 'Requerir KYC',
+                  description: 'Todos los usuarios deben verificar su identidad',
+                  icon: '🪪',
+                },
+                {
+                  key: 'requirePhoneVerification',
+                  label: 'Verificación telefónica',
+                  description: 'Requerir verificación por SMS al registrarse',
+                  icon: 'Smartphone',
+                },
+                {
+                  key: 'twoFactorAuth',
+                  label: 'Autenticación de dos factores',
+                  description: 'Habilitar 2FA para cuentas de administrador',
+                  icon: '🔐',
+                },
               ].map((security) => (
-                <div key={security.key} className="flex items-center justify-between p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50">
+                <div
+                  key={security.key}
+                  className="flex items-center justify-between p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50"
+                >
                   <div className="flex items-center gap-4">
                     <span className="text-2xl">{security.icon}</span>
                     <div>
-                      <p className="font-medium text-surface-800 dark:text-surface-200">{security.label}</p>
-                      <p className="text-sm text-surface-500 dark:text-surface-400">{security.description}</p>
+                      <p className="font-medium text-surface-800 dark:text-surface-200">
+                        {security.label}
+                      </p>
+                      <p className="text-sm text-surface-500 dark:text-surface-400">
+                        {security.description}
+                      </p>
                     </div>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
                       type="checkbox"
-                      checked={settings.security[security.key as keyof typeof settings.security] as boolean}
-                      onChange={(e) => setSettings({
-                        ...settings,
-                        security: { ...settings.security, [security.key]: e.target.checked }
-                      })}
+                      checked={
+                        settings.security[security.key as keyof typeof settings.security] as boolean
+                      }
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          security: { ...settings.security, [security.key]: e.target.checked },
+                        })
+                      }
                       className="sr-only peer"
                     />
                     <div className="w-11 h-6 bg-surface-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-kiwi-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-surface-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-kiwi-500"></div>
@@ -369,10 +474,12 @@ export default function SettingsPage() {
               <input
                 type="number"
                 value={settings.security.sessionTimeout}
-                onChange={(e) => setSettings({
-                  ...settings,
-                  security: { ...settings.security, sessionTimeout: Number(e.target.value) }
-                })}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    security: { ...settings.security, sessionTimeout: Number(e.target.value) },
+                  })
+                }
                 className="w-full max-w-xs px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-500"
               />
             </div>

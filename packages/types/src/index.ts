@@ -30,7 +30,8 @@ export interface MerchantProfile {
 }
 
 // KYC types
-export type KYCStatus = 'pending' | 'documents_submitted' | 'under_review' | 'approved' | 'rejected' | 'expired';
+export type KYCStatus =
+  'pending' | 'documents_submitted' | 'under_review' | 'approved' | 'rejected' | 'expired';
 
 export interface KYCVerification {
   id: string;

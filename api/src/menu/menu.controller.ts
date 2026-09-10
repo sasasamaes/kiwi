@@ -24,10 +24,7 @@ export class MenuController {
   @Get('merchant/:id/items')
   @ApiOperation({ summary: 'Get merchant menu items' })
   @ApiQuery({ name: 'category', required: false })
-  async getMenuItems(
-    @Param('id') id: string,
-    @Query('category') category?: string,
-  ) {
+  async getMenuItems(@Param('id') id: string, @Query('category') category?: string) {
     return this.menuService.getMenuItems(id, category);
   }
 
@@ -49,10 +46,7 @@ export class MenuController {
   @Roles('merchant')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create menu item' })
-  async createMenuItem(
-    @CurrentUser() user: any,
-    @Body() data: any,
-  ) {
+  async createMenuItem(@CurrentUser() user: any, @Body() data: any) {
     return this.menuService.createMenuItem(user.sub, data);
   }
 
@@ -74,10 +68,7 @@ export class MenuController {
   @Roles('merchant')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete menu item' })
-  async deleteMenuItem(
-    @CurrentUser() user: any,
-    @Param('itemId') itemId: string,
-  ) {
+  async deleteMenuItem(@CurrentUser() user: any, @Param('itemId') itemId: string) {
     return this.menuService.deleteMenuItem(user.sub, itemId);
   }
 }

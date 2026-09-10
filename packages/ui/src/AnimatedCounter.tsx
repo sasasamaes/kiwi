@@ -25,13 +25,12 @@ export function AnimatedCounter({
     bounce: 0,
   });
 
-  const display = useTransform(spring, (current) =>
-    `${prefix}${current.toFixed(decimals)}${suffix}`
+  const display = useTransform(
+    spring,
+    (current) => `${prefix}${current.toFixed(decimals)}${suffix}`,
   );
 
-  const [displayValue, setDisplayValue] = useState(
-    `${prefix}0${suffix}`
-  );
+  const [displayValue, setDisplayValue] = useState(`${prefix}0${suffix}`);
 
   useEffect(() => {
     spring.set(value);

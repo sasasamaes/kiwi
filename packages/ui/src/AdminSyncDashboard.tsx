@@ -9,7 +9,10 @@ interface AdminSyncDashboardProps {
   refreshInterval?: number;
 }
 
-export function AdminSyncDashboard({ className = '', refreshInterval = 5000 }: AdminSyncDashboardProps) {
+export function AdminSyncDashboard({
+  className = '',
+  refreshInterval = 5000,
+}: AdminSyncDashboardProps) {
   const [stats, setStats] = useState<any>(null);
   const [devices, setDevices] = useState<DeviceSyncInfo[]>([]);
   const [selectedDevice, setSelectedDevice] = useState<DeviceSyncInfo | null>(null);
@@ -43,7 +46,7 @@ export function AdminSyncDashboard({ className = '', refreshInterval = 5000 }: A
         <div className="animate-pulse space-y-4">
           <div className="h-8 bg-surface-200 dark:bg-surface-700 rounded w-64" />
           <div className="grid grid-cols-4 gap-4">
-            {[1, 2, 3, 4].map(i => (
+            {[1, 2, 3, 4].map((i) => (
               <div key={i} className="h-24 bg-surface-200 dark:bg-surface-700 rounded-2xl" />
             ))}
           </div>
@@ -171,16 +174,25 @@ export function AdminSyncDashboard({ className = '', refreshInterval = 5000 }: A
                 <div className="flex items-center gap-2">
                   <div
                     className="w-3 h-3 rounded-full"
-                    style={{ backgroundColor: adminSyncMonitoring.getStatusColor(status as SyncStatus) }}
+                    style={{
+                      backgroundColor: adminSyncMonitoring.getStatusColor(status as SyncStatus),
+                    }}
                   />
                   <span className="text-sm text-surface-600 dark:text-surface-400 capitalize">
-                    {status === 'synced' ? 'Sincronizado' :
-                     status === 'syncing' ? 'Sincronizando' :
-                     status === 'offline' ? 'Sin conexión' :
-                     status === 'error' ? 'Error' : 'Obsoleto'}
+                    {status === 'synced'
+                      ? 'Sincronizado'
+                      : status === 'syncing'
+                        ? 'Sincronizando'
+                        : status === 'offline'
+                          ? 'Sin conexión'
+                          : status === 'error'
+                            ? 'Error'
+                            : 'Obsoleto'}
                   </span>
                 </div>
-                <span className="font-medium text-surface-800 dark:text-surface-200">{count as number}</span>
+                <span className="font-medium text-surface-800 dark:text-surface-200">
+                  {count as number}
+                </span>
               </div>
             ))}
           </div>
@@ -203,11 +215,16 @@ export function AdminSyncDashboard({ className = '', refreshInterval = 5000 }: A
                     {type === 'merchant' ? '🏪' : type === 'driver' ? 'bike' : 'user'}
                   </span>
                   <span className="text-sm text-surface-600 dark:text-surface-400 capitalize">
-                    {type === 'merchant' ? 'Comerciantes' :
-                     type === 'driver' ? 'Repartidores' : 'Clientes'}
+                    {type === 'merchant'
+                      ? 'Comerciantes'
+                      : type === 'driver'
+                        ? 'Repartidores'
+                        : 'Clientes'}
                   </span>
                 </div>
-                <span className="font-medium text-surface-800 dark:text-surface-200">{count as number}</span>
+                <span className="font-medium text-surface-800 dark:text-surface-200">
+                  {count as number}
+                </span>
               </div>
             ))}
           </div>
@@ -237,9 +254,13 @@ export function AdminSyncDashboard({ className = '', refreshInterval = 5000 }: A
                       : 'bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400'
                   }`}
                 >
-                  {f === 'all' ? 'Todos' :
-                   f === 'merchant' ? '🏪 Comerciantes' :
-                   f === 'driver' ? 'Bike Repartidores' : 'User Clientes'}
+                  {f === 'all'
+                    ? 'Todos'
+                    : f === 'merchant'
+                      ? '🏪 Comerciantes'
+                      : f === 'driver'
+                        ? 'Bike Repartidores'
+                        : 'User Clientes'}
                 </button>
               ))}
             </div>
@@ -253,19 +274,26 @@ export function AdminSyncDashboard({ className = '', refreshInterval = 5000 }: A
               className={`p-4 hover:bg-surface-50 dark:hover:bg-surface-900 cursor-pointer transition-colors ${
                 selectedDevice?.deviceId === device.deviceId ? 'bg-kiwi-50 dark:bg-kiwi-900/30' : ''
               }`}
-              onClick={() => setSelectedDevice(selectedDevice?.deviceId === device.deviceId ? null : device)}
+              onClick={() =>
+                setSelectedDevice(selectedDevice?.deviceId === device.deviceId ? null : device)
+              }
               whileHover={{ x: 2 }}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="relative">
                     <span className="text-2xl">
-                      {device.userType === 'merchant' ? '🏪' :
-                       device.userType === 'driver' ? 'bike' : 'user'}
+                      {device.userType === 'merchant'
+                        ? '🏪'
+                        : device.userType === 'driver'
+                          ? 'bike'
+                          : 'user'}
                     </span>
                     <div
                       className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white dark:border-surface-800"
-                      style={{ backgroundColor: adminSyncMonitoring.getStatusColor(device.syncStatus) }}
+                      style={{
+                        backgroundColor: adminSyncMonitoring.getStatusColor(device.syncStatus),
+                      }}
                     />
                   </div>
                   <div>
@@ -273,7 +301,8 @@ export function AdminSyncDashboard({ className = '', refreshInterval = 5000 }: A
                       {device.userName}
                     </p>
                     <p className="text-xs text-surface-500 dark:text-surface-400">
-                      {device.platform.toUpperCase()} • {adminSyncMonitoring.formatLastSeen(device.lastSeenAt)}
+                      {device.platform.toUpperCase()} •{' '}
+                      {adminSyncMonitoring.formatLastSeen(device.lastSeenAt)}
                     </p>
                   </div>
                 </div>
@@ -291,7 +320,9 @@ export function AdminSyncDashboard({ className = '', refreshInterval = 5000 }: A
                   )}
                   <div
                     className="w-3 h-3 rounded-full"
-                    style={{ backgroundColor: adminSyncMonitoring.getStatusColor(device.syncStatus) }}
+                    style={{
+                      backgroundColor: adminSyncMonitoring.getStatusColor(device.syncStatus),
+                    }}
                   />
                 </div>
               </div>
@@ -310,13 +341,17 @@ export function AdminSyncDashboard({ className = '', refreshInterval = 5000 }: A
                         <p className="text-lg font-bold text-surface-800 dark:text-surface-100">
                           {device.pendingOrders}
                         </p>
-                        <p className="text-xs text-surface-500 dark:text-surface-400">Pedidos pendientes</p>
+                        <p className="text-xs text-surface-500 dark:text-surface-400">
+                          Pedidos pendientes
+                        </p>
                       </div>
                       <div className="p-2 rounded-lg bg-surface-50 dark:bg-surface-900 text-center">
                         <p className="text-lg font-bold text-surface-800 dark:text-surface-100">
                           {device.pendingPayments}
                         </p>
-                        <p className="text-xs text-surface-500 dark:text-surface-400">Pagos pendientes</p>
+                        <p className="text-xs text-surface-500 dark:text-surface-400">
+                          Pagos pendientes
+                        </p>
                       </div>
                       <div className="p-2 rounded-lg bg-surface-50 dark:bg-surface-900 text-center">
                         <p className="text-lg font-bold text-surface-800 dark:text-surface-100">

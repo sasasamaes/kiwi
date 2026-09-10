@@ -122,9 +122,7 @@ export default function MerchantQRPage() {
               className="text-5xl mb-3"
               animate={{ rotate: [0, -5, 5, 0] }}
               transition={{ duration: 2, repeat: Infinity }}
-            >
-              
-            </motion.div>
+            ></motion.div>
             <h2 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100">
               {merchant.businessName}
             </h2>

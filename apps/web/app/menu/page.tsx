@@ -245,10 +245,7 @@ export default function MenuManagementPage() {
         </div>
         <div className="mx-auto max-w-4xl px-4 py-8 space-y-4">
           {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="rounded-2xl glass p-4"
-            >
+            <div key={i} className="rounded-2xl glass p-4">
               <div className="flex gap-4">
                 <Skeleton className="h-16 w-16 rounded-xl" />
                 <div className="flex-1">
@@ -772,7 +769,7 @@ export default function MenuManagementPage() {
                         >
                           <div className="flex items-center justify-between">
                             <p className="text-sm text-surface-600 dark:text-surface-400">
-                              ¿Eliminar "{item.name}"?
+                              ¿Eliminar &quot;{item.name}&quot;?
                             </p>
                             <div className="flex gap-2">
                               <AnimatedButton

@@ -63,16 +63,17 @@ export function NotificationPreferences({ onSave }: NotificationPreferencesProps
   ]);
 
   const togglePreference = (id: string) => {
-    setPreferences(prev =>
-      prev.map(p => (p.id === id ? { ...p, enabled: !p.enabled } : p))
-    );
+    setPreferences((prev) => prev.map((p) => (p.id === id ? { ...p, enabled: !p.enabled } : p)));
   };
 
   const handleSave = () => {
-    const prefs = preferences.reduce((acc, p) => {
-      acc[p.id] = p.enabled;
-      return acc;
-    }, {} as Record<string, boolean>);
+    const prefs = preferences.reduce(
+      (acc, p) => {
+        acc[p.id] = p.enabled;
+        return acc;
+      },
+      {} as Record<string, boolean>,
+    );
     onSave(prefs);
   };
 

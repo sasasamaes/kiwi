@@ -30,10 +30,7 @@ describe('DriversService', () => {
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        DriversService,
-        { provide: PrismaService, useValue: prisma },
-      ],
+      providers: [DriversService, { provide: PrismaService, useValue: prisma }],
     }).compile();
 
     service = module.get<DriversService>(DriversService);

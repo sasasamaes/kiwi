@@ -9,10 +9,7 @@ interface SyncStatusProps {
   showDetails?: boolean;
 }
 
-export function SyncStatus({ 
-  className = '',
-  showDetails = false 
-}: SyncStatusProps) {
+export function SyncStatus({ className = '', showDetails = false }: SyncStatusProps) {
   const { stats, isSyncing, isOnline, processQueue, clearCompleted } = useBackgroundSync();
   const [showPanel, setShowPanel] = useState(false);
 
@@ -57,7 +54,9 @@ export function SyncStatus({
             >
               Clock
             </motion.span>
-            <span className="text-sm">{stats.pending} pendiente{stats.pending !== 1 ? 's' : ''}</span>
+            <span className="text-sm">
+              {stats.pending} pendiente{stats.pending !== 1 ? 's' : ''}
+            </span>
           </>
         ) : null}
       </motion.button>
@@ -301,16 +300,14 @@ export function SyncBanner({ className = '' }: { className?: string }) {
           )}
           <div>
             <p className="font-semibold">
-              {isSyncing 
+              {isSyncing
                 ? 'Sincronizando datos...'
-                : `${stats.pending} acciones pendientes de sincronizar`
-              }
+                : `${stats.pending} acciones pendientes de sincronizar`}
             </p>
             <p className="text-sm opacity-90">
-              {isOnline 
+              {isOnline
                 ? 'Se sincronizarán automáticamente'
-                : 'Se sincronizarán cuando vuelva la conexión'
-              }
+                : 'Se sincronizarán cuando vuelva la conexión'}
             </p>
           </div>
         </div>
@@ -343,20 +340,14 @@ export function SyncBanner({ className = '' }: { className?: string }) {
 /**
  * Sync status for a specific action type
  */
-export function SyncActionStatus({ 
-  type, 
-  className = '' 
-}: { 
-  type: string;
-  className?: string;
-}) {
+export function SyncActionStatus({ type, className = '' }: { type: string; className?: string }) {
   const { getAllActions } = useBackgroundSync();
   const [actions, setActions] = useState<SyncAction[]>([]);
 
   useEffect(() => {
     const loadActions = async () => {
       const allActions = await getAllActions();
-      setActions(allActions.filter(a => a.type.startsWith(type)));
+      setActions(allActions.filter((a) => a.type.startsWith(type)));
     };
 
     loadActions();
@@ -364,8 +355,8 @@ export function SyncActionStatus({
     return () => clearInterval(interval);
   }, [type, getAllActions]);
 
-  const pending = actions.filter(a => a.status === 'pending').length;
-  const syncing = actions.filter(a => a.status === 'syncing').length;
+  const pending = actions.filter((a) => a.status === 'pending').length;
+  const syncing = actions.filter((a) => a.status === 'syncing').length;
 
   if (pending === 0 && syncing === 0) {
     return null;
@@ -383,7 +374,7 @@ export function SyncActionStatus({
         </motion.span>
       )}
       <span className="text-surface-600 dark:text-surface-400">
-        {pending + syncing} {type} pendiente{(pending + syncing) !== 1 ? 's' : ''}
+        {pending + syncing} {type} pendiente{pending + syncing !== 1 ? 's' : ''}
       </span>
     </div>
   );

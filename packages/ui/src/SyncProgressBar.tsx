@@ -26,21 +26,31 @@ interface SyncItemProps {
 function SyncItem({ item, onCancel }: SyncItemProps) {
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'syncing': return 'refresh';
-      case 'completed': return 'Check';
-      case 'failed': return 'close';
-      case 'paused': return '⏸️';
-      default: return 'clock';
+      case 'syncing':
+        return 'refresh';
+      case 'completed':
+        return 'Check';
+      case 'failed':
+        return 'close';
+      case 'paused':
+        return '⏸️';
+      default:
+        return 'clock';
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'syncing': return 'text-blue-600 dark:text-blue-400';
-      case 'completed': return 'text-kiwi-600 dark:text-kiwi-400';
-      case 'failed': return 'text-red-600 dark:text-red-400';
-      case 'paused': return 'text-yellow-600 dark:text-yellow-400';
-      default: return 'text-surface-500 dark:text-surface-400';
+      case 'syncing':
+        return 'text-blue-600 dark:text-blue-400';
+      case 'completed':
+        return 'text-kiwi-600 dark:text-kiwi-400';
+      case 'failed':
+        return 'text-red-600 dark:text-red-400';
+      case 'paused':
+        return 'text-yellow-600 dark:text-yellow-400';
+      default:
+        return 'text-surface-500 dark:text-surface-400';
     }
   };
 
@@ -70,9 +80,11 @@ function SyncItem({ item, onCancel }: SyncItemProps) {
         <div className="h-1.5 bg-surface-200 dark:bg-surface-700 rounded-full overflow-hidden mb-1">
           <motion.div
             className={`h-full rounded-full ${
-              item.status === 'completed' ? 'bg-kiwi-500' :
-              item.status === 'failed' ? 'bg-red-500' :
-              'bg-blue-500'
+              item.status === 'completed'
+                ? 'bg-kiwi-500'
+                : item.status === 'failed'
+                  ? 'bg-red-500'
+                  : 'bg-blue-500'
             }`}
             initial={{ width: 0 }}
             animate={{ width: `${item.progress}%` }}
@@ -83,8 +95,7 @@ function SyncItem({ item, onCancel }: SyncItemProps) {
         {/* Details */}
         <div className="flex items-center justify-between text-xs text-surface-500 dark:text-surface-400">
           <span>
-            {item.operation === 'upload' ? '⬆️' : item.operation === 'download' ? '⬇️' : 'refresh'}
-            {' '}
+            {item.operation === 'upload' ? '⬆️' : item.operation === 'download' ? '⬇️' : 'refresh'}{' '}
             {item.speed > 0 && `${(item.speed / 1024).toFixed(1)} KB/s`}
           </span>
           <span>
@@ -195,7 +206,7 @@ export function SyncProgressBar({
                 {speed} • {estimatedTime}
               </span>
             )}
-            
+
             <span className="text-sm font-medium text-surface-800 dark:text-surface-200">
               {formattedProgress}
             </span>
@@ -206,10 +217,7 @@ export function SyncProgressBar({
                 className="text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
                 whileTap={{ scale: 0.9 }}
               >
-                <motion.span
-                  animate={{ rotate: isExpanded ? 180 : 0 }}
-                  className="block"
-                >
+                <motion.span animate={{ rotate: isExpanded ? 180 : 0 }} className="block">
                   ▼
                 </motion.span>
               </motion.button>
@@ -221,9 +229,11 @@ export function SyncProgressBar({
         <div className="h-2 bg-surface-100 dark:bg-surface-700 rounded-full overflow-hidden">
           <motion.div
             className={`h-full rounded-full ${
-              state.status === 'completed' ? 'bg-kiwi-500' :
-              state.status === 'failed' ? 'bg-red-500' :
-              'bg-blue-500'
+              state.status === 'completed'
+                ? 'bg-kiwi-500'
+                : state.status === 'failed'
+                  ? 'bg-red-500'
+                  : 'bg-blue-500'
             }`}
             initial={{ width: 0 }}
             animate={{ width: `${overallProgress}%` }}
@@ -254,7 +264,9 @@ export function SyncProgressBar({
                 </span>
               )}
             </div>
-            <span>{formattedTransferred} / {formattedTotal}</span>
+            <span>
+              {formattedTransferred} / {formattedTotal}
+            </span>
           </div>
         )}
       </div>
@@ -271,11 +283,7 @@ export function SyncProgressBar({
             <div className="p-3 space-y-2 max-h-48 overflow-y-auto">
               <AnimatePresence>
                 {Array.from(state.items.values()).map((item) => (
-                  <SyncItem
-                    key={item.id}
-                    item={item}
-                    onCancel={cancelSync}
-                  />
+                  <SyncItem key={item.id} item={item} onCancel={cancelSync} />
                 ))}
               </AnimatePresence>
             </div>
@@ -308,9 +316,7 @@ export function SyncIndicator({ className = '' }: { className?: string }) {
         transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
       />
       <span className="text-sm font-medium">{formattedProgress}</span>
-      {activeCount > 1 && (
-        <span className="text-xs">({activeCount})</span>
-      )}
+      {activeCount > 1 && <span className="text-xs">({activeCount})</span>}
     </motion.div>
   );
 }
@@ -319,7 +325,8 @@ export function SyncIndicator({ className = '' }: { className?: string }) {
  * Sync progress toast notification
  */
 export function SyncToast({ className = '' }: { className?: string }) {
-  const { isSyncing, completedCount, failedCount, overallProgress, formattedProgress } = useSyncProgress();
+  const { isSyncing, completedCount, failedCount, overallProgress, formattedProgress } =
+    useSyncProgress();
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
@@ -357,9 +364,7 @@ export function SyncToast({ className = '' }: { className?: string }) {
             transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
           />
         ) : (
-          <span className="text-lg">
-            {failedCount > 0 ? 'close' : 'Check'}
-          </span>
+          <span className="text-lg">{failedCount > 0 ? 'close' : 'Check'}</span>
         )}
         <span className="text-sm">{toastMessage}</span>
       </div>
@@ -425,9 +430,11 @@ export function SyncStatusPage({ className = '' }: { className?: string }) {
         <div className="h-4 bg-surface-100 dark:bg-surface-700 rounded-full overflow-hidden mb-4">
           <motion.div
             className={`h-full rounded-full ${
-              state.status === 'completed' ? 'bg-kiwi-500' :
-              state.status === 'failed' ? 'bg-red-500' :
-              'bg-blue-500'
+              state.status === 'completed'
+                ? 'bg-kiwi-500'
+                : state.status === 'failed'
+                  ? 'bg-red-500'
+                  : 'bg-blue-500'
             }`}
             initial={{ width: 0 }}
             animate={{ width: `${overallProgress}%` }}
@@ -437,7 +444,9 @@ export function SyncStatusPage({ className = '' }: { className?: string }) {
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="text-center p-3 rounded-xl bg-surface-50 dark:bg-surface-900">
-            <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">{totalCount}</p>
+            <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
+              {totalCount}
+            </p>
             <p className="text-xs text-surface-500 dark:text-surface-400">Total</p>
           </div>
           <div className="text-center p-3 rounded-xl bg-blue-50 dark:bg-blue-900/30">

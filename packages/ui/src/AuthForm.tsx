@@ -23,13 +23,13 @@ export interface AuthFormData {
   vehicleType?: string;
 }
 
-export function AuthForm({ 
-  type, 
-  role, 
-  onSubmit, 
-  onToggle, 
+export function AuthForm({
+  type,
+  role,
+  onSubmit,
+  onToggle,
   loading = false,
-  error 
+  error,
 }: AuthFormProps) {
   const [formData, setFormData] = useState<AuthFormData>({
     email: '',
@@ -47,24 +47,24 @@ export function AuthForm({
   };
 
   const updateField = (field: keyof AuthFormData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   return (
-    <motion.div 
+    <motion.div
       className="w-full max-w-md mx-auto"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
       {/* Logo */}
-      <motion.div 
+      <motion.div
         className="text-center mb-8"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
       >
-        <motion.span 
+        <motion.span
           className="text-6xl inline-block"
           animate={{ rotate: [0, -10, 10, -10, 0] }}
           transition={{ duration: 0.5, delay: 0.5 }}
@@ -75,15 +75,18 @@ export function AuthForm({
           Kiwi {role === 'merchant' ? 'Business' : 'Driver'}
         </h1>
         <p className="text-surface-500 mt-2">
-          {type === 'login' 
-            ? (role === 'merchant' ? 'Gestiona tus pedidos' : 'Empieza a ganar')
-            : (role === 'merchant' ? 'Registra tu negocio' : 'Únete como repartidor')
-          }
+          {type === 'login'
+            ? role === 'merchant'
+              ? 'Gestiona tus pedidos'
+              : 'Empieza a ganar'
+            : role === 'merchant'
+              ? 'Registra tu negocio'
+              : 'Únete como repartidor'}
         </p>
       </motion.div>
 
       {/* Form Card */}
-      <motion.div 
+      <motion.div
         className="rounded-3xl glass-strong border border-white/30 shadow-kiwi-lg p-8"
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -164,7 +167,7 @@ export function AuthForm({
                         'flex flex-col items-center p-2 rounded-xl transition-all',
                         formData.vehicleType === v.type
                           ? 'bg-kiwi-100 border-2 border-kiwi-500'
-                          : 'bg-surface-50 border border-surface-200 hover:border-surface-300'
+                          : 'bg-surface-50 border border-surface-200 hover:border-surface-300',
                       )}
                       onClick={() => updateField('vehicleType', v.type)}
                       whileTap={{ scale: 0.95 }}
@@ -191,9 +194,7 @@ export function AuthForm({
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
               >
-                <label className="block text-sm font-medium text-surface-700 mb-2">
-                  Teléfono
-                </label>
+                <label className="block text-sm font-medium text-surface-700 mb-2">Teléfono</label>
                 <motion.input
                   type="tel"
                   value={formData.phone}
@@ -225,9 +226,7 @@ export function AuthForm({
 
           {/* Password */}
           <div>
-            <label className="block text-sm font-medium text-surface-700 mb-2">
-              Contraseña
-            </label>
+            <label className="block text-sm font-medium text-surface-700 mb-2">Contraseña</label>
             <div className="relative">
               <motion.input
                 type={showPassword ? 'text' : 'password'}
@@ -271,7 +270,7 @@ export function AuthForm({
             className={cn(
               'w-full py-3 px-4 rounded-xl font-semibold text-white transition-all',
               'bg-kiwi-gradient hover:shadow-kiwi',
-              'disabled:opacity-50 disabled:cursor-not-allowed'
+              'disabled:opacity-50 disabled:cursor-not-allowed',
             )}
             whileHover={{ scale: 1.02, y: -2 }}
             whileTap={{ scale: 0.98 }}
@@ -287,20 +286,22 @@ export function AuthForm({
                 </motion.span>
                 Procesando...
               </span>
+            ) : type === 'login' ? (
+              'Iniciar Sesión'
             ) : (
-              type === 'login' ? 'Iniciar Sesión' : 'Crear Cuenta'
+              'Crear Cuenta'
             )}
           </motion.button>
 
           {/* Forgot Password (Login only) */}
           {type === 'login' && (
-            <motion.div 
+            <motion.div
               className="text-center"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5 }}
             >
-              <button 
+              <button
                 type="button"
                 className="text-sm text-kiwi-600 hover:text-kiwi-700 font-medium"
               >
@@ -311,7 +312,7 @@ export function AuthForm({
         </form>
 
         {/* Toggle Login/Register */}
-        <motion.div 
+        <motion.div
           className="mt-6 pt-6 border-t border-surface-200 text-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -319,7 +320,7 @@ export function AuthForm({
         >
           <p className="text-sm text-surface-500">
             {type === 'login' ? '¿No tienes cuenta?' : '¿Ya tienes cuenta?'}
-            <button 
+            <button
               onClick={onToggle}
               className="ml-2 font-semibold text-kiwi-600 hover:text-kiwi-700"
             >
@@ -330,7 +331,7 @@ export function AuthForm({
       </motion.div>
 
       {/* Social Login */}
-      <motion.div 
+      <motion.div
         className="mt-6"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

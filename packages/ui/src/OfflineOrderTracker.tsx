@@ -12,13 +12,16 @@ interface OfflineOrderTrackerProps {
   className?: string;
 }
 
-const STATUS_CONFIG: Record<OrderStatus, {
-  label: string;
-  icon: string;
-  color: string;
-  bgColor: string;
-  description: string;
-}> = {
+const STATUS_CONFIG: Record<
+  OrderStatus,
+  {
+    label: string;
+    icon: string;
+    color: string;
+    bgColor: string;
+    description: string;
+  }
+> = {
   draft: {
     label: 'Borrador',
     icon: 'file',
@@ -155,9 +158,13 @@ export function OfflineOrderTracker({
           <div className="flex items-center gap-3">
             <motion.span
               className="text-3xl"
-              animate={order.status === 'in_transit' ? { 
-                scale: [1, 1.1, 1],
-              } : {}}
+              animate={
+                order.status === 'in_transit'
+                  ? {
+                      scale: [1, 1.1, 1],
+                    }
+                  : {}
+              }
               transition={{ duration: 2, repeat: Infinity }}
             >
               {statusConfig.icon}
@@ -185,10 +192,7 @@ export function OfflineOrderTracker({
               <span className="text-orange-500">WifiOff</span>
             )}
             {order.syncStatus === 'failed' && (
-              <button
-                onClick={handleSync}
-                className="text-red-500 hover:text-red-600"
-              >
+              <button onClick={handleSync} className="text-red-500 hover:text-red-600">
                 RefreshCw
               </button>
             )}
@@ -205,9 +209,7 @@ export function OfflineOrderTracker({
             <p className="font-medium text-surface-800 dark:text-surface-200">
               {order.customerName}
             </p>
-            <p className="text-sm text-surface-500 dark:text-surface-400">
-              {order.customerPhone}
-            </p>
+            <p className="text-sm text-surface-500 dark:text-surface-400">{order.customerPhone}</p>
           </div>
         </div>
 
@@ -233,13 +235,13 @@ export function OfflineOrderTracker({
                 <span className="text-surface-600 dark:text-surface-400">
                   {item.quantity}x {item.name}
                 </span>
-                <span className="font-medium">₡{(item.price * item.quantity).toLocaleString()}</span>
+                <span className="font-medium">
+                  ₡{(item.price * item.quantity).toLocaleString()}
+                </span>
               </div>
             ))}
             {order.items.length > 3 && (
-              <p className="text-xs text-surface-400">
-                +{order.items.length - 3} más
-              </p>
+              <p className="text-xs text-surface-400">+{order.items.length - 3} más</p>
             )}
           </div>
           <div className="flex justify-between pt-2 mt-2 border-t border-surface-200 dark:border-surface-700">
@@ -267,20 +269,23 @@ export function OfflineOrderTracker({
         <div className="pt-3 border-t border-surface-100 dark:border-surface-700">
           <p className="text-xs text-surface-500 dark:text-surface-400 mb-2">Historial</p>
           <div className="space-y-2">
-            {order.statusHistory.slice(-3).reverse().map((entry, index) => (
-              <div key={index} className="flex items-center gap-2 text-sm">
-                <span>{STATUS_CONFIG[entry.status]?.icon}</span>
-                <span className="text-surface-600 dark:text-surface-400">
-                  {STATUS_CONFIG[entry.status]?.label}
-                </span>
-                <span className="text-xs text-surface-400 ml-auto">
-                  {new Date(entry.timestamp).toLocaleTimeString('es-CR', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </span>
-              </div>
-            ))}
+            {order.statusHistory
+              .slice(-3)
+              .reverse()
+              .map((entry, index) => (
+                <div key={index} className="flex items-center gap-2 text-sm">
+                  <span>{STATUS_CONFIG[entry.status]?.icon}</span>
+                  <span className="text-surface-600 dark:text-surface-400">
+                    {STATUS_CONFIG[entry.status]?.label}
+                  </span>
+                  <span className="text-xs text-surface-400 ml-auto">
+                    {new Date(entry.timestamp).toLocaleTimeString('es-CR', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </span>
+                </div>
+              ))}
           </div>
         </div>
       </div>
@@ -383,8 +388,11 @@ export function OfflineOrderList({
   if (isLoading) {
     return (
       <div className={`space-y-4 ${className}`}>
-        {[1, 2, 3].map(i => (
-          <div key={i} className="animate-pulse h-48 bg-surface-200 dark:bg-surface-700 rounded-2xl" />
+        {[1, 2, 3].map((i) => (
+          <div
+            key={i}
+            className="animate-pulse h-48 bg-surface-200 dark:bg-surface-700 rounded-2xl"
+          />
         ))}
       </div>
     );
@@ -404,7 +412,8 @@ export function OfflineOrderList({
               <span className="text-2xl">RefreshCw</span>
               <div>
                 <p className="font-medium text-blue-700 dark:text-blue-400">
-                  {unsyncedCount} pedido{unsyncedCount !== 1 ? 's' : ''} pendiente{unsyncedCount !== 1 ? 's' : ''}
+                  {unsyncedCount} pedido{unsyncedCount !== 1 ? 's' : ''} pendiente
+                  {unsyncedCount !== 1 ? 's' : ''}
                 </p>
                 <p className="text-sm text-blue-600 dark:text-blue-400">
                   {isOnline ? 'Se sincronizarán automáticamente' : 'Esperando conexión...'}
@@ -436,11 +445,7 @@ export function OfflineOrderList({
         </div>
       ) : (
         orders.map((order) => (
-          <OfflineOrderTracker
-            key={order.localId}
-            localId={order.localId}
-            className="w-full"
-          />
+          <OfflineOrderTracker key={order.localId} localId={order.localId} className="w-full" />
         ))
       )}
     </div>

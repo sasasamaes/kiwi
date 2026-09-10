@@ -131,7 +131,7 @@ export default function OrderTrackingPage() {
   }, [orderId]);
 
   // Fetch driver location
-  const fetchDriverLocation = useCallback(async () => {
+  async function fetchDriverLocation() {
     if (!order?.driver?.id) return;
 
     try {
@@ -140,7 +140,7 @@ export default function OrderTrackingPage() {
     } catch (err) {
       console.error('Failed to fetch driver location:', err);
     }
-  }, [order?.driver?.id]);
+  }
 
   useEffect(() => {
     fetchOrder();
@@ -153,7 +153,7 @@ export default function OrderTrackingPage() {
     fetchDriverLocation();
     const interval = setInterval(fetchDriverLocation, 10000);
     return () => clearInterval(interval);
-  }, [order?.driver?.id, order?.status, fetchDriverLocation]);
+  }, [order?.driver?.id, order?.status]);
 
   // Update time every minute for ETA calculations
   useEffect(() => {

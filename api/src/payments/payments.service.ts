@@ -2,8 +2,9 @@ import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { OnvoPayProvider } from './providers/onvopay.provider';
 import { StellarProvider } from './providers/stellar.provider';
+import { PaymentMethod, PaymentStatus } from '@prisma/client';
 
-interface CreatePaymentDTO {
+export interface CreatePaymentDTO {
   orderId: string;
   method: 'onvopay_card' | 'onvopay_sinpe' | 'crypto' | 'cash';
   amount: number;
@@ -14,7 +15,7 @@ interface CreatePaymentDTO {
   paymentMethodId?: string; // Tokenized payment method from client
 }
 
-interface PaymentResult {
+export interface PaymentResult {
   success: boolean;
   paymentId?: string;
   checkoutUrl?: string;
@@ -81,7 +82,7 @@ export class PaymentsService {
       where: { orderId },
     });
 
-    if (existingPayment && existingPayment.status === 'completed') {
+    if (existingPayment && existingPayment.status === PaymentStatus.completed) {
       throw new BadRequestException('El pedido ya tiene un pago completado');
     }
 
@@ -115,9 +116,9 @@ export class PaymentsService {
     // Save or update payment record
     const paymentData = {
       amount,
-      currency: method === 'crypto' ? cryptoCoin : 'CRC',
-      method: method as any,
-      status: result.success ? 'pending' : 'failed',
+      currency: (method === 'crypto' ? cryptoCoin : 'CRC') ?? 'CRC',
+      method: method as PaymentMethod,
+      status: (result.success ? PaymentStatus.pending : PaymentStatus.failed) as PaymentStatus,
       onvoPaymentId: result.paymentId,
       onvoCheckoutUrl: result.checkoutUrl,
       cryptoCoin: cryptoCoin,
@@ -134,7 +135,7 @@ export class PaymentsService {
     } else {
       await this.prisma.payment.create({
         data: {
-          orderId,
+          order: { connect: { id: orderId } },
           ...paymentData,
         },
       });
@@ -245,34 +246,34 @@ export class PaymentsService {
 
     // Check with provider if needed
     if (payment.method === 'onvopay_card' || payment.method === 'onvopay_sinpe') {
-      if (payment.onvoPaymentId && payment.status === 'pending') {
+      if (payment.onvoPaymentId && payment.status === PaymentStatus.pending) {
         const status = await this.onvopayProvider.getPaymentIntentStatus(payment.onvoPaymentId);
 
         if (status.status === 'succeeded') {
           await this.prisma.payment.update({
             where: { orderId },
-            data: { status: 'completed' },
+            data: { status: PaymentStatus.completed },
           });
-          payment.status = 'completed';
+          payment.status = PaymentStatus.completed;
         } else if (status.status === 'canceled') {
           await this.prisma.payment.update({
             where: { orderId },
-            data: { status: 'failed' },
+            data: { status: PaymentStatus.failed },
           });
-          payment.status = 'failed';
+          payment.status = PaymentStatus.failed;
         }
       }
     }
 
-    if (payment.method === 'crypto' && payment.status === 'pending') {
+    if (payment.method === 'crypto' && payment.status === PaymentStatus.pending) {
       // Check Stellar transaction
       const verified = await this.stellarProvider.verifyPayment(payment.id);
       if (verified.verified) {
         await this.prisma.payment.update({
           where: { orderId },
-          data: { status: 'completed' },
+          data: { status: PaymentStatus.completed },
         });
-        payment.status = 'completed';
+        payment.status = PaymentStatus.completed;
       }
     }
 
@@ -306,14 +307,18 @@ export class PaymentsService {
 
     // Handle different event types
     if (type === 'payment_intent.succeeded') {
-      const { id, metadata } = data;
+      const { metadata } = data ?? {};
       const orderId = metadata?.orderId;
 
       if (orderId) {
-        await this.prisma.payment.update({
+        const res = await this.prisma.payment.updateMany({
           where: { orderId },
-          data: { status: 'completed' },
+          data: { status: PaymentStatus.completed },
         });
+        if (res.count === 0) {
+          this.logger.warn(`Webhook for unknown order ${orderId} — ignoring`);
+          return { received: true, unknownOrder: true };
+        }
 
         // NOTE: order stays pending until a driver claims it. Marking it
         // assigned here (without driverId) hid it from getAvailableOrders
@@ -322,13 +327,13 @@ export class PaymentsService {
         this.logger.log(`Payment completed for order ${orderId}`);
       }
     } else if (type === 'payment_intent.canceled') {
-      const { metadata } = data;
+      const { metadata } = data ?? {};
       const orderId = metadata?.orderId;
 
       if (orderId) {
-        await this.prisma.payment.update({
+        await this.prisma.payment.updateMany({
           where: { orderId },
-          data: { status: 'failed' },
+          data: { status: PaymentStatus.failed },
         });
 
         this.logger.log(`Payment cancelled for order ${orderId}`);
@@ -339,19 +344,28 @@ export class PaymentsService {
   }
 
   private async handleStellarWebhook(payload: any) {
-    const { transactionHash, orderId } = payload;
+    const { transactionHash, orderId } = payload ?? {};
+
+    if (!orderId || !transactionHash) {
+      this.logger.warn('Stellar webhook missing orderId/transactionHash — ignoring');
+      return { received: true, ignored: true };
+    }
 
     // Verify transaction on Stellar
     const verified = await this.stellarProvider.verifyPayment(orderId);
 
     if (verified.verified) {
-      await this.prisma.payment.update({
+      const res = await this.prisma.payment.updateMany({
         where: { orderId },
         data: {
-          status: 'completed',
+          status: PaymentStatus.completed,
           cryptoTxHash: transactionHash,
         },
       });
+      if (res.count === 0) {
+        this.logger.warn(`Stellar webhook for unknown order ${orderId} — ignoring`);
+        return { received: true, unknownOrder: true };
+      }
 
       this.logger.log(`Crypto payment verified for order ${orderId}`);
     }

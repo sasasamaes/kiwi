@@ -34,11 +34,31 @@ interface Withdrawal {
 }
 
 const STATUS_CONFIG: Record<string, { label: string; icon: string; color: string }> = {
-  pending: { label: 'Pendiente', icon: 'Clock', color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400' },
-  processing: { label: 'Procesando', icon: 'RefreshCw', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400' },
-  completed: { label: 'Completado', icon: 'Check', color: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400' },
-  failed: { label: 'Cancelado', icon: 'X', color: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400' },
-  rejected: { label: 'Rechazado', icon: 'X', color: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400' },
+  pending: {
+    label: 'Pendiente',
+    icon: 'Clock',
+    color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400',
+  },
+  processing: {
+    label: 'Procesando',
+    icon: 'RefreshCw',
+    color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400',
+  },
+  completed: {
+    label: 'Completado',
+    icon: 'Check',
+    color: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400',
+  },
+  failed: {
+    label: 'Cancelado',
+    icon: 'X',
+    color: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400',
+  },
+  rejected: {
+    label: 'Rechazado',
+    icon: 'X',
+    color: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400',
+  },
 };
 
 const FILTER_TABS = [
@@ -64,7 +84,7 @@ export default function AdminWithdrawalsPage() {
     try {
       setLoading(true);
       setError(null);
-      
+
       // For now, we'll fetch pending withdrawals (admin endpoint)
       // In a real app, you'd have an endpoint to get all withdrawals
       const data = await api.getPendingWithdrawals();
@@ -132,17 +152,27 @@ export default function AdminWithdrawalsPage() {
   };
 
   const getStatusConfig = (status: string) => {
-    return STATUS_CONFIG[status] || { label: status, icon: '❓', color: 'bg-surface-100 text-surface-700' };
+    return (
+      STATUS_CONFIG[status] || {
+        label: status,
+        icon: '❓',
+        color: 'bg-surface-100 text-surface-700',
+      }
+    );
   };
 
   // Filter withdrawals
-  const filteredWithdrawals = withdrawals.filter(w => 
-    activeFilter === 'all' || w.status === activeFilter
+  const filteredWithdrawals = withdrawals.filter(
+    (w) => activeFilter === 'all' || w.status === activeFilter,
   );
 
   // Calculate totals
-  const totalPending = withdrawals.filter(w => w.status === 'pending').reduce((sum, w) => sum + w.amount, 0);
-  const totalProcessing = withdrawals.filter(w => w.status === 'processing').reduce((sum, w) => sum + w.amount, 0);
+  const totalPending = withdrawals
+    .filter((w) => w.status === 'pending')
+    .reduce((sum, w) => sum + w.amount, 0);
+  const totalProcessing = withdrawals
+    .filter((w) => w.status === 'processing')
+    .reduce((sum, w) => sum + w.amount, 0);
 
   if (loading && withdrawals.length === 0) {
     return (
@@ -167,12 +197,12 @@ export default function AdminWithdrawalsPage() {
   if (error) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <motion.div 
+        <motion.div
           className="text-center"
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
         >
-          <motion.div 
+          <motion.div
             className="text-6xl mb-4"
             animate={{ y: [0, -10, 0] }}
             transition={{ duration: 2, repeat: Infinity }}
@@ -205,7 +235,7 @@ export default function AdminWithdrawalsPage() {
             Coins Retiros
           </h1>
           <p className="text-surface-500 dark:text-surface-400">
-            {withdrawals.filter(w => w.status === 'pending').length} pendientes de procesar
+            {withdrawals.filter((w) => w.status === 'pending').length} pendientes de procesar
           </p>
         </div>
         <motion.button
@@ -219,7 +249,7 @@ export default function AdminWithdrawalsPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 gap-4">
-        <motion.div 
+        <motion.div
           className="rounded-2xl bg-yellow-50 dark:bg-yellow-900/30 p-4 shadow-soft dark:shadow-dark border border-yellow-200 dark:border-yellow-800"
           whileHover={{ y: -2 }}
         >
@@ -228,7 +258,7 @@ export default function AdminWithdrawalsPage() {
             {formatCurrency(totalPending)}
           </p>
         </motion.div>
-        <motion.div 
+        <motion.div
           className="rounded-2xl bg-blue-50 dark:bg-blue-900/30 p-4 shadow-soft dark:shadow-dark border border-blue-200 dark:border-blue-800"
           whileHover={{ y: -2 }}
         >
@@ -260,21 +290,15 @@ export default function AdminWithdrawalsPage() {
 
       {/* Withdrawals List */}
       {filteredWithdrawals.length === 0 ? (
-        <motion.div 
-          className="text-center py-12"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-        >
+        <motion.div className="text-center py-12" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
           <span className="text-5xl mb-4 block">📭</span>
-          <p className="text-surface-500 dark:text-surface-400">
-            No hay retiros en esta categoría
-          </p>
+          <p className="text-surface-500 dark:text-surface-400">No hay retiros en esta categoría</p>
         </motion.div>
       ) : (
         <div className="space-y-4">
           {filteredWithdrawals.map((withdrawal, index) => {
             const statusConfig = getStatusConfig(withdrawal.status);
-            
+
             return (
               <motion.div
                 key={withdrawal.id}
@@ -299,7 +323,9 @@ export default function AdminWithdrawalsPage() {
                       </p>
                     </div>
                   </div>
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusConfig.color}`}>
+                  <span
+                    className={`px-3 py-1 rounded-full text-xs font-medium ${statusConfig.color}`}
+                  >
                     {statusConfig.icon} {statusConfig.label}
                   </span>
                 </div>
@@ -307,7 +333,11 @@ export default function AdminWithdrawalsPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4 text-sm text-surface-500 dark:text-surface-400">
                     <span>Calendar {formatDate(withdrawal.createdAt)}</span>
-                    <span>{withdrawal.paymentMethod === 'sinpe' ? 'Smartphone SINPE' : '🏦 Transferencia'}</span>
+                    <span>
+                      {withdrawal.paymentMethod === 'sinpe'
+                        ? 'Smartphone SINPE'
+                        : '🏦 Transferencia'}
+                    </span>
                   </div>
                   <span className="text-lg font-bold text-kiwi-600 dark:text-kiwi-400">
                     {formatCurrency(withdrawal.amount)}
@@ -383,8 +413,11 @@ export default function AdminWithdrawalsPage() {
                   <p className="text-4xl font-bold text-kiwi-600 dark:text-kiwi-400">
                     {formatCurrency(selectedWithdrawal.amount)}
                   </p>
-                  <span className={`inline-block mt-2 px-3 py-1 rounded-full text-sm font-medium ${getStatusConfig(selectedWithdrawal.status).color}`}>
-                    {getStatusConfig(selectedWithdrawal.status).icon} {getStatusConfig(selectedWithdrawal.status).label}
+                  <span
+                    className={`inline-block mt-2 px-3 py-1 rounded-full text-sm font-medium ${getStatusConfig(selectedWithdrawal.status).color}`}
+                  >
+                    {getStatusConfig(selectedWithdrawal.status).icon}{' '}
+                    {getStatusConfig(selectedWithdrawal.status).label}
                   </span>
                 </div>
 
@@ -400,7 +433,8 @@ export default function AdminWithdrawalsPage() {
                         {selectedWithdrawal.driver.fullName}
                       </p>
                       <p className="text-sm text-surface-500 dark:text-surface-400">
-                        {selectedWithdrawal.driver.user.email} • Star {selectedWithdrawal.driver.rating}
+                        {selectedWithdrawal.driver.user.email} • Star{' '}
+                        {selectedWithdrawal.driver.rating}
                       </p>
                     </div>
                   </div>
@@ -409,7 +443,9 @@ export default function AdminWithdrawalsPage() {
                 {/* Payment Details */}
                 <div className="p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50">
                   <p className="text-sm text-surface-500 dark:text-surface-400 mb-2">
-                    {selectedWithdrawal.paymentMethod === 'sinpe' ? 'Smartphone Datos SINPE' : '🏦 Datos Bancarios'}
+                    {selectedWithdrawal.paymentMethod === 'sinpe'
+                      ? 'Smartphone Datos SINPE'
+                      : '🏦 Datos Bancarios'}
                   </p>
                   {selectedWithdrawal.paymentMethod === 'sinpe' ? (
                     <div className="space-y-2">
@@ -453,9 +489,12 @@ export default function AdminWithdrawalsPage() {
                 </div>
 
                 {/* Transaction ID (if processing/completed) */}
-                {(selectedWithdrawal.status === 'processing' || selectedWithdrawal.status === 'completed') && (
+                {(selectedWithdrawal.status === 'processing' ||
+                  selectedWithdrawal.status === 'completed') && (
                   <div className="p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50">
-                    <p className="text-sm text-surface-500 dark:text-surface-400 mb-2">ID de Transacción</p>
+                    <p className="text-sm text-surface-500 dark:text-surface-400 mb-2">
+                      ID de Transacción
+                    </p>
                     <p className="font-mono text-surface-800 dark:text-surface-100">
                       {selectedWithdrawal.transactionId || 'No registrado'}
                     </p>

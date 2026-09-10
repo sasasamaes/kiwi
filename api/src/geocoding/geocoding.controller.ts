@@ -18,11 +18,11 @@ export class GeocodingController {
     @Query('country') country?: string,
   ) {
     const maxResults = limit ? parseInt(limit) : 5;
-    
+
     if (country === 'cr') {
       return this.geocodingService.searchCostaRica(query, maxResults);
     }
-    
+
     return this.geocodingService.search(query, maxResults);
   }
 
@@ -30,10 +30,7 @@ export class GeocodingController {
   @ApiOperation({ summary: 'Search for addresses in Nicoya' })
   @ApiQuery({ name: 'q', required: true, description: 'Search query' })
   @ApiQuery({ name: 'limit', required: false, description: 'Max results (default: 5)' })
-  async searchNicoya(
-    @Query('q') query: string,
-    @Query('limit') limit?: string,
-  ) {
+  async searchNicoya(@Query('q') query: string, @Query('limit') limit?: string) {
     const maxResults = limit ? parseInt(limit) : 5;
     return this.geocodingService.searchNicoya(query, maxResults);
   }
@@ -42,17 +39,14 @@ export class GeocodingController {
   @ApiOperation({ summary: 'Reverse geocode coordinates to address' })
   @ApiQuery({ name: 'lat', required: true, description: 'Latitude' })
   @ApiQuery({ name: 'lng', required: true, description: 'Longitude' })
-  async reverseGeocode(
-    @Query('lat') lat: string,
-    @Query('lng') lng: string,
-  ) {
+  async reverseGeocode(@Query('lat') lat: string, @Query('lng') lng: string) {
     const latitude = parseFloat(lat);
     const longitude = parseFloat(lng);
-    
+
     if (isNaN(latitude) || isNaN(longitude)) {
       return { error: 'Invalid coordinates' };
     }
-    
+
     return this.geocodingService.reverseGeocode(latitude, longitude);
   }
 
@@ -74,7 +68,7 @@ export class GeocodingController {
       parseFloat(lat2),
       parseFloat(lng2),
     );
-    
+
     return {
       distance: Math.round(distance * 100) / 100, // Round to 2 decimal places
       unit: 'km',

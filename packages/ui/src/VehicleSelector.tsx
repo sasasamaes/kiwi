@@ -81,7 +81,7 @@ export function VehicleSelector({ selected, onSelect, showDetails = true }: Vehi
             'w-full flex items-center gap-4 rounded-2xl p-4 text-left transition-all',
             selected === vehicle.type
               ? 'border-2 border-kiwi-500 bg-kiwi-50 shadow-kiwi'
-              : 'border border-surface-200 bg-white hover:border-surface-300 hover:shadow-soft'
+              : 'border border-surface-200 bg-white hover:border-surface-300 hover:shadow-soft',
           )}
           whileTap={{ scale: 0.98 }}
         >
@@ -89,7 +89,7 @@ export function VehicleSelector({ selected, onSelect, showDetails = true }: Vehi
           <motion.div
             className={cn(
               'flex h-14 w-14 items-center justify-center rounded-xl text-2xl',
-              selected === vehicle.type ? 'bg-kiwi-100' : 'bg-surface-100'
+              selected === vehicle.type ? 'bg-kiwi-100' : 'bg-surface-100',
             )}
             animate={selected === vehicle.type ? { scale: [1, 1.1, 1] } : {}}
             transition={{ duration: 0.3 }}
@@ -116,11 +116,15 @@ export function VehicleSelector({ selected, onSelect, showDetails = true }: Vehi
               )}
             </div>
             <p className="text-sm text-surface-500">{vehicle.description}</p>
-            
+
             {showDetails && (
               <div className="mt-2 flex gap-3 text-xs text-surface-400">
-                <span className="flex items-center gap-1"><Package className="h-3 w-3" /> {vehicle.capacity}</span>
-                <span className="flex items-center gap-1"><Weight className="h-3 w-3" /> {vehicle.maxWeight}</span>
+                <span className="flex items-center gap-1">
+                  <Package className="h-3 w-3" /> {vehicle.capacity}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Weight className="h-3 w-3" /> {vehicle.maxWeight}
+                </span>
               </div>
             )}
           </div>
@@ -143,8 +147,8 @@ interface VehicleBadgeProps {
 }
 
 export function VehicleBadge({ type, size = 'md' }: VehicleBadgeProps) {
-  const vehicle = vehicles.find(v => v.type === type);
-  
+  const vehicle = vehicles.find((v) => v.type === type);
+
   const sizes = {
     sm: 'h-6 px-2 text-xs',
     md: 'h-8 px-3 text-sm',
@@ -155,10 +159,20 @@ export function VehicleBadge({ type, size = 'md' }: VehicleBadgeProps) {
     <span
       className={cn(
         'inline-flex items-center gap-1.5 rounded-full bg-surface-100 font-medium text-surface-700',
-        sizes[size]
+        sizes[size],
       )}
     >
-      <span>{vehicle?.type === 'motorcycle' || vehicle?.type === 'motorized_bike' || vehicle?.type === 'bicycle' ? <Bike className="h-4 w-4" /> : vehicle?.type === 'car' ? <Car className="h-4 w-4" /> : <Truck className="h-4 w-4" />}</span>
+      <span>
+        {vehicle?.type === 'motorcycle' ||
+        vehicle?.type === 'motorized_bike' ||
+        vehicle?.type === 'bicycle' ? (
+          <Bike className="h-4 w-4" />
+        ) : vehicle?.type === 'car' ? (
+          <Car className="h-4 w-4" />
+        ) : (
+          <Truck className="h-4 w-4" />
+        )}
+      </span>
       <span>{vehicle?.name}</span>
     </span>
   );

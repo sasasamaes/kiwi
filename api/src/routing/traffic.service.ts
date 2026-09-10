@@ -1,26 +1,26 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-interface TrafficCondition {
+export interface TrafficCondition {
   level: 'free' | 'light' | 'moderate' | 'heavy' | 'severe';
   speedFactor: number; // 0.0 to 1.0 (1.0 = no traffic)
   description: string;
   color: string;
 }
 
-interface TrafficPrediction {
+export interface TrafficPrediction {
   conditions: TrafficCondition;
   estimatedDelay: number; // in minutes
   alternativeRoutes?: TrafficRoute[];
 }
 
-interface TrafficRoute {
+export interface TrafficRoute {
   distance: number;
   duration: number;
   trafficDuration: number;
   trafficLevel: string;
 }
 
-interface TimeSlot {
+export interface TimeSlot {
   startHour: number;
   endHour: number;
   level: 'free' | 'light' | 'moderate' | 'heavy' | 'severe';
@@ -37,21 +37,21 @@ export class TrafficService {
     { startHour: 6, endHour: 7, level: 'light', days: [1, 2, 3, 4, 5] },
     { startHour: 7, endHour: 9, level: 'moderate', days: [1, 2, 3, 4, 5] },
     { startHour: 9, endHour: 11, level: 'light', days: [1, 2, 3, 4, 5] },
-    
+
     // Lunch rush (11:30 AM - 1:30 PM)
     { startHour: 11, endHour: 12, level: 'moderate', days: [1, 2, 3, 4, 5, 6] },
     { startHour: 12, endHour: 14, level: 'heavy', days: [1, 2, 3, 4, 5, 6] },
     { startHour: 14, endHour: 15, level: 'moderate', days: [1, 2, 3, 4, 5, 6] },
-    
+
     // Afternoon rush (4-7 PM, weekdays)
     { startHour: 16, endHour: 17, level: 'moderate', days: [1, 2, 3, 4, 5] },
     { startHour: 17, endHour: 19, level: 'heavy', days: [1, 2, 3, 4, 5] },
     { startHour: 19, endHour: 20, level: 'light', days: [1, 2, 3, 4, 5] },
-    
+
     // Weekend patterns
     { startHour: 10, endHour: 14, level: 'light', days: [0, 6] },
     { startHour: 14, endHour: 18, level: 'moderate', days: [0, 6] },
-    
+
     // Night (always free)
     { startHour: 20, endHour: 23, level: 'free', days: [0, 1, 2, 3, 4, 5, 6] },
     { startHour: 0, endHour: 6, level: 'free', days: [0, 1, 2, 3, 4, 5, 6] },
@@ -108,21 +108,21 @@ export class TrafficService {
     // Market area (busy during market days)
     {
       name: 'Mercado',
-      center: { lat: 10.1490, lng: -85.4520 },
+      center: { lat: 10.149, lng: -85.452 },
       radius: 0.3,
       modifier: 1.5,
     },
     // Hospital area
     {
       name: 'Hospital',
-      center: { lat: 10.1470, lng: -85.4540 },
+      center: { lat: 10.147, lng: -85.454 },
       radius: 0.4,
       modifier: 1.2,
     },
     // Outskirts (usually free)
     {
       name: 'Afuera',
-      center: { lat: 10.1500, lng: -85.4500 },
+      center: { lat: 10.15, lng: -85.45 },
       radius: 2.0,
       modifier: 0.7,
     },
@@ -136,7 +136,7 @@ export class TrafficService {
   async getTrafficConditions(lat?: number, lng?: number): Promise<TrafficPrediction> {
     const now = new Date();
     const nicoyaTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Costa_Rica' }));
-    
+
     const hour = nicoyaTime.getHours();
     const day = nicoyaTime.getDay();
 
@@ -172,7 +172,7 @@ export class TrafficService {
     conditions: TrafficCondition;
   }> {
     const prediction = await this.getTrafficConditions(lat, lng);
-    
+
     const adjustedDuration = Math.round(baseDuration / prediction.conditions.speedFactor);
     const delay = adjustedDuration - baseDuration;
 
@@ -254,7 +254,7 @@ export class TrafficService {
 
     // Estimate driving time (assuming 30 km/h average in town)
     const drivingMinutes = Math.round((baseDistance / 30) * 60);
-    
+
     // Apply traffic factor
     const trafficMinutes = Math.round(drivingMinutes / worstCondition.speedFactor);
     const trafficDelay = trafficMinutes - drivingMinutes;
@@ -282,13 +282,13 @@ export class TrafficService {
   /**
    * Get real-time traffic updates for a route
    */
-  async getTrafficUpdates(
-    routePoints: Array<{ lat: number; lng: number }>,
-  ): Promise<Array<{
-    point: { lat: number; lng: number };
-    traffic: TrafficCondition;
-    speed: number;
-  }>> {
+  async getTrafficUpdates(routePoints: Array<{ lat: number; lng: number }>): Promise<
+    Array<{
+      point: { lat: number; lng: number };
+      traffic: TrafficCondition;
+      speed: number;
+    }>
+  > {
     const updates = [];
 
     for (const point of routePoints) {
@@ -309,11 +309,7 @@ export class TrafficService {
 
   private getTimeBasedTraffic(hour: number, day: number): string {
     for (const slot of this.trafficPatterns) {
-      if (
-        slot.days.includes(day) &&
-        hour >= slot.startHour &&
-        hour < slot.endHour
-      ) {
+      if (slot.days.includes(day) && hour >= slot.startHour && hour < slot.endHour) {
         return slot.level;
       }
     }
@@ -322,10 +318,7 @@ export class TrafficService {
 
   private getLocationModifier(lat: number, lng: number): number {
     for (const location of this.locationModifiers) {
-      const distance = this.calculateDistance(
-        lat, lng,
-        location.center.lat, location.center.lng,
-      );
+      const distance = this.calculateDistance(lat, lng, location.center.lat, location.center.lng);
 
       if (distance <= location.radius) {
         return location.modifier;
@@ -383,8 +376,10 @@ export class TrafficService {
     const dLng = this.toRad(lng2 - lng1);
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(this.toRad(lat1)) * Math.cos(this.toRad(lat2)) *
-      Math.sin(dLng / 2) * Math.sin(dLng / 2);
+      Math.cos(this.toRad(lat1)) *
+        Math.cos(this.toRad(lat2)) *
+        Math.sin(dLng / 2) *
+        Math.sin(dLng / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   }

@@ -4,14 +4,93 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const mockUsers = [
-  { id: '1', name: 'Juan Carlos', email: 'juan@email.com', role: 'driver', status: 'active', kycStatus: 'approved', joined: '2024-01-15', rating: 4.9, trips: 234 },
-  { id: '2', name: 'María García', email: 'maria@email.com', role: 'driver', status: 'active', kycStatus: 'pending', joined: '2024-02-20', rating: 4.8, trips: 198 },
-  { id: '3', name: 'Luis Alfredo', email: 'luis@email.com', role: 'merchant', status: 'active', kycStatus: 'approved', joined: '2024-01-10', rating: 4.9, orders: 456 },
-  { id: '4', name: 'Fran', email: 'fran@email.com', role: 'driver', status: 'active', kycStatus: 'approved', joined: '2024-03-05', rating: 4.7, trips: 176 },
-  { id: '5', name: 'Joel', email: 'joel@email.com', role: 'driver', status: 'inactive', kycStatus: 'approved', joined: '2024-03-12', rating: 4.6, trips: 89 },
-  { id: '6', name: 'Punto Ácido', email: 'punto@email.com', role: 'merchant', status: 'active', kycStatus: 'approved', joined: '2024-02-01', rating: 4.8, orders: 389 },
-  { id: '7', name: 'Los Efes', email: 'efes@email.com', role: 'merchant', status: 'active', kycStatus: 'pending', joined: '2024-03-18', rating: 4.7, orders: 312 },
-  { id: '8', name: 'Ana López', email: 'ana@email.com', role: 'customer', status: 'active', kycStatus: 'none', joined: '2024-04-01', orders: 23 },
+  {
+    id: '1',
+    name: 'Juan Carlos',
+    email: 'juan@email.com',
+    role: 'driver',
+    status: 'active',
+    kycStatus: 'approved',
+    joined: '2024-01-15',
+    rating: 4.9,
+    trips: 234,
+  },
+  {
+    id: '2',
+    name: 'María García',
+    email: 'maria@email.com',
+    role: 'driver',
+    status: 'active',
+    kycStatus: 'pending',
+    joined: '2024-02-20',
+    rating: 4.8,
+    trips: 198,
+  },
+  {
+    id: '3',
+    name: 'Luis Alfredo',
+    email: 'luis@email.com',
+    role: 'merchant',
+    status: 'active',
+    kycStatus: 'approved',
+    joined: '2024-01-10',
+    rating: 4.9,
+    orders: 456,
+  },
+  {
+    id: '4',
+    name: 'Fran',
+    email: 'fran@email.com',
+    role: 'driver',
+    status: 'active',
+    kycStatus: 'approved',
+    joined: '2024-03-05',
+    rating: 4.7,
+    trips: 176,
+  },
+  {
+    id: '5',
+    name: 'Joel',
+    email: 'joel@email.com',
+    role: 'driver',
+    status: 'inactive',
+    kycStatus: 'approved',
+    joined: '2024-03-12',
+    rating: 4.6,
+    trips: 89,
+  },
+  {
+    id: '6',
+    name: 'Punto Ácido',
+    email: 'punto@email.com',
+    role: 'merchant',
+    status: 'active',
+    kycStatus: 'approved',
+    joined: '2024-02-01',
+    rating: 4.8,
+    orders: 389,
+  },
+  {
+    id: '7',
+    name: 'Los Efes',
+    email: 'efes@email.com',
+    role: 'merchant',
+    status: 'active',
+    kycStatus: 'pending',
+    joined: '2024-03-18',
+    rating: 4.7,
+    orders: 312,
+  },
+  {
+    id: '8',
+    name: 'Ana López',
+    email: 'ana@email.com',
+    role: 'customer',
+    status: 'active',
+    kycStatus: 'none',
+    joined: '2024-04-01',
+    orders: 23,
+  },
 ];
 
 export default function UsersPage() {
@@ -20,34 +99,43 @@ export default function UsersPage() {
   const [search, setSearch] = useState('');
   const [selectedUser, setSelectedUser] = useState<any>(null);
 
-  const filteredUsers = users.filter(user => {
+  const filteredUsers = users.filter((user) => {
     const matchesFilter = filter === 'all' || user.role === filter;
-    const matchesSearch = user.name.toLowerCase().includes(search.toLowerCase()) ||
-                         user.email.toLowerCase().includes(search.toLowerCase());
+    const matchesSearch =
+      user.name.toLowerCase().includes(search.toLowerCase()) ||
+      user.email.toLowerCase().includes(search.toLowerCase());
     return matchesFilter && matchesSearch;
   });
 
   const getRoleLabel = (role: string) => {
     switch (role) {
-      case 'driver': return { label: 'Repartidor', color: 'bg-kiwi-100 text-kiwi-700' };
-      case 'merchant': return { label: 'Comercio', color: 'bg-blue-100 text-blue-700' };
-      case 'customer': return { label: 'Cliente', color: 'bg-purple-100 text-purple-700' };
-      default: return { label: role, color: 'bg-surface-100 text-surface-700' };
+      case 'driver':
+        return { label: 'Repartidor', color: 'bg-kiwi-100 text-kiwi-700' };
+      case 'merchant':
+        return { label: 'Comercio', color: 'bg-blue-100 text-blue-700' };
+      case 'customer':
+        return { label: 'Cliente', color: 'bg-purple-100 text-purple-700' };
+      default:
+        return { label: role, color: 'bg-surface-100 text-surface-700' };
     }
   };
 
   const getStatusLabel = (status: string) => {
-    return status === 'active' 
+    return status === 'active'
       ? { label: 'Activo', color: 'bg-green-100 text-green-700' }
       : { label: 'Inactivo', color: 'bg-surface-100 text-surface-500' };
   };
 
   const getKycLabel = (status: string) => {
     switch (status) {
-      case 'approved': return { label: 'Aprobado', color: 'bg-green-100 text-green-700' };
-      case 'pending': return { label: 'Pendiente', color: 'bg-yellow-100 text-yellow-700' };
-      case 'rejected': return { label: 'Rechazado', color: 'bg-red-100 text-red-700' };
-      default: return { label: 'Sin KYC', color: 'bg-surface-100 text-surface-500' };
+      case 'approved':
+        return { label: 'Aprobado', color: 'bg-green-100 text-green-700' };
+      case 'pending':
+        return { label: 'Pendiente', color: 'bg-yellow-100 text-yellow-700' };
+      case 'rejected':
+        return { label: 'Rechazado', color: 'bg-red-100 text-red-700' };
+      default:
+        return { label: 'Sin KYC', color: 'bg-surface-100 text-surface-500' };
     }
   };
 
@@ -59,9 +147,7 @@ export default function UsersPage() {
           <h1 className="text-2xl font-display font-bold text-surface-800 dark:text-surface-100">
             Gestión de Usuarios
           </h1>
-          <p className="text-surface-500 dark:text-surface-400">
-            {users.length} usuarios totales
-          </p>
+          <p className="text-surface-500 dark:text-surface-400">{users.length} usuarios totales</p>
         </div>
         <button className="px-4 py-2 text-sm font-medium bg-kiwi-500 text-white rounded-lg hover:bg-kiwi-600 transition-colors">
           + Agregar Usuario
@@ -152,31 +238,43 @@ export default function UsersPage() {
                           {user.name.charAt(0)}
                         </div>
                         <div>
-                          <p className="font-medium text-surface-800 dark:text-surface-200">{user.name}</p>
-                          <p className="text-sm text-surface-500 dark:text-surface-400">{user.email}</p>
+                          <p className="font-medium text-surface-800 dark:text-surface-200">
+                            {user.name}
+                          </p>
+                          <p className="text-sm text-surface-500 dark:text-surface-400">
+                            {user.email}
+                          </p>
                         </div>
                       </div>
                     </td>
                     <td className="py-4 px-6">
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${roleInfo.color}`}>
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-medium ${roleInfo.color}`}
+                      >
                         {roleInfo.label}
                       </span>
                     </td>
                     <td className="py-4 px-6">
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusInfo.color}`}>
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-medium ${statusInfo.color}`}
+                      >
                         {statusInfo.label}
                       </span>
                     </td>
                     <td className="py-4 px-6">
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${kycInfo.color}`}>
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-medium ${kycInfo.color}`}
+                      >
                         {kycInfo.label}
                       </span>
                     </td>
                     <td className="py-4 px-6">
                       <span className="text-sm text-surface-800 dark:text-surface-200">
-                        {user.role === 'driver' ? `${user.trips} viajes` :
-                         user.role === 'merchant' ? `${user.orders} pedidos` :
-                         `${user.orders} compras`}
+                        {user.role === 'driver'
+                          ? `${user.trips} viajes`
+                          : user.role === 'merchant'
+                            ? `${user.orders} pedidos`
+                            : `${user.orders} compras`}
                       </span>
                     </td>
                     <td className="py-4 px-6">
@@ -243,8 +341,12 @@ export default function UsersPage() {
                     {selectedUser.name.charAt(0)}
                   </div>
                   <div>
-                    <h4 className="font-semibold text-surface-800 dark:text-surface-100">{selectedUser.name}</h4>
-                    <p className="text-sm text-surface-500 dark:text-surface-400">{selectedUser.email}</p>
+                    <h4 className="font-semibold text-surface-800 dark:text-surface-100">
+                      {selectedUser.name}
+                    </h4>
+                    <p className="text-sm text-surface-500 dark:text-surface-400">
+                      {selectedUser.email}
+                    </p>
                   </div>
                 </div>
 
@@ -284,7 +386,9 @@ export default function UsersPage() {
                       </span>
                     </div>
                     <div className="flex justify-between items-center mt-2">
-                      <span className="text-surface-600 dark:text-surface-400">Viajes completados</span>
+                      <span className="text-surface-600 dark:text-surface-400">
+                        Viajes completados
+                      </span>
                       <span className="font-semibold text-surface-800 dark:text-surface-200">
                         {selectedUser.trips}
                       </span>

@@ -155,14 +155,24 @@ export default function Profile() {
             {[
               { icon: '🎒', name: 'Bolso térmico', status: 'active', date: 'Mar 2026' },
               { icon: '🧥', name: 'Capa de lluvia', status: 'active', date: 'Jun 2026' },
-              { icon: 'Package', name: 'Cajón container', status: 'locked', date: 'Requiere 7 meses' },
+              {
+                icon: 'Package',
+                name: 'Cajón container',
+                status: 'locked',
+                date: 'Requiere 7 meses',
+              },
               {
                 icon: 'Wrench',
                 name: 'Mantenimiento moto',
                 status: 'locked',
                 date: 'Requiere 10 meses',
               },
-              { icon: 'Bike', name: 'Pago de marchamo', status: 'locked', date: 'Requiere 12 meses' },
+              {
+                icon: 'Bike',
+                name: 'Pago de marchamo',
+                status: 'locked',
+                date: 'Requiere 12 meses',
+              },
             ].map((incentive, i) => (
               <motion.div
                 key={i}

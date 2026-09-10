@@ -10,21 +10,17 @@ interface DataExportProps {
 }
 
 export function DataExport({ className = '', onComplete }: DataExportProps) {
-  const {
-    stats,
-    isLoading,
-    error,
-    downloadExport,
-    importData,
-    refreshStats,
-    formatSize,
-  } = useDataExport();
+  const { stats, isLoading, error, downloadExport, importData, refreshStats, formatSize } =
+    useDataExport();
 
   const [showImport, setShowImport] = useState(false);
   const [importResult, setImportResult] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleExport = async (format: 'json' | 'csv', type: 'all' | 'orders' | 'payments' | 'routes') => {
+  const handleExport = async (
+    format: 'json' | 'csv',
+    type: 'all' | 'orders' | 'payments' | 'routes',
+  ) => {
     try {
       await downloadExport({ format, type, includeMetadata: true });
       onComplete?.();
@@ -142,7 +138,9 @@ export function DataExport({ className = '', onComplete }: DataExportProps) {
               whileTap={{ scale: 0.98 }}
             >
               <span className="text-xl">ClipboardList</span>
-              <p className="text-xs font-medium text-surface-700 dark:text-surface-300 mt-1">Pedidos</p>
+              <p className="text-xs font-medium text-surface-700 dark:text-surface-300 mt-1">
+                Pedidos
+              </p>
             </motion.button>
 
             <motion.button
@@ -152,7 +150,9 @@ export function DataExport({ className = '', onComplete }: DataExportProps) {
               whileTap={{ scale: 0.98 }}
             >
               <span className="text-xl">CreditCard</span>
-              <p className="text-xs font-medium text-surface-700 dark:text-surface-300 mt-1">Pagos</p>
+              <p className="text-xs font-medium text-surface-700 dark:text-surface-300 mt-1">
+                Pagos
+              </p>
             </motion.button>
 
             <motion.button
@@ -162,7 +162,9 @@ export function DataExport({ className = '', onComplete }: DataExportProps) {
               whileTap={{ scale: 0.98 }}
             >
               <span className="text-xl">Map</span>
-              <p className="text-xs font-medium text-surface-700 dark:text-surface-300 mt-1">Rutas</p>
+              <p className="text-xs font-medium text-surface-700 dark:text-surface-300 mt-1">
+                Rutas
+              </p>
             </motion.button>
           </div>
         </div>
@@ -180,9 +182,7 @@ export function DataExport({ className = '', onComplete }: DataExportProps) {
           <div className="flex items-center gap-3">
             <span className="text-2xl">BarChart3</span>
             <div>
-              <p className="font-medium text-surface-800 dark:text-surface-200">
-                Exportar CSV
-              </p>
+              <p className="font-medium text-surface-800 dark:text-surface-200">Exportar CSV</p>
               <p className="text-xs text-surface-500 dark:text-surface-400">
                 Compatible con Excel y hojas de cálculo
               </p>
@@ -203,9 +203,7 @@ export function DataExport({ className = '', onComplete }: DataExportProps) {
           <div className="flex items-center gap-3">
             <span className="text-2xl">Download</span>
             <div>
-              <p className="font-medium text-kiwi-700 dark:text-kiwi-400">
-                Importar respaldo
-              </p>
+              <p className="font-medium text-kiwi-700 dark:text-kiwi-400">Importar respaldo</p>
               <p className="text-xs text-kiwi-600 dark:text-kiwi-400">
                 Restaurar desde archivo JSON
               </p>
@@ -234,11 +232,13 @@ export function DataExport({ className = '', onComplete }: DataExportProps) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
             >
-              <p className={`font-medium ${
-                importResult.success
-                  ? 'text-kiwi-700 dark:text-kiwi-400'
-                  : 'text-red-700 dark:text-red-400'
-              }`}>
+              <p
+                className={`font-medium ${
+                  importResult.success
+                    ? 'text-kiwi-700 dark:text-kiwi-400'
+                    : 'text-red-700 dark:text-red-400'
+                }`}
+              >
                 {importResult.success ? 'Check Importación exitosa' : 'X Error en importación'}
               </p>
               <div className="text-sm mt-1">

@@ -41,9 +41,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               className="text-3xl"
               animate={{ rotate: [0, -10, 10, -10, 0] }}
               transition={{ duration: 0.5, delay: 0.5 }}
-            >
-              
-            </motion.span>
+            ></motion.span>
             {sidebarOpen && (
               <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
                 <h1 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100">

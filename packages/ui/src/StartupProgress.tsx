@@ -23,10 +23,10 @@ export function StartupProgress({
   autoHideDelay = 2000,
   onComplete,
 }: StartupProgressProps) {
-  const { 
-    progress, 
-    isWarming, 
-    isComplete, 
+  const {
+    progress,
+    isWarming,
+    isComplete,
     elapsedTime,
     estimatedRemaining,
     statusMessage,
@@ -88,9 +88,7 @@ export function StartupProgress({
               <h3 className="font-display font-bold text-surface-800 dark:text-surface-100">
                 {statusMessage}
               </h3>
-              <p className="text-sm text-surface-500 dark:text-surface-400">
-                {progressMessage}
-              </p>
+              <p className="text-sm text-surface-500 dark:text-surface-400">{progressMessage}</p>
             </div>
           </div>
 
@@ -113,9 +111,7 @@ export function StartupProgress({
       <div className="p-4">
         <div className="h-2 bg-surface-100 dark:bg-surface-700 rounded-full overflow-hidden mb-4">
           <motion.div
-            className={`h-full rounded-full ${
-              isComplete ? 'bg-kiwi-500' : 'bg-blue-500'
-            }`}
+            className={`h-full rounded-full ${isComplete ? 'bg-kiwi-500' : 'bg-blue-500'}`}
             initial={{ width: 0 }}
             animate={{ width: `${progressPercent}%` }}
             transition={{ duration: 0.3, ease: 'easeOut' }}
@@ -158,48 +154,64 @@ export function StartupProgress({
         <div className="px-4 pb-4">
           <div className="space-y-2 max-h-48 overflow-y-auto">
             <AnimatePresence>
-              {Array.from(progress.total > 0 ? 
-                ['critical', 'high', 'normal', 'low'].flatMap(priority =>
-                  Array.from({ length: Math.min(2, progress.total) }, (_, i) => ({
-                    id: `${priority}-${i}`,
-                    name: getTaskName(priority, i),
-                    priority,
-                    status: getTaskStatus(priority, i),
-                  }))
-                ) : []
-              ).slice(0, 6).map((task) => (
-                <motion.div
-                  key={task.id}
-                  className={`flex items-center justify-between p-2 rounded-lg ${
-                    task.status === 'completed' ? 'bg-kiwi-50 dark:bg-kiwi-900/30' :
-                    task.status === 'warming' ? 'bg-blue-50 dark:bg-blue-900/30' :
-                    task.status === 'failed' ? 'bg-red-50 dark:bg-red-900/30' :
-                    'bg-surface-50 dark:bg-surface-900'
-                  }`}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 10 }}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm">
-                      {task.status === 'completed' ? 'Check' :
-                       task.status === 'warming' ? 'refresh' :
-                       task.status === 'failed' ? 'close' : 'clock'}
+              {Array.from(
+                progress.total > 0
+                  ? ['critical', 'high', 'normal', 'low'].flatMap((priority) =>
+                      Array.from({ length: Math.min(2, progress.total) }, (_, i) => ({
+                        id: `${priority}-${i}`,
+                        name: getTaskName(priority, i),
+                        priority,
+                        status: getTaskStatus(priority, i),
+                      })),
+                    )
+                  : [],
+              )
+                .slice(0, 6)
+                .map((task) => (
+                  <motion.div
+                    key={task.id}
+                    className={`flex items-center justify-between p-2 rounded-lg ${
+                      task.status === 'completed'
+                        ? 'bg-kiwi-50 dark:bg-kiwi-900/30'
+                        : task.status === 'warming'
+                          ? 'bg-blue-50 dark:bg-blue-900/30'
+                          : task.status === 'failed'
+                            ? 'bg-red-50 dark:bg-red-900/30'
+                            : 'bg-surface-50 dark:bg-surface-900'
+                    }`}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 10 }}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">
+                        {task.status === 'completed'
+                          ? 'Check'
+                          : task.status === 'warming'
+                            ? 'refresh'
+                            : task.status === 'failed'
+                              ? 'close'
+                              : 'clock'}
+                      </span>
+                      <span className="text-sm text-surface-700 dark:text-surface-300">
+                        {task.name}
+                      </span>
+                    </div>
+                    <span
+                      className={`text-xs font-medium ${
+                        task.priority === 'critical'
+                          ? 'text-red-500'
+                          : task.priority === 'high'
+                            ? 'text-orange-500'
+                            : task.priority === 'normal'
+                              ? 'text-blue-500'
+                              : 'text-surface-400'
+                      }`}
+                    >
+                      {task.priority}
                     </span>
-                    <span className="text-sm text-surface-700 dark:text-surface-300">
-                      {task.name}
-                    </span>
-                  </div>
-                  <span className={`text-xs font-medium ${
-                    task.priority === 'critical' ? 'text-red-500' :
-                    task.priority === 'high' ? 'text-orange-500' :
-                    task.priority === 'normal' ? 'text-blue-500' :
-                    'text-surface-400'
-                  }`}>
-                    {task.priority}
-                  </span>
-                </motion.div>
-              ))}
+                  </motion.div>
+                ))}
             </AnimatePresence>
           </div>
         </div>
@@ -239,7 +251,7 @@ export function StartupProgressCompact({ className = '' }: { className?: string 
   return (
     <motion.div
       className={`flex items-center gap-2 px-3 py-1.5 rounded-xl ${
-        isComplete 
+        isComplete
           ? 'bg-kiwi-100 dark:bg-kiwi-900/30 text-kiwi-700 dark:text-kiwi-400'
           : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
       } ${className}`}
@@ -265,10 +277,10 @@ export function StartupProgressCompact({ className = '' }: { className?: string 
 /**
  * Full-screen startup splash
  */
-export function StartupSplash({ 
+export function StartupSplash({
   className = '',
-  onComplete 
-}: { 
+  onComplete,
+}: {
   className?: string;
   onComplete?: () => void;
 }) {
@@ -304,9 +316,7 @@ export function StartupSplash({
           initial={{ scale: 0, rotate: -180 }}
           animate={{ scale: 1, rotate: 0 }}
           transition={{ type: 'spring', stiffness: 200, damping: 15 }}
-        >
-          
-        </motion.div>
+        ></motion.div>
 
         {/* App Name */}
         <motion.h1
@@ -343,9 +353,7 @@ export function StartupSplash({
             />
           </div>
 
-          <p className="text-sm text-white/80">
-            {isComplete ? '¡Listo!' : statusMessage}
-          </p>
+          <p className="text-sm text-white/80">{isComplete ? '¡Listo!' : statusMessage}</p>
         </motion.div>
 
         {/* Loading indicator */}

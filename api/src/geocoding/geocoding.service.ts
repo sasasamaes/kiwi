@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-interface GeocodingResult {
+export interface GeocodingResult {
   placeId: string;
   displayName: string;
   shortName: string;
@@ -23,7 +23,7 @@ interface GeocodingResult {
   };
 }
 
-interface ReverseGeocodingResult {
+export interface ReverseGeocodingResult {
   displayName: string;
   shortName: string;
   address: {

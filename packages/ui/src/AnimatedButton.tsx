@@ -44,7 +44,7 @@ export function AnimatedButton({
         'disabled:pointer-events-none disabled:opacity-50',
         variants[variant],
         sizes[size],
-        className
+        className,
       )}
       variants={buttonVariants}
       initial="idle"

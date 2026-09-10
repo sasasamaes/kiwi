@@ -16,9 +16,30 @@ const DEFAULT_CATEGORIES = [
 ];
 
 const EMOJI_OPTIONS = [
-  '🥗', '🥬', '🍣', '🥩', '☕', '🥤', '🍌', '🥟',
-  '🍔', '🍕', '🌮', '🍜', '🍰', '🧁', '🍦', '🍵',
-  '🍺', '🥤', '💧', '🧃', '🍳', '🥘', '🍲', '🍛',
+  '🥗',
+  '🥬',
+  '🍣',
+  '🥩',
+  '☕',
+  '🥤',
+  '🍌',
+  '🥟',
+  '🍔',
+  '🍕',
+  '🌮',
+  '🍜',
+  '🍰',
+  '🧁',
+  '🍦',
+  '🍵',
+  '🍺',
+  '🥤',
+  '💧',
+  '🧃',
+  '🍳',
+  '🥘',
+  '🍲',
+  '🍛',
 ];
 
 interface MenuItemFormData {
@@ -94,7 +115,7 @@ export function MenuItemForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validate()) return;
 
     setLoading(true);
@@ -152,11 +173,7 @@ export function MenuItemForm({
               whileHover={{ scale: 1.05 }}
             >
               {imagePreview ? (
-                <img 
-                  src={imagePreview} 
-                  alt="Preview" 
-                  className="w-full h-full object-cover"
-                />
+                <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
               ) : (
                 formData.image
               )}
@@ -170,7 +187,7 @@ export function MenuItemForm({
                 />
               </label>
             </motion.div>
-            
+
             <div className="flex-1">
               <div className="flex flex-wrap gap-2">
                 {EMOJI_OPTIONS.map((emoji) => (
@@ -215,9 +232,7 @@ export function MenuItemForm({
                 : 'border-surface-200 dark:border-surface-700 focus:border-kiwi-500'
             }`}
           />
-          {errors.name && (
-            <p className="mt-1 text-sm text-red-500">{errors.name}</p>
-          )}
+          {errors.name && <p className="mt-1 text-sm text-red-500">{errors.name}</p>}
         </div>
 
         {/* Description */}
@@ -258,9 +273,7 @@ export function MenuItemForm({
                 }`}
               />
             </div>
-            {errors.price && (
-              <p className="mt-1 text-sm text-red-500">{errors.price}</p>
-            )}
+            {errors.price && <p className="mt-1 text-sm text-red-500">{errors.price}</p>}
           </div>
 
           {/* Category */}
@@ -283,9 +296,7 @@ export function MenuItemForm({
                 </option>
               ))}
             </select>
-            {errors.category && (
-              <p className="mt-1 text-sm text-red-500">{errors.category}</p>
-            )}
+            {errors.category && <p className="mt-1 text-sm text-red-500">{errors.category}</p>}
           </div>
         </div>
 
@@ -296,7 +307,9 @@ export function MenuItemForm({
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium text-surface-800 dark:text-surface-200">🔥 Popular</p>
-                <p className="text-xs text-surface-500 dark:text-surface-400">Mostrar como popular</p>
+                <p className="text-xs text-surface-500 dark:text-surface-400">
+                  Mostrar como popular
+                </p>
               </div>
               <motion.button
                 type="button"
@@ -319,7 +332,9 @@ export function MenuItemForm({
           <div className="flex-1 rounded-xl bg-surface-50 dark:bg-surface-900 p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium text-surface-800 dark:text-surface-200">Check Disponible</p>
+                <p className="font-medium text-surface-800 dark:text-surface-200">
+                  Check Disponible
+                </p>
                 <p className="text-xs text-surface-500 dark:text-surface-400">En stock ahora</p>
               </div>
               <motion.button
@@ -375,12 +390,7 @@ export function MenuItemForm({
           >
             Cancelar
           </AnimatedButton>
-          <AnimatedButton
-            type="submit"
-            variant="gradient"
-            className="flex-1"
-            disabled={loading}
-          >
+          <AnimatedButton type="submit" variant="gradient" className="flex-1" disabled={loading}>
             {loading ? (
               <span className="flex items-center justify-center gap-2">
                 <motion.span

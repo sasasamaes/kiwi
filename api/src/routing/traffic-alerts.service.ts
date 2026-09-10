@@ -1,8 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TrafficService } from './traffic.service';
+import { DriverStatus } from '@prisma/client';
 
-interface TrafficAlert {
+export interface TrafficAlert {
   id: string;
   type: 'congestion' | 'accident' | 'road_closed' | 'weather' | 'event' | 'alternative_route';
   severity: 'low' | 'medium' | 'high' | 'critical';
@@ -24,7 +25,7 @@ interface TrafficAlert {
   createdAt: Date;
 }
 
-interface AlertNotification {
+export interface AlertNotification {
   alertId: string;
   driverId: string;
   read: boolean;
@@ -47,29 +48,29 @@ export class TrafficAlertsService {
     },
     {
       name: 'Mercado Central',
-      lat: 10.1490,
-      lng: -85.4520,
+      lat: 10.149,
+      lng: -85.452,
       radius: 0.3,
       congestionThreshold: 'light',
     },
     {
       name: 'Hospital Nicoya',
-      lat: 10.1470,
-      lng: -85.4540,
+      lat: 10.147,
+      lng: -85.454,
       radius: 0.4,
       congestionThreshold: 'moderate',
     },
     {
       name: 'Entrada Norte',
-      lat: 10.1550,
+      lat: 10.155,
       lng: -85.4527,
       radius: 0.6,
       congestionThreshold: 'heavy',
     },
     {
       name: 'Zona Industrial',
-      lat: 10.1420,
-      lng: -85.4500,
+      lat: 10.142,
+      lng: -85.45,
       radius: 0.8,
       congestionThreshold: 'moderate',
     },
@@ -128,7 +129,11 @@ export class TrafficAlertsService {
 
       // Check if traffic level warrants an alert
       if (this.shouldTriggerAlert(traffic.conditions.level, zone.congestionThreshold)) {
-        const alert = this.createCongestionAlert(zone, traffic.conditions.level, traffic.conditions.description);
+        const alert = this.createCongestionAlert(
+          zone,
+          traffic.conditions.level,
+          traffic.conditions.description,
+        );
         alerts.push(alert);
       }
     }
@@ -143,7 +148,9 @@ export class TrafficAlertsService {
       for (const slot of pattern.timeSlots) {
         if (slot.days.includes(day) && hour >= slot.startHour && hour < slot.endHour) {
           // Find affected zone
-          const affectedZone = this.alertZones.find(z => z.name.includes('Centro') || z.name.includes('Mercado'));
+          const affectedZone = this.alertZones.find(
+            (z) => z.name.includes('Centro') || z.name.includes('Mercado'),
+          );
           if (affectedZone) {
             const alert = this.createTimeBasedAlert(pattern, affectedZone);
             alerts.push(alert);
@@ -153,19 +160,18 @@ export class TrafficAlertsService {
     }
 
     // Check for previously read/dismissed alerts
-    const userAlerts = await this.prisma.trafficAlert.findMany({
+    const userAlerts = await this.prisma.trafficAlertNotification.findMany({
       where: {
         driverId,
         dismissed: false,
-        expiresAt: { gt: new Date() },
       },
     });
 
     // Merge with active alerts, avoiding duplicates
-    const activeAlertIds = new Set(userAlerts.map(a => a.alertId));
-    const newAlerts = alerts.filter(a => !activeAlertIds.has(a.id));
+    const activeAlertIds = new Set(userAlerts.map((a) => a.alertId));
+    const filtered = alerts.filter((a) => !activeAlertIds.has(a.id));
 
-    return alerts;
+    return filtered.length > 0 ? filtered : alerts;
   }
 
   /**
@@ -178,7 +184,11 @@ export class TrafficAlertsService {
       const traffic = await this.trafficService.getTrafficConditions(zone.lat, zone.lng);
 
       if (this.shouldTriggerAlert(traffic.conditions.level, zone.congestionThreshold)) {
-        const alert = this.createCongestionAlert(zone, traffic.conditions.level, traffic.conditions.description);
+        const alert = this.createCongestionAlert(
+          zone,
+          traffic.conditions.level,
+          traffic.conditions.description,
+        );
         alerts.push(alert);
       }
     }
@@ -281,7 +291,7 @@ export class TrafficAlertsService {
     bySeverity: Record<string, number>;
   }> {
     const now = new Date();
-    
+
     const [total, active, byType, bySeverity] = await Promise.all([
       this.prisma.trafficAlert.count(),
       this.prisma.trafficAlert.count({ where: { expiresAt: { gt: now } } }),
@@ -361,17 +371,20 @@ export class TrafficAlertsService {
         address: zone.name,
       },
       affectedArea: { radius: zone.radius },
-      alternativeRoute: level === 'heavy' || level === 'severe' ? {
-        description: 'Usa la ruta alternativa por la perifería',
-        estimatedTimeSaved: level === 'severe' ? 10 : 5,
-      } : undefined,
+      alternativeRoute:
+        level === 'heavy' || level === 'severe'
+          ? {
+              description: 'Usa la ruta alternativa por la perifería',
+              estimatedTimeSaved: level === 'severe' ? 10 : 5,
+            }
+          : undefined,
       expiresAt: new Date(Date.now() + 30 * 60 * 1000), // 30 minutes
       createdAt: new Date(),
     };
   }
 
   private createTimeBasedAlert(
-    pattern: typeof this.alertPatterns[0],
+    pattern: (typeof this.alertPatterns)[0],
     zone: { name: string; lat: number; lng: number; radius: number },
   ): TrafficAlert {
     const severity = pattern.type === 'congestion' ? 'medium' : 'low';
@@ -396,55 +409,51 @@ export class TrafficAlertsService {
 
   private getSeverityFromLevel(level: string): TrafficAlert['severity'] {
     switch (level) {
-      case 'severe': return 'critical';
-      case 'heavy': return 'high';
-      case 'moderate': return 'medium';
-      case 'light': return 'low';
-      default: return 'low';
+      case 'severe':
+        return 'critical';
+      case 'heavy':
+        return 'high';
+      case 'moderate':
+        return 'medium';
+      case 'light':
+        return 'low';
+      default:
+        return 'low';
     }
   }
 
   private async notifyOnlineDrivers(alert: TrafficAlert): Promise<void> {
     try {
-      // Get all online drivers
+      // Get all available drivers (realtime location lives in DriversService
+      // in-memory cache, not in DB, so we notify without geo-filtering here)
       const onlineDrivers = await this.prisma.driverProfile.findMany({
-        where: { status: 'online' },
+        where: { status: DriverStatus.available },
         include: { user: true },
       });
 
-      // Create notifications for each driver in range
+      // Create notifications for each driver
       for (const driver of onlineDrivers) {
-        if (driver.currentLat && driver.currentLng) {
-          const distance = this.calculateDistance(
-            driver.currentLat,
-            driver.currentLng,
-            alert.location.lat,
-            alert.location.lng,
-          );
+        await this.prisma.trafficAlertNotification.upsert({
+          where: { driverId_alertId: { driverId: driver.userId, alertId: alert.id } },
+          update: {},
+          create: {
+            driverId: driver.userId,
+            alertId: alert.id,
+            read: false,
+            dismissed: false,
+          },
+        });
 
-          // Only notify drivers within 5km of the alert
-          if (distance <= 5) {
-            await this.prisma.trafficAlertNotification.create({
-              data: {
-                driverId: driver.userId,
-                alertId: alert.id,
-                read: false,
-                dismissed: false,
-              },
-            });
-
-            // Also create a regular notification
-            await this.prisma.notification.create({
-              data: {
-                userId: driver.userId,
-                type: 'traffic_alert',
-                title: alert.title,
-                message: alert.message,
-                data: JSON.stringify({ alertId: alert.id }),
-              },
-            });
-          }
-        }
+        // Also create a regular notification
+        await this.prisma.notification.create({
+          data: {
+            userId: driver.userId,
+            type: 'traffic_alert',
+            title: alert.title,
+            body: alert.message,
+            data: { alertId: alert.id },
+          },
+        });
       }
 
       this.logger.log(`Notified ${onlineDrivers.length} drivers about traffic alert`);
@@ -459,8 +468,10 @@ export class TrafficAlertsService {
     const dLng = this.toRad(lng2 - lng1);
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(this.toRad(lat1)) * Math.cos(this.toRad(lat2)) *
-      Math.sin(dLng / 2) * Math.sin(dLng / 2);
+      Math.cos(this.toRad(lat1)) *
+        Math.cos(this.toRad(lat2)) *
+        Math.sin(dLng / 2) *
+        Math.sin(dLng / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   }

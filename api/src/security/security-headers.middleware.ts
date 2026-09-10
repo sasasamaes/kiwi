@@ -10,17 +10,20 @@ export class SecurityHeadersMiddleware implements NestMiddleware {
     res.setHeader('X-XSS-Protection', '1; mode=block');
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
     res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(self)');
-    
+
     // Content Security Policy
-    res.setHeader('Content-Security-Policy', [
-      "default-src 'self'",
-      "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
-      "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: https:",
-      "font-src 'self' data:",
-      "connect-src 'self' ws: wss: http: https:",
-      "frame-ancestors 'none'",
-    ].join('; '));
+    res.setHeader(
+      'Content-Security-Policy',
+      [
+        "default-src 'self'",
+        "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
+        "style-src 'self' 'unsafe-inline'",
+        "img-src 'self' data: https:",
+        "font-src 'self' data:",
+        "connect-src 'self' ws: wss: http: https:",
+        "frame-ancestors 'none'",
+      ].join('; '),
+    );
 
     // HSTS (only in production)
     if (process.env.NODE_ENV === 'production') {

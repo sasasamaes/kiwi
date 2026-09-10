@@ -64,10 +64,7 @@ export class DriversController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get driver earnings' })
   @ApiQuery({ name: 'period', required: false, enum: ['today', 'week', 'month', 'all'] })
-  async getEarnings(
-    @CurrentUser() user: any,
-    @Query('period') period?: string,
-  ) {
+  async getEarnings(@CurrentUser() user: any, @Query('period') period?: string) {
     return this.driversService.getEarnings(user.sub, period || 'all');
   }
 
@@ -95,10 +92,7 @@ export class DriversController {
   @ApiOperation({ summary: 'Get available drivers' })
   @ApiQuery({ name: 'lat', required: false })
   @ApiQuery({ name: 'lng', required: false })
-  async getAvailable(
-    @Query('lat') lat?: string,
-    @Query('lng') lng?: string,
-  ) {
+  async getAvailable(@Query('lat') lat?: string, @Query('lng') lng?: string) {
     const latitude = lat ? parseFloat(lat) : undefined;
     const longitude = lng ? parseFloat(lng) : undefined;
     return this.driversService.getAvailableDrivers(latitude, longitude);

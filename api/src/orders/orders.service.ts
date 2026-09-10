@@ -141,6 +141,23 @@ export class OrdersService {
     return order;
   }
 
+  private static readonly VALID_ORDER_STATUSES = [
+    'pending',
+    'driver_proposals',
+    'assigned',
+    'in_transit_to_pickup',
+    'picked_up',
+    'in_transit_to_delivery',
+    'delivered',
+    'cancelled',
+  ] as const;
+
+  private validateOrderStatus(status?: string) {
+    if (status && !(OrdersService.VALID_ORDER_STATUSES as readonly string[]).includes(status)) {
+      throw new BadRequestException(`Estado inválido: ${status}`);
+    }
+  }
+
   async findByMerchant(userId: string, status?: string) {
     const merchantProfile = await this.prisma.merchantProfile.findUnique({
       where: { userId },
@@ -150,6 +167,7 @@ export class OrdersService {
       return [];
     }
 
+    this.validateOrderStatus(status);
     const where: any = { merchantId: merchantProfile.id };
     if (status) {
       where.status = status;
@@ -182,6 +200,7 @@ export class OrdersService {
       return [];
     }
 
+    this.validateOrderStatus(status);
     const where: any = { driverId: driverProfile.id };
     if (status) {
       where.status = status;
@@ -286,7 +305,7 @@ export class OrdersService {
     return updatedOrder;
   }
 
-  async assignDriver(orderId: string, driverId: string) {
+  async assignDriver(orderId: string, driverId: string, merchantUserId?: string) {
     // Verify driver exists first (no state change yet)
     const driverProfile = await this.prisma.driverProfile.findUnique({
       where: { id: driverId },
@@ -294,6 +313,21 @@ export class OrdersService {
 
     if (!driverProfile) {
       throw new NotFoundException('Repartidor no encontrado');
+    }
+
+    // Ownership check: only the merchant that owns the order can assign.
+    // Keeps backward compat with existing tests that call without userId.
+    if (merchantUserId) {
+      const owned = await this.prisma.order.findFirst({
+        where: {
+          id: orderId,
+          merchant: { userId: merchantUserId },
+        },
+        select: { id: true },
+      });
+      if (!owned) {
+        throw new ForbiddenException('No tienes acceso a este pedido');
+      }
     }
 
     // Atomic claim: only one winner even under concurrency

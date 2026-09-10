@@ -48,7 +48,7 @@ export function formatTime(date: Date | string): string {
  */
 export function calculateDistance(
   coord1: { lat: number; lng: number },
-  coord2: { lat: number; lng: number }
+  coord2: { lat: number; lng: number },
 ): number {
   const R = 6371; // Earth's radius in km
   const dLat = toRad(coord2.lat - coord1.lat);

@@ -39,8 +39,10 @@ export function OfflinePaymentForm({
 }: OfflinePaymentFormProps) {
   const { createPayment, processPayment, unsyncedCount } = useOfflinePayments();
   const { isOnline } = useNetworkStatus();
-  
-  const [selectedMethod, setSelectedMethod] = useState<'sinpe' | 'card' | 'cash' | 'crypto'>('cash');
+
+  const [selectedMethod, setSelectedMethod] = useState<'sinpe' | 'card' | 'cash' | 'crypto'>(
+    'cash',
+  );
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentComplete, setPaymentComplete] = useState(false);
   const [receipt, setReceipt] = useState<any>(null);
@@ -67,7 +69,7 @@ export function OfflinePaymentForm({
 
       // Process payment
       const processedPayment = await processPayment(payment.id);
-      
+
       setReceipt(processedPayment.receipt);
       setPaymentComplete(true);
       onSuccess?.(processedPayment);
@@ -117,7 +119,9 @@ export function OfflinePaymentForm({
             <div className="space-y-1 mb-4">
               {receipt.items.map((item: any, index: number) => (
                 <div key={index} className="flex justify-between">
-                  <span>{item.quantity}x {item.name}</span>
+                  <span>
+                    {item.quantity}x {item.name}
+                  </span>
                   <span>₡{item.total.toLocaleString()}</span>
                 </div>
               ))}
@@ -263,9 +267,7 @@ export function OfflinePaymentForm({
                   <p className="font-medium text-surface-800 dark:text-surface-200">
                     {method.label}
                   </p>
-                  <p className="text-sm text-surface-500 dark:text-surface-400">
-                    {method.desc}
-                  </p>
+                  <p className="text-sm text-surface-500 dark:text-surface-400">{method.desc}</p>
                 </div>
               </div>
             </motion.button>
@@ -313,13 +315,7 @@ export function OfflinePaymentForm({
 /**
  * Payment receipt component
  */
-export function PaymentReceipt({
-  payment,
-  className = '',
-}: {
-  payment: any;
-  className?: string;
-}) {
+export function PaymentReceipt({ payment, className = '' }: { payment: any; className?: string }) {
   const receipt = payment.receipt;
 
   return (
@@ -357,11 +353,15 @@ export function PaymentReceipt({
           </div>
           <div className="flex justify-between">
             <span className="text-surface-600 dark:text-surface-400">Envío</span>
-            <span>{receipt.deliveryFee === 0 ? 'Gratis' : `₡${receipt.deliveryFee.toLocaleString()}`}</span>
+            <span>
+              {receipt.deliveryFee === 0 ? 'Gratis' : `₡${receipt.deliveryFee.toLocaleString()}`}
+            </span>
           </div>
           <div className="flex justify-between font-bold text-lg pt-2 border-t border-surface-200 dark:border-surface-700">
             <span>Total</span>
-            <span className="text-kiwi-600 dark:text-kiwi-400">₡{receipt.total.toLocaleString()}</span>
+            <span className="text-kiwi-600 dark:text-kiwi-400">
+              ₡{receipt.total.toLocaleString()}
+            </span>
           </div>
         </div>
 

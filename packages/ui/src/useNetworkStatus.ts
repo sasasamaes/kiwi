@@ -5,25 +5,25 @@ import { useState, useEffect, useCallback } from 'react';
 interface NetworkStatus {
   /** Whether the device is currently online */
   isOnline: boolean;
-  
+
   /** Whether the device was previously offline (just came back online) */
   justCameBackOnline: boolean;
-  
+
   /** Whether the connection is slow (effectiveType) */
   isSlowConnection: boolean;
-  
+
   /** Connection type (4g, 3g, 2g, etc.) */
   connectionType: string;
-  
+
   /** Downlink speed in Mbps */
   downlink: number;
-  
+
   /** Round-trip time in milliseconds */
   rtt: number;
-  
+
   /** Whether the device supports network information API */
   supportsNetworkInfo: boolean;
-  
+
   /** Timestamp of last status change */
   lastChanged: Date;
 }
@@ -31,13 +31,13 @@ interface NetworkStatus {
 interface UseNetworkStatusOptions {
   /** Callback when coming back online */
   onOnline?: () => void;
-  
+
   /** Callback when going offline */
   onOffline?: () => void;
-  
+
   /** Callback when connection speed changes */
   onConnectionChange?: (status: NetworkStatus) => void;
-  
+
   /** Debounce time for connection change events in ms */
   debounceMs?: number;
 }
@@ -73,10 +73,12 @@ export function useNetworkStatus(options: UseNetworkStatusOptions = {}): Network
 
   // Check if connection is slow
   const isSlow = useCallback((effectiveType: string, downlink: number) => {
-    return effectiveType === '2g' || 
-           effectiveType === 'slow-2g' || 
-           (effectiveType === '3g' && downlink < 1.5) ||
-           downlink < 0.5;
+    return (
+      effectiveType === '2g' ||
+      effectiveType === 'slow-2g' ||
+      (effectiveType === '3g' && downlink < 1.5) ||
+      downlink < 0.5
+    );
   }, []);
 
   useEffect(() => {
@@ -86,7 +88,7 @@ export function useNetworkStatus(options: UseNetworkStatusOptions = {}): Network
     const handleOnline = () => {
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => {
-        setStatus(prev => ({
+        setStatus((prev) => ({
           ...prev,
           isOnline: true,
           justCameBackOnline: true,
@@ -102,7 +104,7 @@ export function useNetworkStatus(options: UseNetworkStatusOptions = {}): Network
 
         // Reset justCameBackOnline after 5 seconds
         setTimeout(() => {
-          setStatus(prev => ({
+          setStatus((prev) => ({
             ...prev,
             justCameBackOnline: false,
           }));
@@ -113,7 +115,7 @@ export function useNetworkStatus(options: UseNetworkStatusOptions = {}): Network
     const handleOffline = () => {
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => {
-        setStatus(prev => ({
+        setStatus((prev) => ({
           ...prev,
           isOnline: false,
           justCameBackOnline: false,
@@ -131,9 +133,9 @@ export function useNetworkStatus(options: UseNetworkStatusOptions = {}): Network
 
     const handleConnectionChange = () => {
       const connInfo = getConnectionInfo();
-      
+
       if (connInfo) {
-        setStatus(prev => ({
+        setStatus((prev) => ({
           ...prev,
           connectionType: connInfo.effectiveType,
           downlink: connInfo.downlink,
@@ -169,7 +171,7 @@ export function useNetworkStatus(options: UseNetworkStatusOptions = {}): Network
       clearTimeout(debounceTimer);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
-      
+
       if (connection) {
         connection.removeEventListener('change', handleConnectionChange);
       }

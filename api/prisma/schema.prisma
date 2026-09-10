@@ -492,3 +492,50 @@ model Notification {
 
   @@map("notifications")
 }
+
+// Traffic history (time-series de condiciones viales por zona)
+model TrafficHistory {
+  id          String   @id @default(uuid())
+  lat         Float
+  lng         Float
+  zone        String
+  level       String
+  speedFactor Float    @map("speed_factor")
+  timestamp   DateTime @default(now())
+
+  @@index([zone, timestamp])
+  @@map("traffic_history")
+}
+
+// Traffic alerts (alertas manuales o por congestión)
+model TrafficAlert {
+  id                     String    @id @default(uuid())
+  alertId                String    @unique @map("alert_id")
+  type                   String
+  severity               String
+  title                  String
+  message                String
+  lat                    Float?
+  lng                    Float?
+  address                String?
+  radiusKm               Float?    @map("radius_km")
+  expiresAt              DateTime? @map("expires_at")
+  alternativeDescription String?   @map("alternative_description")
+  alternativeTimeSaved   Int?      @map("alternative_time_saved")
+  createdAt              DateTime  @default(now()) @map("created_at")
+
+  @@map("traffic_alerts")
+}
+
+// Per-driver read/dismiss state for traffic alerts
+model TrafficAlertNotification {
+  id        String   @id @default(uuid())
+  driverId  String   @map("driver_id")
+  alertId   String   @map("alert_id")
+  read      Boolean  @default(false)
+  dismissed Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([driverId, alertId])
+  @@map("traffic_alert_notifications")
+}

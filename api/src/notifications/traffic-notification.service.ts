@@ -2,9 +2,14 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TrafficPredictionsService } from '../routing/traffic-predictions.service';
 
-interface TrafficNotification {
+export interface TrafficNotification {
   id: string;
-  type: 'prediction_alert' | 'best_time' | 'peak_hour_warning' | 'delivery_delay' | 'route_recommendation';
+  type:
+    | 'prediction_alert'
+    | 'best_time'
+    | 'peak_hour_warning'
+    | 'delivery_delay'
+    | 'route_recommendation';
   title: string;
   message: string;
   priority: 'low' | 'medium' | 'high';
@@ -13,7 +18,7 @@ interface TrafficNotification {
   sentAt?: Date;
 }
 
-interface NotificationSchedule {
+export interface NotificationSchedule {
   id: string;
   userId: string;
   type: string;
@@ -39,15 +44,11 @@ export class TrafficNotificationService {
   /**
    * Send traffic prediction notification to merchant
    */
-  async sendPredictionNotification(
-    userId: string,
-    lat: number,
-    lng: number,
-  ): Promise<void> {
+  async sendPredictionNotification(userId: string, lat: number, lng: number): Promise<void> {
     try {
       // Get user's notification preferences
       const preferences = await this.getUserPreferences(userId);
-      
+
       if (!preferences.enabled || !preferences.types.prediction) {
         return;
       }
@@ -78,21 +79,17 @@ export class TrafficNotificationService {
   /**
    * Send best time notification
    */
-  async sendBestTimeNotification(
-    userId: string,
-    lat: number,
-    lng: number,
-  ): Promise<void> {
+  async sendBestTimeNotification(userId: string, lat: number, lng: number): Promise<void> {
     try {
       const preferences = await this.getUserPreferences(userId);
-      
+
       if (!preferences.enabled || !preferences.types.bestTime) {
         return;
       }
 
       // Get best delivery times
       const bestTimes = await this.predictionsService.getBestDeliveryTimes(lat, lng, 1);
-      
+
       if (bestTimes.length === 0) {
         return;
       }
@@ -100,7 +97,7 @@ export class TrafficNotificationService {
       // Find next best time
       const now = new Date();
       const currentHour = now.getHours();
-      const nextBestTime = bestTimes.find(t => t.hour > currentHour);
+      const nextBestTime = bestTimes.find((t) => t.hour > currentHour);
 
       if (!nextBestTime) {
         return;
@@ -119,14 +116,10 @@ export class TrafficNotificationService {
   /**
    * Send peak hour warning
    */
-  async sendPeakHourWarning(
-    userId: string,
-    lat: number,
-    lng: number,
-  ): Promise<void> {
+  async sendPeakHourWarning(userId: string, lat: number, lng: number): Promise<void> {
     try {
       const preferences = await this.getUserPreferences(userId);
-      
+
       if (!preferences.enabled || !preferences.types.peakHour) {
         return;
       }
@@ -134,7 +127,7 @@ export class TrafficNotificationService {
       // Get prediction for next hour
       const nextHour = new Date();
       nextHour.setHours(nextHour.getHours() + 1);
-      
+
       const prediction = await this.predictionsService.getPrediction(lat, lng, nextHour);
 
       // Check if it's a peak hour
@@ -173,7 +166,7 @@ export class TrafficNotificationService {
       }
 
       const preferences = await this.getUserPreferences(merchant.userId);
-      
+
       if (!preferences.enabled || !preferences.types.deliveryDelay) {
         return;
       }
@@ -200,14 +193,14 @@ export class TrafficNotificationService {
   ): Promise<void> {
     try {
       const preferences = await this.getUserPreferences(driverId);
-      
+
       if (!preferences.enabled || !preferences.types.routeRecommendation) {
         return;
       }
 
       // Get quick suggestion
       const response = await fetch(
-        `/api/routing/suggestions/quick?originLat=${originLat}&originLng=${originLng}&destLat=${destLat}&destLng=${destLng}`
+        `/api/routing/suggestions/quick?originLat=${originLat}&originLng=${originLng}&destLat=${destLat}&destLng=${destLng}`,
       );
       const suggestion = await response.json();
 
@@ -241,33 +234,23 @@ export class TrafficNotificationService {
       });
 
       for (const user of users) {
-        if (!user.merchantProfile?.latitude || !user.merchantProfile?.longitude) {
+        if (user.merchantProfile?.latitude == null || user.merchantProfile?.longitude == null) {
           continue;
         }
+        const lat = Number(user.merchantProfile.latitude);
+        const lng = Number(user.merchantProfile.longitude);
 
         // Send prediction notification
-        await this.sendPredictionNotification(
-          user.id,
-          user.merchantProfile.latitude,
-          user.merchantProfile.longitude,
-        );
+        await this.sendPredictionNotification(user.id, lat, lng);
 
         // Send best time notification (only at 8 AM)
         const hour = new Date().getHours();
         if (hour === 8) {
-          await this.sendBestTimeNotification(
-            user.id,
-            user.merchantProfile.latitude,
-            user.merchantProfile.longitude,
-          );
+          await this.sendBestTimeNotification(user.id, lat, lng);
         }
 
         // Send peak hour warning (every hour)
-        await this.sendPeakHourWarning(
-          user.id,
-          user.merchantProfile.latitude,
-          user.merchantProfile.longitude,
-        );
+        await this.sendPeakHourWarning(user.id, lat, lng);
       }
 
       this.logger.log('Recurring notifications scheduled');
@@ -326,10 +309,7 @@ export class TrafficNotificationService {
   /**
    * Get notification history
    */
-  async getNotificationHistory(
-    userId: string,
-    limit: number = 20,
-  ): Promise<TrafficNotification[]> {
+  async getNotificationHistory(userId: string, limit: number = 20): Promise<TrafficNotification[]> {
     const notifications = await this.prisma.notification.findMany({
       where: {
         userId,
@@ -339,13 +319,16 @@ export class TrafficNotificationService {
       take: limit,
     });
 
-    return notifications.map(n => ({
+    return notifications.map((n) => ({
       id: n.id,
       type: n.type as any,
       title: n.title,
-      message: n.message,
-      priority: 'medium',
-      data: JSON.parse(n.data || '{}'),
+      message: n.body,
+      priority: 'medium' as const,
+      data:
+        typeof n.data === 'string'
+          ? JSON.parse((n.data as string) || '{}')
+          : ((n.data as unknown) ?? {}),
       sentAt: n.createdAt,
     }));
   }
@@ -445,18 +428,15 @@ export class TrafficNotificationService {
     };
   }
 
-  private async sendNotification(
-    userId: string,
-    notification: TrafficNotification,
-  ): Promise<void> {
+  private async sendNotification(userId: string, notification: TrafficNotification): Promise<void> {
     // Save to database
     await this.prisma.notification.create({
       data: {
         userId,
         type: 'traffic_prediction',
         title: notification.title,
-        message: notification.message,
-        data: JSON.stringify(notification.data),
+        body: notification.message,
+        data: (notification.data ?? {}) as object,
       },
     });
 

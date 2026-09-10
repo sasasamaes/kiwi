@@ -3,7 +3,17 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from './api-client';
-import { Package, CheckCircle, RefreshCw, Coins, Star, Gift, Settings, Bell, Loader } from 'lucide-react';
+import {
+  Package,
+  CheckCircle,
+  RefreshCw,
+  Coins,
+  Star,
+  Gift,
+  Settings,
+  Bell,
+  Loader,
+} from 'lucide-react';
 
 interface Notification {
   id: string;
@@ -42,9 +52,7 @@ export function NotificationList({ onNotificationClick }: NotificationListProps)
   const markAsRead = async (id: string) => {
     try {
       await api.markNotificationAsRead(id);
-      setNotifications(prev =>
-        prev.map(n => (n.id === id ? { ...n, read: true } : n))
-      );
+      setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
     } catch (error) {
       console.error('Failed to mark as read:', error);
     }
@@ -53,7 +61,7 @@ export function NotificationList({ onNotificationClick }: NotificationListProps)
   const markAllAsRead = async () => {
     try {
       await api.markAllNotificationsAsRead();
-      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     } catch (error) {
       console.error('Failed to mark all as read:', error);
     }
@@ -62,7 +70,7 @@ export function NotificationList({ onNotificationClick }: NotificationListProps)
   const deleteNotification = async (id: string) => {
     try {
       await api.deleteNotification(id);
-      setNotifications(prev => prev.filter(n => n.id !== id));
+      setNotifications((prev) => prev.filter((n) => n.id !== id));
     } catch (error) {
       console.error('Failed to delete notification:', error);
     }
@@ -135,7 +143,7 @@ export function NotificationList({ onNotificationClick }: NotificationListProps)
         >
           No leídas
         </motion.button>
-        {notifications.some(n => !n.read) && (
+        {notifications.some((n) => !n.read) && (
           <motion.button
             className="ml-auto text-sm text-kiwi-600 dark:text-kiwi-400 font-medium"
             onClick={markAllAsRead}
@@ -155,7 +163,9 @@ export function NotificationList({ onNotificationClick }: NotificationListProps)
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
             >
-              <span className="mb-4 block"><Bell className="h-12 w-12 text-surface-300 mx-auto" /></span>
+              <span className="mb-4 block">
+                <Bell className="h-12 w-12 text-surface-300 mx-auto" />
+              </span>
               <p className="text-surface-500 dark:text-surface-400">
                 {filter === 'unread' ? 'No hay notificaciones nuevas' : 'No hay notificaciones'}
               </p>
@@ -190,7 +200,9 @@ export function NotificationList({ onNotificationClick }: NotificationListProps)
                   </span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
-                      <p className={`font-medium ${notification.read ? 'text-surface-600 dark:text-surface-400' : 'text-surface-800 dark:text-surface-200'}`}>
+                      <p
+                        className={`font-medium ${notification.read ? 'text-surface-600 dark:text-surface-400' : 'text-surface-800 dark:text-surface-200'}`}
+                      >
                         {notification.title}
                       </p>
                       <span className="text-xs text-surface-400 whitespace-nowrap">

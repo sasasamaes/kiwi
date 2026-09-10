@@ -1,6 +1,6 @@
 /**
  * 🥝 KIWI PREMIUM ANIMATIONS
- * 
+ *
  * Silicon Valley level micro-interactions and transitions
  * Using Framer Motion for smooth, performant animations
  */

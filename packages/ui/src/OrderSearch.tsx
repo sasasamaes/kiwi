@@ -27,9 +27,24 @@ const STATUS_OPTIONS = [
   { value: 'all', label: 'Todos', icon: 'clipboard', color: 'bg-surface-100 text-surface-700' },
   { value: 'pending', label: 'Pendiente', icon: 'clock', color: 'bg-yellow-100 text-yellow-700' },
   { value: 'assigned', label: 'Asignado', icon: 'check', color: 'bg-blue-100 text-blue-700' },
-  { value: 'in_transit_to_pickup', label: 'En camino', icon: 'bike', color: 'bg-purple-100 text-purple-700' },
-  { value: 'picked_up', label: 'Recogido', icon: 'package', color: 'bg-indigo-100 text-indigo-700' },
-  { value: 'in_transit_to_delivery', label: 'Entregando', icon: 'zap', color: 'bg-cyan-100 text-cyan-700' },
+  {
+    value: 'in_transit_to_pickup',
+    label: 'En camino',
+    icon: 'bike',
+    color: 'bg-purple-100 text-purple-700',
+  },
+  {
+    value: 'picked_up',
+    label: 'Recogido',
+    icon: 'package',
+    color: 'bg-indigo-100 text-indigo-700',
+  },
+  {
+    value: 'in_transit_to_delivery',
+    label: 'Entregando',
+    icon: 'zap',
+    color: 'bg-cyan-100 text-cyan-700',
+  },
   { value: 'delivered', label: 'Entregado', icon: 'party', color: 'bg-green-100 text-green-700' },
   { value: 'cancelled', label: 'Cancelado', icon: 'close', color: 'bg-red-100 text-red-700' },
 ];
@@ -41,11 +56,19 @@ const SORT_OPTIONS = [
   { value: 'lowest', label: 'Menor monto' },
 ];
 
-export function OrderSearch({ orders, onFilterChange, showMerchant = true, showDriver = true }: OrderSearchProps) {
+export function OrderSearch({
+  orders,
+  onFilterChange,
+  showMerchant = true,
+  showDriver = true,
+}: OrderSearchProps) {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
-  const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: '', end: '' });
+  const [dateRange, setDateRange] = useState<{ start: string; end: string }>({
+    start: '',
+    end: '',
+  });
   const [showFilters, setShowFilters] = useState(false);
 
   // Filter and sort orders
@@ -55,30 +78,31 @@ export function OrderSearch({ orders, onFilterChange, showMerchant = true, showD
     // Search filter
     if (search.trim()) {
       const query = search.toLowerCase();
-      result = result.filter(order =>
-        order.id.toLowerCase().includes(query) ||
-        order.pickupAddress.toLowerCase().includes(query) ||
-        order.deliveryAddress.toLowerCase().includes(query) ||
-        order.merchant?.businessName?.toLowerCase().includes(query) ||
-        order.driver?.fullName?.toLowerCase().includes(query) ||
-        order.items?.some(item => item.name.toLowerCase().includes(query))
+      result = result.filter(
+        (order) =>
+          order.id.toLowerCase().includes(query) ||
+          order.pickupAddress.toLowerCase().includes(query) ||
+          order.deliveryAddress.toLowerCase().includes(query) ||
+          order.merchant?.businessName?.toLowerCase().includes(query) ||
+          order.driver?.fullName?.toLowerCase().includes(query) ||
+          order.items?.some((item) => item.name.toLowerCase().includes(query)),
       );
     }
 
     // Status filter
     if (statusFilter !== 'all') {
-      result = result.filter(order => order.status === statusFilter);
+      result = result.filter((order) => order.status === statusFilter);
     }
 
     // Date range filter
     if (dateRange.start) {
       const start = new Date(dateRange.start);
-      result = result.filter(order => new Date(order.createdAt) >= start);
+      result = result.filter((order) => new Date(order.createdAt) >= start);
     }
     if (dateRange.end) {
       const end = new Date(dateRange.end);
       end.setHours(23, 59, 59);
-      result = result.filter(order => new Date(order.createdAt) <= end);
+      result = result.filter((order) => new Date(order.createdAt) <= end);
     }
 
     // Sort
@@ -116,7 +140,9 @@ export function OrderSearch({ orders, onFilterChange, showMerchant = true, showD
       {/* Search Bar */}
       <div className="relative">
         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-          <span className="text-surface-400"><Search className="h-4 w-4" /></span>
+          <span className="text-surface-400">
+            <Search className="h-4 w-4" />
+          </span>
         </div>
         <input
           type="text"
@@ -141,7 +167,9 @@ export function OrderSearch({ orders, onFilterChange, showMerchant = true, showD
           onClick={() => setShowFilters(!showFilters)}
           className="flex items-center gap-2 px-4 py-2 bg-surface-100 dark:bg-surface-800 rounded-lg text-sm font-medium text-surface-700 dark:text-surface-300 hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors"
         >
-          <span><Settings className="h-4 w-4" /></span>
+          <span>
+            <Settings className="h-4 w-4" />
+          </span>
           Filtros
           {activeFilterCount > 0 && (
             <span className="px-2 py-0.5 bg-kiwi-500 text-white text-xs rounded-full">
@@ -216,14 +244,14 @@ export function OrderSearch({ orders, onFilterChange, showMerchant = true, showD
                   <input
                     type="date"
                     value={dateRange.start}
-                    onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                    onChange={(e) => setDateRange((prev) => ({ ...prev, start: e.target.value }))}
                     className="flex-1 px-3 py-2 bg-surface-100 dark:bg-surface-700 border border-surface-200 dark:border-surface-600 rounded-lg text-sm text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-500"
                   />
                   <span className="flex items-center text-surface-400">-</span>
                   <input
                     type="date"
                     value={dateRange.end}
-                    onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                    onChange={(e) => setDateRange((prev) => ({ ...prev, end: e.target.value }))}
                     className="flex-1 px-3 py-2 bg-surface-100 dark:bg-surface-700 border border-surface-200 dark:border-surface-600 rounded-lg text-sm text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-500"
                   />
                 </div>

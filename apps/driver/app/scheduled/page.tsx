@@ -104,10 +104,7 @@ export default function ScheduledOrdersPage() {
         </div>
         <div className="mx-auto max-w-lg px-4 py-8 space-y-4">
           {[1, 2].map((i) => (
-            <div
-              key={i}
-              className="rounded-2xl glass p-4"
-            >
+            <div key={i} className="rounded-2xl glass p-4">
               <div className="flex gap-4">
                 <Skeleton className="h-16 w-16 rounded-xl" />
                 <div className="flex-1">
@@ -327,7 +324,9 @@ export default function ScheduledOrdersPage() {
                 <div className="rounded-xl bg-surface-50 dark:bg-surface-900 p-4">
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span className="text-surface-500 dark:text-surface-400">MapPin Recoger:</span>
+                      <span className="text-surface-500 dark:text-surface-400">
+                        MapPin Recoger:
+                      </span>
                       <span className="font-medium text-surface-800 dark:text-surface-200 text-right max-w-[60%]">
                         {selectedOrder.pickupAddress}
                       </span>
@@ -340,7 +339,9 @@ export default function ScheduledOrdersPage() {
                     </div>
                     {selectedOrder.scheduledDate && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-surface-500 dark:text-surface-400">Calendar Fecha:</span>
+                        <span className="text-surface-500 dark:text-surface-400">
+                          Calendar Fecha:
+                        </span>
                         <span className="font-medium text-gold-600 dark:text-gold-400">
                           {new Date(selectedOrder.scheduledDate).toLocaleDateString('es-CR', {
                             weekday: 'long',

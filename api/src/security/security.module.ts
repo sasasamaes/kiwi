@@ -7,18 +7,12 @@ import { InputSanitizationMiddleware } from './input-sanitization.middleware';
 export class SecurityModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     // Apply rate limiting to all routes
-    consumer
-      .apply(RateLimiterMiddleware)
-      .forRoutes('*');
+    consumer.apply(RateLimiterMiddleware).forRoutes('*');
 
     // Apply security headers
-    consumer
-      .apply(SecurityHeadersMiddleware)
-      .forRoutes('*');
+    consumer.apply(SecurityHeadersMiddleware).forRoutes('*');
 
     // Apply input sanitization
-    consumer
-      .apply(InputSanitizationMiddleware)
-      .forRoutes('*');
+    consumer.apply(InputSanitizationMiddleware).forRoutes('*');
   }
 }

@@ -25,10 +25,7 @@ export class OrdersController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get my orders (merchant or driver)' })
   @ApiQuery({ name: 'status', required: false })
-  async getMyOrders(
-    @CurrentUser() user: any,
-    @Query('status') status?: string,
-  ) {
+  async getMyOrders(@CurrentUser() user: any, @Query('status') status?: string) {
     if (user.role === 'merchant') {
       return this.ordersService.findByMerchant(user.sub, status);
     } else {
@@ -43,10 +40,7 @@ export class OrdersController {
   @ApiOperation({ summary: 'Get available orders for drivers' })
   @ApiQuery({ name: 'lat', required: false })
   @ApiQuery({ name: 'lng', required: false })
-  async getAvailable(
-    @Query('lat') lat?: string,
-    @Query('lng') lng?: string,
-  ) {
+  async getAvailable(@Query('lat') lat?: string, @Query('lng') lng?: string) {
     const latitude = lat ? parseFloat(lat) : undefined;
     const longitude = lng ? parseFloat(lng) : undefined;
     return this.ordersService.getAvailableOrders(latitude, longitude);
@@ -80,8 +74,9 @@ export class OrdersController {
   async assignDriver(
     @Param('id') id: string,
     @Body('driverId') driverId: string,
+    @CurrentUser() user: any,
   ) {
-    return this.ordersService.assignDriver(id, driverId);
+    return this.ordersService.assignDriver(id, driverId, user.sub);
   }
 
   @Post(':id/accept')
@@ -89,10 +84,7 @@ export class OrdersController {
   @Roles('driver')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Driver accepts a pending order' })
-  async acceptOrder(
-    @Param('id') id: string,
-    @CurrentUser() user: any,
-  ) {
+  async acceptOrder(@Param('id') id: string, @CurrentUser() user: any) {
     return this.ordersService.acceptOrderAsDriver(id, user.sub);
   }
 

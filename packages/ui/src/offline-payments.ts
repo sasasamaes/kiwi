@@ -11,6 +11,15 @@ import { backgroundSync } from './background-sync';
 import { apiFetch } from './api-client';
 import { offlineCache } from './offline-cache';
 
+function escapeHtml(value: string | number): string {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 const DB_NAME = 'kiwi-offline-payments';
 const DB_VERSION = 2;
 const STORE_NAME = 'payments';
@@ -770,13 +779,19 @@ class OfflinePaymentService {
    */
   generateReceiptHTML(payment: PaymentItem): string {
     const receipt = payment.receipt;
+    const safeMerchant = escapeHtml(receipt.merchant.name);
+    const safeReceiptNumber = escapeHtml(receipt.receiptNumber);
+    const safeTx = escapeHtml(receipt.transactionId);
+    const safeCustomer = escapeHtml(receipt.customer.name);
+    const safeMethod = escapeHtml(receipt.paymentMethod);
+    const safeQr = receipt.qrCode ? escapeHtml(receipt.qrCode) : '';
 
     return `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Recibo ${receipt.receiptNumber}</title>
+  <title>Recibo ${safeReceiptNumber}</title>
   <style>
     body { font-family: monospace; font-size: 12px; max-width: 300px; margin: 0 auto; padding: 20px; }
     .header { text-align: center; border-bottom: 2px dashed #000; padding-bottom: 10px; margin-bottom: 10px; }
@@ -792,23 +807,23 @@ class OfflinePaymentService {
   <div class="header">
     <div class="logo">🥝 KIWI</div>
     <div>Tu app de delivery</div>
-    <div>${receipt.merchant.name}</div>
+    <div>${safeMerchant}</div>
   </div>
-  
+
   <div style="text-align: center; margin: 10px 0;">
-    <div>Recibo #${receipt.receiptNumber}</div>
-    <div>Transacción: ${receipt.transactionId}</div>
+    <div>Recibo #${safeReceiptNumber}</div>
+    <div>Transacción: ${safeTx}</div>
     <div>${new Date(receipt.timestamp).toLocaleString('es-CR')}</div>
   </div>
-  
+
   <div class="items">
     <div><strong>Productos:</strong></div>
     ${receipt.items
       .map(
         (item) => `
       <div class="item">
-        <span>${item.quantity}x ${item.name}</span>
-        <span>₡${item.total.toLocaleString()}</span>
+        <span>${Number(item.quantity)}x ${escapeHtml(item.name)}</span>
+        <span>₡${Number(item.total).toLocaleString()}</span>
       </div>
     `,
       )
@@ -841,16 +856,16 @@ class OfflinePaymentService {
   </div>
   
   <div style="margin: 10px 0;">
-    <div><strong>Método de pago:</strong> ${receipt.paymentMethod.toUpperCase()}</div>
-    <div><strong>Cliente:</strong> ${receipt.customer.name}</div>
+    <div><strong>Método de pago:</strong> ${safeMethod.toUpperCase()}</div>
+    <div><strong>Cliente:</strong> ${safeCustomer}</div>
   </div>
-  
+
   ${
-    receipt.qrCode
+    safeQr
       ? `
   <div class="qr">
     <div>Código de verificación:</div>
-    <div style="font-size: 8px; word-break: break-all;">${receipt.qrCode}</div>
+    <div style="font-size: 8px; word-break: break-all;">${safeQr}</div>
   </div>
   `
       : ''

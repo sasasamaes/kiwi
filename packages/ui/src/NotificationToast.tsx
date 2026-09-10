@@ -39,7 +39,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       timestamp: new Date(),
     };
 
-    setNotifications(prev => [newNotification, ...prev].slice(0, 10)); // Keep last 10
+    setNotifications((prev) => [newNotification, ...prev].slice(0, 10)); // Keep last 10
 
     // Auto-remove after 5 seconds
     setTimeout(() => {
@@ -48,7 +48,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const removeNotification = useCallback((id: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
   }, []);
 
   const clearNotifications = useCallback(() => {
@@ -56,7 +56,9 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <NotificationContext.Provider value={{ notifications, addNotification, removeNotification, clearNotifications }}>
+    <NotificationContext.Provider
+      value={{ notifications, addNotification, removeNotification, clearNotifications }}
+    >
       {children}
       <NotificationToast />
     </NotificationContext.Provider>
@@ -68,27 +70,43 @@ function NotificationToast() {
 
   const getIcon = (type: string) => {
     switch (type) {
-      case 'new_order': return 'package';
-      case 'order_accepted': return 'Check';
-      case 'order_status': return 'location';
-      case 'payment_received': return 'coins';
-      case 'new_rating': return 'star';
-      case 'withdrawal': return 'creditCard';
-      case 'kyc': return '🪪';
-      default: return 'bell';
+      case 'new_order':
+        return 'package';
+      case 'order_accepted':
+        return 'Check';
+      case 'order_status':
+        return 'location';
+      case 'payment_received':
+        return 'coins';
+      case 'new_rating':
+        return 'star';
+      case 'withdrawal':
+        return 'creditCard';
+      case 'kyc':
+        return '🪪';
+      default:
+        return 'bell';
     }
   };
 
   const getColor = (type: string) => {
     switch (type) {
-      case 'new_order': return 'bg-blue-500';
-      case 'order_accepted': return 'bg-green-500';
-      case 'order_status': return 'bg-kiwi-500';
-      case 'payment_received': return 'bg-yellow-500';
-      case 'new_rating': return 'bg-purple-500';
-      case 'withdrawal': return 'bg-cyan-500';
-      case 'kyc': return 'bg-indigo-500';
-      default: return 'bg-surface-500';
+      case 'new_order':
+        return 'bg-blue-500';
+      case 'order_accepted':
+        return 'bg-green-500';
+      case 'order_status':
+        return 'bg-kiwi-500';
+      case 'payment_received':
+        return 'bg-yellow-500';
+      case 'new_rating':
+        return 'bg-purple-500';
+      case 'withdrawal':
+        return 'bg-cyan-500';
+      case 'kyc':
+        return 'bg-indigo-500';
+      default:
+        return 'bg-surface-500';
     }
   };
 
@@ -104,7 +122,9 @@ function NotificationToast() {
             className="bg-white dark:bg-surface-800 rounded-2xl shadow-2xl overflow-hidden border border-surface-200 dark:border-surface-700"
           >
             <div className="flex items-start gap-3 p-4">
-              <div className={`flex-shrink-0 w-10 h-10 rounded-full ${getColor(notification.type)} flex items-center justify-center text-white text-lg`}>
+              <div
+                className={`flex-shrink-0 w-10 h-10 rounded-full ${getColor(notification.type)} flex items-center justify-center text-white text-lg`}
+              >
                 {getIcon(notification.type)}
               </div>
               <div className="flex-1 min-w-0">

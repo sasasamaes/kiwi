@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -100,7 +100,7 @@ export default function NewOrder() {
       });
     } else {
       const item: OrderItem = {
-        id: Math.random().toString(36).substr(2, 9),
+        id: `quick-${quickItem.name}-${orderData.items.length}`,
         name: quickItem.name,
         quantity: 1,
         price: quickItem.price,
@@ -794,7 +794,9 @@ export default function NewOrder() {
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-surface-500 dark:text-surface-400">Package Productos:</span>
+                    <span className="text-surface-500 dark:text-surface-400">
+                      Package Productos:
+                    </span>
                     <span className="font-medium text-surface-800 dark:text-surface-200">
                       {orderData.items.length} items (
                       {orderData.items.reduce((sum, i) => sum + i.quantity, 0)} uds)
@@ -802,7 +804,9 @@ export default function NewOrder() {
                   </div>
                   {orderData.isScheduled && (
                     <div className="flex justify-between">
-                      <span className="text-surface-500 dark:text-surface-400">Calendar Programado:</span>
+                      <span className="text-surface-500 dark:text-surface-400">
+                        Calendar Programado:
+                      </span>
                       <span className="font-medium text-kiwi-600 dark:text-kiwi-400">
                         {orderData.scheduledDate} {orderData.scheduledTime}
                       </span>
@@ -835,7 +839,9 @@ export default function NewOrder() {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-surface-500 dark:text-surface-400">Envío</span>
-                    <span className="text-kiwi-600 dark:text-kiwi-400 font-medium">Gratis PartyPopper</span>
+                    <span className="text-kiwi-600 dark:text-kiwi-400 font-medium">
+                      Gratis PartyPopper
+                    </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-surface-500 dark:text-surface-400">
@@ -870,7 +876,12 @@ export default function NewOrder() {
                       desc: 'Transferencia instantánea',
                     },
                     { id: 'card', icon: 'CreditCard', label: 'Tarjeta', desc: 'Crédito o débito' },
-                    { id: 'cash', icon: 'DollarSign', label: 'Efectivo', desc: 'Pagar al repartidor' },
+                    {
+                      id: 'cash',
+                      icon: 'DollarSign',
+                      label: 'Efectivo',
+                      desc: 'Pagar al repartidor',
+                    },
                   ].map((method) => (
                     <motion.button
                       key={method.id}

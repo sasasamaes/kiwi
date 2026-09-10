@@ -10,12 +10,7 @@ interface SkeletonProps {
   height?: string | number;
 }
 
-export function Skeleton({
-  className,
-  variant = 'rectangular',
-  width,
-  height,
-}: SkeletonProps) {
+export function Skeleton({ className, variant = 'rectangular', width, height }: SkeletonProps) {
   const variants = {
     text: 'rounded-md',
     circular: 'rounded-full',
@@ -24,11 +19,7 @@ export function Skeleton({
 
   return (
     <motion.div
-      className={cn(
-        'relative overflow-hidden bg-surface-200',
-        variants[variant],
-        className
-      )}
+      className={cn('relative overflow-hidden bg-surface-200', variants[variant], className)}
       style={{ width, height }}
       initial={{ opacity: 0.6 }}
       animate={{ opacity: 1 }}

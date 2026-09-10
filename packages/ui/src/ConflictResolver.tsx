@@ -24,21 +24,31 @@ function ConflictCard({ conflict, onResolve, onDismiss }: ConflictCardProps) {
 
   const getDataTypeIcon = (type: string) => {
     switch (type) {
-      case 'order': return 'package';
-      case 'menu': return 'utensils';
-      case 'profile': return 'user';
-      case 'location': return 'location';
-      default: return '📄';
+      case 'order':
+        return 'package';
+      case 'menu':
+        return 'utensils';
+      case 'profile':
+        return 'user';
+      case 'location':
+        return 'location';
+      default:
+        return '📄';
     }
   };
 
   const getDataTypeLabel = (type: string) => {
     switch (type) {
-      case 'order': return 'Pedido';
-      case 'menu': return 'Menú';
-      case 'profile': return 'Perfil';
-      case 'location': return 'Ubicación';
-      default: return 'Datos';
+      case 'order':
+        return 'Pedido';
+      case 'menu':
+        return 'Menú';
+      case 'profile':
+        return 'Perfil';
+      case 'location':
+        return 'Ubicación';
+      default:
+        return 'Datos';
     }
   };
 
@@ -67,9 +77,7 @@ function ConflictCard({ conflict, onResolve, onDismiss }: ConflictCardProps) {
               <h3 className="font-semibold text-surface-800 dark:text-surface-100">
                 Conflicto en {getDataTypeLabel(conflict.dataType)}
               </h3>
-              <p className="text-sm text-surface-500 dark:text-surface-400">
-                {conflict.dataId}
-              </p>
+              <p className="text-sm text-surface-500 dark:text-surface-400">{conflict.dataId}</p>
             </div>
           </div>
           <motion.button
@@ -77,10 +85,7 @@ function ConflictCard({ conflict, onResolve, onDismiss }: ConflictCardProps) {
             className="text-surface-500 hover:text-surface-700 dark:hover:text-surface-300"
             whileTap={{ scale: 0.9 }}
           >
-            <motion.span
-              animate={{ rotate: isExpanded ? 180 : 0 }}
-              className="block"
-            >
+            <motion.span animate={{ rotate: isExpanded ? 180 : 0 }} className="block">
               ▼
             </motion.span>
           </motion.button>
@@ -125,7 +130,7 @@ function ConflictCard({ conflict, onResolve, onDismiss }: ConflictCardProps) {
                 <h4 className="text-sm font-semibold text-surface-600 dark:text-surface-400">
                   Comparación de datos
                 </h4>
-                
+
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div className="p-2 rounded bg-surface-50 dark:bg-surface-900">
                     <p className="font-medium text-surface-600 dark:text-surface-400">Local</p>
@@ -225,23 +230,23 @@ export function ConflictResolver({
   pendingOnly = true,
   onAllResolved,
 }: ConflictResolverProps) {
-  const { 
-    conflicts, 
-    pendingCount, 
-    stats, 
-    resolveConflict, 
-    dismissConflict, 
+  const {
+    conflicts,
+    pendingCount,
+    stats,
+    resolveConflict,
+    dismissConflict,
     clearResolved,
     clearAll,
   } = useConflictResolution();
 
-  const displayConflicts = pendingOnly 
-    ? conflicts.filter(c => c.status === 'pending')
+  const displayConflicts = pendingOnly
+    ? conflicts.filter((c) => c.status === 'pending')
     : conflicts;
 
   const handleResolve = (conflictId: string, action: MergeAction) => {
     resolveConflict(conflictId, action);
-    
+
     // Check if all conflicts resolved
     if (pendingCount <= 1) {
       onAllResolved?.();
@@ -250,7 +255,7 @@ export function ConflictResolver({
 
   const handleDismiss = (conflictId: string) => {
     dismissConflict(conflictId);
-    
+
     if (pendingCount <= 1) {
       onAllResolved?.();
     }
@@ -295,9 +300,7 @@ export function ConflictResolver({
             <p className="text-xs text-orange-700 dark:text-orange-400">Pendientes</p>
           </div>
           <div className="p-3 rounded-xl bg-kiwi-50 dark:bg-kiwi-900/30 text-center">
-            <p className="text-xl font-bold text-kiwi-600 dark:text-kiwi-400">
-              {stats.resolved}
-            </p>
+            <p className="text-xl font-bold text-kiwi-600 dark:text-kiwi-400">{stats.resolved}</p>
             <p className="text-xs text-kiwi-700 dark:text-kiwi-400">Resueltos</p>
           </div>
           <div className="p-3 rounded-xl bg-surface-50 dark:bg-surface-900 text-center">
@@ -311,11 +314,7 @@ export function ConflictResolver({
 
       {/* Conflict List */}
       {displayConflicts.length === 0 ? (
-        <motion.div
-          className="text-center py-12"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-        >
+        <motion.div className="text-center py-12" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
           <motion.div
             className="text-5xl mb-4"
             animate={{ y: [0, -5, 0] }}
@@ -327,10 +326,9 @@ export function ConflictResolver({
             {pendingOnly ? 'Sin conflictos pendientes' : 'Sin conflictos'}
           </h3>
           <p className="text-surface-500 dark:text-surface-400">
-            {pendingOnly 
+            {pendingOnly
               ? 'Todos los conflictos han sido resueltos'
-              : 'No hay conflictos registrados'
-            }
+              : 'No hay conflictos registrados'}
           </p>
         </motion.div>
       ) : (
@@ -395,7 +393,8 @@ export function ConflictBanner({ className = '' }: { className?: string }) {
           <span className="text-xl">AlertTriangle</span>
           <div>
             <p className="font-semibold">
-              {pendingCount} conflicto{pendingCount !== 1 ? 's' : ''} pendiente{pendingCount !== 1 ? 's' : ''}
+              {pendingCount} conflicto{pendingCount !== 1 ? 's' : ''} pendiente
+              {pendingCount !== 1 ? 's' : ''}
             </p>
             <p className="text-sm opacity-90">
               Se detectaron cambios simultáneos que requieren tu atención

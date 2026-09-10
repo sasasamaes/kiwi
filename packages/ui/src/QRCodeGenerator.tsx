@@ -6,6 +6,31 @@ import { motion } from 'framer-motion';
 
 const MENU_BASE_URL = process.env.NEXT_PUBLIC_MENU_URL || 'https://kiwi-client-tau.vercel.app/menu';
 
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function isAllowedMenuUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url, MENU_BASE_URL);
+    // Only allow http(s) URLs that point to our menu path or same-origin relative links
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false;
+    const base = new URL(MENU_BASE_URL);
+    // Same host as MENU_BASE_URL, path starts with its pathname (usually /menu)
+    if (parsed.host === base.host && parsed.pathname.startsWith(base.pathname)) return true;
+    // Relative /menu/... links
+    if (url.startsWith('/menu/')) return true;
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 export interface QRCodeGeneratorProps {
   /** Merchant ID to encode in the QR code */
   merchantId: string;
@@ -95,11 +120,12 @@ export function QRCodeGenerator({
 
     const qrDataUrl = canvas.toDataURL('image/png');
 
+    const safeBusinessName = businessName ? escapeHtml(businessName) : '';
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
         <head>
-          <title>QR Menu - ${businessName || 'Kiwi'}</title>
+          <title>QR Menu - ${safeBusinessName || 'Kiwi'}</title>
           <style>
             body {
               display: flex;
@@ -147,7 +173,7 @@ export function QRCodeGenerator({
         <body>
           <div class="qr-container">
             <img src="${qrDataUrl}" width="${size}" height="${size}" />
-            ${businessName ? `<div class="business-name">${businessName}</div>` : ''}
+            ${safeBusinessName ? `<div class="business-name">${safeBusinessName}</div>` : ''}
             <div class="subtitle">Escanea para ver el menú</div>
             <div class="instruction">Smartphone Abre la cámara y apunta al código</div>
             <div class="brand"> Kiwi Delivery - Nicoya</div>
@@ -312,15 +338,15 @@ export function QRScanner({ onScan, onError, isActive = true }: QRScannerProps) 
         (decodedText) => {
           // Parse the URL to extract merchant ID
           const match = decodedText.match(/\/menu\/([a-zA-Z0-9-]+)/);
-          if (match) {
+          if (match && isAllowedMenuUrl(decodedText)) {
             const merchantId = match[1];
             onScan?.(merchantId, decodedText);
             scanner.stop().catch(() => {});
-          } else if (decodedText.startsWith('http')) {
-            // If it's a full URL but doesn't match our pattern, still navigate
+          } else if (isAllowedMenuUrl(decodedText)) {
+            // Only navigate to allowlisted menu URLs to avoid open-redirect phishing
             window.location.href = decodedText;
           } else {
-            onError?.(`Código QR no válido: ${decodedText}`);
+            onError?.('Código QR no válido para Kiwi');
           }
         },
         () => {

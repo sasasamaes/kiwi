@@ -39,11 +39,7 @@ export default function MerchantTrafficAnalytics() {
   const [loading, setLoading] = useState(true);
   const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'quarter'>('week');
 
-  useEffect(() => {
-    fetchAnalytics();
-  }, [selectedPeriod]);
-
-  const fetchAnalytics = async () => {
+  async function fetchAnalytics() {
     try {
       // Fetch traffic analytics
       const analyticsResponse = await apiFetch('/api/routing/history/merchant/current');
@@ -95,7 +91,11 @@ export default function MerchantTrafficAnalytics() {
     } finally {
       setLoading(false);
     }
-  };
+  }
+
+  useEffect(() => {
+    fetchAnalytics();
+  }, [selectedPeriod]);
 
   if (loading) {
     return (

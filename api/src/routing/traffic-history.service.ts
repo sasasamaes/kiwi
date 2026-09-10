@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TrafficService } from './traffic.service';
 
-interface TrafficHistoryRecord {
+export interface TrafficHistoryRecord {
   id: string;
   timestamp: Date;
   lat: number;
@@ -13,7 +13,7 @@ interface TrafficHistoryRecord {
   duration: number; // in minutes
 }
 
-interface TrafficPattern {
+export interface TrafficPattern {
   hour: number;
   dayOfWeek: number;
   averageLevel: string;
@@ -21,7 +21,7 @@ interface TrafficPattern {
   sampleCount: number;
 }
 
-interface TrafficTrend {
+export interface TrafficTrend {
   period: string;
   current: number;
   previous: number;
@@ -29,14 +29,14 @@ interface TrafficTrend {
   changePercent: number;
 }
 
-interface TrafficHeatmapData {
+export interface TrafficHeatmapData {
   lat: number;
   lng: number;
   intensity: number; // 0-1
   level: string;
 }
 
-interface MerchantTrafficReport {
+export interface MerchantTrafficReport {
   merchantId: string;
   period: 'day' | 'week' | 'month';
   summary: {
@@ -58,11 +58,11 @@ export class TrafficHistoryService {
   // Zone definitions for Nicoya
   private readonly zones = [
     { name: 'Centro', lat: 10.1483, lng: -85.4527, radius: 0.5 },
-    { name: 'Mercado', lat: 10.1490, lng: -85.4520, radius: 0.3 },
-    { name: 'Hospital', lat: 10.1470, lng: -85.4540, radius: 0.4 },
-    { name: 'Norte', lat: 10.1550, lng: -85.4527, radius: 0.6 },
-    { name: 'Sur', lat: 10.1420, lng: -85.4500, radius: 0.8 },
-    { name: 'Industrial', lat: 10.1400, lng: -85.4480, radius: 0.7 },
+    { name: 'Mercado', lat: 10.149, lng: -85.452, radius: 0.3 },
+    { name: 'Hospital', lat: 10.147, lng: -85.454, radius: 0.4 },
+    { name: 'Norte', lat: 10.155, lng: -85.4527, radius: 0.6 },
+    { name: 'Sur', lat: 10.142, lng: -85.45, radius: 0.8 },
+    { name: 'Industrial', lat: 10.14, lng: -85.448, radius: 0.7 },
   ];
 
   constructor(
@@ -117,7 +117,7 @@ export class TrafficHistoryService {
       take: limit,
     });
 
-    return records.map(r => ({
+    return records.map((r) => ({
       id: r.id,
       timestamp: r.timestamp,
       lat: r.lat,
@@ -132,10 +132,7 @@ export class TrafficHistoryService {
   /**
    * Get traffic patterns by hour and day
    */
-  async getTrafficPatterns(
-    zone?: string,
-    daysBack: number = 30,
-  ): Promise<TrafficPattern[]> {
+  async getTrafficPatterns(zone?: string, daysBack: number = 30): Promise<TrafficPattern[]> {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - daysBack);
 
@@ -175,7 +172,7 @@ export class TrafficHistoryService {
         if (data && data.levels.length > 0) {
           const avgSpeed = data.speeds.reduce((a, b) => a + b, 0) / data.speeds.length;
           const avgLevelIndex = Math.round(
-            data.levels.reduce((sum, l) => sum + levels.indexOf(l), 0) / data.levels.length
+            data.levels.reduce((sum, l) => sum + levels.indexOf(l), 0) / data.levels.length,
           );
 
           patterns.push({
@@ -260,9 +257,8 @@ export class TrafficHistoryService {
       current: currentAvg,
       previous: previousAvg,
       change: Math.round((currentAvg - previousAvg) * 100) / 100,
-      changePercent: previousAvg > 0 
-        ? Math.round(((currentAvg - previousAvg) / previousAvg) * 100)
-        : 0,
+      changePercent:
+        previousAvg > 0 ? Math.round(((currentAvg - previousAvg) / previousAvg) * 100) : 0,
     });
 
     return trends;
@@ -271,10 +267,7 @@ export class TrafficHistoryService {
   /**
    * Get traffic heatmap data
    */
-  async getTrafficHeatmap(
-    startDate?: Date,
-    endDate?: Date,
-  ): Promise<TrafficHeatmapData[]> {
+  async getTrafficHeatmap(startDate?: Date, endDate?: Date): Promise<TrafficHeatmapData[]> {
     const where: any = {};
     if (startDate || endDate) {
       where.timestamp = {};
@@ -308,9 +301,9 @@ export class TrafficHistoryService {
       const [lat, lng] = key.split('_').map(Number);
       const avgSpeed = data.speeds.reduce((a, b) => a + b, 0) / data.speeds.length;
       const intensity = 1 - avgSpeed; // Invert: slower = more intense
-      
+
       const levelIndex = Math.round((1 - avgSpeed) * (levels.length - 1));
-      
+
       heatmapData.push({
         lat,
         lng,
@@ -366,10 +359,18 @@ export class TrafficHistoryService {
     });
 
     // Get traffic data for merchant area
+    const merchantLat = merchant.latitude != null ? Number(merchant.latitude) : 10.1483;
+    const merchantLng = merchant.longitude != null ? Number(merchant.longitude) : -85.4527;
     const trafficHistory = await this.prisma.trafficHistory.findMany({
       where: {
-        lat: { gte: (merchant.latitude || 10.1483) - 0.01, lte: (merchant.latitude || 10.1483) + 0.01 },
-        lng: { gte: (merchant.longitude || -85.4527) - 0.01, lte: (merchant.longitude || -85.4527) + 0.01 },
+        lat: {
+          gte: merchantLat - 0.01,
+          lte: merchantLat + 0.01,
+        },
+        lng: {
+          gte: merchantLng - 0.01,
+          lte: merchantLng + 0.01,
+        },
         timestamp: { gte: startDate },
       },
     });
@@ -378,18 +379,18 @@ export class TrafficHistoryService {
     const totalDeliveries = orders.length;
     const avgTrafficLevel = this.calculateAverageLevel(trafficHistory);
     const avgDeliveryTime = this.calculateAverageDeliveryTime(orders);
-    const trafficDelayed = orders.filter(o => this.wasDelayedByTraffic(o, trafficHistory)).length;
+    const trafficDelayed = orders.filter((o) => this.wasDelayedByTraffic(o, trafficHistory)).length;
     const timeLost = trafficDelayed * 5; // Estimate 5 min delay per traffic delay
 
     // Get patterns
     const patterns = await this.getTrafficPatterns(
-      this.getZoneForLocation(merchant.latitude || 10.1483, merchant.longitude || -85.4527)?.name,
+      this.getZoneForLocation(merchantLat, merchantLng)?.name,
       30,
     );
 
     // Get trends
     const trends = await this.getTrafficTrends(
-      this.getZoneForLocation(merchant.latitude || 10.1483, merchant.longitude || -85.4527)?.name,
+      this.getZoneForLocation(merchantLat, merchantLng)?.name,
       period,
     );
 
@@ -423,12 +424,14 @@ export class TrafficHistoryService {
     lat: number,
     lng: number,
     daysBack: number = 30,
-  ): Promise<Array<{
-    hour: number;
-    dayOfWeek: number;
-    level: string;
-    recommendation: string;
-  }>> {
+  ): Promise<
+    Array<{
+      hour: number;
+      dayOfWeek: number;
+      level: string;
+      recommendation: string;
+    }>
+  > {
     const patterns = await this.getTrafficPatterns(
       this.getZoneForLocation(lat, lng)?.name,
       daysBack,
@@ -436,12 +439,18 @@ export class TrafficHistoryService {
 
     // Find best times (free or light traffic)
     const bestTimes = patterns
-      .filter(p => p.averageLevel === 'free' || p.averageLevel === 'light')
-      .map(p => ({
-        ...p,
-        recommendation: p.averageLevel === 'free' 
-          ? '🟢 Tráfico libre - Tiempo ideal'
-          : '🟡 Tráfico ligero - Buen momento',
+      .filter((p) => p.averageLevel === 'free' || p.averageLevel === 'light')
+      .map((p) => ({
+        hour: p.hour,
+        dayOfWeek: p.dayOfWeek,
+        level: p.averageLevel,
+        averageLevel: p.averageLevel,
+        averageSpeed: p.averageSpeed,
+        sampleCount: p.sampleCount,
+        recommendation:
+          p.averageLevel === 'free'
+            ? '🟢 Tráfico libre - Tiempo ideal'
+            : '🟡 Tráfico ligero - Buen momento',
       }))
       .sort((a, b) => b.averageSpeed - a.averageSpeed)
       .slice(0, 10);
@@ -456,12 +465,14 @@ export class TrafficHistoryService {
     lat: number,
     lng: number,
     daysBack: number = 30,
-  ): Promise<Array<{
-    hour: number;
-    dayOfWeek: number;
-    level: string;
-    recommendation: string;
-  }>> {
+  ): Promise<
+    Array<{
+      hour: number;
+      dayOfWeek: number;
+      level: string;
+      recommendation: string;
+    }>
+  > {
     const patterns = await this.getTrafficPatterns(
       this.getZoneForLocation(lat, lng)?.name,
       daysBack,
@@ -469,12 +480,18 @@ export class TrafficHistoryService {
 
     // Find worst times (heavy or severe traffic)
     const worstTimes = patterns
-      .filter(p => p.averageLevel === 'heavy' || p.averageLevel === 'severe')
-      .map(p => ({
-        ...p,
-        recommendation: p.averageLevel === 'severe'
-          ? '🔴 Tráfico severo - Evitar si es posible'
-          : '🟠 Tráfico pesado - Planificar con tiempo',
+      .filter((p) => p.averageLevel === 'heavy' || p.averageLevel === 'severe')
+      .map((p) => ({
+        hour: p.hour,
+        dayOfWeek: p.dayOfWeek,
+        level: p.averageLevel,
+        averageLevel: p.averageLevel,
+        averageSpeed: p.averageSpeed,
+        sampleCount: p.sampleCount,
+        recommendation:
+          p.averageLevel === 'severe'
+            ? '🔴 Tráfico severo - Evitar si es posible'
+            : '🟠 Tráfico pesado - Planificar con tiempo',
       }))
       .sort((a, b) => a.averageSpeed - b.averageSpeed)
       .slice(0, 10);
@@ -500,8 +517,10 @@ export class TrafficHistoryService {
     const dLng = this.toRad(lng2 - lng1);
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(this.toRad(lat1)) * Math.cos(this.toRad(lat2)) *
-      Math.sin(dLng / 2) * Math.sin(dLng / 2);
+      Math.cos(this.toRad(lat1)) *
+        Math.cos(this.toRad(lat2)) *
+        Math.sin(dLng / 2) *
+        Math.sin(dLng / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   }
@@ -526,8 +545,8 @@ export class TrafficHistoryService {
   private calculateAverageDeliveryTime(orders: any[]): number {
     if (orders.length === 0) return 0;
     const times = orders
-      .filter(o => o.deliveredAt && o.createdAt)
-      .map(o => {
+      .filter((o) => o.deliveredAt && o.createdAt)
+      .map((o) => {
         const created = new Date(o.createdAt).getTime();
         const delivered = new Date(o.deliveredAt).getTime();
         return (delivered - created) / 1000 / 60; // minutes
@@ -540,13 +559,13 @@ export class TrafficHistoryService {
     // Check if there was heavy traffic during order delivery time
     const orderTime = new Date(order.createdAt);
     const hour = orderTime.getHours();
-    
-    const trafficDuringOrder = trafficHistory.filter(t => {
+
+    const trafficDuringOrder = trafficHistory.filter((t) => {
       const tTime = new Date(t.timestamp);
       return Math.abs(tTime.getTime() - orderTime.getTime()) < 30 * 60 * 1000; // Within 30 min
     });
 
-    return trafficDuringOrder.some(t => t.level === 'heavy' || t.level === 'severe');
+    return trafficDuringOrder.some((t) => t.level === 'heavy' || t.level === 'severe');
   }
 
   private generateRecommendations(
@@ -557,37 +576,39 @@ export class TrafficHistoryService {
     const recommendations: string[] = [];
 
     // Analyze patterns
-    const freeHours = patterns.filter(p => p.averageLevel === 'free');
-    const heavyHours = patterns.filter(p => p.averageLevel === 'heavy' || p.averageLevel === 'severe');
+    const freeHours = patterns.filter((p) => p.averageLevel === 'free');
+    const heavyHours = patterns.filter(
+      (p) => p.averageLevel === 'heavy' || p.averageLevel === 'severe',
+    );
 
     if (freeHours.length > 0) {
       const bestHour = freeHours[0];
       recommendations.push(
-        `🟢 Los mejores horarios son entre las ${bestHour.hour}:00 y ${bestHour.hour + 1}:00 con tráfico libre.`
+        `🟢 Los mejores horarios son entre las ${bestHour.hour}:00 y ${bestHour.hour + 1}:00 con tráfico libre.`,
       );
     }
 
     if (heavyHours.length > 0) {
       const worstHour = heavyHours[0];
       recommendations.push(
-        `🔴 Evita enviar repartidores entre las ${worstHour.hour}:00 y ${worstHour.hour + 1}:00 (tráfico pesado).`
+        `🔴 Evita enviar repartidores entre las ${worstHour.hour}:00 y ${worstHour.hour + 1}:00 (tráfico pesado).`,
       );
     }
 
     if (avgLevel === 'heavy' || avgLevel === 'severe') {
       recommendations.push(
-        '⚠️ Tu zona tiene tráfico frecuentemente pesado. Considera ofrecer horarios de entrega fuera de pico.'
+        '⚠️ Tu zona tiene tráfico frecuentemente pesado. Considera ofrecer horarios de entrega fuera de pico.',
       );
     }
 
     if (totalOrders > 10) {
       recommendations.push(
-        '📊 Con más pedidos, puedes identificar patrones personales de demanda.'
+        '📊 Con más pedidos, puedes identificar patrones personales de demanda.',
       );
     }
 
     recommendations.push(
-      '💡 Ofrecer delivery en horarios de tráfico libre puede mejorar la experiencia del cliente.'
+      '💡 Ofrecer delivery en horarios de tráfico libre puede mejorar la experiencia del cliente.',
     );
 
     return recommendations;

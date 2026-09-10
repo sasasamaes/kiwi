@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import * as crypto from 'node:crypto';
 
 interface OnvoPayPaymentRequest {
   amount: number;
@@ -65,7 +66,7 @@ export class OnvoPayProvider {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.secretKey}`,
+          Authorization: `Bearer ${this.secretKey}`,
         },
         body: JSON.stringify({
           amount: Math.round(request.amount), // Colones don't have decimals
@@ -121,7 +122,7 @@ export class OnvoPayProvider {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.secretKey}`,
+          Authorization: `Bearer ${this.secretKey}`,
         },
         body: JSON.stringify({
           paymentMethodId,
@@ -151,7 +152,9 @@ export class OnvoPayProvider {
    * Get payment intent status
    * @see https://docs.onvopay.com/en/api/crear-una-intencion-de-pago
    */
-  async getPaymentIntentStatus(paymentIntentId: string): Promise<{ status: string; details?: any }> {
+  async getPaymentIntentStatus(
+    paymentIntentId: string,
+  ): Promise<{ status: string; details?: any }> {
     try {
       if (!this.secretKey) {
         return this.mockGetPaymentStatus(paymentIntentId);
@@ -159,7 +162,7 @@ export class OnvoPayProvider {
 
       const response = await fetch(`${this.baseUrl}/payment-intents/${paymentIntentId}`, {
         headers: {
-          'Authorization': `Bearer ${this.secretKey}`,
+          Authorization: `Bearer ${this.secretKey}`,
         },
       });
 
@@ -175,7 +178,9 @@ export class OnvoPayProvider {
    * Cancel a payment intent
    * @see https://docs.onvopay.com/en/api/cancelar-una-intencion-de-pago
    */
-  async cancelPaymentIntent(paymentIntentId: string): Promise<{ success: boolean; error?: string }> {
+  async cancelPaymentIntent(
+    paymentIntentId: string,
+  ): Promise<{ success: boolean; error?: string }> {
     try {
       if (!this.secretKey) {
         return { success: true };
@@ -185,7 +190,7 @@ export class OnvoPayProvider {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.secretKey}`,
+          Authorization: `Bearer ${this.secretKey}`,
         },
       });
 
@@ -213,7 +218,7 @@ export class OnvoPayProvider {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.secretKey}`,
+          Authorization: `Bearer ${this.secretKey}`,
         },
         body: amount ? JSON.stringify({ amount }) : undefined,
       });
@@ -235,7 +240,7 @@ export class OnvoPayProvider {
       // In production, this is done client-side with publishable key
       // Server-side we just store the token ID
       this.logger.log('Payment method token received');
-      
+
       return {
         id: token,
         type: 'card', // or 'sinpe'
@@ -248,17 +253,32 @@ export class OnvoPayProvider {
 
   /**
    * Verify webhook signature
+   * Fail-closed in production: without a secret or valid signature we reject.
    * @see https://docs.onvopay.com/en/webhooks
    */
   verifyWebhookSignature(payload: string, signature: string): boolean {
-    // In production, verify HMAC signature
-    // const expectedSignature = crypto
-    //   .createHmac('sha256', this.webhookSecret)
-    //   .update(payload)
-    //   .digest('hex');
-    // return signature === expectedSignature;
-    
-    return true; // Mock for development
+    const webhookSecret = this.configService.get<string>('ONVO_WEBHOOK_SECRET') ?? this.secretKey;
+
+    if (!webhookSecret) {
+      // No secret configured: only allow unsigned webhooks outside production
+      // (local dev with mock provider). In production this must reject.
+      const isProd = this.configService.get('NODE_ENV') === 'production';
+      if (isProd) {
+        this.logger.error('ONVO_WEBHOOK_SECRET missing in production — rejecting webhook');
+        return false;
+      }
+      this.logger.warn('Verifying webhook without secret (dev only) — accepting');
+      return true;
+    }
+
+    try {
+      const expected = crypto.createHmac('sha256', webhookSecret).update(payload).digest('hex');
+      const a = Buffer.from(expected, 'utf8');
+      const b = Buffer.from(signature ?? '', 'utf8');
+      return a.length === b.length && crypto.timingSafeEqual(a, b);
+    } catch {
+      return false;
+    }
   }
 
   // Mock methods for development

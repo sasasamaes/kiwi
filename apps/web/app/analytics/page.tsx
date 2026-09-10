@@ -113,7 +113,7 @@ export default function MerchantAnalyticsPage() {
 
   // Calculate max for chart scaling
   const maxDailyOrders = analytics?.orders?.daily
-    ? Math.max(...analytics.orders.daily.map(d => d.value), 1)
+    ? Math.max(...analytics.orders.daily.map((d) => d.value), 1)
     : 1;
 
   if (loading && !analytics) {
@@ -135,12 +135,12 @@ export default function MerchantAnalyticsPage() {
   if (error && !analytics) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <motion.div 
+        <motion.div
           className="text-center"
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
         >
-          <motion.div 
+          <motion.div
             className="text-6xl mb-4"
             animate={{ y: [0, -10, 0] }}
             transition={{ duration: 2, repeat: Infinity }}
@@ -186,7 +186,7 @@ export default function MerchantAnalyticsPage() {
       </div>
 
       {/* Period Selector */}
-      <motion.div 
+      <motion.div
         className="flex gap-2 rounded-xl bg-surface-100 dark:bg-surface-800 p-1 overflow-x-auto"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -211,14 +211,14 @@ export default function MerchantAnalyticsPage() {
       {/* Overview Stats */}
       <StaggerContainer className="grid grid-cols-2 md:grid-cols-3 gap-4">
         <StaggerItem>
-          <motion.div 
-            className="rounded-2xl glass p-4"
-            whileHover={{ y: -2 }}
-          >
+          <motion.div className="rounded-2xl glass p-4" whileHover={{ y: -2 }}>
             <div className="flex items-center justify-between mb-2">
               <span className="text-2xl">Package</span>
-              <span className={`text-xs font-medium ${getGrowthColor(analytics?.trend?.ordersGrowth || 0)}`}>
-                {getGrowthIcon(analytics?.trend?.ordersGrowth || 0)} {Math.abs(analytics?.trend?.ordersGrowth || 0)}%
+              <span
+                className={`text-xs font-medium ${getGrowthColor(analytics?.trend?.ordersGrowth || 0)}`}
+              >
+                {getGrowthIcon(analytics?.trend?.ordersGrowth || 0)}{' '}
+                {Math.abs(analytics?.trend?.ordersGrowth || 0)}%
               </span>
             </div>
             <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
@@ -229,14 +229,14 @@ export default function MerchantAnalyticsPage() {
         </StaggerItem>
 
         <StaggerItem>
-          <motion.div 
-            className="rounded-2xl glass p-4"
-            whileHover={{ y: -2 }}
-          >
+          <motion.div className="rounded-2xl glass p-4" whileHover={{ y: -2 }}>
             <div className="flex items-center justify-between mb-2">
               <span className="text-2xl">Coins</span>
-              <span className={`text-xs font-medium ${getGrowthColor(analytics?.trend?.revenueGrowth || 0)}`}>
-                {getGrowthIcon(analytics?.trend?.revenueGrowth || 0)} {Math.abs(analytics?.trend?.revenueGrowth || 0)}%
+              <span
+                className={`text-xs font-medium ${getGrowthColor(analytics?.trend?.revenueGrowth || 0)}`}
+              >
+                {getGrowthIcon(analytics?.trend?.revenueGrowth || 0)}{' '}
+                {Math.abs(analytics?.trend?.revenueGrowth || 0)}%
               </span>
             </div>
             <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
@@ -247,13 +247,12 @@ export default function MerchantAnalyticsPage() {
         </StaggerItem>
 
         <StaggerItem>
-          <motion.div 
-            className="rounded-2xl glass p-4"
-            whileHover={{ y: -2 }}
-          >
+          <motion.div className="rounded-2xl glass p-4" whileHover={{ y: -2 }}>
             <div className="flex items-center justify-between mb-2">
               <span className="text-2xl">BarChart3</span>
-              <span className="text-xs font-medium text-surface-500 dark:text-surface-400">Promedio</span>
+              <span className="text-xs font-medium text-surface-500 dark:text-surface-400">
+                Promedio
+              </span>
             </div>
             <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
               {formatCurrency(analytics?.overview?.averageOrderValue || 0)}
@@ -263,10 +262,7 @@ export default function MerchantAnalyticsPage() {
         </StaggerItem>
 
         <StaggerItem>
-          <motion.div 
-            className="rounded-2xl glass p-4"
-            whileHover={{ y: -2 }}
-          >
+          <motion.div className="rounded-2xl glass p-4" whileHover={{ y: -2 }}>
             <div className="flex items-center justify-between mb-2">
               <span className="text-2xl">Check</span>
               <span className="text-xs font-medium text-kiwi-600 dark:text-kiwi-400">
@@ -281,13 +277,12 @@ export default function MerchantAnalyticsPage() {
         </StaggerItem>
 
         <StaggerItem>
-          <motion.div 
-            className="rounded-2xl glass p-4"
-            whileHover={{ y: -2 }}
-          >
+          <motion.div className="rounded-2xl glass p-4" whileHover={{ y: -2 }}>
             <div className="flex items-center justify-between mb-2">
               <span className="text-2xl">⏱️</span>
-              <span className="text-xs font-medium text-surface-500 dark:text-surface-400">min</span>
+              <span className="text-xs font-medium text-surface-500 dark:text-surface-400">
+                min
+              </span>
             </div>
             <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
               {analytics?.overview?.averageDeliveryTime || 0}
@@ -297,7 +292,7 @@ export default function MerchantAnalyticsPage() {
         </StaggerItem>
 
         <StaggerItem>
-          <motion.div 
+          <motion.div
             className="rounded-2xl bg-kiwi-50 dark:bg-kiwi-900/30 p-4 shadow-soft dark:shadow-dark border border-kiwi-200 dark:border-kiwi-800"
             whileHover={{ y: -2 }}
           >
@@ -366,9 +361,15 @@ export default function MerchantAnalyticsPage() {
           </h3>
           <div className="space-y-4">
             {(analytics?.revenue?.byPaymentMethod || []).map((method) => {
-              const config = PAYMENT_METHODS[method.method] || { label: method.method, icon: 'Coins', color: 'bg-surface-100 text-surface-700' };
-              const percentage = analytics?.revenue?.total ? (method.amount / analytics.revenue.total) * 100 : 0;
-              
+              const config = PAYMENT_METHODS[method.method] || {
+                label: method.method,
+                icon: 'Coins',
+                color: 'bg-surface-100 text-surface-700',
+              };
+              const percentage = analytics?.revenue?.total
+                ? (method.amount / analytics.revenue.total) * 100
+                : 0;
+
               return (
                 <div key={method.method}>
                   <div className="flex items-center justify-between mb-2">
@@ -420,8 +421,12 @@ export default function MerchantAnalyticsPage() {
                 <div className="flex items-center gap-3">
                   <span className="text-2xl">{item.image}</span>
                   <div>
-                    <p className="font-medium text-surface-800 dark:text-surface-200">{item.name}</p>
-                    <p className="text-sm text-surface-500 dark:text-surface-400">{item.orders} pedidos</p>
+                    <p className="font-medium text-surface-800 dark:text-surface-200">
+                      {item.name}
+                    </p>
+                    <p className="text-sm text-surface-500 dark:text-surface-400">
+                      {item.orders} pedidos
+                    </p>
                   </div>
                 </div>
                 <span className="font-semibold text-kiwi-600 dark:text-kiwi-400">
@@ -444,9 +449,9 @@ export default function MerchantAnalyticsPage() {
           </h3>
           <div className="flex items-end gap-1 h-40">
             {(analytics?.peakHours || []).slice(7, 20).map((hour, index) => {
-              const maxOrders = Math.max(...(analytics?.peakHours || []).map(h => h.orders), 1);
+              const maxOrders = Math.max(...(analytics?.peakHours || []).map((h) => h.orders), 1);
               const height = (hour.orders / maxOrders) * 100;
-              
+
               return (
                 <motion.div
                   key={hour.hour}
@@ -523,9 +528,13 @@ export default function MerchantAnalyticsPage() {
           </h4>
           <div className="space-y-2">
             {(analytics?.customerStats?.ratingDistribution || []).map((rating) => {
-              const total = analytics?.customerStats?.ratingDistribution?.reduce((sum, r) => sum + r.count, 0) || 1;
+              const total =
+                analytics?.customerStats?.ratingDistribution?.reduce(
+                  (sum, r) => sum + r.count,
+                  0,
+                ) || 1;
               const percentage = (rating.count / total) * 100;
-              
+
               return (
                 <div key={rating.stars} className="flex items-center gap-3">
                   <span className="text-sm font-medium text-surface-800 dark:text-surface-200 w-12">
@@ -561,7 +570,7 @@ export default function MerchantAnalyticsPage() {
         </h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Link href="/dashboard">
-            <motion.button 
+            <motion.button
               className="w-full p-4 rounded-xl bg-kiwi-50 dark:bg-kiwi-900/30 text-kiwi-600 dark:text-kiwi-400 hover:bg-kiwi-100 dark:hover:bg-kiwi-900/50 transition-colors"
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.95 }}
@@ -571,7 +580,7 @@ export default function MerchantAnalyticsPage() {
             </motion.button>
           </Link>
           <Link href="/menu">
-            <motion.button 
+            <motion.button
               className="w-full p-4 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.95 }}
@@ -581,7 +590,7 @@ export default function MerchantAnalyticsPage() {
             </motion.button>
           </Link>
           <Link href="/orders/scheduled">
-            <motion.button 
+            <motion.button
               className="w-full p-4 rounded-xl bg-yellow-50 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-100 dark:hover:bg-yellow-900/50 transition-colors"
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.95 }}
@@ -591,7 +600,7 @@ export default function MerchantAnalyticsPage() {
             </motion.button>
           </Link>
           <Link href="/merchants/me/qr">
-            <motion.button 
+            <motion.button
               className="w-full p-4 rounded-xl bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors"
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.95 }}
@@ -601,7 +610,7 @@ export default function MerchantAnalyticsPage() {
             </motion.button>
           </Link>
           <Link href="/analytics/traffic">
-            <motion.button 
+            <motion.button
               className="w-full p-4 rounded-xl bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/50 transition-colors"
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.95 }}

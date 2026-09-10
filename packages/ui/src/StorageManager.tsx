@@ -19,10 +19,7 @@ interface StorageBreakdown {
   storage: StorageStats;
 }
 
-export function StorageManager({ 
-  className = '',
-  showDetails = false 
-}: StorageManagerProps) {
+export function StorageManager({ className = '', showDetails = false }: StorageManagerProps) {
   const [breakdown, setBreakdown] = useState<StorageBreakdown | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showPanel, setShowPanel] = useState(false);
@@ -42,8 +39,8 @@ export function StorageManager({
       ]);
 
       const orders = await offlineOrders.getOrders();
-      const synced = orders.filter(o => o.syncStatus === 'synced').length;
-      const unsynced = orders.filter(o => o.syncStatus !== 'synced').length;
+      const synced = orders.filter((o) => o.syncStatus === 'synced').length;
+      const unsynced = orders.filter((o) => o.syncStatus !== 'synced').length;
 
       setBreakdown({
         cache: cacheStats,
@@ -113,9 +110,11 @@ export function StorageManager({
         <div className="h-3 bg-surface-100 dark:bg-surface-700 rounded-full overflow-hidden mb-2">
           <motion.div
             className={`h-full rounded-full ${
-              storagePercentage > 90 ? 'bg-red-500' :
-              storagePercentage > 70 ? 'bg-orange-500' :
-              'bg-kiwi-500'
+              storagePercentage > 90
+                ? 'bg-red-500'
+                : storagePercentage > 70
+                  ? 'bg-orange-500'
+                  : 'bg-kiwi-500'
             }`}
             initial={{ width: 0 }}
             animate={{ width: `${Math.min(storagePercentage, 100)}%` }}
@@ -178,9 +177,7 @@ export function StorageManager({
               {/* Storage Overview */}
               <div className="p-4 rounded-xl bg-surface-50 dark:bg-surface-900 mb-6">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-surface-600 dark:text-surface-400">
-                    Uso total
-                  </span>
+                  <span className="text-sm text-surface-600 dark:text-surface-400">Uso total</span>
                   <span className="font-bold text-surface-800 dark:text-surface-200">
                     {compression.formatBytes(breakdown.storage.used)}
                   </span>
@@ -188,9 +185,11 @@ export function StorageManager({
                 <div className="h-4 bg-surface-200 dark:bg-surface-700 rounded-full overflow-hidden">
                   <motion.div
                     className={`h-full rounded-full ${
-                      storagePercentage > 90 ? 'bg-red-500' :
-                      storagePercentage > 70 ? 'bg-orange-500' :
-                      'bg-kiwi-500'
+                      storagePercentage > 90
+                        ? 'bg-red-500'
+                        : storagePercentage > 70
+                          ? 'bg-orange-500'
+                          : 'bg-kiwi-500'
                     }`}
                     initial={{ width: 0 }}
                     animate={{ width: `${Math.min(storagePercentage, 100)}%` }}
@@ -380,9 +379,7 @@ export function StorageWarning({ className = '' }: { className?: string }) {
   return (
     <motion.div
       className={`px-4 py-3 ${
-        stats.isCritical 
-          ? 'bg-red-500' 
-          : 'bg-orange-500'
+        stats.isCritical ? 'bg-red-500' : 'bg-orange-500'
       } text-white ${className}`}
       initial={{ y: -50, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
@@ -396,7 +393,8 @@ export function StorageWarning({ className = '' }: { className?: string }) {
               {stats.isCritical ? 'Almacenamiento crítico' : 'Almacenamiento bajo'}
             </p>
             <p className="text-sm opacity-90">
-              {compression.formatBytes(stats.used)} de {compression.formatBytes(stats.available)} usado
+              {compression.formatBytes(stats.used)} de {compression.formatBytes(stats.available)}{' '}
+              usado
             </p>
           </div>
         </div>
@@ -434,11 +432,13 @@ export function StorageIndicatorCompact({ className = '' }: { className?: string
   }
 
   return (
-    <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium ${
-      stats.isCritical
-        ? 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-400'
-        : 'bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-400'
-    } ${className}`}>
+    <div
+      className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium ${
+        stats.isCritical
+          ? 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-400'
+          : 'bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-400'
+      } ${className}`}
+    >
       <span>💾</span>
       <span>{stats.percentage.toFixed(0)}%</span>
     </div>

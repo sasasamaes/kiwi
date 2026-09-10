@@ -1,6 +1,6 @@
 /**
  * 🥝 KIWI PREMIUM DESIGN SYSTEM
- * 
+ *
  * Modern, trendy, and beautiful UI/UX
  * Based on 2026 design trends:
  * - Glassmorphism
@@ -22,8 +22,8 @@ export const kiwiPremiumTheme = {
       200: '#bbf7d0',
       300: '#86efac',
       400: '#4ade80',
-      500: '#22c55e',  // Vibrant Green
-      600: '#16a34a',  // Deep Green
+      500: '#22c55e', // Vibrant Green
+      600: '#16a34a', // Deep Green
       700: '#15803d',
       800: '#166534',
       900: '#14532d',
@@ -106,14 +106,15 @@ export const kiwiPremiumTheme = {
     kiwi: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
     kiwiVibrant: 'linear-gradient(135deg, #4ade80 0%, #22c55e 50%, #16a34a 100%)',
     kiwiSunset: 'linear-gradient(135deg, #22c55e 0%, #fbbf24 100%)',
-    
+
     // Mesh gradients (trending 2026)
-    meshGreen: 'radial-gradient(at 40% 20%, #22c55e33 0px, transparent 50%), radial-gradient(at 80% 0%, #16a34a33 0px, transparent 50%), radial-gradient(at 0% 50%, #4ade8033 0px, transparent 50%)',
-    
+    meshGreen:
+      'radial-gradient(at 40% 20%, #22c55e33 0px, transparent 50%), radial-gradient(at 80% 0%, #16a34a33 0px, transparent 50%), radial-gradient(at 0% 50%, #4ade8033 0px, transparent 50%)',
+
     // Glass gradients
     glassWhite: 'linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.7) 100%)',
     glassGreen: 'linear-gradient(135deg, rgba(34,197,94,0.9) 0%, rgba(22,163,74,0.9) 100%)',
-    
+
     // Background gradients
     bgLight: 'linear-gradient(135deg, #f0fdf4 0%, #fafaf9 50%, #f5f5f4 100%)',
     bgDark: 'linear-gradient(135deg, #1c1917 0%, #292524 100%)',
@@ -195,13 +196,13 @@ export const kiwiPremiumTheme = {
     lg: '0 8px 16px -2px rgb(0 0 0 / 0.08), 0 4px 8px -4px rgb(0 0 0 / 0.08)',
     xl: '0 16px 32px -4px rgb(0 0 0 / 0.1), 0 8px 16px -8px rgb(0 0 0 / 0.1)',
     '2xl': '0 24px 48px -8px rgb(0 0 0 / 0.12)',
-    
+
     // Colored shadows
     kiwi: '0 8px 24px -4px rgba(34, 197, 94, 0.35)',
     'kiwi-lg': '0 16px 40px -8px rgba(34, 197, 94, 0.4)',
     gold: '0 8px 24px -4px rgba(251, 191, 36, 0.35)',
     bark: '0 8px 24px -4px rgba(139, 101, 61, 0.25)',
-    
+
     // Inner shadows (neumorphism)
     inner: 'inset 0 2px 4px 0 rgb(0 0 0 / 0.05)',
     'inner-lg': 'inset 0 4px 8px 0 rgb(0 0 0 / 0.08)',
@@ -239,16 +240,16 @@ export const kiwiPremiumTheme = {
     'fade-in-down': 'fadeInDown 0.4s ease-out',
     'slide-in-right': 'slideInRight 0.3s ease-out',
     'slide-in-left': 'slideInLeft 0.3s ease-out',
-    
+
     // Bouncy (fun)
     'bounce-in': 'bounceIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
-    'pop': 'pop 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
-    
+    pop: 'pop 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+
     // Continuous
     'pulse-soft': 'pulseSoft 2s ease-in-out infinite',
-    'float': 'float 3s ease-in-out infinite',
-    'wiggle': 'wiggle 1s ease-in-out infinite',
-    
+    float: 'float 3s ease-in-out infinite',
+    wiggle: 'wiggle 1s ease-in-out infinite',
+
     // Loading
     'spin-slow': 'spin 3s linear infinite',
     'ping-slow': 'ping 2s cubic-bezier(0, 0, 0.2, 1) infinite',

@@ -6,7 +6,7 @@ const withPWA = require('next-pwa')({
   disable: process.env.NODE_ENV === 'development',
   runtimeCaching: [
     {
-      // Real API host (was api.kiwi.app, which doesn't exist → rule never hit).
+      // Real API host: https://kiwi-api-fe54.onrender.com/api
       // Short TTL: these GETs can be authenticated, so a 24h cache risks
       // stale cross-user data on shared devices.
       urlPattern: (() => {

@@ -94,7 +94,9 @@ export default function Dashboard() {
       try {
         const data = await api.getUnreadNotificationCount();
         setUnreadCount(data.count);
-      } catch {}
+      } catch {
+        // Ignore notification count fetch failures
+      }
       // Request push notification permission
       requestPermission();
     };
@@ -144,9 +146,7 @@ export default function Dashboard() {
                 className="text-3xl"
                 animate={{ rotate: [0, -10, 10, -10, 0] }}
                 transition={{ duration: 0.5, delay: 0.5 }}
-              >
-                
-              </motion.span>
+              ></motion.span>
               <h1 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100">
                 Kiwi
               </h1>

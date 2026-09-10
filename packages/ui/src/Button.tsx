@@ -26,7 +26,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       disabled,
       ...props
     },
-    ref
+    ref,
   ) => {
     // Base styles
     const baseStyles = cn(
@@ -34,7 +34,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
       'disabled:pointer-events-none disabled:opacity-50',
       'active:scale-[0.98]',
-      fullWidth && 'w-full'
+      fullWidth && 'w-full',
     );
 
     // Variants with modern effects
@@ -44,39 +44,39 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         'hover:bg-kiwi-600 hover:shadow-kiwi',
         'focus-visible:ring-kiwi-500',
         'shadow-soft-md',
-        'rounded-xl'
+        'rounded-xl',
       ),
       secondary: cn(
         'bg-surface-100 text-surface-700',
         'hover:bg-surface-200 hover:shadow-soft',
         'focus-visible:ring-surface-400',
         'border border-surface-200',
-        'rounded-xl'
+        'rounded-xl',
       ),
       ghost: cn(
         'text-surface-600',
         'hover:bg-surface-100 hover:text-surface-900',
         'focus-visible:ring-surface-400',
-        'rounded-xl'
+        'rounded-xl',
       ),
       danger: cn(
         'bg-red-500 text-white',
         'hover:bg-red-600 hover:shadow-lg hover:shadow-red-500/25',
         'focus-visible:ring-red-500',
-        'rounded-xl'
+        'rounded-xl',
       ),
       glass: cn(
         'glass-strong text-surface-700',
         'border border-white/30',
         'hover:bg-white/90 hover:shadow-soft-lg',
         'focus-visible:ring-kiwi-500',
-        'rounded-xl'
+        'rounded-xl',
       ),
       gradient: cn(
         'bg-kiwi-gradient text-white',
         'hover:shadow-kiwi-lg',
         'focus-visible:ring-kiwi-500',
-        'rounded-xl'
+        'rounded-xl',
       ),
     };
 
@@ -129,7 +129,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         )}
       </button>
     );
-  }
+  },
 );
 
 Button.displayName = 'Button';

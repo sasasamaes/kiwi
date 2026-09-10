@@ -62,7 +62,8 @@ export class RoutingController {
     },
   })
   async optimizeRoute(
-    @Body() body: {
+    @Body()
+    body: {
       startLocation: { lat: number; lng: number };
       orders: Array<{
         orderId: string;
@@ -93,9 +94,7 @@ export class RoutingController {
 
   @Post('distance-matrix')
   @ApiOperation({ summary: 'Calculate distance matrix between multiple points' })
-  async calculateDistanceMatrix(
-    @Body() body: { locations: Array<{ lat: number; lng: number }> },
-  ) {
+  async calculateDistanceMatrix(@Body() body: { locations: Array<{ lat: number; lng: number }> }) {
     return this.routingService.calculateDistanceMatrix(body.locations);
   }
 
@@ -105,10 +104,7 @@ export class RoutingController {
 
   @Get('traffic')
   @ApiOperation({ summary: 'Get current traffic conditions' })
-  async getTrafficConditions(
-    @Query('lat') lat?: string,
-    @Query('lng') lng?: string,
-  ) {
+  async getTrafficConditions(@Query('lat') lat?: string, @Query('lng') lng?: string) {
     const latNum = lat ? parseFloat(lat) : undefined;
     const lngNum = lng ? parseFloat(lng) : undefined;
     return this.trafficService.getTrafficConditions(latNum, lngNum);
@@ -148,7 +144,8 @@ export class RoutingController {
   @Post('traffic/compare-routes')
   @ApiOperation({ summary: 'Compare traffic on multiple routes' })
   async compareRouteTraffic(
-    @Body() body: {
+    @Body()
+    body: {
       routes: Array<{
         distance: number;
         duration: number;
@@ -164,11 +161,7 @@ export class RoutingController {
 
   @Post('traffic/updates')
   @ApiOperation({ summary: 'Get real-time traffic updates for route points' })
-  async getTrafficUpdates(
-    @Body() body: {
-      points: Array<{ lat: number; lng: number }>;
-    },
-  ) {
+  async getTrafficUpdates(@Body() body: { points: Array<{ lat: number; lng: number }> }) {
     return this.trafficService.getTrafficUpdates(body.points);
   }
 
@@ -200,7 +193,10 @@ export class RoutingController {
     schema: {
       type: 'object',
       properties: {
-        type: { type: 'string', enum: ['congestion', 'accident', 'road_closed', 'weather', 'event', 'alternative_route'] },
+        type: {
+          type: 'string',
+          enum: ['congestion', 'accident', 'road_closed', 'weather', 'event', 'alternative_route'],
+        },
         severity: { type: 'string', enum: ['low', 'medium', 'high', 'critical'] },
         title: { type: 'string' },
         message: { type: 'string' },
@@ -225,7 +221,8 @@ export class RoutingController {
     },
   })
   async createAlert(
-    @Body() body: {
+    @Body()
+    body: {
       type: 'congestion' | 'accident' | 'road_closed' | 'weather' | 'event' | 'alternative_route';
       severity: 'low' | 'medium' | 'high' | 'critical';
       title: string;
@@ -241,20 +238,14 @@ export class RoutingController {
 
   @Put('alerts/:alertId/dismiss')
   @ApiOperation({ summary: 'Dismiss an alert for driver' })
-  async dismissAlert(
-    @Param('alertId') alertId: string,
-    @Body() body: { driverId: string },
-  ) {
+  async dismissAlert(@Param('alertId') alertId: string, @Body() body: { driverId: string }) {
     await this.trafficAlertsService.dismissAlert(body.driverId, alertId);
     return { success: true };
   }
 
   @Put('alerts/:alertId/read')
   @ApiOperation({ summary: 'Mark alert as read' })
-  async markAlertAsRead(
-    @Param('alertId') alertId: string,
-    @Body() body: { driverId: string },
-  ) {
+  async markAlertAsRead(@Param('alertId') alertId: string, @Body() body: { driverId: string }) {
     await this.trafficAlertsService.markAlertAsRead(body.driverId, alertId);
     return { success: true };
   }
@@ -268,12 +259,7 @@ export class RoutingController {
   @Post('alerts/alternative-route')
   @ApiOperation({ summary: 'Get alternative route suggestion' })
   async getAlternativeRoute(
-    @Body() body: {
-      originLat: number;
-      originLng: number;
-      destLat: number;
-      destLng: number;
-    },
+    @Body() body: { originLat: number; originLng: number; destLat: number; destLng: number },
   ) {
     return this.trafficAlertsService.getAlternativeRoute(
       body.originLat,
@@ -303,20 +289,14 @@ export class RoutingController {
 
   @Get('history/patterns')
   @ApiOperation({ summary: 'Get traffic patterns by hour and day' })
-  async getTrafficPatterns(
-    @Query('zone') zone?: string,
-    @Query('daysBack') daysBack?: string,
-  ) {
+  async getTrafficPatterns(@Query('zone') zone?: string, @Query('daysBack') daysBack?: string) {
     const days = daysBack ? parseInt(daysBack) : 30;
     return this.trafficHistoryService.getTrafficPatterns(zone, days);
   }
 
   @Get('history/trends')
   @ApiOperation({ summary: 'Get traffic trends' })
-  async getTrafficTrends(
-    @Query('zone') zone?: string,
-    @Query('period') period?: string,
-  ) {
+  async getTrafficTrends(@Query('zone') zone?: string, @Query('period') period?: string) {
     const periodType = (period as 'day' | 'week' | 'month') || 'week';
     return this.trafficHistoryService.getTrafficTrends(zone, periodType);
   }
@@ -441,7 +421,8 @@ export class RoutingController {
   @Post('suggestions/blocked')
   @ApiOperation({ summary: 'Get alternative for blocked route' })
   async getAlternativeForBlockedRoute(
-    @Body() body: {
+    @Body()
+    body: {
       originLat: number;
       originLng: number;
       destLat: number;
@@ -478,14 +459,8 @@ export class RoutingController {
 
   @Get('predictions/hourly')
   @ApiOperation({ summary: 'Get hourly forecast for today' })
-  async getHourlyForecast(
-    @Query('lat') lat: string,
-    @Query('lng') lng: string,
-  ) {
-    return this.trafficPredictionsService.getHourlyForecast(
-      parseFloat(lat),
-      parseFloat(lng),
-    );
+  async getHourlyForecast(@Query('lat') lat: string, @Query('lng') lng: string) {
+    return this.trafficPredictionsService.getHourlyForecast(parseFloat(lat), parseFloat(lng));
   }
 
   @Get('predictions/daily')
@@ -505,7 +480,7 @@ export class RoutingController {
 
   @Get('predictions/best-times')
   @ApiOperation({ summary: 'Get best times for delivery based on predictions' })
-  async getBestDeliveryTimes(
+  async getBestDeliveryTimesPrediction(
     @Query('lat') lat: string,
     @Query('lng') lng: string,
     @Query('days') days?: string,
@@ -526,11 +501,7 @@ export class RoutingController {
     @Query('timeframe') timeframe?: string,
   ) {
     const tf = (timeframe as 'hour' | 'day' | 'week') || 'day';
-    return this.trafficPredictionsService.getTrafficTrend(
-      parseFloat(lat),
-      parseFloat(lng),
-      tf,
-    );
+    return this.trafficPredictionsService.getTrafficTrend(parseFloat(lat), parseFloat(lng), tf);
   }
 
   @Get('predictions/accuracy')
@@ -541,13 +512,7 @@ export class RoutingController {
 
   @Get('predictions/insights')
   @ApiOperation({ summary: 'Get traffic pattern insights' })
-  async getPatternInsights(
-    @Query('lat') lat: string,
-    @Query('lng') lng: string,
-  ) {
-    return this.trafficPredictionsService.getPatternInsights(
-      parseFloat(lat),
-      parseFloat(lng),
-    );
+  async getPatternInsights(@Query('lat') lat: string, @Query('lng') lng: string) {
+    return this.trafficPredictionsService.getPatternInsights(parseFloat(lat), parseFloat(lng));
   }
 }
