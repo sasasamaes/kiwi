@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { apiFetch } from './api-client';
-import { Map } from 'lucide-react';
+import { Map, Star } from 'lucide-react';
 
 export interface RouteSuggestion {
   id: string;
@@ -300,7 +300,7 @@ function RouteCard({ route, isSelected, onSelect, className = '' }: RouteCardPro
               animate={{ rotate: [0, 10, -10, 0] }}
               transition={{ duration: 2, repeat: Infinity }}
             >
-              Star
+              <Star className="h-5 w-5" />
             </motion.span>
           ) : (
             <span className="text-xl">🛣️</span>

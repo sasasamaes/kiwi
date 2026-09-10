@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from './api-client';
-import { Map, Package, RefreshCw } from 'lucide-react';
+import { Bike, Map, Package, RefreshCw } from 'lucide-react';
 
 interface RouteStop {
   location: {
@@ -210,7 +210,7 @@ export function RouteOptimizer({
         <div className="flex items-center gap-3 pb-3">
           <div className="flex flex-col items-center">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500 text-white text-sm font-bold">
-              Bike
+              <Bike className="h-4 w-4" />
             </div>
             <div className="w-0.5 h-6 bg-surface-200 dark:bg-surface-700" />
           </div>

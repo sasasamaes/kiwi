@@ -250,7 +250,7 @@ export function PaymentNotifications({
               animate={{ y: [0, -5, 0] }}
               transition={{ duration: 2, repeat: Infinity }}
             >
-              Bell
+              <Bell className="h-10 w-10" />
             </motion.div>
             <h3 className="font-semibold text-surface-800 dark:text-surface-100 mb-1">
               Sin notificaciones

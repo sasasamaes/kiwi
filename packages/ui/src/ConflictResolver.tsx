@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useConflictResolution, type Conflict, type MergeAction } from './useConflictResolution';
-import { AlertTriangle, Sparkles } from 'lucide-react';
+import { AlertTriangle, Check, Sparkles } from 'lucide-react';
 
 interface ConflictResolverProps {
   className?: string;
@@ -321,7 +321,7 @@ export function ConflictResolver({
             animate={{ y: [0, -5, 0] }}
             transition={{ duration: 2, repeat: Infinity }}
           >
-            Check
+            <Check className="h-12 w-12" />
           </motion.div>
           <h3 className="text-lg font-semibold text-surface-800 dark:text-surface-100 mb-2">
             {pendingOnly ? 'Sin conflictos pendientes' : 'Sin conflictos'}

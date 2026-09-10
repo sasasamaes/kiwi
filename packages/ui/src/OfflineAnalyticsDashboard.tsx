@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { CreditCard, Package, RefreshCw } from 'lucide-react';
 import { offlineAnalytics, type OfflineUsageStats } from './offline-analytics';
 
 interface OfflineAnalyticsDashboardProps {
@@ -98,7 +99,7 @@ export function OfflineAnalyticsDashboard({
         >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center text-xl">
-              Package
+              <Package className="h-5 w-5" />
             </div>
             <div>
               <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
@@ -117,7 +118,7 @@ export function OfflineAnalyticsDashboard({
         >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-kiwi-100 dark:bg-kiwi-900/30 rounded-xl flex items-center justify-center text-xl">
-              CreditCard
+              <CreditCard className="h-5 w-5" />
             </div>
             <div>
               <p className="text-2xl font-bold text-kiwi-600 dark:text-kiwi-400">
@@ -136,7 +137,7 @@ export function OfflineAnalyticsDashboard({
         >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center text-xl">
-              RefreshCw
+              <RefreshCw className="h-5 w-5" />
             </div>
             <div>
               <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">

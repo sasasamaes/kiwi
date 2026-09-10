@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Clock, Map, MapPin } from 'lucide-react';
 import {
   useOfflineNavigation,
   type Route,
@@ -406,7 +407,7 @@ export function OfflineNavigation({
               }}
               className="px-3 py-2 rounded-xl bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400"
             >
-              MapPin
+              <MapPin className="h-5 w-5" />
             </button>
           </div>
         </div>
@@ -475,7 +476,7 @@ export function OfflineNavigation({
                 animate={{ rotate: 360 }}
                 transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
               >
-                Clock
+                <Clock className="h-4 w-4" />
               </motion.span>
               Buscando ruta...
             </span>
@@ -515,7 +516,7 @@ export function OfflineNavigation({
               className="px-4 py-3 rounded-xl bg-surface-100 dark:bg-surface-700 text-surface-700 dark:text-surface-300"
               whileTap={{ scale: 0.98 }}
             >
-              Map
+              <Map className="h-5 w-5" />
             </motion.button>
           </div>
         </div>

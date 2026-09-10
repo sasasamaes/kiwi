@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Coins, Smartphone, CreditCard } from 'lucide-react';
 import { AnimatedButton, StaggerContainer, StaggerItem, api } from '@kiwi/ui';
 
 interface CartItem {
@@ -423,9 +423,21 @@ function CheckoutContent() {
             )}
           </button>
           <p className="text-center text-xs text-surface-400 mt-3">
-            {paymentMethod === 'cash' && 'Coins Pagas al repartidor al recibir tu pedido'}
-            {paymentMethod === 'sinpe' && 'Smartphone Recibirás un link de pago por SINPE'}
-            {paymentMethod === 'card' && 'CreditCard Serás redirigido al pago seguro'}
+            {paymentMethod === 'cash' && (
+              <span>
+                <Coins className="h-3 w-3 inline" /> Pagas al repartidor al recibir tu pedido
+              </span>
+            )}
+            {paymentMethod === 'sinpe' && (
+              <span>
+                <Smartphone className="h-3 w-3 inline" /> Recibirás un link de pago por SINPE
+              </span>
+            )}
+            {paymentMethod === 'card' && (
+              <span>
+                <CreditCard className="h-3 w-3 inline" /> Serás redirigido al pago seguro
+              </span>
+            )}
             {paymentMethod === 'crypto_usdc' && '💎 Paga con USDC en la red Stellar'}
           </p>
         </motion.div>

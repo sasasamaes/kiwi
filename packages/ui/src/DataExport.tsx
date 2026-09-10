@@ -3,7 +3,15 @@
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDataExport, type ExportOptions } from './useDataExport';
-import { BarChart3, ClipboardList, CreditCard, Download, Map, Package } from 'lucide-react';
+import {
+  BarChart3,
+  ClipboardList,
+  CreditCard,
+  Download,
+  Map,
+  Package,
+  RefreshCw,
+} from 'lucide-react';
 
 interface DataExportProps {
   className?: string;
@@ -66,7 +74,7 @@ export function DataExport({ className = '', onComplete }: DataExportProps) {
             className="p-2 rounded-xl bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400"
             whileTap={{ scale: 0.9 }}
           >
-            RefreshCw
+            <RefreshCw className="h-5 w-5" />
           </motion.button>
         </div>
       </div>

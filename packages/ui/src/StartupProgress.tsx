@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check } from 'lucide-react';
+import { Check, RefreshCw } from 'lucide-react';
 import { useCacheWarmingProgress, type WarmTask } from './useCacheWarming';
 
 interface StartupProgressProps {
@@ -71,7 +71,7 @@ export function StartupProgress({
                 animate={{ rotate: 360 }}
                 transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
               >
-                RefreshCw
+                <RefreshCw className="h-6 w-6" />
               </motion.div>
             ) : isComplete ? (
               <motion.div
@@ -80,7 +80,7 @@ export function StartupProgress({
                 animate={{ scale: 1 }}
                 transition={{ type: 'spring', stiffness: 500 }}
               >
-                Check
+                <Check className="h-6 w-6" />
               </motion.div>
             ) : (
               <span className="text-2xl"></span>

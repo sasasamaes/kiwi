@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CreditCard, Smartphone } from 'lucide-react';
+import { Clock, CreditCard, Smartphone } from 'lucide-react';
 
 export interface OnvoPayCheckoutProps {
   paymentIntentId: string;
@@ -130,7 +130,7 @@ export function OnvoPayCheckout({
               animate={{ rotate: 360 }}
               transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
             >
-              Clock
+              <Clock className="h-4 w-4" />
             </motion.span>
             Procesando...
           </span>

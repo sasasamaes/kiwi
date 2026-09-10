@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslations } from './LanguageProvider';
 import { apiFetch } from './api-client';
-import { Map, MapPin } from 'lucide-react';
+import { AlertTriangle, Check, Map, MapPin } from 'lucide-react';
 
 export interface TrafficAlert {
   id: string;
@@ -216,7 +216,7 @@ export function TrafficAlertList({
           animate={{ y: [0, -5, 0] }}
           transition={{ duration: 2, repeat: Infinity }}
         >
-          Check
+          <Check className="h-12 w-12" />
         </motion.div>
         <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100 mb-1">
           {t('traffic.noAlerts')}
@@ -378,7 +378,7 @@ export function TrafficAlertBadge({ count, onClick, className = '' }: TrafficAle
         animate={{ rotate: [0, -10, 10, 0] }}
         transition={{ duration: 0.5, repeat: Infinity, repeatDelay: 3 }}
       >
-        AlertTriangle
+        <AlertTriangle className="h-4 w-4" />
       </motion.span>
       <span className="text-sm">
         {count} {t('traffic.alerts')}

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Clock, Smartphone, X } from 'lucide-react';
 import { adminSyncMonitoring, type DeviceSyncInfo, type SyncStatus } from './admin-sync-monitor';
 
 interface AdminSyncDashboardProps {
@@ -88,7 +89,7 @@ export function AdminSyncDashboard({
         >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center text-xl">
-              Smartphone
+              <Smartphone className="h-5 w-5" />
             </div>
             <div>
               <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
@@ -126,7 +127,7 @@ export function AdminSyncDashboard({
         >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-xl flex items-center justify-center text-xl">
-              Clock
+              <Clock className="h-5 w-5" />
             </div>
             <div>
               <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
@@ -145,7 +146,7 @@ export function AdminSyncDashboard({
         >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-xl flex items-center justify-center text-xl">
-              X
+              <X className="h-5 w-5" />
             </div>
             <div>
               <p className="text-2xl font-bold text-red-600 dark:text-red-400">

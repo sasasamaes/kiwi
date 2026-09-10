@@ -9,6 +9,7 @@ import dynamic from 'next/dynamic';
 import {
   Package,
   Bike,
+  Car,
   Check,
   PartyPopper,
   Rocket,
@@ -17,6 +18,10 @@ import {
   Home,
   Clock,
   Star,
+  BarChart3,
+  Phone,
+  RefreshCw,
+  X,
   Footprints as Runner,
 } from 'lucide-react';
 
@@ -263,7 +268,7 @@ export default function OrderTrackingPage() {
               onClick={fetchOrder}
               className="px-6 py-3 rounded-xl bg-kiwi-gradient text-white font-medium shadow-kiwi-lg"
             >
-              RefreshCw Reintentar
+              <RefreshCw className="h-4 w-4 inline" /> Reintentar
             </button>
           </div>
         </motion.div>
@@ -298,7 +303,7 @@ export default function OrderTrackingPage() {
               <span className="text-sm font-medium">Inicio</span>
             </Link>
             <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-              MapPin Tracking
+              <MapPin className="h-4 w-4 inline" /> Tracking
             </h1>
             <div className="w-16" />
           </div>
@@ -447,7 +452,7 @@ export default function OrderTrackingPage() {
           transition={{ delay: 0.1 }}
         >
           <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-            BarChart3 Estado del Pedido
+            <BarChart3 className="h-4 w-4 inline" /> Estado del Pedido
           </h3>
 
           <div className="space-y-0">
@@ -536,7 +541,7 @@ export default function OrderTrackingPage() {
             transition={{ delay: 0.2 }}
           >
             <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-              Bike Tu Repartidor
+              <Bike className="h-4 w-4 inline" /> Tu Repartidor
             </h3>
 
             <div className="flex items-center gap-4">
@@ -556,13 +561,18 @@ export default function OrderTrackingPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 mt-1">
-                  <span className="px-2 py-1 rounded-full bg-surface-100 dark:bg-surface-700 text-xs font-medium text-surface-600 dark:text-surface-400">
+                  <span className="px-2 py-1 rounded-full bg-surface-100 dark:bg-surface-700 text-xs font-medium text-surface-600 dark:text-surface-400 inline-flex items-center gap-1">
+                    {order.driver.vehicleType === 'car' ? (
+                      <Car className="h-3 w-3" />
+                    ) : (
+                      <Bike className="h-3 w-3" />
+                    )}
                     {order.driver.vehicleType === 'motorcycle'
-                      ? 'Bike Moto'
+                      ? 'Moto'
                       : order.driver.vehicleType === 'car'
-                        ? 'Car Carro'
+                        ? 'Carro'
                         : order.driver.vehicleType === 'bicycle'
-                          ? 'Bike Bici'
+                          ? 'Bici'
                           : order.driver.vehicleType}
                   </span>
                 </div>
@@ -579,7 +589,7 @@ export default function OrderTrackingPage() {
           transition={{ delay: 0.3 }}
         >
           <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-            Package Detalles del Pedido
+            <Package className="h-4 w-4 inline" /> Detalles del Pedido
           </h3>
 
           <div className="space-y-3">
@@ -645,7 +655,7 @@ export default function OrderTrackingPage() {
           {isDelivered && (
             <Link href="/">
               <button className="w-full py-4 rounded-xl bg-kiwi-gradient text-white font-semibold shadow-kiwi-lg">
-                Home Volver al inicio
+                <Home className="h-4 w-4 inline" /> Volver al inicio
               </button>
             </Link>
           )}
@@ -655,7 +665,7 @@ export default function OrderTrackingPage() {
               onClick={() => window.open(`tel:${order.driver.phone}`)}
               className="w-full py-4 rounded-xl bg-surface-100 dark:bg-surface-800 text-surface-700 dark:text-surface-300 font-medium"
             >
-              Phone Llamar al repartidor
+              <Phone className="h-4 w-4 inline" /> Llamar al repartidor
             </button>
           )}
 
@@ -673,7 +683,7 @@ export default function OrderTrackingPage() {
               }}
               className="w-full py-4 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-500 font-medium hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
             >
-              X Cancelar pedido
+              <X className="h-4 w-4 inline" /> Cancelar pedido
             </button>
           )}
         </div>

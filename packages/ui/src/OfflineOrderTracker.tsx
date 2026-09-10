@@ -194,7 +194,7 @@ export function OfflineOrderTracker({
             )}
             {order.syncStatus === 'failed' && (
               <button onClick={handleSync} className="text-red-500 hover:text-red-600">
-                RefreshCw
+                <RefreshCw className="h-5 w-5" />
               </button>
             )}
           </div>
@@ -364,7 +364,7 @@ export function OfflineOrderTracker({
               onClick={handleSync}
               className="px-4 py-2 rounded-xl bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-medium"
             >
-              RefreshCw
+              <RefreshCw className="h-5 w-5" />
             </button>
           )}
         </div>

@@ -4,7 +4,23 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Utensils, Star, MapPin, Clock, Smartphone, CreditCard, DollarSign } from 'lucide-react';
+import {
+  Utensils,
+  Star,
+  MapPin,
+  Clock,
+  Smartphone,
+  CreditCard,
+  DollarSign,
+  PartyPopper,
+  Home,
+  RefreshCw,
+  ShoppingCart,
+  Package,
+  User,
+  FileText,
+  X,
+} from 'lucide-react';
 import {
   AnimatedButton,
   StaggerContainer,
@@ -31,9 +47,9 @@ interface DeliveryInfo {
 }
 
 const SAVED_ADDRESSES = [
-  { id: 'home', label: 'Home Casa', address: '' },
+  { id: 'home', label: 'Casa', address: '' },
   { id: 'work', label: '💼 Trabajo', address: '' },
-  { id: 'other', label: 'MapPin Otro', address: '' },
+  { id: 'other', label: 'Otro', address: '' },
 ];
 
 export default function MenuPage() {
@@ -249,7 +265,7 @@ export default function MenuPage() {
             animate={{ scale: 1, rotate: 0 }}
             transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}
           >
-            PartyPopper
+            <PartyPopper className="h-16 w-16 inline" />
           </motion.div>
           <h1 className="text-2xl font-display font-bold text-surface-800 dark:text-surface-100 mb-2">
             ¡Pedido Creado!
@@ -284,12 +300,12 @@ export default function MenuPage() {
           <div className="space-y-3">
             <Link href={`/order/${orderSuccess}/tracking`}>
               <AnimatedButton variant="gradient" className="w-full">
-                MapPin Rastrear Pedido
+                <MapPin className="h-4 w-4 inline" /> Rastrear Pedido
               </AnimatedButton>
             </Link>
             <Link href="/">
               <AnimatedButton variant="secondary" className="w-full">
-                Home Volver al inicio
+                <Home className="h-4 w-4 inline" /> Volver al inicio
               </AnimatedButton>
             </Link>
             <AnimatedButton
@@ -374,7 +390,7 @@ export default function MenuPage() {
               ← Volver
             </AnimatedButton>
             <AnimatedButton variant="gradient" onClick={fetchData}>
-              RefreshCw Reintentar
+              <RefreshCw className="h-4 w-4 inline" /> Reintentar
             </AnimatedButton>
           </div>
         </motion.div>
@@ -387,7 +403,9 @@ export default function MenuPage() {
     return (
       <main className="min-h-[100dvh] bg-bg-light dark:bg-surface-950 flex items-center justify-center">
         <div className="text-center">
-          <span className="text-5xl mb-4 block">X</span>
+          <span className="text-5xl mb-4 block">
+            <X className="h-12 w-12 inline" />
+          </span>
           <p className="text-surface-500 dark:text-surface-400">Comercio no encontrado</p>
           <Link href="/" className="mt-4 inline-block text-kiwi-600 hover:text-kiwi-700">
             ← Volver al inicio
@@ -638,7 +656,7 @@ export default function MenuPage() {
                 <div className="w-12 h-1 bg-surface-300 dark:bg-surface-600 rounded-full mx-auto mb-3" />
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100">
-                    ShoppingCart Tu Pedido
+                    <ShoppingCart className="h-4 w-4 inline" /> Tu Pedido
                   </h2>
                   <motion.button
                     onClick={() => setShowCheckout(false)}
@@ -655,7 +673,7 @@ export default function MenuPage() {
                 {/* Order Summary */}
                 <div>
                   <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-3">
-                    Package Resumen
+                    <Package className="h-4 w-4 inline" /> Resumen
                   </h3>
                   <div className="space-y-2">
                     {cart.map((item) => (
@@ -684,7 +702,7 @@ export default function MenuPage() {
                 {/* Delivery Address */}
                 <div>
                   <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-3">
-                    MapPin Dirección de entrega
+                    <MapPin className="h-4 w-4 inline" /> Dirección de entrega
                   </h3>
 
                   {/* Saved Addresses */}
@@ -700,6 +718,11 @@ export default function MenuPage() {
                         onClick={() => setSelectedAddressType(addr.id)}
                         whileTap={{ scale: 0.95 }}
                       >
+                        {addr.id === 'home' ? (
+                          <Home className="h-4 w-4 inline" />
+                        ) : addr.id === 'other' ? (
+                          <MapPin className="h-4 w-4 inline" />
+                        ) : null}{' '}
                         {addr.label}
                       </motion.button>
                     ))}
@@ -722,7 +745,7 @@ export default function MenuPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-3">
-                      User Nombre
+                      <User className="h-4 w-4 inline" /> Nombre
                     </h3>
                     <input
                       type="text"
@@ -734,7 +757,7 @@ export default function MenuPage() {
                   </div>
                   <div>
                     <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-3">
-                      Smartphone Teléfono
+                      <Smartphone className="h-4 w-4 inline" /> Teléfono
                     </h3>
                     <input
                       type="tel"
@@ -749,7 +772,7 @@ export default function MenuPage() {
                 {/* Special Instructions */}
                 <div>
                   <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-3">
-                    FileText Instrucciones (opcional)
+                    <FileText className="h-4 w-4 inline" /> Instrucciones (opcional)
                   </h3>
                   <textarea
                     value={deliveryInfo.instructions}
@@ -765,7 +788,7 @@ export default function MenuPage() {
                 {/* Payment Method */}
                 <div>
                   <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-3">
-                    CreditCard Método de pago
+                    <CreditCard className="h-4 w-4 inline" /> Método de pago
                   </h3>
                   <div className="grid grid-cols-3 gap-3">
                     {[
@@ -920,7 +943,8 @@ export default function MenuPage() {
                       className="mt-3 rounded-xl bg-gold-50 dark:bg-gold-900/30 p-3"
                     >
                       <p className="text-sm text-gold-700 dark:text-gold-400">
-                        DollarSign Paga en efectivo al repartidor cuando te entreguen tu pedido
+                        <DollarSign className="h-4 w-4 inline" /> Paga en efectivo al repartidor
+                        cuando te entreguen tu pedido
                       </p>
                     </motion.div>
                   )}
@@ -933,7 +957,8 @@ export default function MenuPage() {
                       className="mt-3 rounded-xl bg-blue-50 dark:bg-blue-900/30 p-3"
                     >
                       <p className="text-sm text-blue-700 dark:text-blue-400">
-                        CreditCard Se te redirigirá a OnvoPay para completar el pago seguro
+                        <CreditCard className="h-4 w-4 inline" /> Se te redirigirá a OnvoPay para
+                        completar el pago seguro
                       </p>
                     </motion.div>
                   )}
@@ -957,14 +982,19 @@ export default function MenuPage() {
                             : 'text-surface-800 dark:text-surface-200'
                         }
                       >
-                        {deliveryFee === 0
-                          ? 'Gratis PartyPopper'
-                          : `₡${deliveryFee.toLocaleString()}`}
+                        {deliveryFee === 0 ? (
+                          <span className="inline-flex items-center gap-1">
+                            Gratis <PartyPopper className="h-4 w-4 inline" />
+                          </span>
+                        ) : (
+                          `₡${deliveryFee.toLocaleString()}`
+                        )}
                       </span>
                     </div>
                     {cartTotal < 5000 && (
                       <p className="text-xs text-kiwi-600 dark:text-kiwi-400">
-                        PartyPopper Envío gratis en pedidos mayores a ₡5,000
+                        <PartyPopper className="h-4 w-4 inline" /> Envío gratis en pedidos mayores a
+                        ₡5,000
                       </p>
                     )}
                     <div className="border-t border-surface-200 dark:border-surface-700 pt-2 mt-2">

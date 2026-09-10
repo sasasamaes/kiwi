@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from './utils';
-import { Car, Shield } from 'lucide-react';
+import { Car, Check, Clock, Search, Shield } from 'lucide-react';
 
 export type KYCStatus =
   'pending' | 'documents_submitted' | 'under_review' | 'approved' | 'rejected' | 'expired';
@@ -120,7 +120,7 @@ export function KYCVerification({
           animate={{ scale: [1, 1.2, 1] }}
           transition={{ duration: 0.5 }}
         >
-          Check
+          <Check className="h-12 w-12" />
         </motion.div>
         <h3 className="text-lg font-display font-semibold text-kiwi-700 mb-2">Cuenta Verificada</h3>
         <p className="text-sm text-kiwi-600">
@@ -175,7 +175,7 @@ export function KYCVerification({
           animate={{ rotate: [0, 10, -10, 0] }}
           transition={{ duration: 2, repeat: Infinity }}
         >
-          Search
+          <Search className="h-12 w-12" />
         </motion.div>
         <h3 className="text-lg font-display font-semibold text-gold-700 mb-2">{config.label}</h3>
         <p className="text-sm text-gold-600">{config.description}</p>
@@ -560,7 +560,7 @@ export function KYCVerification({
                 animate={{ rotate: 360 }}
                 transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
               >
-                Clock
+                <Clock className="h-4 w-4" />
               </motion.span>
               Enviando...
             </span>

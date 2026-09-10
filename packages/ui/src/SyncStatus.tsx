@@ -42,7 +42,7 @@ export function SyncStatus({ className = '', showDetails = false }: SyncStatusPr
               animate={{ rotate: 360 }}
               transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
             >
-              RefreshCw
+              <RefreshCw className="h-4 w-4" />
             </motion.span>
             <span className="text-sm">Sincronizando...</span>
           </>
@@ -53,7 +53,7 @@ export function SyncStatus({ className = '', showDetails = false }: SyncStatusPr
               animate={{ opacity: [1, 0.5, 1] }}
               transition={{ duration: 2, repeat: Infinity }}
             >
-              Clock
+              <Clock className="h-4 w-4" />
             </motion.span>
             <span className="text-sm">
               {stats.pending} pendiente{stats.pending !== 1 ? 's' : ''}
@@ -371,7 +371,7 @@ export function SyncActionStatus({ type, className = '' }: { type: string; class
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
         >
-          RefreshCw
+          <RefreshCw className="h-4 w-4" />
         </motion.span>
       )}
       <span className="text-surface-600 dark:text-surface-400">

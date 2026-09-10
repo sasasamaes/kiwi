@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { MapPin, Home, Star } from 'lucide-react';
+import { MapPin, Home, Star, Map, Phone, PartyPopper } from 'lucide-react';
 
 export default function ActiveOrders() {
   const [orderStatus, setOrderStatus] = useState<'pickup' | 'delivering' | 'delivered'>('pickup');
@@ -94,7 +94,7 @@ export default function ActiveOrders() {
             <p className="text-sm font-medium text-surface-800">Restaurante El Sabor</p>
             <p className="text-xs text-surface-500">Nicoya Centro, 200m</p>
             <button className="mt-3 w-full rounded-xl bg-kiwi-500 py-2.5 text-sm font-medium text-white shadow-kiwi hover:bg-kiwi-600 transition-colors">
-              Map Abrir en Maps
+              <Map className="h-4 w-4 inline" /> Abrir en Maps
             </button>
           </div>
 
@@ -113,7 +113,7 @@ export default function ActiveOrders() {
             <p className="text-sm font-medium text-surface-800">Casa del Cliente</p>
             <p className="text-xs text-surface-500">Santa Cruz, 2.5 km</p>
             <button className="mt-3 w-full rounded-xl bg-gold-500 py-2.5 text-sm font-medium text-white shadow-gold hover:bg-gold-600 transition-colors">
-              Map Abrir en Maps
+              <Map className="h-4 w-4 inline" /> Abrir en Maps
             </button>
           </div>
 
@@ -130,8 +130,8 @@ export default function ActiveOrders() {
                 </p>
               </div>
             </div>
-            <button className="rounded-full bg-kiwi-100 p-2 text-kiwi-600 hover:bg-kiwi-200">
-              Phone
+            <button className="rounded-full bg-kiwi-100 p-2 text-kiwi-600 hover:bg-kiwi-200 flex items-center justify-center">
+              <Phone className="h-6 w-6" />
             </button>
           </div>
         </div>
@@ -161,7 +161,7 @@ export default function ActiveOrders() {
               href="/"
               className="block w-full rounded-2xl bg-kiwi-gradient py-4 text-center text-lg font-semibold text-white shadow-kiwi-lg hover:shadow-kiwi-xl transition-all active:scale-[0.98]"
             >
-              PartyPopper ¡Pedido completado!
+              <PartyPopper className="h-5 w-5 inline" /> ¡Pedido completado!
             </Link>
           )}
 

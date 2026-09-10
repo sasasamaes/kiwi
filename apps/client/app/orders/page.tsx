@@ -14,6 +14,7 @@ import {
   RefreshCw,
   Check,
   X,
+  Smartphone,
 } from 'lucide-react';
 import { api, Skeleton } from '@kiwi/ui';
 
@@ -173,7 +174,7 @@ export default function OrderHistoryPage() {
               onClick={fetchOrders}
               className="px-6 py-3 rounded-xl bg-kiwi-gradient text-white font-medium shadow-kiwi-lg"
             >
-              RefreshCw Reintentar
+              <RefreshCw className="h-4 w-4 inline" /> Reintentar
             </button>
           </div>
         </motion.div>
@@ -199,7 +200,7 @@ export default function OrderHistoryPage() {
               <span className="text-sm font-medium">Inicio</span>
             </Link>
             <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-              ClipboardList Mis Pedidos
+              <ClipboardList className="h-4 w-4 inline" /> Mis Pedidos
             </h1>
             <div className="w-16" />
           </div>
@@ -259,7 +260,7 @@ export default function OrderHistoryPage() {
             </p>
             <Link href="/">
               <button className="px-6 py-3 rounded-xl bg-kiwi-gradient text-white font-medium shadow-kiwi-lg">
-                Smartphone Escanear QR
+                <Smartphone className="h-4 w-4 inline" /> Escanear QR
               </button>
             </Link>
           </motion.div>
