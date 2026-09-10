@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { CreditCard, Smartphone } from 'lucide-react';
 
 export interface OnvoPayCheckoutProps {
   paymentIntentId: string;
@@ -80,7 +81,9 @@ export function OnvoPayCheckout({
       animate={{ opacity: 1, y: 0 }}
     >
       <div className="text-center mb-6">
-        <div className="text-4xl mb-3">CreditCard</div>
+        <div className="text-4xl mb-3">
+          <CreditCard className="h-10 w-10" />
+        </div>
         <h3 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100">
           Pago Seguro con OnvoPay
         </h3>
@@ -217,7 +220,9 @@ export function CryptoCheckout({
           <div className="p-4 bg-white rounded-xl shadow-soft">
             {/* QR code would be rendered here using qrcode.react */}
             <div className="w-48 h-48 bg-surface-100 dark:bg-surface-700 rounded-lg flex items-center justify-center">
-              <span className="text-4xl">Smartphone</span>
+              <span className="text-4xl">
+                <Smartphone className="h-10 w-10" />
+              </span>
             </div>
           </div>
         </div>

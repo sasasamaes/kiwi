@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { Calendar, Car, Coins } from 'lucide-react';
 import { AnimatedButton, StaggerContainer, StaggerItem } from '@kiwi/ui';
 
 export default function DriverLanding() {
@@ -63,7 +64,7 @@ export default function DriverLanding() {
           <StaggerContainer className="mb-8 space-y-4">
             <StaggerItem>
               <div className="flex items-center gap-4 text-left p-4 rounded-xl bg-white/70 backdrop-blur-sm">
-                <span className="text-3xl">Calendar</span>
+                <Calendar className="text-3xl h-8 w-8" />
                 <div>
                   <p className="font-semibold text-surface-800">Horario flexible</p>
                   <p className="text-sm text-surface-500">Trabaja cuando quieras</p>
@@ -72,7 +73,7 @@ export default function DriverLanding() {
             </StaggerItem>
             <StaggerItem>
               <div className="flex items-center gap-4 text-left p-4 rounded-xl bg-white/70 backdrop-blur-sm">
-                <span className="text-3xl">Car</span>
+                <Car className="text-3xl h-8 w-8" />
                 <div>
                   <p className="font-semibold text-surface-800">Cualquier vehículo</p>
                   <p className="text-sm text-surface-500">Moto, bici, carro o camión</p>
@@ -81,7 +82,7 @@ export default function DriverLanding() {
             </StaggerItem>
             <StaggerItem>
               <div className="flex items-center gap-4 text-left p-4 rounded-xl bg-white/70 backdrop-blur-sm">
-                <span className="text-3xl">Coins</span>
+                <Coins className="text-3xl h-8 w-8" />
                 <div>
                   <p className="font-semibold text-surface-800">Gana por viaje</p>
                   <p className="text-sm text-surface-500">Tú eliges los pedidos</p>

@@ -5,6 +5,18 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import {
+  Utensils,
+  Smartphone,
+  Check,
+  RefreshCw,
+  Clock,
+  ClipboardList,
+  BarChart3,
+  Pencil,
+  Trash2,
+  X,
+} from 'lucide-react';
+import {
   AnimatedButton,
   StaggerContainer,
   StaggerItem,
@@ -283,7 +295,7 @@ export default function MenuManagementPage() {
               <span className="text-sm font-medium">Dashboard</span>
             </Link>
             <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-              Utensils Mi Menú
+              <Utensils className="h-5 w-5 inline" /> Mi Menú
             </h1>
             <div className="flex items-center gap-2">
               <motion.button
@@ -320,7 +332,9 @@ export default function MenuManagementPage() {
                 />
                 <div className="relative flex items-center gap-4">
                   <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/20">
-                    <span className="text-3xl">Smartphone</span>
+                    <span className="text-3xl">
+                      <Smartphone className="h-8 w-8" />
+                    </span>
                   </div>
                   <div className="flex-1">
                     <h3 className="font-display font-bold text-lg">Mi Código QR</h3>
@@ -472,17 +486,17 @@ export default function MenuManagementPage() {
                     size="sm"
                     onClick={() => handleBulkToggleAvailability(true)}
                   >
-                    Check Disponible
+                    <Check className="h-4 w-4 inline" /> Disponible
                   </AnimatedButton>
                   <AnimatedButton
                     variant="secondary"
                     size="sm"
                     onClick={() => handleBulkToggleAvailability(false)}
                   >
-                    X Agotado
+                    <X className="h-4 w-4 inline" /> Agotado
                   </AnimatedButton>
                   <AnimatedButton variant="danger" size="sm" onClick={handleBulkDelete}>
-                    Trash2 Eliminar
+                    <Trash2 className="h-4 w-4 inline" /> Eliminar
                   </AnimatedButton>
                   <AnimatedButton
                     variant="ghost"
@@ -558,14 +572,22 @@ export default function MenuManagementPage() {
                 onClick={() => setIsReordering(!isReordering)}
                 whileTap={{ scale: 0.95 }}
               >
-                {isReordering ? 'Check Listo' : 'RefreshCw Reordenar'}
+                {isReordering ? (
+                  <>
+                    <Check className="h-4 w-4 inline" /> Listo
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="h-4 w-4 inline" /> Reordenar
+                  </>
+                )}
               </motion.button>
               {user?.merchantProfile?.id && (
                 <Link
                   href={`/merchants/${user.merchantProfile.id}/qr`}
                   className="text-sm font-medium text-kiwi-600 hover:text-kiwi-700"
                 >
-                  Smartphone Ver mi QR →
+                  <Smartphone className="h-4 w-4 inline" /> Ver mi QR →
                 </Link>
               )}
             </div>
@@ -582,7 +604,7 @@ export default function MenuManagementPage() {
                 animate={{ y: [0, -10, 0] }}
                 transition={{ duration: 2, repeat: Infinity }}
               >
-                Utensils
+                <Utensils className="h-16 w-16" />
               </motion.div>
               <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-2">
                 {selectedCategory === 'Todos'
@@ -616,7 +638,11 @@ export default function MenuManagementPage() {
                   <div className="flex items-center gap-4">
                     <div className="text-surface-400 dark:text-surface-500">⋮⋮</div>
                     <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-surface-100 dark:bg-surface-700 text-2xl flex-shrink-0">
-                      {item.image || 'Utensils'}
+                      {item.image && item.image !== 'Utensils' ? (
+                        item.image
+                      ) : (
+                        <Utensils className="h-6 w-6" />
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
@@ -667,7 +693,11 @@ export default function MenuManagementPage() {
 
                       {/* Item Image */}
                       <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-surface-100 dark:bg-surface-700 text-3xl flex-shrink-0">
-                        {item.image || 'Utensils'}
+                        {item.image && item.image !== 'Utensils' ? (
+                          item.image
+                        ) : (
+                          <Utensils className="h-8 w-8" />
+                        )}
                       </div>
 
                       {/* Item Info */}
@@ -718,11 +748,17 @@ export default function MenuManagementPage() {
                               disabled={togglingAvailability === item.id}
                               whileTap={{ scale: 0.95 }}
                             >
-                              {togglingAvailability === item.id
-                                ? 'Clock'
-                                : item.isAvailable
-                                  ? 'Check Disponible'
-                                  : 'X Agotado'}
+                              {togglingAvailability === item.id ? (
+                                <Clock className="h-4 w-4 inline" />
+                              ) : item.isAvailable ? (
+                                <>
+                                  <Check className="h-4 w-4 inline" /> Disponible
+                                </>
+                              ) : (
+                                <>
+                                  <X className="h-4 w-4 inline" /> Agotado
+                                </>
+                              )}
                             </motion.button>
 
                             {/* Duplicate */}
@@ -733,7 +769,11 @@ export default function MenuManagementPage() {
                               whileTap={{ scale: 0.95 }}
                               title="Duplicar"
                             >
-                              {duplicatingItem === item.id ? 'Clock' : 'ClipboardList'}
+                              {duplicatingItem === item.id ? (
+                                <Clock className="h-4 w-4" />
+                              ) : (
+                                <ClipboardList className="h-4 w-4" />
+                              )}
                             </motion.button>
 
                             {/* Edit */}
@@ -742,7 +782,7 @@ export default function MenuManagementPage() {
                               onClick={() => openEditForm(item)}
                               whileTap={{ scale: 0.95 }}
                             >
-                              Pencil
+                              <Pencil className="h-4 w-4" />
                             </motion.button>
 
                             {/* Delete */}
@@ -751,7 +791,7 @@ export default function MenuManagementPage() {
                               onClick={() => setDeleteConfirm(item.id)}
                               whileTap={{ scale: 0.95 }}
                             >
-                              Trash2
+                              <Trash2 className="h-4 w-4" />
                             </motion.button>
                           </div>
                         </div>
@@ -784,7 +824,7 @@ export default function MenuManagementPage() {
                                 size="sm"
                                 onClick={() => handleDelete(item.id)}
                               >
-                                Trash2 Eliminar
+                                <Trash2 className="h-4 w-4 inline" /> Eliminar
                               </AnimatedButton>
                             </div>
                           </div>
@@ -807,7 +847,7 @@ export default function MenuManagementPage() {
             transition={{ delay: 0.3 }}
           >
             <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-              BarChart3 Resumen del Menú
+              <BarChart3 className="h-5 w-5 inline" /> Resumen del Menú
             </h3>
             <div className="grid grid-cols-4 gap-4">
               <div className="text-center">

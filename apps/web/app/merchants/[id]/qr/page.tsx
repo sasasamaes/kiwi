@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
+import { Clock, X, ClipboardList, Printer, Smartphone, ShoppingCart, Bike } from 'lucide-react';
 import { QRCodeGenerator, useAuth, api, StaggerContainer, StaggerItem } from '@kiwi/ui';
 
 interface MerchantData {
@@ -63,7 +64,7 @@ export default function MerchantQRPage() {
           transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
           className="text-4xl"
         >
-          Clock
+          <Clock className="h-10 w-10" />
         </motion.div>
       </div>
     );
@@ -73,7 +74,9 @@ export default function MerchantQRPage() {
     return (
       <div className="min-h-[100dvh] bg-bg-light dark:bg-surface-950 flex items-center justify-center">
         <div className="text-center">
-          <span className="text-5xl mb-4 block">X</span>
+          <span className="text-5xl mb-4 block">
+            <X className="h-12 w-12" />
+          </span>
           <p className="text-surface-500 dark:text-surface-400">Comercio no encontrado</p>
           <Link href="/dashboard" className="mt-4 inline-block text-kiwi-600 hover:text-kiwi-700">
             ← Volver al dashboard
@@ -148,53 +151,56 @@ export default function MerchantQRPage() {
           transition={{ delay: 0.2 }}
         >
           <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-            ClipboardList ¿Cómo usar tu QR?
+            <ClipboardList className="h-5 w-5 inline" /> ¿Cómo usar tu QR?
           </h3>
           <div className="space-y-4">
             {[
               {
                 step: '1',
-                icon: 'Printer',
+                icon: Printer,
                 title: 'Imprime el QR',
                 desc: 'Descarga o imprime el código y ponlo en un lugar visible de tu negocio',
               },
               {
                 step: '2',
-                icon: 'Smartphone',
+                icon: Smartphone,
                 title: 'Cliente escanea',
                 desc: 'El cliente apunta su cámara al código QR con su teléfono',
               },
               {
                 step: '3',
-                icon: 'ClipboardList',
+                icon: ClipboardList,
                 title: 'Ve el menú',
                 desc: 'Se abre tu menú digital con todos tus productos y precios',
               },
               {
                 step: '4',
-                icon: 'ShoppingCart',
+                icon: ShoppingCart,
                 title: 'Cliente pide',
                 desc: 'El cliente selecciona sus productos y paga directamente desde el celular',
               },
               {
                 step: '5',
-                icon: 'Bike',
+                icon: Bike,
                 title: 'Repartidor recoge',
                 desc: 'Recibes la comanda en tu sistema y un repartidor la lleva al cliente',
               },
-            ].map((item) => (
-              <div key={item.step} className="flex items-start gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-kiwi-500 text-white text-sm font-bold flex-shrink-0">
-                  {item.step}
+            ].map((item) => {
+              const StepIcon = item.icon as any;
+              return (
+                <div key={item.step} className="flex items-start gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-kiwi-500 text-white text-sm font-bold flex-shrink-0">
+                    {item.step}
+                  </div>
+                  <div>
+                    <p className="font-medium text-surface-800 dark:text-surface-200">
+                      <StepIcon className="h-4 w-4 inline" /> {item.title}
+                    </p>
+                    <p className="text-sm text-surface-500 dark:text-surface-400">{item.desc}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-medium text-surface-800 dark:text-surface-200">
-                    {item.icon} {item.title}
-                  </p>
-                  <p className="text-sm text-surface-500 dark:text-surface-400">{item.desc}</p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </motion.div>
 

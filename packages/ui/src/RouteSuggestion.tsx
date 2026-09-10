@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { apiFetch } from './api-client';
+import { Map } from 'lucide-react';
 
 export interface RouteSuggestion {
   id: string;
@@ -130,7 +131,7 @@ export function RouteSuggestionPanel({
   if (!comparison || comparison.routes.length === 0) {
     return (
       <div className={`rounded-2xl glass p-8 text-center ${className}`}>
-        <span className="text-4xl block mb-3">Map</span>
+        <Map className="text-4xl block mb-3 h-10 w-10" />
         <p className="text-surface-500 dark:text-surface-400">No se encontraron rutas</p>
       </div>
     );
@@ -143,8 +144,8 @@ export function RouteSuggestionPanel({
       {/* Header */}
       <div className="p-4 border-b border-surface-100 dark:border-surface-700">
         <div className="flex items-center justify-between">
-          <h3 className="font-display font-bold text-surface-800 dark:text-surface-100">
-            Map Rutas Disponibles
+          <h3 className="font-display font-bold text-surface-800 dark:text-surface-100 flex items-center gap-2">
+            <Map className="h-5 w-5" /> Rutas Disponibles
           </h3>
           <div className="flex items-center gap-2">
             <motion.div
@@ -433,7 +434,7 @@ export function QuickSuggestionBanner({
           animate={{ rotate: [0, 5, -5, 0] }}
           transition={{ duration: 2, repeat: Infinity }}
         >
-          <span className="text-2xl">Map</span>
+          <Map className="text-2xl h-6 w-6" />
         </motion.div>
 
         <div className="flex-1">

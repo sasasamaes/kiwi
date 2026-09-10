@@ -4,6 +4,21 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
+  Calendar,
+  Coins,
+  Target,
+  Package,
+  Wrench,
+  Bike,
+  User,
+  Bell,
+  CreditCard,
+  Shield,
+  Home,
+  Star,
+  Car,
+} from 'lucide-react';
+import {
   AnimatedButton,
   StaggerContainer,
   StaggerItem,
@@ -66,12 +81,10 @@ export default function Profile() {
 
           <div className="relative mt-4 flex justify-center gap-6">
             <div className="text-center">
-              <AnimatedCounter
-                value={4.9}
-                decimals={1}
-                prefix="Star"
-                className="text-2xl font-bold"
-              />
+              <div className="flex items-center justify-center gap-1">
+                <Star className="h-5 w-5 fill-white/90 text-white/90" />
+                <AnimatedCounter value={4.9} decimals={1} className="text-2xl font-bold" />
+              </div>
               <p className="text-xs text-white/70">Rating</p>
             </div>
             <div className="text-center">
@@ -115,7 +128,7 @@ export default function Profile() {
         <StaggerContainer className="mb-6 grid grid-cols-2 gap-3">
           <StaggerItem>
             <div className="rounded-xl bg-white p-4 shadow-soft text-center">
-              <span className="text-2xl">Calendar</span>
+              <Calendar className="text-2xl h-6 w-6 mx-auto" />
               <p className="mt-2 text-xl font-bold text-surface-800">45</p>
               <p className="text-xs text-surface-500">Días activos</p>
             </div>
@@ -129,14 +142,14 @@ export default function Profile() {
           </StaggerItem>
           <StaggerItem>
             <div className="rounded-xl bg-white p-4 shadow-soft text-center">
-              <span className="text-2xl">Coins</span>
+              <Coins className="text-2xl h-6 w-6 mx-auto" />
               <p className="mt-2 text-xl font-bold text-kiwi-600">₡468k</p>
               <p className="text-xs text-surface-500">Ganancias totales</p>
             </div>
           </StaggerItem>
           <StaggerItem>
             <div className="rounded-xl bg-white p-4 shadow-soft text-center">
-              <span className="text-2xl">Target</span>
+              <Target className="text-2xl h-6 w-6 mx-auto" />
               <p className="mt-2 text-xl font-bold text-surface-800">98%</p>
               <p className="text-xs text-surface-500">Tasa de aceptación</p>
             </div>
@@ -156,51 +169,58 @@ export default function Profile() {
               { icon: '🎒', name: 'Bolso térmico', status: 'active', date: 'Mar 2026' },
               { icon: '🧥', name: 'Capa de lluvia', status: 'active', date: 'Jun 2026' },
               {
-                icon: 'Package',
+                icon: Package,
                 name: 'Cajón container',
                 status: 'locked',
                 date: 'Requiere 7 meses',
               },
               {
-                icon: 'Wrench',
+                icon: Wrench,
                 name: 'Mantenimiento moto',
                 status: 'locked',
                 date: 'Requiere 10 meses',
               },
               {
-                icon: 'Bike',
+                icon: Bike,
                 name: 'Pago de marchamo',
                 status: 'locked',
                 date: 'Requiere 12 meses',
               },
-            ].map((incentive, i) => (
-              <motion.div
-                key={i}
-                className={`flex items-center justify-between rounded-xl p-3 ${
-                  incentive.status === 'active' ? 'bg-kiwi-50' : 'bg-surface-50'
-                }`}
-                whileHover={{ x: 4 }}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">{incentive.icon}</span>
-                  <div>
-                    <p
-                      className={`text-sm font-medium ${incentive.status === 'active' ? 'text-kiwi-700' : 'text-surface-600'}`}
-                    >
-                      {incentive.name}
-                    </p>
-                    <p className="text-xs text-surface-400">{incentive.date}</p>
-                  </div>
-                </div>
-                <span
-                  className={`text-sm font-medium ${
-                    incentive.status === 'active' ? 'text-kiwi-600' : 'text-surface-400'
+            ].map((incentive, i) => {
+              const IncentiveIcon = incentive.icon as any;
+              return (
+                <motion.div
+                  key={i}
+                  className={`flex items-center justify-between rounded-xl p-3 ${
+                    incentive.status === 'active' ? 'bg-kiwi-50' : 'bg-surface-50'
                   }`}
+                  whileHover={{ x: 4 }}
                 >
-                  {incentive.status === 'active' ? 'Activo' : 'Bloqueado'}
-                </span>
-              </motion.div>
-            ))}
+                  <div className="flex items-center gap-3">
+                    {typeof IncentiveIcon === 'string' ? (
+                      <span className="text-2xl">{IncentiveIcon}</span>
+                    ) : (
+                      <IncentiveIcon className="h-6 w-6" />
+                    )}
+                    <div>
+                      <p
+                        className={`text-sm font-medium ${incentive.status === 'active' ? 'text-kiwi-700' : 'text-surface-600'}`}
+                      >
+                        {incentive.name}
+                      </p>
+                      <p className="text-xs text-surface-400">{incentive.date}</p>
+                    </div>
+                  </div>
+                  <span
+                    className={`text-sm font-medium ${
+                      incentive.status === 'active' ? 'text-kiwi-600' : 'text-surface-400'
+                    }`}
+                  >
+                    {incentive.status === 'active' ? 'Activo' : 'Bloqueado'}
+                  </span>
+                </motion.div>
+              );
+            })}
           </div>
         </motion.div>
 
@@ -233,14 +253,16 @@ export default function Profile() {
           transition={{ delay: 0.4 }}
         >
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-display font-semibold text-surface-800">Car Mi Vehículo</h3>
+            <h3 className="font-display font-semibold text-surface-800">
+              <Car className="h-5 w-5 inline" /> Mi Vehículo
+            </h3>
             <AnimatedButton variant="ghost" size="sm" onClick={() => setShowVehicleModal(true)}>
               Editar
             </AnimatedButton>
           </div>
           <div className="flex items-center gap-4">
             <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-surface-100 text-3xl">
-              Bike
+              <Bike className="h-8 w-8" />
             </div>
             <div>
               <p className="font-display font-semibold text-surface-800">Moto</p>
@@ -254,25 +276,32 @@ export default function Profile() {
         <div className="rounded-2xl bg-white shadow-soft overflow-hidden">
           <h3 className="p-4 pb-2 font-display font-semibold text-surface-800">Configuración</h3>
           {[
-            { icon: 'User', label: 'Editar perfil', href: '#' },
-            { icon: 'Bell', label: 'Notificaciones', href: '#' },
-            { icon: 'CreditCard', label: 'Método de pago', href: '#' },
-            { icon: 'Shield', label: 'Seguridad', href: '#' },
+            { icon: User, label: 'Editar perfil', href: '#' },
+            { icon: Bell, label: 'Notificaciones', href: '#' },
+            { icon: CreditCard, label: 'Método de pago', href: '#' },
+            { icon: Shield, label: 'Seguridad', href: '#' },
             { icon: '❓', label: 'Ayuda', href: '#' },
-          ].map((item, i) => (
-            <Link key={i} href={item.href}>
-              <motion.div
-                className="flex items-center justify-between border-b border-surface-100 px-4 py-3 hover:bg-surface-50 transition-colors"
-                whileHover={{ x: 4 }}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-xl">{item.icon}</span>
-                  <span className="text-sm font-medium text-surface-700">{item.label}</span>
-                </div>
-                <span className="text-surface-400">→</span>
-              </motion.div>
-            </Link>
-          ))}
+          ].map((item, i) => {
+            const SettingIcon = item.icon as any;
+            return (
+              <Link key={i} href={item.href}>
+                <motion.div
+                  className="flex items-center justify-between border-b border-surface-100 px-4 py-3 hover:bg-surface-50 transition-colors"
+                  whileHover={{ x: 4 }}
+                >
+                  <div className="flex items-center gap-3">
+                    {typeof SettingIcon === 'string' ? (
+                      <span className="text-xl">{SettingIcon}</span>
+                    ) : (
+                      <SettingIcon className="h-5 w-5" />
+                    )}
+                    <span className="text-sm font-medium text-surface-700">{item.label}</span>
+                  </div>
+                  <span className="text-surface-400">→</span>
+                </motion.div>
+              </Link>
+            );
+          })}
         </div>
 
         {/* Logout */}
@@ -343,25 +372,32 @@ export default function Profile() {
       <nav className="sticky bottom-0 border-t border-surface-200/50 bg-white/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-lg items-center justify-around py-2">
           {[
-            { href: '/', icon: 'Home', label: 'Inicio', active: false },
-            { href: '/active', icon: 'Package', label: 'Activos', active: false },
-            { href: '/earnings', icon: 'Coins', label: 'Ganancias', active: false },
-            { href: '/schedule', icon: 'Calendar', label: 'Horario', active: false },
-            { href: '/profile', icon: 'User', label: 'Perfil', active: true },
-          ].map((item) => (
-            <Link key={item.href} href={item.href}>
-              <motion.div
-                className={`flex flex-col items-center gap-1 px-4 py-2 ${
-                  item.active ? 'text-kiwi-600' : 'text-surface-400 hover:text-surface-600'
-                }`}
-                whileHover={{ y: -2 }}
-                whileTap={{ scale: 0.9 }}
-              >
-                <span className="text-xl">{item.icon}</span>
-                <span className="text-xs font-medium">{item.label}</span>
-              </motion.div>
-            </Link>
-          ))}
+            { href: '/', icon: Home, label: 'Inicio', active: false },
+            { href: '/active', icon: Package, label: 'Activos', active: false },
+            { href: '/earnings', icon: Coins, label: 'Ganancias', active: false },
+            { href: '/schedule', icon: Calendar, label: 'Horario', active: false },
+            { href: '/profile', icon: User, label: 'Perfil', active: true },
+          ].map((item) => {
+            const NavIcon = item.icon as any;
+            return (
+              <Link key={item.href} href={item.href}>
+                <motion.div
+                  className={`flex flex-col items-center gap-1 px-4 py-2 ${
+                    item.active ? 'text-kiwi-600' : 'text-surface-400 hover:text-surface-600'
+                  }`}
+                  whileHover={{ y: -2 }}
+                  whileTap={{ scale: 0.9 }}
+                >
+                  {typeof NavIcon === 'string' ? (
+                    <span className="text-xl">{NavIcon}</span>
+                  ) : (
+                    <NavIcon className="h-5 w-5" />
+                  )}
+                  <span className="text-xs font-medium">{item.label}</span>
+                </motion.div>
+              </Link>
+            );
+          })}
         </div>
       </nav>
     </main>

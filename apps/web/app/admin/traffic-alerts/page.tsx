@@ -5,6 +5,16 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
+  AlertTriangle,
+  Check,
+  MapPin,
+  RefreshCw,
+  Clock,
+  Map,
+  PartyPopper,
+  Trash2,
+} from 'lucide-react';
+import {
   AnimatedButton,
   StaggerContainer,
   StaggerItem,
@@ -49,8 +59,8 @@ const ALERT_TYPES = [
   { id: 'accident', label: 'Accidente', icon: '🚑', color: '#ef4444' },
   { id: 'road_closed', label: 'Camino Cerrado', icon: '🚧', color: '#eab308' },
   { id: 'weather', label: 'Clima', icon: '🌧️', color: '#3b82f6' },
-  { id: 'event', label: 'Evento', icon: 'PartyPopper', color: '#8b5cf6' },
-  { id: 'alternative_route', label: 'Ruta Alternativa', icon: 'Map', color: '#22c55e' },
+  { id: 'event', label: 'Evento', icon: PartyPopper, color: '#8b5cf6' },
+  { id: 'alternative_route', label: 'Ruta Alternativa', icon: Map, color: '#22c55e' },
 ];
 
 const SEVERITY_LEVELS = [
@@ -257,7 +267,9 @@ export default function AdminTrafficAlertsPage() {
             <div className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark">
               <div className="flex items-center gap-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-100 dark:bg-orange-900/30">
-                  <span className="text-2xl">AlertTriangle</span>
+                  <span className="text-2xl">
+                    <AlertTriangle className="h-6 w-6" />
+                  </span>
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
@@ -271,7 +283,9 @@ export default function AdminTrafficAlertsPage() {
             <div className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark">
               <div className="flex items-center gap-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-100 dark:bg-green-900/30">
-                  <span className="text-2xl">Check</span>
+                  <span className="text-2xl">
+                    <Check className="h-6 w-6" />
+                  </span>
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-green-600">{stats.active}</p>
@@ -338,7 +352,8 @@ export default function AdminTrafficAlertsPage() {
               <option value="all">Todos los tipos</option>
               {ALERT_TYPES.map((type) => (
                 <option key={type.id} value={type.id}>
-                  {type.icon} {type.label}
+                  {typeof type.icon === 'string' ? `${type.icon} ` : ''}
+                  {type.label}
                 </option>
               ))}
             </select>
@@ -376,7 +391,7 @@ export default function AdminTrafficAlertsPage() {
                 animate={{ y: [0, -10, 0] }}
                 transition={{ duration: 2, repeat: Infinity }}
               >
-                AlertTriangle
+                <AlertTriangle className="h-16 w-16" />
               </motion.div>
               <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-2">
                 No hay alertas
@@ -397,6 +412,7 @@ export default function AdminTrafficAlertsPage() {
               {filteredAlerts.map((alert) => {
                 const typeConfig = ALERT_TYPES.find((t) => t.id === alert.type);
                 const severityConfig = SEVERITY_LEVELS.find((s) => s.id === alert.severity);
+                const TypeIcon = typeConfig?.icon as any;
 
                 return (
                   <StaggerItem key={alert.id}>
@@ -410,7 +426,11 @@ export default function AdminTrafficAlertsPage() {
                           className="flex h-14 w-14 items-center justify-center rounded-xl text-2xl flex-shrink-0"
                           style={{ backgroundColor: `${typeConfig?.color}20` }}
                         >
-                          {typeConfig?.icon}
+                          {typeof TypeIcon === 'string' ? (
+                            TypeIcon
+                          ) : TypeIcon ? (
+                            <TypeIcon className="h-6 w-6" />
+                          ) : null}
                         </div>
 
                         {/* Content */}
@@ -432,8 +452,13 @@ export default function AdminTrafficAlertsPage() {
                                 {alert.message}
                               </p>
                               <div className="flex items-center gap-4 text-xs text-surface-400 dark:text-surface-500">
-                                <span>MapPin {alert.location.address}</span>
-                                <span>RefreshCw Radio: {alert.affectedArea.radius} km</span>
+                                <span>
+                                  <MapPin className="h-4 w-4 inline" /> {alert.location.address}
+                                </span>
+                                <span>
+                                  <RefreshCw className="h-4 w-4 inline" /> Radio:{' '}
+                                  {alert.affectedArea.radius} km
+                                </span>
                                 <span>
                                   ⏰ Expira: {new Date(alert.expiresAt).toLocaleString('es-CR')}
                                 </span>
@@ -456,7 +481,7 @@ export default function AdminTrafficAlertsPage() {
                                 whileTap={{ scale: 0.95 }}
                                 title="Eliminar"
                               >
-                                Trash2
+                                <Trash2 className="h-5 w-5" />
                               </motion.button>
                             </div>
                           </div>
@@ -465,7 +490,9 @@ export default function AdminTrafficAlertsPage() {
                           {alert.alternativeRoute && (
                             <div className="mt-3 p-2 rounded-lg bg-green-50 dark:bg-green-900/30">
                               <div className="flex items-center gap-2">
-                                <span>Map</span>
+                                <span>
+                                  <Map className="h-4 w-4" />
+                                </span>
                                 <span className="text-xs font-medium text-green-700 dark:text-green-400">
                                   Ruta alternativa: {alert.alternativeRoute.description}
                                 </span>
@@ -512,7 +539,7 @@ export default function AdminTrafficAlertsPage() {
               <div className="sticky top-0 bg-white dark:bg-surface-800 p-6 border-b border-surface-100 dark:border-surface-700 rounded-t-3xl">
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100">
-                    AlertTriangle Crear Alerta de Tráfico
+                    <AlertTriangle className="h-5 w-5 inline" /> Crear Alerta de Tráfico
                   </h2>
                   <motion.button
                     onClick={() => setShowCreateModal(false)}
@@ -532,26 +559,35 @@ export default function AdminTrafficAlertsPage() {
                     Tipo de Alerta *
                   </label>
                   <div className="grid grid-cols-3 gap-2">
-                    {ALERT_TYPES.map((type) => (
-                      <motion.button
-                        key={type.id}
-                        type="button"
-                        className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-all ${
-                          formData.type === type.id
-                            ? 'ring-2 ring-kiwi-500 bg-kiwi-50 dark:bg-kiwi-900/30'
-                            : 'bg-surface-50 dark:bg-surface-900 hover:bg-surface-100 dark:hover:bg-surface-800'
-                        }`}
-                        onClick={() =>
-                          setFormData({ ...formData, type: type.id as TrafficAlert['type'] })
-                        }
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        <span className="text-xl">{type.icon}</span>
-                        <span className="text-xs font-medium text-surface-700 dark:text-surface-300">
-                          {type.label}
-                        </span>
-                      </motion.button>
-                    ))}
+                    {ALERT_TYPES.map((type) => {
+                      const TypeOptionIcon = type.icon as any;
+                      return (
+                        <motion.button
+                          key={type.id}
+                          type="button"
+                          className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-all ${
+                            formData.type === type.id
+                              ? 'ring-2 ring-kiwi-500 bg-kiwi-50 dark:bg-kiwi-900/30'
+                              : 'bg-surface-50 dark:bg-surface-900 hover:bg-surface-100 dark:hover:bg-surface-800'
+                          }`}
+                          onClick={() =>
+                            setFormData({ ...formData, type: type.id as TrafficAlert['type'] })
+                          }
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          {typeof TypeOptionIcon === 'string' ? (
+                            <span className="text-xl">{TypeOptionIcon}</span>
+                          ) : (
+                            <span className="text-xl">
+                              <TypeOptionIcon className="h-5 w-5" />
+                            </span>
+                          )}
+                          <span className="text-xs font-medium text-surface-700 dark:text-surface-300">
+                            {type.label}
+                          </span>
+                        </motion.button>
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -683,7 +719,7 @@ export default function AdminTrafficAlertsPage() {
                 {/* Alternative Route */}
                 <div className="p-4 rounded-xl bg-surface-50 dark:bg-surface-900">
                   <h4 className="text-sm font-medium text-surface-600 dark:text-surface-400 mb-3">
-                    Map Ruta Alternativa (Opcional)
+                    <Map className="h-4 w-4 inline" /> Ruta Alternativa (Opcional)
                   </h4>
                   <div className="space-y-3">
                     <input
@@ -734,7 +770,7 @@ export default function AdminTrafficAlertsPage() {
                     onClick={handleCreateAlert}
                     disabled={!formData.title || !formData.message}
                   >
-                    AlertTriangle Crear Alerta
+                    <AlertTriangle className="h-4 w-4 inline" /> Crear Alerta
                   </AnimatedButton>
                 </div>
               </div>
@@ -779,7 +815,15 @@ export default function AdminTrafficAlertsPage() {
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
                   <span className="text-3xl">
-                    {ALERT_TYPES.find((t) => t.id === selectedAlert.type)?.icon}
+                    {(() => {
+                      const DetailIcon = ALERT_TYPES.find((t) => t.id === selectedAlert.type)
+                        ?.icon as any;
+                      return typeof DetailIcon === 'string' ? (
+                        DetailIcon
+                      ) : DetailIcon ? (
+                        <DetailIcon className="h-8 w-8" />
+                      ) : null;
+                    })()}
                   </span>
                   <div>
                     <h4 className="font-semibold text-surface-800 dark:text-surface-100">
@@ -804,13 +848,17 @@ export default function AdminTrafficAlertsPage() {
 
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-surface-500 dark:text-surface-400">MapPin Ubicación</span>
+                    <span className="text-surface-500 dark:text-surface-400">
+                      <MapPin className="h-4 w-4 inline" /> Ubicación
+                    </span>
                     <span className="text-surface-800 dark:text-surface-200">
                       {selectedAlert.location.address}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-surface-500 dark:text-surface-400">RefreshCw Radio</span>
+                    <span className="text-surface-500 dark:text-surface-400">
+                      <RefreshCw className="h-4 w-4 inline" /> Radio
+                    </span>
                     <span className="text-surface-800 dark:text-surface-200">
                       {selectedAlert.affectedArea.radius} km
                     </span>
@@ -822,7 +870,9 @@ export default function AdminTrafficAlertsPage() {
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-surface-500 dark:text-surface-400">Clock Expira</span>
+                    <span className="text-surface-500 dark:text-surface-400">
+                      <Clock className="h-4 w-4 inline" /> Expira
+                    </span>
                     <span className="text-surface-800 dark:text-surface-200">
                       {new Date(selectedAlert.expiresAt).toLocaleString('es-CR')}
                     </span>
@@ -832,7 +882,7 @@ export default function AdminTrafficAlertsPage() {
                 {selectedAlert.alternativeRoute && (
                   <div className="p-3 rounded-xl bg-green-50 dark:bg-green-900/30">
                     <p className="text-sm font-medium text-green-700 dark:text-green-400">
-                      Map Ruta Alternativa
+                      <Map className="h-4 w-4 inline" /> Ruta Alternativa
                     </p>
                     <p className="text-sm text-green-600 dark:text-green-300">
                       {selectedAlert.alternativeRoute.description}
@@ -854,7 +904,7 @@ export default function AdminTrafficAlertsPage() {
                       setSelectedAlert(null);
                     }}
                   >
-                    Trash2 Eliminar
+                    <Trash2 className="h-4 w-4 inline" /> Eliminar
                   </AnimatedButton>
                   <AnimatedButton
                     variant="secondary"

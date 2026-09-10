@@ -17,14 +17,16 @@ export default function RegisterPage() {
     setError(null);
 
     try {
-      await register({
+      // Don't send blank optionals: backend regex-validates phone when present.
+      const payload: Record<string, unknown> = {
         email: data.email,
         password: data.password,
-        phone: data.phone,
         fullName: data.fullName,
         role: 'merchant',
-        businessName: data.businessName,
-      });
+      };
+      if (data.phone?.trim()) payload.phone = data.phone.trim();
+      if (data.businessName?.trim()) payload.businessName = data.businessName.trim();
+      await register(payload);
       router.push('/dashboard');
     } catch (err: any) {
       setError(err.message || 'Error al crear la cuenta. Intenta de nuevo.');

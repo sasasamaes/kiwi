@@ -3,6 +3,21 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import {
+  Package,
+  Coins,
+  BarChart3,
+  Check,
+  Star,
+  Calendar,
+  CalendarDays,
+  Smartphone,
+  CreditCard,
+  DollarSign,
+  RefreshCw,
+  Utensils,
+  Trophy,
+} from 'lucide-react';
 import { api, Skeleton, StaggerContainer, StaggerItem } from '@kiwi/ui';
 
 interface MerchantAnalytics {
@@ -57,17 +72,17 @@ interface MerchantAnalytics {
 }
 
 const PERIODS = [
-  { id: 'today', label: 'Hoy', icon: 'Calendar' },
+  { id: 'today', label: 'Hoy', icon: Calendar },
   { id: 'week', label: 'Semana', icon: '📆' },
-  { id: 'month', label: 'Mes', icon: 'CalendarDays' },
-  { id: 'quarter', label: 'Trimestre', icon: 'BarChart3' },
+  { id: 'month', label: 'Mes', icon: CalendarDays },
+  { id: 'quarter', label: 'Trimestre', icon: BarChart3 },
   { id: 'year', label: 'Año', icon: '📈' },
 ];
 
-const PAYMENT_METHODS: Record<string, { label: string; icon: string; color: string }> = {
-  sinpe: { label: 'SINPE', icon: 'Smartphone', color: 'bg-green-100 text-green-700' },
-  card: { label: 'Tarjeta', icon: 'CreditCard', color: 'bg-blue-100 text-blue-700' },
-  cash: { label: 'Efectivo', icon: 'DollarSign', color: 'bg-yellow-100 text-yellow-700' },
+const PAYMENT_METHODS: Record<string, { label: string; icon: any; color: string }> = {
+  sinpe: { label: 'SINPE', icon: Smartphone, color: 'bg-green-100 text-green-700' },
+  card: { label: 'Tarjeta', icon: CreditCard, color: 'bg-blue-100 text-blue-700' },
+  cash: { label: 'Efectivo', icon: DollarSign, color: 'bg-yellow-100 text-yellow-700' },
   crypto: { label: 'Crypto', icon: '₿', color: 'bg-purple-100 text-purple-700' },
 };
 
@@ -157,7 +172,7 @@ export default function MerchantAnalyticsPage() {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            RefreshCw Reintentar
+            <RefreshCw className="h-4 w-4 inline" /> Reintentar
           </motion.button>
         </motion.div>
       </div>
@@ -170,7 +185,7 @@ export default function MerchantAnalyticsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-display font-bold text-surface-800 dark:text-surface-100">
-            BarChart3 Mis Analíticas
+            <BarChart3 className="h-6 w-6 inline" /> Mis Analíticas
           </h1>
           <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">
             Rendimiento de tu negocio
@@ -181,7 +196,7 @@ export default function MerchantAnalyticsPage() {
           className="px-4 py-2 text-sm font-medium bg-surface-100 dark:bg-surface-800 text-surface-700 dark:text-surface-300 rounded-lg hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors"
           whileTap={{ scale: 0.95 }}
         >
-          RefreshCw Actualizar
+          <RefreshCw className="h-4 w-4 inline" /> Actualizar
         </motion.button>
       </div>
 
@@ -191,21 +206,28 @@ export default function MerchantAnalyticsPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        {PERIODS.map((period) => (
-          <motion.button
-            key={period.id}
-            onClick={() => setSelectedPeriod(period.id)}
-            className={`flex-shrink-0 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
-              selectedPeriod === period.id
-                ? 'bg-white dark:bg-surface-700 text-surface-800 dark:text-surface-100 shadow-soft'
-                : 'text-surface-500 dark:text-surface-400 hover:text-surface-700 dark:hover:text-surface-300'
-            }`}
-            whileTap={{ scale: 0.95 }}
-          >
-            <span className="mr-1">{period.icon}</span>
-            {period.label}
-          </motion.button>
-        ))}
+        {PERIODS.map((period) => {
+          const PeriodIcon = period.icon as any;
+          return (
+            <motion.button
+              key={period.id}
+              onClick={() => setSelectedPeriod(period.id)}
+              className={`flex-shrink-0 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                selectedPeriod === period.id
+                  ? 'bg-white dark:bg-surface-700 text-surface-800 dark:text-surface-100 shadow-soft'
+                  : 'text-surface-500 dark:text-surface-400 hover:text-surface-700 dark:hover:text-surface-300'
+              }`}
+              whileTap={{ scale: 0.95 }}
+            >
+              {typeof PeriodIcon === 'string' ? (
+                <span className="mr-1">{PeriodIcon}</span>
+              ) : (
+                <PeriodIcon className="mr-1 h-4 w-4 inline" />
+              )}
+              {period.label}
+            </motion.button>
+          );
+        })}
       </motion.div>
 
       {/* Overview Stats */}
@@ -213,7 +235,9 @@ export default function MerchantAnalyticsPage() {
         <StaggerItem>
           <motion.div className="rounded-2xl glass p-4" whileHover={{ y: -2 }}>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-2xl">Package</span>
+              <span className="text-2xl">
+                <Package className="h-6 w-6" />
+              </span>
               <span
                 className={`text-xs font-medium ${getGrowthColor(analytics?.trend?.ordersGrowth || 0)}`}
               >
@@ -231,7 +255,9 @@ export default function MerchantAnalyticsPage() {
         <StaggerItem>
           <motion.div className="rounded-2xl glass p-4" whileHover={{ y: -2 }}>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-2xl">Coins</span>
+              <span className="text-2xl">
+                <Coins className="h-6 w-6" />
+              </span>
               <span
                 className={`text-xs font-medium ${getGrowthColor(analytics?.trend?.revenueGrowth || 0)}`}
               >
@@ -249,7 +275,9 @@ export default function MerchantAnalyticsPage() {
         <StaggerItem>
           <motion.div className="rounded-2xl glass p-4" whileHover={{ y: -2 }}>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-2xl">BarChart3</span>
+              <span className="text-2xl">
+                <BarChart3 className="h-6 w-6" />
+              </span>
               <span className="text-xs font-medium text-surface-500 dark:text-surface-400">
                 Promedio
               </span>
@@ -264,7 +292,9 @@ export default function MerchantAnalyticsPage() {
         <StaggerItem>
           <motion.div className="rounded-2xl glass p-4" whileHover={{ y: -2 }}>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-2xl">Check</span>
+              <span className="text-2xl">
+                <Check className="h-6 w-6" />
+              </span>
               <span className="text-xs font-medium text-kiwi-600 dark:text-kiwi-400">
                 {analytics?.overview?.completionRate || 0}%
               </span>
@@ -297,7 +327,9 @@ export default function MerchantAnalyticsPage() {
             whileHover={{ y: -2 }}
           >
             <div className="flex items-center justify-between mb-2">
-              <span className="text-2xl">Star</span>
+              <span className="text-2xl">
+                <Star className="h-6 w-6" />
+              </span>
               <span className="text-xs font-medium text-kiwi-600 dark:text-kiwi-400">Rating</span>
             </div>
             <p className="text-2xl font-bold text-kiwi-700 dark:text-kiwi-300">
@@ -318,7 +350,7 @@ export default function MerchantAnalyticsPage() {
           transition={{ delay: 0.3 }}
         >
           <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-            BarChart3 Pedidos Diarios
+            <BarChart3 className="h-5 w-5 inline" /> Pedidos Diarios
           </h3>
           <div className="flex items-end gap-1 h-40">
             {(analytics?.orders?.daily || []).slice(-7).map((day, index) => (
@@ -357,25 +389,31 @@ export default function MerchantAnalyticsPage() {
           transition={{ delay: 0.4 }}
         >
           <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-            CreditCard Métodos de Pago
+            <CreditCard className="h-5 w-5 inline" /> Métodos de Pago
           </h3>
           <div className="space-y-4">
             {(analytics?.revenue?.byPaymentMethod || []).map((method) => {
               const config = PAYMENT_METHODS[method.method] || {
                 label: method.method,
-                icon: 'Coins',
+                icon: Coins,
                 color: 'bg-surface-100 text-surface-700',
               };
               const percentage = analytics?.revenue?.total
                 ? (method.amount / analytics.revenue.total) * 100
                 : 0;
+              const MethodIcon = config.icon as any;
 
               return (
                 <div key={method.method}>
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <span className={`px-2 py-1 rounded-lg text-xs font-medium ${config.color}`}>
-                        {config.icon} {config.label}
+                        {typeof MethodIcon === 'string' ? (
+                          <span>{MethodIcon}</span>
+                        ) : (
+                          <MethodIcon className="h-4 w-4 inline" />
+                        )}{' '}
+                        {config.label}
                       </span>
                     </div>
                     <span className="text-sm font-medium text-surface-800 dark:text-surface-200">
@@ -407,7 +445,7 @@ export default function MerchantAnalyticsPage() {
           transition={{ delay: 0.5 }}
         >
           <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-            Trophy Top Productos
+            <Trophy className="h-5 w-5 inline" /> Top Productos
           </h3>
           <div className="space-y-3">
             {(analytics?.topItems || []).slice(0, 5).map((item, index) => (
@@ -515,7 +553,7 @@ export default function MerchantAnalyticsPage() {
           </div>
           <div className="text-center p-4 rounded-xl bg-yellow-50 dark:bg-yellow-900/30">
             <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">
-              Star {analytics?.customerStats?.averageRating || 0}
+              <Star className="h-6 w-6 inline" /> {analytics?.customerStats?.averageRating || 0}
             </p>
             <p className="text-sm text-surface-500 dark:text-surface-400">Rating Promedio</p>
           </div>
@@ -538,7 +576,7 @@ export default function MerchantAnalyticsPage() {
               return (
                 <div key={rating.stars} className="flex items-center gap-3">
                   <span className="text-sm font-medium text-surface-800 dark:text-surface-200 w-12">
-                    {rating.stars} Star
+                    {rating.stars} <Star className="h-4 w-4 inline" />
                   </span>
                   <div className="flex-1 h-3 bg-surface-100 dark:bg-surface-700 rounded-full overflow-hidden">
                     <motion.div
@@ -575,7 +613,9 @@ export default function MerchantAnalyticsPage() {
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.95 }}
             >
-              <span className="text-2xl block mb-2">BarChart3</span>
+              <span className="text-2xl block mb-2">
+                <BarChart3 className="h-6 w-6" />
+              </span>
               <span className="text-sm font-medium">Dashboard</span>
             </motion.button>
           </Link>
@@ -585,7 +625,9 @@ export default function MerchantAnalyticsPage() {
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.95 }}
             >
-              <span className="text-2xl block mb-2">Utensils</span>
+              <span className="text-2xl block mb-2">
+                <Utensils className="h-6 w-6" />
+              </span>
               <span className="text-sm font-medium">Mi Menú</span>
             </motion.button>
           </Link>
@@ -595,7 +637,9 @@ export default function MerchantAnalyticsPage() {
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.95 }}
             >
-              <span className="text-2xl block mb-2">Calendar</span>
+              <span className="text-2xl block mb-2">
+                <Calendar className="h-6 w-6" />
+              </span>
               <span className="text-sm font-medium">Programados</span>
             </motion.button>
           </Link>
@@ -605,7 +649,9 @@ export default function MerchantAnalyticsPage() {
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.95 }}
             >
-              <span className="text-2xl block mb-2">Smartphone</span>
+              <span className="text-2xl block mb-2">
+                <Smartphone className="h-6 w-6" />
+              </span>
               <span className="text-sm font-medium">Mi QR</span>
             </motion.button>
           </Link>

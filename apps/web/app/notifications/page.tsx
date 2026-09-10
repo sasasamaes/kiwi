@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { Bell, Settings } from 'lucide-react';
 import { NotificationList, NotificationPreferences, AnimatedButton } from '@kiwi/ui';
 
 type Tab = 'notifications' | 'preferences';
@@ -53,7 +54,7 @@ export default function NotificationsPage() {
             onClick={() => setActiveTab('notifications')}
             whileTap={{ scale: 0.98 }}
           >
-            Bell Notificaciones
+            <Bell className="h-4 w-4 inline" /> Notificaciones
           </motion.button>
           <motion.button
             className={`flex-1 py-3 rounded-xl text-sm font-medium transition-colors ${
@@ -64,7 +65,7 @@ export default function NotificationsPage() {
             onClick={() => setActiveTab('preferences')}
             whileTap={{ scale: 0.98 }}
           >
-            Settings Preferencias
+            <Settings className="h-4 w-4 inline" /> Preferencias
           </motion.button>
         </div>
 

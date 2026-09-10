@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Package, Calendar, CalendarDays, Home, Coins, User, BarChart3 } from 'lucide-react';
 import { api } from '@kiwi/ui';
 
 interface EarningsData {
@@ -31,15 +32,15 @@ interface EarningsData {
 }
 
 const PERIODS = [
-  { id: 'today', label: 'Hoy', icon: 'Calendar' },
+  { id: 'today', label: 'Hoy', icon: Calendar },
   { id: 'week', label: 'Semana', icon: '📆' },
-  { id: 'month', label: 'Mes', icon: 'CalendarDays' },
+  { id: 'month', label: 'Mes', icon: CalendarDays },
   { id: 'all', label: 'Todo', icon: '♾️' },
 ];
 
-const ORDER_TYPE_ICONS: Record<string, string> = {
-  immediate: 'Package',
-  scheduled: 'Calendar',
+const ORDER_TYPE_ICONS: Record<string, any> = {
+  immediate: Package,
+  scheduled: Calendar,
   freight: '🚚',
   trip: '🚕',
 };
@@ -237,7 +238,7 @@ export default function EarningsPage() {
             </motion.p>
             <div className="mt-4 flex items-center gap-4 text-sm">
               <div className="flex items-center gap-1 text-white/80">
-                <span className="text-kiwi-200">Package</span>
+                <Package className="text-kiwi-200 h-5 w-5" />
                 <span>{earnings?.totalTrips || 0} viajes</span>
               </div>
               <div className="flex items-center gap-1 text-white/80">
@@ -255,21 +256,28 @@ export default function EarningsPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          {PERIODS.map((period) => (
-            <motion.button
-              key={period.id}
-              onClick={() => setSelectedPeriod(period.id)}
-              className={`flex-1 rounded-lg py-2.5 text-sm font-medium transition-all ${
-                selectedPeriod === period.id
-                  ? 'bg-white dark:bg-surface-700 text-surface-800 dark:text-surface-100 shadow-soft'
-                  : 'text-surface-500 dark:text-surface-400 hover:text-surface-700 dark:hover:text-surface-300'
-              }`}
-              whileTap={{ scale: 0.95 }}
-            >
-              <span className="mr-1">{period.icon}</span>
-              {period.label}
-            </motion.button>
-          ))}
+          {PERIODS.map((period) => {
+            const PeriodIcon = period.icon as any;
+            return (
+              <motion.button
+                key={period.id}
+                onClick={() => setSelectedPeriod(period.id)}
+                className={`flex-1 rounded-lg py-2.5 text-sm font-medium transition-all ${
+                  selectedPeriod === period.id
+                    ? 'bg-white dark:bg-surface-700 text-surface-800 dark:text-surface-100 shadow-soft'
+                    : 'text-surface-500 dark:text-surface-400 hover:text-surface-700 dark:hover:text-surface-300'
+                }`}
+                whileTap={{ scale: 0.95 }}
+              >
+                {typeof PeriodIcon === 'string' ? (
+                  <span className="mr-1">{PeriodIcon}</span>
+                ) : (
+                  <PeriodIcon className="h-4 w-4 inline mr-1" />
+                )}
+                {period.label}
+              </motion.button>
+            );
+          })}
         </motion.div>
 
         {/* Stats Grid */}
@@ -317,7 +325,7 @@ export default function EarningsPage() {
             transition={{ delay: 0.3 }}
           >
             <h3 className="mb-4 text-sm font-semibold text-surface-600 dark:text-surface-400">
-              BarChart3 Ganancias Diarias
+              <BarChart3 className="h-4 w-4 inline" /> Ganancias Diarias
             </h3>
             <div className="flex items-end gap-1 h-32">
               {earnings.daily.slice(-7).map((day, index) => (
@@ -373,7 +381,15 @@ export default function EarningsPage() {
                   <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-kiwi-100 dark:bg-kiwi-900/50 text-kiwi-600 dark:text-kiwi-400">
                       <span className="text-lg">
-                        {ORDER_TYPE_ICONS[transaction.orderType] || 'Package'}
+                        {(() => {
+                          const OrderIcon = (ORDER_TYPE_ICONS[transaction.orderType] ||
+                            Package) as any;
+                          return typeof OrderIcon === 'string' ? (
+                            OrderIcon
+                          ) : (
+                            <OrderIcon className="h-5 w-5" />
+                          );
+                        })()}
                       </span>
                     </div>
                     <div>
@@ -430,35 +446,35 @@ export default function EarningsPage() {
             href="/"
             className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
           >
-            <span className="text-xl">Home</span>
+            <Home className="text-xl h-5 w-5" />
             <span className="text-xs font-medium">Inicio</span>
           </Link>
           <Link
             href="/active"
             className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
           >
-            <span className="text-xl">Package</span>
+            <Package className="text-xl h-5 w-5" />
             <span className="text-xs font-medium">Activos</span>
           </Link>
           <Link
             href="/earnings"
             className="flex flex-col items-center gap-1 px-4 py-2 text-kiwi-600 dark:text-kiwi-400"
           >
-            <span className="text-xl">Coins</span>
+            <Coins className="text-xl h-5 w-5" />
             <span className="text-xs font-medium">Ganancias</span>
           </Link>
           <Link
             href="/schedule"
             className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
           >
-            <span className="text-xl">Calendar</span>
+            <Calendar className="text-xl h-5 w-5" />
             <span className="text-xs font-medium">Horario</span>
           </Link>
           <Link
             href="/profile"
             className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
           >
-            <span className="text-xl">User</span>
+            <User className="text-xl h-5 w-5" />
             <span className="text-xs font-medium">Perfil</span>
           </Link>
         </div>

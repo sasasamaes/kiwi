@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { ClipboardList } from 'lucide-react';
 
 const mockOrders = [
   {
@@ -300,7 +301,7 @@ export default function OrdersPage() {
                         👁️
                       </button>
                       <button className="p-2 text-surface-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors">
-                        ClipboardList
+                        <ClipboardList className="h-5 w-5" />
                       </button>
                     </div>
                   </td>

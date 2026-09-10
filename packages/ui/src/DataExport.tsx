@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDataExport, type ExportOptions } from './useDataExport';
+import { BarChart3, ClipboardList, CreditCard, Download, Map, Package } from 'lucide-react';
 
 interface DataExportProps {
   className?: string;
@@ -118,7 +119,7 @@ export function DataExport({ className = '', onComplete }: DataExportProps) {
             whileTap={{ scale: 0.98 }}
           >
             <div className="flex items-center gap-3">
-              <span className="text-2xl">Package</span>
+              <Package className="text-2xl h-6 w-6" />
               <div>
                 <p className="font-medium text-surface-800 dark:text-surface-200">
                   Todos los datos
@@ -137,7 +138,7 @@ export function DataExport({ className = '', onComplete }: DataExportProps) {
               className="p-3 rounded-xl bg-surface-50 dark:bg-surface-900 text-center hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors"
               whileTap={{ scale: 0.98 }}
             >
-              <span className="text-xl">ClipboardList</span>
+              <ClipboardList className="text-xl h-5 w-5" />
               <p className="text-xs font-medium text-surface-700 dark:text-surface-300 mt-1">
                 Pedidos
               </p>
@@ -149,7 +150,7 @@ export function DataExport({ className = '', onComplete }: DataExportProps) {
               className="p-3 rounded-xl bg-surface-50 dark:bg-surface-900 text-center hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors"
               whileTap={{ scale: 0.98 }}
             >
-              <span className="text-xl">CreditCard</span>
+              <CreditCard className="text-xl h-5 w-5" />
               <p className="text-xs font-medium text-surface-700 dark:text-surface-300 mt-1">
                 Pagos
               </p>
@@ -161,7 +162,7 @@ export function DataExport({ className = '', onComplete }: DataExportProps) {
               className="p-3 rounded-xl bg-surface-50 dark:bg-surface-900 text-center hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors"
               whileTap={{ scale: 0.98 }}
             >
-              <span className="text-xl">Map</span>
+              <Map className="text-xl h-5 w-5" />
               <p className="text-xs font-medium text-surface-700 dark:text-surface-300 mt-1">
                 Rutas
               </p>
@@ -180,7 +181,7 @@ export function DataExport({ className = '', onComplete }: DataExportProps) {
           whileTap={{ scale: 0.98 }}
         >
           <div className="flex items-center gap-3">
-            <span className="text-2xl">BarChart3</span>
+            <BarChart3 className="text-2xl h-6 w-6" />
             <div>
               <p className="font-medium text-surface-800 dark:text-surface-200">Exportar CSV</p>
               <p className="text-xs text-surface-500 dark:text-surface-400">
@@ -201,7 +202,7 @@ export function DataExport({ className = '', onComplete }: DataExportProps) {
           whileTap={{ scale: 0.98 }}
         >
           <div className="flex items-center gap-3">
-            <span className="text-2xl">Download</span>
+            <Download className="text-2xl h-6 w-6" />
             <div>
               <p className="font-medium text-kiwi-700 dark:text-kiwi-400">Importar respaldo</p>
               <p className="text-xs text-kiwi-600 dark:text-kiwi-400">

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { offlineCache, type CacheStats } from './offline-cache';
+import { AlertTriangle, BarChart3, Map } from 'lucide-react';
 
 interface OfflineIndicatorProps {
   className?: string;
@@ -209,7 +210,7 @@ export function OfflineIndicator({ className = '', showDetails = false }: Offlin
                   </h4>
                   <div className="space-y-2">
                     <div className="flex items-center gap-3 p-3 rounded-xl bg-surface-50 dark:bg-surface-900">
-                      <span className="text-lg">Map</span>
+                      <Map className="text-lg h-5 w-5" />
                       <div>
                         <p className="text-sm font-medium text-surface-800 dark:text-surface-200">
                           Predicciones de Tráfico
@@ -220,7 +221,7 @@ export function OfflineIndicator({ className = '', showDetails = false }: Offlin
                       </div>
                     </div>
                     <div className="flex items-center gap-3 p-3 rounded-xl bg-surface-50 dark:bg-surface-900">
-                      <span className="text-lg">AlertTriangle</span>
+                      <AlertTriangle className="text-lg h-5 w-5" />
                       <div>
                         <p className="text-sm font-medium text-surface-800 dark:text-surface-200">
                           Alertas de Tráfico
@@ -231,7 +232,7 @@ export function OfflineIndicator({ className = '', showDetails = false }: Offlin
                       </div>
                     </div>
                     <div className="flex items-center gap-3 p-3 rounded-xl bg-surface-50 dark:bg-surface-900">
-                      <span className="text-lg">BarChart3</span>
+                      <BarChart3 className="text-lg h-5 w-5" />
                       <div>
                         <p className="text-sm font-medium text-surface-800 dark:text-surface-200">
                           Análisis Histórico

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { apiFetch } from './api-client';
+import { BarChart3, Check, Map } from 'lucide-react';
 
 export interface TrafficPattern {
   hour: number;
@@ -97,7 +98,7 @@ export function TrafficAnalytics({ merchantId, className = '' }: TrafficAnalytic
   if (!report) {
     return (
       <div className={`rounded-2xl glass p-8 text-center ${className}`}>
-        <span className="text-4xl block mb-3">BarChart3</span>
+        <BarChart3 className="text-4xl block mb-3 h-10 w-10" />
         <p className="text-surface-500 dark:text-surface-400">
           No hay datos de tráfico disponibles
         </p>
@@ -427,7 +428,9 @@ function RecommendationsTab({ recommendations }: { recommendations: string[] }) 
 
       {recommendations.length === 0 ? (
         <div className="text-center py-8">
-          <span className="text-4xl block mb-3">Check</span>
+          <span className="text-4xl block mb-3">
+            <Check className="h-10 w-10 mx-auto" />
+          </span>
           <p className="text-surface-500 dark:text-surface-400">
             No hay recomendaciones en este momento
           </p>
@@ -504,7 +507,7 @@ export function TrafficHeatmap({
   if (data.length === 0) {
     return (
       <div className={`rounded-2xl glass p-8 text-center ${className}`}>
-        <span className="text-4xl block mb-3">Map</span>
+        <Map className="text-4xl block mb-3 h-10 w-10" />
         <p className="text-surface-500 dark:text-surface-400">
           No hay datos de mapa de calor disponibles
         </p>

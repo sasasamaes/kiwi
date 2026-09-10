@@ -2,6 +2,20 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import {
+  Settings,
+  CreditCard,
+  Bell,
+  Lock,
+  Smartphone,
+  DollarSign,
+  Package,
+  Check,
+  RefreshCw,
+  Coins,
+  Star,
+  PartyPopper,
+} from 'lucide-react';
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState({
@@ -69,24 +83,27 @@ export default function SettingsPage() {
       {/* Tabs */}
       <div className="flex gap-2 border-b border-surface-200 dark:border-surface-700 pb-2">
         {[
-          { id: 'platform', label: 'Plataforma', icon: 'Settings' },
-          { id: 'payments', label: 'Pagos', icon: 'CreditCard' },
-          { id: 'notifications', label: 'Notificaciones', icon: 'Bell' },
-          { id: 'security', label: 'Seguridad', icon: 'Lock' },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-              activeTab === tab.id
-                ? 'bg-kiwi-50 dark:bg-kiwi-900/30 text-kiwi-600 dark:text-kiwi-400'
-                : 'text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800'
-            }`}
-          >
-            <span>{tab.icon}</span>
-            {tab.label}
-          </button>
-        ))}
+          { id: 'platform', label: 'Plataforma', icon: Settings },
+          { id: 'payments', label: 'Pagos', icon: CreditCard },
+          { id: 'notifications', label: 'Notificaciones', icon: Bell },
+          { id: 'security', label: 'Seguridad', icon: Lock },
+        ].map((tab) => {
+          const TabIcon = tab.icon as any;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                activeTab === tab.id
+                  ? 'bg-kiwi-50 dark:bg-kiwi-900/30 text-kiwi-600 dark:text-kiwi-400'
+                  : 'text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800'
+              }`}
+            >
+              <TabIcon className="h-4 w-4" />
+              {tab.label}
+            </button>
+          );
+        })}
       </div>
 
       {/* Platform Settings */}
@@ -213,37 +230,50 @@ export default function SettingsPage() {
               </h4>
               <div className="space-y-3">
                 {[
-                  { key: 'sinpeEnabled', label: 'SINPE Móvil', icon: 'Smartphone' },
-                  { key: 'cardEnabled', label: 'Tarjeta de crédito/débito', icon: 'CreditCard' },
-                  { key: 'cashEnabled', label: 'Efectivo', icon: 'DollarSign' },
+                  { key: 'sinpeEnabled', label: 'SINPE Móvil', icon: Smartphone },
+                  { key: 'cardEnabled', label: 'Tarjeta de crédito/débito', icon: CreditCard },
+                  { key: 'cashEnabled', label: 'Efectivo', icon: DollarSign },
                   { key: 'cryptoEnabled', label: 'Criptomonedas (USDC/USDT)', icon: '₿' },
-                ].map((method) => (
-                  <div
-                    key={method.key}
-                    className="flex items-center justify-between p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="text-xl">{method.icon}</span>
-                      <span className="text-surface-800 dark:text-surface-200">{method.label}</span>
+                ].map((method) => {
+                  const MethodIcon = method.icon as any;
+                  return (
+                    <div
+                      key={method.key}
+                      className="flex items-center justify-between p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50"
+                    >
+                      <div className="flex items-center gap-3">
+                        {typeof MethodIcon === 'string' ? (
+                          <span className="text-xl">{MethodIcon}</span>
+                        ) : (
+                          <span className="text-xl">
+                            <MethodIcon className="h-5 w-5" />
+                          </span>
+                        )}
+                        <span className="text-surface-800 dark:text-surface-200">
+                          {method.label}
+                        </span>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={
+                            settings.payments[
+                              method.key as keyof typeof settings.payments
+                            ] as boolean
+                          }
+                          onChange={(e) =>
+                            setSettings({
+                              ...settings,
+                              payments: { ...settings.payments, [method.key]: e.target.checked },
+                            })
+                          }
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-surface-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-kiwi-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-surface-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-kiwi-500"></div>
+                      </label>
                     </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={
-                          settings.payments[method.key as keyof typeof settings.payments] as boolean
-                        }
-                        onChange={(e) =>
-                          setSettings({
-                            ...settings,
-                            payments: { ...settings.payments, [method.key]: e.target.checked },
-                          })
-                        }
-                        className="sr-only peer"
-                      />
-                      <div className="w-11 h-6 bg-surface-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-kiwi-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-surface-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-kiwi-500"></div>
-                    </label>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
@@ -324,77 +354,82 @@ export default function SettingsPage() {
                 key: 'newOrder',
                 label: 'Nuevo pedido disponible',
                 description: 'Cuando un comercio crea un nuevo pedido',
-                icon: 'Package',
+                icon: Package,
               },
               {
                 key: 'orderAccepted',
                 label: 'Pedido aceptado',
                 description: 'Cuando un repartidor acepta un pedido',
-                icon: 'Check',
+                icon: Check,
               },
               {
                 key: 'orderStatus',
                 label: 'Cambios de estado',
                 description: 'Cuando el estado de un pedido cambia',
-                icon: 'RefreshCw',
+                icon: RefreshCw,
               },
               {
                 key: 'payment',
                 label: 'Pagos',
                 description: 'Cuando se procesa un pago',
-                icon: 'Coins',
+                icon: Coins,
               },
               {
                 key: 'rating',
                 label: 'Calificaciones',
                 description: 'Cuando recibes una nueva calificación',
-                icon: 'Star',
+                icon: Star,
               },
               {
                 key: 'promotion',
                 label: 'Promociones',
                 description: 'Ofertas especiales y descuentos',
-                icon: 'PartyPopper',
+                icon: PartyPopper,
               },
-            ].map((notification) => (
-              <div
-                key={notification.key}
-                className="flex items-center justify-between p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50"
-              >
-                <div className="flex items-center gap-4">
-                  <span className="text-2xl">{notification.icon}</span>
-                  <div>
-                    <p className="font-medium text-surface-800 dark:text-surface-200">
-                      {notification.label}
-                    </p>
-                    <p className="text-sm text-surface-500 dark:text-surface-400">
-                      {notification.description}
-                    </p>
+            ].map((notification) => {
+              const NotificationIcon = notification.icon as any;
+              return (
+                <div
+                  key={notification.key}
+                  className="flex items-center justify-between p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50"
+                >
+                  <div className="flex items-center gap-4">
+                    <span className="text-2xl">
+                      <NotificationIcon className="h-6 w-6" />
+                    </span>
+                    <div>
+                      <p className="font-medium text-surface-800 dark:text-surface-200">
+                        {notification.label}
+                      </p>
+                      <p className="text-sm text-surface-500 dark:text-surface-400">
+                        {notification.description}
+                      </p>
+                    </div>
                   </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={
+                        settings.notifications[
+                          notification.key as keyof typeof settings.notifications
+                        ] as boolean
+                      }
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          notifications: {
+                            ...settings.notifications,
+                            [notification.key]: e.target.checked,
+                          },
+                        })
+                      }
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-surface-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-kiwi-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-surface-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-kiwi-500"></div>
+                  </label>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={
-                      settings.notifications[
-                        notification.key as keyof typeof settings.notifications
-                      ] as boolean
-                    }
-                    onChange={(e) =>
-                      setSettings({
-                        ...settings,
-                        notifications: {
-                          ...settings.notifications,
-                          [notification.key]: e.target.checked,
-                        },
-                      })
-                    }
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-surface-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-kiwi-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-surface-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-kiwi-500"></div>
-                </label>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </motion.div>
       )}
@@ -423,7 +458,7 @@ export default function SettingsPage() {
                   key: 'requirePhoneVerification',
                   label: 'Verificación telefónica',
                   description: 'Requerir verificación por SMS al registrarse',
-                  icon: 'Smartphone',
+                  icon: Smartphone,
                 },
                 {
                   key: 'twoFactorAuth',
@@ -431,40 +466,51 @@ export default function SettingsPage() {
                   description: 'Habilitar 2FA para cuentas de administrador',
                   icon: '🔐',
                 },
-              ].map((security) => (
-                <div
-                  key={security.key}
-                  className="flex items-center justify-between p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50"
-                >
-                  <div className="flex items-center gap-4">
-                    <span className="text-2xl">{security.icon}</span>
-                    <div>
-                      <p className="font-medium text-surface-800 dark:text-surface-200">
-                        {security.label}
-                      </p>
-                      <p className="text-sm text-surface-500 dark:text-surface-400">
-                        {security.description}
-                      </p>
+              ].map((security) => {
+                const SecurityIcon = security.icon as any;
+                return (
+                  <div
+                    key={security.key}
+                    className="flex items-center justify-between p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50"
+                  >
+                    <div className="flex items-center gap-4">
+                      {typeof SecurityIcon === 'string' ? (
+                        <span className="text-2xl">{SecurityIcon}</span>
+                      ) : (
+                        <span className="text-2xl">
+                          <SecurityIcon className="h-6 w-6" />
+                        </span>
+                      )}
+                      <div>
+                        <p className="font-medium text-surface-800 dark:text-surface-200">
+                          {security.label}
+                        </p>
+                        <p className="text-sm text-surface-500 dark:text-surface-400">
+                          {security.description}
+                        </p>
+                      </div>
                     </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={
+                          settings.security[
+                            security.key as keyof typeof settings.security
+                          ] as boolean
+                        }
+                        onChange={(e) =>
+                          setSettings({
+                            ...settings,
+                            security: { ...settings.security, [security.key]: e.target.checked },
+                          })
+                        }
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-surface-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-kiwi-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-surface-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-kiwi-500"></div>
+                    </label>
                   </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={
-                        settings.security[security.key as keyof typeof settings.security] as boolean
-                      }
-                      onChange={(e) =>
-                        setSettings({
-                          ...settings,
-                          security: { ...settings.security, [security.key]: e.target.checked },
-                        })
-                      }
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-surface-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-kiwi-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-surface-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-kiwi-500"></div>
-                  </label>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             <div>

@@ -3,6 +3,18 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import {
+  Package,
+  Coins,
+  BarChart3,
+  Star,
+  Home,
+  User,
+  Calendar,
+  CalendarDays,
+  RefreshCw,
+  Target,
+} from 'lucide-react';
 import { api, Skeleton, StaggerContainer, StaggerItem } from '@kiwi/ui';
 
 interface DriverAnalytics {
@@ -49,9 +61,9 @@ interface DriverAnalytics {
 }
 
 const PERIODS = [
-  { id: 'today', label: 'Hoy', icon: 'Calendar' },
+  { id: 'today', label: 'Hoy', icon: Calendar },
   { id: 'week', label: 'Semana', icon: '📆' },
-  { id: 'month', label: 'Mes', icon: 'CalendarDays' },
+  { id: 'month', label: 'Mes', icon: CalendarDays },
   { id: 'all', label: 'Todo', icon: '♾️' },
 ];
 
@@ -146,7 +158,7 @@ export default function DriverAnalyticsPage() {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            RefreshCw Reintentar
+            <RefreshCw className="h-4 w-4 inline" /> Reintentar
           </motion.button>
         </motion.div>
       </main>
@@ -171,7 +183,7 @@ export default function DriverAnalyticsPage() {
               <span className="text-sm font-medium">Volver</span>
             </Link>
             <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-              BarChart3 Mis Analytics
+              <BarChart3 className="h-5 w-5 inline" /> Mis Analytics
             </h1>
             <div className="w-16" />
           </div>
@@ -185,21 +197,28 @@ export default function DriverAnalyticsPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          {PERIODS.map((period) => (
-            <motion.button
-              key={period.id}
-              onClick={() => setSelectedPeriod(period.id)}
-              className={`flex-1 rounded-lg py-2.5 text-sm font-medium transition-all ${
-                selectedPeriod === period.id
-                  ? 'bg-white dark:bg-surface-700 text-surface-800 dark:text-surface-100 shadow-soft'
-                  : 'text-surface-500 dark:text-surface-400 hover:text-surface-700 dark:hover:text-surface-300'
-              }`}
-              whileTap={{ scale: 0.95 }}
-            >
-              <span className="mr-1">{period.icon}</span>
-              {period.label}
-            </motion.button>
-          ))}
+          {PERIODS.map((period) => {
+            const PeriodIcon = period.icon as any;
+            return (
+              <motion.button
+                key={period.id}
+                onClick={() => setSelectedPeriod(period.id)}
+                className={`flex-1 rounded-lg py-2.5 text-sm font-medium transition-all ${
+                  selectedPeriod === period.id
+                    ? 'bg-white dark:bg-surface-700 text-surface-800 dark:text-surface-100 shadow-soft'
+                    : 'text-surface-500 dark:text-surface-400 hover:text-surface-700 dark:hover:text-surface-300'
+                }`}
+                whileTap={{ scale: 0.95 }}
+              >
+                {typeof PeriodIcon === 'string' ? (
+                  <span className="mr-1">{PeriodIcon}</span>
+                ) : (
+                  <PeriodIcon className="h-4 w-4 inline mr-1" />
+                )}
+                {period.label}
+              </motion.button>
+            );
+          })}
         </motion.div>
 
         {/* Overview Stats */}
@@ -210,7 +229,7 @@ export default function DriverAnalyticsPage() {
               whileHover={{ y: -2 }}
             >
               <div className="flex items-center justify-between mb-2">
-                <span className="text-2xl">Package</span>
+                <Package className="text-2xl h-6 w-6" />
                 <span
                   className={`text-xs font-medium ${getGrowthColor(analytics?.trend?.deliveriesGrowth || 0)}`}
                 >
@@ -231,7 +250,7 @@ export default function DriverAnalyticsPage() {
               whileHover={{ y: -2 }}
             >
               <div className="flex items-center justify-between mb-2">
-                <span className="text-2xl">Coins</span>
+                <Coins className="text-2xl h-6 w-6" />
                 <span
                   className={`text-xs font-medium ${getGrowthColor(analytics?.trend?.earningsGrowth || 0)}`}
                 >
@@ -252,7 +271,7 @@ export default function DriverAnalyticsPage() {
               whileHover={{ y: -2 }}
             >
               <div className="flex items-center justify-between mb-2">
-                <span className="text-2xl">BarChart3</span>
+                <BarChart3 className="text-2xl h-6 w-6" />
                 <span className="text-xs font-medium text-surface-500 dark:text-surface-400">
                   Promedio
                 </span>
@@ -270,7 +289,7 @@ export default function DriverAnalyticsPage() {
               whileHover={{ y: -2 }}
             >
               <div className="flex items-center justify-between mb-2">
-                <span className="text-2xl">Star</span>
+                <Star className="text-2xl h-6 w-6" />
                 <span
                   className={`text-xs font-medium ${getGrowthColor(analytics?.trend?.ratingGrowth || 0)}`}
                 >
@@ -294,7 +313,7 @@ export default function DriverAnalyticsPage() {
           transition={{ delay: 0.2 }}
         >
           <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-4">
-            Coins Ganancias Diarias
+            <Coins className="h-4 w-4 inline" /> Ganancias Diarias
           </h3>
           <div className="flex items-end gap-1 h-32">
             {(analytics?.earnings?.daily || []).slice(-7).map((day, index) => (
@@ -333,7 +352,7 @@ export default function DriverAnalyticsPage() {
           transition={{ delay: 0.3 }}
         >
           <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-4">
-            Package Entregas Diarias
+            <Package className="h-4 w-4 inline" /> Entregas Diarias
           </h3>
           <div className="flex items-end gap-1 h-32">
             {(analytics?.deliveries?.daily || []).slice(-7).map((day, index) => (
@@ -411,7 +430,7 @@ export default function DriverAnalyticsPage() {
           transition={{ delay: 0.5 }}
         >
           <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-4">
-            BarChart3 Métricas de Rendimiento
+            <BarChart3 className="h-4 w-4 inline" /> Métricas de Rendimiento
           </h3>
           <div className="grid grid-cols-2 gap-4">
             <div className="p-3 rounded-xl bg-surface-50 dark:bg-surface-700/50">
@@ -449,14 +468,14 @@ export default function DriverAnalyticsPage() {
           transition={{ delay: 0.6 }}
         >
           <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-4">
-            Star Calificaciones
+            <Star className="h-4 w-4 inline" /> Calificaciones
           </h3>
           <div className="flex items-center gap-6">
             <div className="text-center">
               <p className="text-4xl font-bold text-surface-800 dark:text-surface-100">
                 {analytics?.ratings?.average || 0}
               </p>
-              <p className="text-2xl">Star</p>
+              <Star className="text-2xl h-6 w-6 mx-auto" />
               <p className="text-xs text-surface-500 dark:text-surface-400">
                 {analytics?.ratings?.total || 0} calificaciones
               </p>
@@ -469,7 +488,7 @@ export default function DriverAnalyticsPage() {
                 return (
                   <div key={rating.stars} className="flex items-center gap-2">
                     <span className="text-xs text-surface-500 dark:text-surface-400 w-8">
-                      {rating.stars} Star
+                      {rating.stars} <Star className="h-3 w-3 inline" />
                     </span>
                     <div className="flex-1 h-2 bg-surface-100 dark:bg-surface-700 rounded-full overflow-hidden">
                       <motion.div
@@ -503,13 +522,17 @@ export default function DriverAnalyticsPage() {
               <p className="text-sm text-white/80">Las 11am-2pm y 5pm-8pm tienen más pedidos</p>
             </div>
             <div className="bg-white/20 rounded-xl p-3">
-              <p className="font-medium">Star Mantén alta calificación</p>
+              <p className="font-medium">
+                <Star className="h-4 w-4 inline" /> Mantén alta calificación
+              </p>
               <p className="text-sm text-white/80">
                 Los repartidores top reciben más pedidos premium
               </p>
             </div>
             <div className="bg-white/20 rounded-xl p-3">
-              <p className="font-medium">Target Sé consistente</p>
+              <p className="font-medium">
+                <Target className="h-4 w-4 inline" /> Sé consistente
+              </p>
               <p className="text-sm text-white/80">
                 Trabaja al menos 5 días a la semana para bonos
               </p>
@@ -525,35 +548,35 @@ export default function DriverAnalyticsPage() {
             href="/"
             className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
           >
-            <span className="text-xl">Home</span>
+            <Home className="text-xl h-5 w-5" />
             <span className="text-xs font-medium">Inicio</span>
           </Link>
           <Link
             href="/active"
             className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
           >
-            <span className="text-xl">Package</span>
+            <Package className="text-xl h-5 w-5" />
             <span className="text-xs font-medium">Activos</span>
           </Link>
           <Link
             href="/earnings"
             className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
           >
-            <span className="text-xl">Coins</span>
+            <Coins className="text-xl h-5 w-5" />
             <span className="text-xs font-medium">Ganancias</span>
           </Link>
           <Link
             href="/analytics"
             className="flex flex-col items-center gap-1 px-4 py-2 text-kiwi-600 dark:text-kiwi-400"
           >
-            <span className="text-xl">BarChart3</span>
+            <BarChart3 className="text-xl h-5 w-5" />
             <span className="text-xs font-medium">Analytics</span>
           </Link>
           <Link
             href="/profile"
             className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
           >
-            <span className="text-xl">User</span>
+            <User className="text-xl h-5 w-5" />
             <span className="text-xs font-medium">Perfil</span>
           </Link>
         </div>

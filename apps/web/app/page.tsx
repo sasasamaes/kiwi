@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { Check, Star, Car, Calendar, FileText } from 'lucide-react';
 import { AnimatedButton, StaggerContainer, StaggerItem } from '@kiwi/ui';
 
 export default function Home() {
@@ -90,7 +91,7 @@ export default function Home() {
             </Link>
             <Link href="/register">
               <AnimatedButton variant="glass" size="lg" className="min-w-[200px]">
-                FileText Crear Cuenta
+                <FileText className="h-4 w-4 inline" /> Crear Cuenta
               </AnimatedButton>
             </Link>
           </motion.div>
@@ -103,19 +104,24 @@ export default function Home() {
             transition={{ delay: 0.7 }}
           >
             {[
-              { icon: 'Check', text: '100+ comercios' },
-              { icon: 'Star', text: '4.9 calificación' },
-              { icon: 'Car', text: '50+ repartidores' },
-            ].map((item, i) => (
-              <motion.div
-                key={i}
-                className="flex items-center gap-2 text-surface-400"
-                whileHover={{ scale: 1.05, color: '#22c55e' }}
-              >
-                <span className="text-2xl">{item.icon}</span>
-                <span className="text-sm">{item.text}</span>
-              </motion.div>
-            ))}
+              { icon: Check, text: '100+ comercios' },
+              { icon: Star, text: '4.9 calificación' },
+              { icon: Car, text: '50+ repartidores' },
+            ].map((item, i) => {
+              const ProofIcon = item.icon as any;
+              return (
+                <motion.div
+                  key={i}
+                  className="flex items-center gap-2 text-surface-400"
+                  whileHover={{ scale: 1.05, color: '#22c55e' }}
+                >
+                  <span className="text-2xl">
+                    <ProofIcon className="h-6 w-6" />
+                  </span>
+                  <span className="text-sm">{item.text}</span>
+                </motion.div>
+              );
+            })}
           </motion.div>
         </div>
       </section>
@@ -147,7 +153,9 @@ export default function Home() {
                   whileHover={{ rotate: 10, scale: 1.1 }}
                   transition={{ type: 'spring', stiffness: 260, damping: 20 }}
                 >
-                  <span className="text-3xl">Calendar</span>
+                  <span className="text-3xl">
+                    <Calendar className="h-8 w-8" />
+                  </span>
                 </motion.div>
                 <h3 className="mb-2 text-lg font-display font-semibold text-surface-800">
                   Pedidos Programados
@@ -169,7 +177,9 @@ export default function Home() {
                   whileHover={{ rotate: -10, scale: 1.1 }}
                   transition={{ type: 'spring', stiffness: 260, damping: 20 }}
                 >
-                  <span className="text-3xl">Star</span>
+                  <span className="text-3xl">
+                    <Star className="h-8 w-8" />
+                  </span>
                 </motion.div>
                 <h3 className="mb-2 text-lg font-display font-semibold text-surface-800">
                   Calidad, No Precio

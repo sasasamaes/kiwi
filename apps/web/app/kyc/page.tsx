@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
+import { MapPin } from 'lucide-react';
 import { KYCVerification, KYCStatusBadge } from '@kiwi/ui';
 
 export default function MerchantKYCPage() {
@@ -111,7 +112,9 @@ export default function MerchantKYCPage() {
               </div>
             </div>
             <div className="flex items-start gap-3 p-4 rounded-xl bg-surface-50">
-              <span className="text-2xl">MapPin</span>
+              <span className="text-2xl">
+                <MapPin className="h-6 w-6" />
+              </span>
               <div>
                 <p className="font-medium text-surface-700">Foto del Local</p>
                 <p className="text-xs text-surface-400">Exterior del negocio con letrero visible</p>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Utensils, Check, Clock, Pencil } from 'lucide-react';
 import { AnimatedButton } from '@kiwi/ui';
 
 const DEFAULT_CATEGORIES = [
@@ -149,7 +150,13 @@ export function MenuItemForm({
     >
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100">
-          {isEditing ? 'Pencil Editar Producto' : '➕ Nuevo Producto'}
+          {isEditing ? (
+            <>
+              <Pencil className="h-5 w-5 inline" /> Editar Producto
+            </>
+          ) : (
+            '➕ Nuevo Producto'
+          )}
         </h2>
         <motion.button
           onClick={onCancel}
@@ -174,6 +181,8 @@ export function MenuItemForm({
             >
               {imagePreview ? (
                 <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+              ) : formData.image === 'Utensils' ? (
+                <Utensils className="h-10 w-10" />
               ) : (
                 formData.image
               )}
@@ -333,7 +342,7 @@ export function MenuItemForm({
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium text-surface-800 dark:text-surface-200">
-                  Check Disponible
+                  <Check className="h-4 w-4 inline" /> Disponible
                 </p>
                 <p className="text-xs text-surface-500 dark:text-surface-400">En stock ahora</p>
               </div>
@@ -397,7 +406,7 @@ export function MenuItemForm({
                   animate={{ rotate: 360 }}
                   transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
                 >
-                  Clock
+                  <Clock className="h-5 w-5" />
                 </motion.span>
                 Guardando...
               </span>

@@ -4,6 +4,18 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import {
+  MapPin,
+  Home,
+  Package,
+  CreditCard,
+  Smartphone,
+  DollarSign,
+  Calendar,
+  BarChart3,
+  Clock,
+  PartyPopper,
+} from 'lucide-react';
 import { AnimatedButton, StaggerContainer, StaggerItem, useAuth, useSocket, api } from '@kiwi/ui';
 
 type Step = 1 | 2 | 3 | 4;
@@ -176,10 +188,10 @@ export default function NewOrder() {
   };
 
   const steps = [
-    { num: 1, label: 'Recoger', icon: 'MapPin' },
-    { num: 2, label: 'Entregar', icon: 'Home' },
-    { num: 3, label: 'Detalles', icon: 'Package' },
-    { num: 4, label: 'Pagar', icon: 'CreditCard' },
+    { num: 1, label: 'Recoger', icon: MapPin },
+    { num: 2, label: 'Entregar', icon: Home },
+    { num: 3, label: 'Detalles', icon: Package },
+    { num: 4, label: 'Pagar', icon: CreditCard },
   ];
 
   // Order Created Success Screen
@@ -197,7 +209,7 @@ export default function NewOrder() {
             animate={{ scale: 1, rotate: 0 }}
             transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}
           >
-            PartyPopper
+            <PartyPopper className="h-24 w-24" />
           </motion.div>
           <h1 className="text-2xl font-display font-bold text-surface-800 dark:text-surface-100 mb-2">
             ¡Pedido Creado!
@@ -217,7 +229,13 @@ export default function NewOrder() {
               <div className="flex justify-between">
                 <span className="text-surface-500 dark:text-surface-400">Tipo</span>
                 <span className="font-medium text-surface-800 dark:text-surface-200">
-                  {orderData.isScheduled ? 'Calendar Programado' : '⚡ Inmediato'}
+                  {orderData.isScheduled ? (
+                    <>
+                      <Calendar className="h-4 w-4 inline" /> Programado
+                    </>
+                  ) : (
+                    '⚡ Inmediato'
+                  )}
                 </span>
               </div>
               <div className="flex justify-between">
@@ -232,7 +250,7 @@ export default function NewOrder() {
           <div className="space-y-3">
             <Link href="/dashboard">
               <AnimatedButton variant="gradient" className="w-full">
-                BarChart3 Volver al Dashboard
+                <BarChart3 className="h-4 w-4 inline" /> Volver al Dashboard
               </AnimatedButton>
             </Link>
             <AnimatedButton
@@ -289,33 +307,36 @@ export default function NewOrder() {
       {/* Progress Steps */}
       <div className="mx-auto w-full max-w-lg px-4 py-4">
         <div className="flex items-center justify-between">
-          {steps.map((s, i) => (
-            <div key={s.num} className="flex items-center">
-              <motion.div
-                className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-medium transition-all ${
-                  step >= s.num
-                    ? 'bg-kiwi-500 text-white shadow-kiwi'
-                    : 'bg-surface-200 dark:bg-surface-700 text-surface-500 dark:text-surface-400'
-                }`}
-                animate={step === s.num ? { scale: [1, 1.1, 1] } : {}}
-                transition={{ duration: 0.3 }}
-              >
-                {step > s.num ? '✓' : s.icon}
-              </motion.div>
-              <span
-                className={`ml-2 text-xs font-medium hidden sm:block ${
-                  step >= s.num ? 'text-kiwi-600 dark:text-kiwi-400' : 'text-surface-400'
-                }`}
-              >
-                {s.label}
-              </span>
-              {i < steps.length - 1 && (
-                <div
-                  className={`mx-2 h-0.5 w-6 sm:w-8 ${step > s.num ? 'bg-kiwi-500' : 'bg-surface-200 dark:bg-surface-700'}`}
-                />
-              )}
-            </div>
-          ))}
+          {steps.map((s, i) => {
+            const StepIcon = s.icon as any;
+            return (
+              <div key={s.num} className="flex items-center">
+                <motion.div
+                  className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-medium transition-all ${
+                    step >= s.num
+                      ? 'bg-kiwi-500 text-white shadow-kiwi'
+                      : 'bg-surface-200 dark:bg-surface-700 text-surface-500 dark:text-surface-400'
+                  }`}
+                  animate={step === s.num ? { scale: [1, 1.1, 1] } : {}}
+                  transition={{ duration: 0.3 }}
+                >
+                  {step > s.num ? '✓' : <StepIcon className="h-5 w-5" />}
+                </motion.div>
+                <span
+                  className={`ml-2 text-xs font-medium hidden sm:block ${
+                    step >= s.num ? 'text-kiwi-600 dark:text-kiwi-400' : 'text-surface-400'
+                  }`}
+                >
+                  {s.label}
+                </span>
+                {i < steps.length - 1 && (
+                  <div
+                    className={`mx-2 h-0.5 w-6 sm:w-8 ${step > s.num ? 'bg-kiwi-500' : 'bg-surface-200 dark:bg-surface-700'}`}
+                  />
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -331,7 +352,7 @@ export default function NewOrder() {
               exit={{ opacity: 0, x: -50 }}
             >
               <h2 className="mb-6 text-xl font-display font-semibold text-surface-800 dark:text-surface-100">
-                MapPin ¿Dónde recoger?
+                <MapPin className="h-6 w-6 inline" /> ¿Dónde recoger?
               </h2>
 
               {/* Saved Addresses */}
@@ -410,7 +431,9 @@ export default function NewOrder() {
                   whileTap={{ scale: 0.98 }}
                 >
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl">MapPin</span>
+                    <span className="text-2xl">
+                      <MapPin className="h-6 w-6" />
+                    </span>
                     <div>
                       <p className="text-sm font-medium text-kiwi-700 dark:text-kiwi-400">
                         Usar ubicación actual
@@ -434,7 +457,7 @@ export default function NewOrder() {
               exit={{ opacity: 0, x: -50 }}
             >
               <h2 className="mb-6 text-xl font-display font-semibold text-surface-800 dark:text-surface-100">
-                Home ¿Dónde entregar?
+                <Home className="h-6 w-6 inline" /> ¿Dónde entregar?
               </h2>
 
               <div className="space-y-4">
@@ -515,7 +538,7 @@ export default function NewOrder() {
               exit={{ opacity: 0, x: -50 }}
             >
               <h2 className="mb-6 text-xl font-display font-semibold text-surface-800 dark:text-surface-100">
-                Package Detalles del pedido
+                <Package className="h-6 w-6 inline" /> Detalles del pedido
               </h2>
 
               {/* Quick Add Section */}
@@ -677,7 +700,9 @@ export default function NewOrder() {
 
                 {orderData.items.length === 0 && (
                   <div className="rounded-xl bg-surface-50 dark:bg-surface-800 p-8 text-center">
-                    <span className="text-4xl">Package</span>
+                    <span className="text-4xl">
+                      <Package className="h-10 w-10" />
+                    </span>
                     <p className="mt-2 text-sm text-surface-500 dark:text-surface-400">
                       Agrega productos al pedido
                     </p>
@@ -706,7 +731,7 @@ export default function NewOrder() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-medium text-surface-800 dark:text-surface-200">
-                      Calendar Programar para después
+                      <Calendar className="h-5 w-5 inline" /> Programar para después
                     </p>
                     <p className="text-xs text-surface-500 dark:text-surface-400">
                       Elige fecha y hora específica
@@ -771,7 +796,7 @@ export default function NewOrder() {
               exit={{ opacity: 0, x: -50 }}
             >
               <h2 className="mb-6 text-xl font-display font-semibold text-surface-800 dark:text-surface-100">
-                CreditCard Resumen y pago
+                <CreditCard className="h-6 w-6 inline" /> Resumen y pago
               </h2>
 
               {/* Order Summary */}
@@ -782,20 +807,24 @@ export default function NewOrder() {
 
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-surface-500 dark:text-surface-400">MapPin Recoger:</span>
+                    <span className="text-surface-500 dark:text-surface-400">
+                      <MapPin className="h-4 w-4 inline" /> Recoger:
+                    </span>
                     <span className="font-medium text-surface-800 dark:text-surface-200 text-right max-w-[60%]">
                       {orderData.pickupName || 'No especificado'}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-surface-500 dark:text-surface-400">Home Entregar:</span>
+                    <span className="text-surface-500 dark:text-surface-400">
+                      <Home className="h-4 w-4 inline" /> Entregar:
+                    </span>
                     <span className="font-medium text-surface-800 dark:text-surface-200 text-right max-w-[60%]">
                       {orderData.deliveryName || 'No especificado'}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-surface-500 dark:text-surface-400">
-                      Package Productos:
+                      <Package className="h-4 w-4 inline" /> Productos:
                     </span>
                     <span className="font-medium text-surface-800 dark:text-surface-200">
                       {orderData.items.length} items (
@@ -805,7 +834,7 @@ export default function NewOrder() {
                   {orderData.isScheduled && (
                     <div className="flex justify-between">
                       <span className="text-surface-500 dark:text-surface-400">
-                        Calendar Programado:
+                        <Calendar className="h-4 w-4 inline" /> Programado:
                       </span>
                       <span className="font-medium text-kiwi-600 dark:text-kiwi-400">
                         {orderData.scheduledDate} {orderData.scheduledTime}
@@ -871,52 +900,57 @@ export default function NewOrder() {
                   {[
                     {
                       id: 'sinpe',
-                      icon: 'Smartphone',
+                      icon: Smartphone,
                       label: 'SINPE Móvil',
                       desc: 'Transferencia instantánea',
                     },
-                    { id: 'card', icon: 'CreditCard', label: 'Tarjeta', desc: 'Crédito o débito' },
+                    { id: 'card', icon: CreditCard, label: 'Tarjeta', desc: 'Crédito o débito' },
                     {
                       id: 'cash',
-                      icon: 'DollarSign',
+                      icon: DollarSign,
                       label: 'Efectivo',
                       desc: 'Pagar al repartidor',
                     },
-                  ].map((method) => (
-                    <motion.button
-                      key={method.id}
-                      onClick={() =>
-                        setOrderData({ ...orderData, paymentMethod: method.id as any })
-                      }
-                      className={`w-full flex items-center justify-between rounded-xl p-4 transition-all ${
-                        orderData.paymentMethod === method.id
-                          ? 'border-2 border-kiwi-500 bg-kiwi-50 dark:bg-kiwi-900/30'
-                          : 'border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 hover:border-surface-300 dark:hover:border-surface-600'
-                      }`}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="text-2xl">{method.icon}</span>
-                        <div className="text-left">
-                          <p className="font-medium text-surface-800 dark:text-surface-200">
-                            {method.label}
-                          </p>
-                          <p className="text-xs text-surface-500 dark:text-surface-400">
-                            {method.desc}
-                          </p>
+                  ].map((method) => {
+                    const PaymentIcon = method.icon as any;
+                    return (
+                      <motion.button
+                        key={method.id}
+                        onClick={() =>
+                          setOrderData({ ...orderData, paymentMethod: method.id as any })
+                        }
+                        className={`w-full flex items-center justify-between rounded-xl p-4 transition-all ${
+                          orderData.paymentMethod === method.id
+                            ? 'border-2 border-kiwi-500 bg-kiwi-50 dark:bg-kiwi-900/30'
+                            : 'border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 hover:border-surface-300 dark:hover:border-surface-600'
+                        }`}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-2xl">
+                            <PaymentIcon className="h-6 w-6" />
+                          </span>
+                          <div className="text-left">
+                            <p className="font-medium text-surface-800 dark:text-surface-200">
+                              {method.label}
+                            </p>
+                            <p className="text-xs text-surface-500 dark:text-surface-400">
+                              {method.desc}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                      {orderData.paymentMethod === method.id && (
-                        <motion.span
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          className="text-kiwi-500 text-xl"
-                        >
-                          ✓
-                        </motion.span>
-                      )}
-                    </motion.button>
-                  ))}
+                        {orderData.paymentMethod === method.id && (
+                          <motion.span
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            className="text-kiwi-500 text-xl"
+                          >
+                            ✓
+                          </motion.span>
+                        )}
+                      </motion.button>
+                    );
+                  })}
                 </div>
               </div>
             </motion.div>
@@ -964,7 +998,7 @@ export default function NewOrder() {
                     animate={{ rotate: 360 }}
                     transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
                   >
-                    Clock
+                    <Clock className="h-5 w-5" />
                   </motion.span>
                   Creando...
                 </span>

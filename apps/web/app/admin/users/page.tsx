@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Star, Pencil, Trash2, Check } from 'lucide-react';
 
 const mockUsers = [
   {
@@ -291,10 +292,10 @@ export default function UsersPage() {
                           👁️
                         </button>
                         <button className="p-2 text-surface-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors">
-                          Pencil
+                          <Pencil className="h-5 w-5" />
                         </button>
                         <button className="p-2 text-surface-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors">
-                          Trash2
+                          <Trash2 className="h-5 w-5" />
                         </button>
                       </div>
                     </td>
@@ -382,7 +383,7 @@ export default function UsersPage() {
                     <div className="flex justify-between items-center">
                       <span className="text-surface-600 dark:text-surface-400">Rating</span>
                       <span className="font-semibold text-kiwi-600 dark:text-kiwi-400">
-                        Star {selectedUser.rating}
+                        <Star className="h-4 w-4 inline" /> {selectedUser.rating}
                       </span>
                     </div>
                     <div className="flex justify-between items-center mt-2">
@@ -398,15 +399,15 @@ export default function UsersPage() {
 
                 <div className="flex gap-3 pt-4">
                   <button className="flex-1 py-2 px-4 text-sm font-medium bg-surface-100 dark:bg-surface-700 text-surface-700 dark:text-surface-300 rounded-lg hover:bg-surface-200 dark:hover:bg-surface-600 transition-colors">
-                    Pencil Editar
+                    <Pencil className="h-4 w-4 inline" /> Editar
                   </button>
                   {selectedUser.kycStatus === 'pending' && (
                     <button className="flex-1 py-2 px-4 text-sm font-medium bg-kiwi-500 text-white rounded-lg hover:bg-kiwi-600 transition-colors">
-                      Check Aprobar KYC
+                      <Check className="h-4 w-4 inline" /> Aprobar KYC
                     </button>
                   )}
                   <button className="py-2 px-4 text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors">
-                    Trash2
+                    <Trash2 className="h-5 w-5" />
                   </button>
                 </div>
               </div>

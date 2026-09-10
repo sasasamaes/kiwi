@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from './utils';
+import { Car, Shield } from 'lucide-react';
 
 export type KYCStatus =
   'pending' | 'documents_submitted' | 'under_review' | 'approved' | 'rejected' | 'expired';
@@ -365,7 +366,7 @@ export function KYCVerification({
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
-              <span className="text-3xl mb-2 block">Car</span>
+              <Car className="text-3xl mb-2 block h-8 w-8" />
               <p className="text-sm font-medium text-surface-700">Marchamo (registration)</p>
               <p className="text-xs text-surface-400">Foto o PDF</p>
             </motion.div>
@@ -374,7 +375,7 @@ export function KYCVerification({
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
-              <span className="text-3xl mb-2 block">Shield</span>
+              <Shield className="text-3xl mb-2 block h-8 w-8" />
               <p className="text-sm font-medium text-surface-700">Seguro del vehículo</p>
               <p className="text-xs text-surface-400">Foto o PDF</p>
             </motion.div>

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { MapPin, Home, Star } from 'lucide-react';
 
 export default function ActiveOrders() {
   const [orderStatus, setOrderStatus] = useState<'pickup' | 'delivering' | 'delivered'>('pickup');
@@ -85,7 +86,7 @@ export default function ActiveOrders() {
           {/* Pickup Location */}
           <div className="mb-4 rounded-xl glass p-4">
             <div className="mb-2 flex items-center gap-2">
-              <span className="text-lg">MapPin</span>
+              <MapPin className="text-lg h-5 w-5" />
               <span className="text-sm font-semibold text-kiwi-700">
                 {orderStatus === 'pickup' ? 'Ir a recoger' : 'Recogido'}
               </span>
@@ -100,7 +101,7 @@ export default function ActiveOrders() {
           {/* Delivery Location */}
           <div className="rounded-xl glass p-4">
             <div className="mb-2 flex items-center gap-2">
-              <span className="text-lg">Home</span>
+              <Home className="text-lg h-5 w-5" />
               <span className="text-sm font-semibold text-gold-700">
                 {orderStatus === 'delivering'
                   ? 'Ir a entregar'
@@ -124,7 +125,9 @@ export default function ActiveOrders() {
               </div>
               <div>
                 <p className="text-sm font-medium text-surface-800">María C.</p>
-                <p className="text-xs text-surface-400">Star 4.8 • 23 pedidos</p>
+                <p className="text-xs text-surface-400">
+                  <Star className="h-3 w-3 inline" /> 4.8 • 23 pedidos
+                </p>
               </div>
             </div>
             <button className="rounded-full bg-kiwi-100 p-2 text-kiwi-600 hover:bg-kiwi-200">

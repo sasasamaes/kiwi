@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Check } from 'lucide-react';
 import { useCacheWarmingProgress, type WarmTask } from './useCacheWarming';
 
 interface StartupProgressProps {
@@ -123,7 +124,7 @@ export function StartupProgress({
           <div className="flex items-center gap-4">
             {progress.completed > 0 && (
               <span className="flex items-center gap-1 text-kiwi-600 dark:text-kiwi-400">
-                <span>Check</span>
+                <Check className="h-4 w-4" />
                 <span>{progress.completed}</span>
               </span>
             )}
@@ -265,7 +266,7 @@ export function StartupProgressCompact({ className = '' }: { className?: string 
           transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
         />
       ) : (
-        <span className="text-sm">Check</span>
+        <Check className="text-sm h-4 w-4" />
       )}
       <span className="text-sm font-medium">
         {isComplete ? 'Listo' : `${Math.round(progressPercent)}%`}

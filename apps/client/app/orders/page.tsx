@@ -3,6 +3,18 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Home,
+  ClipboardList,
+  MapPin,
+  Bike,
+  Star,
+  Calendar,
+  Clock,
+  RefreshCw,
+  Check,
+  X,
+} from 'lucide-react';
 import { api, Skeleton } from '@kiwi/ui';
 
 interface OrderHistory {
@@ -29,15 +41,15 @@ interface OrderHistory {
   }>;
 }
 
-const STATUS_CONFIG: Record<string, { label: string; icon: string; color: string }> = {
+const STATUS_CONFIG: Record<string, { label: string; icon: any; color: string }> = {
   delivered: {
     label: 'Entregado',
-    icon: 'Check',
+    icon: Check,
     color: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400',
   },
   cancelled: {
     label: 'Cancelado',
-    icon: 'X',
+    icon: X,
     color: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400',
   },
   in_transit_to_delivery: {
@@ -47,21 +59,21 @@ const STATUS_CONFIG: Record<string, { label: string; icon: string; color: string
   },
   assigned: {
     label: 'Asignado',
-    icon: 'Bike',
+    icon: Bike,
     color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400',
   },
   pending: {
     label: 'Pendiente',
-    icon: 'Clock',
+    icon: Clock,
     color: 'bg-surface-100 text-surface-700 dark:bg-surface-700 dark:text-surface-300',
   },
 };
 
 const FILTER_TABS = [
-  { id: 'all', label: 'Todos', icon: 'ClipboardList' },
-  { id: 'active', label: 'Activos', icon: 'RefreshCw' },
-  { id: 'delivered', label: 'Entregados', icon: 'Check' },
-  { id: 'cancelled', label: 'Cancelados', icon: 'X' },
+  { id: 'all', label: 'Todos', icon: ClipboardList },
+  { id: 'active', label: 'Activos', icon: RefreshCw },
+  { id: 'delivered', label: 'Entregados', icon: Check },
+  { id: 'cancelled', label: 'Cancelados', icon: X },
 ];
 
 export default function OrderHistoryPage() {
@@ -201,21 +213,26 @@ export default function OrderHistoryPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          {FILTER_TABS.map((tab) => (
-            <motion.button
-              key={tab.id}
-              onClick={() => setActiveFilter(tab.id)}
-              className={`flex-shrink-0 px-4 py-2.5 rounded-full text-sm font-medium transition-all ${
-                activeFilter === tab.id
-                  ? 'bg-kiwi-500 text-white shadow-kiwi'
-                  : 'bg-white dark:bg-surface-800 text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700'
-              }`}
-              whileTap={{ scale: 0.95 }}
-            >
-              <span className="mr-1">{tab.icon}</span>
-              {tab.label}
-            </motion.button>
-          ))}
+          {FILTER_TABS.map((tab) => {
+            const TabIcon = tab.icon as any;
+            return (
+              <motion.button
+                key={tab.id}
+                onClick={() => setActiveFilter(tab.id)}
+                className={`flex-shrink-0 px-4 py-2.5 rounded-full text-sm font-medium transition-all ${
+                  activeFilter === tab.id
+                    ? 'bg-kiwi-500 text-white shadow-kiwi'
+                    : 'bg-white dark:bg-surface-800 text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700'
+                }`}
+                whileTap={{ scale: 0.95 }}
+              >
+                <span className="mr-1">
+                  {typeof tab.icon === 'string' ? tab.icon : <TabIcon className="h-4 w-4 inline" />}
+                </span>
+                {tab.label}
+              </motion.button>
+            );
+          })}
         </motion.div>
 
         {/* Orders List */}
@@ -251,6 +268,7 @@ export default function OrderHistoryPage() {
             <AnimatePresence mode="popLayout">
               {filteredOrders.map((order, index) => {
                 const statusConfig = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending;
+                const StatusIcon = statusConfig.icon as any;
 
                 return (
                   <motion.div
@@ -270,7 +288,11 @@ export default function OrderHistoryPage() {
                         <div className="flex items-start justify-between mb-3">
                           <div className="flex items-center gap-3">
                             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-kiwi-100 dark:bg-kiwi-900/50 text-2xl">
-                              {statusConfig.icon}
+                              {typeof statusConfig.icon === 'string' ? (
+                                statusConfig.icon
+                              ) : (
+                                <StatusIcon className="h-6 w-6" />
+                              )}
                             </div>
                             <div>
                               <p className="font-semibold text-surface-800 dark:text-surface-100">
@@ -290,27 +312,33 @@ export default function OrderHistoryPage() {
 
                         <div className="space-y-2 mb-3">
                           <div className="flex items-center gap-2 text-sm">
-                            <span className="text-surface-400">MapPin</span>
+                            <MapPin className="text-surface-400 h-5 w-5" />
                             <span className="text-surface-600 dark:text-surface-400 truncate">
                               {order.deliveryAddress}
                             </span>
                           </div>
                           {order.driver && (
                             <div className="flex items-center gap-2 text-sm">
-                              <span className="text-surface-400">Bike</span>
+                              <Bike className="text-surface-400 h-5 w-5" />
                               <span className="text-surface-600 dark:text-surface-400">
                                 {order.driver.fullName}
                               </span>
                               <span className="text-surface-400">•</span>
-                              <span className="text-yellow-500">Star {order.driver.rating}</span>
+                              <span className="text-yellow-500">
+                                <Star className="h-4 w-4 inline" /> {order.driver.rating}
+                              </span>
                             </div>
                           )}
                         </div>
 
                         <div className="flex items-center justify-between pt-3 border-t border-surface-100 dark:border-surface-700">
                           <div className="flex items-center gap-4 text-sm text-surface-500 dark:text-surface-400">
-                            <span>Calendar {formatDate(order.createdAt)}</span>
-                            <span>Clock {formatTime(order.createdAt)}</span>
+                            <span>
+                              <Calendar className="h-4 w-4 inline" /> {formatDate(order.createdAt)}
+                            </span>
+                            <span>
+                              <Clock className="h-4 w-4 inline" /> {formatTime(order.createdAt)}
+                            </span>
                           </div>
                           <span className="text-lg font-bold text-kiwi-600 dark:text-kiwi-400">
                             {formatCurrency(order.totalAmount)}
@@ -347,21 +375,21 @@ export default function OrderHistoryPage() {
             href="/"
             className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
           >
-            <span className="text-xl">Home</span>
+            <Home className="text-xl h-6 w-6" />
             <span className="text-xs font-medium">Inicio</span>
           </Link>
           <Link
             href="/orders"
             className="flex flex-col items-center gap-1 px-4 py-2 text-kiwi-600 dark:text-kiwi-400"
           >
-            <span className="text-xl">ClipboardList</span>
+            <ClipboardList className="text-xl h-6 w-6" />
             <span className="text-xs font-medium">Pedidos</span>
           </Link>
           <Link
             href="/tracking"
             className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
           >
-            <span className="text-xl">MapPin</span>
+            <MapPin className="text-xl h-6 w-6" />
             <span className="text-xs font-medium">Tracking</span>
           </Link>
         </div>

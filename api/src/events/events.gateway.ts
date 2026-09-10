@@ -13,7 +13,18 @@ import { PrismaService } from '../prisma/prisma.service';
 
 @WebSocketGateway({
   cors: {
-    origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002'],
+    // Must mirror the HTTP CORS allowlist in main.ts or prod handshakes fail.
+    origin: [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://localhost:3002',
+      'https://kiwi-merchant.vercel.app',
+      'https://kiwi-client-tau.vercel.app',
+      'https://kiwi-driver.vercel.app',
+      process.env.CLIENT_URL,
+      process.env.WEB_URL,
+      process.env.DRIVER_URL,
+    ].filter(Boolean),
     credentials: true,
   },
   namespace: '/',

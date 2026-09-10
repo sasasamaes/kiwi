@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import { BarChart3, Package, Check, AlertTriangle, Calendar, Target } from 'lucide-react';
 import { apiFetch } from '@kiwi/ui';
 
 interface TrafficAnalytics {
@@ -142,7 +143,7 @@ export default function MerchantTrafficAnalytics() {
               </Link>
               <div>
                 <h1 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100">
-                  BarChart3 Análisis de Tráfico
+                  <BarChart3 className="h-6 w-6 inline" /> Análisis de Tráfico
                 </h1>
                 <p className="text-sm text-surface-500 dark:text-surface-400">
                   Impacto del tráfico en tus entregas
@@ -182,7 +183,7 @@ export default function MerchantTrafficAnalytics() {
           >
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-kiwi-100 dark:bg-kiwi-900/30 rounded-xl flex items-center justify-center text-2xl">
-                Package
+                <Package className="h-6 w-6" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
@@ -274,7 +275,7 @@ export default function MerchantTrafficAnalytics() {
                 <div>
                   <div className="flex justify-between mb-1">
                     <span className="text-sm text-surface-600 dark:text-surface-400">
-                      Check A tiempo
+                      <Check className="h-4 w-4 inline" /> A tiempo
                     </span>
                     <span className="text-sm font-medium text-surface-800 dark:text-surface-200">
                       {analytics?.trafficImpact.onTime} (
@@ -301,7 +302,7 @@ export default function MerchantTrafficAnalytics() {
                 <div>
                   <div className="flex justify-between mb-1">
                     <span className="text-sm text-surface-600 dark:text-surface-400">
-                      AlertTriangle Retrasadas
+                      <AlertTriangle className="h-4 w-4 inline" /> Retrasadas
                     </span>
                     <span className="text-sm font-medium text-orange-600 dark:text-orange-400">
                       {analytics?.trafficImpact.delayed} (
@@ -387,7 +388,9 @@ export default function MerchantTrafficAnalytics() {
                       {time.reason}
                     </p>
                   </div>
-                  <div className="text-kiwi-500">Check</div>
+                  <div className="text-kiwi-500">
+                    <Check className="h-6 w-6" />
+                  </div>
                 </motion.div>
               ))}
             </div>
@@ -426,7 +429,9 @@ export default function MerchantTrafficAnalytics() {
                       {time.reason}
                     </p>
                   </div>
-                  <div className="text-red-500">AlertTriangle</div>
+                  <div className="text-red-500">
+                    <AlertTriangle className="h-6 w-6" />
+                  </div>
                 </motion.div>
               ))}
             </div>
@@ -441,7 +446,7 @@ export default function MerchantTrafficAnalytics() {
           transition={{ delay: 0.8 }}
         >
           <h2 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100 mb-4">
-            Calendar Patrones de Tráfico por Día
+            <Calendar className="h-5 w-5 inline" /> Patrones de Tráfico por Día
           </h2>
 
           <div className="grid grid-cols-7 gap-2">
@@ -633,7 +638,9 @@ export default function MerchantTrafficAnalytics() {
             </div>
 
             <div className="p-4 rounded-xl bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800">
-              <div className="text-3xl mb-3">BarChart3</div>
+              <div className="text-3xl mb-3">
+                <BarChart3 className="h-8 w-8" />
+              </div>
               <h3 className="font-semibold text-surface-800 dark:text-surface-100 mb-2">
                 Revisa tus Métricas
               </h3>
@@ -710,7 +717,7 @@ export default function MerchantTrafficAnalytics() {
           transition={{ delay: 1.1 }}
         >
           <h2 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100 mb-4">
-            Target Patrones Detectados
+            <Target className="h-5 w-5 inline" /> Patrones Detectados
           </h2>
 
           <div className="space-y-3">

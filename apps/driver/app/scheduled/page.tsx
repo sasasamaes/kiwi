@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Calendar, MapPin, Home, Coins, Clock, Check } from 'lucide-react';
 import {
   AnimatedButton,
   StaggerContainer,
@@ -63,7 +64,7 @@ export default function ScheduledOrdersPage() {
   // Listen for new scheduled orders
   useEffect(() => {
     const cleanup = on('order:new', (data: any) => {
-      console.log('Calendar New scheduled order:', data);
+      console.log('New scheduled order:', data);
       fetchScheduledOrders();
     });
 
@@ -139,7 +140,7 @@ export default function ScheduledOrdersPage() {
               <span className="text-sm font-medium">Inicio</span>
             </Link>
             <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-              Calendar Pedidos Programados
+              <Calendar className="h-5 w-5 inline" /> Pedidos Programados
             </h1>
             <div className="w-16" />
           </div>
@@ -175,11 +176,11 @@ export default function ScheduledOrdersPage() {
             animate={{ opacity: 1 }}
           >
             <motion.div
-              className="text-6xl mb-4"
+              className="text-6xl mb-4 flex justify-center"
               animate={{ y: [0, -10, 0] }}
               transition={{ duration: 2, repeat: Infinity }}
             >
-              Calendar
+              <Calendar className="h-12 w-12" />
             </motion.div>
             <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-2">
               No hay pedidos programados
@@ -204,7 +205,7 @@ export default function ScheduledOrdersPage() {
                     <div className="flex gap-4">
                       {/* Schedule Icon */}
                       <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-gold-100 dark:bg-gold-900/30 text-3xl flex-shrink-0">
-                        Calendar
+                        <Calendar className="h-8 w-8" />
                       </div>
 
                       {/* Order Info */}
@@ -227,7 +228,7 @@ export default function ScheduledOrdersPage() {
                           {/* Schedule Time */}
                           {order.scheduledDate && (
                             <span className="flex items-center gap-1 text-sm text-gold-600 dark:text-gold-400 font-medium">
-                              Calendar{' '}
+                              <Calendar className="h-4 w-4" />{' '}
                               {new Date(order.scheduledDate).toLocaleDateString('es-CR', {
                                 weekday: 'short',
                                 month: 'short',
@@ -240,7 +241,7 @@ export default function ScheduledOrdersPage() {
                           {/* Distance */}
                           {order.distanceKm && (
                             <span className="text-sm text-surface-500 dark:text-surface-400">
-                              MapPin {order.distanceKm} km
+                              <MapPin className="h-4 w-4 inline" /> {order.distanceKm} km
                             </span>
                           )}
                         </div>
@@ -249,7 +250,7 @@ export default function ScheduledOrdersPage() {
                         <div className="mt-3">
                           {hasSubmitted ? (
                             <div className="flex items-center gap-2 text-kiwi-600 dark:text-kiwi-400">
-                              <span className="text-lg">Check</span>
+                              <Check className="text-lg h-5 w-5" />
                               <span className="text-sm font-medium">Propuesta enviada</span>
                             </div>
                           ) : (
@@ -325,14 +326,16 @@ export default function ScheduledOrdersPage() {
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-surface-500 dark:text-surface-400">
-                        MapPin Recoger:
+                        <MapPin className="h-4 w-4 inline" /> Recoger:
                       </span>
                       <span className="font-medium text-surface-800 dark:text-surface-200 text-right max-w-[60%]">
                         {selectedOrder.pickupAddress}
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-surface-500 dark:text-surface-400">Home Entregar:</span>
+                      <span className="text-surface-500 dark:text-surface-400">
+                        <Home className="h-4 w-4 inline" /> Entregar:
+                      </span>
                       <span className="font-medium text-surface-800 dark:text-surface-200 text-right max-w-[60%]">
                         {selectedOrder.deliveryAddress}
                       </span>
@@ -340,7 +343,7 @@ export default function ScheduledOrdersPage() {
                     {selectedOrder.scheduledDate && (
                       <div className="flex justify-between text-sm">
                         <span className="text-surface-500 dark:text-surface-400">
-                          Calendar Fecha:
+                          <Calendar className="h-4 w-4 inline" /> Fecha:
                         </span>
                         <span className="font-medium text-gold-600 dark:text-gold-400">
                           {new Date(selectedOrder.scheduledDate).toLocaleDateString('es-CR', {
@@ -353,7 +356,9 @@ export default function ScheduledOrdersPage() {
                       </div>
                     )}
                     <div className="flex justify-between text-sm">
-                      <span className="text-surface-500 dark:text-surface-400">Coins Pago:</span>
+                      <span className="text-surface-500 dark:text-surface-400">
+                        <Coins className="h-4 w-4 inline" /> Pago:
+                      </span>
                       <span className="font-bold text-kiwi-600 dark:text-kiwi-400">
                         ₡
                         {Number(
@@ -367,7 +372,7 @@ export default function ScheduledOrdersPage() {
                 {/* Estimated Arrival */}
                 <div>
                   <label className="mb-2 block text-sm font-medium text-surface-600 dark:text-surface-400">
-                    Clock ¿Cuándo puedes llegar? *
+                    <Clock className="h-4 w-4 inline" /> ¿Cuándo puedes llegar? *
                   </label>
                   <input
                     type="text"
@@ -424,7 +429,7 @@ export default function ScheduledOrdersPage() {
                         animate={{ rotate: 360 }}
                         transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
                       >
-                        Clock
+                        <Clock className="h-4 w-4" />
                       </motion.span>
                       Enviando...
                     </span>

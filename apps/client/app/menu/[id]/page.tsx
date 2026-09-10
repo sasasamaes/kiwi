@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Utensils, Star, MapPin, Clock, Smartphone, CreditCard, DollarSign } from 'lucide-react';
 import {
   AnimatedButton,
   StaggerContainer,
@@ -438,10 +439,11 @@ export default function MenuPage() {
               </h2>
               <div className="flex items-center gap-3 mt-1">
                 <span className="text-sm text-surface-500 dark:text-surface-400">
-                  Star {merchant.rating.toFixed(1)} ({merchant.totalRatings})
+                  <Star className="h-4 w-4 inline" /> {merchant.rating.toFixed(1)} (
+                  {merchant.totalRatings})
                 </span>
                 <span className="text-sm text-surface-500 dark:text-surface-400">
-                  MapPin {merchant.address}
+                  <MapPin className="h-4 w-4 inline" /> {merchant.address}
                 </span>
                 <span
                   className={`px-2 py-0.5 rounded-full text-xs font-medium ${
@@ -492,7 +494,7 @@ export default function MenuPage() {
       >
         {filteredItems.length === 0 ? (
           <div className="text-center py-12">
-            <span className="text-5xl mb-4 block">Utensils</span>
+            <Utensils className="text-5xl mb-4 block h-12 w-12 mx-auto" />
             <p className="text-surface-500 dark:text-surface-400">
               No hay productos en esta categoría
             </p>
@@ -506,7 +508,11 @@ export default function MenuPage() {
                   <motion.div className="rounded-2xl glass p-4" whileHover={{ y: -2 }}>
                     <div className="flex gap-4">
                       <div className="flex h-20 w-20 items-center justify-center rounded-xl bg-surface-100 dark:bg-surface-700 text-3xl flex-shrink-0">
-                        {item.image || 'Utensils'}
+                        {typeof item.image === 'string' && item.image ? (
+                          item.image
+                        ) : (
+                          <Utensils className="h-8 w-8" />
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between">
@@ -655,7 +661,11 @@ export default function MenuPage() {
                     {cart.map((item) => (
                       <div key={item.id} className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <span className="text-xl">{item.image || 'Utensils'}</span>
+                          {typeof item.image === 'string' && item.image ? (
+                            <span className="text-xl">{item.image}</span>
+                          ) : (
+                            <Utensils className="text-xl h-6 w-6" />
+                          )}
                           <div>
                             <p className="text-sm font-medium text-surface-800 dark:text-surface-200">
                               {item.name}
@@ -761,59 +771,68 @@ export default function MenuPage() {
                     {[
                       {
                         id: 'sinpe' as const,
-                        icon: 'Smartphone',
+                        icon: Smartphone,
                         label: 'SINPE',
                         desc: 'Transferencia',
                       },
                       {
                         id: 'card' as const,
-                        icon: 'CreditCard',
+                        icon: CreditCard,
                         label: 'Tarjeta',
                         desc: 'Crédito/Débito',
                       },
                       {
                         id: 'cash' as const,
-                        icon: 'DollarSign',
+                        icon: DollarSign,
                         label: 'Efectivo',
                         desc: 'Al repartidor',
                       },
-                    ].map((method) => (
-                      <motion.button
-                        key={method.id}
-                        type="button"
-                        className={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all ${
-                          paymentMethod === method.id
-                            ? 'bg-kiwi-100 dark:bg-kiwi-900/50 ring-2 ring-kiwi-500 shadow-kiwi'
-                            : 'bg-surface-100 dark:bg-surface-700 hover:bg-surface-200 dark:hover:bg-surface-600'
-                        }`}
-                        onClick={() => setPaymentMethod(method.id)}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        <span className="text-2xl">{method.icon}</span>
-                        <span
-                          className={`text-sm font-semibold ${
+                    ].map((method) => {
+                      const MethodIcon = method.icon as any;
+                      return (
+                        <motion.button
+                          key={method.id}
+                          type="button"
+                          className={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all ${
                             paymentMethod === method.id
-                              ? 'text-kiwi-700 dark:text-kiwi-400'
-                              : 'text-surface-700 dark:text-surface-300'
+                              ? 'bg-kiwi-100 dark:bg-kiwi-900/50 ring-2 ring-kiwi-500 shadow-kiwi'
+                              : 'bg-surface-100 dark:bg-surface-700 hover:bg-surface-200 dark:hover:bg-surface-600'
                           }`}
+                          onClick={() => setPaymentMethod(method.id)}
+                          whileTap={{ scale: 0.95 }}
                         >
-                          {method.label}
-                        </span>
-                        <span className="text-xs text-surface-400 dark:text-surface-500">
-                          {method.desc}
-                        </span>
-                        {paymentMethod === method.id && (
-                          <motion.div
-                            className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-kiwi-500 text-white text-xs flex items-center justify-center"
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            transition={{ type: 'spring', stiffness: 500 }}
+                          <span className="text-2xl">
+                            {typeof method.icon === 'string' ? (
+                              method.icon
+                            ) : (
+                              <MethodIcon className="h-6 w-6" />
+                            )}
+                          </span>
+                          <span
+                            className={`text-sm font-semibold ${
+                              paymentMethod === method.id
+                                ? 'text-kiwi-700 dark:text-kiwi-400'
+                                : 'text-surface-700 dark:text-surface-300'
+                            }`}
                           >
-                            ✓
-                          </motion.div>
-                        )}
-                      </motion.button>
-                    ))}
+                            {method.label}
+                          </span>
+                          <span className="text-xs text-surface-400 dark:text-surface-500">
+                            {method.desc}
+                          </span>
+                          {paymentMethod === method.id && (
+                            <motion.div
+                              className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-kiwi-500 text-white text-xs flex items-center justify-center"
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              transition={{ type: 'spring', stiffness: 500 }}
+                            >
+                              ✓
+                            </motion.div>
+                          )}
+                        </motion.button>
+                      );
+                    })}
                   </div>
 
                   {/* Crypto Options */}
@@ -821,45 +840,54 @@ export default function MenuPage() {
                     {[
                       {
                         id: 'crypto_usdc' as const,
-                        icon: 'DollarSign',
+                        icon: DollarSign,
                         label: 'USDC',
                         desc: 'Stellar',
                       },
                       {
                         id: 'crypto_usdt' as const,
-                        icon: 'DollarSign',
+                        icon: DollarSign,
                         label: 'USDT',
                         desc: 'Stellar',
                       },
-                    ].map((method) => (
-                      <motion.button
-                        key={method.id}
-                        type="button"
-                        className={`flex items-center gap-3 p-3 rounded-xl transition-all ${
-                          paymentMethod === method.id
-                            ? 'bg-purple-100 dark:bg-purple-900/50 ring-2 ring-purple-500 shadow-purple'
-                            : 'bg-surface-100 dark:bg-surface-700 hover:bg-surface-200 dark:hover:bg-surface-600'
-                        }`}
-                        onClick={() => setPaymentMethod(method.id)}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        <span className="text-xl">{method.icon}</span>
-                        <div className="text-left">
-                          <span
-                            className={`text-sm font-semibold ${
-                              paymentMethod === method.id
-                                ? 'text-purple-700 dark:text-purple-400'
-                                : 'text-surface-700 dark:text-surface-300'
-                            }`}
-                          >
-                            {method.label}
+                    ].map((method) => {
+                      const CryptoIcon = method.icon as any;
+                      return (
+                        <motion.button
+                          key={method.id}
+                          type="button"
+                          className={`flex items-center gap-3 p-3 rounded-xl transition-all ${
+                            paymentMethod === method.id
+                              ? 'bg-purple-100 dark:bg-purple-900/50 ring-2 ring-purple-500 shadow-purple'
+                              : 'bg-surface-100 dark:bg-surface-700 hover:bg-surface-200 dark:hover:bg-surface-600'
+                          }`}
+                          onClick={() => setPaymentMethod(method.id)}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          <span className="text-xl">
+                            {typeof method.icon === 'string' ? (
+                              method.icon
+                            ) : (
+                              <CryptoIcon className="h-6 w-6" />
+                            )}
                           </span>
-                          <span className="text-xs text-surface-400 dark:text-surface-500 block">
-                            {method.desc}
-                          </span>
-                        </div>
-                      </motion.button>
-                    ))}
+                          <div className="text-left">
+                            <span
+                              className={`text-sm font-semibold ${
+                                paymentMethod === method.id
+                                  ? 'text-purple-700 dark:text-purple-400'
+                                  : 'text-surface-700 dark:text-surface-300'
+                              }`}
+                            >
+                              {method.label}
+                            </span>
+                            <span className="text-xs text-surface-400 dark:text-surface-500 block">
+                              {method.desc}
+                            </span>
+                          </div>
+                        </motion.button>
+                      );
+                    })}
                   </div>
 
                   {/* SINPE Phone Input */}
@@ -964,8 +992,9 @@ export default function MenuPage() {
                       <motion.span
                         animate={{ rotate: 360 }}
                         transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                        className="flex"
                       >
-                        Clock
+                        <Clock className="h-5 w-5" />
                       </motion.span>
                       Creando pedido...
                     </span>

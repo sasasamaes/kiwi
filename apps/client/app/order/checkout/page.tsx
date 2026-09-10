@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import { RefreshCw } from 'lucide-react';
 import { AnimatedButton, StaggerContainer, StaggerItem, api } from '@kiwi/ui';
 
 interface CartItem {
@@ -415,7 +416,7 @@ function CheckoutContent() {
           >
             {loading ? (
               <span className="flex items-center justify-center gap-2">
-                <span className="animate-spin">RefreshCw</span> Procesando...
+                <RefreshCw className="animate-spin h-5 w-5" /> Procesando...
               </span>
             ) : (
               `Ordenar — ₡${total.toLocaleString()}`

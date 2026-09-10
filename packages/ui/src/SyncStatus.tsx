@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useBackgroundSync, type SyncQueueStats, type SyncAction } from './useBackgroundSync';
+import { AlertTriangle, Clock, RefreshCw } from 'lucide-react';
 
 interface SyncStatusProps {
   className?: string;
@@ -129,7 +130,7 @@ export function SyncStatus({ className = '', showDetails = false }: SyncStatusPr
               {stats.failed > 0 && (
                 <div className="mb-6 p-4 rounded-xl bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800">
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl">AlertTriangle</span>
+                    <AlertTriangle className="text-2xl h-6 w-6" />
                     <div>
                       <p className="font-medium text-red-700 dark:text-red-400">
                         {stats.failed} acciones fallidas
@@ -257,10 +258,10 @@ export function SyncIndicatorCompact({ className = '' }: { className?: string })
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
         >
-          RefreshCw
+          <RefreshCw className="h-4 w-4" />
         </motion.span>
       ) : (
-        <span>Clock</span>
+        <Clock className="h-4 w-4" />
       )}
       <span>{stats.pending + stats.syncing}</span>
     </motion.div>
@@ -293,10 +294,10 @@ export function SyncBanner({ className = '' }: { className?: string }) {
               animate={{ rotate: 360 }}
               transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
             >
-              RefreshCw
+              <RefreshCw className="text-xl h-5 w-5" />
             </motion.span>
           ) : (
-            <span className="text-xl">Clock</span>
+            <Clock className="text-xl h-5 w-5" />
           )}
           <div>
             <p className="font-semibold">

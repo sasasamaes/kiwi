@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Clock, Bike, MapPin, Car, Check, Star, Phone, PartyPopper } from 'lucide-react';
 
 interface OrderStatus {
   id: string;
@@ -20,11 +21,11 @@ interface OrderTrackerProps {
 }
 
 const statusConfig = {
-  pending: { label: 'Esperando repartidor', icon: 'Clock', color: 'bg-gold-100 text-gold-700' },
-  assigned: { label: 'Repartidor asignado', icon: 'Bike', color: 'bg-blue-100 text-blue-700' },
-  pickup: { label: 'En camino a recoger', icon: 'MapPin', color: 'bg-kiwi-100 text-kiwi-700' },
-  delivering: { label: 'En camino a entregar', icon: 'Car', color: 'bg-kiwi-500 text-white' },
-  delivered: { label: 'Entregado', icon: 'Check', color: 'bg-green-100 text-green-700' },
+  pending: { label: 'Esperando repartidor', icon: Clock, color: 'bg-gold-100 text-gold-700' },
+  assigned: { label: 'Repartidor asignado', icon: Bike, color: 'bg-blue-100 text-blue-700' },
+  pickup: { label: 'En camino a recoger', icon: MapPin, color: 'bg-kiwi-100 text-kiwi-700' },
+  delivering: { label: 'En camino a entregar', icon: Car, color: 'bg-kiwi-500 text-white' },
+  delivered: { label: 'Entregado', icon: Check, color: 'bg-green-100 text-green-700' },
 };
 
 export function OrderTracker({ orderId, initialStatus = 'pending' }: OrderTrackerProps) {
@@ -59,6 +60,7 @@ export function OrderTracker({ orderId, initialStatus = 'pending' }: OrderTracke
   }, [initialStatus]);
 
   const config = statusConfig[status];
+  const ConfigIcon = config.icon as any;
 
   return (
     <motion.div className="rounded-2xl bg-white p-4 shadow-soft" layout>
@@ -71,7 +73,12 @@ export function OrderTracker({ orderId, initialStatus = 'pending' }: OrderTracke
           animate={{ scale: 1, opacity: 1 }}
           transition={{ type: 'spring', stiffness: 300, damping: 20 }}
         >
-          {config.icon} {config.label}
+          {typeof ConfigIcon === 'string' ? (
+            <span>{ConfigIcon}</span>
+          ) : (
+            <ConfigIcon className="h-4 w-4 inline" />
+          )}{' '}
+          {config.label}
         </motion.span>
       </div>
 
@@ -138,14 +145,16 @@ export function OrderTracker({ orderId, initialStatus = 'pending' }: OrderTracke
           </div>
           <div className="flex-1">
             <p className="text-sm font-medium text-surface-800">Juan Carlos</p>
-            <p className="text-xs text-surface-400">Star 4.9 • 156 viajes</p>
+            <p className="text-xs text-surface-400">
+              <Star className="h-4 w-4 inline" /> 4.9 • 156 viajes
+            </p>
           </div>
           <motion.button
             className="rounded-full bg-kiwi-100 p-2 text-kiwi-600 hover:bg-kiwi-200"
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
           >
-            Phone
+            <Phone className="h-5 w-5" />
           </motion.button>
         </motion.div>
       )}
@@ -164,7 +173,7 @@ export function OrderTracker({ orderId, initialStatus = 'pending' }: OrderTracke
               animate={{ scale: [1, 1.2, 1] }}
               transition={{ duration: 0.5 }}
             >
-              PartyPopper
+              <PartyPopper className="h-10 w-10" />
             </motion.span>
             <p className="mt-2 font-medium text-green-700">¡Pedido entregado con éxito!</p>
             <p className="text-sm text-green-600">Gracias por usar Kiwi</p>

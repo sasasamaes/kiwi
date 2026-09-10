@@ -16,6 +16,7 @@ import {
   MapPin,
   Home,
   Clock,
+  Star,
   Footprints as Runner,
 } from 'lucide-react';
 
@@ -548,7 +549,7 @@ export default function OrderTrackingPage() {
                     {order.driver.fullName}
                   </h4>
                   <div className="flex items-center gap-1">
-                    <span className="text-sm">Star</span>
+                    <Star className="text-sm h-4 w-4" />
                     <span className="text-sm font-medium text-surface-600 dark:text-surface-400">
                       {order.driver.rating?.toFixed(1) || '5.0'}
                     </span>
@@ -586,7 +587,7 @@ export default function OrderTrackingPage() {
             <div className="space-y-2">
               <div className="flex items-start gap-3">
                 <div className="flex h-6 w-6 items-center justify-center rounded-full bg-kiwi-100 dark:bg-kiwi-900/50 text-kiwi-600 flex-shrink-0 mt-0.5">
-                  <span className="text-xs">MapPin</span>
+                  <MapPin className="text-xs h-3 w-3" />
                 </div>
                 <div>
                   <p className="text-xs text-surface-400">Recoger en</p>
@@ -597,7 +598,7 @@ export default function OrderTrackingPage() {
               </div>
               <div className="flex items-start gap-3">
                 <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gold-100 dark:bg-gold-900/50 text-gold-600 flex-shrink-0 mt-0.5">
-                  <span className="text-xs">Home</span>
+                  <Home className="text-xs h-3 w-3" />
                 </div>
                 <div>
                   <p className="text-xs text-surface-400">Entregar en</p>

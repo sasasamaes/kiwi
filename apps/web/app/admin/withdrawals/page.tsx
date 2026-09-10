@@ -2,6 +2,17 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Clock,
+  RefreshCw,
+  Check,
+  X,
+  ClipboardList,
+  Coins,
+  Smartphone,
+  Calendar,
+  Star,
+} from 'lucide-react';
 import { api, Skeleton } from '@kiwi/ui';
 
 interface Withdrawal {
@@ -33,40 +44,40 @@ interface Withdrawal {
   };
 }
 
-const STATUS_CONFIG: Record<string, { label: string; icon: string; color: string }> = {
+const STATUS_CONFIG: Record<string, { label: string; icon: any; color: string }> = {
   pending: {
     label: 'Pendiente',
-    icon: 'Clock',
+    icon: Clock,
     color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400',
   },
   processing: {
     label: 'Procesando',
-    icon: 'RefreshCw',
+    icon: RefreshCw,
     color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400',
   },
   completed: {
     label: 'Completado',
-    icon: 'Check',
+    icon: Check,
     color: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400',
   },
   failed: {
     label: 'Cancelado',
-    icon: 'X',
+    icon: X,
     color: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400',
   },
   rejected: {
     label: 'Rechazado',
-    icon: 'X',
+    icon: X,
     color: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400',
   },
 };
 
 const FILTER_TABS = [
-  { id: 'all', label: 'Todos', icon: 'ClipboardList' },
-  { id: 'pending', label: 'Pendientes', icon: 'Clock' },
-  { id: 'processing', label: 'Procesando', icon: 'RefreshCw' },
-  { id: 'completed', label: 'Completados', icon: 'Check' },
-  { id: 'rejected', label: 'Rechazados', icon: 'X' },
+  { id: 'all', label: 'Todos', icon: ClipboardList },
+  { id: 'pending', label: 'Pendientes', icon: Clock },
+  { id: 'processing', label: 'Procesando', icon: RefreshCw },
+  { id: 'completed', label: 'Completados', icon: Check },
+  { id: 'rejected', label: 'Rechazados', icon: X },
 ];
 
 export default function AdminWithdrawalsPage() {
@@ -219,7 +230,7 @@ export default function AdminWithdrawalsPage() {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            RefreshCw Reintentar
+            <RefreshCw className="h-4 w-4 inline" /> Reintentar
           </motion.button>
         </motion.div>
       </div>
@@ -232,7 +243,7 @@ export default function AdminWithdrawalsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-display font-bold text-surface-800 dark:text-surface-100">
-            Coins Retiros
+            <Coins className="h-6 w-6 inline" /> Retiros
           </h1>
           <p className="text-surface-500 dark:text-surface-400">
             {withdrawals.filter((w) => w.status === 'pending').length} pendientes de procesar
@@ -243,7 +254,7 @@ export default function AdminWithdrawalsPage() {
           className="px-4 py-2 text-sm font-medium bg-surface-100 dark:bg-surface-800 text-surface-700 dark:text-surface-300 rounded-lg hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors"
           whileTap={{ scale: 0.95 }}
         >
-          RefreshCw Actualizar
+          <RefreshCw className="h-4 w-4 inline" /> Actualizar
         </motion.button>
       </div>
 
@@ -271,21 +282,24 @@ export default function AdminWithdrawalsPage() {
 
       {/* Filter Tabs */}
       <div className="flex gap-2 overflow-x-auto pb-2">
-        {FILTER_TABS.map((tab) => (
-          <motion.button
-            key={tab.id}
-            onClick={() => setActiveFilter(tab.id)}
-            className={`flex-shrink-0 px-4 py-2.5 rounded-full text-sm font-medium transition-all ${
-              activeFilter === tab.id
-                ? 'bg-kiwi-500 text-white shadow-kiwi'
-                : 'bg-white dark:bg-surface-800 text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700'
-            }`}
-            whileTap={{ scale: 0.95 }}
-          >
-            <span className="mr-1">{tab.icon}</span>
-            {tab.label}
-          </motion.button>
-        ))}
+        {FILTER_TABS.map((tab) => {
+          const TabIcon = tab.icon as any;
+          return (
+            <motion.button
+              key={tab.id}
+              onClick={() => setActiveFilter(tab.id)}
+              className={`flex-shrink-0 px-4 py-2.5 rounded-full text-sm font-medium transition-all ${
+                activeFilter === tab.id
+                  ? 'bg-kiwi-500 text-white shadow-kiwi'
+                  : 'bg-white dark:bg-surface-800 text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700'
+              }`}
+              whileTap={{ scale: 0.95 }}
+            >
+              <TabIcon className="mr-1 h-4 w-4 inline" />
+              {tab.label}
+            </motion.button>
+          );
+        })}
       </div>
 
       {/* Withdrawals List */}
@@ -298,6 +312,7 @@ export default function AdminWithdrawalsPage() {
         <div className="space-y-4">
           {filteredWithdrawals.map((withdrawal, index) => {
             const statusConfig = getStatusConfig(withdrawal.status);
+            const StatusIcon = statusConfig.icon as any;
 
             return (
               <motion.div
@@ -312,7 +327,11 @@ export default function AdminWithdrawalsPage() {
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
                     <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-kiwi-100 dark:bg-kiwi-900/50 text-2xl">
-                      {withdrawal.paymentMethod === 'sinpe' ? 'Smartphone' : '🏦'}
+                      {withdrawal.paymentMethod === 'sinpe' ? (
+                        <Smartphone className="h-6 w-6" />
+                      ) : (
+                        '🏦'
+                      )}
                     </div>
                     <div>
                       <p className="font-semibold text-surface-800 dark:text-surface-100">
@@ -326,17 +345,28 @@ export default function AdminWithdrawalsPage() {
                   <span
                     className={`px-3 py-1 rounded-full text-xs font-medium ${statusConfig.color}`}
                   >
-                    {statusConfig.icon} {statusConfig.label}
+                    {typeof StatusIcon === 'string' ? (
+                      <span>{StatusIcon}</span>
+                    ) : (
+                      <StatusIcon className="h-4 w-4 inline" />
+                    )}{' '}
+                    {statusConfig.label}
                   </span>
                 </div>
 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4 text-sm text-surface-500 dark:text-surface-400">
-                    <span>Calendar {formatDate(withdrawal.createdAt)}</span>
                     <span>
-                      {withdrawal.paymentMethod === 'sinpe'
-                        ? 'Smartphone SINPE'
-                        : '🏦 Transferencia'}
+                      <Calendar className="h-4 w-4 inline" /> {formatDate(withdrawal.createdAt)}
+                    </span>
+                    <span>
+                      {withdrawal.paymentMethod === 'sinpe' ? (
+                        <>
+                          <Smartphone className="h-4 w-4 inline" /> SINPE
+                        </>
+                      ) : (
+                        '🏦 Transferencia'
+                      )}
                     </span>
                   </div>
                   <span className="text-lg font-bold text-kiwi-600 dark:text-kiwi-400">
@@ -355,7 +385,7 @@ export default function AdminWithdrawalsPage() {
                         setShowRejectModal(true);
                       }}
                     >
-                      X Rechazar
+                      <X className="h-4 w-4 inline" /> Rechazar
                     </button>
                     <button
                       className="flex-1 py-2 text-sm font-medium bg-kiwi-500 text-white rounded-lg hover:bg-kiwi-600 transition-colors"
@@ -364,7 +394,7 @@ export default function AdminWithdrawalsPage() {
                         handleApprove(withdrawal.id);
                       }}
                     >
-                      Check Aprobar
+                      <Check className="h-4 w-4 inline" /> Aprobar
                     </button>
                   </div>
                 )}
@@ -395,7 +425,7 @@ export default function AdminWithdrawalsPage() {
               <div className="sticky top-0 bg-white dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700 p-6 z-10">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100">
-                    Coins Detalle del Retiro
+                    <Coins className="h-5 w-5 inline" /> Detalle del Retiro
                   </h3>
                   <button
                     onClick={() => setSelectedWithdrawal(null)}
@@ -416,7 +446,15 @@ export default function AdminWithdrawalsPage() {
                   <span
                     className={`inline-block mt-2 px-3 py-1 rounded-full text-sm font-medium ${getStatusConfig(selectedWithdrawal.status).color}`}
                   >
-                    {getStatusConfig(selectedWithdrawal.status).icon}{' '}
+                    {(() => {
+                      const ModalStatusIcon = getStatusConfig(selectedWithdrawal.status)
+                        .icon as any;
+                      return typeof ModalStatusIcon === 'string' ? (
+                        <span>{ModalStatusIcon}</span>
+                      ) : (
+                        <ModalStatusIcon className="h-4 w-4 inline" />
+                      );
+                    })()}{' '}
                     {getStatusConfig(selectedWithdrawal.status).label}
                   </span>
                 </div>
@@ -433,7 +471,7 @@ export default function AdminWithdrawalsPage() {
                         {selectedWithdrawal.driver.fullName}
                       </p>
                       <p className="text-sm text-surface-500 dark:text-surface-400">
-                        {selectedWithdrawal.driver.user.email} • Star{' '}
+                        {selectedWithdrawal.driver.user.email} • <Star className="h-4 w-4 inline" />{' '}
                         {selectedWithdrawal.driver.rating}
                       </p>
                     </div>
@@ -443,9 +481,13 @@ export default function AdminWithdrawalsPage() {
                 {/* Payment Details */}
                 <div className="p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50">
                   <p className="text-sm text-surface-500 dark:text-surface-400 mb-2">
-                    {selectedWithdrawal.paymentMethod === 'sinpe'
-                      ? 'Smartphone Datos SINPE'
-                      : '🏦 Datos Bancarios'}
+                    {selectedWithdrawal.paymentMethod === 'sinpe' ? (
+                      <>
+                        <Smartphone className="h-4 w-4 inline" /> Datos SINPE
+                      </>
+                    ) : (
+                      '🏦 Datos Bancarios'
+                    )}
                   </p>
                   {selectedWithdrawal.paymentMethod === 'sinpe' ? (
                     <div className="space-y-2">
@@ -552,14 +594,20 @@ export default function AdminWithdrawalsPage() {
                         onClick={() => setShowRejectModal(true)}
                         disabled={actionLoading}
                       >
-                        X Rechazar
+                        <X className="h-4 w-4 inline" /> Rechazar
                       </button>
                       <button
                         className="flex-1 py-3 px-4 text-sm font-medium bg-kiwi-500 text-white rounded-xl hover:bg-kiwi-600 transition-colors"
                         onClick={() => handleApprove(selectedWithdrawal.id)}
                         disabled={actionLoading}
                       >
-                        {actionLoading ? 'Procesando...' : 'Check Aprobar'}
+                        {actionLoading ? (
+                          'Procesando...'
+                        ) : (
+                          <>
+                            <Check className="h-4 w-4 inline" /> Aprobar
+                          </>
+                        )}
                       </button>
                     </div>
                   </div>
@@ -589,7 +637,7 @@ export default function AdminWithdrawalsPage() {
             >
               <div className="p-6">
                 <h3 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100 mb-4">
-                  X Rechazar Retiro
+                  <X className="h-5 w-5 inline" /> Rechazar Retiro
                 </h3>
                 <p className="text-surface-500 dark:text-surface-400 mb-4">
                   Por favor, indica el motivo del rechazo:

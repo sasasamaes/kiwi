@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
+import { Car, Shield } from 'lucide-react';
 import { KYCVerification, KYCStatusBadge } from '@kiwi/ui';
 
 export default function DriverKYCPage() {
@@ -111,14 +112,14 @@ export default function DriverKYCPage() {
               </div>
             </div>
             <div className="flex items-start gap-3 p-4 rounded-xl bg-surface-50">
-              <span className="text-2xl">Car</span>
+              <Car className="text-2xl h-6 w-6" />
               <div>
                 <p className="font-medium text-surface-700">Marchamo del Vehículo</p>
                 <p className="text-xs text-surface-400">Último año pagado</p>
               </div>
             </div>
             <div className="flex items-start gap-3 p-4 rounded-xl bg-surface-50">
-              <span className="text-2xl">Shield</span>
+              <Shield className="text-2xl h-6 w-6" />
               <div>
                 <p className="font-medium text-surface-700">Seguro del Vehículo</p>
                 <p className="text-xs text-surface-400">Póliza vigente</p>

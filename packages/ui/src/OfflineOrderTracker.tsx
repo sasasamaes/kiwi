@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useOfflineOrders, type OfflineOrder, type OrderStatus } from './useOfflineOrders';
 import { useNetworkStatus } from './useNetworkStatus';
 import { backgroundSync } from './background-sync';
+import { Bike, MapPin, Package, RefreshCw, User, WifiOff } from 'lucide-react';
 
 interface OfflineOrderTrackerProps {
   localId: string;
@@ -189,7 +190,7 @@ export function OfflineOrderTracker({
               />
             )}
             {order.syncStatus === 'pending' && !isOnline && (
-              <span className="text-orange-500">WifiOff</span>
+              <WifiOff className="text-orange-500 h-5 w-5" />
             )}
             {order.syncStatus === 'failed' && (
               <button onClick={handleSync} className="text-red-500 hover:text-red-600">
@@ -204,7 +205,7 @@ export function OfflineOrderTracker({
       <div className="p-4 space-y-3">
         {/* Customer Info */}
         <div className="flex items-center gap-3">
-          <span className="text-xl">User</span>
+          <User className="text-xl h-5 w-5" />
           <div>
             <p className="font-medium text-surface-800 dark:text-surface-200">
               {order.customerName}
@@ -215,7 +216,7 @@ export function OfflineOrderTracker({
 
         {/* Delivery Address */}
         <div className="flex items-center gap-3">
-          <span className="text-xl">MapPin</span>
+          <MapPin className="text-xl h-5 w-5" />
           <div>
             <p className="text-sm text-surface-500 dark:text-surface-400">Entregar en</p>
             <p className="font-medium text-surface-800 dark:text-surface-200">
@@ -255,7 +256,7 @@ export function OfflineOrderTracker({
         {/* Driver Info */}
         {order.driverName && (
           <div className="flex items-center gap-3">
-            <span className="text-xl">Bike</span>
+            <Bike className="text-xl h-5 w-5" />
             <div>
               <p className="text-sm text-surface-500 dark:text-surface-400">Repartidor</p>
               <p className="font-medium text-surface-800 dark:text-surface-200">
@@ -409,7 +410,7 @@ export function OfflineOrderList({
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <span className="text-2xl">RefreshCw</span>
+              <RefreshCw className="text-2xl h-6 w-6" />
               <div>
                 <p className="font-medium text-blue-700 dark:text-blue-400">
                   {unsyncedCount} pedido{unsyncedCount !== 1 ? 's' : ''} pendiente
@@ -435,7 +436,7 @@ export function OfflineOrderList({
       {/* Orders */}
       {orders.length === 0 ? (
         <div className="text-center py-12">
-          <span className="text-5xl block mb-4">Package</span>
+          <Package className="text-5xl block mb-4 h-12 w-12" />
           <h3 className="text-lg font-semibold text-surface-800 dark:text-surface-100 mb-2">
             No hay pedidos
           </h3>

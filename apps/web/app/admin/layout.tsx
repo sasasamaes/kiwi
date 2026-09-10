@@ -4,15 +4,16 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import { BarChart3, Package, Coins, Settings } from 'lucide-react';
 import { ThemeToggle } from '@kiwi/ui';
 
 const menuItems = [
-  { href: '/admin', icon: 'BarChart3', label: 'Dashboard', exact: true },
+  { href: '/admin', icon: BarChart3, label: 'Dashboard', exact: true },
   { href: '/admin/users', icon: '👥', label: 'Usuarios' },
-  { href: '/admin/orders', icon: 'Package', label: 'Pedidos' },
+  { href: '/admin/orders', icon: Package, label: 'Pedidos' },
   { href: '/admin/kyc', icon: '🪪', label: 'Verificaciones KYC' },
-  { href: '/admin/payments', icon: 'Coins', label: 'Pagos' },
-  { href: '/admin/settings', icon: 'Settings', label: 'Configuración' },
+  { href: '/admin/payments', icon: Coins, label: 'Pagos' },
+  { href: '/admin/settings', icon: Settings, label: 'Configuración' },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -58,29 +59,38 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* Navigation */}
         <nav className="p-4">
           <ul className="space-y-2">
-            {menuItems.map((item) => (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                    isActive(item.href, item.exact)
-                      ? 'bg-kiwi-50 dark:bg-kiwi-900/30 text-kiwi-600 dark:text-kiwi-400 font-medium'
-                      : 'text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800'
-                  }`}
-                >
-                  <span className="text-xl">{item.icon}</span>
-                  {sidebarOpen && (
-                    <motion.span
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="text-sm"
-                    >
-                      {item.label}
-                    </motion.span>
-                  )}
-                </Link>
-              </li>
-            ))}
+            {menuItems.map((item) => {
+              const ItemIcon = item.icon as any;
+              return (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                      isActive(item.href, item.exact)
+                        ? 'bg-kiwi-50 dark:bg-kiwi-900/30 text-kiwi-600 dark:text-kiwi-400 font-medium'
+                        : 'text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800'
+                    }`}
+                  >
+                    {typeof ItemIcon === 'string' ? (
+                      <span className="text-xl">{ItemIcon}</span>
+                    ) : (
+                      <span className="text-xl">
+                        <ItemIcon className="h-5 w-5" />
+                      </span>
+                    )}
+                    {sidebarOpen && (
+                      <motion.span
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="text-sm"
+                      >
+                        {item.label}
+                      </motion.span>
+                    )}
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         </nav>
 

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Check } from 'lucide-react';
 import { useSyncProgress, type SyncProgressItem } from './useSyncProgress';
 
 interface SyncProgressBarProps {
@@ -193,7 +194,7 @@ export function SyncProgressBar({
                 transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
               />
             ) : (
-              <span className="text-lg">Check</span>
+              <Check className="text-lg h-5 w-5" />
             )}
             <span className="text-sm font-medium text-surface-800 dark:text-surface-200">
               {isSyncing ? 'Sincronizando...' : 'Sincronización completa'}

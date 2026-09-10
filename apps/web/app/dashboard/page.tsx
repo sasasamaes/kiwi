@@ -5,6 +5,19 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
+  Package,
+  Coins,
+  Clock,
+  Check,
+  Utensils,
+  Bike,
+  Calendar,
+  BarChart3,
+  Bell,
+  Plus,
+  Loader2,
+} from 'lucide-react';
+import {
   AnimatedButton,
   AnimatedCounter,
   StaggerContainer,
@@ -48,7 +61,7 @@ export default function Dashboard() {
   const { isConnected, onOrderAccepted, onOrderStatusChanged } = useSocket({
     onConnect: () => console.log('🟢 Connected to real-time updates'),
     onOrderAccepted: (data) => {
-      console.log('Package Order accepted:', data);
+      console.log('Order accepted:', data);
       setNotifications((prev) => [
         ...prev,
         { type: 'success', message: data.message, time: new Date() },
@@ -57,7 +70,7 @@ export default function Dashboard() {
       fetchOrders();
     },
     onOrderStatusChanged: (data) => {
-      console.log('RefreshCw Order status changed:', data);
+      console.log('Order status changed:', data);
       setNotifications((prev) => [
         ...prev,
         { type: 'info', message: data.message, time: new Date() },
@@ -114,7 +127,7 @@ export default function Dashboard() {
           transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
           className="text-4xl"
         >
-          Clock
+          <Loader2 className="h-8 w-8" />
         </motion.div>
       </div>
     );
@@ -146,7 +159,9 @@ export default function Dashboard() {
                 className="text-3xl"
                 animate={{ rotate: [0, -10, 10, -10, 0] }}
                 transition={{ duration: 0.5, delay: 0.5 }}
-              ></motion.span>
+              >
+                🥝
+              </motion.span>
               <h1 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100">
                 Kiwi
               </h1>
@@ -170,7 +185,9 @@ export default function Dashboard() {
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                 >
-                  <span className="text-xl">Bell</span>
+                  <span className="text-xl">
+                    <Bell className="h-5 w-5" />
+                  </span>
                   {unreadCount > 0 && (
                     <motion.span
                       className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-kiwi-500 text-white text-xs font-bold flex items-center justify-center"
@@ -225,7 +242,7 @@ export default function Dashboard() {
               value={String(todayOrders.length)}
               change={`${orders.length} total`}
               changeType="neutral"
-              icon={<span className="text-2xl">Package</span>}
+              icon={<Package className="h-6 w-6" />}
               color="kiwi"
             />
           </StaggerItem>
@@ -235,7 +252,7 @@ export default function Dashboard() {
               value={`₡${totalRevenue.toLocaleString()}`}
               change={`${deliveredOrders.length} entregados`}
               changeType="positive"
-              icon={<span className="text-2xl">Coins</span>}
+              icon={<Coins className="h-6 w-6" />}
               color="gold"
             />
           </StaggerItem>
@@ -245,7 +262,7 @@ export default function Dashboard() {
               value={String(pendingOrders.length)}
               change={pendingOrders.length > 0 ? 'Esperando repartidor' : 'Todo al día'}
               changeType={pendingOrders.length > 0 ? 'negative' : 'positive'}
-              icon={<span className="text-2xl">Clock</span>}
+              icon={<Clock className="h-6 w-6" />}
               color="blue"
             />
           </StaggerItem>
@@ -255,7 +272,7 @@ export default function Dashboard() {
               value={`${orders.length > 0 ? Math.round((deliveredOrders.length / orders.length) * 100) : 100}%`}
               change="de pedidos"
               changeType="positive"
-              icon={<span className="text-2xl">Check</span>}
+              icon={<Check className="h-6 w-6" />}
               color="bark"
             />
           </StaggerItem>
@@ -276,7 +293,7 @@ export default function Dashboard() {
                     whileHover={{ rotate: 90 }}
                     transition={{ type: 'spring', stiffness: 260, damping: 20 }}
                   >
-                    <span className="text-2xl">➕</span>
+                    <Plus className="h-6 w-6" />
                   </motion.div>
                   <div>
                     <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">
@@ -304,7 +321,7 @@ export default function Dashboard() {
                     whileHover={{ rotate: -90 }}
                     transition={{ type: 'spring', stiffness: 260, damping: 20 }}
                   >
-                    <span className="text-2xl">Utensils</span>
+                    <Utensils className="h-6 w-6" />
                   </motion.div>
                   <div>
                     <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">
@@ -333,7 +350,7 @@ export default function Dashboard() {
                     whileHover={{ scale: 1.1 }}
                     transition={{ type: 'spring', stiffness: 260, damping: 20 }}
                   >
-                    <span className="text-2xl">Bike</span>
+                    <Bike className="h-6 w-6" />
                   </motion.div>
                   <div>
                     <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">
@@ -359,7 +376,7 @@ export default function Dashboard() {
                     whileHover={{ scale: 1.1 }}
                     transition={{ type: 'spring', stiffness: 260, damping: 20 }}
                   >
-                    <span className="text-2xl">Calendar</span>
+                    <Calendar className="h-6 w-6" />
                   </motion.div>
                   <div>
                     <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">
@@ -385,7 +402,7 @@ export default function Dashboard() {
                     whileHover={{ scale: 1.1 }}
                     transition={{ type: 'spring', stiffness: 260, damping: 20 }}
                   >
-                    <span className="text-2xl">BarChart3</span>
+                    <BarChart3 className="h-6 w-6" />
                   </motion.div>
                   <div>
                     <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">
@@ -427,11 +444,11 @@ export default function Dashboard() {
                 animate={{ opacity: 1 }}
               >
                 <motion.div
-                  className="text-5xl mb-3"
+                  className="text-5xl mb-3 flex justify-center"
                   animate={{ y: [0, -10, 0] }}
                   transition={{ duration: 2, repeat: Infinity }}
                 >
-                  Package
+                  <Package className="h-12 w-12 text-surface-300" />
                 </motion.div>
                 <p className="text-surface-500 dark:text-surface-400">Aún no hay pedidos</p>
                 <p className="text-xs text-surface-400 mt-1">Crea tu primer pedido para empezar</p>
@@ -481,8 +498,16 @@ export default function Dashboard() {
                               {order.pickupAddress} → {order.deliveryAddress}
                             </p>
                             <div className="flex items-center gap-2">
-                              <p className="text-sm text-surface-400">
-                                {order.driver ? 'Bike Asignado' : 'Clock Sin repartidor'}
+                              <p className="text-sm text-surface-400 flex items-center gap-1">
+                                {order.driver ? (
+                                  <>
+                                    <Bike className="h-4 w-4" /> Asignado
+                                  </>
+                                ) : (
+                                  <>
+                                    <Clock className="h-4 w-4" /> Sin repartidor
+                                  </>
+                                )}
                               </p>
                               {order.driver && (
                                 <VehicleBadge

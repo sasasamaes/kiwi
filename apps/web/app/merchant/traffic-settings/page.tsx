@@ -3,6 +3,17 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import {
+  Check,
+  MapPin,
+  RefreshCw,
+  Coins,
+  Bell,
+  AlertTriangle,
+  Map,
+  Clock,
+  Settings,
+} from 'lucide-react';
 import { apiFetch } from '@kiwi/ui';
 
 interface TrafficSettings {
@@ -134,7 +145,7 @@ export default function MerchantTrafficSettings() {
               </Link>
               <div>
                 <h1 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100">
-                  Settings Configuración de Tráfico
+                  <Settings className="h-6 w-6 inline" /> Configuración de Tráfico
                 </h1>
                 <p className="text-sm text-surface-500 dark:text-surface-400">
                   Personaliza las entregas según el tráfico
@@ -167,7 +178,7 @@ export default function MerchantTrafficSettings() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 100 }}
           >
-            Check Configuración guardada
+            <Check className="h-4 w-4 inline" /> Configuración guardada
           </motion.div>
         )}
       </AnimatePresence>
@@ -182,7 +193,7 @@ export default function MerchantTrafficSettings() {
           transition={{ delay: 0.1 }}
         >
           <h2 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100 mb-4">
-            MapPin Radio de Entrega
+            <MapPin className="h-5 w-5 inline" /> Radio de Entrega
           </h2>
 
           <div className="space-y-6">
@@ -302,7 +313,9 @@ export default function MerchantTrafficSettings() {
 
             <div className="flex items-center justify-between p-4 rounded-xl bg-surface-50 dark:bg-surface-900">
               <div className="flex items-center gap-3">
-                <span className="text-2xl">RefreshCw</span>
+                <span className="text-2xl">
+                  <RefreshCw className="h-6 w-6" />
+                </span>
                 <div>
                   <p className="font-medium text-surface-800 dark:text-surface-200">
                     Permitir rutas alternativas
@@ -431,7 +444,7 @@ export default function MerchantTrafficSettings() {
           transition={{ delay: 0.4 }}
         >
           <h2 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100 mb-4">
-            Coins Configuración de Precios
+            <Coins className="h-5 w-5 inline" /> Configuración de Precios
           </h2>
 
           <div className="space-y-4">
@@ -520,7 +533,7 @@ export default function MerchantTrafficSettings() {
         >
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100">
-              Bell Notificaciones
+              <Bell className="h-5 w-5 inline" /> Notificaciones
             </h2>
             <button
               onClick={() => updateSetting('notificationsEnabled', !settings.notificationsEnabled)}
@@ -560,7 +573,7 @@ export default function MerchantTrafficSettings() {
                     },
                     {
                       key: 'peakHourWarnings',
-                      icon: 'AlertTriangle',
+                      icon: AlertTriangle,
                       label: 'Aviso de hora pico',
                       desc: 'Cuando se acerca una hora pico',
                     },
@@ -572,47 +585,56 @@ export default function MerchantTrafficSettings() {
                     },
                     {
                       key: 'routeRecommendations',
-                      icon: 'Map',
+                      icon: Map,
                       label: 'Recomendaciones de ruta',
                       desc: 'Mejores rutas disponibles',
                     },
-                  ].map((item) => (
-                    <div
-                      key={item.key}
-                      className="flex items-center justify-between p-3 rounded-xl bg-surface-50 dark:bg-surface-900"
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="text-xl">{item.icon}</span>
-                        <div>
-                          <p className="text-sm font-medium text-surface-800 dark:text-surface-200">
-                            {item.label}
-                          </p>
-                          <p className="text-xs text-surface-500 dark:text-surface-400">
-                            {item.desc}
-                          </p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() =>
-                          updateSetting(
-                            item.key as keyof TrafficSettings,
-                            !(settings as any)[item.key],
-                          )
-                        }
-                        className={`relative w-10 h-5 rounded-full transition-colors ${
-                          (settings as any)[item.key]
-                            ? 'bg-kiwi-500'
-                            : 'bg-surface-300 dark:bg-surface-600'
-                        }`}
+                  ].map((item) => {
+                    const ItemIcon = item.icon as any;
+                    return (
+                      <div
+                        key={item.key}
+                        className="flex items-center justify-between p-3 rounded-xl bg-surface-50 dark:bg-surface-900"
                       >
-                        <motion.div
-                          className="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full"
-                          animate={{ x: (settings as any)[item.key] ? 20 : 0 }}
-                          transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                        />
-                      </button>
-                    </div>
-                  ))}
+                        <div className="flex items-center gap-3">
+                          {typeof ItemIcon === 'string' ? (
+                            <span className="text-xl">{ItemIcon}</span>
+                          ) : (
+                            <span className="text-xl">
+                              <ItemIcon className="h-5 w-5" />
+                            </span>
+                          )}
+                          <div>
+                            <p className="text-sm font-medium text-surface-800 dark:text-surface-200">
+                              {item.label}
+                            </p>
+                            <p className="text-xs text-surface-500 dark:text-surface-400">
+                              {item.desc}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() =>
+                            updateSetting(
+                              item.key as keyof TrafficSettings,
+                              !(settings as any)[item.key],
+                            )
+                          }
+                          className={`relative w-10 h-5 rounded-full transition-colors ${
+                            (settings as any)[item.key]
+                              ? 'bg-kiwi-500'
+                              : 'bg-surface-300 dark:bg-surface-600'
+                          }`}
+                        >
+                          <motion.div
+                            className="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full"
+                            animate={{ x: (settings as any)[item.key] ? 20 : 0 }}
+                            transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                          />
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               </motion.div>
             )}
@@ -642,7 +664,7 @@ export default function MerchantTrafficSettings() {
                   animate={{ rotate: 360 }}
                   transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
                 >
-                  Clock
+                  <Clock className="h-5 w-5" />
                 </motion.span>
                 Guardando...
               </span>

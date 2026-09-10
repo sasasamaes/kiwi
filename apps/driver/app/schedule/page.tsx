@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Home, Package, Coins, Calendar, User, PartyPopper } from 'lucide-react';
 import { AnimatedButton, StaggerContainer, StaggerItem } from '@kiwi/ui';
 
 const days = [
@@ -12,7 +13,7 @@ const days = [
   { short: 'Mié', full: 'Miércoles', icon: '💼' },
   { short: 'Jue', full: 'Jueves', icon: '💼' },
   { short: 'Vie', full: 'Viernes', icon: '💼' },
-  { short: 'Sáb', full: 'Sábado', icon: 'PartyPopper' },
+  { short: 'Sáb', full: 'Sábado', icon: PartyPopper },
 ];
 
 const hours = Array.from({ length: 15 }, (_, i) => i + 7); // 7am to 9pm
@@ -21,7 +22,7 @@ const presets = [
   { name: '🌅 Mañana', hours: [7, 8, 9, 10, 11, 12] },
   { name: '☀️ Tarde', hours: [13, 14, 15, 16, 17, 18] },
   { name: '🌙 Noche', hours: [18, 19, 20, 21] },
-  { name: 'Calendar Día completo', hours: [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18] },
+  { name: '📅 Día completo', hours: [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18] },
 ];
 
 export default function Schedule() {
@@ -80,6 +81,8 @@ export default function Schedule() {
 
   const weeklyHours = Object.values(schedule).flat().length;
   const activeDays = Object.keys(schedule).filter((k) => schedule[parseInt(k)]?.length > 0).length;
+
+  const SelectedDayIcon = days[selectedDay]?.icon as any;
 
   const getHourLabel = (hour: number) => {
     if (hour < 12) return `${hour}am`;
@@ -200,7 +203,12 @@ export default function Schedule() {
         >
           <div>
             <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100">
-              {days[selectedDay].icon} {days[selectedDay].full}
+              {typeof SelectedDayIcon === 'string' ? (
+                SelectedDayIcon
+              ) : (
+                <SelectedDayIcon className="h-5 w-5 inline" />
+              )}{' '}
+              {days[selectedDay].full}
             </h3>
             <p className="text-sm text-surface-500 dark:text-surface-400">
               {(schedule[selectedDay] || []).length} horas seleccionadas
@@ -416,28 +424,36 @@ export default function Schedule() {
               </p>
 
               <div className="grid grid-cols-2 gap-3">
-                {days.map((day, index) => (
-                  <motion.button
-                    key={day.short}
-                    className={`p-4 rounded-xl border text-left transition-all ${
-                      index === selectedDay
-                        ? 'border-surface-200 dark:border-surface-600 bg-surface-50 dark:bg-surface-700 opacity-50 cursor-not-allowed'
-                        : 'border-surface-200 dark:border-surface-600 hover:border-kiwi-300 dark:hover:border-kiwi-600'
-                    }`}
-                    onClick={() => index !== selectedDay && copyToDay(index)}
-                    disabled={index === selectedDay}
-                    whileTap={index !== selectedDay ? { scale: 0.95 } : {}}
-                  >
-                    <span className="font-medium text-surface-800 dark:text-surface-200">
-                      {day.icon} {day.short}
-                    </span>
-                    <span className="block text-xs text-surface-400 mt-1">
-                      {index === selectedDay
-                        ? 'Origen'
-                        : `${(schedule[index] || []).length} horas actuales`}
-                    </span>
-                  </motion.button>
-                ))}
+                {days.map((day, index) => {
+                  const DayIcon = day.icon as any;
+                  return (
+                    <motion.button
+                      key={day.short}
+                      className={`p-4 rounded-xl border text-left transition-all ${
+                        index === selectedDay
+                          ? 'border-surface-200 dark:border-surface-600 bg-surface-50 dark:bg-surface-700 opacity-50 cursor-not-allowed'
+                          : 'border-surface-200 dark:border-surface-600 hover:border-kiwi-300 dark:hover:border-kiwi-600'
+                      }`}
+                      onClick={() => index !== selectedDay && copyToDay(index)}
+                      disabled={index === selectedDay}
+                      whileTap={index !== selectedDay ? { scale: 0.95 } : {}}
+                    >
+                      <span className="font-medium text-surface-800 dark:text-surface-200">
+                        {typeof DayIcon === 'string' ? (
+                          DayIcon
+                        ) : (
+                          <DayIcon className="h-4 w-4 inline" />
+                        )}{' '}
+                        {day.short}
+                      </span>
+                      <span className="block text-xs text-surface-400 mt-1">
+                        {index === selectedDay
+                          ? 'Origen'
+                          : `${(schedule[index] || []).length} horas actuales`}
+                      </span>
+                    </motion.button>
+                  );
+                })}
               </div>
             </motion.div>
           </motion.div>
@@ -448,27 +464,34 @@ export default function Schedule() {
       <nav className="sticky bottom-0 border-t border-surface-200/50 dark:border-surface-700/50 bg-white/80 dark:bg-surface-900/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-lg items-center justify-around py-2">
           {[
-            { href: '/', icon: 'Home', label: 'Inicio', active: false },
-            { href: '/active', icon: 'Package', label: 'Activos', active: false },
-            { href: '/earnings', icon: 'Coins', label: 'Ganancias', active: false },
-            { href: '/schedule', icon: 'Calendar', label: 'Horario', active: true },
-            { href: '/profile', icon: 'User', label: 'Perfil', active: false },
-          ].map((item) => (
-            <Link key={item.href} href={item.href}>
-              <motion.div
-                className={`flex flex-col items-center gap-1 px-4 py-2 ${
-                  item.active
-                    ? 'text-kiwi-600 dark:text-kiwi-400'
-                    : 'text-surface-400 hover:text-surface-600 dark:hover:text-surface-300'
-                }`}
-                whileHover={{ y: -2 }}
-                whileTap={{ scale: 0.9 }}
-              >
-                <span className="text-xl">{item.icon}</span>
-                <span className="text-xs font-medium">{item.label}</span>
-              </motion.div>
-            </Link>
-          ))}
+            { href: '/', icon: Home, label: 'Inicio', active: false },
+            { href: '/active', icon: Package, label: 'Activos', active: false },
+            { href: '/earnings', icon: Coins, label: 'Ganancias', active: false },
+            { href: '/schedule', icon: Calendar, label: 'Horario', active: true },
+            { href: '/profile', icon: User, label: 'Perfil', active: false },
+          ].map((item) => {
+            const NavIcon = item.icon as any;
+            return (
+              <Link key={item.href} href={item.href}>
+                <motion.div
+                  className={`flex flex-col items-center gap-1 px-4 py-2 ${
+                    item.active
+                      ? 'text-kiwi-600 dark:text-kiwi-400'
+                      : 'text-surface-400 hover:text-surface-600 dark:hover:text-surface-300'
+                  }`}
+                  whileHover={{ y: -2 }}
+                  whileTap={{ scale: 0.9 }}
+                >
+                  {typeof NavIcon === 'string' ? (
+                    <span className="text-xl">{NavIcon}</span>
+                  ) : (
+                    <NavIcon className="h-5 w-5" />
+                  )}
+                  <span className="text-xs font-medium">{item.label}</span>
+                </motion.div>
+              </Link>
+            );
+          })}
         </div>
       </nav>
     </main>

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { Smartphone, CreditCard, DollarSign, Coins, Bike, Clock } from 'lucide-react';
 import { AreaChartComponent, PieChartComponent, StatCard } from '@kiwi/ui';
 
 const mockPayments = [
@@ -131,15 +132,15 @@ export default function PaymentsPage() {
   const getMethodIcon = (method: string) => {
     switch (method) {
       case 'sinpe':
-        return 'Smartphone';
+        return Smartphone;
       case 'card':
-        return 'CreditCard';
+        return CreditCard;
       case 'cash':
-        return 'DollarSign';
+        return DollarSign;
       case 'crypto':
         return '₿';
       default:
-        return 'Coins';
+        return Coins;
     }
   };
 
@@ -158,7 +159,7 @@ export default function PaymentsPage() {
         <StatCard
           title="Ingresos Totales"
           value={`₡${stats.totalRevenue.toLocaleString()}`}
-          icon="Coins"
+          icon={<Coins className="h-6 w-6" />}
           color="kiwi"
         />
         <StatCard
@@ -170,13 +171,13 @@ export default function PaymentsPage() {
         <StatCard
           title="Pagos a Repartidores"
           value={`₡${stats.totalPayouts.toLocaleString()}`}
-          icon="Bike"
+          icon={<Bike className="h-6 w-6" />}
           color="bark"
         />
         <StatCard
           title="Pagos Pendientes"
           value={`₡${stats.pendingPayouts.toLocaleString()}`}
-          icon="Clock"
+          icon={<Clock className="h-6 w-6" />}
           color="gold"
         />
       </div>
@@ -269,66 +270,73 @@ export default function PaymentsPage() {
               </tr>
             </thead>
             <tbody>
-              {filteredPayments.map((payment, index) => (
-                <motion.tr
-                  key={payment.id}
-                  className="border-b border-surface-100 dark:border-surface-700/50 hover:bg-surface-50 dark:hover:bg-surface-700/50 transition-colors"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                >
-                  <td className="py-4 px-6">
-                    <span className="font-mono text-sm text-surface-800 dark:text-surface-200">
-                      {payment.id}
-                    </span>
-                  </td>
-                  <td className="py-4 px-6">
-                    <span className="font-mono text-sm text-surface-800 dark:text-surface-200">
-                      {payment.orderId}
-                    </span>
-                  </td>
-                  <td className="py-4 px-6">
-                    <span className="text-sm text-surface-800 dark:text-surface-200">
-                      {payment.merchant}
-                    </span>
-                  </td>
-                  <td className="py-4 px-6">
-                    <span className="flex items-center gap-2">
-                      <span>{getMethodIcon(payment.method)}</span>
-                      <span className="text-sm text-surface-800 dark:text-surface-200 capitalize">
-                        {payment.method}
+              {filteredPayments.map((payment, index) => {
+                const MethodIcon = getMethodIcon(payment.method) as any;
+                return (
+                  <motion.tr
+                    key={payment.id}
+                    className="border-b border-surface-100 dark:border-surface-700/50 hover:bg-surface-50 dark:hover:bg-surface-700/50 transition-colors"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                  >
+                    <td className="py-4 px-6">
+                      <span className="font-mono text-sm text-surface-800 dark:text-surface-200">
+                        {payment.id}
                       </span>
-                    </span>
-                  </td>
-                  <td className="py-4 px-6">
-                    <span className="font-medium text-surface-800 dark:text-surface-200">
-                      ₡{payment.amount.toLocaleString()}
-                    </span>
-                  </td>
-                  <td className="py-4 px-6">
-                    <span className="text-sm text-kiwi-600 dark:text-kiwi-400">
-                      ₡{payment.fee.toLocaleString()}
-                    </span>
-                  </td>
-                  <td className="py-4 px-6">
-                    <span className="text-sm text-blue-600 dark:text-blue-400">
-                      {payment.driver ? `₡${payment.driverPayout.toLocaleString()}` : '-'}
-                    </span>
-                  </td>
-                  <td className="py-4 px-6">
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(payment.status)}`}
-                    >
-                      {getStatusLabel(payment.status)}
-                    </span>
-                  </td>
-                  <td className="py-4 px-6">
-                    <span className="text-sm text-surface-500 dark:text-surface-400">
-                      {new Date(payment.createdAt).toLocaleDateString('es-CR')}
-                    </span>
-                  </td>
-                </motion.tr>
-              ))}
+                    </td>
+                    <td className="py-4 px-6">
+                      <span className="font-mono text-sm text-surface-800 dark:text-surface-200">
+                        {payment.orderId}
+                      </span>
+                    </td>
+                    <td className="py-4 px-6">
+                      <span className="text-sm text-surface-800 dark:text-surface-200">
+                        {payment.merchant}
+                      </span>
+                    </td>
+                    <td className="py-4 px-6">
+                      <span className="flex items-center gap-2">
+                        {typeof MethodIcon === 'string' ? (
+                          <span>{MethodIcon}</span>
+                        ) : (
+                          <MethodIcon className="h-5 w-5" />
+                        )}
+                        <span className="text-sm text-surface-800 dark:text-surface-200 capitalize">
+                          {payment.method}
+                        </span>
+                      </span>
+                    </td>
+                    <td className="py-4 px-6">
+                      <span className="font-medium text-surface-800 dark:text-surface-200">
+                        ₡{payment.amount.toLocaleString()}
+                      </span>
+                    </td>
+                    <td className="py-4 px-6">
+                      <span className="text-sm text-kiwi-600 dark:text-kiwi-400">
+                        ₡{payment.fee.toLocaleString()}
+                      </span>
+                    </td>
+                    <td className="py-4 px-6">
+                      <span className="text-sm text-blue-600 dark:text-blue-400">
+                        {payment.driver ? `₡${payment.driverPayout.toLocaleString()}` : '-'}
+                      </span>
+                    </td>
+                    <td className="py-4 px-6">
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(payment.status)}`}
+                      >
+                        {getStatusLabel(payment.status)}
+                      </span>
+                    </td>
+                    <td className="py-4 px-6">
+                      <span className="text-sm text-surface-500 dark:text-surface-400">
+                        {new Date(payment.createdAt).toLocaleDateString('es-CR')}
+                      </span>
+                    </td>
+                  </motion.tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

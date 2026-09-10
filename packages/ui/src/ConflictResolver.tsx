@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useConflictResolution, type Conflict, type MergeAction } from './useConflictResolution';
+import { AlertTriangle, Sparkles } from 'lucide-react';
 
 interface ConflictResolverProps {
   className?: string;
@@ -151,7 +152,7 @@ function ConflictCard({ conflict, onResolve, onDismiss }: ConflictCardProps) {
               {conflict.autoMergeResult && (
                 <div className="p-3 rounded-xl bg-kiwi-50 dark:bg-kiwi-900/30 border border-kiwi-200 dark:border-kiwi-800 mb-4">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-lg">Sparkles</span>
+                    <Sparkles className="text-lg h-5 w-5" />
                     <p className="font-medium text-kiwi-700 dark:text-kiwi-400">
                       Auto-merge disponible
                     </p>
@@ -196,10 +197,10 @@ function ConflictCard({ conflict, onResolve, onDismiss }: ConflictCardProps) {
               {conflict.autoMergeResult && (
                 <motion.button
                   onClick={() => onResolve(conflict.id, 'merge')}
-                  className="w-full py-2 rounded-xl bg-kiwi-500 text-white font-medium"
+                  className="w-full py-2 rounded-xl bg-kiwi-500 text-white font-medium flex items-center justify-center gap-2"
                   whileTap={{ scale: 0.95 }}
                 >
-                  Sparkles Auto-combinar
+                  <Sparkles className="h-4 w-4" /> Auto-combinar
                 </motion.button>
               )}
               <motion.button
@@ -266,7 +267,7 @@ export function ConflictResolver({
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <span className="text-2xl">AlertTriangle</span>
+          <AlertTriangle className="text-2xl h-6 w-6" />
           <div>
             <h2 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100">
               Conflictos
@@ -366,7 +367,7 @@ export function ConflictIndicator({ className = '' }: { className?: string }) {
       animate={{ scale: 1 }}
       transition={{ type: 'spring', stiffness: 500 }}
     >
-      <span>AlertTriangle</span>
+      <AlertTriangle className="h-5 w-5" />
       <span>{pendingCount}</span>
     </motion.div>
   );
@@ -390,7 +391,7 @@ export function ConflictBanner({ className = '' }: { className?: string }) {
     >
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <span className="text-xl">AlertTriangle</span>
+          <AlertTriangle className="text-xl h-5 w-5" />
           <div>
             <p className="font-semibold">
               {pendingCount} conflicto{pendingCount !== 1 ? 's' : ''} pendiente

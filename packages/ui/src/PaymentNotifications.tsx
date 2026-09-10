@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Bell } from 'lucide-react';
 import { usePaymentNotifications, type PaymentNotification } from './usePaymentNotifications';
 
 interface PaymentNotificationsProps {
@@ -327,7 +328,7 @@ export function NotificationBadge({
       animate={{ scale: 1 }}
       transition={{ type: 'spring', stiffness: 500 }}
     >
-      <span className="text-xl">Bell</span>
+      <Bell className="text-xl h-6 w-6" />
       <motion.div
         className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center"
         animate={{ scale: [1, 1.2, 1] }}

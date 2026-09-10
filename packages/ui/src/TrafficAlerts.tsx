@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslations } from './LanguageProvider';
 import { apiFetch } from './api-client';
+import { Map, MapPin } from 'lucide-react';
 
 export interface TrafficAlert {
   id: string;
@@ -145,7 +146,7 @@ export function TrafficAlertBanner({
 
           {/* Location */}
           <div className="flex items-center gap-1 text-xs opacity-75 mb-2">
-            <span>MapPin</span>
+            <MapPin className="h-5 w-5" />
             <span>{alert.location.address}</span>
             <span>•</span>
             <span>
@@ -157,7 +158,7 @@ export function TrafficAlertBanner({
           {alert.alternativeRoute && (
             <div className="rounded-lg bg-white/50 dark:bg-surface-800/50 p-2 mb-2">
               <div className="flex items-center gap-2">
-                <span className="text-sm">Map</span>
+                <Map className="text-sm h-4 w-4" />
                 <span className={`text-xs font-medium ${config.textColor}`}>
                   {t('traffic.alternativeRoute')}: {alert.alternativeRoute.description}
                 </span>
@@ -304,7 +305,7 @@ export function TrafficAlertList({
                       {alert.alternativeRoute && (
                         <div className="rounded-lg bg-white/50 dark:bg-surface-800/50 p-3 mb-3">
                           <div className="flex items-center gap-2 mb-1">
-                            <span>Map</span>
+                            <Map className="h-5 w-5" />
                             <span className={`text-xs font-semibold ${config.textColor}`}>
                               {t('traffic.alternativeRoute')}
                             </span>

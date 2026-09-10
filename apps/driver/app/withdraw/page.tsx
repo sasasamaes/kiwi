@@ -3,6 +3,18 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Clock,
+  RefreshCw,
+  Check,
+  X,
+  Smartphone,
+  Home,
+  Package,
+  Coins,
+  Calendar,
+  User,
+} from 'lucide-react';
 import { api, Skeleton } from '@kiwi/ui';
 
 interface Balance {
@@ -28,30 +40,30 @@ interface Withdrawal {
   createdAt: string;
 }
 
-const STATUS_CONFIG: Record<string, { label: string; icon: string; color: string }> = {
+const STATUS_CONFIG: Record<string, { label: string; icon: any; color: string }> = {
   pending: {
     label: 'Pendiente',
-    icon: 'Clock',
+    icon: Clock,
     color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400',
   },
   processing: {
     label: 'Procesando',
-    icon: 'RefreshCw',
+    icon: RefreshCw,
     color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400',
   },
   completed: {
     label: 'Completado',
-    icon: 'Check',
+    icon: Check,
     color: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400',
   },
   failed: {
     label: 'Cancelado',
-    icon: 'X',
+    icon: X,
     color: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400',
   },
   rejected: {
     label: 'Rechazado',
-    icon: 'X',
+    icon: X,
     color: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400',
   },
 };
@@ -386,7 +398,7 @@ export default function WithdrawPage() {
                           : 'border-surface-200 dark:border-surface-700 hover:border-surface-300 dark:hover:border-surface-600'
                       }`}
                     >
-                      <span className="text-2xl block mb-1">Smartphone</span>
+                      <Smartphone className="text-2xl block mb-1 h-6 w-6 mx-auto" />
                       <span className="font-medium text-surface-800 dark:text-surface-100">
                         SINPE
                       </span>
@@ -535,6 +547,7 @@ export default function WithdrawPage() {
             <div className="space-y-3">
               {withdrawals.map((withdrawal, index) => {
                 const statusConfig = STATUS_CONFIG[withdrawal.status] || STATUS_CONFIG.pending;
+                const StatusIcon = statusConfig.icon as any;
 
                 return (
                   <motion.div
@@ -548,7 +561,11 @@ export default function WithdrawPage() {
                       <div
                         className={`flex h-10 w-10 items-center justify-center rounded-full ${statusConfig.color}`}
                       >
-                        <span className="text-lg">{statusConfig.icon}</span>
+                        {typeof StatusIcon === 'string' ? (
+                          <span className="text-lg">{StatusIcon}</span>
+                        ) : (
+                          <StatusIcon className="h-5 w-5" />
+                        )}
                       </div>
                       <div>
                         <p className="font-medium text-surface-800 dark:text-surface-100">
@@ -590,35 +607,35 @@ export default function WithdrawPage() {
             href="/"
             className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
           >
-            <span className="text-xl">Home</span>
+            <Home className="text-xl h-5 w-5" />
             <span className="text-xs font-medium">Inicio</span>
           </Link>
           <Link
             href="/active"
             className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
           >
-            <span className="text-xl">Package</span>
+            <Package className="text-xl h-5 w-5" />
             <span className="text-xs font-medium">Activos</span>
           </Link>
           <Link
             href="/earnings"
             className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
           >
-            <span className="text-xl">Coins</span>
+            <Coins className="text-xl h-5 w-5" />
             <span className="text-xs font-medium">Ganancias</span>
           </Link>
           <Link
             href="/schedule"
             className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
           >
-            <span className="text-xl">Calendar</span>
+            <Calendar className="text-xl h-5 w-5" />
             <span className="text-xs font-medium">Horario</span>
           </Link>
           <Link
             href="/profile"
             className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
           >
-            <span className="text-xl">User</span>
+            <User className="text-xl h-5 w-5" />
             <span className="text-xs font-medium">Perfil</span>
           </Link>
         </div>

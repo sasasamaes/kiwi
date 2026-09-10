@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Star, Package, Search } from 'lucide-react';
 import {
   AnimatedButton,
   StaggerContainer,
@@ -235,8 +236,12 @@ export default function DriversPage() {
                       <VehicleBadge type={driver.vehicleType} size="sm" />
                     </div>
                     <div className="flex items-center gap-4 mt-1 text-sm text-surface-500">
-                      <span>Star {driver.rating}</span>
-                      <span>Package {driver.trips} viajes</span>
+                      <span>
+                        <Star className="h-4 w-4 inline" /> {driver.rating}
+                      </span>
+                      <span>
+                        <Package className="h-4 w-4 inline" /> {driver.trips} viajes
+                      </span>
                     </div>
                   </div>
 
@@ -271,7 +276,9 @@ export default function DriversPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
-            <span className="text-4xl">Search</span>
+            <span className="text-4xl">
+              <Search className="h-10 w-10" />
+            </span>
             <p className="mt-4 font-medium text-surface-600">
               No hay repartidores con este vehículo
             </p>

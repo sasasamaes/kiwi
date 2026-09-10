@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from './api-client';
+import { Map, Package, RefreshCw } from 'lucide-react';
 
 interface RouteStop {
   location: {
@@ -147,7 +148,7 @@ export function RouteOptimizer({
     return (
       <div className={`rounded-2xl glass p-4 ${className}`}>
         <div className="text-center py-4">
-          <span className="text-3xl block mb-2">Package</span>
+          <Package className="text-3xl block mb-2 h-8 w-8" />
           <p className="text-sm text-surface-500 dark:text-surface-400">No hay pedidos activos</p>
         </div>
       </div>
@@ -158,8 +159,8 @@ export function RouteOptimizer({
     <div className={`rounded-2xl glass p-4 ${className}`}>
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-          Map Ruta Optimizada
+        <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100 flex items-center gap-2">
+          <Map className="h-5 w-5" /> Ruta Optimizada
         </h3>
         <div className="flex items-center gap-2">
           <span className="px-2 py-1 rounded-full bg-kiwi-100 dark:bg-kiwi-900/50 text-xs font-medium text-kiwi-700 dark:text-kiwi-400">
@@ -175,7 +176,7 @@ export function RouteOptimizer({
               transition={{ duration: 1, repeat: loading ? Infinity : 0, ease: 'linear' }}
               className="block"
             >
-              RefreshCw
+              <RefreshCw className="h-4 w-4" />
             </motion.span>
           </button>
         </div>

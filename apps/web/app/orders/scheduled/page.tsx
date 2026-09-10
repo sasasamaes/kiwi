@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Calendar, Clock, MapPin, Home, Coins, Star, Check, ClipboardList } from 'lucide-react';
 import {
   AnimatedButton,
   StaggerContainer,
@@ -156,7 +157,7 @@ export default function ScheduledOrdersPage() {
               <span className="text-sm font-medium">Dashboard</span>
             </Link>
             <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-              Calendar Pedidos Programados
+              <Calendar className="h-5 w-5 inline" /> Pedidos Programados
             </h1>
             <div className="w-16" />
           </div>
@@ -196,7 +197,7 @@ export default function ScheduledOrdersPage() {
               animate={{ y: [0, -10, 0] }}
               transition={{ duration: 2, repeat: Infinity }}
             >
-              Calendar
+              <Calendar className="h-16 w-16" />
             </motion.div>
             <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-2">
               No hay pedidos programados
@@ -221,7 +222,7 @@ export default function ScheduledOrdersPage() {
                   <div className="flex gap-4">
                     {/* Schedule Icon */}
                     <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-gold-100 dark:bg-gold-900/30 text-3xl flex-shrink-0">
-                      Calendar
+                      <Calendar className="h-8 w-8" />
                     </div>
 
                     {/* Order Info */}
@@ -244,7 +245,7 @@ export default function ScheduledOrdersPage() {
                         {/* Schedule Time */}
                         {order.scheduledDate && (
                           <span className="flex items-center gap-1 text-sm text-gold-600 dark:text-gold-400 font-medium">
-                            Calendar{' '}
+                            <Calendar className="h-4 w-4 inline" />{' '}
                             {new Date(order.scheduledDate).toLocaleDateString('es-CR', {
                               weekday: 'short',
                               month: 'short',
@@ -256,7 +257,7 @@ export default function ScheduledOrdersPage() {
 
                         {/* Status Badge */}
                         <span className="px-3 py-1 rounded-full bg-gold-100 dark:bg-gold-900/50 text-xs font-medium text-gold-700 dark:text-gold-400">
-                          Clock Esperando propuestas
+                          <Clock className="h-4 w-4 inline" /> Esperando propuestas
                         </span>
                       </div>
                     </div>
@@ -299,7 +300,7 @@ export default function ScheduledOrdersPage() {
                 <div className="w-12 h-1 bg-surface-300 dark:bg-surface-600 rounded-full mx-auto mb-3" />
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100">
-                    ClipboardList Propuestas
+                    <ClipboardList className="h-5 w-5 inline" /> Propuestas
                   </h2>
                   <motion.button
                     onClick={() => {
@@ -321,14 +322,16 @@ export default function ScheduledOrdersPage() {
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-surface-500 dark:text-surface-400">
-                        MapPin Recoger:
+                        <MapPin className="h-4 w-4 inline" /> Recoger:
                       </span>
                       <span className="font-medium text-surface-800 dark:text-surface-200 text-right max-w-[60%]">
                         {selectedOrder.pickupAddress}
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-surface-500 dark:text-surface-400">Home Entregar:</span>
+                      <span className="text-surface-500 dark:text-surface-400">
+                        <Home className="h-4 w-4 inline" /> Entregar:
+                      </span>
                       <span className="font-medium text-surface-800 dark:text-surface-200 text-right max-w-[60%]">
                         {selectedOrder.deliveryAddress}
                       </span>
@@ -336,7 +339,7 @@ export default function ScheduledOrdersPage() {
                     {selectedOrder.scheduledDate && (
                       <div className="flex justify-between text-sm">
                         <span className="text-surface-500 dark:text-surface-400">
-                          Calendar Fecha:
+                          <Calendar className="h-4 w-4 inline" /> Fecha:
                         </span>
                         <span className="font-medium text-gold-600 dark:text-gold-400">
                           {new Date(selectedOrder.scheduledDate).toLocaleDateString('es-CR', {
@@ -349,7 +352,9 @@ export default function ScheduledOrdersPage() {
                       </div>
                     )}
                     <div className="flex justify-between text-sm">
-                      <span className="text-surface-500 dark:text-surface-400">Coins Total:</span>
+                      <span className="text-surface-500 dark:text-surface-400">
+                        <Coins className="h-4 w-4 inline" /> Total:
+                      </span>
                       <span className="font-bold text-kiwi-600 dark:text-kiwi-400">
                         ₡{Number(selectedOrder.totalAmount).toLocaleString()}
                       </span>
@@ -383,7 +388,7 @@ export default function ScheduledOrdersPage() {
                       animate={{ y: [0, -5, 0] }}
                       transition={{ duration: 2, repeat: Infinity }}
                     >
-                      Clock
+                      <Clock className="h-10 w-10" />
                     </motion.div>
                     <p className="text-surface-500 dark:text-surface-400">
                       Esperando propuestas de repartidores...
@@ -413,7 +418,9 @@ export default function ScheduledOrdersPage() {
                                   {proposal.driver?.fullName || 'Repartidor'}
                                 </h4>
                                 <div className="flex items-center gap-1">
-                                  <span className="text-sm">Star</span>
+                                  <span className="text-sm">
+                                    <Star className="h-4 w-4" />
+                                  </span>
                                   <span className="text-sm font-medium text-surface-600 dark:text-surface-400">
                                     {proposal.driver?.rating?.toFixed(1) || '5.0'}
                                   </span>
@@ -433,7 +440,8 @@ export default function ScheduledOrdersPage() {
                               {/* Estimated Arrival */}
                               <div className="mt-2 flex items-center gap-2">
                                 <span className="text-sm font-medium text-kiwi-600 dark:text-kiwi-400">
-                                  Clock Llega en: {proposal.estimatedArrival || 'No especificado'}
+                                  <Clock className="h-4 w-4 inline" /> Llega en:{' '}
+                                  {proposal.estimatedArrival || 'No especificado'}
                                 </span>
                               </div>
 
@@ -457,12 +465,15 @@ export default function ScheduledOrdersPage() {
                                       animate={{ rotate: 360 }}
                                       transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
                                     >
-                                      Clock
+                                      <Clock className="h-4 w-4" />
                                     </motion.span>
                                     Aceptando...
                                   </span>
                                 ) : (
-                                  `Check Elegir a ${proposal.driver?.fullName || 'este repartidor'}`
+                                  <>
+                                    <Check className="h-4 w-4 inline" /> Elegir a{' '}
+                                    {proposal.driver?.fullName || 'este repartidor'}
+                                  </>
                                 )}
                               </motion.button>
                             </div>

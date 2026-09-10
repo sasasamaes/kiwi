@@ -6,6 +6,7 @@ import { compression, type StorageStats } from './compression';
 import { offlineCache, type CacheStats } from './offline-cache';
 import { backgroundSync, type SyncQueueStats } from './background-sync';
 import { offlineOrders } from './offline-orders';
+import { AlertTriangle, ClipboardList, Package, RefreshCw } from 'lucide-react';
 
 interface StorageManagerProps {
   className?: string;
@@ -98,7 +99,7 @@ export function StorageManager({ className = '', showDetails = false }: StorageM
           </h3>
           <div className="flex items-center gap-2">
             {breakdown.storage.isCritical && (
-              <span className="text-red-500 animate-pulse">AlertTriangle</span>
+              <AlertTriangle className="text-red-500 animate-pulse h-5 w-5" />
             )}
             <span className="text-sm font-medium text-surface-600 dark:text-surface-400">
               {compression.formatBytes(breakdown.storage.used)}
@@ -212,7 +213,7 @@ export function StorageManager({ className = '', showDetails = false }: StorageM
                 <div className="p-3 rounded-xl bg-surface-50 dark:bg-surface-900">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-lg">Package</span>
+                      <Package className="text-lg h-5 w-5" />
                       <div>
                         <p className="font-medium text-surface-800 dark:text-surface-200">
                           Caché de tráfico
@@ -240,7 +241,7 @@ export function StorageManager({ className = '', showDetails = false }: StorageM
                 <div className="p-3 rounded-xl bg-surface-50 dark:bg-surface-900">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-lg">RefreshCw</span>
+                      <RefreshCw className="text-lg h-5 w-5" />
                       <div>
                         <p className="font-medium text-surface-800 dark:text-surface-200">
                           Cola de sincronización
@@ -270,7 +271,7 @@ export function StorageManager({ className = '', showDetails = false }: StorageM
                 <div className="p-3 rounded-xl bg-surface-50 dark:bg-surface-900">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-lg">ClipboardList</span>
+                      <ClipboardList className="text-lg h-5 w-5" />
                       <div>
                         <p className="font-medium text-surface-800 dark:text-surface-200">
                           Pedidos offline

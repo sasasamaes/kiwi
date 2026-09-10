@@ -3,6 +3,16 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Package,
+  Coins,
+  Bike,
+  BarChart3,
+  Calendar,
+  CalendarDays,
+  RefreshCw,
+  ClipboardList,
+} from 'lucide-react';
 import { api, StatCard, StaggerContainer, StaggerItem } from '@kiwi/ui';
 
 interface PlatformAnalytics {
@@ -41,10 +51,10 @@ interface PlatformAnalytics {
 }
 
 const PERIODS = [
-  { id: 'today', label: 'Hoy', icon: 'Calendar' },
+  { id: 'today', label: 'Hoy', icon: Calendar },
   { id: 'week', label: 'Semana', icon: '📆' },
-  { id: 'month', label: 'Mes', icon: 'CalendarDays' },
-  { id: 'quarter', label: 'Trimestre', icon: 'BarChart3' },
+  { id: 'month', label: 'Mes', icon: CalendarDays },
+  { id: 'quarter', label: 'Trimestre', icon: BarChart3 },
   { id: 'year', label: 'Año', icon: '📈' },
 ];
 
@@ -147,7 +157,7 @@ export default function AdminDashboard() {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            RefreshCw Reintentar
+            <RefreshCw className="h-4 w-4 inline" /> Reintentar
           </motion.button>
         </motion.div>
       </div>
@@ -160,7 +170,7 @@ export default function AdminDashboard() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-display font-bold text-surface-800 dark:text-surface-100">
-            BarChart3 Dashboard Admin
+            <BarChart3 className="h-6 w-6 inline" /> Dashboard Admin
           </h1>
           <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">
             Analíticas de la plataforma Kiwi
@@ -172,7 +182,7 @@ export default function AdminDashboard() {
             className="px-4 py-2 text-sm font-medium bg-surface-100 dark:bg-surface-800 text-surface-700 dark:text-surface-300 rounded-lg hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors"
             whileTap={{ scale: 0.95 }}
           >
-            RefreshCw Actualizar
+            <RefreshCw className="h-4 w-4 inline" /> Actualizar
           </motion.button>
         </div>
       </div>
@@ -183,21 +193,28 @@ export default function AdminDashboard() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        {PERIODS.map((period) => (
-          <motion.button
-            key={period.id}
-            onClick={() => setSelectedPeriod(period.id)}
-            className={`flex-shrink-0 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
-              selectedPeriod === period.id
-                ? 'bg-white dark:bg-surface-700 text-surface-800 dark:text-surface-100 shadow-soft'
-                : 'text-surface-500 dark:text-surface-400 hover:text-surface-700 dark:hover:text-surface-300'
-            }`}
-            whileTap={{ scale: 0.95 }}
-          >
-            <span className="mr-1">{period.icon}</span>
-            {period.label}
-          </motion.button>
-        ))}
+        {PERIODS.map((period) => {
+          const PeriodIcon = period.icon as any;
+          return (
+            <motion.button
+              key={period.id}
+              onClick={() => setSelectedPeriod(period.id)}
+              className={`flex-shrink-0 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                selectedPeriod === period.id
+                  ? 'bg-white dark:bg-surface-700 text-surface-800 dark:text-surface-100 shadow-soft'
+                  : 'text-surface-500 dark:text-surface-400 hover:text-surface-700 dark:hover:text-surface-300'
+              }`}
+              whileTap={{ scale: 0.95 }}
+            >
+              {typeof PeriodIcon === 'string' ? (
+                <span className="mr-1">{PeriodIcon}</span>
+              ) : (
+                <PeriodIcon className="mr-1 h-4 w-4 inline" />
+              )}
+              {period.label}
+            </motion.button>
+          );
+        })}
       </motion.div>
 
       {/* Overview Stats */}
@@ -238,7 +255,9 @@ export default function AdminDashboard() {
         <StaggerItem>
           <motion.div className="rounded-2xl glass p-4" whileHover={{ y: -2 }}>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-2xl">Package</span>
+              <span className="text-2xl">
+                <Package className="h-6 w-6" />
+              </span>
               <span
                 className={`text-xs font-medium ${getGrowthColor(analytics?.growth?.orderGrowth || 0)}`}
               >
@@ -256,7 +275,9 @@ export default function AdminDashboard() {
         <StaggerItem>
           <motion.div className="rounded-2xl glass p-4" whileHover={{ y: -2 }}>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-2xl">Coins</span>
+              <span className="text-2xl">
+                <Coins className="h-6 w-6" />
+              </span>
               <span
                 className={`text-xs font-medium ${getGrowthColor(analytics?.growth?.revenueGrowth || 0)}`}
               >
@@ -292,7 +313,9 @@ export default function AdminDashboard() {
         <StaggerItem>
           <motion.div className="rounded-2xl glass p-4" whileHover={{ y: -2 }}>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-2xl">Bike</span>
+              <span className="text-2xl">
+                <Bike className="h-6 w-6" />
+              </span>
               <span className="text-xs font-medium text-surface-500 dark:text-surface-400">
                 {analytics?.users?.drivers || 0} registrados
               </span>
@@ -322,7 +345,9 @@ export default function AdminDashboard() {
         <StaggerItem>
           <motion.div className="rounded-2xl glass p-4" whileHover={{ y: -2 }}>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-2xl">BarChart3</span>
+              <span className="text-2xl">
+                <BarChart3 className="h-6 w-6" />
+              </span>
               <span className="text-xs font-medium text-surface-500 dark:text-surface-400">
                 Promedio
               </span>
@@ -345,7 +370,7 @@ export default function AdminDashboard() {
           transition={{ delay: 0.3 }}
         >
           <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-            BarChart3 Estado de Pedidos
+            <BarChart3 className="h-5 w-5 inline" /> Estado de Pedidos
           </h3>
           <div className="space-y-4">
             {/* Completed */}
@@ -463,7 +488,9 @@ export default function AdminDashboard() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-100 dark:bg-purple-900/50">
-                  <span className="text-lg">Package</span>
+                  <span className="text-lg">
+                    <Package className="h-5 w-5" />
+                  </span>
                 </div>
                 <div>
                   <p className="font-medium text-surface-800 dark:text-surface-200">Pedidos</p>
@@ -484,7 +511,9 @@ export default function AdminDashboard() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gold-100 dark:bg-gold-900/50">
-                  <span className="text-lg">Coins</span>
+                  <span className="text-lg">
+                    <Coins className="h-5 w-5" />
+                  </span>
                 </div>
                 <div>
                   <p className="font-medium text-surface-800 dark:text-surface-200">Ingresos</p>
@@ -553,7 +582,9 @@ export default function AdminDashboard() {
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.95 }}
             >
-              <span className="text-2xl block mb-2">Package</span>
+              <span className="text-2xl block mb-2">
+                <Package className="h-6 w-6" />
+              </span>
               <span className="text-sm font-medium">Ver Pedidos</span>
             </motion.button>
           </Link>
@@ -573,7 +604,9 @@ export default function AdminDashboard() {
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.95 }}
             >
-              <span className="text-2xl block mb-2">Coins</span>
+              <span className="text-2xl block mb-2">
+                <Coins className="h-6 w-6" />
+              </span>
               <span className="text-sm font-medium">Ver Pagos</span>
             </motion.button>
           </Link>
@@ -588,7 +621,7 @@ export default function AdminDashboard() {
         transition={{ delay: 0.6 }}
       >
         <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-          ClipboardList Resumen del Sistema
+          <ClipboardList className="h-5 w-5 inline" /> Resumen del Sistema
         </h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="text-center p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50">

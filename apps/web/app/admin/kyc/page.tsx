@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Bike, Car, ClipboardList, Clock, Check, X } from 'lucide-react';
 import { api, Skeleton } from '@kiwi/ui';
 
 interface KYCVerification {
@@ -65,10 +66,10 @@ const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
 };
 
 const FILTER_TABS = [
-  { id: 'all', label: 'Todos', icon: 'ClipboardList' },
-  { id: 'pending', label: 'Pendientes', icon: 'Clock' },
-  { id: 'approved', label: 'Aprobados', icon: 'Check' },
-  { id: 'rejected', label: 'Rechazados', icon: 'X' },
+  { id: 'all', label: 'Todos', icon: ClipboardList },
+  { id: 'pending', label: 'Pendientes', icon: Clock },
+  { id: 'approved', label: 'Aprobados', icon: Check },
+  { id: 'rejected', label: 'Rechazados', icon: X },
 ];
 
 export default function KYCPage() {
@@ -264,21 +265,24 @@ export default function KYCPage() {
 
       {/* Filter Tabs */}
       <div className="flex gap-2 overflow-x-auto pb-2">
-        {FILTER_TABS.map((tab) => (
-          <motion.button
-            key={tab.id}
-            onClick={() => setActiveFilter(tab.id)}
-            className={`flex-shrink-0 px-4 py-2.5 rounded-full text-sm font-medium transition-all ${
-              activeFilter === tab.id
-                ? 'bg-kiwi-500 text-white shadow-kiwi'
-                : 'bg-white dark:bg-surface-800 text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700'
-            }`}
-            whileTap={{ scale: 0.95 }}
-          >
-            <span className="mr-1">{tab.icon}</span>
-            {tab.label}
-          </motion.button>
-        ))}
+        {FILTER_TABS.map((tab) => {
+          const TabIcon = tab.icon as any;
+          return (
+            <motion.button
+              key={tab.id}
+              onClick={() => setActiveFilter(tab.id)}
+              className={`flex-shrink-0 px-4 py-2.5 rounded-full text-sm font-medium transition-all ${
+                activeFilter === tab.id
+                  ? 'bg-kiwi-500 text-white shadow-kiwi'
+                  : 'bg-white dark:bg-surface-800 text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700'
+              }`}
+              whileTap={{ scale: 0.95 }}
+            >
+              <TabIcon className="mr-1 h-4 w-4 inline" />
+              {tab.label}
+            </motion.button>
+          );
+        })}
       </div>
 
       {/* Verifications Grid */}
@@ -317,7 +321,7 @@ export default function KYCPage() {
                           : 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
                       }`}
                     >
-                      {kyc.user.role === 'driver' ? 'Bike' : '🏪'}
+                      {kyc.user.role === 'driver' ? <Bike className="h-6 w-6" /> : '🏪'}
                     </div>
                     <div>
                       <p className="font-semibold text-surface-800 dark:text-surface-100">
@@ -382,7 +386,9 @@ export default function KYCPage() {
 
                 {kyc.status === 'rejected' && kyc.rejectionReason && (
                   <div className="pt-2 border-t border-surface-100 dark:border-surface-700">
-                    <p className="text-sm text-red-500">X {kyc.rejectionReason}</p>
+                    <p className="text-sm text-red-500">
+                      <X className="h-4 w-4 inline" /> {kyc.rejectionReason}
+                    </p>
                   </div>
                 )}
 
@@ -425,7 +431,7 @@ export default function KYCPage() {
                           : 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
                       }`}
                     >
-                      {selectedKYC.user.role === 'driver' ? 'Bike' : '🏪'}
+                      {selectedKYC.user.role === 'driver' ? <Bike className="h-6 w-6" /> : '🏪'}
                     </div>
                     <div>
                       <h3 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100">
@@ -521,7 +527,9 @@ export default function KYCPage() {
                     {selectedKYC.licenseUrl && (
                       <div className="rounded-xl bg-surface-100 dark:bg-surface-700 p-4">
                         <div className="aspect-video bg-surface-200 dark:bg-surface-600 rounded-lg flex items-center justify-center mb-2">
-                          <span className="text-4xl">Car</span>
+                          <span className="text-4xl">
+                            <Car className="h-10 w-10" />
+                          </span>
                         </div>
                         <p className="text-sm text-surface-600 dark:text-surface-400">
                           Licencia de conducir
@@ -609,7 +617,9 @@ export default function KYCPage() {
                       <span>{formatDate(selectedKYC.verifiedAt)}</span>
                     </div>
                     {selectedKYC.rejectionReason && (
-                      <p className="mt-2 text-sm text-red-500">X {selectedKYC.rejectionReason}</p>
+                      <p className="mt-2 text-sm text-red-500">
+                        <X className="h-4 w-4 inline" /> {selectedKYC.rejectionReason}
+                      </p>
                     )}
                   </div>
                 )}

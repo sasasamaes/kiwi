@@ -2,31 +2,43 @@
 
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import {
+  Smartphone,
+  Map,
+  CreditCard,
+  Bike,
+  Lock,
+  ShoppingCart,
+  Coins,
+  PartyPopper,
+  MapPin,
+  Star,
+} from 'lucide-react';
 import { AnimatedButton, StaggerContainer, StaggerItem } from '@kiwi/ui';
 
 const FEATURES = [
   {
-    icon: 'Smartphone',
+    icon: Smartphone,
     title: 'Menú QR',
     description: 'Escanea el código QR del comercio y ordena en segundos. Sin apps adicionales.',
   },
   {
-    icon: 'Map',
+    icon: Map,
     title: 'Tracking en tiempo real',
     description: 'Sigue tu pedido en el mapa. Sabes exactamente dónde está tu repartidor.',
   },
   {
-    icon: 'CreditCard',
+    icon: CreditCard,
     title: 'Paga como quieras',
     description: 'SINPE, tarjeta, efectivo o cripto (USDC/USDT). Tú eliges.',
   },
   {
-    icon: 'Bike',
+    icon: Bike,
     title: 'Trabaja cuando quieras',
     description: 'Tú decides tus horarios. Gana dinero extra con entregas.',
   },
   {
-    icon: 'Lock',
+    icon: Lock,
     title: 'Seguro y verificado',
     description: 'Todos los usuarios pasan verificación KYC. Tu seguridad es nuestra prioridad.',
   },
@@ -48,19 +60,19 @@ const STEPS = [
     step: '2',
     title: 'Elige',
     description: 'Selecciona lo que quieres del menú',
-    icon: 'ShoppingCart',
+    icon: ShoppingCart,
   },
   {
     step: '3',
     title: 'Paga',
     description: 'Elige tu método de pago favorito',
-    icon: 'Coins',
+    icon: Coins,
   },
   {
     step: '4',
     title: 'Recibe',
     description: 'Sigue tu pedido y recíbelo en minutos',
-    icon: 'PartyPopper',
+    icon: PartyPopper,
   },
 ];
 
@@ -174,23 +186,27 @@ export default function LandingPage() {
         <div className="mx-auto max-w-6xl px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             {[
-              { value: '50+', label: 'Comercios' },
-              { value: '200+', label: 'Repartidores' },
-              { value: '1000+', label: 'Pedidos' },
-              { value: '4.9Star', label: 'Calificación' },
-            ].map((stat, i) => (
-              <motion.div
-                key={stat.label}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
-              >
-                <div className="text-3xl md:text-4xl font-bold text-kiwi-600 dark:text-kiwi-400">
-                  {stat.value}
-                </div>
-                <div className="text-surface-500 dark:text-surface-400 mt-1">{stat.label}</div>
-              </motion.div>
-            ))}
+              { value: '50+', label: 'Comercios', icon: null },
+              { value: '200+', label: 'Repartidores', icon: null },
+              { value: '1000+', label: 'Pedidos', icon: null },
+              { value: '4.9', label: 'Calificación', icon: Star },
+            ].map((stat, i) => {
+              const StatIcon = stat.icon as any;
+              return (
+                <motion.div
+                  key={stat.label}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.1 }}
+                >
+                  <div className="text-3xl md:text-4xl font-bold text-kiwi-600 dark:text-kiwi-400">
+                    {stat.value}
+                    {StatIcon ? <StatIcon className="h-7 w-7 inline" /> : null}
+                  </div>
+                  <div className="text-surface-500 dark:text-surface-400 mt-1">{stat.label}</div>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -213,22 +229,31 @@ export default function LandingPage() {
 
           <StaggerContainer>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {FEATURES.map((feature, i) => (
-                <StaggerItem key={feature.title}>
-                  <motion.div
-                    className="p-6 bg-white dark:bg-surface-800 rounded-2xl border border-surface-200 dark:border-surface-700 hover:shadow-lg transition-shadow"
-                    whileHover={{ y: -5 }}
-                  >
-                    <span className="text-4xl mb-4 block">{feature.icon}</span>
-                    <h3 className="text-lg font-semibold text-surface-800 dark:text-surface-100 mb-2">
-                      {feature.title}
-                    </h3>
-                    <p className="text-surface-600 dark:text-surface-400 text-sm">
-                      {feature.description}
-                    </p>
-                  </motion.div>
-                </StaggerItem>
-              ))}
+              {FEATURES.map((feature, i) => {
+                const FeatureIcon = feature.icon as any;
+                return (
+                  <StaggerItem key={feature.title}>
+                    <motion.div
+                      className="p-6 bg-white dark:bg-surface-800 rounded-2xl border border-surface-200 dark:border-surface-700 hover:shadow-lg transition-shadow"
+                      whileHover={{ y: -5 }}
+                    >
+                      {typeof FeatureIcon === 'string' ? (
+                        <span className="text-4xl mb-4 block">{FeatureIcon}</span>
+                      ) : (
+                        <span className="text-4xl mb-4 block">
+                          <FeatureIcon className="h-10 w-10" />
+                        </span>
+                      )}
+                      <h3 className="text-lg font-semibold text-surface-800 dark:text-surface-100 mb-2">
+                        {feature.title}
+                      </h3>
+                      <p className="text-surface-600 dark:text-surface-400 text-sm">
+                        {feature.description}
+                      </p>
+                    </motion.div>
+                  </StaggerItem>
+                );
+              })}
             </div>
           </StaggerContainer>
         </div>
@@ -251,26 +276,37 @@ export default function LandingPage() {
           </motion.div>
 
           <div className="grid md:grid-cols-4 gap-8">
-            {STEPS.map((step, i) => (
-              <motion.div
-                key={step.step}
-                className="text-center"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.15 }}
-              >
-                <div className="w-16 h-16 mx-auto mb-4 bg-kiwi-100 dark:bg-kiwi-900/30 rounded-full flex items-center justify-center">
-                  <span className="text-3xl">{step.icon}</span>
-                </div>
-                <div className="text-sm font-bold text-kiwi-600 dark:text-kiwi-400 mb-2">
-                  Paso {step.step}
-                </div>
-                <h3 className="text-lg font-semibold text-surface-800 dark:text-surface-100 mb-2">
-                  {step.title}
-                </h3>
-                <p className="text-sm text-surface-600 dark:text-surface-400">{step.description}</p>
-              </motion.div>
-            ))}
+            {STEPS.map((step, i) => {
+              const StepIcon = step.icon as any;
+              return (
+                <motion.div
+                  key={step.step}
+                  className="text-center"
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.15 }}
+                >
+                  <div className="w-16 h-16 mx-auto mb-4 bg-kiwi-100 dark:bg-kiwi-900/30 rounded-full flex items-center justify-center">
+                    {typeof StepIcon === 'string' ? (
+                      <span className="text-3xl">{StepIcon}</span>
+                    ) : (
+                      <span className="text-3xl">
+                        <StepIcon className="h-8 w-8" />
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-sm font-bold text-kiwi-600 dark:text-kiwi-400 mb-2">
+                    Paso {step.step}
+                  </div>
+                  <h3 className="text-lg font-semibold text-surface-800 dark:text-surface-100 mb-2">
+                    {step.title}
+                  </h3>
+                  <p className="text-sm text-surface-600 dark:text-surface-400">
+                    {step.description}
+                  </p>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -318,7 +354,9 @@ export default function LandingPage() {
       <section id="download" className="py-20 bg-gradient-to-br from-kiwi-500 to-kiwi-600">
         <div className="mx-auto max-w-4xl px-4 text-center">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}>
-            <span className="text-6xl mb-6 block">Smartphone</span>
+            <span className="text-6xl mb-6 block">
+              <Smartphone className="h-16 w-16" />
+            </span>
             <h2 className="text-3xl md:text-4xl font-display font-bold text-white mb-4">
               Descarga Kiwi ahora
             </h2>
@@ -414,8 +452,12 @@ export default function LandingPage() {
               </h4>
               <ul className="space-y-2 text-sm text-surface-500 dark:text-surface-400">
                 <li>📧 soporte@kiwi.app</li>
-                <li>Smartphone +506 8888-5678</li>
-                <li>MapPin Nicoya, Guanacaste</li>
+                <li>
+                  <Smartphone className="h-4 w-4 inline" /> +506 8888-5678
+                </li>
+                <li>
+                  <MapPin className="h-4 w-4 inline" /> Nicoya, Guanacaste
+                </li>
               </ul>
             </div>
           </div>

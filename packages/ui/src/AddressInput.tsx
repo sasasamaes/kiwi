@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from './api-client';
+import { MapPin, RefreshCw, Search } from 'lucide-react';
 
 interface AddressResult {
   placeId: string;
@@ -264,7 +265,7 @@ export function AddressInput({
               transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
             />
           ) : (
-            <span>Search</span>
+            <Search className="h-5 w-5" />
           )}
         </div>
 
@@ -279,11 +280,14 @@ export function AddressInput({
             <motion.span
               animate={{ rotate: 360 }}
               transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+              className="block"
             >
-              RefreshCw
+              <RefreshCw className="h-4 w-4" />
             </motion.span>
           ) : (
-            'MapPin Mi ubicación'
+            <span className="flex items-center gap-1">
+              <MapPin className="h-4 w-4" /> Mi ubicación
+            </span>
           )}
         </button>
       </div>
@@ -346,7 +350,7 @@ export function AddressInput({
           animate={{ opacity: 1, y: 0 }}
         >
           <div className="text-center">
-            <span className="text-2xl block mb-2">Search</span>
+            <Search className="text-2xl block mb-2 h-6 w-6" />
             <p className="text-sm text-surface-500 dark:text-surface-400">
               No se encontraron direcciones para "{query}"
             </p>

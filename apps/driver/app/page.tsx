@@ -64,7 +64,7 @@ export default function Home() {
   } = useSocket({
     onConnect: () => console.log('🟢 Driver connected to real-time'),
     onNewOrder: (data) => {
-      console.log('Package New order available:', data);
+      console.log('New order available:', data);
       setNewOrderAlert(data);
       // Add to available orders list
       setAvailableOrders((prev) => [data, ...prev]);
@@ -77,7 +77,7 @@ export default function Home() {
       }
     },
     onOrderStatusChanged: (data) => {
-      console.log('RefreshCw Order status changed:', data);
+      console.log('Order status changed:', data);
       // Refresh active orders
       fetchActiveOrders();
     },
