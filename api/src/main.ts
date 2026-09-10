@@ -113,15 +113,27 @@ async function bootstrap() {
   // Global prefix
   app.setGlobalPrefix('api');
 
-  // CORS
+  // CORS: localhost + prod Vercel URLs + env override.
+  // Render debe tener CLIENT_URL/WEB_URL/DRIVER_URL o CORS_ORIGIN seteados;
+  // los defaults cubren prod aunque falten las vars (ese era el register bloqueado).
+  const envOrigins = [
+    process.env.CLIENT_URL, // Production client
+    process.env.WEB_URL, // Production web
+    process.env.DRIVER_URL, // Production driver
+    ...(process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : []),
+  ]
+    .map((o) => o?.trim())
+    .filter(Boolean) as string[];
   app.enableCors({
     origin: [
       'http://localhost:3000', // Web dashboard
       'http://localhost:3001', // Driver app
       'http://localhost:3002', // Client app
-      process.env.CLIENT_URL, // Production client
-      process.env.WEB_URL, // Production web
-    ].filter(Boolean),
+      'https://kiwi-merchant.vercel.app',
+      'https://kiwi-client-tau.vercel.app',
+      'https://kiwi-driver.vercel.app',
+      ...envOrigins,
+    ],
     credentials: true,
   });
 

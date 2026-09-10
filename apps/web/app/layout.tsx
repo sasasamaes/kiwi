@@ -21,12 +21,6 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: 'Kiwi - Repartidores para Comerciantes',
   description: 'Plataforma de repartidores para comerciantes de Nicoya, Costa Rica',
-  manifest: '/manifest.json',
-  themeColor: '#22c55e',
-  icons: {
-    icon: '/favicon.ico',
-    apple: '/apple-touch-icon.png',
-  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
