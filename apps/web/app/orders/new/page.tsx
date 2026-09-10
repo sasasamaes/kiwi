@@ -55,15 +55,6 @@ const savedAddresses = [
   { id: '2', name: 'Bodega', address: 'Nicoya, 1km sur del estadio' },
 ];
 
-const quickItems = [
-  { name: 'Bowl Tropikal', price: 4500, icon: '🥗' },
-  { name: 'Bowl Verde', price: 4200, icon: '🥬' },
-  { name: 'Café Americano', price: 1200, icon: '☕' },
-  { name: 'Latte', price: 1800, icon: '☕' },
-  { name: 'Smoothie Verde', price: 2500, icon: '🥤' },
-  { name: 'Patacones', price: 1800, icon: '🍌' },
-];
-
 export default function NewOrder() {
   const router = useRouter();
   const { user } = useAuth();
@@ -94,6 +85,24 @@ export default function NewOrder() {
 
   const [newItem, setNewItem] = useState({ name: '', quantity: 1, price: 0 });
   const [showQuickAdd, setShowQuickAdd] = useState(false);
+  const [quickItems, setQuickItems] = useState<{ name: string; price: number }[]>([]);
+
+  useEffect(() => {
+    api
+      .getMyMenuItems()
+      .then((data) => {
+        const list = Array.isArray(data) ? data : [];
+        setQuickItems(
+          list
+            .filter((item) => item.isAvailable !== false)
+            .slice(0, 6)
+            .map((item) => ({ name: item.name, price: Number(item.price) })),
+        );
+      })
+      .catch(() => {
+        setQuickItems([]);
+      });
+  }, []);
 
   const addItem = () => {
     if (newItem.name && newItem.price > 0) {
@@ -679,7 +688,6 @@ export default function NewOrder() {
                               onClick={() => addQuickItem(item)}
                               whileTap={{ scale: 0.95 }}
                             >
-                              <span className="text-xl">{item.icon}</span>
                               <div className="text-left">
                                 <p className="text-xs font-medium text-surface-700 dark:text-surface-300">
                                   {item.name}
