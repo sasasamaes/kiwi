@@ -219,6 +219,12 @@ model Order {
   commission        Decimal     @db.Decimal(10, 2)
   driverPayout      Decimal     @map("driver_payout") @db.Decimal(10, 2)
   totalAmount       Decimal     @map("total_amount") @db.Decimal(10, 2)
+  // Flete (fase 1: encomiendas)
+  productsTotal      Decimal   @default(0) @map("products_total") @db.Decimal(10, 2)
+  kind               String    @default("food") @map("kind")
+  packageDescription String?   @map("package_description")
+  packageSize        String?   @map("package_size")
+  declaredValue      Decimal?  @map("declared_value") @db.Decimal(10, 2)
   
   // Instructions
   specialInstructions String?   @map("special_instructions")
