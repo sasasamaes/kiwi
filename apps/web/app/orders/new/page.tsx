@@ -39,6 +39,10 @@ interface OrderData {
   deliveryLat?: number;
   deliveryLng?: number;
   items: OrderItem[];
+  kind: 'food' | 'freight';
+  packageDescription: string;
+  packageSize: '' | 'S' | 'M' | 'L';
+  declaredValue: number;
   specialInstructions: string;
   isScheduled: boolean;
   scheduledDate: string;
@@ -77,6 +81,10 @@ export default function NewOrder() {
     deliveryName: '',
     deliveryPhone: '',
     items: [],
+    kind: 'food',
+    packageDescription: '',
+    packageSize: '',
+    declaredValue: 0,
     specialInstructions: '',
     isScheduled: false,
     scheduledDate: '',
@@ -355,6 +363,46 @@ export default function NewOrder() {
                 <MapPin className="h-6 w-6 inline" /> ¿Dónde recoger?
               </h2>
 
+              {/* Mode selector */}
+              <div className="mb-4 grid grid-cols-2 gap-2">
+                <motion.button
+                  className={`rounded-xl p-4 text-left transition-all ${
+                    orderData.kind === 'food'
+                      ? 'border-2 border-kiwi-500 bg-kiwi-50 dark:bg-kiwi-900/30'
+                      : 'border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800'
+                  }`}
+                  onClick={() =>
+                    setOrderData({
+                      ...orderData,
+                      kind: 'food',
+                      packageDescription: '',
+                      packageSize: '',
+                      declaredValue: 0,
+                    })
+                  }
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <p className="text-2xl">🍔</p>
+                  <p className="font-medium text-surface-800 dark:text-surface-200">Comida</p>
+                  <p className="text-xs text-surface-500 dark:text-surface-400">Pedido del menú</p>
+                </motion.button>
+                <motion.button
+                  className={`rounded-xl p-4 text-left transition-all ${
+                    orderData.kind === 'freight'
+                      ? 'border-2 border-kiwi-500 bg-kiwi-50 dark:bg-kiwi-900/30'
+                      : 'border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800'
+                  }`}
+                  onClick={() => setOrderData({ ...orderData, kind: 'freight', items: [] })}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <p className="text-2xl">📦</p>
+                  <p className="font-medium text-surface-800 dark:text-surface-200">Encomienda</p>
+                  <p className="text-xs text-surface-500 dark:text-surface-400">
+                    Paquete o mandado
+                  </p>
+                </motion.button>
+              </div>
+
               {/* Saved Addresses */}
               <div className="mb-4">
                 <p className="mb-2 text-sm font-medium text-surface-600 dark:text-surface-400">
@@ -542,173 +590,237 @@ export default function NewOrder() {
               </h2>
 
               {/* Quick Add Section */}
-              <div className="mb-4">
-                <motion.button
-                  className="w-full flex items-center justify-between p-3 rounded-xl bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-700"
-                  onClick={() => setShowQuickAdd(!showQuickAdd)}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <span className="text-sm font-medium text-surface-700 dark:text-surface-300">
-                    ⚡ Agregados rápidos
-                  </span>
-                  <motion.span
-                    animate={{ rotate: showQuickAdd ? 180 : 0 }}
-                    className="text-surface-400"
-                  >
-                    ▼
-                  </motion.span>
-                </motion.button>
-
-                <AnimatePresence>
-                  {showQuickAdd && (
-                    <motion.div
-                      className="mt-2 grid grid-cols-2 gap-2"
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                    >
-                      {quickItems.map((item) => (
+              {orderData.kind === 'freight' ? (
+                <div className="mb-6 space-y-4">
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-surface-600 dark:text-surface-400">
+                      Descripción del paquete *
+                    </label>
+                    <textarea
+                      value={orderData.packageDescription}
+                      onChange={(e) =>
+                        setOrderData({ ...orderData, packageDescription: e.target.value })
+                      }
+                      placeholder="Ej: Caja con repuestos"
+                      rows={3}
+                      className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:border-kiwi-500 focus:ring-2 focus:ring-kiwi-500/20 transition-all resize-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-surface-600 dark:text-surface-400">
+                      Tamaño del paquete
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {(['S', 'M', 'L'] as const).map((size) => (
                         <motion.button
-                          key={item.name}
-                          className="flex items-center gap-2 p-3 rounded-xl bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-700 hover:border-kiwi-300 dark:hover:border-kiwi-600 transition-colors"
-                          onClick={() => addQuickItem(item)}
+                          key={size}
+                          className={`rounded-xl p-3 text-center font-medium transition-all ${
+                            orderData.packageSize === size
+                              ? 'border-2 border-kiwi-500 bg-kiwi-50 dark:bg-kiwi-900/30 text-surface-800 dark:text-surface-200'
+                              : 'border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 text-surface-600 dark:text-surface-400'
+                          }`}
+                          onClick={() => setOrderData({ ...orderData, packageSize: size })}
                           whileTap={{ scale: 0.95 }}
                         >
-                          <span className="text-xl">{item.icon}</span>
-                          <div className="text-left">
-                            <p className="text-xs font-medium text-surface-700 dark:text-surface-300">
-                              {item.name}
-                            </p>
-                            <p className="text-xs text-kiwi-600 dark:text-kiwi-400">
-                              ₡{item.price}
-                            </p>
-                          </div>
+                          {size}
                         </motion.button>
                       ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              {/* Custom Item Form */}
-              <div className="mb-6 rounded-xl glass p-4">
-                <h3 className="mb-3 text-sm font-semibold text-surface-600 dark:text-surface-400">
-                  Agregar producto personalizado
-                </h3>
-                <div className="space-y-3">
-                  <input
-                    type="text"
-                    value={newItem.name}
-                    onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
-                    placeholder="Nombre del producto"
-                    className="w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-2 text-sm text-surface-800 dark:text-surface-100 focus:border-kiwi-500 focus:ring-2 focus:ring-kiwi-500/20"
-                  />
-                  <div className="flex gap-3">
-                    <div className="flex items-center gap-2">
-                      <motion.button
-                        className="h-8 w-8 rounded-lg bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400"
-                        onClick={() =>
-                          setNewItem({ ...newItem, quantity: Math.max(1, newItem.quantity - 1) })
-                        }
-                        whileTap={{ scale: 0.9 }}
-                      >
-                        −
-                      </motion.button>
-                      <span className="w-8 text-center font-medium text-surface-800 dark:text-surface-200">
-                        {newItem.quantity}
-                      </span>
-                      <motion.button
-                        className="h-8 w-8 rounded-lg bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400"
-                        onClick={() => setNewItem({ ...newItem, quantity: newItem.quantity + 1 })}
-                        whileTap={{ scale: 0.9 }}
-                      >
-                        +
-                      </motion.button>
                     </div>
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-surface-600 dark:text-surface-400">
+                      Valor declarado (opcional)
+                    </label>
                     <input
                       type="number"
-                      value={newItem.price || ''}
+                      value={orderData.declaredValue || ''}
                       onChange={(e) =>
-                        setNewItem({ ...newItem, price: parseInt(e.target.value) || 0 })
+                        setOrderData({
+                          ...orderData,
+                          declaredValue: parseInt(e.target.value) || 0,
+                        })
                       }
-                      placeholder="Precio ₡"
-                      className="flex-1 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-2 text-sm text-surface-800 dark:text-surface-100 focus:border-kiwi-500 focus:ring-2 focus:ring-kiwi-500/20"
+                      placeholder="₡"
+                      className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:border-kiwi-500 focus:ring-2 focus:ring-kiwi-500/20 transition-all"
                     />
-                    <AnimatedButton variant="primary" size="sm" onClick={addItem}>
-                      +
-                    </AnimatedButton>
                   </div>
                 </div>
-              </div>
-
-              {/* Items List */}
-              <div className="mb-6 space-y-2">
-                <AnimatePresence>
-                  {orderData.items.map((item) => (
-                    <motion.div
-                      key={item.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 20 }}
-                      className="flex items-center justify-between rounded-xl bg-white dark:bg-surface-800 p-3 shadow-soft dark:shadow-dark"
+              ) : (
+                <>
+                  <div className="mb-4">
+                    <motion.button
+                      className="w-full flex items-center justify-between p-3 rounded-xl bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-700"
+                      onClick={() => setShowQuickAdd(!showQuickAdd)}
+                      whileTap={{ scale: 0.98 }}
                     >
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-1">
+                      <span className="text-sm font-medium text-surface-700 dark:text-surface-300">
+                        ⚡ Agregados rápidos
+                      </span>
+                      <motion.span
+                        animate={{ rotate: showQuickAdd ? 180 : 0 }}
+                        className="text-surface-400"
+                      >
+                        ▼
+                      </motion.span>
+                    </motion.button>
+
+                    <AnimatePresence>
+                      {showQuickAdd && (
+                        <motion.div
+                          className="mt-2 grid grid-cols-2 gap-2"
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                        >
+                          {quickItems.map((item) => (
+                            <motion.button
+                              key={item.name}
+                              className="flex items-center gap-2 p-3 rounded-xl bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-700 hover:border-kiwi-300 dark:hover:border-kiwi-600 transition-colors"
+                              onClick={() => addQuickItem(item)}
+                              whileTap={{ scale: 0.95 }}
+                            >
+                              <span className="text-xl">{item.icon}</span>
+                              <div className="text-left">
+                                <p className="text-xs font-medium text-surface-700 dark:text-surface-300">
+                                  {item.name}
+                                </p>
+                                <p className="text-xs text-kiwi-600 dark:text-kiwi-400">
+                                  ₡{item.price}
+                                </p>
+                              </div>
+                            </motion.button>
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+
+                  {/* Custom Item Form */}
+                  <div className="mb-6 rounded-xl glass p-4">
+                    <h3 className="mb-3 text-sm font-semibold text-surface-600 dark:text-surface-400">
+                      Agregar producto personalizado
+                    </h3>
+                    <div className="space-y-3">
+                      <input
+                        type="text"
+                        value={newItem.name}
+                        onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+                        placeholder="Nombre del producto"
+                        className="w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-2 text-sm text-surface-800 dark:text-surface-100 focus:border-kiwi-500 focus:ring-2 focus:ring-kiwi-500/20"
+                      />
+                      <div className="flex gap-3">
+                        <div className="flex items-center gap-2">
                           <motion.button
-                            className="h-6 w-6 rounded bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400 text-sm"
-                            onClick={() => updateItemQuantity(item.id, -1)}
+                            className="h-8 w-8 rounded-lg bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400"
+                            onClick={() =>
+                              setNewItem({
+                                ...newItem,
+                                quantity: Math.max(1, newItem.quantity - 1),
+                              })
+                            }
                             whileTap={{ scale: 0.9 }}
                           >
                             −
                           </motion.button>
-                          <span className="w-6 text-center text-sm font-medium text-surface-800 dark:text-surface-200">
-                            {item.quantity}
+                          <span className="w-8 text-center font-medium text-surface-800 dark:text-surface-200">
+                            {newItem.quantity}
                           </span>
                           <motion.button
-                            className="h-6 w-6 rounded bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400 text-sm"
-                            onClick={() => updateItemQuantity(item.id, 1)}
+                            className="h-8 w-8 rounded-lg bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400"
+                            onClick={() =>
+                              setNewItem({ ...newItem, quantity: newItem.quantity + 1 })
+                            }
                             whileTap={{ scale: 0.9 }}
                           >
                             +
                           </motion.button>
                         </div>
-                        <div>
-                          <p className="text-sm font-medium text-surface-800 dark:text-surface-200">
-                            {item.name}
-                          </p>
-                          <p className="text-xs text-surface-400">
-                            ₡{item.price.toLocaleString()} c/u
-                          </p>
-                        </div>
+                        <input
+                          type="number"
+                          value={newItem.price || ''}
+                          onChange={(e) =>
+                            setNewItem({ ...newItem, price: parseInt(e.target.value) || 0 })
+                          }
+                          placeholder="Precio ₡"
+                          className="flex-1 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-2 text-sm text-surface-800 dark:text-surface-100 focus:border-kiwi-500 focus:ring-2 focus:ring-kiwi-500/20"
+                        />
+                        <AnimatedButton variant="primary" size="sm" onClick={addItem}>
+                          +
+                        </AnimatedButton>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <span className="font-semibold text-surface-800 dark:text-surface-200">
-                          ₡{(item.price * item.quantity).toLocaleString()}
-                        </span>
-                        <motion.button
-                          onClick={() => removeItem(item.id)}
-                          className="text-red-400 hover:text-red-600"
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                        >
-                          ✕
-                        </motion.button>
-                      </div>
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-
-                {orderData.items.length === 0 && (
-                  <div className="rounded-xl bg-surface-50 dark:bg-surface-800 p-8 text-center">
-                    <span className="text-4xl">
-                      <Package className="h-10 w-10" />
-                    </span>
-                    <p className="mt-2 text-sm text-surface-500 dark:text-surface-400">
-                      Agrega productos al pedido
-                    </p>
+                    </div>
                   </div>
-                )}
-              </div>
+
+                  {/* Items List */}
+                  <div className="mb-6 space-y-2">
+                    <AnimatePresence>
+                      {orderData.items.map((item) => (
+                        <motion.div
+                          key={item.id}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: 20 }}
+                          className="flex items-center justify-between rounded-xl bg-white dark:bg-surface-800 p-3 shadow-soft dark:shadow-dark"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-1">
+                              <motion.button
+                                className="h-6 w-6 rounded bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400 text-sm"
+                                onClick={() => updateItemQuantity(item.id, -1)}
+                                whileTap={{ scale: 0.9 }}
+                              >
+                                −
+                              </motion.button>
+                              <span className="w-6 text-center text-sm font-medium text-surface-800 dark:text-surface-200">
+                                {item.quantity}
+                              </span>
+                              <motion.button
+                                className="h-6 w-6 rounded bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400 text-sm"
+                                onClick={() => updateItemQuantity(item.id, 1)}
+                                whileTap={{ scale: 0.9 }}
+                              >
+                                +
+                              </motion.button>
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-surface-800 dark:text-surface-200">
+                                {item.name}
+                              </p>
+                              <p className="text-xs text-surface-400">
+                                ₡{item.price.toLocaleString()} c/u
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="font-semibold text-surface-800 dark:text-surface-200">
+                              ₡{(item.price * item.quantity).toLocaleString()}
+                            </span>
+                            <motion.button
+                              onClick={() => removeItem(item.id)}
+                              className="text-red-400 hover:text-red-600"
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                            >
+                              ✕
+                            </motion.button>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+
+                    {orderData.items.length === 0 && (
+                      <div className="rounded-xl bg-surface-50 dark:bg-surface-800 p-8 text-center">
+                        <span className="text-4xl">
+                          <Package className="h-10 w-10" />
+                        </span>
+                        <p className="mt-2 text-sm text-surface-500 dark:text-surface-400">
+                          Agrega productos al pedido
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
 
               {/* Special Instructions */}
               <div className="mb-6">
@@ -979,7 +1091,8 @@ export default function NewOrder() {
               disabled={
                 (step === 1 && !orderData.pickupAddress) ||
                 (step === 2 && !orderData.deliveryAddress) ||
-                (step === 3 && orderData.items.length === 0)
+                (step === 3 && orderData.kind === 'food' && orderData.items.length === 0) ||
+                (step === 3 && orderData.kind === 'freight' && !orderData.packageDescription.trim())
               }
             >
               Siguiente →
