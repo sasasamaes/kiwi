@@ -11,7 +11,6 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: 'Kiwi - Menu',
   description: 'Ordena desde tu restaurante favorito',
-  manifest: '/manifest.json',
   themeColor: '#22c55e',
   viewport: {
     width: 'device-width',
