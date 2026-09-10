@@ -15,10 +15,24 @@ import {
   BarChart3,
   Clock,
   PartyPopper,
+  Bike,
+  Star,
 } from 'lucide-react';
 import { AnimatedButton, StaggerContainer, StaggerItem, useAuth, useSocket, api } from '@kiwi/ui';
 
-type Step = 1 | 2 | 3 | 4;
+type Step = 1 | 2 | 3 | 4 | 5;
+
+interface Driver {
+  id: string;
+  fullName: string;
+  vehicleType?: string;
+  rating?: number;
+}
+
+const toDriverList = (data: any): Driver[] => {
+  const list = Array.isArray(data) ? data : (data?.drivers ?? data?.favorites ?? data?.data ?? []);
+  return Array.isArray(list) ? list : [];
+};
 
 interface OrderItem {
   id: string;
@@ -86,6 +100,10 @@ export default function NewOrder() {
   const [newItem, setNewItem] = useState({ name: '', quantity: 1, price: 0 });
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [quickItems, setQuickItems] = useState<{ name: string; price: number }[]>([]);
+  const [favoriteDrivers, setFavoriteDrivers] = useState<Driver[]>([]);
+  const [availableDrivers, setAvailableDrivers] = useState<Driver[]>([]);
+  const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
+  const [driversLoading, setDriversLoading] = useState(false);
 
   useEffect(() => {
     api
@@ -103,6 +121,50 @@ export default function NewOrder() {
         setQuickItems([]);
       });
   }, []);
+
+  useEffect(() => {
+    if (step !== 4) return;
+    let cancelled = false;
+    const loadDrivers = async () => {
+      setDriversLoading(true);
+      try {
+        const favs = await api.getFavoriteDrivers().catch(() => []);
+        if (!cancelled) setFavoriteDrivers(toDriverList(favs));
+      } catch {
+        if (!cancelled) setFavoriteDrivers([]);
+      }
+      try {
+        const avail = await api
+          .getAvailableDrivers(orderData.pickupLat, orderData.pickupLng)
+          .catch(() => []);
+        if (!cancelled) setAvailableDrivers(toDriverList(avail));
+      } catch {
+        if (!cancelled) setAvailableDrivers([]);
+      } finally {
+        if (!cancelled) setDriversLoading(false);
+      }
+    };
+    loadDrivers();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
+
+  const toggleFavorite = async (driver: Driver) => {
+    const isFav = favoriteDrivers.some((d) => d.id === driver.id);
+    try {
+      if (isFav) {
+        await api.removeFavoriteDriver(driver.id);
+      } else {
+        await api.addFavoriteDriver(driver.id);
+      }
+      const favs = await api.getFavoriteDrivers().catch(() => []);
+      setFavoriteDrivers(toDriverList(favs));
+    } catch (error) {
+      console.error('Failed to update favorite:', error);
+    }
+  };
 
   const addItem = () => {
     if (newItem.name && newItem.price > 0) {
@@ -169,6 +231,7 @@ export default function NewOrder() {
   const createOrderHandler = async () => {
     setLoading(true);
     try {
+      const productsTotal = orderData.kind === 'food' ? subtotal : 0;
       const result = await api.createOrder({
         pickupAddress: orderData.pickupAddress,
         pickupLat: orderData.pickupLat,
@@ -181,7 +244,22 @@ export default function NewOrder() {
         scheduledTime: orderData.scheduledTime || undefined,
         specialInstructions: orderData.specialInstructions,
         distanceKm: 2.5, // Mock distance
+        kind: orderData.kind,
+        productsTotal,
+        packageDescription: orderData.kind === 'freight' ? orderData.packageDescription : undefined,
+        packageSize:
+          orderData.kind === 'freight' && orderData.packageSize !== ''
+            ? orderData.packageSize
+            : undefined,
+        declaredValue:
+          orderData.kind === 'freight' && orderData.declaredValue
+            ? orderData.declaredValue
+            : undefined,
       });
+
+      if (selectedDriverId) {
+        await api.assignDriver(result.id, selectedDriverId);
+      }
 
       setCreatedOrderId(result.id);
       setOrderCreated(true);
@@ -208,7 +286,8 @@ export default function NewOrder() {
     { num: 1, label: 'Recoger', icon: MapPin },
     { num: 2, label: 'Entregar', icon: Home },
     { num: 3, label: 'Detalles', icon: Package },
-    { num: 4, label: 'Pagar', icon: CreditCard },
+    { num: 4, label: 'Asignar', icon: Star },
+    { num: 5, label: 'Pagar', icon: CreditCard },
   ];
 
   // Order Created Success Screen
@@ -907,10 +986,186 @@ export default function NewOrder() {
             </motion.div>
           )}
 
-          {/* Step 4: Payment & Review */}
+          {/* Step 4: Assign Driver */}
           {step === 4 && (
             <motion.div
               key="step4"
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -50 }}
+            >
+              <h2 className="mb-6 text-xl font-display font-semibold text-surface-800 dark:text-surface-100">
+                <Star className="h-6 w-6 inline" /> Asignar repartidor
+              </h2>
+
+              {/* Asignar después (default selected) */}
+              <motion.div
+                className={`rounded-xl border-2 p-4 mb-4 cursor-pointer transition-all ${
+                  selectedDriverId === null
+                    ? 'border-kiwi-500 bg-kiwi-50 dark:bg-kiwi-900/30'
+                    : 'border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800'
+                }`}
+                onClick={() => setSelectedDriverId(null)}
+                whileTap={{ scale: 0.98 }}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">⏳</span>
+                    <div>
+                      <p className="font-medium text-surface-800 dark:text-surface-200">
+                        Asignar después
+                      </p>
+                      <p className="text-xs text-surface-500 dark:text-surface-400">
+                        Dejar para después en la página de conductores
+                      </p>
+                    </div>
+                  </div>
+                  {selectedDriverId === null && (
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="h-6 w-6 rounded-full bg-kiwi-500 flex items-center justify-center"
+                    >
+                      <span className="text-white text-xs">✓</span>
+                    </motion.div>
+                  )}
+                </div>
+              </motion.div>
+
+              {/* Favoritos */}
+              <div className="mb-6">
+                <h3 className="mb-3 text-sm font-semibold text-surface-600 dark:text-surface-400">
+                  ⭐ Favoritos
+                </h3>
+                {driversLoading ? (
+                  <p className="text-sm text-surface-400">Cargando...</p>
+                ) : favoriteDrivers.length === 0 ? (
+                  <p className="text-sm text-surface-400">
+                    No tienes conductores favoritos. Agrega algunos desde la página de conductores.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {favoriteDrivers.map((driver) => (
+                      <motion.div
+                        key={driver.id}
+                        className={`flex items-center justify-between rounded-xl p-4 cursor-pointer transition-all ${
+                          selectedDriverId === driver.id
+                            ? 'border-2 border-kiwi-500 bg-kiwi-50 dark:bg-kiwi-900/30'
+                            : 'border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800'
+                        }`}
+                        onClick={() =>
+                          setSelectedDriverId(selectedDriverId === driver.id ? null : driver.id)
+                        }
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-lg">
+                            {driver.vehicleType === 'bike'
+                              ? '🚴'
+                              : driver.vehicleType === 'car'
+                                ? '🚗'
+                                : '🏍️'}
+                          </span>
+                          <div>
+                            <p className="font-medium text-surface-800 dark:text-surface-200">
+                              {driver.fullName}
+                            </p>
+                            <p className="text-xs text-surface-500 dark:text-surface-400">
+                              {driver.vehicleType} • ⭐ {driver.rating}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleFavorite(driver);
+                          }}
+                          className="text-surface-400 hover:text-kiwi-500 transition-colors"
+                        >
+                          <Star
+                            className={`h-5 w-5 ${
+                              favoriteDrivers.some((d) => d.id === driver.id)
+                                ? 'fill-kiwi-500 text-kiwi-500'
+                                : ''
+                            }`}
+                          />
+                        </button>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Disponibles */}
+              <div className="mb-6">
+                <h3 className="mb-3 text-sm font-semibold text-surface-600 dark:text-surface-400">
+                  📍 Disponibles cerca de ti
+                </h3>
+                {driversLoading ? (
+                  <p className="text-sm text-surface-400">Cargando...</p>
+                ) : availableDrivers.length === 0 ? (
+                  <p className="text-sm text-surface-400">
+                    No hay conductores disponibles en este momento.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {availableDrivers.map((driver) => (
+                      <motion.div
+                        key={driver.id}
+                        className={`flex items-center justify-between rounded-xl p-4 cursor-pointer transition-all ${
+                          selectedDriverId === driver.id
+                            ? 'border-2 border-kiwi-500 bg-kiwi-50 dark:bg-kiwi-900/30'
+                            : 'border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800'
+                        }`}
+                        onClick={() =>
+                          setSelectedDriverId(selectedDriverId === driver.id ? null : driver.id)
+                        }
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-lg">
+                            {driver.vehicleType === 'bike'
+                              ? '🚴'
+                              : driver.vehicleType === 'car'
+                                ? '🚗'
+                                : '🏍️'}
+                          </span>
+                          <div>
+                            <p className="font-medium text-surface-800 dark:text-surface-200">
+                              {driver.fullName}
+                            </p>
+                            <p className="text-xs text-surface-500 dark:text-surface-400">
+                              {driver.vehicleType} • ⭐ {driver.rating}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleFavorite(driver);
+                          }}
+                          className="text-surface-400 hover:text-kiwi-500 transition-colors"
+                        >
+                          <Star
+                            className={`h-5 w-5 ${
+                              favoriteDrivers.some((d) => d.id === driver.id)
+                                ? 'fill-kiwi-500 text-kiwi-500'
+                                : ''
+                            }`}
+                          />
+                        </button>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+
+          {/* Step 5: Payment & Review */}
+          {step === 5 && (
+            <motion.div
+              key="step5"
               initial={{ opacity: 0, x: 50 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -50 }}
@@ -1091,7 +1346,7 @@ export default function NewOrder() {
             </AnimatedButton>
           )}
 
-          {step < 4 ? (
+          {step < 5 ? (
             <AnimatedButton
               variant="gradient"
               onClick={() => setStep((step + 1) as Step)}
