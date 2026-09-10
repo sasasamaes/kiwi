@@ -107,8 +107,11 @@ export class WithdrawalsService {
     }
 
     // Create withdrawal request atomically: re-check balance inside tx
-    // to narrow the TOCTOU window between getBalance() and create().
+    // and serialize concurrent requests per driver with a transaction-scoped
+    // advisory lock so two parallel requests cannot both pass the balance
+    // check and double-spend the available balance.
     const withdrawal = await this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${driverProfile.id})::bigint)`;
       const [earnings, withdrawn, pending] = await Promise.all([
         tx.order.aggregate({
           where: { driverId: driverProfile.id, status: 'delivered' },
