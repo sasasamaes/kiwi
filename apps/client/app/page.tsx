@@ -1,88 +1,16 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AnimatedButton, StaggerContainer, StaggerItem, ThemeToggle, QRScanner } from '@kiwi/ui';
-import {
-  Search,
-  Camera,
-  ClipboardList,
-  CreditCard,
-  Bike,
-  Star,
-  Clock,
-  UtensilsCrossed,
-  Smartphone,
-  X,
-  Store,
-  Package,
-  MapPin,
-  Loader2,
-} from 'lucide-react';
-
-interface Restaurant {
-  id: string;
-  name: string;
-  image: string;
-  rating: number;
-  deliveryTime: string;
-  category: string;
-  isOpen: boolean;
-}
-
-const mockRestaurants: Restaurant[] = [
-  {
-    id: '1',
-    name: 'Bowl & Café Luis Alfredo',
-    image: '🥗',
-    rating: 4.9,
-    deliveryTime: '20-30 min',
-    category: 'Bowls • Café',
-    isOpen: true,
-  },
-  {
-    id: '2',
-    name: 'Los Efes Cevichería',
-    image: '🐟',
-    rating: 4.8,
-    deliveryTime: '25-35 min',
-    category: 'Cevichería • Mariscos',
-    isOpen: true,
-  },
-  {
-    id: '3',
-    name: 'Punto Ácido',
-    image: '🍦',
-    rating: 4.7,
-    deliveryTime: '15-25 min',
-    category: 'Helados • Snacks',
-    isOpen: true,
-  },
-  {
-    id: '4',
-    name: 'Twentis',
-    image: '🍔',
-    rating: 4.6,
-    deliveryTime: '20-30 min',
-    category: 'Comida Rápida',
-    isOpen: false,
-  },
-];
+import { AnimatedButton, ThemeToggle, QRScanner } from '@kiwi/ui';
+import { Camera, ClipboardList, CreditCard, Bike, Smartphone, X } from 'lucide-react';
 
 export default function ClientHome() {
   const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState('');
   const [showScanner, setShowScanner] = useState(false);
   const [scannerActive, setScannerActive] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
-
-  const filteredRestaurants = mockRestaurants.filter(
-    (r) =>
-      r.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.category.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
 
   const handleScan = useCallback(
     (merchantId: string, url: string) => {
@@ -136,17 +64,6 @@ export default function ClientHome() {
               </h1>
             </div>
             <ThemeToggle />
-          </div>
-
-          {/* Search Bar */}
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Buscar restaurante o comida..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl bg-surface-100 dark:bg-surface-800 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-kiwi-500 transition-all"
-            />
           </div>
         </div>
       </motion.header>
@@ -231,25 +148,7 @@ export default function ClientHome() {
           </motion.div>
         )}
 
-        {/* Categories */}
-        <motion.div
-          className="mb-6 flex gap-3 overflow-x-auto pb-2 scrollbar-hide"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
-          {['Todos', 'Bowls', 'Mariscos', 'Rapida', 'Snacks', 'Cafe'].map((cat) => (
-            <motion.button
-              key={cat}
-              className="flex-shrink-0 px-4 py-2 rounded-full bg-white dark:bg-surface-800 text-sm font-medium text-surface-700 dark:text-surface-300 shadow-soft dark:shadow-dark hover:bg-kiwi-50 dark:hover:bg-kiwi-900/30 transition-colors"
-              whileTap={{ scale: 0.95 }}
-            >
-              {cat}
-            </motion.button>
-          ))}
-        </motion.div>
-
-        {/* Restaurant List */}
+        {/* Nearby restaurants — coming soon: entry is QR scan for now */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -259,75 +158,22 @@ export default function ClientHome() {
             Restaurantes cercanos
           </h2>
 
-          <StaggerContainer className="space-y-4">
-            {filteredRestaurants.map((restaurant) => (
-              <StaggerItem key={restaurant.id}>
-                <Link href={`/menu/${restaurant.id}`}>
-                  <motion.div
-                    className="rounded-2xl glass p-4 tactile cursor-pointer overflow-hidden"
-                    whileHover={{ y: -4, boxShadow: '0 12px 32px -8px rgba(34, 197, 94, 0.25)' }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <div className="flex gap-4">
-                      {/* Restaurant Image/Icon */}
-                      <div className="flex h-20 w-20 items-center justify-center rounded-xl bg-surface-100 dark:bg-surface-700 text-4xl">
-                        {restaurant.image}
-                      </div>
-
-                      {/* Restaurant Info */}
-                      <div className="flex-1">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-                              {restaurant.name}
-                            </h3>
-                            <p className="text-sm text-surface-500 dark:text-surface-400">
-                              {restaurant.category}
-                            </p>
-                          </div>
-                          <span
-                            className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              restaurant.isOpen
-                                ? 'bg-kiwi-100 dark:bg-kiwi-900/50 text-kiwi-700 dark:text-kiwi-400'
-                                : 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-400'
-                            }`}
-                          >
-                            {restaurant.isOpen ? 'Abierto' : 'Cerrado'}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-4 mt-2">
-                          <span className="flex items-center gap-1 text-sm text-surface-600 dark:text-surface-400">
-                            <Star className="h-3 w-3 fill-gold-400 text-gold-400" />{' '}
-                            {restaurant.rating}
-                          </span>
-                          <span className="flex items-center gap-1 text-sm text-surface-600 dark:text-surface-400">
-                            <Clock className="h-3 w-3" /> {restaurant.deliveryTime}
-                          </span>
-                          <span className="flex items-center gap-1 text-sm text-kiwi-600 dark:text-kiwi-400">
-                            <Bike className="h-3 w-3" /> Gratis
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                </Link>
-              </StaggerItem>
-            ))}
-          </StaggerContainer>
-
-          {filteredRestaurants.length === 0 && (
-            <motion.div
-              className="text-center py-12"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-            >
-              <Search className="h-12 w-12 text-surface-300 dark:text-surface-600 mx-auto mb-4" />
-              <p className="text-surface-500 dark:text-surface-400">
-                No se encontraron restaurantes
-              </p>
-            </motion.div>
-          )}
+          <motion.div
+            className="rounded-2xl glass p-6 text-center cursor-pointer"
+            whileHover={{ y: -2 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={startScanner}
+          >
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-kiwi-100 dark:bg-kiwi-900/30 mx-auto mb-3">
+              <Camera className="h-8 w-8 text-kiwi-600 dark:text-kiwi-400" />
+            </div>
+            <p className="font-medium text-surface-800 dark:text-surface-200">
+              Muy pronto por aquí
+            </p>
+            <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">
+              Por ahora escaneá el QR de tu restaurante favorito para ver su menú
+            </p>
+          </motion.div>
         </motion.div>
 
         {/* How it Works */}
