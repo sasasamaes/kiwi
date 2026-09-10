@@ -41,9 +41,10 @@ if (process.env.SENTRY_DSN) {
  * Ensure the database is reachable, migrated and seeded before serving traffic.
  *
  * Render's deploy pipeline only runs `start:prod` — nothing applies Prisma
- * migrations or seeds demo data, so a fresh database means every DB-backed
- * route 500s (P2021/P2022 "table does not exist") until someone runs
- * migrations by hand. This makes a fresh deploy self-heal instead.
+ * migrations. `prisma migrate deploy` is idempotent, so we run it on EVERY
+ * boot: probing user rows alone cannot detect column-level drift (a new
+ * Prisma Client selecting columns the prod DB lacks, e.g. the flete fields,
+ * 500s every orders query while user.count() keeps succeeding).
  */
 async function ensureDatabaseReady(): Promise<void> {
   const databaseUrl = process.env.DATABASE_URL;
@@ -57,6 +58,13 @@ async function ensureDatabaseReady(): Promise<void> {
   const apiRoot = join(__dirname, '..'); // prisma/ and package.json live at the api root
 
   try {
+    // 0. Apply pending migrations on every boot (no-op when up to date).
+    console.log('🛠️  Applying pending migrations (if any)...');
+    execSync('npx prisma migrate deploy', {
+      stdio: 'inherit',
+      cwd: apiRoot,
+    });
+
     // 1. Reachability + schema probe.
     const userCount = await prisma.user.count();
     console.log(`🗄️  Database reachable (${userCount} users)`);
@@ -72,31 +80,10 @@ async function ensureDatabaseReady(): Promise<void> {
       execSync('npx prisma db seed', { stdio: 'inherit', cwd: apiRoot });
     }
   } catch (error: any) {
-    // P2021/P2022: tables missing — apply migrations, then re-probe and seed.
-    const code = error?.code;
-    if (code === 'P2021' || code === 'P2022') {
-      console.log('🛠️  Schema missing — applying pending migrations...');
-      execSync('npx prisma migrate deploy', {
-        stdio: 'inherit',
-        cwd: join(__dirname, '..'), // prisma/ lives one level above dist/
-      });
-
-      const userCount = await prisma.user.count();
-      console.log(`🗄️  Migrations applied (${userCount} users)`);
-
-      const seedFlagAfter = process.env.SEED_DEMO_DATA;
-      const isProdAfter = process.env.NODE_ENV === 'production';
-      const shouldSeedAfter =
-        seedFlagAfter === 'true' || (!isProdAfter && seedFlagAfter !== 'false');
-      if (userCount === 0 && shouldSeedAfter) {
-        console.log('🌱 Empty database — seeding demo data...');
-        execSync('npx prisma db seed', { stdio: 'inherit', cwd: join(__dirname, '..') });
-      }
-    } else {
-      // Unreachable DB, bad credentials, etc. Log loudly but keep serving so
-      // Render doesn't flap the deploy while the DB comes back online.
-      console.error(`❌ Database bootstrap failed (${code ?? 'unknown'}): ${error?.message}`);
-    }
+    // Migrations already ran unconditionally above; if we still get here the
+    // DB is unreachable or credentials are bad. Log loudly but keep serving so
+    // Render doesn't flap the deploy while the DB comes back online.
+    console.error(`❌ Database bootstrap failed (${error?.code ?? 'unknown'}): ${error?.message}`);
   } finally {
     await prisma.$disconnect();
   }

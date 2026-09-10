@@ -532,6 +532,30 @@ export default function OrderTrackingPage() {
           </div>
         </motion.div>
 
+        {/* Rate driver CTA — solo cuando está entregado */}
+        {isDelivered && (
+          <motion.div
+            className="mb-6 rounded-2xl glass p-5 text-center"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+          >
+            <p className="text-3xl mb-2">⭐</p>
+            <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100 mb-1">
+              ¿Cómo estuvo tu entrega?
+            </h3>
+            <p className="text-sm text-surface-500 dark:text-surface-400 mb-4">
+              Califica al repartidor y ayuda a mejorar el servicio.
+            </p>
+            <button
+              onClick={() => router.push(`/order/${orderId}/rate`)}
+              className="inline-flex items-center gap-2 rounded-xl bg-kiwi-gradient px-6 py-3 font-semibold text-white"
+            >
+              <Star className="h-4 w-4" /> Calificar pedido
+            </button>
+          </motion.div>
+        )}
+
         {/* Driver Info */}
         {order.driver && (
           <motion.div
@@ -662,7 +686,9 @@ export default function OrderTrackingPage() {
 
           {!isDelivered && !isCancelled && order.driver?.phone && (
             <button
-              onClick={() => window.open(`tel:${order.driver.phone}`)}
+              onClick={() => {
+                if (order.driver?.phone) window.location.href = `tel:${order.driver.phone}`;
+              }}
               className="w-full py-4 rounded-xl bg-surface-100 dark:bg-surface-800 text-surface-700 dark:text-surface-300 font-medium"
             >
               <Phone className="h-4 w-4 inline" /> Llamar al repartidor
