@@ -224,9 +224,9 @@ export default function NewOrder() {
   };
 
   const subtotal = orderData.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const commission = Math.round(subtotal * 0.1);
-  const deliveryFee = 0; // Free delivery
-  const total = subtotal + deliveryFee;
+  const tripEstimate = 2000; // zona Nicoya centro; el backend recalcula
+  const commissionEstimate = Math.round(tripEstimate * 0.1);
+  const total = subtotal + tripEstimate + commissionEstimate;
 
   const createOrderHandler = async () => {
     setLoading(true);
@@ -1236,15 +1236,17 @@ export default function NewOrder() {
 
                 <div className="mt-4 border-t border-surface-100 dark:border-surface-700 pt-4">
                   <div className="flex justify-between text-sm">
-                    <span className="text-surface-500 dark:text-surface-400">Subtotal</span>
+                    <span className="text-surface-500 dark:text-surface-400">
+                      Productos (food only)
+                    </span>
                     <span className="text-surface-800 dark:text-surface-200">
                       ₡{subtotal.toLocaleString()}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-surface-500 dark:text-surface-400">Envío</span>
+                    <span className="text-surface-500 dark:text-surface-400">Viaje</span>
                     <span className="text-kiwi-600 dark:text-kiwi-400 font-medium">
-                      Gratis PartyPopper
+                      ₡{tripEstimate.toLocaleString()}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
@@ -1252,7 +1254,7 @@ export default function NewOrder() {
                       Comisión Kiwi (10%)
                     </span>
                     <span className="text-surface-600 dark:text-surface-400">
-                      ₡{commission.toLocaleString()}
+                      ₡{commissionEstimate.toLocaleString()}
                     </span>
                   </div>
                   <div className="flex justify-between text-lg mt-2 pt-2 border-t border-surface-100 dark:border-surface-700">
