@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ForbiddenException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -120,6 +121,57 @@ export class MenuService {
   }
 
   /**
+   * Validate & normalize menu item input. The controller passes raw body —
+   * without this, a string/oversized price or missing name/category reached
+   * Prisma and surfaced as 500s, and negative prices were accepted.
+   */
+  private static normalizeItemInput(data: any, { requireAll }: { requireAll: boolean }) {
+    const out: Record<string, any> = {};
+
+    if (data.name !== undefined || requireAll) {
+      const name = typeof data.name === 'string' ? data.name.trim() : '';
+      if (!name || name.length > 100) {
+        throw new BadRequestException('Nombre requerido (máx 100 caracteres)');
+      }
+      out.name = name;
+    }
+    if (data.category !== undefined || requireAll) {
+      const category = typeof data.category === 'string' ? data.category.trim() : '';
+      if (!category || category.length > 50) {
+        throw new BadRequestException('Categoría requerida (máx 50 caracteres)');
+      }
+      out.category = category;
+    }
+    if (data.price !== undefined || requireAll) {
+      const price = Number(data.price);
+      if (!Number.isFinite(price) || price < 0) {
+        throw new BadRequestException('Precio inválido (debe ser un número ≥ 0)');
+      }
+      // Decimal(10,2): cap at 99,999,999.99 to avoid Prisma P2000 500s.
+      if (price > 99999999.99) {
+        throw new BadRequestException('Precio fuera de rango');
+      }
+      out.price = Math.round(price * 100) / 100;
+    }
+    if (data.description !== undefined) {
+      if (data.description != null && typeof data.description !== 'string') {
+        throw new BadRequestException('Descripción inválida');
+      }
+      out.description = data.description?.trim() || null;
+    }
+    if (data.image !== undefined) {
+      if (data.image != null && typeof data.image !== 'string') {
+        throw new BadRequestException('Imagen inválida');
+      }
+      out.image = data.image;
+    }
+    if (data.isPopular !== undefined) out.isPopular = Boolean(data.isPopular);
+    if (data.isAvailable !== undefined) out.isAvailable = Boolean(data.isAvailable);
+
+    return out;
+  }
+
+  /**
    * Create a menu item
    */
   async createMenuItem(userId: string, data: any) {
@@ -131,22 +183,24 @@ export class MenuService {
       throw new NotFoundException('Perfil de comerciante no encontrado');
     }
 
+    const input = MenuService.normalizeItemInput(data, { requireAll: true });
+
     // Get next sort order
     const lastItem = await this.prisma.menuItem.findFirst({
-      where: { merchantId: merchant.id, category: data.category },
+      where: { merchantId: merchant.id, category: input.category },
       orderBy: { sortOrder: 'desc' },
     });
 
     return this.prisma.menuItem.create({
       data: {
         merchantId: merchant.id,
-        name: data.name,
-        description: data.description,
-        price: data.price,
-        image: data.image,
-        category: data.category,
-        isPopular: data.isPopular || false,
-        isAvailable: data.isAvailable ?? true,
+        name: input.name,
+        description: input.description,
+        price: input.price,
+        image: input.image,
+        category: input.category,
+        isPopular: input.isPopular || false,
+        isAvailable: input.isAvailable ?? true,
         sortOrder: (lastItem?.sortOrder || 0) + 1,
       },
     });
@@ -173,18 +227,14 @@ export class MenuService {
       throw new ForbiddenException('No puedes editar este artículo');
     }
 
+    const input = MenuService.normalizeItemInput(data, { requireAll: false });
+    if (Object.keys(input).length === 0) {
+      throw new BadRequestException('Nada que actualizar');
+    }
+
     return this.prisma.menuItem.update({
       where: { id: itemId },
-      data: {
-        name: data.name,
-        description: data.description,
-        price: data.price,
-        image: data.image,
-        category: data.category,
-        isPopular: data.isPopular,
-        isAvailable: data.isAvailable,
-        sortOrder: data.sortOrder,
-      },
+      data: input,
     });
   }
 

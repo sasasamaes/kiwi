@@ -233,6 +233,56 @@ describe('OrdersService', () => {
       expect(order.totalAmount).toBe(2200);
     });
 
+    it('encomienda por peso: 12kg suma ₡3500 por 7kg extra', async () => {
+      const order: any = await service.create('user-1', {
+        pickupAddress: 'Parque Nicoya',
+        pickupLat: 10.1467,
+        pickupLng: -85.452,
+        deliveryAddress: 'Barrio San Martín',
+        deliveryLat: 10.15,
+        deliveryLng: -85.455,
+        distanceKm: 2,
+        kind: 'freight',
+        packageDescription: 'Caja pesada',
+        weightKg: 12,
+      });
+      // 2000 viaje + 7*500 peso = 5500; comisión 10% = 550; driver = 5500
+      expect(order.basePrice).toBe(5500);
+      expect(order.commission).toBe(550);
+      expect(order.driverPayout).toBe(5500);
+      expect(order.totalAmount).toBe(6050);
+    });
+
+    it('rechaza weightKg inválido', async () => {
+      const base = {
+        pickupAddress: 'Parque Nicoya',
+        deliveryAddress: 'Barrio San Martín',
+        distanceKm: 2,
+        kind: 'freight',
+        packageDescription: 'Caja',
+      };
+      await expect(service.create('user-1', { ...base, weightKg: -3 })).rejects.toThrow(
+        'weightKg inválido',
+      );
+      await expect(service.create('user-1', { ...base, weightKg: 9999 })).rejects.toThrow(
+        'weightKg inválido',
+      );
+      expect(prisma.order.create).not.toHaveBeenCalled();
+    });
+
+    it('rechaza items del menú que no pertenecen al comercio', async () => {
+      prisma.menuItem.findMany.mockResolvedValue([]);
+      await expect(
+        service.create('user-1', {
+          pickupAddress: 'A',
+          deliveryAddress: 'B',
+          kind: 'food',
+          items: [{ menuItemId: 'otro-comercio', quantity: 1 }],
+        }),
+      ).rejects.toThrow('Producto del menú no válido');
+      expect(prisma.order.create).not.toHaveBeenCalled();
+    });
+
     it('comida en zona: productos pass-through sin comision', async () => {
       const order: any = await service.create('user-1', {
         pickupAddress: 'Parque Nicoya',

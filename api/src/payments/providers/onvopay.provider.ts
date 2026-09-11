@@ -46,6 +46,16 @@ export class OnvoPayProvider {
     this.secretKey = this.configService.get<string>('ONVO_SECRET_KEY', '');
     this.publishableKey = this.configService.get<string>('ONVO_PUBLISHABLE_KEY', '');
     this.baseUrl = this.configService.get<string>('ONVO_BASE_URL', 'https://api.onvopay.com/v1');
+
+    // Validate configuration
+    if (!this.secretKey) {
+      this.logger.warn('ONVO_SECRET_KEY not configured - payments will fail in production');
+    }
+    if (!this.publishableKey) {
+      this.logger.warn(
+        'ONVO_PUBLISHABLE_KEY not configured - client-side payment methods cannot be created',
+      );
+    }
   }
 
   /**
@@ -278,6 +288,179 @@ export class OnvoPayProvider {
       return a.length === b.length && crypto.timingSafeEqual(a, b);
     } catch {
       return false;
+    }
+  }
+
+  /**
+   * Create a customer in OnvoPay (optional, for recurring payments)
+   */
+  async createCustomer(email: string, phone?: string): Promise<{ customerId: string }> {
+    try {
+      if (!this.secretKey) {
+        return { customerId: `cust_${Date.now()}` };
+      }
+
+      const response = await fetch(`${this.baseUrl}/customers`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.secretKey}`,
+        },
+        body: JSON.stringify({
+          email,
+          phone,
+          metadata: {},
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to create customer');
+      }
+
+      return { customerId: data.id };
+    } catch (error) {
+      this.logger.error('Failed to create customer:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * List payment methods for a customer
+   */
+  async listPaymentMethods(customerId: string): Promise<{ paymentMethods: any[] }> {
+    try {
+      if (!this.secretKey) {
+        return { paymentMethods: [] };
+      }
+
+      const response = await fetch(`${this.baseUrl}/customers/${customerId}/payment-methods`, {
+        headers: {
+          Authorization: `Bearer ${this.secretKey}`,
+        },
+      });
+
+      const data = await response.json();
+      return { paymentMethods: data.data || [] };
+    } catch (error) {
+      this.logger.error('Failed to list payment methods:', error);
+      return { paymentMethods: [] };
+    }
+  }
+
+  /**
+   * Get payment methods available for checkout
+   * This should be called client-side with publishable key
+   */
+  async getAvailablePaymentMethods(): Promise<{ methods: string[] }> {
+    return {
+      methods: ['card', 'sinpe'],
+    };
+  }
+
+  /**
+   * Refund a payment
+   */
+  async refundPayment(
+    paymentIntentId: string,
+    amount?: number,
+  ): Promise<{ success: boolean; refundId?: string; error?: string }> {
+    try {
+      if (!this.secretKey) {
+        return { success: true, refundId: `ref_${Date.now()}` };
+      }
+
+      const response = await fetch(`${this.baseUrl}/payment-intents/${paymentIntentId}/refund`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.secretKey}`,
+        },
+        body: amount ? JSON.stringify({ amount }) : undefined,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Refund failed');
+      }
+
+      return { success: true, refundId: data.id };
+    } catch (error) {
+      this.logger.error('Refund failed:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Get payment intent details
+   */
+  async getPaymentIntent(paymentIntentId: string): Promise<{ intent: any; error?: string }> {
+    try {
+      if (!this.secretKey) {
+        return { intent: { id: paymentIntentId, status: 'succeeded' } };
+      }
+
+      const response = await fetch(`${this.baseUrl}/payment-intents/${paymentIntentId}`, {
+        headers: {
+          Authorization: `Bearer ${this.secretKey}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to get payment intent');
+      }
+
+      return { intent: data };
+    } catch (error) {
+      this.logger.error('Failed to get payment intent:', error);
+      return { intent: {}, error: error.message };
+    }
+  }
+
+  /**
+   * Create a recurring payment setup
+   */
+  async createSetupIntent(
+    customerId: string,
+    paymentMethodTypes: string[] = ['card', 'sinpe'],
+  ): Promise<{ setupIntentId: string; clientSecret: string; error?: string }> {
+    try {
+      if (!this.secretKey) {
+        return {
+          setupIntentId: `seti_${Date.now()}`,
+          clientSecret: `seti_secret_${Date.now()}`,
+        };
+      }
+
+      const response = await fetch(`${this.baseUrl}/setup-intents`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.secretKey}`,
+        },
+        body: JSON.stringify({
+          customer: customerId,
+          payment_method_types: paymentMethodTypes,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to create setup intent');
+      }
+
+      return {
+        setupIntentId: data.id,
+        clientSecret: data.client_secret,
+      };
+    } catch (error) {
+      this.logger.error('Failed to create setup intent:', error);
+      return { setupIntentId: '', clientSecret: '', error: error.message };
     }
   }
 

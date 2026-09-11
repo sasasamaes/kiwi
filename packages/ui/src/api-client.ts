@@ -283,6 +283,23 @@ class ApiClient {
     });
   }
 
+  async submitRating(data: {
+    orderId: string;
+    rating: number;
+    comment?: string;
+    onTime?: boolean;
+    carefulWithOrder?: boolean;
+  }) {
+    return this.request<any>('/ratings', {
+      method: 'POST',
+      body: data,
+    });
+  }
+
+  async getRatingForOrder(orderId: string) {
+    return this.request<{ rating: any | null; canRate: boolean }>(`/ratings/order/${orderId}`);
+  }
+
   async assignDriver(orderId: string, driverId: string) {
     return this.request<any>(`/orders/${orderId}/assign`, {
       method: 'PUT',
@@ -475,6 +492,35 @@ class ApiClient {
     return this.request<any>(`/payments/crypto/quote?${params.toString()}`, {
       method: 'GET',
     });
+  }
+
+  // ============================================
+  // 🔊 ONVO PAY NOTIFICATIONS
+  // ============================================
+
+  async getOnvoPaymentStatus(paymentIntentId: string) {
+    return this.request<any>(`/payments/onvo/status/${paymentIntentId}`);
+  }
+
+  async cancelOnvoPayment(paymentIntentId: string) {
+    return this.request<any>(`/payments/onvo/cancel/${paymentIntentId}`, {
+      method: 'POST',
+    });
+  }
+
+  async getOnvoPaymentMethods() {
+    return this.request<any>(`/payments/onvo/methods`);
+  }
+
+  async refundOnvoPayment(paymentIntentId: string, amount?: number) {
+    return this.request<any>(`/payments/onvo/refund/${paymentIntentId}`, {
+      method: 'POST',
+      body: amount ? { amount } : undefined,
+    });
+  }
+
+  async getOnvoPaymentIntent(paymentIntentId: string) {
+    return this.request<any>(`/payments/onvo/intent/${paymentIntentId}`);
   }
 
   // ============================================
@@ -989,14 +1035,33 @@ export interface Order {
   scheduledDate?: string;
   scheduledTime?: string;
   pickupAddress: string;
+  pickupLat?: number | string | null;
+  pickupLng?: number | string | null;
   deliveryAddress: string;
-  distanceKm?: number;
+  deliveryLat?: number | string | null;
+  deliveryLng?: number | string | null;
+  distanceKm?: number | string | null;
   basePrice: number;
   commission: number;
   driverPayout: number;
   totalAmount: number;
+  // Flete / encomiendas
+  kind?: 'food' | 'freight';
+  productsTotal?: number;
+  packageDescription?: string | null;
+  packageSize?: string | null;
+  declaredValue?: number | string | null;
+  weightKg?: number | string | null;
   specialInstructions?: string;
   createdAt: string;
+  merchant?: { businessName?: string | null } | null;
+  items?: Array<{
+    id: string;
+    name: string;
+    price: number | string;
+    quantity: number;
+    notes?: string | null;
+  }>;
 }
 
 export interface MenuItem {

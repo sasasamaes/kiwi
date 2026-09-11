@@ -417,4 +417,32 @@ export class PaymentsService {
       },
     ];
   }
+
+  /**
+   * Create a customer in OnvoPay
+   */
+  async createOnvoCustomer(
+    email: string,
+    phone?: string,
+    userId?: string,
+  ): Promise<{ customerId: string }> {
+    return this.onvopayProvider.createCustomer(email, phone);
+  }
+
+  /**
+   * List payment methods for a customer
+   */
+  async listOnvoPaymentMethods(customerId: string): Promise<{ methods: any[] }> {
+    const result = await this.onvopayProvider.listPaymentMethods(customerId);
+    return { methods: result.paymentMethods || [] };
+  }
+
+  /**
+   * Setup recurring payment for a customer
+   */
+  async setupRecurringPayment(
+    customerId: string,
+  ): Promise<{ setupIntentId: string; clientSecret: string }> {
+    return this.onvopayProvider.createSetupIntent(customerId);
+  }
 }

@@ -18,7 +18,15 @@ import {
   Bike,
   Star,
 } from 'lucide-react';
-import { AnimatedButton, StaggerContainer, StaggerItem, useAuth, useSocket, api } from '@kiwi/ui';
+import {
+  AnimatedButton,
+  StaggerContainer,
+  StaggerItem,
+  useAuth,
+  useSocket,
+  api,
+  MenuItem,
+} from '@kiwi/ui';
 
 type Step = 1 | 2 | 3 | 4 | 5;
 
@@ -40,6 +48,7 @@ interface OrderItem {
   quantity: number;
   price: number;
   notes?: string;
+  menuItemId?: string;
 }
 
 interface OrderData {
@@ -57,11 +66,12 @@ interface OrderData {
   packageDescription: string;
   packageSize: '' | 'S' | 'M' | 'L';
   declaredValue: number;
+  weightKg: number;
   specialInstructions: string;
   isScheduled: boolean;
   scheduledDate: string;
   scheduledTime: string;
-  paymentMethod: 'cash' | 'sinpe' | 'card';
+  paymentMethod: 'cash' | 'sinpe' | 'card' | 'crypto';
 }
 
 const savedAddresses = [
@@ -90,6 +100,7 @@ export default function NewOrder() {
     packageDescription: '',
     packageSize: '',
     declaredValue: 0,
+    weightKg: 0,
     specialInstructions: '',
     isScheduled: false,
     scheduledDate: '',
@@ -99,7 +110,8 @@ export default function NewOrder() {
 
   const [newItem, setNewItem] = useState({ name: '', quantity: 1, price: 0 });
   const [showQuickAdd, setShowQuickAdd] = useState(false);
-  const [quickItems, setQuickItems] = useState<{ name: string; price: number }[]>([]);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [quickCategory, setQuickCategory] = useState('Todos');
   const [favoriteDrivers, setFavoriteDrivers] = useState<Driver[]>([]);
   const [availableDrivers, setAvailableDrivers] = useState<Driver[]>([]);
   const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
@@ -110,15 +122,17 @@ export default function NewOrder() {
       .getMyMenuItems()
       .then((data) => {
         const list = Array.isArray(data) ? data : [];
-        setQuickItems(
+        setMenuItems(
           list
             .filter((item) => item.isAvailable !== false)
-            .slice(0, 6)
-            .map((item) => ({ name: item.name, price: Number(item.price) })),
+            .map((item) => ({
+              ...item,
+              price: Number(item.price),
+            })),
         );
       })
       .catch(() => {
-        setQuickItems([]);
+        setMenuItems([]);
       });
   }, []);
 
@@ -180,8 +194,8 @@ export default function NewOrder() {
     }
   };
 
-  const addQuickItem = (quickItem: (typeof quickItems)[0]) => {
-    const existingItem = orderData.items.find((i) => i.name === quickItem.name);
+  const addQuickItem = (menuItem: MenuItem) => {
+    const existingItem = orderData.items.find((i) => i.menuItemId === menuItem.id);
     if (existingItem) {
       setOrderData({
         ...orderData,
@@ -191,10 +205,11 @@ export default function NewOrder() {
       });
     } else {
       const item: OrderItem = {
-        id: `quick-${quickItem.name}-${orderData.items.length}`,
-        name: quickItem.name,
+        id: `quick-${menuItem.id}`,
+        menuItemId: menuItem.id,
+        name: menuItem.name,
         quantity: 1,
-        price: quickItem.price,
+        price: Number(menuItem.price),
       };
       setOrderData({
         ...orderData,
@@ -224,14 +239,22 @@ export default function NewOrder() {
   };
 
   const subtotal = orderData.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const tripEstimate = 2000; // zona Nicoya centro; el backend recalcula
+  // Zona Nicoya centro (el backend recalcula con coordenadas reales)
+  const baseTrip = 2000;
+  // Encomiendas por peso: los primeros 5 kg van incluidos; cada kg extra suma ₡500
+  const weightSurchargeEstimate =
+    orderData.kind === 'freight' && orderData.weightKg > 5
+      ? Math.ceil(orderData.weightKg - 5) * 500
+      : 0;
+  const tripEstimate = baseTrip + weightSurchargeEstimate;
   const commissionEstimate = Math.round(tripEstimate * 0.1);
   const total = subtotal + tripEstimate + commissionEstimate;
 
   const createOrderHandler = async () => {
     setLoading(true);
     try {
-      const productsTotal = orderData.kind === 'food' ? subtotal : 0;
+      // El backend es la fuente de verdad de los precios: re-lee el menú de la
+      // BD y calcula productsTotal. Aquí solo enviamos los items con menuItemId.
       const result = await api.createOrder({
         pickupAddress: orderData.pickupAddress,
         pickupLat: orderData.pickupLat,
@@ -245,7 +268,16 @@ export default function NewOrder() {
         specialInstructions: orderData.specialInstructions,
         distanceKm: 2.5, // Mock distance
         kind: orderData.kind,
-        productsTotal,
+        items:
+          orderData.kind === 'food'
+            ? orderData.items.map((item) => ({
+                menuItemId: item.menuItemId,
+                name: item.name,
+                price: item.price,
+                quantity: item.quantity,
+                notes: item.notes || undefined,
+              }))
+            : [],
         packageDescription: orderData.kind === 'freight' ? orderData.packageDescription : undefined,
         packageSize:
           orderData.kind === 'freight' && orderData.packageSize !== ''
@@ -255,10 +287,41 @@ export default function NewOrder() {
           orderData.kind === 'freight' && orderData.declaredValue
             ? orderData.declaredValue
             : undefined,
+        weightKg:
+          orderData.kind === 'freight' && orderData.weightKg > 0 ? orderData.weightKg : undefined,
       });
 
       if (selectedDriverId) {
         await api.assignDriver(result.id, selectedDriverId);
+      }
+
+      // Cobro según método elegido (OnvoPay para sinpe/tarjeta, Stellar para crypto)
+      try {
+        if (orderData.paymentMethod === 'sinpe') {
+          await api.createPayment({
+            orderId: result.id,
+            method: 'onvopay_sinpe',
+            amount: total,
+          });
+        } else if (orderData.paymentMethod === 'card') {
+          await api.createPayment({
+            orderId: result.id,
+            method: 'onvopay_card',
+            amount: total,
+          });
+        } else if (orderData.paymentMethod === 'crypto') {
+          await api.createPayment({
+            orderId: result.id,
+            method: 'crypto',
+            amount: total,
+            cryptoCoin: 'USDC',
+          });
+        } else {
+          await api.createPayment({ orderId: result.id, method: 'cash', amount: total });
+        }
+      } catch (paymentError) {
+        // El pedido ya existe: no lo tiramos a la basura por un fallo del cobro
+        console.error('Failed to create payment:', paymentError);
       }
 
       setCreatedOrderId(result.id);
@@ -480,7 +543,14 @@ export default function NewOrder() {
                       ? 'border-2 border-kiwi-500 bg-kiwi-50 dark:bg-kiwi-900/30'
                       : 'border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800'
                   }`}
-                  onClick={() => setOrderData({ ...orderData, kind: 'freight', items: [] })}
+                  onClick={() =>
+                    setOrderData({
+                      ...orderData,
+                      kind: 'freight',
+                      items: [],
+                      weightKg: 0,
+                    })
+                  }
                   whileTap={{ scale: 0.98 }}
                 >
                   <p className="text-2xl">📦</p>
@@ -717,6 +787,31 @@ export default function NewOrder() {
                   </div>
                   <div>
                     <label className="mb-2 block text-sm font-medium text-surface-600 dark:text-surface-400">
+                      Peso del paquete (kg)
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.5"
+                        value={orderData.weightKg || ''}
+                        onChange={(e) =>
+                          setOrderData({
+                            ...orderData,
+                            weightKg: parseFloat(e.target.value) || 0,
+                          })
+                        }
+                        placeholder="Ej: 12"
+                        className="flex-1 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:border-kiwi-500 focus:ring-2 focus:ring-kiwi-500/20 transition-all"
+                      />
+                      <span className="text-sm text-surface-500 dark:text-surface-400">kg</span>
+                    </div>
+                    <p className="mt-1 text-xs text-surface-400 dark:text-surface-500">
+                      Los primeros 5 kg van incluidos en el envío · cada kg extra suma ₡500
+                    </p>
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-surface-600 dark:text-surface-400">
                       Valor declarado (opcional)
                     </label>
                     <input
@@ -755,28 +850,99 @@ export default function NewOrder() {
                     <AnimatePresence>
                       {showQuickAdd && (
                         <motion.div
-                          className="mt-2 grid grid-cols-2 gap-2"
+                          className="mt-2"
                           initial={{ opacity: 0, height: 0 }}
                           animate={{ opacity: 1, height: 'auto' }}
                           exit={{ opacity: 0, height: 0 }}
+                          style={{ overflow: 'hidden' }}
                         >
-                          {quickItems.map((item) => (
-                            <motion.button
-                              key={item.name}
-                              className="flex items-center gap-2 p-3 rounded-xl bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-700 hover:border-kiwi-300 dark:hover:border-kiwi-600 transition-colors"
-                              onClick={() => addQuickItem(item)}
-                              whileTap={{ scale: 0.95 }}
-                            >
-                              <div className="text-left">
-                                <p className="text-xs font-medium text-surface-700 dark:text-surface-300">
-                                  {item.name}
-                                </p>
-                                <p className="text-xs text-kiwi-600 dark:text-kiwi-400">
-                                  ₡{item.price}
-                                </p>
+                          {menuItems.length === 0 ? (
+                            <div className="rounded-xl bg-surface-50 dark:bg-surface-800 p-4 text-center">
+                              <p className="text-sm text-surface-500 dark:text-surface-400">
+                                Tu menú está vacío. Configúralo en{' '}
+                                <Link
+                                  href="/menu"
+                                  className="font-medium text-kiwi-600 dark:text-kiwi-400 underline"
+                                >
+                                  Mi Menú
+                                </Link>
+                              </p>
+                            </div>
+                          ) : (
+                            <>
+                              {/* Encomienda por peso: acceso directo */}
+                              <button
+                                onClick={() =>
+                                  setOrderData({
+                                    ...orderData,
+                                    kind: 'freight',
+                                    items: [],
+                                    weightKg: 0,
+                                  })
+                                }
+                                className="mb-2 flex w-full items-center justify-between rounded-xl border border-dashed border-kiwi-300 dark:border-kiwi-700 bg-kiwi-50/50 dark:bg-kiwi-900/20 p-3 text-left"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xl">📦</span>
+                                  <div>
+                                    <p className="text-sm font-medium text-surface-800 dark:text-surface-200">
+                                      Encomienda / Flete por peso
+                                    </p>
+                                    <p className="text-xs text-surface-500 dark:text-surface-400">
+                                      ₡2000 base (5 kg incluidos) + ₡500 por kg extra
+                                    </p>
+                                  </div>
+                                </div>
+                                <span className="text-kiwi-500">→</span>
+                              </button>
+
+                              {/* Categorías del menú */}
+                              <div className="mb-2 flex gap-1.5 overflow-x-auto pb-1">
+                                {['Todos', ...new Set(menuItems.map((i) => i.category))].map(
+                                  (cat) => (
+                                    <button
+                                      key={cat}
+                                      onClick={() => setQuickCategory(cat)}
+                                      className={`whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                                        quickCategory === cat
+                                          ? 'bg-kiwi-500 text-white'
+                                          : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400'
+                                      }`}
+                                    >
+                                      {cat}
+                                    </button>
+                                  ),
+                                )}
                               </div>
-                            </motion.button>
-                          ))}
+                              <div className="grid grid-cols-2 gap-2">
+                                {menuItems
+                                  .filter(
+                                    (item) =>
+                                      quickCategory === 'Todos' || item.category === quickCategory,
+                                  )
+                                  .map((menuItem) => (
+                                    <motion.button
+                                      key={menuItem.id}
+                                      className="flex items-center gap-2 p-3 rounded-xl bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-700 hover:border-kiwi-300 dark:hover:border-kiwi-600 transition-colors"
+                                      onClick={() => addQuickItem(menuItem)}
+                                      whileTap={{ scale: 0.95 }}
+                                    >
+                                      {menuItem.image && menuItem.image !== 'Utensils' && (
+                                        <span className="text-lg">{menuItem.image}</span>
+                                      )}
+                                      <div className="text-left min-w-0">
+                                        <p className="text-xs font-medium text-surface-700 dark:text-surface-300 truncate">
+                                          {menuItem.name}
+                                        </p>
+                                        <p className="text-xs text-kiwi-600 dark:text-kiwi-400">
+                                          ₡{Number(menuItem.price).toLocaleString()}
+                                        </p>
+                                      </div>
+                                    </motion.button>
+                                  ))}
+                              </div>
+                            </>
+                          )}
                         </motion.div>
                       )}
                     </AnimatePresence>
@@ -1236,22 +1402,22 @@ export default function NewOrder() {
 
                 <div className="mt-4 border-t border-surface-100 dark:border-surface-700 pt-4">
                   <div className="flex justify-between text-sm">
-                    <span className="text-surface-500 dark:text-surface-400">
-                      Productos (food only)
-                    </span>
+                    <span className="text-surface-500 dark:text-surface-400">Productos</span>
                     <span className="text-surface-800 dark:text-surface-200">
                       ₡{subtotal.toLocaleString()}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-surface-500 dark:text-surface-400">Viaje</span>
+                    <span className="text-surface-500 dark:text-surface-400">
+                      Envío (para el repartidor)
+                    </span>
                     <span className="text-kiwi-600 dark:text-kiwi-400 font-medium">
                       ₡{tripEstimate.toLocaleString()}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-surface-500 dark:text-surface-400">
-                      Comisión Kiwi (10%)
+                      Comisión Kiwi (10% del envío)
                     </span>
                     <span className="text-surface-600 dark:text-surface-400">
                       ₡{commissionEstimate.toLocaleString()}
@@ -1279,9 +1445,20 @@ export default function NewOrder() {
                       id: 'sinpe',
                       icon: Smartphone,
                       label: 'SINPE Móvil',
-                      desc: 'Transferencia instantánea',
+                      desc: 'Transferencia instantánea (OnvoPay)',
                     },
-                    { id: 'card', icon: CreditCard, label: 'Tarjeta', desc: 'Crédito o débito' },
+                    {
+                      id: 'card',
+                      icon: CreditCard,
+                      label: 'Tarjeta',
+                      desc: 'Crédito o débito (OnvoPay)',
+                    },
+                    {
+                      id: 'crypto',
+                      icon: '₿',
+                      label: 'Cripto (USDC)',
+                      desc: 'Pago digital vía Stellar',
+                    },
                     {
                       id: 'cash',
                       icon: DollarSign,
@@ -1305,7 +1482,11 @@ export default function NewOrder() {
                       >
                         <div className="flex items-center gap-3">
                           <span className="text-2xl">
-                            <PaymentIcon className="h-6 w-6" />
+                            {typeof PaymentIcon === 'string' ? (
+                              PaymentIcon
+                            ) : (
+                              <PaymentIcon className="h-6 w-6" />
+                            )}
                           </span>
                           <div className="text-left">
                             <p className="font-medium text-surface-800 dark:text-surface-200">

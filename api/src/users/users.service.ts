@@ -1,5 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+
+const VALID_VEHICLE_TYPES = ['motorcycle', 'motorized_bike', 'bicycle', 'car', 'truck'];
 
 @Injectable()
 export class UsersService {
@@ -51,6 +53,9 @@ export class UsersService {
         },
       });
     } else if (user.role === 'driver' && user.driverProfile) {
+      if (data.vehicleType !== undefined && !VALID_VEHICLE_TYPES.includes(data.vehicleType)) {
+        throw new BadRequestException(`vehicleType inválido: ${data.vehicleType}`);
+      }
       await this.prisma.driverProfile.update({
         where: { userId },
         data: {

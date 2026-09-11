@@ -31,7 +31,9 @@ export class RegisterDto {
   fullName: string;
 
   @ApiProperty({ enum: ['merchant', 'driver'] })
-  @IsEnum(['merchant', 'driver'])
+  @IsEnum(['merchant', 'driver'], {
+    message: 'role debe ser "merchant" (comercio) o "driver" (repartidor)',
+  })
   role: string;
 
   @ApiPropertyOptional({ example: 'Restaurante El Sabor' })

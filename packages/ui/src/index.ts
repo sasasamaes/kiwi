@@ -352,6 +352,12 @@ export { OnvoPayCheckout, CryptoCheckout } from './OnvoPayCheckout';
 export type { OnvoPayCheckoutProps, CryptoCheckoutProps } from './OnvoPayCheckout';
 
 // ============================================
+//   ONVOPAY SDK
+// ============================================
+export { OnvoPay, getOnvoPay } from './onvopay-sdk';
+export type { CardToken, PaymentIntent } from './onvopay-sdk';
+
+// ============================================
 // 🚦 TRAFFIC INDICATOR
 // ============================================
 export { TrafficIndicator, DeliveryEstimate, TrafficMapOverlay } from './TrafficIndicator';

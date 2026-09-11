@@ -76,6 +76,7 @@ describe('Orders Integration: Full Lifecycle', () => {
       },
       orderItem: {
         create: jest.fn(),
+        createMany: jest.fn().mockResolvedValue({ count: 0 }),
       },
       driverProposal: {
         create: jest.fn(),
@@ -136,6 +137,10 @@ describe('Orders Integration: Full Lifecycle', () => {
       };
 
       prisma.order.create.mockResolvedValue(expectedOrder);
+
+      prisma.menuItem.findMany.mockResolvedValue([
+        { id: 'item-1', name: 'Bowl Tropikal', price: 4500, merchantId: MERCHANT_PROFILE_ID },
+      ]);
 
       const result = await ordersService.create(MERCHANT_USER_ID, {
         pickupAddress: 'Bowl & Café, Nicoya Centro',
@@ -338,16 +343,20 @@ describe('Orders Integration: Full Lifecycle', () => {
         merchantId: MERCHANT_PROFILE_ID,
         status: 'driver_proposals',
         orderType: 'scheduled',
-        scheduledDate: new Date('2026-09-05'),
+        scheduledDate: new Date('2027-09-05'),
         scheduledTime: '12:00',
         totalAmount: 1500,
         pickupAddress: 'Bowl & Café',
         deliveryAddress: 'Hotel Guanacaste',
       });
 
+      prisma.menuItem.findMany.mockResolvedValue([
+        { id: 'item-1', name: 'Bowl Tropikal', price: 4500, merchantId: MERCHANT_PROFILE_ID },
+      ]);
+
       const result = await ordersService.create(MERCHANT_USER_ID, {
         orderType: 'scheduled',
-        scheduledDate: '2026-09-05',
+        scheduledDate: '2027-09-05',
         scheduledTime: '12:00',
         pickupAddress: 'Bowl & Café',
         deliveryAddress: 'Hotel Guanacaste',

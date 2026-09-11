@@ -14,6 +14,7 @@ import {
   CalendarDays,
   RefreshCw,
   Target,
+  DollarSign,
 } from 'lucide-react';
 import { api, Skeleton, StaggerContainer, StaggerItem } from '@kiwi/ui';
 
@@ -391,7 +392,7 @@ export default function DriverAnalyticsPage() {
           transition={{ delay: 0.4 }}
         >
           <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-4">
-            DollarSign Desglose de Ganancias
+            <DollarSign className="h-4 w-4 inline" /> Desglose de Ganancias
           </h3>
           <div className="space-y-3">
             {(analytics?.earnings?.breakdown || []).map((item) => {

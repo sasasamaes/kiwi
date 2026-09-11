@@ -359,6 +359,18 @@ export default function OrderHistoryPage() {
                             </p>
                           </div>
                         )}
+
+                        {/* Calificar entregados */}
+                        {order.status === 'delivered' && (
+                          <div className="mt-3 flex justify-end">
+                            <Link
+                              href={`/order/${order.id}/rate`}
+                              className="inline-flex items-center gap-1 rounded-lg bg-yellow-50 dark:bg-yellow-900/30 px-3 py-1.5 text-xs font-semibold text-yellow-700 dark:text-yellow-400"
+                            >
+                              <Star className="h-3.5 w-3.5" /> Calificar
+                            </Link>
+                          </div>
+                        )}
                       </motion.div>
                     </Link>
                   </motion.div>

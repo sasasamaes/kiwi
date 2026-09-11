@@ -51,6 +51,9 @@ jobs:
       - name: Generate Prisma client
         run: cd api && npx prisma generate
 
+      - name: Type-check workspace (turbo)
+        run: npx turbo run type-check
+
       - name: Run API tests
         run: cd api && npm test
 
@@ -59,6 +62,59 @@ jobs:
 
       - name: Verify API builds
         run: test -f api/dist/main.js && echo "✅ API build OK" || echo "❌ API build failed"
+
+  migrations:
+    name: Migrations up-to-date (schema ↔ DB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: kiwi
+          POSTGRES_PASSWORD: kiwi
+          POSTGRES_DB: kiwi_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U kiwi"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://kiwi:kiwi@localhost:5432/kiwi_ci
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup dependencies (cached)
+        uses: ./.github/actions/setup-deps
+
+      - name: Apply all migrations to a fresh database
+        run: cd api && npx prisma migrate deploy
+
+      - name: Assert migrations reproduce schema.prisma exactly (no drift)
+        working-directory: api
+        run: |
+          set +e
+          npx prisma migrate diff \
+            --from-url "$DATABASE_URL" \
+            --to-schema-datamodel prisma/schema.prisma \
+            --exit-code > /tmp/drift.sql 2>&1
+          code=$?
+          set -e
+          if [ "$code" -eq 0 ]; then
+            echo "✅ No drift: applied migrations reproduce schema.prisma exactly."
+            exit 0
+          fi
+          echo "❌ Drift between applied migrations and schema.prisma (prisma migrate diff exit $code)."
+          echo "SQL that would make the migrated database match schema.prisma:"
+          cat /tmp/drift.sql
+          echo
+          echo "Fix locally with: cd api && npx prisma migrate dev --name <change>"
+          exit 1
 
   e2e:
     name: E2E Flow (real Postgres)

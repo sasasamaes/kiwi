@@ -225,6 +225,7 @@ model Order {
   packageDescription String?   @map("package_description")
   packageSize        String?   @map("package_size")
   declaredValue      Decimal?  @map("declared_value") @db.Decimal(10, 2)
+  weightKg           Decimal?  @map("weight_kg") @db.Decimal(8, 2)
   
   // Instructions
   specialInstructions String?   @map("special_instructions")
@@ -468,7 +469,8 @@ model MenuItem {
 model OrderItem {
   id          String   @id @default(uuid())
   orderId     String   @map("order_id")
-  menuItemId  String   @map("menu_item_id")
+  // Optional: null for custom items written by hand in the order wizard
+  menuItemId  String?  @map("menu_item_id")
   name        String
   price       Decimal  @db.Decimal(10, 2)
   quantity    Int      @default(1)
@@ -477,7 +479,7 @@ model OrderItem {
 
   // Relations
   order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  menuItem MenuItem @relation(fields: [menuItemId], references: [id])
+  menuItem MenuItem? @relation(fields: [menuItemId], references: [id])
 
   @@map("order_items")
 }

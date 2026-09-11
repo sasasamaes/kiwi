@@ -37,6 +37,7 @@ const CATEGORIES = [
   'Postres',
   'Platos Fuertes',
   'Ensaladas',
+  'Flete/Encomienda',
   'Otros',
 ];
 

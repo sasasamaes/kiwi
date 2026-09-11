@@ -13,6 +13,7 @@ const DEFAULT_CATEGORIES = [
   'Postres',
   'Platos Fuertes',
   'Ensaladas',
+  'Flete/Encomienda',
   'Otros',
 ];
 
@@ -367,10 +368,15 @@ export function MenuItemForm({
         {/* Quick Price Suggestions */}
         <div>
           <label className="mb-2 block text-sm font-medium text-surface-600 dark:text-surface-400">
-            Precios rápidos
+            {formData.category === 'Flete/Encomienda'
+              ? 'Tarifas de flete (por kg o tramo)'
+              : 'Precios rápidos'}
           </label>
           <div className="flex gap-2 flex-wrap">
-            {[1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000].map((price) => (
+            {(formData.category === 'Flete/Encomienda'
+              ? [1000, 2000, 2500, 3000, 4000, 5000, 6000, 8000, 10000]
+              : [1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000]
+            ).map((price) => (
               <motion.button
                 key={price}
                 type="button"

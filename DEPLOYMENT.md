@@ -93,6 +93,11 @@ curl -s https://kiwi-api-fe54.onrender.com/api/payments/methods -o /dev/null -w 
 # Headers de seguridad aplicados
 curl -sI https://kiwi-merchant.vercel.app | grep -i strict-transport
 
+# Drift de esquema: detecta si el Prisma Client desplegado espera columnas
+# que la BD de producción aún no tiene (causa clásica de 500 en rutas de datos
+# con P2022 mientras la API arranca "bien")
+curl -s https://kiwi-api-fe54.onrender.com/api/health/schema
+
 # Prueba E2E completa (login, menú, ciclo de pedidos)
 node scripts/e2e-prod-flow.mjs https://kiwi-api-fe54.onrender.com/api
 ```
@@ -101,10 +106,23 @@ node scripts/e2e-prod-flow.mjs https://kiwi-api-fe54.onrender.com/api
 
 ## 🧯 Troubleshooting
 
-| Problema                                                              | Solución                                                                                                                                  |
-| --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| La API devuelve 500 en rutas de datos                                 | Revisa `DATABASE_URL` en Render y los logs de arranque; el boot auto-ejecuta migraciones si faltan tablas                                 |
-| El primer pedido tras un deploy falla                                 | Ya resuelto: el gateway de eventos es null-safe; si reaparece, revisa `api/src/events/events.gateway.ts`                                  |
-| Build falla en Vercel por `framer-motion` u otra dependencia fantasma | Asegúrate de que cada paquete declare en su `package.json` todo lo que importa (no dependas del hoisting)                                 |
-| `process is not defined` en el navegador                              | Nunca uses `process.env?.X` ni variables sin prefijo `NEXT_PUBLIC_` en código de cliente; CI lo bloquea con `npm run check:client-bundle` |
-| El deploy de Vercel no toma los headers nuevos                        | Confirma que editaste el `vercel.json` del app correcto y redespliega                                                                     |
+| Problema                                                              | Solución                                                                                                                                                                                                                                                          |
+| --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| La API devuelve 500 en rutas de datos                                 | Revisa `DATABASE_URL` en Render y los logs de arranque; el boot auto-ejecuta migraciones si faltan tablas                                                                                                                                                         |
+| 500 solo en rutas de orders/earnings con la API "arriba"              | Drift de columnas: abre `GET /api/health/schema` — si devuelve `drift`, la BD no tiene columnas que el Prisma Client espera; fuerza redeploy de la API (el boot aplica `prisma migrate deploy`) o ejecuta la migración a mano con la `DATABASE_URL` de producción |
+| El primer pedido tras un deploy falla                                 | Ya resuelto: el gateway de eventos es null-safe; si reaparece, revisa `api/src/events/events.gateway.ts`                                                                                                                                                          |
+| Build falla en Vercel por `framer-motion` u otra dependencia fantasma | Asegúrate de que cada paquete declare en su `package.json` todo lo que importa (no dependas del hoisting)                                                                                                                                                         |
+| `process is not defined` en el navegador                              | Nunca uses `process.env?.X` ni variables sin prefijo `NEXT_PUBLIC_` en código de cliente; CI lo bloquea con `npm run check:client-bundle`                                                                                                                         |     | El deploy de Vercel no toma los headers nuevos | Confirma que editaste el `vercel.json` del app correcto y redespliega |
+| CI falla en el job `Migrations up-to-date`                            | El schema y las migraciones no coinciden. En local: `cd api && npx prisma migrate dev --name <cambio>` y commitea la migración generada. Nunca edites `schema.prisma` sin su migración                                                                            |
+
+### CI (GitHub Actions)
+
+`.github/workflows/ci.yml` corre en cada PR y push a `main`:
+
+| Job                   | Qué valida                                                                                                                                                                |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Repo Hygiene          | Hosts muertos + invariantes del schema Prisma (una sola copia)                                                                                                            |
+| Client Bundle Safety  | `process.env` / secretos filtrados en bundles de cliente                                                                                                                  |
+| Test & Build          | `turbo run type-check` (los 6 paquetes), tests del API, build de NestJS                                                                                                   |
+| Migrations up-to-date | Aplica todas las migraciones a un Postgres fresco y verifica con `prisma migrate diff` que reproducen `schema.prisma` **sin drift** (el bug exacto que rompió producción) |
+| E2E Flow              | API real contra Postgres: login → menú → ciclo completo de pedidos                                                                                                        |

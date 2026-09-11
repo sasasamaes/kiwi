@@ -12,15 +12,23 @@
  *   node scripts/e2e-prod-flow.mjs [baseUrl]
  *
  * Default baseUrl: https://kiwi-api-fe54.onrender.com
- * Credentials come from api/prisma/seed.ts demo data (password 123456).
+ * Credentials default to api/prisma/seed.ts demo data; override via env:
+ *   E2E_PASSWORD, E2E_MERCHANT_EMAIL, E2E_DRIVER_EMAIL, E2E_DRIVER2_EMAIL
  */
 
 const BASE = (process.argv[2] || 'https://kiwi-api-fe54.onrender.com').replace(/\/$/, '');
 const API = `${BASE}/api`;
-const PASSWORD = '123456';
-const MERCHANT = 'luis@kiwi.app';
-const DRIVER = 'juan@kiwi.app';
-const DRIVER2 = 'fran@kiwi.app';
+const PASSWORD = process.env.E2E_PASSWORD || '123456';
+const MERCHANT = process.env.E2E_MERCHANT_EMAIL || 'luis@kiwi.app';
+const DRIVER = process.env.E2E_DRIVER_EMAIL || 'juan@kiwi.app';
+const DRIVER2 = process.env.E2E_DRIVER2_EMAIL || 'fran@kiwi.app';
+const REQUEST_TIMEOUT_MS = Number(process.env.E2E_TIMEOUT_MS) || 30000;
+
+// Cleanup tracking: a run that dies mid-lifecycle must not leave a LIVE
+// order sitting in the driver pool.
+let leftoverOrderId = null;
+let leftoverOrderDelivered = false;
+let leftoverMerchantToken = null;
 
 const results = [];
 let step = 0;
@@ -40,6 +48,7 @@ async function req(method, path, { token, body } = {}) {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     ...(body ? { body: JSON.stringify(body) } : {}),
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
   let data = null;
   try { data = await res.json(); } catch { /* non-JSON */ }
@@ -139,6 +148,8 @@ async function main() {
     },
   });
   const orderId = newOrder.data?.id;
+  leftoverOrderId = orderId || null;
+  leftoverMerchantToken = merchantToken;
   ok('merchant creates order', [200, 201].includes(newOrder.status) && !!orderId,
     `status=${newOrder.data?.status}, basePrice=${newOrder.data?.basePrice}`);
 
@@ -186,9 +197,27 @@ async function main() {
 
   const delivered = await req('GET', `/orders/${orderId}`, { token: merchantToken });
   ok('deliveredAt timestamp set', !!delivered.data?.deliveredAt, `deliveredAt=${delivered.data?.deliveredAt}`);
+  if (delivered.data?.status === 'delivered') leftoverOrderDelivered = true;
 
   const invalid = await req('PUT', `/orders/${orderId}/status`, { token: driverToken, body: { status: 'pending' } });
   ok('invalid transition (delivered → pending) rejected', invalid.status === 400, `HTTP ${invalid.status}`);
+
+  // ── Cleanup ────────────────────────────────────────────
+  // Delivered orders have no delete endpoint: the test order stays as a
+  // historical record (marked "E2E TEST"). But an order that never got
+  // delivered (failed run) must be cancelled so it doesn't sit LIVE in
+  // the driver pool.
+  if (leftoverOrderId && !leftoverOrderDelivered && leftoverMerchantToken) {
+    try {
+      const cancel = await req('PUT', `/orders/${leftoverOrderId}/status`, {
+        token: leftoverMerchantToken,
+        body: { status: 'cancelled' },
+      });
+      console.log(`\n🧹 Leftover order ${cancel.status === 200 ? 'cancelled' : `NOT cancelled (HTTP ${cancel.status})`} (${leftoverOrderId})`);
+    } catch (e) {
+      console.log(`\n🧹 Could not cancel leftover order ${leftoverOrderId}: ${e.message}`);
+    }
+  }
 
   // ── Summary ──────────────────────────────────────────────
   const failed = results.filter((r) => !r.pass);
@@ -198,13 +227,24 @@ async function main() {
     console.log('\nFailed steps:');
     for (const f of failed) console.log(`   ❌ ${f.name} ${f.detail}`);
   }
-  console.log(`\nℹ️  Left behind: one delivered test order (${orderId}) marked "E2E TEST" in deliveryAddress.`);
+  console.log(`\nℹ️  Left behind: one delivered test order (${orderId}) marked "E2E TEST" in deliveryAddress (no delete endpoint — historical record).`);
   console.log(`   Merchant menu was restored (test item created and deleted).`);
 
   if (failed.length) process.exit(1);
 }
 
-main().catch((e) => {
+main().catch(async (e) => {
   console.error(`\n❌ E2E run crashed: ${e.message}`);
+  if (leftoverOrderId && !leftoverOrderDelivered && leftoverMerchantToken) {
+    try {
+      await req('PUT', `/orders/${leftoverOrderId}/status`, {
+        token: leftoverMerchantToken,
+        body: { status: 'cancelled' },
+      });
+      console.log(`🧹 Leftover order cancelled (${leftoverOrderId})`);
+    } catch {
+      console.log(`🧹 Could not cancel leftover order ${leftoverOrderId}`);
+    }
+  }
   process.exit(2);
 });

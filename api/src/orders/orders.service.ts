@@ -46,8 +46,14 @@ export class OrdersService {
         throw new BadRequestException('scheduledDate inválida');
       }
     }
-    if (orderType === 'scheduled' && !scheduledDate) {
-      throw new BadRequestException('Los pedidos programados requieren scheduledDate');
+    if (orderType === 'scheduled') {
+      if (!scheduledDate) {
+        throw new BadRequestException('Los pedidos programados requieren scheduledDate');
+      }
+      // El horario programado debe ser futuro (con margen de reloj de 2 min).
+      if (scheduledDate.getTime() < Date.now() - 2 * 60 * 1000) {
+        throw new BadRequestException('La fecha programada ya pasó — elige una fecha futura');
+      }
     }
 
     // Pricing: trip (zone flat or distance table) + 10% trip commission.
@@ -56,15 +62,92 @@ export class OrdersService {
     if (kind !== 'food' && kind !== 'freight') {
       throw new BadRequestException('kind inválido: use food o freight');
     }
-    const productsTotal = Number(data.productsTotal ?? 0);
-    if (!Number.isFinite(productsTotal) || productsTotal < 0) {
-      throw new BadRequestException('productsTotal inválido');
+
+    // Server is the source of truth for prices. Menu items are re-read from
+    // the DB (client-sent prices are never trusted); handwritten items keep
+    // their client price but are validated and persisted as line items.
+    const incomingItems: Array<Record<string, any>> = Array.isArray(data.items) ? data.items : [];
+    const resolvedItems: Array<{
+      menuItemId: string | null;
+      name: string;
+      price: number;
+      quantity: number;
+      notes?: string;
+    }> = [];
+    let productsTotal = 0;
+    if (kind === 'food' && incomingItems.length > 0) {
+      const menuIds = [
+        ...new Set(incomingItems.map((i) => i?.menuItemId).filter(Boolean) as string[]),
+      ];
+      const menuItems = menuIds.length
+        ? await this.prisma.menuItem.findMany({
+            where: { id: { in: menuIds }, merchantId: merchantProfile.id },
+          })
+        : [];
+      const menuById = new Map(menuItems.map((m) => [m.id, m]));
+
+      for (const item of incomingItems) {
+        const quantity = Number(item?.quantity ?? 1);
+        if (!Number.isFinite(quantity) || quantity < 1 || quantity > 999) {
+          throw new BadRequestException('quantity inválida');
+        }
+        if (item?.menuItemId) {
+          const menuItem = menuById.get(item.menuItemId);
+          if (!menuItem) {
+            throw new BadRequestException('Producto del menú no válido para este comercio');
+          }
+          productsTotal += Number(menuItem.price) * quantity;
+          resolvedItems.push({
+            menuItemId: menuItem.id,
+            name: menuItem.name,
+            price: Number(menuItem.price),
+            quantity,
+            notes: item.notes || undefined,
+          });
+        } else {
+          const name = String(item?.name ?? '').trim();
+          if (!name || name.length > 200) {
+            throw new BadRequestException('name inválido');
+          }
+          const price = Number(item?.price ?? 0);
+          if (!Number.isFinite(price) || price < 0) {
+            throw new BadRequestException('price inválido');
+          }
+          productsTotal += price * quantity;
+          resolvedItems.push({
+            menuItemId: null,
+            name,
+            price,
+            quantity,
+            notes: item.notes || undefined,
+          });
+        }
+      }
+    } else {
+      productsTotal = Number(data.productsTotal ?? 0);
+      if (!Number.isFinite(productsTotal) || productsTotal < 0) {
+        throw new BadRequestException('productsTotal inválido');
+      }
     }
-    const tripPrice = this.calculateBasePrice(
-      distanceKm,
-      { lat: data.pickupLat, lng: data.pickupLng },
-      { lat: data.deliveryLat, lng: data.deliveryLng },
-    );
+
+    // Encomiendas por peso: los primeros 5 kg van incluidos en la tarifa del
+    // viaje; cada kg adicional (iniciado) suma ₡500 al viaje (y por ende al
+    // payout del repartidor). La comisión de la app sigue siendo el 10%.
+    let weightKg: number | null = null;
+    if (kind === 'freight' && data.weightKg != null) {
+      weightKg = Number(data.weightKg);
+      if (!Number.isFinite(weightKg) || weightKg <= 0 || weightKg > 500) {
+        throw new BadRequestException('weightKg inválido (0–500 kg)');
+      }
+    }
+    const weightSurcharge = weightKg ? this.freightWeightSurcharge(weightKg) : 0;
+
+    const tripPrice =
+      this.calculateBasePrice(
+        distanceKm,
+        { lat: data.pickupLat, lng: data.pickupLng },
+        { lat: data.deliveryLat, lng: data.deliveryLng },
+      ) + weightSurcharge;
     const commission = Math.round(tripPrice * 0.1) + this.commissionForProducts(productsTotal);
     const driverPayout = tripPrice;
     const totalAmount = productsTotal + tripPrice + commission;
@@ -95,12 +178,32 @@ export class OrdersService {
         packageDescription: data.packageDescription ?? null,
         packageSize: data.packageSize ?? null,
         declaredValue: data.declaredValue ?? null,
+        weightKg: weightKg != null ? weightKg : null,
         specialInstructions: data.specialInstructions,
       },
       include: {
         merchant: true,
       },
     });
+
+    // Persist line items so drivers and reports see exactly what to carry.
+    // Best-effort: a failure here must not roll back a created order.
+    if (resolvedItems.length > 0) {
+      try {
+        await this.prisma.orderItem.createMany({
+          data: resolvedItems.map((item) => ({
+            orderId: order.id,
+            menuItemId: item.menuItemId,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            notes: item.notes,
+          })),
+        });
+      } catch (error) {
+        console.error('Failed to persist order items:', error);
+      }
+    }
 
     // Broadcast new order to all available drivers via Socket.io
     if (order.status === 'pending') {
@@ -687,6 +790,16 @@ export class OrdersService {
   /** Phase-2 seam: commission on products. Currently 0 (merchant keeps 100%). */
   private commissionForProducts(_productsTotal: number): number {
     return 0;
+  }
+
+  /**
+   * Encomiendas por peso: los primeros 5 kg van incluidos en la tarifa base;
+   * cada kg adicional (iniciado) suma ₡500 al viaje del repartidor.
+   */
+  private freightWeightSurcharge(weightKg: number): number {
+    if (!Number.isFinite(weightKg) || weightKg <= 0) return 0;
+    const extraKg = Math.max(0, Math.ceil(weightKg - 5));
+    return extraKg * 500;
   }
 
   private calculateBasePrice(
