@@ -9,7 +9,7 @@ interface OnvoPayConfig {
   baseUrl?: string;
 }
 
-interface CardToken {
+export interface CardToken {
   id: string;
   object: 'token';
   card: {
@@ -54,7 +54,7 @@ interface PaymentMethod {
   livemode: boolean;
 }
 
-interface PaymentIntent {
+export interface PaymentIntent {
   id: string;
   object: 'payment_intent';
   amount: number;

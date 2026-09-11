@@ -276,6 +276,10 @@ class ApiClient {
     return this.request<any>(`/orders/${id}`);
   }
 
+  async getOrderMessages(orderId: string, limit = 50) {
+    return this.request<any>(`/orders/${orderId}/messages?limit=${limit}`);
+  }
+
   async updateOrderStatus(orderId: string, status: string) {
     return this.request<any>(`/orders/${orderId}/status`, {
       method: 'PUT',

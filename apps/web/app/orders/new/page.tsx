@@ -26,6 +26,7 @@ import {
   useSocket,
   api,
   MenuItem,
+  calculateDistance,
 } from '@kiwi/ui';
 
 type Step = 1 | 2 | 3 | 4 | 5;
@@ -37,10 +38,56 @@ interface Driver {
   rating?: number;
 }
 
+/**
+ * Normaliza a perfil de repartidor: favoritos viene como
+ * {id: favoriteId, driverId, driver: {...perfil}} mientras disponibles
+ * viene como perfil directo. El id que vale para assign/favorite es
+ * SIEMPRE el del perfil (DriverProfile.id).
+ */
 const toDriverList = (data: any): Driver[] => {
-  const list = Array.isArray(data) ? data : (data?.drivers ?? data?.favorites ?? data?.data ?? []);
-  return Array.isArray(list) ? list : [];
+  const raw = Array.isArray(data) ? data : (data?.drivers ?? data?.favorites ?? data?.data ?? []);
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((item: any) => {
+      const p = item?.driver ?? item;
+      if (!p?.id) return null;
+      return {
+        id: String(p.id),
+        fullName: p.fullName ?? 'Repartidor',
+        vehicleType: p.vehicleType,
+        rating: typeof p.rating === 'number' ? p.rating : Number(p.rating) || undefined,
+      } as Driver;
+    })
+    .filter(Boolean) as Driver[];
 };
+
+/** Backend pricing tiers (orders.service calculateBasePrice). */
+const tripPriceForKm = (km: number): number => {
+  if (km <= 1) return 800;
+  if (km <= 2) return 1000;
+  if (km <= 5) return 1500;
+  if (km <= 10) return 2000;
+  return Math.round(2000 + (km - 10) * 350);
+};
+
+// Misma zona plana del backend: ₡2000 en 10 km del parque de Nicoya.
+const NICOYA_LAT = 10.1467;
+const NICOYA_LNG = -85.452;
+const NICOYA_ZONE_KM = 10;
+const NICOYA_FLAT = 2000;
+
+const inNicoyaZone = (lat?: number, lng?: number): boolean => {
+  if (lat == null || lng == null) return false;
+  const km = calculateDistance({ lat, lng }, { lat: NICOYA_LAT, lng: NICOYA_LNG });
+  return Number.isFinite(km) && km <= NICOYA_ZONE_KM;
+};
+
+interface GeoSuggestion {
+  displayName: string;
+  shortName?: string;
+  lat: number;
+  lng: number;
+}
 
 interface OrderItem {
   id: string;
@@ -74,10 +121,12 @@ interface OrderData {
   paymentMethod: 'cash' | 'sinpe' | 'card' | 'crypto';
 }
 
-const savedAddresses = [
-  { id: '1', name: 'Mi Negocio', address: 'Nicoya Centro, 200m norte del parque', isDefault: true },
-  { id: '2', name: 'Bodega', address: 'Nicoya, 1km sur del estadio' },
-];
+interface SavedAddress {
+  id: string;
+  name: string;
+  address: string;
+  isDefault?: boolean;
+}
 
 export default function NewOrder() {
   const router = useRouter();
@@ -116,6 +165,49 @@ export default function NewOrder() {
   const [availableDrivers, setAvailableDrivers] = useState<Driver[]>([]);
   const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
   const [driversLoading, setDriversLoading] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [locating, setLocating] = useState(false);
+  const [pickupSuggest, setPickupSuggest] = useState<GeoSuggestion[]>([]);
+  const [deliverySuggest, setDeliverySuggest] = useState<GeoSuggestion[]>([]);
+  const [geoError, setGeoError] = useState<string | null>(null);
+  const [routeKm, setRouteKm] = useState<number | null>(null);
+  const pickupDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const deliveryDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Direcciones guardadas reales: del perfil + la que esté en uso.
+  const savedAddresses: SavedAddress[] = [
+    ...(user?.merchantProfile?.address
+      ? [
+          {
+            id: 'profile',
+            name: user.merchantProfile.businessName || 'Mi Negocio',
+            address: user.merchantProfile.address,
+            isDefault: true as const,
+          },
+        ]
+      : []),
+    ...(orderData.pickupAddress && orderData.pickupAddress !== user?.merchantProfile?.address
+      ? [
+          {
+            id: 'current',
+            name: orderData.pickupName || 'Actual',
+            address: orderData.pickupAddress,
+          },
+        ]
+      : []),
+  ];
+
+  // El usuario carga async: rellenar pickup cuando llegue el perfil.
+  const profileAddress = user?.merchantProfile?.address || '';
+  const profileName = user?.merchantProfile?.businessName || '';
+  useEffect(() => {
+    if (!profileAddress) return;
+    setOrderData((prev) =>
+      prev.pickupAddress || prev.pickupName
+        ? prev
+        : { ...prev, pickupAddress: profileAddress, pickupName: profileName },
+    );
+  }, [profileAddress, profileName]);
 
   useEffect(() => {
     api
@@ -164,6 +256,147 @@ export default function NewOrder() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step]);
+
+  // Distancia real: backend cuando hay coords, haversine local como
+  // respaldo, null honesto cuando no hay con qué calcular.
+  useEffect(() => {
+    const { pickupLat, pickupLng, deliveryLat, deliveryLng } = orderData;
+    if (pickupLat == null || pickupLng == null || deliveryLat == null || deliveryLng == null) {
+      setRouteKm(null);
+      return;
+    }
+    let cancelled = false;
+    const fallbackKm = () => {
+      try {
+        const km = calculateDistance(
+          { lat: pickupLat, lng: pickupLng },
+          { lat: deliveryLat, lng: deliveryLng },
+        );
+        if (!cancelled)
+          setRouteKm(Number.isFinite(km) && km >= 0 ? Math.round(km * 10) / 10 : null);
+      } catch {
+        if (!cancelled) setRouteKm(null);
+      }
+    };
+    api
+      .calculateDistance(pickupLat, pickupLng, deliveryLat, deliveryLng)
+      .then((res: any) => {
+        const km = Number(res?.distanceKm ?? res?.km ?? res?.distance);
+        if (cancelled) return;
+        if (Number.isFinite(km) && km >= 0) setRouteKm(Math.round(km * 10) / 10);
+        else fallbackKm();
+      })
+      .catch(fallbackKm);
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderData.pickupLat, orderData.pickupLng, orderData.deliveryLat, orderData.deliveryLng]);
+
+  const searchPlaces = async (q: string, target: 'pickup' | 'delivery') => {
+    const query = q.trim();
+    if (query.length < 3) {
+      target === 'pickup' ? setPickupSuggest([]) : setDeliverySuggest([]);
+      return;
+    }
+    try {
+      const res = await api.searchNicoyaAddresses(query, 5);
+      const list: GeoSuggestion[] = (Array.isArray(res) ? res : []).map((r: any) => ({
+        displayName: r.displayName,
+        shortName: r.shortName,
+        lat: Number(r.lat),
+        lng: Number(r.lng),
+      }));
+      target === 'pickup' ? setPickupSuggest(list) : setDeliverySuggest(list);
+    } catch {
+      target === 'pickup' ? setPickupSuggest([]) : setDeliverySuggest([]);
+    }
+  };
+
+  const onPickupChange = (value: string) => {
+    setOrderData((prev) => ({
+      ...prev,
+      pickupAddress: value,
+      pickupLat: undefined,
+      pickupLng: undefined,
+    }));
+    if (pickupDebounce.current) clearTimeout(pickupDebounce.current);
+    pickupDebounce.current = setTimeout(() => searchPlaces(value, 'pickup'), 400);
+  };
+
+  const onDeliveryChange = (value: string) => {
+    setOrderData((prev) => ({
+      ...prev,
+      deliveryAddress: value,
+      deliveryLat: undefined,
+      deliveryLng: undefined,
+    }));
+    if (deliveryDebounce.current) clearTimeout(deliveryDebounce.current);
+    deliveryDebounce.current = setTimeout(() => searchPlaces(value, 'delivery'), 400);
+  };
+
+  const pickSuggestion = (s: GeoSuggestion, target: 'pickup' | 'delivery') => {
+    if (target === 'pickup') {
+      setOrderData((prev) => ({
+        ...prev,
+        pickupAddress: s.displayName,
+        pickupLat: s.lat,
+        pickupLng: s.lng,
+      }));
+      setPickupSuggest([]);
+    } else {
+      setOrderData((prev) => ({
+        ...prev,
+        deliveryAddress: s.displayName,
+        deliveryLat: s.lat,
+        deliveryLng: s.lng,
+      }));
+      setDeliverySuggest([]);
+    }
+  };
+
+  const useCurrentLocation = () => {
+    if (!('geolocation' in navigator)) {
+      setGeoError('Tu navegador no soporta geolocalización');
+      return;
+    }
+    setLocating(true);
+    setGeoError(null);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        try {
+          const rev = await api.reverseGeocode(latitude, longitude);
+          const label =
+            rev?.displayName || rev?.shortName || `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+          setOrderData((prev) => ({
+            ...prev,
+            pickupAddress: label,
+            pickupLat: latitude,
+            pickupLng: longitude,
+          }));
+        } catch {
+          setOrderData((prev) => ({
+            ...prev,
+            pickupAddress: `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`,
+            pickupLat: latitude,
+            pickupLng: longitude,
+          }));
+        } finally {
+          setLocating(false);
+        }
+      },
+      (err) => {
+        setLocating(false);
+        setGeoError(
+          err.code === err.PERMISSION_DENIED
+            ? 'Permiso de ubicación denegado'
+            : 'No se pudo obtener tu ubicación',
+        );
+      },
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
+  };
 
   const toggleFavorite = async (driver: Driver) => {
     const isFav = favoriteDrivers.some((d) => d.id === driver.id);
@@ -239,8 +472,16 @@ export default function NewOrder() {
   };
 
   const subtotal = orderData.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  // Zona Nicoya centro (el backend recalcula con coordenadas reales)
-  const baseTrip = 2000;
+  // Estimación con la misma regla del backend (el servidor recalcula al crear):
+  // zona Nicoya = plano ₡2000, fuera = tabla por distancia. Sin coords se
+  // asume Nicoya igual que el servidor.
+  const inZone =
+    orderData.deliveryLat != null
+      ? inNicoyaZone(orderData.deliveryLat, orderData.deliveryLng)
+      : orderData.pickupLat != null
+        ? inNicoyaZone(orderData.pickupLat, orderData.pickupLng)
+        : (routeKm ?? 0) <= NICOYA_ZONE_KM;
+  const baseTrip = inZone ? NICOYA_FLAT : routeKm != null ? tripPriceForKm(routeKm) : NICOYA_FLAT;
   // Encomiendas por peso: los primeros 5 kg van incluidos; cada kg extra suma ₡500
   const weightSurchargeEstimate =
     orderData.kind === 'freight' && orderData.weightKg > 5
@@ -249,8 +490,15 @@ export default function NewOrder() {
   const tripEstimate = baseTrip + weightSurchargeEstimate;
   const commissionEstimate = Math.round(tripEstimate * 0.1);
   const total = subtotal + tripEstimate + commissionEstimate;
+  // ~25 km/h en moto dentro de Nicoya.
+  const etaMin = routeKm != null ? Math.max(5, Math.round((routeKm / 25) * 60)) : null;
 
   const createOrderHandler = async () => {
+    setFormError(null);
+    if (orderData.isScheduled && !orderData.scheduledDate) {
+      setFormError('Elegí fecha y hora para programar el pedido');
+      return;
+    }
     setLoading(true);
     try {
       // El backend es la fuente de verdad de los precios: re-lee el menú de la
@@ -266,7 +514,7 @@ export default function NewOrder() {
         scheduledDate: orderData.scheduledDate || undefined,
         scheduledTime: orderData.scheduledTime || undefined,
         specialInstructions: orderData.specialInstructions,
-        distanceKm: 2.5, // Mock distance
+        distanceKm: routeKm ?? undefined,
         kind: orderData.kind,
         items:
           orderData.kind === 'food'
@@ -334,12 +582,12 @@ export default function NewOrder() {
           pickupAddress: orderData.pickupAddress,
           deliveryAddress: orderData.deliveryAddress,
           totalAmount: total,
-          distanceKm: 2.5,
+          distanceKm: routeKm ?? undefined,
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to create order:', error);
-      alert('Error al crear el pedido. Intenta de nuevo.');
+      setFormError(error?.message || 'Error al crear el pedido. Intenta de nuevo.');
     } finally {
       setLoading(false);
     }
@@ -624,17 +872,32 @@ export default function NewOrder() {
                   </label>
                   <textarea
                     value={orderData.pickupAddress}
-                    onChange={(e) => setOrderData({ ...orderData, pickupAddress: e.target.value })}
+                    onChange={(e) => onPickupChange(e.target.value)}
                     placeholder="Ej: Nicoya Centro, 200m norte del parque"
                     rows={3}
                     className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:border-kiwi-500 focus:ring-2 focus:ring-kiwi-500/20 transition-all resize-none"
                   />
+                  {pickupSuggest.length > 0 && (
+                    <div className="mt-2 overflow-hidden rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 shadow-soft">
+                      {pickupSuggest.map((s, i) => (
+                        <button
+                          key={`${s.lat}-${s.lng}-${i}`}
+                          onClick={() => pickSuggestion(s, 'pickup')}
+                          className="w-full text-left px-4 py-2.5 text-sm text-surface-700 dark:text-surface-300 hover:bg-kiwi-50 dark:hover:bg-kiwi-900/20 transition-colors"
+                        >
+                          📍 {s.shortName || s.displayName}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
-                <motion.div
-                  className="rounded-xl bg-kiwi-50 dark:bg-kiwi-900/30 p-4 cursor-pointer"
+                <motion.button
+                  className="rounded-xl bg-kiwi-50 dark:bg-kiwi-900/30 p-4 cursor-pointer w-full text-left"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
+                  onClick={useCurrentLocation}
+                  disabled={locating}
                 >
                   <div className="flex items-center gap-3">
                     <span className="text-2xl">
@@ -642,14 +905,15 @@ export default function NewOrder() {
                     </span>
                     <div>
                       <p className="text-sm font-medium text-kiwi-700 dark:text-kiwi-400">
-                        Usar ubicación actual
+                        {locating ? 'Detectando ubicación…' : 'Usar ubicación actual'}
                       </p>
                       <p className="text-xs text-kiwi-600 dark:text-kiwi-500">
-                        Detectar automáticamente
+                        {locating ? 'Esperando al GPS…' : 'Detectar automáticamente'}
                       </p>
                     </div>
                   </div>
-                </motion.div>
+                </motion.button>
+                {geoError && <p className="text-sm text-red-500 dark:text-red-400">{geoError}</p>}
               </div>
             </motion.div>
           )}
@@ -699,13 +963,24 @@ export default function NewOrder() {
                   </label>
                   <textarea
                     value={orderData.deliveryAddress}
-                    onChange={(e) =>
-                      setOrderData({ ...orderData, deliveryAddress: e.target.value })
-                    }
+                    onChange={(e) => onDeliveryChange(e.target.value)}
                     placeholder="Ej: Santa Cruz, 500m sur del banco"
                     rows={3}
                     className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:border-kiwi-500 focus:ring-2 focus:ring-kiwi-500/20 transition-all resize-none"
                   />
+                  {deliverySuggest.length > 0 && (
+                    <div className="mt-2 overflow-hidden rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 shadow-soft">
+                      {deliverySuggest.map((s, i) => (
+                        <button
+                          key={`${s.lat}-${s.lng}-${i}`}
+                          onClick={() => pickSuggestion(s, 'delivery')}
+                          className="w-full text-left px-4 py-2.5 text-sm text-surface-700 dark:text-surface-300 hover:bg-kiwi-50 dark:hover:bg-kiwi-900/20 transition-colors"
+                        >
+                          📍 {s.shortName || s.displayName}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Distance Estimate */}
@@ -720,14 +995,16 @@ export default function NewOrder() {
                         Distancia estimada
                       </span>
                       <span className="font-medium text-surface-800 dark:text-surface-200">
-                        ~2.5 km
+                        {routeKm != null ? `~${routeKm} km` : 'Sin coords: se calcula al crear'}
                       </span>
                     </div>
                     <div className="flex items-center justify-between mt-2">
                       <span className="text-sm text-surface-500 dark:text-surface-400">
                         Tiempo estimado
                       </span>
-                      <span className="font-medium text-kiwi-600 dark:text-kiwi-400">~20 min</span>
+                      <span className="font-medium text-kiwi-600 dark:text-kiwi-400">
+                        {etaMin != null ? `~${etaMin} min` : '—'}
+                      </span>
                     </div>
                   </motion.div>
                 )}
@@ -1130,6 +1407,7 @@ export default function NewOrder() {
                       <div className="mt-4 flex gap-3">
                         <input
                           type="date"
+                          min={new Date().toISOString().split('T')[0]}
                           value={orderData.scheduledDate}
                           onChange={(e) =>
                             setOrderData({ ...orderData, scheduledDate: e.target.value })
@@ -1518,11 +1796,21 @@ export default function NewOrder() {
 
       {/* Bottom Actions */}
       <div className="sticky bottom-0 border-t border-surface-200/50 dark:border-surface-700/50 bg-white/80 dark:bg-surface-900/80 backdrop-blur-xl p-4">
+        <div className="mx-auto max-w-lg">
+          {formError && (
+            <div className="mb-3 rounded-xl bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 px-4 py-3 text-sm text-red-600 dark:text-red-400">
+              {formError}
+            </div>
+          )}
+        </div>
         <div className="mx-auto max-w-lg flex gap-3">
           {step > 1 && (
             <AnimatedButton
               variant="secondary"
-              onClick={() => setStep((step - 1) as Step)}
+              onClick={() => {
+                setFormError(null);
+                setStep((step - 1) as Step);
+              }}
               className="flex-1 dark:bg-surface-800 dark:text-surface-300"
             >
               ← Atrás
@@ -1532,7 +1820,14 @@ export default function NewOrder() {
           {step < 5 ? (
             <AnimatedButton
               variant="gradient"
-              onClick={() => setStep((step + 1) as Step)}
+              onClick={() => {
+                if (step === 3 && orderData.isScheduled && !orderData.scheduledDate) {
+                  setFormError('Elegí fecha y hora para programar el pedido');
+                  return;
+                }
+                setFormError(null);
+                setStep((step + 1) as Step);
+              }}
               className="flex-1"
               disabled={
                 (step === 1 && !orderData.pickupAddress) ||

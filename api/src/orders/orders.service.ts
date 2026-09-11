@@ -266,6 +266,34 @@ export class OrdersService {
     return order;
   }
 
+  /**
+   * Order-scoped chat history. Reuses findById for participant-only
+   * access: merchant owner, assigned driver, or admin.
+   */
+  async getOrderMessages(orderId: string, userId: string, limit = 50) {
+    await this.findById(orderId, userId);
+
+    const messages = await this.prisma.notification.findMany({
+      where: {
+        type: 'chat',
+        data: { path: ['orderId'], equals: orderId },
+        OR: [{ userId }, { data: { path: ['senderId'], equals: userId } }],
+      },
+      orderBy: { createdAt: 'asc' },
+      take: Math.min(Math.max(limit, 1), 200),
+    });
+
+    return messages.map((m: any) => ({
+      id: m.id,
+      orderId,
+      senderId: m.data?.senderId ?? null,
+      senderRole: m.data?.senderRole ?? null,
+      text: m.body,
+      createdAt: m.createdAt,
+      mine: (m.data?.senderId ?? null) === userId,
+    }));
+  }
+
   private static readonly VALID_ORDER_STATUSES = [
     'pending',
     'driver_proposals',
@@ -311,6 +339,7 @@ export class OrdersService {
             },
           },
         },
+        _count: { select: { proposals: true } },
       },
       orderBy: { createdAt: 'desc' },
     });

@@ -124,6 +124,11 @@ class SocketClient {
       console.log('🟢 Connected to Kiwi:', data);
       this.emit('socket:ready', data);
     });
+
+    // Chat events
+    this.socket.on('chat:message', (data) => {
+      this.emit('chat:message', data);
+    });
   }
 
   disconnect() {
@@ -162,6 +167,22 @@ class SocketClient {
   // Notification methods
   subscribeToTopics(topics: string[]) {
     this.socket?.emit('notification:subscribe', { topics });
+  }
+
+  // Chat: order-scoped message with server ack (10s timeout)
+  sendChat(orderId: string, text: string): Promise<any> {
+    return new Promise((resolve, reject) => {
+      if (!this.socket?.connected) {
+        reject(new Error('Sin conexión en tiempo real'));
+        return;
+      }
+      const timer = setTimeout(() => reject(new Error('El mensaje tardó demasiado')), 10000);
+      this.socket.emit('chat:send', { orderId, text }, (ack: any) => {
+        clearTimeout(timer);
+        if (ack?.error) reject(new Error(ack.error));
+        else resolve(ack?.message ?? ack);
+      });
+    });
   }
 
   // ============================================

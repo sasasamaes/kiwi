@@ -66,6 +66,19 @@ export class OrdersController {
     return this.ordersService.updateStatus(id, status, user.sub);
   }
 
+  @Get(':id/messages')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Order chat history (participants only)' })
+  @ApiQuery({ name: 'limit', required: false })
+  async getMessages(
+    @Param('id') id: string,
+    @CurrentUser() user: any,
+    @Query('limit') limit?: string,
+  ) {
+    return this.ordersService.getOrderMessages(id, user.sub, limit ? Number(limit) : 50);
+  }
+
   @Put(':id/assign')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('merchant')
