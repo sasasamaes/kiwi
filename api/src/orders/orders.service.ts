@@ -6,12 +6,14 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventsGateway } from '../events/events.gateway';
+import { DriversService } from '../drivers/drivers.service';
 
 @Injectable()
 export class OrdersService {
   constructor(
     private prisma: PrismaService,
     private eventsGateway: EventsGateway,
+    private driversService: DriversService,
   ) {}
 
   async create(merchantId: string, data: any) {
@@ -292,6 +294,79 @@ export class OrdersService {
       createdAt: m.createdAt,
       mine: (m.data?.senderId ?? null) === userId,
     }));
+  }
+
+  /**
+   * Public tracking view (no auth): order IDs are unguessable UUIDs, so the
+   * link itself is the credential ("anyone with the link" pattern, same as
+   * the public menu). Only share-safe fields are exposed — never phones,
+   * emails, amounts or payouts.
+   */
+  async getPublicTracking(orderId: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        merchant: { select: { businessName: true } },
+        driver: {
+          select: { id: true, fullName: true, vehicleType: true, rating: true },
+        },
+        items: { select: { name: true, quantity: true } },
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Pedido no encontrado');
+    }
+
+    return {
+      id: order.id,
+      status: order.status,
+      orderType: order.orderType,
+      pickupAddress: order.pickupAddress,
+      pickupLat: order.pickupLat != null ? Number(order.pickupLat) : null,
+      pickupLng: order.pickupLng != null ? Number(order.pickupLng) : null,
+      deliveryAddress: order.deliveryAddress,
+      deliveryLat: order.deliveryLat != null ? Number(order.deliveryLat) : null,
+      deliveryLng: order.deliveryLng != null ? Number(order.deliveryLng) : null,
+      merchantName: (order as any).merchant?.businessName ?? null,
+      driver: order.driverId
+        ? {
+            fullName: (order as any).driver?.fullName ?? null,
+            vehicleType: (order as any).driver?.vehicleType ?? null,
+            rating:
+              (order as any).driver?.rating != null ? Number((order as any).driver.rating) : null,
+          }
+        : null,
+      items: ((order as any).items ?? []).map((i: any) => ({
+        name: i.name,
+        quantity: i.quantity,
+      })),
+      createdAt: order.createdAt,
+      assignedAt: order.assignedAt,
+      pickedUpAt: order.pickedUpAt,
+      deliveredAt: order.deliveredAt,
+    };
+  }
+
+  /**
+   * Public driver position for a tracked order (link holders only).
+   * No driver identity beyond what getPublicTracking already exposes.
+   */
+  async getPublicDriverLocation(orderId: string) {
+    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+
+    if (!order || !order.driverId) {
+      throw new NotFoundException('Ubicación no disponible');
+    }
+
+    const loc: any = await this.driversService.getLocation(order.driverId);
+    return {
+      lat: loc.lat,
+      lng: loc.lng,
+      updatedAt: loc.updatedAt,
+      isStale: !!loc.isStale,
+      known: loc.known ?? !loc.isStale,
+    };
   }
 
   private static readonly VALID_ORDER_STATUSES = [

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { api, useAuth, type Order } from '@kiwi/ui';
+import { api, useAuth, type Order, ShareTrackingButton } from '@kiwi/ui';
 
 const STATUS_LABELS: Record<string, string> = {
   pending: 'Pendiente',
@@ -67,9 +67,16 @@ export default function OrdersPage() {
                 #{order.id.slice(-4)} · ₡{Number(order.totalAmount).toLocaleString()}
               </p>
             </div>
-            <span className="rounded-full bg-surface-100 px-3 py-1 text-xs font-medium">
-              {STATUS_LABELS[order.status] ?? order.status}
-            </span>
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="rounded-full bg-surface-100 px-3 py-1 text-xs font-medium">
+                {STATUS_LABELS[order.status] ?? order.status}
+              </span>
+              <ShareTrackingButton
+                orderId={order.id}
+                label="Compartir"
+                className="!px-3 !py-1.5 !text-xs"
+              />
+            </div>
           </li>
         ))}
       </ul>

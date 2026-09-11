@@ -21,6 +21,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { NotFoundException } from '@nestjs/common';
 import { OrdersService } from '../orders/orders.service';
 import { EventsGateway } from '../events/events.gateway';
+import { DriversService } from '../drivers/drivers.service';
 
 describe('OrdersService', () => {
   let service: OrdersService;
@@ -54,6 +55,7 @@ describe('OrdersService', () => {
         OrdersService,
         { provide: PrismaService, useValue: prisma },
         { provide: EventsGateway, useValue: mockEventsGateway },
+        { provide: DriversService, useValue: { getLocation: jest.fn() } },
       ],
     }).compile();
 
@@ -345,6 +347,64 @@ describe('OrdersService', () => {
 
       await expect(service.getOrderMessages('order-1', 'outsider-9')).rejects.toThrow();
       expect(prisma.notification.findMany).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getPublicTracking', () => {
+    it('expone solo campos compartibles (sin PII ni montos)', async () => {
+      prisma.order.findUnique.mockResolvedValue({
+        id: 'order-1',
+        status: 'in_transit_to_delivery',
+        orderType: 'immediate',
+        pickupAddress: 'Tienda',
+        pickupLat: '10.1',
+        pickupLng: '-85.4',
+        deliveryAddress: 'Casa',
+        deliveryLat: null,
+        deliveryLng: null,
+        driverId: 'dp-1',
+        merchant: { businessName: 'Bowl & Café' },
+        driver: { fullName: 'Juan', vehicleType: 'motorcycle', rating: '4.9' },
+        items: [{ name: 'Bowl', quantity: 2 }],
+        createdAt: new Date(),
+        assignedAt: new Date(),
+        pickedUpAt: null,
+        deliveredAt: null,
+      });
+
+      const dto: any = await service.getPublicTracking('order-1');
+
+      expect(dto.id).toBe('order-1');
+      expect(dto.merchantName).toBe('Bowl & Café');
+      expect(dto.driver.fullName).toBe('Juan');
+      expect(dto.pickupLat).toBe(10.1);
+      expect(dto).not.toHaveProperty('driverPayout');
+      expect(dto).not.toHaveProperty('totalAmount');
+      expect(JSON.stringify(dto)).not.toContain('8888');
+    });
+
+    it('404 en pedido inexistente', async () => {
+      prisma.order.findUnique.mockResolvedValue(null);
+      await expect(service.getPublicTracking('missing')).rejects.toThrow(NotFoundException);
+    });
+
+    it('ubicación 404 sin repartidor y datos con repartidor', async () => {
+      prisma.order.findUnique.mockResolvedValue({ id: 'order-1', driverId: null });
+      await expect(service.getPublicDriverLocation('order-1')).rejects.toThrow(NotFoundException);
+
+      prisma.order.findUnique.mockResolvedValue({ id: 'order-1', driverId: 'dp-1' });
+      const driversService = (service as any).driversService;
+      driversService.getLocation.mockResolvedValue({
+        lat: 10.2,
+        lng: -85.5,
+        updatedAt: new Date(),
+        isStale: false,
+        known: true,
+      });
+
+      const loc: any = await service.getPublicDriverLocation('order-1');
+      expect(loc.lat).toBe(10.2);
+      expect(loc).not.toHaveProperty('driverId');
     });
   });
 });

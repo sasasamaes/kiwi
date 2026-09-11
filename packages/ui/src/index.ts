@@ -328,10 +328,11 @@ export { QRCodeGenerator, QRScanner } from './QRCodeGenerator';
 export type { QRCodeGeneratorProps, QRScannerProps } from './QRCodeGenerator';
 
 // ============================================
-//  ️ TRACKING MAP
+//   TRACKING MAP + SHARE LINK
 // ============================================
 export { TrackingMap } from './TrackingMap';
 export type { TrackingMapProps } from './TrackingMap';
+export { ShareTrackingButton, buildTrackingUrl } from './ShareTracking';
 
 // ============================================
 //   ADDRESS INPUT

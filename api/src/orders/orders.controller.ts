@@ -46,6 +46,18 @@ export class OrdersController {
     return this.ordersService.getAvailableOrders(latitude, longitude);
   }
 
+  @Get('track/:id')
+  @ApiOperation({ summary: 'Public order tracking (share link, no auth)' })
+  async trackOrder(@Param('id') id: string) {
+    return this.ordersService.getPublicTracking(id);
+  }
+
+  @Get('track/:id/location')
+  @ApiOperation({ summary: 'Public driver location for a tracked order (no auth)' })
+  async trackDriverLocation(@Param('id') id: string) {
+    return this.ordersService.getPublicDriverLocation(id);
+  }
+
   @Get(':id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()

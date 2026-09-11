@@ -280,6 +280,14 @@ class ApiClient {
     return this.request<any>(`/orders/${orderId}/messages?limit=${limit}`);
   }
 
+  async getPublicTracking(orderId: string) {
+    return this.request<any>(`/orders/track/${orderId}`);
+  }
+
+  async getPublicDriverLocation(orderId: string) {
+    return this.request<any>(`/orders/track/${orderId}/location`);
+  }
+
   async updateOrderStatus(orderId: string, status: string) {
     return this.request<any>(`/orders/${orderId}/status`, {
       method: 'PUT',

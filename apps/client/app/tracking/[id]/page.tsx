@@ -95,27 +95,66 @@ export default function TrackingPage() {
     },
   });
 
-  const fetchOrder = useCallback(async () => {
-    if (!orderId) {
-      setError('Pedido no encontrado');
-      setLoading(false);
-      return;
-    }
+  const fetchOrder = useCallback(
+    async (silent = false) => {
+      if (!orderId) {
+        setError('Pedido no encontrado');
+        setLoading(false);
+        return;
+      }
+      try {
+        if (!silent) setLoading(true);
+        // Invitado con link: endpoint público. Logueado: vista completa.
+        const data = api.getToken()
+          ? await api.getOrderById(orderId)
+          : await api.getPublicTracking(orderId);
+        setOrder(data);
+        setCurrentStatus(data.status as OrderStatus);
+        setError(null);
+      } catch {
+        if (!silent) setError('No se pudo cargar el pedido');
+      } finally {
+        if (!silent) setLoading(false);
+      }
+    },
+    [orderId],
+  );
+
+  const driverId = (order as any)?.driverId ?? (order as any)?.driver?.id;
+
+  const fetchLocation = useCallback(async () => {
+    if (!orderId) return;
     try {
-      setLoading(true);
-      const data = await api.getOrderById(orderId);
-      setOrder(data);
-      setCurrentStatus(data.status as OrderStatus);
+      const loc = api.getToken()
+        ? driverId
+          ? await api.getDriverLocation(driverId).catch(() => null)
+          : null
+        : await api.getPublicDriverLocation(orderId).catch(() => null);
+      if (loc && loc.known !== false && !loc.isStale && Number.isFinite(Number(loc.lat))) {
+        setDriverLocation({ lat: Number(loc.lat), lng: Number(loc.lng) });
+      }
     } catch {
-      setError('No se pudo cargar el pedido');
-    } finally {
-      setLoading(false);
+      // Sin ubicación: el mapa muestra pickup/delivery igual.
     }
-  }, [orderId]);
+  }, [orderId, driverId]);
 
   useEffect(() => {
     fetchOrder();
   }, [fetchOrder]);
+
+  // Invitados sin socket: polling honesto cada 15s en vez de "en vivo".
+  useEffect(() => {
+    if (isConnected || !orderId) return;
+    const interval = setInterval(() => {
+      fetchOrder(true);
+      fetchLocation();
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [isConnected, orderId, fetchOrder, fetchLocation]);
+
+  useEffect(() => {
+    if (driverId) fetchLocation();
+  }, [driverId, fetchLocation]);
 
   useEffect(() => {
     const cleanup = on('order:statusChanged', (data: any) => {
@@ -248,8 +287,10 @@ export default function TrackingPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
         >
-          <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
-          {isConnected ? 'En vivo' : 'Sin conexion'}
+          <span
+            className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-amber-500'}`}
+          />
+          {isConnected ? 'En vivo' : 'Se actualiza solo'}
         </motion.div>
 
         <motion.div
@@ -316,12 +357,14 @@ export default function TrackingPage() {
               <span className="text-surface-500 dark:text-surface-400">Estado</span>
               <span className="text-surface-700 dark:text-surface-200">{config.label}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-surface-500 dark:text-surface-400">Total</span>
-              <span className="text-surface-700 dark:text-surface-200 font-semibold font-mono">
-                {Number(order.totalAmount || 0).toLocaleString()}
-              </span>
-            </div>
+            {(order as any).totalAmount ? (
+              <div className="flex justify-between">
+                <span className="text-surface-500 dark:text-surface-400">Total</span>
+                <span className="text-surface-700 dark:text-surface-200 font-semibold font-mono">
+                  {Number((order as any).totalAmount).toLocaleString()}
+                </span>
+              </div>
+            ) : null}
           </div>
         </motion.div>
 

@@ -27,6 +27,7 @@ import {
   api,
   MenuItem,
   calculateDistance,
+  ShareTrackingButton,
 } from '@kiwi/ui';
 
 type Step = 1 | 2 | 3 | 4 | 5;
@@ -660,6 +661,13 @@ export default function NewOrder() {
                 <BarChart3 className="h-4 w-4 inline" /> Volver al Dashboard
               </AnimatedButton>
             </Link>
+            {createdOrderId && (
+              <ShareTrackingButton
+                orderId={createdOrderId}
+                label="Copiar link para el cliente"
+                className="w-full justify-center"
+              />
+            )}
             <AnimatedButton
               variant="ghost"
               className="w-full"
