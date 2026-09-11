@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AnalyticsPeriod, AnalyticsQueryDto } from './dto/analytics-query.dto';
 import { OrderStatus, PaymentStatus, UserStatus } from '@prisma/client';
@@ -7,8 +7,18 @@ import { OrderStatus, PaymentStatus, UserStatus } from '@prisma/client';
 export class AnalyticsService {
   constructor(private prisma: PrismaService) {}
 
-  async getMerchantAnalytics(merchantId: string, query: AnalyticsQueryDto) {
+  async getMerchantAnalytics(userId: string, query: AnalyticsQueryDto) {
     const dateRange = this.getDateRange(query.period, query.startDate, query.endDate);
+
+    // Order.merchantId is the PROFILE id, not the user id the controller
+    // passes in: resolve it or every query below silently returns zeros.
+    const merchantProfile = await this.prisma.merchantProfile.findUnique({
+      where: { userId },
+    });
+    if (!merchantProfile) {
+      throw new NotFoundException('Perfil de comerciante no encontrado');
+    }
+    const merchantId = merchantProfile.id;
 
     const [orders, revenue, topItems, peakHours, customerStats] = await Promise.all([
       this.getOrderStats(merchantId, dateRange),
@@ -38,8 +48,17 @@ export class AnalyticsService {
     };
   }
 
-  async getDriverAnalytics(driverId: string, query: AnalyticsQueryDto) {
+  async getDriverAnalytics(userId: string, query: AnalyticsQueryDto) {
     const dateRange = this.getDateRange(query.period, query.startDate, query.endDate);
+
+    // Order.driverId is the PROFILE id, not the user id: resolve it.
+    const driverProfile = await this.prisma.driverProfile.findUnique({
+      where: { userId },
+    });
+    if (!driverProfile) {
+      throw new NotFoundException('Perfil de repartidor no encontrado');
+    }
+    const driverId = driverProfile.id;
 
     const [deliveries, earnings, ratings, schedule] = await Promise.all([
       this.getDeliveryStats(driverId, dateRange),
@@ -136,17 +155,13 @@ export class AnalyticsService {
       createdAt: { gte: dateRange.start, lte: dateRange.end },
     };
 
-    const [total, completed, cancelled, avgDelivery] = await Promise.all([
+    const [total, completed, cancelled] = await Promise.all([
       this.prisma.order.count({ where }),
       this.prisma.order.count({ where: { ...where, status: OrderStatus.delivered } }),
       this.prisma.order.count({ where: { ...where, status: OrderStatus.cancelled } }),
-      this.prisma.order.aggregate({
-        where: { ...where, status: OrderStatus.delivered, deliveredAt: { not: null } },
-        _avg: {
-          // Calculate average delivery time in minutes
-        },
-      }),
     ]);
+
+    // Calculate average delivery time manually (see below).
 
     // Calculate average delivery time manually
     const deliveredOrders = await this.prisma.order.findMany({
