@@ -58,16 +58,14 @@ interface MerchantAnalytics {
     revenue: number;
   }>;
   customerStats: {
-    totalCustomers: number;
-    newCustomers: number;
-    returningCustomers: number;
+    totalOrders: number;
+    totalReviews: number;
     averageRating: number;
     ratingDistribution: Array<{ stars: number; count: number }>;
   };
   trend: {
     ordersGrowth: number;
     revenueGrowth: number;
-    customerGrowth: number;
   };
 }
 
@@ -535,21 +533,15 @@ export default function MerchantAnalyticsPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="text-center p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50">
             <p className="text-3xl font-bold text-surface-800 dark:text-surface-100">
-              {analytics?.customerStats?.totalCustomers || 0}
+              {analytics?.customerStats?.totalOrders || 0}
             </p>
-            <p className="text-sm text-surface-500 dark:text-surface-400">Total Clientes</p>
+            <p className="text-sm text-surface-500 dark:text-surface-400">Pedidos</p>
           </div>
           <div className="text-center p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50">
             <p className="text-3xl font-bold text-kiwi-600 dark:text-kiwi-400">
-              {analytics?.customerStats?.newCustomers || 0}
+              {analytics?.customerStats?.totalReviews || 0}
             </p>
-            <p className="text-sm text-surface-500 dark:text-surface-400">Nuevos</p>
-          </div>
-          <div className="text-center p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50">
-            <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
-              {analytics?.customerStats?.returningCustomers || 0}
-            </p>
-            <p className="text-sm text-surface-500 dark:text-surface-400">Recurrentes</p>
+            <p className="text-sm text-surface-500 dark:text-surface-400">Reseñas</p>
           </div>
           <div className="text-center p-4 rounded-xl bg-yellow-50 dark:bg-yellow-900/30">
             <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">

@@ -365,9 +365,8 @@ export class AnalyticsService {
     }));
 
     return {
-      totalCustomers: orders.length, // Simplified - in production, track unique users
-      newCustomers: Math.round(orders.length * 0.2), // Estimate
-      returningCustomers: Math.round(orders.length * 0.8), // Estimate
+      totalOrders: orders.length,
+      totalReviews: ratings.length,
       averageRating: Math.round(averageRating * 10) / 10,
       ratingDistribution: distribution,
     };
@@ -417,7 +416,6 @@ export class AnalyticsService {
     return {
       ordersGrowth,
       revenueGrowth,
-      customerGrowth: ordersGrowth, // Simplified
       averageOrderGrowth: revenueGrowth - ordersGrowth,
     };
   }
@@ -440,6 +438,22 @@ export class AnalyticsService {
       _avg: { distanceKm: true },
     });
 
+    // Average delivery time, computed from real timestamps (driver+range
+    // bounded, same pattern as merchant averageDeliveryTime).
+    const deliveredTimes = await this.prisma.order.findMany({
+      where: { ...where, status: OrderStatus.delivered, deliveredAt: { not: null } },
+      select: { createdAt: true, deliveredAt: true },
+    });
+    let averageTime = 0;
+    if (deliveredTimes.length > 0) {
+      const totalMinutes = deliveredTimes.reduce(
+        (sum, o) =>
+          sum + (new Date(o.deliveredAt!).getTime() - new Date(o.createdAt).getTime()) / 60000,
+        0,
+      );
+      averageTime = Math.round(totalMinutes / deliveredTimes.length);
+    }
+
     // Daily breakdown
     const dailyOrders = await this.getDriverDailyBreakdown(driverId, dateRange, 'orders');
 
@@ -448,7 +462,7 @@ export class AnalyticsService {
       completed,
       cancelled,
       averageDistance: Number(avgDistance._avg?.distanceKm || 0),
-      averageTime: 25, // Estimated
+      averageTime,
       daily: dailyOrders,
     };
   }
@@ -479,11 +493,9 @@ export class AnalyticsService {
       average: count > 0 ? Math.round(total / count) : 0,
       highest: Number(totalResult._max?.driverPayout || 0),
       daily: dailyEarnings,
-      breakdown: [
-        { type: 'delivery_fee', amount: Math.round(total * 0.85) },
-        { type: 'tips', amount: Math.round(total * 0.1) },
-        { type: 'bonus', amount: Math.round(total * 0.05) },
-      ],
+      // Real composition only: tips/bonus don't exist in the model, so a
+      // split with fabricated percentages is worse than a single 100% bar.
+      breakdown: [{ type: 'delivery_fee', amount: total }],
     };
   }
 
@@ -516,20 +528,32 @@ export class AnalyticsService {
       where: { driverId, isAvailable: true },
     });
 
-    // Calculate active hours per week
+    // Real hours per weekday from the driver's own schedule.
+    const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    const hoursByDay = new Map<number, number>();
     let activeHoursPerWeek = 0;
     schedules.forEach((schedule) => {
       const start = new Date(schedule.startTime);
       const end = new Date(schedule.endTime);
       const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+      if (!Number.isFinite(hours) || hours <= 0) return;
       activeHoursPerWeek += hours;
+      hoursByDay.set(schedule.dayOfWeek, (hoursByDay.get(schedule.dayOfWeek) || 0) + hours);
     });
+
+    let mostActiveDay = '—';
+    let bestHours = 0;
+    for (const [day, hours] of hoursByDay) {
+      if (hours > bestHours) {
+        bestHours = hours;
+        mostActiveDay = dayNames[day] ?? '—';
+      }
+    }
 
     return {
       activeHours: Math.round(activeHoursPerWeek),
       averageHoursPerDay: Math.round((activeHoursPerWeek / 7) * 10) / 10,
-      mostActiveDay: 'Sábado', // Simplified
-      utilizationRate: 75, // Estimated
+      mostActiveDay,
     };
   }
 
@@ -585,10 +609,28 @@ export class AnalyticsService {
         ? Math.round(((currentEarn - previousEarn) / previousEarn) * 100 * 10) / 10
         : 0;
 
+    // Real rating trend: % change of the average score between windows.
+    const [currentRatings, previousRatings] = await Promise.all([
+      this.prisma.rating.findMany({
+        where: { driverId, createdAt: { gte: dateRange.start, lte: dateRange.end } },
+        select: { rating: true },
+      }),
+      this.prisma.rating.findMany({
+        where: { driverId, createdAt: { gte: previousStart, lte: previousEnd } },
+        select: { rating: true },
+      }),
+    ]);
+    const avg = (rs: { rating: number }[]) =>
+      rs.length > 0 ? rs.reduce((s, r) => s + r.rating, 0) / rs.length : 0;
+    const currentAvg = avg(currentRatings);
+    const previousAvg = avg(previousRatings);
+    const ratingGrowth =
+      previousAvg > 0 ? Math.round(((currentAvg - previousAvg) / previousAvg) * 100 * 10) / 10 : 0;
+
     return {
       deliveriesGrowth,
       earningsGrowth,
-      ratingGrowth: 0,
+      ratingGrowth,
     };
   }
 
@@ -678,6 +720,10 @@ export class AnalyticsService {
       previousOrders,
       currentRevenue,
       previousRevenue,
+      currentMerchants,
+      previousMerchants,
+      currentDrivers,
+      previousDrivers,
     ] = await Promise.all([
       this.prisma.user.count({
         where: { createdAt: { gte: dateRange.start, lte: dateRange.end } },
@@ -705,6 +751,18 @@ export class AnalyticsService {
         },
         _sum: { totalAmount: true },
       }),
+      this.prisma.merchantProfile.count({
+        where: { createdAt: { gte: dateRange.start, lte: dateRange.end } },
+      }),
+      this.prisma.merchantProfile.count({
+        where: { createdAt: { gte: previousStart, lte: previousEnd } },
+      }),
+      this.prisma.driverProfile.count({
+        where: { createdAt: { gte: dateRange.start, lte: dateRange.end } },
+      }),
+      this.prisma.driverProfile.count({
+        where: { createdAt: { gte: previousStart, lte: previousEnd } },
+      }),
     ]);
 
     const calculateGrowth = (current: number, previous: number) => {
@@ -718,8 +776,8 @@ export class AnalyticsService {
         Number(currentRevenue._sum?.totalAmount || 0),
         Number(previousRevenue._sum?.totalAmount || 0),
       ),
-      merchantGrowth: 0, // Simplified
-      driverGrowth: 0, // Simplified
+      merchantGrowth: calculateGrowth(currentMerchants, previousMerchants),
+      driverGrowth: calculateGrowth(currentDrivers, previousDrivers),
     };
   }
 

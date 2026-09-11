@@ -52,7 +52,6 @@ interface DriverAnalytics {
     activeHours: number;
     averageHoursPerDay: number;
     mostActiveDay: string;
-    utilizationRate: number;
   };
   trend: {
     deliveriesGrowth: number;
@@ -453,9 +452,9 @@ export default function DriverAnalyticsPage() {
               </p>
             </div>
             <div className="p-3 rounded-xl bg-surface-50 dark:bg-surface-700/50">
-              <p className="text-sm text-surface-500 dark:text-surface-400">Utilización</p>
+              <p className="text-sm text-surface-500 dark:text-surface-400">Día más activo</p>
               <p className="text-lg font-bold text-kiwi-600 dark:text-kiwi-400">
-                {analytics?.schedule?.utilizationRate || 0}%
+                {analytics?.schedule?.mostActiveDay || '—'}
               </p>
             </div>
           </div>
