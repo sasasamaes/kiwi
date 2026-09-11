@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
   Package,
@@ -16,7 +17,7 @@ import {
   Target,
   DollarSign,
 } from 'lucide-react';
-import { api, Skeleton, StaggerContainer, StaggerItem } from '@kiwi/ui';
+import { api, Skeleton, StaggerContainer, StaggerItem, useAuth } from '@kiwi/ui';
 
 interface DriverAnalytics {
   period: string;
@@ -68,6 +69,8 @@ const PERIODS = [
 ];
 
 export default function DriverAnalyticsPage() {
+  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   const [analytics, setAnalytics] = useState<DriverAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -88,8 +91,13 @@ export default function DriverAnalyticsPage() {
   }, []);
 
   useEffect(() => {
+    if (!authLoading && !user) router.push('/login');
+  }, [user, authLoading, router]);
+
+  useEffect(() => {
+    if (!user) return;
     fetchAnalytics(selectedPeriod);
-  }, [selectedPeriod, fetchAnalytics]);
+  }, [selectedPeriod, fetchAnalytics, user]);
 
   const formatCurrency = (amount: number) => {
     return `₡${amount.toLocaleString()}`;
