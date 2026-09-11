@@ -21,6 +21,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { OrdersService } from '../orders/orders.service';
 import { EventsGateway } from '../events/events.gateway';
 import { DriversService } from '../drivers/drivers.service';
+import { GeocodingService } from '../geocoding/geocoding.service';
 
 /**
  * Integration Test: Full Order Lifecycle
@@ -101,6 +102,10 @@ describe('Orders Integration: Full Lifecycle', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: EventsGateway, useValue: mockEventsGateway },
         { provide: DriversService, useValue: { getLocation: jest.fn() } },
+        {
+          provide: GeocodingService,
+          useValue: { searchCostaRica: jest.fn().mockResolvedValue([]) },
+        },
       ],
     }).compile();
 

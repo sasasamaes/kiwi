@@ -22,6 +22,7 @@ import { NotFoundException } from '@nestjs/common';
 import { OrdersService } from '../orders/orders.service';
 import { EventsGateway } from '../events/events.gateway';
 import { DriversService } from '../drivers/drivers.service';
+import { GeocodingService } from '../geocoding/geocoding.service';
 
 describe('OrdersService', () => {
   let service: OrdersService;
@@ -56,6 +57,10 @@ describe('OrdersService', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: EventsGateway, useValue: mockEventsGateway },
         { provide: DriversService, useValue: { getLocation: jest.fn() } },
+        {
+          provide: GeocodingService,
+          useValue: { searchCostaRica: jest.fn().mockResolvedValue([]) },
+        },
       ],
     }).compile();
 
@@ -187,7 +192,8 @@ describe('OrdersService', () => {
         distanceKm: 2.5,
       });
 
-      expect(order.basePrice).toBe(1500);
+      // Server measures ~0.75 km between coords (not the claimed 2.5).
+      expect(order.basePrice).toBe(800);
     });
   });
 
@@ -307,6 +313,32 @@ describe('OrdersService', () => {
         'productsTotal inválido',
       );
       expect(prisma.order.create).not.toHaveBeenCalled();
+    });
+
+    it('usa distancia del servidor cuando hay coords (ignora spoof del cliente)', async () => {
+      prisma.merchantProfile.findUnique.mockResolvedValue({
+        id: 'merchant-1',
+        userId: 'user-1',
+        businessName: 'Bowl & Café',
+      });
+      prisma.order.create.mockImplementation((args: any) =>
+        Promise.resolve({ id: 'order-9', ...args.data }),
+      );
+
+      await service.create('user-1', {
+        pickupAddress: 'A',
+        deliveryAddress: 'B',
+        pickupLat: 10.2617,
+        pickupLng: -85.584,
+        deliveryLat: 10.27,
+        deliveryLng: -85.595,
+        distanceKm: 0.1, // spoof: el servidor debe medir ~1.5 km
+      });
+
+      const stored = prisma.order.create.mock.calls[0][0].data;
+      expect(stored.distanceKm).toBeGreaterThan(1);
+      expect(stored.distanceKm).toBeLessThan(3);
+      expect(stored.basePrice).toBe(1000); // tier ≤ 2 km
     });
   });
 

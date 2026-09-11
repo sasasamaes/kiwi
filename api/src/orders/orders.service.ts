@@ -3,17 +3,22 @@ import {
   NotFoundException,
   ForbiddenException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventsGateway } from '../events/events.gateway';
 import { DriversService } from '../drivers/drivers.service';
+import { GeocodingService } from '../geocoding/geocoding.service';
 
 @Injectable()
 export class OrdersService {
+  private readonly logger = new Logger(OrdersService.name);
+
   constructor(
     private prisma: PrismaService,
     private eventsGateway: EventsGateway,
     private driversService: DriversService,
+    private geocodingService: GeocodingService,
   ) {}
 
   async create(merchantId: string, data: any) {
@@ -34,13 +39,13 @@ export class OrdersService {
     if (!data.pickupAddress || !data.deliveryAddress) {
       throw new BadRequestException('pickupAddress y deliveryAddress son requeridos');
     }
-    const distanceKm = Number(data.distanceKm ?? 0);
-    if (!Number.isFinite(distanceKm) || distanceKm < 0) {
-      throw new BadRequestException('distanceKm inválido');
-    }
-    if (distanceKm > 300) {
-      throw new BadRequestException('distanceKm fuera de rango (máx 300 km)');
-    }
+    const distanceKm = await this.resolveDistanceKm(
+      { lat: data.pickupLat, lng: data.pickupLng },
+      { lat: data.deliveryLat, lng: data.deliveryLng },
+      data.pickupAddress,
+      data.deliveryAddress,
+      Number(data.distanceKm ?? 0),
+    );
     let scheduledDate: Date | null = null;
     if (data.scheduledDate) {
       scheduledDate = new Date(data.scheduledDate);
@@ -367,6 +372,75 @@ export class OrdersService {
       isStale: !!loc.isStale,
       known: loc.known ?? !loc.isStale,
     };
+  }
+
+  /**
+   * Server-side distance: coords → haversine; else geocode addresses
+   * (bounded, best-effort); else the validated client value. The client
+   * number is never trusted for pricing when we can measure ourselves.
+   */
+  private async resolveDistanceKm(
+    pickup: { lat: unknown; lng: unknown },
+    delivery: { lat: unknown; lng: unknown },
+    pickupAddress: string,
+    deliveryAddress: string,
+    clientKm: number,
+  ): Promise<number> {
+    const finite = (v: unknown) => {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : null;
+    };
+
+    const pLat = finite(pickup?.lat);
+    const pLng = finite(pickup?.lng);
+    const dLat = finite(delivery?.lat);
+    const dLng = finite(delivery?.lng);
+
+    if (pLat != null && pLng != null && dLat != null && dLng != null) {
+      const km = OrdersService.haversineKm(pLat, pLng, dLat, dLng);
+      if (Number.isFinite(clientKm) && Math.abs(clientKm - km) > Math.max(1, km * 0.3)) {
+        this.logger.warn(
+          `distanceKm mismatch: client=${clientKm} server=${km.toFixed(2)} — using server value`,
+        );
+      }
+      return this.boundDistance(km);
+    }
+
+    // No coords: try geocoding (4s cap, silent fallback).
+    try {
+      const [from, to] = await Promise.race([
+        Promise.all([
+          this.geocodingService.searchCostaRica(pickupAddress, 1),
+          this.geocodingService.searchCostaRica(deliveryAddress, 1),
+        ]),
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 4000)),
+      ]).then((r) => r ?? [null, null]);
+      const a = Array.isArray(from) ? from[0] : null;
+      const b = Array.isArray(to) ? to[0] : null;
+      if (a && b) {
+        return this.boundDistance(OrdersService.haversineKm(a.lat, a.lng, b.lat, b.lng));
+      }
+    } catch {
+      // Fall through to client value.
+    }
+
+    if (!Number.isFinite(clientKm) || clientKm < 0) {
+      throw new BadRequestException('distanceKm inválido');
+    }
+    if (clientKm > 300) {
+      throw new BadRequestException('distanceKm fuera de rango (máx 300 km)');
+    }
+    return clientKm;
+  }
+
+  private boundDistance(km: number): number {
+    if (!Number.isFinite(km) || km < 0) {
+      throw new BadRequestException('distanceKm inválido');
+    }
+    if (km > 600) {
+      throw new BadRequestException('distanceKm fuera de rango');
+    }
+    return Math.round(km * 100) / 100;
   }
 
   private static readonly VALID_ORDER_STATUSES = [
