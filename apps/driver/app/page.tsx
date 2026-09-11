@@ -47,6 +47,7 @@ export default function Home() {
   const [newOrderAlert, setNewOrderAlert] = useState<any>(null);
   const [acceptingOrder, setAcceptingOrder] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'delivery' | 'trip' | 'freight'>('all');
+  const [pageError, setPageError] = useState<string | null>(null);
 
   const tabs = [
     { id: 'all' as const, label: 'Todos', icon: ClipboardList },
@@ -54,6 +55,28 @@ export default function Home() {
     { id: 'trip' as const, label: 'Viajes', icon: Bike },
     { id: 'freight' as const, label: 'Fletes', icon: Truck },
   ];
+
+  // Pitido WebAudio (no hay asset /notification.mp3 en public/).
+  const beep = () => {
+    try {
+      const Ctx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!Ctx) return;
+      const ctx = new Ctx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = 880;
+      gain.gain.setValueAtTime(0.001, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.45);
+      osc.onended = () => ctx.close();
+    } catch {
+      // Silencio si el navegador no lo permite
+    }
+  };
 
   // Real-time socket connection
   const {
@@ -68,13 +91,7 @@ export default function Home() {
       setNewOrderAlert(data);
       // Add to available orders list
       setAvailableOrders((prev) => [data, ...prev]);
-      // Play notification sound
-      try {
-        const audio = new Audio('/notification.mp3');
-        audio.play().catch(() => {});
-      } catch {
-        // Ignore audio playback errors
-      }
+      beep();
     },
     onOrderStatusChanged: (data) => {
       console.log('Order status changed:', data);
@@ -111,9 +128,16 @@ export default function Home() {
     const fetchDriverData = async () => {
       try {
         const profile = await api.getDriverProfile();
+        let earnings = 0;
+        try {
+          const e = await api.getDriverEarnings('all');
+          earnings = Number(e?.totalEarnings || 0);
+        } catch {
+          // Ganancias opcionales: el resto del dashboard igual carga
+        }
         setStats({
           trips: profile.totalTrips || 0,
-          earnings: 0,
+          earnings,
           rating: Number(profile.rating) || 5.0,
         });
         setIsOnline(profile.status === 'available');
@@ -134,17 +158,20 @@ export default function Home() {
 
   const toggleOnlineStatus = async () => {
     const newStatus = isOnline ? 'offline' : 'available';
+    setPageError(null);
     try {
       await api.updateDriverStatus(newStatus as any);
       socketUpdateStatus(newStatus as any);
       setIsOnline(!isOnline);
     } catch (error) {
       console.error('Failed to update status:', error);
+      setPageError('No se pudo cambiar tu estado. Revisa tu conexión.');
     }
   };
 
   const handleAcceptOrder = async (orderId: string) => {
     setAcceptingOrder(orderId);
+    setPageError(null);
     try {
       await api.acceptOrder(orderId);
       // Remove from available orders
@@ -159,7 +186,7 @@ export default function Home() {
       await fetchActiveOrders();
     } catch (error) {
       console.error('Failed to accept order:', error);
-      alert('No se pudo aceptar el pedido. Inténtalo de nuevo.');
+      setPageError('No se pudo aceptar el pedido. Quizás otro repartidor lo tomó primero.');
     } finally {
       setAcceptingOrder(null);
     }
@@ -171,11 +198,13 @@ export default function Home() {
   };
 
   const handleUpdateStatus = async (orderId: string, newStatus: string) => {
+    setPageError(null);
     try {
       await api.updateOrderStatus(orderId, newStatus);
       await fetchActiveOrders();
     } catch (error) {
       console.error('Failed to update status:', error);
+      setPageError('No se pudo actualizar el pedido. Se reintentará al reconectar.');
     }
   };
 
@@ -210,9 +239,20 @@ export default function Home() {
 
   const filteredOrders = availableOrders.filter((order) => {
     if (activeTab === 'all') return true;
-    // Simple filtering based on order type or distance
-    return true;
+    if (activeTab === 'freight') return (order as any).kind === 'freight';
+    if (activeTab === 'trip') return order.orderType === 'scheduled';
+    // Delivery: comida inmediata
+    return (order as any).kind !== 'freight' && order.orderType !== 'scheduled';
   });
+
+  const driverLevel = (user?.driverProfile as any)?.level as string | undefined;
+  const levelLabel: Record<string, string> = {
+    bronce: 'Bronce',
+    plata: 'Plata',
+    oro: 'Oro',
+    diamante: 'Diamante',
+    vip: 'VIP',
+  };
 
   return (
     <main className="min-h-[100dvh] flex flex-col">
@@ -263,6 +303,11 @@ export default function Home() {
 
       {/* Main Content */}
       <main className="flex-1 mx-auto w-full max-w-lg px-4 py-6">
+        {pageError && (
+          <div className="mb-4 rounded-xl bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 px-4 py-3 text-sm text-red-600 dark:text-red-400">
+            {pageError}
+          </div>
+        )}
         {/* Status Toggle */}
         <motion.div
           className="mb-6 rounded-2xl bg-kiwi-gradient p-6 text-white glow-kiwi-lg overflow-hidden relative"
@@ -345,7 +390,7 @@ export default function Home() {
         </motion.div>
 
         {/* Today's Stats */}
-        <StaggerContainer className="mb-6 grid grid-cols-3 gap-3">
+        <StaggerContainer className="mb-6 grid grid-cols-2 gap-3">
           <StaggerItem>
             <motion.div className="rounded-xl glass p-4 text-center tactile" whileHover={{ y: -2 }}>
               <AnimatedCounter value={stats.trips} className="text-2xl font-bold text-kiwi-600" />
@@ -363,6 +408,14 @@ export default function Home() {
                 />
               </div>
               <p className="text-xs text-surface-500 dark:text-surface-400">Rating</p>
+            </motion.div>
+          </StaggerItem>
+          <StaggerItem>
+            <motion.div className="rounded-xl glass p-4 text-center tactile" whileHover={{ y: -2 }}>
+              <span className="text-2xl font-bold text-kiwi-600">
+                ₡{Math.round(stats.earnings).toLocaleString()}
+              </span>
+              <p className="text-xs text-surface-500 dark:text-surface-400">Ganado</p>
             </motion.div>
           </StaggerItem>
           <StaggerItem>
@@ -589,33 +642,25 @@ export default function Home() {
           whileHover={{ y: -2 }}
         >
           <h3 className="mb-3 text-sm font-semibold text-surface-600 dark:text-surface-300">
-            Tu Progreso
+            Tu Nivel
           </h3>
           <div className="space-y-3">
             <div>
               <div className="mb-1 flex items-center justify-between text-sm">
                 <span className="text-surface-600 dark:text-surface-400">
-                  Nivel {user?.driverProfile?.level || 'Bronce'}
+                  Nivel {driverLevel ? (levelLabel[driverLevel] ?? driverLevel) : 'Bronce'}
                 </span>
-                <span className="text-kiwi-600 font-medium">{stats.trips}/50 viajes</span>
-              </div>
-              <div className="h-2 rounded-full bg-surface-100 dark:bg-surface-700 overflow-hidden">
-                <motion.div
-                  className="h-2 rounded-full bg-kiwi-gradient"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${Math.min((stats.trips / 50) * 100, 100)}%` }}
-                  transition={{ duration: 1, delay: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
-                />
+                <span className="text-kiwi-600 font-medium">{stats.trips} viajes en total</span>
               </div>
             </div>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-surface-500 dark:text-surface-400">Próximo incentivo:</span>
+              <span className="text-surface-500 dark:text-surface-400">Estado</span>
               <motion.span
                 className="font-medium text-surface-700 dark:text-surface-300"
                 animate={{ scale: [1, 1.05, 1] }}
                 transition={{ duration: 2, repeat: Infinity }}
               >
-                Bolso termico
+                {isOnline ? 'Recibiendo pedidos' : 'En pausa'}
               </motion.span>
             </div>
           </div>

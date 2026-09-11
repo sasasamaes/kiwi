@@ -26,6 +26,7 @@ export default function ScheduledOrdersPage() {
   const [showProposalForm, setShowProposalForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState<string[]>([]);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Proposal form data
   const [proposalData, setProposalData] = useState({
@@ -81,6 +82,7 @@ export default function ScheduledOrdersPage() {
     if (!selectedOrder || !proposalData.estimatedArrival.trim()) return;
 
     setSubmitting(true);
+    setSubmitError(null);
     try {
       await api.submitProposal(selectedOrder.id, proposalData);
       setSubmitted((prev) => [...prev, selectedOrder.id]);
@@ -89,7 +91,7 @@ export default function ScheduledOrdersPage() {
       setProposalData({ estimatedArrival: '', message: '' });
     } catch (error) {
       console.error('Failed to submit proposal:', error);
-      alert('Error al enviar propuesta');
+      setSubmitError('Error al enviar propuesta. Quizás ya enviaste una o el pedido cerró.');
     } finally {
       setSubmitting(false);
     }
@@ -321,6 +323,11 @@ export default function ScheduledOrdersPage() {
               </div>
 
               <div className="p-6 space-y-6">
+                {submitError && (
+                  <div className="rounded-xl bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 px-4 py-3 text-sm text-red-600 dark:text-red-400">
+                    {submitError}
+                  </div>
+                )}
                 {/* Order Summary */}
                 <div className="rounded-xl bg-surface-50 dark:bg-surface-900 p-4">
                   <div className="space-y-2">

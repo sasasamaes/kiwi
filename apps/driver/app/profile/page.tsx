@@ -1,22 +1,21 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Calendar,
   Coins,
-  Target,
   Package,
-  Wrench,
   Bike,
-  User,
-  Bell,
-  CreditCard,
-  Shield,
-  Home,
   Star,
   Car,
+  Eye,
+  EyeOff,
+  Loader2,
+  Home,
+  User,
 } from 'lucide-react';
 import {
   AnimatedButton,
@@ -24,20 +23,136 @@ import {
   StaggerItem,
   AnimatedCounter,
   VehicleSelector,
-  VehicleBadge,
   VehicleType,
   KYCStatusBadge,
+  useAuth,
+  api,
+  type KYCStatus,
 } from '@kiwi/ui';
 
+const LEVEL_LABEL: Record<string, string> = {
+  bronce: 'Bronce',
+  plata: 'Plata',
+  oro: 'Oro',
+  diamante: 'Diamante',
+  vip: 'VIP',
+};
+
+const LEVEL_MEDAL: Record<string, string> = {
+  bronce: '🥉',
+  plata: '🥈',
+  oro: '🥇',
+  diamante: '💎',
+  vip: '👑',
+};
+
+const VEHICLE_LABEL: Record<string, string> = {
+  motorcycle: 'Moto',
+  motorized_bike: 'Bici Bota',
+  bicycle: 'Bici',
+  car: 'Carro',
+  truck: 'Camión',
+};
+
+const initials = (name: string) =>
+  name
+    .split(' ')
+    .map((w) => w[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+
 export default function Profile() {
+  const router = useRouter();
+  const { user, loading: authLoading, logout } = useAuth();
+  const [profile, setProfile] = useState<any>(null);
+  const [earnings, setEarnings] = useState(0);
+  const [kycStatus, setKycStatus] = useState<KYCStatus>('pending');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showVehicleModal, setShowVehicleModal] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleType>('motorcycle');
+  const [plate, setPlate] = useState('');
+  const [savingVehicle, setSavingVehicle] = useState(false);
+
+  const load = useCallback(async () => {
+    setError(null);
+    try {
+      const [p, kyc] = await Promise.all([
+        api.getDriverProfile(),
+        api.getKycStatus().catch(() => null),
+      ]);
+      setProfile(p);
+      setSelectedVehicle((p.vehicleType as VehicleType) || 'motorcycle');
+      setPlate(p.vehiclePlate || '');
+      if (kyc?.status) setKycStatus(kyc.status as KYCStatus);
+      else if (p.kycStatus) setKycStatus(p.kycStatus as KYCStatus);
+      try {
+        const e = await api.getDriverEarnings('all');
+        setEarnings(Number(e?.totalEarnings || 0));
+      } catch {
+        // Ganancias opcionales
+      }
+    } catch {
+      setError('No se pudo cargar tu perfil');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!authLoading && !user) router.push('/login');
+  }, [user, authLoading, router]);
+
+  useEffect(() => {
+    if (user) load();
+  }, [user, load]);
+
+  const saveVehicle = async () => {
+    setSavingVehicle(true);
+    setError(null);
+    try {
+      await api.updateDriverProfile({
+        vehicleType: selectedVehicle,
+        vehiclePlate: plate || undefined,
+      });
+      setShowVehicleModal(false);
+      await load();
+    } catch {
+      setError('No se pudo guardar el vehículo');
+    } finally {
+      setSavingVehicle(false);
+    }
+  };
+
+  const handleLogout = () => {
+    logout();
+    router.push('/login');
+  };
+
+  if (authLoading || loading) {
+    return (
+      <main className="min-h-[100dvh] flex items-center justify-center bg-bg-light dark:bg-surface-950">
+        <Loader2 className="h-8 w-8 animate-spin text-kiwi-500" />
+      </main>
+    );
+  }
+
+  const name = profile?.fullName || user?.driverProfile?.fullName || 'Repartidor';
+  const rating = Number(profile?.rating ?? 5);
+  const trips = Number(profile?.totalTrips ?? 0);
+  const level = String(profile?.level || 'bronce');
+  const status = String(profile?.status || 'offline');
+  const since = profile?.createdAt
+    ? new Date(profile.createdAt).toLocaleDateString('es-CR', { month: 'long', year: 'numeric' })
+    : null;
+  const visible = status === 'available' && kycStatus === 'approved';
 
   return (
-    <main className="min-h-[100dvh] flex flex-col">
-      {/* Header */}
+    <main className="min-h-[100dvh] flex flex-col bg-bg-light dark:bg-surface-950">
       <motion.header
-        className="sticky top-0 z-50 border-b border-surface-200/50 bg-white/70 backdrop-blur-xl"
+        className="sticky top-0 z-50 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
       >
@@ -45,215 +160,184 @@ export default function Profile() {
           <div className="flex items-center justify-between">
             <Link
               href="/"
-              className="flex items-center gap-2 text-surface-600 hover:text-surface-800"
+              className="flex items-center gap-2 text-surface-600 dark:text-surface-400 hover:text-surface-800"
             >
               <span>←</span>
               <span className="text-sm font-medium">Volver</span>
             </Link>
-            <h1 className="font-display font-semibold text-surface-800">Mi Perfil</h1>
+            <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
+              Mi Perfil
+            </h1>
             <div className="w-16" />
           </div>
         </div>
       </motion.header>
 
       <main className="flex-1 mx-auto w-full max-w-lg px-4 py-6">
-        {/* Profile Card */}
+        {error && (
+          <div className="mb-4 rounded-xl bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 px-4 py-3 text-sm text-red-600 dark:text-red-400">
+            {error}
+          </div>
+        )}
+
+        {/* Profile Card real */}
         <motion.div
           className="mb-6 rounded-2xl bg-kiwi-gradient p-6 text-white shadow-kiwi-lg text-center relative overflow-hidden"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          {/* Background decoration */}
           <motion.div
             className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/10"
             animate={{ scale: [1, 1.2, 1] }}
             transition={{ duration: 4, repeat: Infinity }}
           />
-
           <motion.div
             className="relative mb-4 inline-flex h-24 w-24 items-center justify-center rounded-full bg-white text-4xl font-bold text-kiwi-600 shadow-lg"
             whileHover={{ scale: 1.05 }}
           >
-            JC
+            {initials(name)}
           </motion.div>
-          <h2 className="relative text-xl font-display font-bold">Juan Carlos</h2>
-          <p className="relative text-white/80">Repartidor desde Enero 2026</p>
+          <h2 className="relative text-xl font-display font-bold">{name}</h2>
+          <p className="relative text-white/80">
+            {since ? `Repartidor desde ${since}` : 'Repartidor Kiwi'}
+          </p>
 
           <div className="relative mt-4 flex justify-center gap-6">
             <div className="text-center">
               <div className="flex items-center justify-center gap-1">
                 <Star className="h-5 w-5 fill-white/90 text-white/90" />
-                <AnimatedCounter value={4.9} decimals={1} className="text-2xl font-bold" />
+                <AnimatedCounter
+                  value={Number.isFinite(rating) ? rating : 5}
+                  decimals={1}
+                  className="text-2xl font-bold"
+                />
               </div>
               <p className="text-xs text-white/70">Rating</p>
             </div>
             <div className="text-center">
-              <AnimatedCounter value={156} className="text-2xl font-bold" />
+              <AnimatedCounter value={trips} className="text-2xl font-bold" />
               <p className="text-xs text-white/70">Viajes</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold">🥇</p>
-              <p className="text-xs text-white/70">Nivel Oro</p>
+              <p className="text-2xl font-bold">{LEVEL_MEDAL[level] ?? '🥉'}</p>
+              <p className="text-xs text-white/70">Nivel {LEVEL_LABEL[level] ?? level}</p>
             </div>
           </div>
         </motion.div>
 
-        {/* Progress to Next Level */}
+        {/* Visibilidad para comercios */}
         <motion.div
-          className="mb-6 rounded-2xl bg-white p-5 shadow-soft"
+          className="mb-6 rounded-2xl bg-white dark:bg-surface-800 p-5 shadow-soft"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
+          transition={{ delay: 0.05 }}
         >
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-display font-semibold text-surface-800">Próximo nivel</h3>
-            <span className="text-sm text-kiwi-600 font-medium">💎 Diamante</span>
+          <div className="flex items-center gap-3">
+            {visible ? (
+              <Eye className="h-6 w-6 text-kiwi-500" />
+            ) : (
+              <EyeOff className="h-6 w-6 text-surface-400" />
+            )}
+            <div>
+              <p className="font-medium text-surface-800 dark:text-surface-200">
+                {visible ? 'Visible para comercios' : 'No apareces en búsquedas'}
+              </p>
+              <p className="text-xs text-surface-500 dark:text-surface-400">
+                {kycStatus !== 'approved'
+                  ? 'Completa tu verificación para aparecer.'
+                  : status !== 'available'
+                    ? 'Ponte disponible desde el inicio para aparecer.'
+                    : 'Los comercios pueden encontrarte y asignarte.'}
+              </p>
+            </div>
           </div>
-          <div className="mb-2 flex items-center justify-between text-sm">
-            <span className="text-surface-500">Progreso</span>
-            <span className="font-medium text-surface-700">344/500 viajes</span>
-          </div>
-          <div className="h-3 rounded-full bg-surface-100 overflow-hidden">
-            <motion.div
-              className="h-3 rounded-full bg-kiwi-gradient"
-              initial={{ width: 0 }}
-              animate={{ width: '69%' }}
-              transition={{ duration: 1, delay: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
-            />
-          </div>
-          <p className="mt-2 text-xs text-surface-400">Te faltan 156 viajes para Diamante</p>
+          {kycStatus !== 'approved' && (
+            <Link href="/kyc">
+              <AnimatedButton variant="primary" className="w-full mt-4">
+                Verificar identidad
+              </AnimatedButton>
+            </Link>
+          )}
         </motion.div>
 
-        {/* Stats Grid */}
+        {/* Stats reales */}
         <StaggerContainer className="mb-6 grid grid-cols-2 gap-3">
           <StaggerItem>
-            <div className="rounded-xl bg-white p-4 shadow-soft text-center">
+            <div className="rounded-xl bg-white dark:bg-surface-800 p-4 shadow-soft text-center">
               <Calendar className="text-2xl h-6 w-6 mx-auto" />
-              <p className="mt-2 text-xl font-bold text-surface-800">45</p>
-              <p className="text-xs text-surface-500">Días activos</p>
+              <p className="mt-2 text-xl font-bold text-surface-800 dark:text-surface-100">
+                {trips}
+              </p>
+              <p className="text-xs text-surface-500">Viajes totales</p>
             </div>
           </StaggerItem>
           <StaggerItem>
-            <div className="rounded-xl bg-white p-4 shadow-soft text-center">
-              <span className="text-2xl">⏱️</span>
-              <p className="mt-2 text-xl font-bold text-surface-800">120h</p>
-              <p className="text-xs text-surface-500">Horas trabajadas</p>
-            </div>
-          </StaggerItem>
-          <StaggerItem>
-            <div className="rounded-xl bg-white p-4 shadow-soft text-center">
+            <div className="rounded-xl bg-white dark:bg-surface-800 p-4 shadow-soft text-center">
               <Coins className="text-2xl h-6 w-6 mx-auto" />
-              <p className="mt-2 text-xl font-bold text-kiwi-600">₡468k</p>
+              <p className="mt-2 text-xl font-bold text-kiwi-600">
+                ₡{Math.round(earnings).toLocaleString()}
+              </p>
               <p className="text-xs text-surface-500">Ganancias totales</p>
             </div>
           </StaggerItem>
           <StaggerItem>
-            <div className="rounded-xl bg-white p-4 shadow-soft text-center">
-              <Target className="text-2xl h-6 w-6 mx-auto" />
-              <p className="mt-2 text-xl font-bold text-surface-800">98%</p>
-              <p className="text-xs text-surface-500">Tasa de aceptación</p>
+            <div className="rounded-xl bg-white dark:bg-surface-800 p-4 shadow-soft text-center">
+              <Bike className="text-2xl h-6 w-6 mx-auto" />
+              <p className="mt-2 text-xl font-bold text-surface-800 dark:text-surface-100">
+                {profile?.vehicleType
+                  ? (VEHICLE_LABEL[profile.vehicleType] ?? profile.vehicleType)
+                  : '—'}
+              </p>
+              <p className="text-xs text-surface-500">Vehículo</p>
+            </div>
+          </StaggerItem>
+          <StaggerItem>
+            <div className="rounded-xl bg-white dark:bg-surface-800 p-4 shadow-soft text-center">
+              <Package className="text-2xl h-6 w-6 mx-auto" />
+              <p className="mt-2 text-xl font-bold text-surface-800 dark:text-surface-100 capitalize">
+                {status}
+              </p>
+              <p className="text-xs text-surface-500">Estado</p>
             </div>
           </StaggerItem>
         </StaggerContainer>
 
-        {/* Incentives */}
+        {/* KYC real */}
         <motion.div
-          className="mb-6 rounded-2xl bg-white p-5 shadow-soft"
+          className="mb-6 rounded-2xl bg-white dark:bg-surface-800 p-5 shadow-soft"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          <h3 className="mb-4 font-display font-semibold text-surface-800">Gift Mis Incentivos</h3>
-          <div className="space-y-3">
-            {[
-              { icon: '🎒', name: 'Bolso térmico', status: 'active', date: 'Mar 2026' },
-              { icon: '🧥', name: 'Capa de lluvia', status: 'active', date: 'Jun 2026' },
-              {
-                icon: Package,
-                name: 'Cajón container',
-                status: 'locked',
-                date: 'Requiere 7 meses',
-              },
-              {
-                icon: Wrench,
-                name: 'Mantenimiento moto',
-                status: 'locked',
-                date: 'Requiere 10 meses',
-              },
-              {
-                icon: Bike,
-                name: 'Pago de marchamo',
-                status: 'locked',
-                date: 'Requiere 12 meses',
-              },
-            ].map((incentive, i) => {
-              const IncentiveIcon = incentive.icon as any;
-              return (
-                <motion.div
-                  key={i}
-                  className={`flex items-center justify-between rounded-xl p-3 ${
-                    incentive.status === 'active' ? 'bg-kiwi-50' : 'bg-surface-50'
-                  }`}
-                  whileHover={{ x: 4 }}
-                >
-                  <div className="flex items-center gap-3">
-                    {typeof IncentiveIcon === 'string' ? (
-                      <span className="text-2xl">{IncentiveIcon}</span>
-                    ) : (
-                      <IncentiveIcon className="h-6 w-6" />
-                    )}
-                    <div>
-                      <p
-                        className={`text-sm font-medium ${incentive.status === 'active' ? 'text-kiwi-700' : 'text-surface-600'}`}
-                      >
-                        {incentive.name}
-                      </p>
-                      <p className="text-xs text-surface-400">{incentive.date}</p>
-                    </div>
-                  </div>
-                  <span
-                    className={`text-sm font-medium ${
-                      incentive.status === 'active' ? 'text-kiwi-600' : 'text-surface-400'
-                    }`}
-                  >
-                    {incentive.status === 'active' ? 'Activo' : 'Bloqueado'}
-                  </span>
-                </motion.div>
-              );
-            })}
-          </div>
-        </motion.div>
-
-        {/* KYC Status */}
-        <motion.div
-          className="mb-6 rounded-2xl bg-white p-5 shadow-soft"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.35 }}
+          transition={{ delay: 0.1 }}
         >
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-display font-semibold text-surface-800">🪪 Verificación</h3>
-            <KYCStatusBadge status="pending" size="sm" />
+            <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">
+              🪪 Verificación
+            </h3>
+            <KYCStatusBadge status={kycStatus} size="sm" />
           </div>
-          <p className="text-sm text-surface-500 mb-4">
-            Verifica tu identidad para empezar a trabajar
-          </p>
-          <Link href="/kyc">
-            <AnimatedButton variant="primary" className="w-full">
-              Verificar Ahora
-            </AnimatedButton>
-          </Link>
+          {kycStatus !== 'approved' && (
+            <>
+              <p className="text-sm text-surface-500 dark:text-surface-400 mb-4">
+                Verifica tu identidad para empezar a trabajar
+              </p>
+              <Link href="/kyc">
+                <AnimatedButton variant="primary" className="w-full">
+                  Verificar Ahora
+                </AnimatedButton>
+              </Link>
+            </>
+          )}
         </motion.div>
 
-        {/* Vehicle Info */}
+        {/* Vehículo real */}
         <motion.div
-          className="mb-6 rounded-2xl bg-white p-5 shadow-soft"
+          className="mb-6 rounded-2xl bg-white dark:bg-surface-800 p-5 shadow-soft"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
+          transition={{ delay: 0.15 }}
         >
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-display font-semibold text-surface-800">
+            <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">
               <Car className="h-5 w-5 inline" /> Mi Vehículo
             </h3>
             <AnimatedButton variant="ghost" size="sm" onClick={() => setShowVehicleModal(true)}>
@@ -261,52 +345,27 @@ export default function Profile() {
             </AnimatedButton>
           </div>
           <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-surface-100 text-3xl">
+            <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-surface-100 dark:bg-surface-700 text-3xl">
               <Bike className="h-8 w-8" />
             </div>
             <div>
-              <p className="font-display font-semibold text-surface-800">Moto</p>
-              <p className="text-sm text-surface-500">Placa: ABC123</p>
-              <p className="text-xs text-surface-400">Hasta 10 kg • ₡500/km</p>
+              <p className="font-display font-semibold text-surface-800 dark:text-surface-100">
+                {profile?.vehicleType
+                  ? (VEHICLE_LABEL[profile.vehicleType] ?? profile.vehicleType)
+                  : 'Sin definir'}
+              </p>
+              <p className="text-sm text-surface-500">Placa: {profile?.vehiclePlate || '—'}</p>
             </div>
           </div>
         </motion.div>
 
-        {/* Settings Menu */}
-        <div className="rounded-2xl bg-white shadow-soft overflow-hidden">
-          <h3 className="p-4 pb-2 font-display font-semibold text-surface-800">Configuración</h3>
-          {[
-            { icon: User, label: 'Editar perfil', href: '#' },
-            { icon: Bell, label: 'Notificaciones', href: '#' },
-            { icon: CreditCard, label: 'Método de pago', href: '#' },
-            { icon: Shield, label: 'Seguridad', href: '#' },
-            { icon: '❓', label: 'Ayuda', href: '#' },
-          ].map((item, i) => {
-            const SettingIcon = item.icon as any;
-            return (
-              <Link key={i} href={item.href}>
-                <motion.div
-                  className="flex items-center justify-between border-b border-surface-100 px-4 py-3 hover:bg-surface-50 transition-colors"
-                  whileHover={{ x: 4 }}
-                >
-                  <div className="flex items-center gap-3">
-                    {typeof SettingIcon === 'string' ? (
-                      <span className="text-xl">{SettingIcon}</span>
-                    ) : (
-                      <SettingIcon className="h-5 w-5" />
-                    )}
-                    <span className="text-sm font-medium text-surface-700">{item.label}</span>
-                  </div>
-                  <span className="text-surface-400">→</span>
-                </motion.div>
-              </Link>
-            );
-          })}
-        </div>
-
-        {/* Logout */}
+        {/* Logout real */}
         <div className="mt-6">
-          <AnimatedButton variant="ghost" className="w-full text-red-500 hover:bg-red-50">
+          <AnimatedButton
+            variant="ghost"
+            className="w-full text-red-500 hover:bg-red-50"
+            onClick={handleLogout}
+          >
             Cerrar sesión
           </AnimatedButton>
         </div>
@@ -323,7 +382,7 @@ export default function Profile() {
             onClick={() => setShowVehicleModal(false)}
           >
             <motion.div
-              className="w-full max-w-lg rounded-t-3xl bg-white p-6 shadow-2xl"
+              className="w-full max-w-lg rounded-t-3xl bg-white dark:bg-surface-800 p-6 shadow-2xl"
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
@@ -331,7 +390,7 @@ export default function Profile() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="mb-6 flex items-center justify-between">
-                <h3 className="font-display text-lg font-semibold text-surface-800">
+                <h3 className="font-display text-lg font-semibold text-surface-800 dark:text-surface-100">
                   Seleccionar vehículo
                 </h3>
                 <button
@@ -344,6 +403,19 @@ export default function Profile() {
 
               <VehicleSelector selected={selectedVehicle} onSelect={setSelectedVehicle} />
 
+              <div className="mt-4">
+                <label className="mb-2 block text-sm font-medium text-surface-600 dark:text-surface-400">
+                  Placa (opcional)
+                </label>
+                <input
+                  type="text"
+                  value={plate}
+                  onChange={(e) => setPlate(e.target.value.toUpperCase())}
+                  placeholder="Ej: ABC123"
+                  className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:border-kiwi-500 focus:ring-2 focus:ring-kiwi-500/20"
+                />
+              </div>
+
               <div className="mt-6 flex gap-3">
                 <AnimatedButton
                   variant="ghost"
@@ -355,12 +427,10 @@ export default function Profile() {
                 <AnimatedButton
                   variant="primary"
                   className="flex-1"
-                  onClick={() => {
-                    // TODO: Save vehicle type
-                    setShowVehicleModal(false);
-                  }}
+                  onClick={saveVehicle}
+                  disabled={savingVehicle}
                 >
-                  Guardar
+                  {savingVehicle ? 'Guardando…' : 'Guardar'}
                 </AnimatedButton>
               </div>
             </motion.div>
@@ -369,35 +439,26 @@ export default function Profile() {
       </AnimatePresence>
 
       {/* Bottom Navigation */}
-      <nav className="sticky bottom-0 border-t border-surface-200/50 bg-white/80 backdrop-blur-xl">
+      <nav className="sticky bottom-0 border-t border-surface-200/50 dark:border-surface-700/50 bg-white/80 dark:bg-surface-900/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-lg items-center justify-around py-2">
           {[
-            { href: '/', icon: Home, label: 'Inicio', active: false },
-            { href: '/active', icon: Package, label: 'Activos', active: false },
-            { href: '/earnings', icon: Coins, label: 'Ganancias', active: false },
-            { href: '/schedule', icon: Calendar, label: 'Horario', active: false },
+            { href: '/', icon: Home, label: 'Inicio' },
+            { href: '/active', icon: Package, label: 'Activos' },
+            { href: '/earnings', icon: Coins, label: 'Ganancias' },
+            { href: '/schedule', icon: Calendar, label: 'Horario' },
             { href: '/profile', icon: User, label: 'Perfil', active: true },
-          ].map((item) => {
-            const NavIcon = item.icon as any;
-            return (
-              <Link key={item.href} href={item.href}>
-                <motion.div
-                  className={`flex flex-col items-center gap-1 px-4 py-2 ${
-                    item.active ? 'text-kiwi-600' : 'text-surface-400 hover:text-surface-600'
-                  }`}
-                  whileHover={{ y: -2 }}
-                  whileTap={{ scale: 0.9 }}
-                >
-                  {typeof NavIcon === 'string' ? (
-                    <span className="text-xl">{NavIcon}</span>
-                  ) : (
-                    <NavIcon className="h-5 w-5" />
-                  )}
-                  <span className="text-xs font-medium">{item.label}</span>
-                </motion.div>
-              </Link>
-            );
-          })}
+          ].map((item) => (
+            <Link key={item.href} href={item.href}>
+              <div
+                className={`flex flex-col items-center gap-1 px-4 py-2 ${
+                  item.active ? 'text-kiwi-600' : 'text-surface-400 hover:text-surface-600'
+                }`}
+              >
+                <item.icon className="h-5 w-5" />
+                <span className="text-xs font-medium">{item.label}</span>
+              </div>
+            </Link>
+          ))}
         </div>
       </nav>
     </main>

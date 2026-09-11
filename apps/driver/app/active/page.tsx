@@ -58,11 +58,14 @@ const STATUS_LABEL: Record<string, string> = {
   in_transit_to_delivery: 'Entregando',
 };
 
-function openMaps(lat?: number | string | null, address?: string) {
-  const dest =
-    lat != null
-      ? `https://www.google.com/maps/dir/?api=1&destination=${lat}`
-      : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address || '')}`;
+function openMaps(lat?: number | string | null, lng?: number | string | null, address?: string) {
+  const coords =
+    lat != null && lng != null && Number.isFinite(Number(lat)) && Number.isFinite(Number(lng))
+      ? `${lat},${lng}`
+      : null;
+  const dest = coords
+    ? `https://www.google.com/maps/dir/?api=1&destination=${coords}`
+    : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address || '')}`;
   window.open(dest, '_blank');
 }
 
@@ -82,6 +85,7 @@ export default function ActiveOrders() {
   // Offline: pedidos vistos desde caché, acciones esperando sync
   const [fromCache, setFromCache] = useState(false);
   const [online, setOnline] = useState(true);
+  const [notice, setNotice] = useState<string | null>(null);
   // orderId -> estado al que se quiere avanzar mientras está encolado
   const [queuedTransitions, setQueuedTransitions] = useState<Record<string, string>>({});
   const queuedTransitionsRef = useRef(queuedTransitions);
@@ -173,7 +177,7 @@ export default function ActiveOrders() {
         console.error('Failed to enqueue status change:', queueErr);
         // Sin cola disponible: revertir para no mostrar un estado mentiroso
         applyOptimistic(order.id, order.status);
-        alert('Sin conexión y no se pudo guardar el cambio. Intenta de nuevo.');
+        setNotice('Sin conexión y no se pudo guardar el cambio. Intenta de nuevo.');
       }
     } finally {
       setUpdating(false);
@@ -215,7 +219,7 @@ export default function ActiveOrders() {
           });
           // Revertir al estado real del servidor
           fetchActiveOrders();
-          alert('Un cambio de estado no se pudo sincronizar después de varios intentos.');
+          setNotice('Un cambio de estado no se pudo sincronizar después de varios intentos.');
         }
       }
     };
@@ -352,6 +356,14 @@ export default function ActiveOrders() {
       </header>
 
       <main className="flex-1 mx-auto w-full max-w-lg px-4 py-6">
+        {notice && (
+          <div className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 p-3">
+            <p className="text-xs font-medium text-amber-800 dark:text-amber-300">{notice}</p>
+            <button onClick={() => setNotice(null)} className="text-amber-600 dark:text-amber-400">
+              ✕
+            </button>
+          </div>
+        )}
         {/* Banner offline / caché */}
         {showOfflineBanner && (
           <div className="mb-4 flex items-center gap-3 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 p-3">
@@ -483,7 +495,11 @@ export default function ActiveOrders() {
             <p className="text-xs text-surface-500 dark:text-surface-400">{order.pickupAddress}</p>
             <button
               onClick={() =>
-                openMaps(order.pickupLat ? Number(order.pickupLat) : null, order.pickupAddress)
+                openMaps(
+                  order.pickupLat ? Number(order.pickupLat) : null,
+                  order.pickupLng ? Number(order.pickupLng) : null,
+                  order.pickupAddress,
+                )
               }
               className="mt-3 w-full rounded-xl bg-kiwi-500 py-2.5 text-sm font-medium text-white shadow-kiwi hover:bg-kiwi-600 transition-colors"
             >
@@ -509,6 +525,7 @@ export default function ActiveOrders() {
               onClick={() =>
                 openMaps(
                   order.deliveryLat ? Number(order.deliveryLat) : null,
+                  order.deliveryLng ? Number(order.deliveryLng) : null,
                   order.deliveryAddress,
                 )
               }
