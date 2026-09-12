@@ -279,9 +279,9 @@ export default function Dashboard() {
         </StaggerContainer>
 
         {/* Quick Actions */}
-        <StaggerContainer className="mb-8 grid gap-4 md:grid-cols-4">
+        <StaggerContainer className="mb-8 grid gap-4 md:grid-cols-3">
           <StaggerItem>
-            <Link href="/orders/new">
+            <Link href="/orders/new?kind=food">
               <motion.div
                 className="rounded-2xl bg-white/70 dark:bg-surface-800/70 backdrop-blur-xl border border-white/30 dark:border-surface-700/30 shadow-soft-md dark:shadow-dark p-4 cursor-pointer group"
                 whileHover={{ y: -4, boxShadow: '0 12px 32px -8px rgba(34, 197, 94, 0.25)' }}
@@ -297,10 +297,38 @@ export default function Dashboard() {
                   </motion.div>
                   <div>
                     <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-                      Nuevo Pedido
+                      Pedido Menú
                     </h3>
                     <p className="text-sm text-surface-500 dark:text-surface-400">
-                      Crear un pedido ahora
+                      Comida del menú
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            </Link>
+          </StaggerItem>
+
+          <StaggerItem>
+            <Link href="/orders/new?kind=freight">
+              <motion.div
+                className="rounded-2xl bg-white/70 dark:bg-surface-800/70 backdrop-blur-xl border border-white/30 dark:border-surface-700/30 shadow-soft-md dark:shadow-dark p-4 cursor-pointer group"
+                whileHover={{ y: -4, boxShadow: '0 12px 32px -8px rgba(251, 191, 36, 0.25)' }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <div className="flex items-center gap-4">
+                  <motion.div
+                    className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gold-100 dark:bg-gold-900/50 text-gold-600 dark:text-gold-400 transition-colors group-hover:bg-gold-500 group-hover:text-white"
+                    whileHover={{ rotate: -90 }}
+                    transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+                  >
+                    <Package className="h-6 w-6" />
+                  </motion.div>
+                  <div>
+                    <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">
+                      Encomienda
+                    </h3>
+                    <p className="text-sm text-surface-500 dark:text-surface-400">
+                      Paquete o mandado
                     </p>
                   </div>
                 </div>
