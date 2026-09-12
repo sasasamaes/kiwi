@@ -582,7 +582,9 @@ interface KYCStatusBadgeProps {
 }
 
 export function KYCStatusBadge({ status, size = 'md' }: KYCStatusBadgeProps) {
-  const config = statusConfig[status];
+  // Fallback defensivo: el backend puede devolver estados fuera del union
+  // (ej. 'not_submitted' cuando nunca se inició verificación).
+  const config = statusConfig[status] ?? statusConfig.pending;
 
   const sizes = {
     sm: 'h-6 px-2 text-xs',

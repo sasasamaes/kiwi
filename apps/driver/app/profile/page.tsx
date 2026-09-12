@@ -63,6 +63,19 @@ const initials = (name: string) =>
     .join('')
     .toUpperCase();
 
+const KNOWN_KYC: KYCStatus[] = [
+  'pending',
+  'documents_submitted',
+  'under_review',
+  'approved',
+  'rejected',
+  'expired',
+];
+
+/** El endpoint devuelve 'not_submitted' si nunca se inició el trámite. */
+const normalizeKyc = (s: unknown): KYCStatus =>
+  KNOWN_KYC.includes(s as KYCStatus) ? (s as KYCStatus) : 'pending';
+
 export default function Profile() {
   const router = useRouter();
   const { user, loading: authLoading, logout } = useAuth();
@@ -86,8 +99,8 @@ export default function Profile() {
       setProfile(p);
       setSelectedVehicle((p.vehicleType as VehicleType) || 'motorcycle');
       setPlate(p.vehiclePlate || '');
-      if (kyc?.status) setKycStatus(kyc.status as KYCStatus);
-      else if (p.kycStatus) setKycStatus(p.kycStatus as KYCStatus);
+      if (kyc?.status) setKycStatus(normalizeKyc(kyc.status));
+      else if (p.kycStatus) setKycStatus(normalizeKyc(p.kycStatus));
       try {
         const e = await api.getDriverEarnings('all');
         setEarnings(Number(e?.totalEarnings || 0));
@@ -142,6 +155,7 @@ export default function Profile() {
   const name = profile?.fullName || user?.driverProfile?.fullName || 'Repartidor';
   const rating = Number(profile?.rating ?? 5);
   const trips = Number(profile?.totalTrips ?? 0);
+  const safeTrips = Number.isFinite(trips) && trips >= 0 ? Math.floor(trips) : 0;
   const level = String(profile?.level || 'bronce');
   const status = String(profile?.status || 'offline');
   const since = profile?.createdAt
@@ -215,7 +229,7 @@ export default function Profile() {
               <p className="text-xs text-white/70">Rating</p>
             </div>
             <div className="text-center">
-              <AnimatedCounter value={trips} className="text-2xl font-bold" />
+              <AnimatedCounter value={safeTrips} className="text-2xl font-bold" />
               <p className="text-xs text-white/70">Viajes</p>
             </div>
             <div className="text-center">
