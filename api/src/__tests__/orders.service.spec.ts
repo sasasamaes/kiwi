@@ -44,6 +44,9 @@ describe('OrdersService', () => {
       menuItem: {
         findMany: jest.fn(),
       },
+      menuItemVariantOption: {
+        findMany: jest.fn().mockResolvedValue([]),
+      },
       orderItem: {
         create: jest.fn(),
       },
@@ -339,6 +342,64 @@ describe('OrdersService', () => {
       expect(stored.distanceKm).toBeGreaterThan(1);
       expect(stored.distanceKm).toBeLessThan(3);
       expect(stored.basePrice).toBe(1000); // tier ≤ 2 km
+    });
+
+    it('cobra variantes con deltas de la BD y guarda snapshot', async () => {
+      prisma.merchantProfile.findUnique.mockResolvedValue({ id: 'merchant-1', userId: 'user-1' });
+      prisma.menuItem.findMany.mockResolvedValue([{ id: 'item-1', price: 4500 }]);
+      prisma.menuItemVariantOption.findMany.mockResolvedValue([
+        {
+          id: 'opt-big',
+          name: 'Grande',
+          priceDelta: 1000,
+          isAvailable: true,
+          group: { id: 'g1', name: 'Tamaño', menuItemId: 'item-1' },
+        },
+      ]);
+      prisma.order.create.mockImplementation((args: any) =>
+        Promise.resolve({ id: 'o1', ...args.data }),
+      );
+      prisma.orderItem.createMany = jest.fn().mockResolvedValue({});
+
+      await service.create('user-1', {
+        pickupAddress: 'A',
+        deliveryAddress: 'B',
+        items: [{ menuItemId: 'item-1', quantity: 2, variants: [{ optionId: 'opt-big' }] }],
+      });
+
+      const persisted = prisma.orderItem.createMany.mock.calls[0][0].data[0];
+      expect(persisted.price).toBe(5500); // 4500 + delta DB 1000 (no el del cliente)
+      expect(persisted.selectedVariants).toEqual([
+        { group: 'Tamaño', option: 'Grande', priceDelta: 1000 },
+      ]);
+    });
+
+    it('rechaza variante ajena, no disponible o en item personalizado', async () => {
+      prisma.merchantProfile.findUnique.mockResolvedValue({ id: 'merchant-1', userId: 'user-1' });
+      prisma.menuItem.findMany.mockResolvedValue([{ id: 'item-1', price: 1000 }]);
+      prisma.menuItemVariantOption.findMany.mockResolvedValue([
+        {
+          id: 'opt-x',
+          name: 'X',
+          priceDelta: 500,
+          isAvailable: false,
+          group: { id: 'g9', name: 'Otro', menuItemId: 'other-item' },
+        },
+      ]);
+      const base = { pickupAddress: 'A', deliveryAddress: 'B' };
+
+      await expect(
+        service.create('user-1', {
+          ...base,
+          items: [{ menuItemId: 'item-1', quantity: 1, variants: [{ optionId: 'opt-x' }] }],
+        }),
+      ).rejects.toThrow('Variante no válida');
+      await expect(
+        service.create('user-1', {
+          ...base,
+          items: [{ name: 'Mano', price: 100, quantity: 1, variants: [{ optionId: 'opt-x' }] }],
+        }),
+      ).rejects.toThrow('personalizados');
     });
   });
 

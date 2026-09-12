@@ -546,6 +546,30 @@ export default function ActiveOrders() {
               </p>
             </div>
           )}
+
+          {/* Contenido del pedido */}
+          {Array.isArray((order as any).items) && (order as any).items.length > 0 && (
+            <div className="mt-4 rounded-xl bg-surface-50 dark:bg-surface-800 p-3">
+              <p className="text-xs font-medium text-surface-600 dark:text-surface-300 mb-2">
+                🛍️ Qué llevar
+              </p>
+              <div className="space-y-1.5">
+                {(order as any).items.map((it: any, i: number) => (
+                  <div key={it.id ?? i} className="flex justify-between text-xs">
+                    <span className="text-surface-700 dark:text-surface-200">
+                      {it.quantity}x {it.name}
+                      {Array.isArray(it.selectedVariants) && it.selectedVariants.length > 0 && (
+                        <span className="text-surface-500">
+                          {' '}
+                          ({it.selectedVariants.map((v: any) => v.option).join(', ')})
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Action Buttons */}

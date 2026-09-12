@@ -1076,6 +1076,21 @@ export interface Order {
   }>;
 }
 
+export interface VariantOption {
+  id: string;
+  name: string;
+  priceDelta: number;
+  isAvailable?: boolean;
+}
+
+export interface VariantGroup {
+  id: string;
+  name: string;
+  required: boolean;
+  multiple: boolean;
+  options: VariantOption[];
+}
+
 export interface MenuItem {
   id: string;
   merchantId: string;
@@ -1087,6 +1102,7 @@ export interface MenuItem {
   isPopular: boolean;
   isAvailable: boolean;
   sortOrder: number;
+  variantGroups?: VariantGroup[];
 }
 
 export interface MerchantPublicProfile {

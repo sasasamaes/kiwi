@@ -37,6 +37,38 @@ import {
 
 interface CartItem extends MenuItem {
   quantity: number;
+  /** Identidad de línea: producto + combinación elegida. */
+  lineId: string;
+  /** Precio unitario con deltas aplicados. */
+  unitPrice: number;
+  selectedOptions: SelectedOption[];
+}
+
+const lineIdFor = (menuItemId: string, picks: SelectedOption[]) =>
+  `${menuItemId}::${[...picks]
+    .map((p) => p.optionId)
+    .sort()
+    .join(',')}`;
+
+const unitPriceFor = (base: number, picks: SelectedOption[]) =>
+  Math.round((base + picks.reduce((s, p) => s + p.priceDelta, 0)) * 100) / 100;
+
+interface SelectedOption {
+  groupId: string;
+  groupName: string;
+  optionId: string;
+  optionName: string;
+  priceDelta: number;
+}
+
+interface CartLine {
+  lineId: string;
+  menuItemId: string;
+  name: string;
+  image: string;
+  quantity: number;
+  unitPrice: number;
+  selectedOptions: SelectedOption[];
 }
 
 interface DeliveryInfo {
@@ -67,6 +99,10 @@ export default function MenuPage() {
   const [showCheckout, setShowCheckout] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState<string | null>(null);
+  // Producto en el picker de variantes (null = picker cerrado).
+  const [picking, setPicking] = useState<MenuItem | null>(null);
+  const [picks, setPicks] = useState<Record<string, string[]>>({});
+  const [pickError, setPickError] = useState<string | null>(null);
 
   // Delivery info
   const [deliveryInfo, setDeliveryInfo] = useState<DeliveryInfo>({
@@ -115,34 +151,116 @@ export default function MenuPage() {
   }, [fetchData]);
 
   // Cart functions
-  const addToCart = useCallback((item: MenuItem) => {
+  const addLine = useCallback((item: MenuItem, selected: SelectedOption[]) => {
+    const lineId = lineIdFor(item.id, selected);
+    const unitPrice = unitPriceFor(Number(item.price), selected);
     setCart((prev) => {
-      const existing = prev.find((c) => c.id === item.id);
+      const existing = prev.find((c) => c.lineId === lineId);
       if (existing) {
-        return prev.map((c) => (c.id === item.id ? { ...c, quantity: c.quantity + 1 } : c));
+        return prev.map((c) => (c.lineId === lineId ? { ...c, quantity: c.quantity + 1 } : c));
       }
-      return [...prev, { ...item, quantity: 1 }];
+      return [...prev, { ...item, lineId, unitPrice, selectedOptions: selected, quantity: 1 }];
     });
   }, []);
 
-  const removeFromCart = useCallback((itemId: string) => {
-    setCart((prev) => {
-      const existing = prev.find((c) => c.id === itemId);
-      if (existing && existing.quantity > 1) {
-        return prev.map((c) => (c.id === itemId ? { ...c, quantity: c.quantity - 1 } : c));
+  const addToCart = useCallback(
+    (item: MenuItem) => {
+      const groups = item.variantGroups ?? [];
+      const hasOptions = groups.some((g) => g.options.length > 0);
+      if (hasOptions) {
+        // Defaults: primera opción de cada grupo obligatorio simple.
+        const initial: Record<string, string[]> = {};
+        for (const g of groups) {
+          if (g.required && !g.multiple && g.options.length > 0) {
+            initial[g.id] = [g.options[0].id];
+          }
+        }
+        setPicks(initial);
+        setPickError(null);
+        setPicking(item);
+        return;
       }
-      return prev.filter((c) => c.id !== itemId);
+      addLine(item, []);
+    },
+    [addLine],
+  );
+
+  const togglePick = useCallback((groupId: string, optionId: string, multiple: boolean) => {
+    setPicks((prev) => {
+      const current = prev[groupId] ?? [];
+      if (multiple) {
+        return {
+          ...prev,
+          [groupId]: current.includes(optionId)
+            ? current.filter((id) => id !== optionId)
+            : [...current, optionId],
+        };
+      }
+      return { ...prev, [groupId]: [optionId] };
+    });
+  }, []);
+
+  const confirmPick = useCallback(() => {
+    if (!picking) return;
+    const groups = picking.variantGroups ?? [];
+    const missing = groups.find((g) => g.required && (picks[g.id] ?? []).length === 0);
+    if (missing) {
+      setPickError(`Elegí una opción de "${missing.name}"`);
+      return;
+    }
+    const selected: SelectedOption[] = [];
+    for (const g of groups) {
+      for (const optionId of picks[g.id] ?? []) {
+        const opt = g.options.find((o) => o.id === optionId);
+        if (opt) {
+          selected.push({
+            groupId: g.id,
+            groupName: g.name,
+            optionId: opt.id,
+            optionName: opt.name,
+            priceDelta: Number(opt.priceDelta),
+          });
+        }
+      }
+    }
+    addLine(picking, selected);
+    setPicking(null);
+    setPicks({});
+  }, [picking, picks, addLine]);
+
+  const removeFromCart = useCallback((lineId: string) => {
+    setCart((prev) => {
+      const existing = prev.find((c) => c.lineId === lineId);
+      if (existing && existing.quantity > 1) {
+        return prev.map((c) => (c.lineId === lineId ? { ...c, quantity: c.quantity - 1 } : c));
+      }
+      return prev.filter((c) => c.lineId !== lineId);
+    });
+  }, []);
+
+  /** − del card: descuenta la línea más reciente de ese producto. */
+  const decrementMenuItem = useCallback((menuItemId: string) => {
+    setCart((prev) => {
+      const lines = prev.filter((c) => c.id === menuItemId);
+      if (lines.length === 0) return prev;
+      const target = lines[lines.length - 1];
+      if (target.quantity > 1) {
+        return prev.map((c) =>
+          c.lineId === target.lineId ? { ...c, quantity: c.quantity - 1 } : c,
+        );
+      }
+      return prev.filter((c) => c.lineId !== target.lineId);
     });
   }, []);
 
   const getItemQuantity = useCallback(
     (itemId: string) => {
-      return cart.find((c) => c.id === itemId)?.quantity || 0;
+      return cart.filter((c) => c.id === itemId).reduce((s, c) => s + c.quantity, 0);
     },
     [cart],
   );
 
-  const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const cartTotal = cart.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   const deliveryFee = cartTotal >= 5000 ? 0 : 500; // Free delivery over ₡5,000
   const totalWithDelivery = cartTotal + deliveryFee;
@@ -173,8 +291,9 @@ export default function MenuPage() {
         items: cart.map((item) => ({
           menuItemId: item.id,
           name: item.name,
-          price: item.price,
+          price: item.unitPrice,
           quantity: item.quantity,
+          variants: item.selectedOptions.map((s) => ({ optionId: s.optionId })),
         })),
         specialInstructions: deliveryInfo.instructions,
         distanceKm: 2.5,
@@ -544,6 +663,11 @@ export default function MenuPage() {
                                   🔥 Popular
                                 </span>
                               )}
+                              {(item.variantGroups ?? []).some((g) => g.options.length > 0) && (
+                                <span className="px-2 py-0.5 rounded-full bg-kiwi-100 dark:bg-kiwi-900/50 text-xs font-medium text-kiwi-700 dark:text-kiwi-400">
+                                  Personalizable
+                                </span>
+                              )}
                             </div>
                             {item.description && (
                               <p className="text-sm text-surface-500 dark:text-surface-400 mt-1 line-clamp-2">
@@ -565,7 +689,7 @@ export default function MenuPage() {
                               >
                                 <motion.button
                                   className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400"
-                                  onClick={() => removeFromCart(item.id)}
+                                  onClick={() => decrementMenuItem(item.id)}
                                   whileTap={{ scale: 0.9 }}
                                 >
                                   −
@@ -595,6 +719,99 @@ export default function MenuPage() {
           </StaggerContainer>
         )}
       </motion.div>
+
+      {/* Floating Cart Button */}
+      <AnimatePresence>
+        {picking && (
+          <motion.div
+            className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/50 p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setPicking(null)}
+          >
+            <motion.div
+              className="w-full max-w-lg rounded-3xl bg-white dark:bg-surface-800 p-6 shadow-2xl max-h-[85vh] overflow-y-auto"
+              initial={{ y: 60, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 60, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-start justify-between mb-1">
+                <h3 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100">
+                  {picking.name}
+                </h3>
+                <button
+                  onClick={() => setPicking(null)}
+                  className="text-surface-400 hover:text-surface-600 px-2"
+                >
+                  ✕
+                </button>
+              </div>
+              <p className="text-sm text-surface-500 mb-4">
+                Base ₡{Number(picking.price).toLocaleString()}
+              </p>
+              {(picking.variantGroups ?? []).map((g) => (
+                <div key={g.id} className="mb-4">
+                  <p className="mb-2 text-sm font-semibold text-surface-700 dark:text-surface-300">
+                    {g.name}
+                    {g.required && <span className="text-red-500"> *</span>}
+                    {g.multiple && (
+                      <span className="ml-1 text-xs font-normal text-surface-400">(varias)</span>
+                    )}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {g.options.map((o) => {
+                      const active = (picks[g.id] ?? []).includes(o.id);
+                      return (
+                        <button
+                          key={o.id}
+                          onClick={() => togglePick(g.id, o.id, g.multiple)}
+                          className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
+                            active
+                              ? 'bg-kiwi-500 text-white'
+                              : 'bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-300'
+                          }`}
+                        >
+                          {o.name}
+                          {Number(o.priceDelta) !== 0 && (
+                            <span className="ml-1 opacity-80">
+                              {Number(o.priceDelta) > 0 ? '+' : ''}₡
+                              {Number(o.priceDelta).toLocaleString()}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+              {pickError && <p className="mb-3 text-sm text-red-500">{pickError}</p>}
+              <button
+                onClick={confirmPick}
+                className="w-full rounded-2xl bg-kiwi-gradient py-3.5 font-semibold text-white shadow-kiwi-lg"
+              >
+                Agregar • ₡
+                {unitPriceFor(
+                  Number(picking.price),
+                  (picking.variantGroups ?? []).flatMap((g) =>
+                    (picks[g.id] ?? []).map((oid) => {
+                      const o = g.options.find((x) => x.id === oid);
+                      return {
+                        groupId: g.id,
+                        groupName: g.name,
+                        optionId: oid,
+                        optionName: o?.name ?? '',
+                        priceDelta: Number(o?.priceDelta ?? 0),
+                      };
+                    }),
+                  ),
+                ).toLocaleString()}
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Floating Cart Button */}
       <AnimatePresence>
@@ -677,7 +894,7 @@ export default function MenuPage() {
                   </h3>
                   <div className="space-y-2">
                     {cart.map((item) => (
-                      <div key={item.id} className="flex items-center justify-between">
+                      <div key={item.lineId} className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           {typeof item.image === 'string' && item.image ? (
                             <span className="text-xl">{item.image}</span>
@@ -688,12 +905,26 @@ export default function MenuPage() {
                             <p className="text-sm font-medium text-surface-800 dark:text-surface-200">
                               {item.name}
                             </p>
+                            {item.selectedOptions.length > 0 && (
+                              <p className="text-xs text-surface-500">
+                                {item.selectedOptions.map((s) => s.optionName).join(' · ')}
+                              </p>
+                            )}
                             <p className="text-xs text-surface-400">x{item.quantity}</p>
                           </div>
                         </div>
-                        <span className="text-sm font-semibold text-surface-800 dark:text-surface-200">
-                          ₡{(item.price * item.quantity).toLocaleString()}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold text-surface-800 dark:text-surface-200">
+                            ₡{(item.unitPrice * item.quantity).toLocaleString()}
+                          </span>
+                          <button
+                            onClick={() => removeFromCart(item.lineId)}
+                            className="text-surface-300 hover:text-red-500 text-sm px-1"
+                            aria-label="Quitar"
+                          >
+                            ✕
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>

@@ -83,6 +83,12 @@ export class MenuService {
     const items = await this.prisma.menuItem.findMany({
       where,
       orderBy: [{ sortOrder: 'asc' }, { isPopular: 'desc' }, { name: 'asc' }],
+      include: {
+        variantGroups: {
+          orderBy: { sortOrder: 'asc' },
+          include: { options: { orderBy: { sortOrder: 'asc' } } },
+        },
+      },
     });
 
     // Group by category
@@ -92,6 +98,10 @@ export class MenuService {
       items: items.map((item) => ({
         ...item,
         price: Number(item.price),
+        variantGroups: (item as any).variantGroups.map((g: any) => ({
+          ...g,
+          options: g.options.map((o: any) => ({ ...o, priceDelta: Number(o.priceDelta) })),
+        })),
       })),
       categories: ['Todos', ...categories],
     };
@@ -112,11 +122,21 @@ export class MenuService {
     const items = await this.prisma.menuItem.findMany({
       where: { merchantId: merchant.id },
       orderBy: [{ category: 'asc' }, { sortOrder: 'asc' }, { name: 'asc' }],
+      include: {
+        variantGroups: {
+          orderBy: { sortOrder: 'asc' },
+          include: { options: { orderBy: { sortOrder: 'asc' } } },
+        },
+      },
     });
 
     return items.map((item) => ({
       ...item,
       price: Number(item.price),
+      variantGroups: (item as any).variantGroups.map((g: any) => ({
+        ...g,
+        options: g.options.map((o: any) => ({ ...o, priceDelta: Number(o.priceDelta) })),
+      })),
     }));
   }
 
@@ -172,6 +192,62 @@ export class MenuService {
   }
 
   /**
+   * Validate & normalize variant groups. Prices/deltas never come from the
+   * client at order time — but they ARE merchant input here, so validate
+   * ranges and shapes to avoid Prisma 500s.
+   */
+  private static normalizeVariants(data: any):
+    | Array<{
+        name: string;
+        required: boolean;
+        multiple: boolean;
+        options: Array<{ name: string; priceDelta: number; isAvailable: boolean }>;
+      }>
+    | undefined {
+    if (data.variants === undefined) return undefined;
+    if (!Array.isArray(data.variants)) {
+      throw new BadRequestException('variants debe ser un arreglo');
+    }
+    if (data.variants.length > 20) {
+      throw new BadRequestException('Máximo 20 grupos de variantes');
+    }
+    return data.variants.map((g: any, gi: number) => {
+      const name = typeof g?.name === 'string' ? g.name.trim() : '';
+      if (!name || name.length > 50) {
+        throw new BadRequestException(`Grupo ${gi + 1}: nombre requerido (máx 50)`);
+      }
+      if (!Array.isArray(g?.options) || g.options.length === 0) {
+        throw new BadRequestException(`Grupo "${name}": necesita al menos una opción`);
+      }
+      if (g.options.length > 30) {
+        throw new BadRequestException(`Grupo "${name}": máximo 30 opciones`);
+      }
+      return {
+        name,
+        required: Boolean(g.required),
+        multiple: Boolean(g.multiple),
+        options: g.options.map((o: any, oi: number) => {
+          const oname = typeof o?.name === 'string' ? o.name.trim() : '';
+          if (!oname || oname.length > 50) {
+            throw new BadRequestException(
+              `Grupo "${name}" opción ${oi + 1}: nombre requerido (máx 50)`,
+            );
+          }
+          const delta = Number(o?.priceDelta ?? 0);
+          if (!Number.isFinite(delta) || delta < -99999999.99 || delta > 99999999.99) {
+            throw new BadRequestException(`Grupo "${name}" opción "${oname}": priceDelta inválido`);
+          }
+          return {
+            name: oname,
+            priceDelta: Math.round(delta * 100) / 100,
+            isAvailable: o?.isAvailable ?? true,
+          };
+        }),
+      };
+    });
+  }
+
+  /**
    * Create a menu item
    */
   async createMenuItem(userId: string, data: any) {
@@ -184,6 +260,7 @@ export class MenuService {
     }
 
     const input = MenuService.normalizeItemInput(data, { requireAll: true });
+    const variants = MenuService.normalizeVariants(data);
 
     // Get next sort order
     const lastItem = await this.prisma.menuItem.findFirst({
@@ -202,6 +279,24 @@ export class MenuService {
         isPopular: input.isPopular || false,
         isAvailable: input.isAvailable ?? true,
         sortOrder: (lastItem?.sortOrder || 0) + 1,
+        ...(variants
+          ? {
+              variantGroups: {
+                create: variants.map((g, gi) => ({
+                  name: g.name,
+                  required: g.required,
+                  multiple: g.multiple,
+                  sortOrder: gi,
+                  options: {
+                    create: g.options.map((o, oi) => ({ ...o, sortOrder: oi })),
+                  },
+                })),
+              },
+            }
+          : {}),
+      },
+      include: {
+        variantGroups: { include: { options: true } },
       },
     });
   }
@@ -228,13 +323,50 @@ export class MenuService {
     }
 
     const input = MenuService.normalizeItemInput(data, { requireAll: false });
-    if (Object.keys(input).length === 0) {
+    const variants = MenuService.normalizeVariants(data);
+    if (Object.keys(input).length === 0 && variants === undefined) {
       throw new BadRequestException('Nada que actualizar');
     }
 
-    return this.prisma.menuItem.update({
-      where: { id: itemId },
-      data: input,
+    return this.prisma.$transaction(async (tx) => {
+      if (variants !== undefined) {
+        // Replace strategy: modifier setup is small and fully owned here.
+        await tx.menuItemVariantGroup.deleteMany({ where: { menuItemId: itemId } });
+        if (variants.length > 0) {
+          await tx.menuItemVariantGroup.createMany({
+            data: variants.map((g, gi) => ({
+              menuItemId: itemId,
+              name: g.name,
+              required: g.required,
+              multiple: g.multiple,
+              sortOrder: gi,
+            })),
+          });
+          const groups = await tx.menuItemVariantGroup.findMany({
+            where: { menuItemId: itemId },
+            orderBy: { sortOrder: 'asc' },
+          });
+          for (let gi = 0; gi < groups.length; gi++) {
+            const opts = variants[gi].options;
+            if (opts.length > 0) {
+              await tx.menuItemVariantOption.createMany({
+                data: opts.map((o, oi) => ({
+                  groupId: groups[gi].id,
+                  name: o.name,
+                  priceDelta: o.priceDelta,
+                  isAvailable: o.isAvailable,
+                  sortOrder: oi,
+                })),
+              });
+            }
+          }
+        }
+      }
+      return tx.menuItem.update({
+        where: { id: itemId },
+        data: input,
+        include: { variantGroups: { include: { options: true } } },
+      });
     });
   }
 

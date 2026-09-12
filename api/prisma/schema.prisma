@@ -460,9 +460,40 @@ model MenuItem {
   // Relations
   merchant MerchantProfile @relation(fields: [merchantId], references: [id], onDelete: Cascade)
   orderItems OrderItem[]
+  variantGroups MenuItemVariantGroup[]
 
   @@index([merchantId, category])
   @@map("menu_items")
+}
+
+// Modifier groups (tamaño, color, extras) defined per menu item
+model MenuItemVariantGroup {
+  id         String  @id @default(uuid())
+  menuItemId String  @map("menu_item_id")
+  name       String
+  required   Boolean @default(false)
+  multiple   Boolean @default(false)
+  sortOrder  Int     @default(0) @map("sort_order")
+
+  // Relations
+  menuItem MenuItem                @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  options  MenuItemVariantOption[]
+
+  @@map("menu_item_variant_groups")
+}
+
+model MenuItemVariantOption {
+  id         String  @id @default(uuid())
+  groupId    String  @map("group_id")
+  name       String
+  priceDelta Decimal @default(0) @db.Decimal(10, 2) @map("price_delta")
+  sortOrder  Int     @default(0) @map("sort_order")
+  isAvailable Boolean @default(true) @map("is_available")
+
+  // Relations
+  group MenuItemVariantGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@map("menu_item_variant_options")
 }
 
 // Order Items (links orders to menu items)
@@ -475,6 +506,9 @@ model OrderItem {
   price       Decimal  @db.Decimal(10, 2)
   quantity    Int      @default(1)
   notes       String?
+  // Snapshot of chosen variants [{group, option, priceDelta}]; price
+  // already includes deltas, so totals never depend on live menu data.
+  selectedVariants Json? @map("selected_variants")
   createdAt   DateTime @default(now()) @map("created_at")
 
   // Relations

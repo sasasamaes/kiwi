@@ -44,6 +44,18 @@ const EMOJI_OPTIONS = [
   '🍛',
 ];
 
+interface VariantOptionForm {
+  name: string;
+  priceDelta: number;
+}
+
+interface VariantGroupForm {
+  name: string;
+  required: boolean;
+  multiple: boolean;
+  options: VariantOptionForm[];
+}
+
 interface MenuItemFormData {
   name: string;
   description: string;
@@ -52,7 +64,22 @@ interface MenuItemFormData {
   image: string;
   isPopular: boolean;
   isAvailable: boolean;
+  variants: VariantGroupForm[];
 }
+
+const toVariantForm = (input: any): VariantGroupForm[] => {
+  const groups = input?.variantGroups ?? input?.variants ?? [];
+  if (!Array.isArray(groups)) return [];
+  return groups.map((g: any) => ({
+    name: String(g?.name ?? ''),
+    required: Boolean(g?.required),
+    multiple: Boolean(g?.multiple),
+    options: (Array.isArray(g?.options) ? g.options : []).map((o: any) => ({
+      name: String(o?.name ?? ''),
+      priceDelta: Number(o?.priceDelta ?? 0),
+    })),
+  }));
+};
 
 interface MenuItemFormProps {
   initialData?: Partial<MenuItemFormData>;
@@ -77,6 +104,7 @@ export function MenuItemForm({
     image: initialData?.image || 'Utensils',
     isPopular: initialData?.isPopular || false,
     isAvailable: initialData?.isAvailable ?? true,
+    variants: toVariantForm(initialData),
   });
 
   const [loading, setLoading] = useState(false);
@@ -94,9 +122,28 @@ export function MenuItemForm({
         image: initialData.image || 'Utensils',
         isPopular: initialData.isPopular || false,
         isAvailable: initialData.isAvailable ?? true,
+        variants: toVariantForm(initialData),
       });
     }
   }, [initialData, categories]);
+
+  const updateGroup = (gi: number, patch: Partial<VariantGroupForm>) => {
+    setFormData((prev) => ({
+      ...prev,
+      variants: prev.variants.map((g, i) => (i === gi ? { ...g, ...patch } : g)),
+    }));
+  };
+
+  const updateOption = (gi: number, oi: number, patch: Partial<VariantOptionForm>) => {
+    setFormData((prev) => ({
+      ...prev,
+      variants: prev.variants.map((g, i) =>
+        i === gi
+          ? { ...g, options: g.options.map((o, j) => (j === oi ? { ...o, ...patch } : o)) }
+          : g,
+      ),
+    }));
+  };
 
   const validate = (): boolean => {
     const newErrors: Partial<Record<keyof MenuItemFormData, string>> = {};
@@ -110,6 +157,21 @@ export function MenuItemForm({
     if (!formData.category) {
       newErrors.category = 'Selecciona una categoría';
     }
+    formData.variants.forEach((g, gi) => {
+      if (!g.name.trim()) {
+        (newErrors as any)[`variant-${gi}`] = 'Cada grupo necesita nombre';
+      } else if (g.options.length === 0) {
+        (newErrors as any)[`variant-${gi}`] = `"${g.name}" necesita al menos una opción`;
+      }
+      g.options.forEach((o, oi) => {
+        if (!o.name.trim()) {
+          (newErrors as any)[`variant-${gi}-${oi}`] = 'La opción necesita nombre';
+        }
+        if (!Number.isFinite(o.priceDelta)) {
+          (newErrors as any)[`variant-${gi}-${oi}`] = 'Diferencia inválida';
+        }
+      });
+    });
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -391,6 +453,127 @@ export function MenuItemForm({
                 ₡{price.toLocaleString()}
               </motion.button>
             ))}
+          </div>
+        </div>
+
+        {/* Variantes / modificadores */}
+        <div>
+          <label className="mb-2 block text-sm font-medium text-surface-600 dark:text-surface-400">
+            Modificadores (tamaños, colores, extras)
+          </label>
+          <div className="space-y-3">
+            {formData.variants.map((g, gi) => (
+              <div
+                key={gi}
+                className="rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 p-3"
+              >
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={g.name}
+                    onChange={(e) => updateGroup(gi, { name: e.target.value })}
+                    placeholder="Ej: Tamaño"
+                    className="flex-1 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2 text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        variants: prev.variants.filter((_, i) => i !== gi),
+                      }))
+                    }
+                    className="text-red-400 hover:text-red-600 px-2"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="mt-2 flex gap-4 text-xs text-surface-500">
+                  <label className="flex items-center gap-1">
+                    <input
+                      type="checkbox"
+                      checked={g.required}
+                      onChange={(e) => updateGroup(gi, { required: e.target.checked })}
+                    />
+                    Obligatorio
+                  </label>
+                  <label className="flex items-center gap-1">
+                    <input
+                      type="checkbox"
+                      checked={g.multiple}
+                      onChange={(e) => updateGroup(gi, { multiple: e.target.checked })}
+                    />
+                    Varias opciones
+                  </label>
+                </div>
+                {(errors as any)[`variant-${gi}`] && (
+                  <p className="mt-1 text-sm text-red-500">{(errors as any)[`variant-${gi}`]}</p>
+                )}
+                <div className="mt-2 space-y-2">
+                  {g.options.map((o, oi) => (
+                    <div key={oi}>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={o.name}
+                          onChange={(e) => updateOption(gi, oi, { name: e.target.value })}
+                          placeholder="Ej: Grande"
+                          className="flex-1 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2 text-sm"
+                        />
+                        <input
+                          type="number"
+                          value={o.priceDelta}
+                          onChange={(e) =>
+                            updateOption(gi, oi, { priceDelta: parseFloat(e.target.value) || 0 })
+                          }
+                          placeholder="+₡"
+                          title="Diferencia sobre el precio base (₡, puede ser negativa)"
+                          className="w-24 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2 text-sm"
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            updateGroup(gi, { options: g.options.filter((_, j) => j !== oi) })
+                          }
+                          className="text-red-400 hover:text-red-600 px-1"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                      {(errors as any)[`variant-${gi}-${oi}`] && (
+                        <p className="mt-1 text-sm text-red-500">
+                          {(errors as any)[`variant-${gi}-${oi}`]}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      updateGroup(gi, { options: [...g.options, { name: '', priceDelta: 0 }] })
+                    }
+                    className="text-xs font-medium text-kiwi-600 dark:text-kiwi-400"
+                  >
+                    + Agregar opción
+                  </button>
+                </div>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() =>
+                setFormData((prev) => ({
+                  ...prev,
+                  variants: [
+                    ...prev.variants,
+                    { name: '', required: false, multiple: false, options: [] },
+                  ],
+                }))
+              }
+              className="text-sm font-medium text-kiwi-600 dark:text-kiwi-400"
+            >
+              + Agregar grupo (ej: Tamaño, Extras)
+            </button>
           </div>
         </div>
 

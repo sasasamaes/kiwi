@@ -126,6 +126,8 @@ export type {
   DriverProfile,
   Order,
   MenuItem,
+  VariantGroup,
+  VariantOption,
   MerchantPublicProfile,
   DriverProposal,
 } from './api-client';

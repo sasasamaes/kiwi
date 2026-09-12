@@ -80,6 +80,7 @@ export class OrdersService {
       price: number;
       quantity: number;
       notes?: string;
+      selectedVariants: Array<{ group: string; option: string; priceDelta: number }>;
     }> = [];
     let productsTotal = 0;
     if (kind === 'food' && incomingItems.length > 0) {
@@ -93,6 +94,26 @@ export class OrdersService {
         : [];
       const menuById = new Map(menuItems.map((m) => [m.id, m]));
 
+      // Variant options referenced by the cart: load once, validate
+      // ownership (same merchant) + availability. Deltas come from the DB,
+      // never from the client.
+      const optionIds = [
+        ...new Set(
+          incomingItems.flatMap((i) =>
+            Array.isArray(i?.variants)
+              ? i.variants.map((v: any) => v?.optionId).filter(Boolean)
+              : [],
+          ) as string[],
+        ),
+      ];
+      const dbOptions = optionIds.length
+        ? await this.prisma.menuItemVariantOption.findMany({
+            where: { id: { in: optionIds } },
+            include: { group: { select: { id: true, name: true, menuItemId: true } } },
+          })
+        : [];
+      const optionById = new Map(dbOptions.map((o) => [o.id, o]));
+
       for (const item of incomingItems) {
         const quantity = Number(item?.quantity ?? 1);
         if (!Number.isFinite(quantity) || quantity < 1 || quantity > 999) {
@@ -103,18 +124,46 @@ export class OrdersService {
           if (!menuItem) {
             throw new BadRequestException('Producto del menú no válido para este comercio');
           }
-          productsTotal += Number(menuItem.price) * quantity;
+          const selectedVariants: Array<{ group: string; option: string; priceDelta: number }> = [];
+          let unitPrice = Number(menuItem.price);
+          const requested = Array.isArray(item?.variants) ? item.variants : [];
+          if (requested.length > 0) {
+            const seen = new Set<string>();
+            for (const v of requested) {
+              const opt: any = optionById.get(v?.optionId);
+              if (!opt || opt.group.menuItemId !== menuItem.id) {
+                throw new BadRequestException('Variante no válida para este producto');
+              }
+              if (!opt.isAvailable) {
+                throw new BadRequestException(`Variante no disponible: ${opt.name}`);
+              }
+              if (seen.has(opt.id)) continue;
+              seen.add(opt.id);
+              const delta = Number(opt.priceDelta);
+              unitPrice += delta;
+              selectedVariants.push({
+                group: opt.group.name,
+                option: opt.name,
+                priceDelta: Math.round(delta * 100) / 100,
+              });
+            }
+          }
+          productsTotal += unitPrice * quantity;
           resolvedItems.push({
             menuItemId: menuItem.id,
             name: menuItem.name,
-            price: Number(menuItem.price),
+            price: Math.round(unitPrice * 100) / 100,
             quantity,
             notes: item.notes || undefined,
+            selectedVariants,
           });
         } else {
           const name = String(item?.name ?? '').trim();
           if (!name || name.length > 200) {
             throw new BadRequestException('name inválido');
+          }
+          if (Array.isArray(item?.variants) && item.variants.length > 0) {
+            throw new BadRequestException('Los productos personalizados no llevan variantes');
           }
           const price = Number(item?.price ?? 0);
           if (!Number.isFinite(price) || price < 0) {
@@ -127,6 +176,7 @@ export class OrdersService {
             price,
             quantity,
             notes: item.notes || undefined,
+            selectedVariants: [],
           });
         }
       }
@@ -205,6 +255,7 @@ export class OrdersService {
             price: item.price,
             quantity: item.quantity,
             notes: item.notes,
+            selectedVariants: item.selectedVariants,
           })),
         });
       } catch (error) {
@@ -255,6 +306,7 @@ export class OrdersService {
         },
         payment: true,
         ratings: true,
+        items: true,
       },
     });
 
@@ -315,7 +367,7 @@ export class OrdersService {
         driver: {
           select: { id: true, fullName: true, vehicleType: true, rating: true },
         },
-        items: { select: { name: true, quantity: true } },
+        items: { select: { name: true, quantity: true, selectedVariants: true } },
       },
     });
 
@@ -345,6 +397,7 @@ export class OrdersService {
       items: ((order as any).items ?? []).map((i: any) => ({
         name: i.name,
         quantity: i.quantity,
+        selectedVariants: i.selectedVariants ?? [],
       })),
       createdAt: order.createdAt,
       assignedAt: order.assignedAt,
@@ -513,6 +566,7 @@ export class OrdersService {
       where,
       include: {
         merchant: true,
+        items: true,
       },
       orderBy: { createdAt: 'desc' },
     });

@@ -357,6 +357,20 @@ export default function TrackingPage() {
               <span className="text-surface-500 dark:text-surface-400">Estado</span>
               <span className="text-surface-700 dark:text-surface-200">{config.label}</span>
             </div>
+            {Array.isArray((order as any).items) && (order as any).items.length > 0 && (
+              <div className="pt-2 space-y-1">
+                {(order as any).items.map((it: any, i: number) => (
+                  <div key={it.id ?? i} className="flex justify-between text-sm">
+                    <span className="text-surface-600 dark:text-surface-400">
+                      {it.quantity}x {it.name}
+                      {Array.isArray(it.selectedVariants) && it.selectedVariants.length > 0 && (
+                        <> ({it.selectedVariants.map((v: any) => v.option).join(', ')})</>
+                      )}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
             {(order as any).totalAmount ? (
               <div className="flex justify-between">
                 <span className="text-surface-500 dark:text-surface-400">Total</span>

@@ -13,6 +13,7 @@ interface CartItem {
   price: number;
   quantity: number;
   menuItemId?: string;
+  selectedOptions?: Array<{ optionId: string }>;
 }
 
 type PaymentMethod = 'sinpe' | 'card' | 'cash' | 'crypto_usdc' | 'crypto_usdt';
@@ -101,6 +102,7 @@ function CheckoutContent() {
           name: item.name,
           price: item.price,
           quantity: item.quantity,
+          variants: (item.selectedOptions ?? []).map((s) => ({ optionId: s.optionId })),
         })),
         specialInstructions: notes,
         distanceKm: 2.5,
