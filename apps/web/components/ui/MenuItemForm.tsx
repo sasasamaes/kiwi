@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Utensils, Check, Clock, Pencil } from 'lucide-react';
 import { AnimatedButton } from '@kiwi/ui';
@@ -47,6 +47,7 @@ const EMOJI_OPTIONS = [
 interface VariantOptionForm {
   name: string;
   priceDelta: number;
+  isAvailable?: boolean;
 }
 
 interface VariantGroupForm {
@@ -77,6 +78,7 @@ const toVariantForm = (input: any): VariantGroupForm[] => {
     options: (Array.isArray(g?.options) ? g.options : []).map((o: any) => ({
       name: String(o?.name ?? ''),
       priceDelta: Number(o?.priceDelta ?? 0),
+      isAvailable: o?.isAvailable !== false,
     })),
   }));
 };
@@ -457,10 +459,121 @@ export function MenuItemForm({
         </div>
 
         {/* Variantes / modificadores */}
-        <div>
-          <label className="mb-2 block text-sm font-medium text-surface-600 dark:text-surface-400">
-            Modificadores (tamaños, colores, extras)
-          </label>
+        <div className="rounded-2xl border border-surface-200 dark:border-surface-700 p-4">
+          <div className="flex items-start justify-between gap-2 mb-1">
+            <label className="block text-sm font-medium text-surface-600 dark:text-surface-400">
+              Opciones del producto
+            </label>
+            <button
+              type="button"
+              onClick={() =>
+                setFormData((prev) => ({
+                  ...prev,
+                  variants: [
+                    ...prev.variants,
+                    { name: '', required: false, multiple: false, options: [] },
+                  ],
+                }))
+              }
+              className="text-xs font-medium text-kiwi-600 dark:text-kiwi-400 hover:underline"
+            >
+              + Grupo manual
+            </button>
+          </div>
+          <p className="text-xs text-surface-500 dark:text-surface-400 mb-3">
+            El cliente elige entre opciones antes de agregar el producto. La diferencia de precio se
+            suma al precio base (ej. base ₡3500 + «Grande +₡500» = ₡4000).
+          </p>
+
+          {/* Plantillas rápidas — la forma común de configurar esto */}
+          <div className="flex flex-wrap gap-2 mb-3">
+            {[
+              {
+                label: '🥤 Tamaño',
+                group: {
+                  name: 'Tamaño',
+                  required: true,
+                  multiple: false,
+                  options: [
+                    { name: 'Chico', priceDelta: 0, isAvailable: true },
+                    { name: 'Mediano', priceDelta: 500, isAvailable: true },
+                    { name: 'Grande', priceDelta: 1000, isAvailable: true },
+                  ],
+                },
+              },
+              {
+                label: '🧀 Extras',
+                group: {
+                  name: 'Extras',
+                  required: false,
+                  multiple: true,
+                  options: [
+                    { name: 'Queso extra', priceDelta: 500, isAvailable: true },
+                    { name: 'Aguacate', priceDelta: 700, isAvailable: true },
+                    { name: 'Proteína extra', priceDelta: 1500, isAvailable: true },
+                  ],
+                },
+              },
+              {
+                label: '🔥 Nivel de picante',
+                group: {
+                  name: 'Picante',
+                  required: true,
+                  multiple: false,
+                  options: [
+                    { name: 'Sin picante', priceDelta: 0, isAvailable: true },
+                    { name: 'Medio', priceDelta: 0, isAvailable: true },
+                    { name: 'Picante', priceDelta: 0, isAvailable: true },
+                  ],
+                },
+              },
+              {
+                label: '🥛 Tipo de leche',
+                group: {
+                  name: 'Leche',
+                  required: true,
+                  multiple: false,
+                  options: [
+                    { name: 'Entera', priceDelta: 0, isAvailable: true },
+                    { name: 'Deslactosada', priceDelta: 0, isAvailable: true },
+                    { name: 'Almendras', priceDelta: 500, isAvailable: true },
+                  ],
+                },
+              },
+            ].map((t) => {
+              const exists = formData.variants.some((g) => g.name === t.group.name);
+              return (
+                <motion.button
+                  key={t.label}
+                  type="button"
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      variants: exists
+                        ? prev.variants
+                        : [
+                            ...prev.variants,
+                            {
+                              ...t.group,
+                              options: t.group.options.map((o) => ({ ...o })),
+                            },
+                          ],
+                    }))
+                  }
+                  disabled={exists}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                    exists
+                      ? 'bg-surface-100 dark:bg-surface-700 text-surface-400 cursor-not-allowed'
+                      : 'bg-kiwi-50 dark:bg-kiwi-900/30 text-kiwi-700 dark:text-kiwi-300 hover:bg-kiwi-100 dark:hover:bg-kiwi-900/50'
+                  }`}
+                >
+                  {exists ? `✓ ${t.label}` : `+ ${t.label}`}
+                </motion.button>
+              );
+            })}
+          </div>
+
           <div className="space-y-3">
             {formData.variants.map((g, gi) => (
               <div
@@ -473,7 +586,11 @@ export function MenuItemForm({
                     value={g.name}
                     onChange={(e) => updateGroup(gi, { name: e.target.value })}
                     placeholder="Ej: Tamaño"
-                    className="flex-1 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2 text-sm"
+                    className={`flex-1 rounded-lg border bg-white dark:bg-surface-800 px-3 py-2 text-sm font-medium ${
+                      (errors as any)[`variant-${gi}`] && !g.name.trim()
+                        ? 'border-red-400'
+                        : 'border-surface-200 dark:border-surface-700'
+                    }`}
                   />
                   <button
                     type="button"
@@ -483,65 +600,116 @@ export function MenuItemForm({
                         variants: prev.variants.filter((_, i) => i !== gi),
                       }))
                     }
+                    title="Eliminar grupo"
                     className="text-red-400 hover:text-red-600 px-2"
                   >
                     ✕
                   </button>
                 </div>
-                <div className="mt-2 flex gap-4 text-xs text-surface-500">
-                  <label className="flex items-center gap-1">
-                    <input
-                      type="checkbox"
-                      checked={g.required}
-                      onChange={(e) => updateGroup(gi, { required: e.target.checked })}
-                    />
-                    Obligatorio
-                  </label>
-                  <label className="flex items-center gap-1">
-                    <input
-                      type="checkbox"
-                      checked={g.multiple}
-                      onChange={(e) => updateGroup(gi, { multiple: e.target.checked })}
-                    />
-                    Varias opciones
-                  </label>
+
+                {/* Semántica en lenguaje plano */}
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => updateGroup(gi, { required: !g.required })}
+                    className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                      g.required
+                        ? 'bg-kiwi-500 text-white'
+                        : 'bg-surface-200 dark:bg-surface-700 text-surface-500 dark:text-surface-300'
+                    }`}
+                  >
+                    {g.required ? '✓ Obligatorio' : 'Opcional'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => updateGroup(gi, { multiple: !g.multiple })}
+                    className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                      g.multiple
+                        ? 'bg-kiwi-500 text-white'
+                        : 'bg-surface-200 dark:bg-surface-700 text-surface-500 dark:text-surface-300'
+                    }`}
+                  >
+                    {g.multiple ? '✓ Puede elegir varios' : 'Elige 1'}
+                  </button>
                 </div>
                 {(errors as any)[`variant-${gi}`] && (
-                  <p className="mt-1 text-sm text-red-500">{(errors as any)[`variant-${gi}`]}</p>
+                  <p className="mt-1 text-xs text-red-500">{(errors as any)[`variant-${gi}`]}</p>
                 )}
                 <div className="mt-2 space-y-2">
                   {g.options.map((o, oi) => (
-                    <div key={oi}>
-                      <div className="flex gap-2">
+                    <div key={oi} className={o.isAvailable ? '' : 'opacity-60'}>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            updateOption(gi, oi, { isAvailable: o.isAvailable === false })
+                          }
+                          title={
+                            o.isAvailable
+                              ? 'Marcar como agotado: el cliente no podrá elegirlo'
+                              : 'Marcar como disponible otra vez'
+                          }
+                          className={`shrink-0 rounded-full px-2.5 py-2 text-xs font-semibold transition-colors ${
+                            o.isAvailable
+                              ? 'bg-kiwi-100 text-kiwi-700 dark:bg-kiwi-900/40 dark:text-kiwi-300'
+                              : 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-300'
+                          }`}
+                        >
+                          {o.isAvailable ? '● Disponible' : '⛔ Agotado'}
+                        </button>
                         <input
                           type="text"
                           value={o.name}
                           onChange={(e) => updateOption(gi, oi, { name: e.target.value })}
-                          placeholder="Ej: Grande"
-                          className="flex-1 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2 text-sm"
+                          placeholder={g.multiple ? 'Ej: Queso extra' : 'Ej: Grande'}
+                          className={`flex-1 rounded-lg border bg-white dark:bg-surface-800 px-3 py-2 text-sm ${
+                            (errors as any)[`variant-${gi}-${oi}`]
+                              ? 'border-red-400'
+                              : 'border-surface-200 dark:border-surface-700'
+                          }`}
                         />
-                        <input
-                          type="number"
-                          value={o.priceDelta}
-                          onChange={(e) =>
-                            updateOption(gi, oi, { priceDelta: parseFloat(e.target.value) || 0 })
-                          }
-                          placeholder="+₡"
-                          title="Diferencia sobre el precio base (₡, puede ser negativa)"
-                          className="w-24 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2 text-sm"
-                        />
+                        <div
+                          className="flex items-center rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 overflow-hidden"
+                          title="Cuánto se suma (o resta) al precio base"
+                        >
+                          <span className="pl-2.5 text-xs text-surface-400">₡</span>
+                          <input
+                            type="number"
+                            value={o.priceDelta === 0 ? '' : o.priceDelta}
+                            onChange={(e) =>
+                              updateOption(gi, oi, {
+                                priceDelta: parseFloat(e.target.value) || 0,
+                              })
+                            }
+                            placeholder="0"
+                            className="w-16 px-1 py-2 text-sm bg-transparent"
+                          />
+                          <span
+                            className={`pr-2.5 text-xs font-medium ${
+                              o.priceDelta > 0
+                                ? 'text-kiwi-600'
+                                : o.priceDelta < 0
+                                  ? 'text-red-500'
+                                  : 'text-surface-400'
+                            }`}
+                          >
+                            {o.priceDelta > 0 ? '+' : ''}
+                            {o.priceDelta < 0 ? '−' : ''}
+                          </span>
+                        </div>
                         <button
                           type="button"
                           onClick={() =>
                             updateGroup(gi, { options: g.options.filter((_, j) => j !== oi) })
                           }
+                          title="Quitar opción"
                           className="text-red-400 hover:text-red-600 px-1"
                         >
                           ✕
                         </button>
                       </div>
                       {(errors as any)[`variant-${gi}-${oi}`] && (
-                        <p className="mt-1 text-sm text-red-500">
+                        <p className="mt-1 text-xs text-red-500">
                           {(errors as any)[`variant-${gi}-${oi}`]}
                         </p>
                       )}
@@ -550,31 +718,59 @@ export function MenuItemForm({
                   <button
                     type="button"
                     onClick={() =>
-                      updateGroup(gi, { options: [...g.options, { name: '', priceDelta: 0 }] })
+                      updateGroup(gi, {
+                        options: [...g.options, { name: '', priceDelta: 0, isAvailable: true }],
+                      })
                     }
-                    className="text-xs font-medium text-kiwi-600 dark:text-kiwi-400"
+                    className="text-xs font-medium text-kiwi-600 dark:text-kiwi-400 hover:underline"
                   >
-                    + Agregar opción
+                    + opción
                   </button>
                 </div>
               </div>
             ))}
-            <button
-              type="button"
-              onClick={() =>
-                setFormData((prev) => ({
-                  ...prev,
-                  variants: [
-                    ...prev.variants,
-                    { name: '', required: false, multiple: false, options: [] },
-                  ],
-                }))
-              }
-              className="text-sm font-medium text-kiwi-600 dark:text-kiwi-400"
-            >
-              + Agregar grupo (ej: Tamaño, Extras)
-            </button>
           </div>
+
+          {/* Vista previa de lo que ve el cliente */}
+          {formData.variants.some((g) => g.options.length > 0) && (
+            <div className="mt-3 rounded-xl bg-surface-50 dark:bg-surface-900 p-3">
+              <p className="text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">
+                👀 Así lo ve el cliente:
+              </p>
+              <div className="space-y-1">
+                {formData.variants
+                  .filter((g) => g.options.length > 0)
+                  .map((g, gi) => (
+                    <Fragment key={`${gi}-${g.name}`}>
+                      <p className="text-xs text-surface-600 dark:text-surface-300">
+                        <span className="font-medium">
+                          {g.name || 'Grupo sin nombre'}
+                          {g.required && '*'}:{' '}
+                        </span>
+                        {g.options
+                          .map((o) => {
+                            const price = o.priceDelta
+                              ? ` (+₡${o.priceDelta.toLocaleString()})`
+                              : '';
+                            return o.isAvailable
+                              ? `${o.name || '?'}${price}`
+                              : `${o.name || '?'}${price} (agotado)`;
+                          })
+                          .join(' · ')}
+                      </p>
+                      {g.required &&
+                        g.options.length > 0 &&
+                        g.options.every((o) => !o.isAvailable) && (
+                          <p className="text-xs text-red-500">
+                            ⚠️ "{g.name || 'Este grupo'}" es obligatorio pero todas sus opciones
+                            están agotadas — el cliente no podría pedir este producto.
+                          </p>
+                        )}
+                    </Fragment>
+                  ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Actions */}

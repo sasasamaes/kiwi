@@ -161,6 +161,13 @@ export default function MenuManagementPage() {
         image: item.image,
         isPopular: item.isPopular,
         isAvailable: item.isAvailable,
+        // Clonar también los modificadores; sin esto un duplicado los pierde.
+        variants: (item.variantGroups ?? []).map((g) => ({
+          name: g.name,
+          required: g.required,
+          multiple: g.multiple,
+          options: g.options.map((o) => ({ name: o.name, priceDelta: o.priceDelta })),
+        })),
       });
       await fetchMenuItems();
     } catch (error) {
@@ -456,6 +463,9 @@ export default function MenuManagementPage() {
                         image: editingItem.image,
                         isPopular: editingItem.isPopular,
                         isAvailable: editingItem.isAvailable,
+                        // CRÍTICO: sin esto, guardar una edición borraba todos
+                        // los modificadores (el update es replace-all).
+                        variants: editingItem.variantGroups ?? [],
                       }
                     : undefined
                 }
@@ -719,6 +729,44 @@ export default function MenuManagementPage() {
                                   Agotado
                                 </span>
                               )}
+                              {(item.variantGroups ?? []).some((g) => g.options.length > 0) &&
+                                (() => {
+                                  const soldOut = (item.variantGroups ?? []).reduce(
+                                    (n, g) =>
+                                      n + g.options.filter((o) => o.isAvailable === false).length,
+                                    0,
+                                  );
+                                  return (
+                                    <span
+                                      className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                        soldOut > 0
+                                          ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400'
+                                          : 'bg-kiwi-100 dark:bg-kiwi-900/50 text-kiwi-700 dark:text-kiwi-400'
+                                      }`}
+                                      title={(item.variantGroups ?? [])
+                                        .map(
+                                          (g) =>
+                                            `${g.name}: ${g.options
+                                              .map((o) =>
+                                                o.isAvailable === false
+                                                  ? `${o.name} (agotado)`
+                                                  : o.name,
+                                              )
+                                              .join(', ')}`,
+                                        )
+                                        .join(' · ')}
+                                    >
+                                      Personalizable (
+                                      {(item.variantGroups ?? []).reduce(
+                                        (n, g) => n + g.options.length,
+                                        0,
+                                      )}
+                                      )
+                                      {soldOut > 0 &&
+                                        ` · ${soldOut} agotada${soldOut === 1 ? '' : 's'}`}
+                                    </span>
+                                  );
+                                })()}
                             </div>
                             {item.description && (
                               <p className="text-sm text-surface-500 dark:text-surface-400 mt-1 line-clamp-1">

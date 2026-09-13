@@ -168,11 +168,12 @@ export default function MenuPage() {
       const groups = item.variantGroups ?? [];
       const hasOptions = groups.some((g) => g.options.length > 0);
       if (hasOptions) {
-        // Defaults: primera opción de cada grupo obligatorio simple.
+        // Defaults: primera opción DISPONIBLE de cada grupo obligatorio simple.
         const initial: Record<string, string[]> = {};
         for (const g of groups) {
-          if (g.required && !g.multiple && g.options.length > 0) {
-            initial[g.id] = [g.options[0].id];
+          const firstAvailable = g.options.find((o) => o.isAvailable !== false);
+          if (g.required && !g.multiple && firstAvailable) {
+            initial[g.id] = [firstAvailable.id];
           }
         }
         setPicks(initial);
@@ -205,7 +206,12 @@ export default function MenuPage() {
     const groups = picking.variantGroups ?? [];
     const missing = groups.find((g) => g.required && (picks[g.id] ?? []).length === 0);
     if (missing) {
-      setPickError(`Elegí una opción de "${missing.name}"`);
+      const noneAvailable = missing.options.every((o) => o.isAvailable === false);
+      setPickError(
+        noneAvailable
+          ? `Agotado: no queda ninguna opción de "${missing.name}"`
+          : `Elegí una opción de "${missing.name}"`,
+      );
       return;
     }
     const selected: SelectedOption[] = [];
@@ -763,16 +769,21 @@ export default function MenuPage() {
                   <div className="flex flex-wrap gap-2">
                     {g.options.map((o) => {
                       const active = (picks[g.id] ?? []).includes(o.id);
+                      const soldOut = o.isAvailable === false;
                       return (
                         <button
                           key={o.id}
+                          disabled={soldOut}
                           onClick={() => togglePick(g.id, o.id, g.multiple)}
                           className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
-                            active
-                              ? 'bg-kiwi-500 text-white'
-                              : 'bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-300'
+                            soldOut
+                              ? 'bg-surface-100 dark:bg-surface-800 text-surface-400 dark:text-surface-500 line-through opacity-60'
+                              : active
+                                ? 'bg-kiwi-500 text-white'
+                                : 'bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-300'
                           }`}
                         >
+                          {soldOut && <span className="mr-1">⛔</span>}
                           {o.name}
                           {Number(o.priceDelta) !== 0 && (
                             <span className="ml-1 opacity-80">
