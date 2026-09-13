@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TrafficService } from './traffic.service';
 
@@ -69,6 +69,15 @@ export class TrafficHistoryService {
     private prisma: PrismaService,
     private trafficService: TrafficService,
   ) {}
+
+  /**
+   * Hora/día en Costa Rica (UTC-6 sin horario de verano). El servidor corre
+   * en UTC: usar getHours() directo corre las "horas pico" 6 horas.
+   */
+  private static costaRicaParts(date: Date): { hour: number; dayOfWeek: number } {
+    const shifted = new Date(date.getTime() - 6 * 60 * 60 * 1000);
+    return { hour: shifted.getUTCHours(), dayOfWeek: shifted.getUTCDay() };
+  }
 
   /**
    * Record traffic data point
@@ -148,9 +157,7 @@ export class TrafficHistoryService {
     const grouped: Record<string, { levels: string[]; speeds: number[] }> = {};
 
     for (const record of records) {
-      const date = new Date(record.timestamp);
-      const hour = date.getHours();
-      const dayOfWeek = date.getDay();
+      const { hour, dayOfWeek } = TrafficHistoryService.costaRicaParts(new Date(record.timestamp));
       const key = `${hour}_${dayOfWeek}`;
 
       if (!grouped[key]) {
@@ -313,6 +320,23 @@ export class TrafficHistoryService {
     }
 
     return heatmapData;
+  }
+
+  /**
+   * Traffic report for the authenticated merchant (resolves profile id
+   * from the user id — the frontend must not guess profile ids).
+   */
+  async getMyTrafficReport(
+    userId: string,
+    period: 'day' | 'week' | 'month' = 'week',
+  ): Promise<MerchantTrafficReport> {
+    const merchant = await this.prisma.merchantProfile.findUnique({
+      where: { userId },
+    });
+    if (!merchant) {
+      throw new NotFoundException('Perfil de comerciante no encontrado');
+    }
+    return this.getMerchantTrafficReport(merchant.id, period);
   }
 
   /**
@@ -556,9 +580,8 @@ export class TrafficHistoryService {
   }
 
   private wasDelayedByTraffic(order: any, trafficHistory: any[]): boolean {
-    // Check if there was heavy traffic during order delivery time
+    // Ventana absoluta de ±30 min (comparación por timestamp: sin problema de zona horaria).
     const orderTime = new Date(order.createdAt);
-    const hour = orderTime.getHours();
 
     const trafficDuringOrder = trafficHistory.filter((t) => {
       const tTime = new Date(t.timestamp);

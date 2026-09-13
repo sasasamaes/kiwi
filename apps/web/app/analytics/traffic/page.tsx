@@ -1,107 +1,135 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect, useCallback, Fragment } from 'react';
+import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { BarChart3, Package, Check, AlertTriangle, Calendar, Target } from 'lucide-react';
-import { apiFetch } from '@kiwi/ui';
+import { useRouter } from 'next/navigation';
+import {
+  BarChart3,
+  Package,
+  Check,
+  AlertTriangle,
+  Calendar,
+  Target,
+  RefreshCw,
+} from 'lucide-react';
+import { api, apiFetch, useAuth } from '@kiwi/ui';
+import { MerchantNav } from '../../../components/MerchantNav';
 
-interface TrafficAnalytics {
-  totalDeliveries: number;
-  averageDeliveryTime: number;
-  trafficDelayTotal: number;
-  deliveriesAffected: number;
-  peakHours: Array<{ hour: number; level: string; deliveries: number }>;
-  bestDeliveryTimes: Array<{ hour: number; reason: string }>;
-  worstDeliveryTimes: Array<{ hour: number; reason: string }>;
-  trafficImpact: {
-    onTime: number;
-    delayed: number;
-    avgDelay: number;
+interface TrafficPattern {
+  hour: number;
+  dayOfWeek: number;
+  averageLevel: string;
+  averageSpeed: number;
+  sampleCount: number;
+}
+
+interface MerchantReport {
+  summary: {
+    totalDeliveries: number;
+    averageTrafficLevel: string;
+    averageDeliveryTime: number;
+    trafficDelayedDeliveries: number;
+    estimatedTimeLost: number;
   };
-  patterns: Array<{
-    day: string;
-    pattern: string;
-    confidence: number;
+  patterns: TrafficPattern[];
+  trends: Array<{
+    period: string;
+    current: number;
+    previous: number;
+    change: number;
+    changePercent: number;
   }>;
+  recommendations: string[];
 }
 
-interface DailyStats {
+interface DayStat {
   date: string;
-  deliveries: number;
-  revenue: number;
-  avgTime: number;
-  trafficLevel: string;
+  value: number;
 }
+
+const DAY_NAMES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+const HEAT_HOURS = [6, 7, 8, 9, 10, 11, 12];
+
+const levelColor = (level?: string) => {
+  switch (level) {
+    case 'free':
+      return 'bg-kiwi-200 dark:bg-kiwi-800';
+    case 'light':
+      return 'bg-yellow-200 dark:bg-yellow-800';
+    case 'moderate':
+      return 'bg-orange-200 dark:bg-orange-800';
+    case 'heavy':
+    case 'severe':
+      return 'bg-red-200 dark:bg-red-800';
+    default:
+      return 'bg-surface-100 dark:bg-surface-700';
+  }
+};
+
+const levelLabel = (level?: string) => {
+  switch (level) {
+    case 'free':
+      return 'Libre';
+    case 'light':
+      return 'Ligero';
+    case 'moderate':
+      return 'Moderado';
+    case 'heavy':
+      return 'Pesado';
+    case 'severe':
+      return 'Severo';
+    default:
+      return 'Sin datos';
+  }
+};
 
 export default function MerchantTrafficAnalytics() {
-  const [analytics, setAnalytics] = useState<TrafficAnalytics | null>(null);
-  const [dailyStats, setDailyStats] = useState<DailyStats[]>([]);
+  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
+  const [report, setReport] = useState<MerchantReport | null>(null);
+  const [dailyOrders, setDailyOrders] = useState<DayStat[]>([]);
+  const [dailyRevenue, setDailyRevenue] = useState<DayStat[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'quarter'>('week');
 
-  async function fetchAnalytics() {
+  const fetchAnalytics = useCallback(async (period: 'week' | 'month' | 'quarter') => {
     try {
-      // Fetch traffic analytics
-      const analyticsResponse = await apiFetch('/api/routing/history/merchant/current');
-      if (!analyticsResponse.ok) throw new Error(`HTTP ${analyticsResponse.status}`);
-      const analyticsData = await analyticsResponse.json();
-      setAnalytics(analyticsData);
-
-      // Fetch daily stats
-      const statsResponse = await apiFetch(`/api/routing/history?period=${selectedPeriod}`);
-      if (!statsResponse.ok) throw new Error(`HTTP ${statsResponse.status}`);
-      const statsData = await statsResponse.json();
-      setDailyStats(statsData.dailyStats || []);
-    } catch (error) {
-      console.error('Failed to fetch analytics:', error);
-      // Use mock data for demo
-      setAnalytics({
-        totalDeliveries: 156,
-        averageDeliveryTime: 28,
-        trafficDelayTotal: 420,
-        deliveriesAffected: 45,
-        peakHours: [
-          { hour: 7, level: 'moderate', deliveries: 12 },
-          { hour: 8, level: 'heavy', deliveries: 18 },
-          { hour: 12, level: 'heavy', deliveries: 25 },
-          { hour: 13, level: 'moderate', deliveries: 20 },
-          { hour: 18, level: 'heavy', deliveries: 22 },
-        ],
-        bestDeliveryTimes: [
-          { hour: 10, reason: 'Tráfico ligero, repartidores disponibles' },
-          { hour: 15, reason: 'Fuera de hora pico, buen flujo' },
-          { hour: 20, reason: 'Sin tráfico, rápido' },
-        ],
-        worstDeliveryTimes: [
-          { hour: 7, reason: 'Hora pico mañana, congestión' },
-          { hour: 12, reason: 'Almuerzo, tráfico pesado' },
-          { hour: 18, reason: 'Hora pico tarde, alta demanda' },
-        ],
-        trafficImpact: {
-          onTime: 111,
-          delayed: 45,
-          avgDelay: 9.3,
-        },
-        patterns: [
-          { day: 'Lunes', pattern: 'Alta demanda en la mañana', confidence: 0.85 },
-          { day: 'Viernes', pattern: 'Picos de almuerzo intensos', confidence: 0.78 },
-          { day: 'Sábado', pattern: 'Distribución uniforme', confidence: 0.72 },
-        ],
-      });
+      setLoading(true);
+      setError(null);
+      // El backend solo acepta day|week|month: quarter se aproxima a month.
+      const backendPeriod = period === 'quarter' ? 'month' : period;
+      const [repRes, merch] = await Promise.all([
+        apiFetch(`/api/routing/history/merchant/me?period=${backendPeriod}`),
+        api.getMerchantAnalytics(period),
+      ]);
+      if (!repRes.ok) throw new Error(`Tráfico: HTTP ${repRes.status}`);
+      setReport(await repRes.json());
+      setDailyOrders(merch?.orders?.daily ?? []);
+      setDailyRevenue(merch?.revenue?.daily ?? []);
+    } catch (err) {
+      console.error('Failed to fetch traffic analytics:', err);
+      setError(err instanceof Error ? err.message : 'No se pudo cargar el análisis');
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
-    fetchAnalytics();
-  }, [selectedPeriod]);
+    if (!authLoading && !user) router.push('/login');
+  }, [user, authLoading, router]);
 
-  if (loading) {
+  useEffect(() => {
+    if (!user) return;
+    fetchAnalytics(selectedPeriod);
+  }, [selectedPeriod, fetchAnalytics, user]);
+
+  if (authLoading || (loading && !report)) {
     return (
-      <div className="min-h-[100dvh] bg-gradient-to-br from-surface-50 to-surface-100 dark:from-surface-900 dark:to-surface-800">
-        <div className="max-w-7xl mx-auto px-4 py-8">
+      <>
+        <MerchantNav />
+        <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
           <div className="animate-pulse space-y-6">
             <div className="h-8 bg-surface-200 dark:bg-surface-700 rounded w-64" />
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -111,47 +139,88 @@ export default function MerchantTrafficAnalytics() {
             </div>
             <div className="h-96 bg-surface-200 dark:bg-surface-700 rounded-2xl" />
           </div>
-        </div>
-      </div>
+        </main>
+      </>
     );
   }
 
-  return (
-    <div className="min-h-[100dvh] bg-gradient-to-br from-surface-50 to-surface-100 dark:from-surface-900 dark:to-surface-800">
-      {/* Header */}
-      <div className="bg-white/80 dark:bg-surface-800/80 backdrop-blur-xl border-b border-surface-200 dark:border-surface-700 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link
-                href="/analytics"
-                className="p-2 hover:bg-surface-100 dark:hover:bg-surface-700 rounded-xl transition-colors"
+  if (error && !report) {
+    return (
+      <>
+        <MerchantNav />
+        <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="text-center">
+              <p className="text-5xl mb-4">😕</p>
+              <h2 className="text-xl font-display font-bold mb-2">No pudimos cargar el tráfico</h2>
+              <p className="text-surface-500 mb-6">{error}</p>
+              <button
+                onClick={() => fetchAnalytics(selectedPeriod)}
+                className="px-6 py-3 rounded-xl bg-kiwi-gradient text-white font-semibold"
               >
-                <svg
-                  className="w-5 h-5 text-surface-600 dark:text-surface-400"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 19l-7-7 7-7"
-                  />
-                </svg>
-              </Link>
-              <div>
-                <h1 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100">
-                  <BarChart3 className="h-6 w-6 inline" /> Análisis de Tráfico
-                </h1>
-                <p className="text-sm text-surface-500 dark:text-surface-400">
-                  Impacto del tráfico en tus entregas
-                </p>
-              </div>
+                <RefreshCw className="h-4 w-4 inline" /> Reintentar
+              </button>
             </div>
+          </div>
+        </main>
+      </>
+    );
+  }
 
-            {/* Period Selector */}
+  const summary = report?.summary;
+  const patterns = report?.patterns ?? [];
+  const delayed = summary?.trafficDelayedDeliveries ?? 0;
+  const total = summary?.totalDeliveries ?? 0;
+  const onTime = Math.max(0, total - delayed);
+  const avgDelay = delayed > 0 ? Math.round((summary?.estimatedTimeLost ?? 0) / delayed) : 0;
+
+  const byHour = new Map<number, TrafficPattern[]>();
+  for (const p of patterns) {
+    const arr = byHour.get(p.hour) ?? [];
+    arr.push(p);
+    byHour.set(p.hour, arr);
+  }
+  const worstByHour = [...byHour.entries()]
+    .map(([hour, list]) => ({
+      hour,
+      worst: list.some((p) => p.averageLevel === 'severe' || p.averageLevel === 'heavy'),
+      samples: list.reduce((s, p) => s + p.sampleCount, 0),
+    }))
+    .filter((h) => h.worst)
+    .sort((a, b) => b.samples - a.samples)
+    .slice(0, 3);
+  const bestByHour = [...byHour.entries()]
+    .map(([hour, list]) => ({
+      hour,
+      best:
+        list.length > 0 &&
+        list.every((p) => p.averageLevel === 'free' || p.averageLevel === 'light'),
+      samples: list.reduce((s, p) => s + p.sampleCount, 0),
+    }))
+    .filter((h) => h.best)
+    .sort((a, b) => b.samples - a.samples)
+    .slice(0, 3);
+
+  const cellLevel = (day: number, hour: number) =>
+    patterns.find((p) => p.dayOfWeek === day && p.hour === hour)?.averageLevel;
+
+  const maxDaily = Math.max(...dailyOrders.map((d) => d.value), 1);
+  const hasTrafficData = patterns.length > 0;
+
+  return (
+    <>
+      <MerchantNav />
+      <div className="min-h-[100dvh] bg-gradient-to-br from-surface-50 to-surface-100 dark:from-surface-900 dark:to-surface-800">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+            <div>
+              <h1 className="text-2xl font-display font-bold text-surface-800 dark:text-surface-100">
+                <BarChart3 className="h-6 w-6 inline" /> Análisis de Tráfico
+              </h1>
+              <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">
+                Impacto del tráfico en tus entregas
+              </p>
+            </div>
             <div className="flex gap-1 bg-surface-100 dark:bg-surface-700 rounded-xl p-1">
               {(['week', 'month', 'quarter'] as const).map((period) => (
                 <button
@@ -168,593 +237,331 @@ export default function MerchantTrafficAnalytics() {
               ))}
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <motion.div
-            className="bg-white dark:bg-surface-800 rounded-2xl p-6 shadow-soft dark:shadow-dark"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-kiwi-100 dark:bg-kiwi-900/30 rounded-xl flex items-center justify-center text-2xl">
-                <Package className="h-6 w-6" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
-                  {analytics?.totalDeliveries}
-                </p>
-                <p className="text-sm text-surface-500 dark:text-surface-400">Entregas totales</p>
-              </div>
+          {!hasTrafficData && (
+            <div className="mb-6 rounded-2xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-4">
+              <p className="text-sm text-blue-800 dark:text-blue-200">
+                Aún no hay suficientes datos de tráfico registrados. Los patrones aparecen solos a
+                medida que se registran entregas.
+              </p>
             </div>
-          </motion.div>
+          )}
 
-          <motion.div
-            className="bg-white dark:bg-surface-800 rounded-2xl p-6 shadow-soft dark:shadow-dark"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center text-2xl">
-                ⏱️
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
-                  {analytics?.averageDeliveryTime} min
-                </p>
-                <p className="text-sm text-surface-500 dark:text-surface-400">Tiempo promedio</p>
-              </div>
+          <div className="space-y-6 sm:space-y-8">
+            {/* Quick Stats */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+              <motion.div
+                className="bg-white dark:bg-surface-800 rounded-2xl p-6 shadow-soft dark:shadow-dark"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-kiwi-100 dark:bg-kiwi-900/30 rounded-xl flex items-center justify-center">
+                    <Package className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold">{total}</p>
+                    <p className="text-sm text-surface-500 dark:text-surface-400">
+                      Entregas totales
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+
+              <motion.div
+                className="bg-white dark:bg-surface-800 rounded-2xl p-6 shadow-soft dark:shadow-dark"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center text-2xl">
+                    ⏱️
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold">{summary?.averageDeliveryTime ?? 0} min</p>
+                    <p className="text-sm text-surface-500 dark:text-surface-400">
+                      Tiempo promedio
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+
+              <motion.div
+                className="bg-white dark:bg-surface-800 rounded-2xl p-6 shadow-soft dark:shadow-dark"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-xl flex items-center justify-center text-2xl">
+                    🚦
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                      {delayed}
+                    </p>
+                    <p className="text-sm text-surface-500 dark:text-surface-400">
+                      Afectados por tráfico
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+
+              <motion.div
+                className="bg-white dark:bg-surface-800 rounded-2xl p-6 shadow-soft dark:shadow-dark"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-xl flex items-center justify-center text-2xl">
+                    🐢
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-red-600 dark:text-red-400">
+                      +{avgDelay} min
+                    </p>
+                    <p className="text-sm text-surface-500 dark:text-surface-400">
+                      Retraso promedio
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
             </div>
-          </motion.div>
 
-          <motion.div
-            className="bg-white dark:bg-surface-800 rounded-2xl p-6 shadow-soft dark:shadow-dark"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-xl flex items-center justify-center text-2xl">
-                🚦
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-                  {analytics?.deliveriesAffected}
-                </p>
-                <p className="text-sm text-surface-500 dark:text-surface-400">
-                  Afectados por tráfico
-                </p>
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            className="bg-white dark:bg-surface-800 rounded-2xl p-6 shadow-soft dark:shadow-dark"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-xl flex items-center justify-center text-2xl">
-                🐢
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-red-600 dark:text-red-400">
-                  +{analytics?.trafficImpact.avgDelay} min
-                </p>
-                <p className="text-sm text-surface-500 dark:text-surface-400">Retraso promedio</p>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-
-        {/* Traffic Impact Chart */}
-        <motion.div
-          className="bg-white dark:bg-surface-800 rounded-2xl p-6 shadow-soft dark:shadow-dark"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-        >
-          <h2 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100 mb-6">
-            📈 Impacto del Tráfico en Entregas
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* On-time vs Delayed */}
-            <div>
-              <h3 className="text-sm font-medium text-surface-600 dark:text-surface-400 mb-4">
-                Entregas a tiempo vs retrasadas
-              </h3>
-              <div className="space-y-4">
+            <motion.div
+              className="bg-white dark:bg-surface-800 rounded-2xl p-6 shadow-soft dark:shadow-dark"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+            >
+              <h2 className="text-lg font-display font-bold mb-6">📈 A tiempo vs retrasadas</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
                   <div className="flex justify-between mb-1">
-                    <span className="text-sm text-surface-600 dark:text-surface-400">
+                    <span className="text-sm">
                       <Check className="h-4 w-4 inline" /> A tiempo
                     </span>
-                    <span className="text-sm font-medium text-surface-800 dark:text-surface-200">
-                      {analytics?.trafficImpact.onTime} (
-                      {Math.round(
-                        ((analytics?.trafficImpact.onTime || 0) /
-                          (analytics?.totalDeliveries || 1)) *
-                          100,
-                      )}
-                      %)
+                    <span className="text-sm font-medium">
+                      {onTime} ({total > 0 ? Math.round((onTime / total) * 100) : 0}%)
                     </span>
                   </div>
                   <div className="h-3 bg-surface-100 dark:bg-surface-700 rounded-full overflow-hidden">
                     <motion.div
                       className="h-full bg-kiwi-500 rounded-full"
                       initial={{ width: 0 }}
-                      animate={{
-                        width: `${((analytics?.trafficImpact.onTime || 0) / (analytics?.totalDeliveries || 1)) * 100}%`,
-                      }}
+                      animate={{ width: `${total > 0 ? (onTime / total) * 100 : 0}%` }}
                       transition={{ duration: 1, ease: 'easeOut' }}
                     />
                   </div>
-                </div>
-
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm text-surface-600 dark:text-surface-400">
+                  <div className="flex justify-between mb-1 mt-4">
+                    <span className="text-sm">
                       <AlertTriangle className="h-4 w-4 inline" /> Retrasadas
                     </span>
-                    <span className="text-sm font-medium text-orange-600 dark:text-orange-400">
-                      {analytics?.trafficImpact.delayed} (
-                      {Math.round(
-                        ((analytics?.trafficImpact.delayed || 0) /
-                          (analytics?.totalDeliveries || 1)) *
-                          100,
-                      )}
-                      %)
+                    <span className="text-sm font-medium text-orange-600">
+                      {delayed} ({total > 0 ? Math.round((delayed / total) * 100) : 0}%)
                     </span>
                   </div>
                   <div className="h-3 bg-surface-100 dark:bg-surface-700 rounded-full overflow-hidden">
                     <motion.div
                       className="h-full bg-orange-500 rounded-full"
                       initial={{ width: 0 }}
-                      animate={{
-                        width: `${((analytics?.trafficImpact.delayed || 0) / (analytics?.totalDeliveries || 1)) * 100}%`,
-                      }}
+                      animate={{ width: `${total > 0 ? (delayed / total) * 100 : 0}%` }}
                       transition={{ duration: 1, ease: 'easeOut', delay: 0.2 }}
                     />
                   </div>
                 </div>
-              </div>
-            </div>
-
-            {/* Traffic Delay Breakdown */}
-            <div>
-              <h3 className="text-sm font-medium text-surface-600 dark:text-surface-400 mb-4">
-                Minutos perdidos por tráfico
-              </h3>
-              <div className="text-center py-8">
-                <motion.div
-                  className="text-6xl font-bold text-orange-600 dark:text-orange-400"
-                  initial={{ scale: 0.8 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: 'spring', stiffness: 200 }}
-                >
-                  {analytics?.trafficDelayTotal}
-                </motion.div>
-                <p className="text-lg text-surface-600 dark:text-surface-400 mt-2">
-                  minutos totales de retraso
-                </p>
-                <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">
-                  ≈ {Math.round((analytics?.trafficDelayTotal || 0) / 60)} horas perdidas
-                </p>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Best & Worst Times */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Best Delivery Times */}
-          <motion.div
-            className="bg-white dark:bg-surface-800 rounded-2xl p-6 shadow-soft dark:shadow-dark"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-          >
-            <h2 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100 mb-4">
-              🟢 Mejores Horas para Entregas
-            </h2>
-            <p className="text-sm text-surface-500 dark:text-surface-400 mb-4">
-              Programa pedidos en estos horarios para evitar retrasos
-            </p>
-
-            <div className="space-y-3">
-              {analytics?.bestDeliveryTimes.map((time, index) => (
-                <motion.div
-                  key={time.hour}
-                  className="flex items-center gap-4 p-4 rounded-xl bg-kiwi-50 dark:bg-kiwi-900/30 border border-kiwi-200 dark:border-kiwi-800"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.7 + index * 0.1 }}
-                >
-                  <div className="w-16 text-center">
-                    <p className="text-2xl font-bold text-kiwi-600 dark:text-kiwi-400">
-                      {time.hour}:00
-                    </p>
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-surface-800 dark:text-surface-100">
-                      {time.reason}
-                    </p>
-                  </div>
-                  <div className="text-kiwi-500">
-                    <Check className="h-6 w-6" />
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-
-          {/* Worst Delivery Times */}
-          <motion.div
-            className="bg-white dark:bg-surface-800 rounded-2xl p-6 shadow-soft dark:shadow-dark"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7 }}
-          >
-            <h2 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100 mb-4">
-              🔴 Horas con Más Tráfico
-            </h2>
-            <p className="text-sm text-surface-500 dark:text-surface-400 mb-4">
-              Evita estos horarios o informa a clientes de posibles retrasos
-            </p>
-
-            <div className="space-y-3">
-              {analytics?.worstDeliveryTimes.map((time, index) => (
-                <motion.div
-                  key={time.hour}
-                  className="flex items-center gap-4 p-4 rounded-xl bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.8 + index * 0.1 }}
-                >
-                  <div className="w-16 text-center">
-                    <p className="text-2xl font-bold text-red-600 dark:text-red-400">
-                      {time.hour}:00
-                    </p>
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-surface-800 dark:text-surface-100">
-                      {time.reason}
-                    </p>
-                  </div>
-                  <div className="text-red-500">
-                    <AlertTriangle className="h-6 w-6" />
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        </div>
-
-        {/* Weekly Traffic Pattern */}
-        <motion.div
-          className="bg-white dark:bg-surface-800 rounded-2xl p-6 shadow-soft dark:shadow-dark"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8 }}
-        >
-          <h2 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100 mb-4">
-            <Calendar className="h-5 w-5 inline" /> Patrones de Tráfico por Día
-          </h2>
-
-          <div className="grid grid-cols-7 gap-2">
-            {/* Hour labels */}
-            <div className="text-xs text-surface-500 dark:text-surface-400 text-center">Hora</div>
-            {[6, 7, 8, 9, 10, 11, 12].map((hour) => (
-              <div
-                key={hour}
-                className="text-xs text-surface-500 dark:text-surface-400 text-center"
-              >
-                {hour}:00
-              </div>
-            ))}
-
-            {/* Monday */}
-            <div className="text-xs text-surface-600 dark:text-surface-400 font-medium">Lun</div>
-            {['green', 'orange', 'red', 'yellow', 'green', 'green', 'red'].map((color, i) => (
-              <div
-                key={`mon-${i}`}
-                className={`h-8 rounded ${
-                  color === 'green'
-                    ? 'bg-kiwi-200 dark:bg-kiwi-800'
-                    : color === 'yellow'
-                      ? 'bg-yellow-200 dark:bg-yellow-800'
-                      : color === 'orange'
-                        ? 'bg-orange-200 dark:bg-orange-800'
-                        : 'bg-red-200 dark:bg-red-800'
-                }`}
-              />
-            ))}
-
-            {/* Tuesday */}
-            <div className="text-xs text-surface-600 dark:text-surface-400 font-medium">Mar</div>
-            {['green', 'orange', 'red', 'yellow', 'green', 'yellow', 'orange'].map((color, i) => (
-              <div
-                key={`tue-${i}`}
-                className={`h-8 rounded ${
-                  color === 'green'
-                    ? 'bg-kiwi-200 dark:bg-kiwi-800'
-                    : color === 'yellow'
-                      ? 'bg-yellow-200 dark:bg-yellow-800'
-                      : color === 'orange'
-                        ? 'bg-orange-200 dark:bg-orange-800'
-                        : 'bg-red-200 dark:bg-red-800'
-                }`}
-              />
-            ))}
-
-            {/* Wednesday */}
-            <div className="text-xs text-surface-600 dark:text-surface-400 font-medium">Mié</div>
-            {['green', 'yellow', 'red', 'yellow', 'green', 'green', 'red'].map((color, i) => (
-              <div
-                key={`wed-${i}`}
-                className={`h-8 rounded ${
-                  color === 'green'
-                    ? 'bg-kiwi-200 dark:bg-kiwi-800'
-                    : color === 'yellow'
-                      ? 'bg-yellow-200 dark:bg-yellow-800'
-                      : color === 'orange'
-                        ? 'bg-orange-200 dark:bg-orange-800'
-                        : 'bg-red-200 dark:bg-red-800'
-                }`}
-              />
-            ))}
-
-            {/* Thursday */}
-            <div className="text-xs text-surface-600 dark:text-surface-400 font-medium">Jue</div>
-            {['green', 'yellow', 'orange', 'yellow', 'green', 'yellow', 'orange'].map(
-              (color, i) => (
-                <div
-                  key={`thu-${i}`}
-                  className={`h-8 rounded ${
-                    color === 'green'
-                      ? 'bg-kiwi-200 dark:bg-kiwi-800'
-                      : color === 'yellow'
-                        ? 'bg-yellow-200 dark:bg-yellow-800'
-                        : color === 'orange'
-                          ? 'bg-orange-200 dark:bg-orange-800'
-                          : 'bg-red-200 dark:bg-red-800'
-                  }`}
-                />
-              ),
-            )}
-
-            {/* Friday */}
-            <div className="text-xs text-surface-600 dark:text-surface-400 font-medium">Vie</div>
-            {['green', 'orange', 'red', 'orange', 'yellow', 'red', 'red'].map((color, i) => (
-              <div
-                key={`fri-${i}`}
-                className={`h-8 rounded ${
-                  color === 'green'
-                    ? 'bg-kiwi-200 dark:bg-kiwi-800'
-                    : color === 'yellow'
-                      ? 'bg-yellow-200 dark:bg-yellow-800'
-                      : color === 'orange'
-                        ? 'bg-orange-200 dark:bg-orange-800'
-                        : 'bg-red-200 dark:bg-red-800'
-                }`}
-              />
-            ))}
-
-            {/* Saturday */}
-            <div className="text-xs text-surface-600 dark:text-surface-400 font-medium">Sáb</div>
-            {['green', 'green', 'yellow', 'green', 'green', 'green', 'yellow'].map((color, i) => (
-              <div
-                key={`sat-${i}`}
-                className={`h-8 rounded ${
-                  color === 'green'
-                    ? 'bg-kiwi-200 dark:bg-kiwi-800'
-                    : color === 'yellow'
-                      ? 'bg-yellow-200 dark:bg-yellow-800'
-                      : color === 'orange'
-                        ? 'bg-orange-200 dark:bg-orange-800'
-                        : 'bg-red-200 dark:bg-red-800'
-                }`}
-              />
-            ))}
-
-            {/* Sunday */}
-            <div className="text-xs text-surface-600 dark:text-surface-400 font-medium">Dom</div>
-            {['green', 'green', 'green', 'green', 'green', 'green', 'green'].map((color, i) => (
-              <div
-                key={`sun-${i}`}
-                className={`h-8 rounded ${
-                  color === 'green'
-                    ? 'bg-kiwi-200 dark:bg-kiwi-800'
-                    : color === 'yellow'
-                      ? 'bg-yellow-200 dark:bg-yellow-800'
-                      : color === 'orange'
-                        ? 'bg-orange-200 dark:bg-orange-800'
-                        : 'bg-red-200 dark:bg-red-800'
-                }`}
-              />
-            ))}
-          </div>
-
-          {/* Legend */}
-          <div className="flex items-center justify-center gap-6 mt-6">
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-kiwi-200 dark:bg-kiwi-800 rounded" />
-              <span className="text-xs text-surface-600 dark:text-surface-400">Libre</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-yellow-200 dark:bg-yellow-800 rounded" />
-              <span className="text-xs text-surface-600 dark:text-surface-400">Ligero</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-orange-200 dark:bg-orange-800 rounded" />
-              <span className="text-xs text-surface-600 dark:text-surface-400">Moderado</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-red-200 dark:bg-red-800 rounded" />
-              <span className="text-xs text-surface-600 dark:text-surface-400">Pesado</span>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Recommendations */}
-        <motion.div
-          className="bg-white dark:bg-surface-800 rounded-2xl p-6 shadow-soft dark:shadow-dark"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.9 }}
-        >
-          <h2 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100 mb-4">
-            💡 Recomendaciones para Optimizar Entregas
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 rounded-xl bg-kiwi-50 dark:bg-kiwi-900/30 border border-kiwi-200 dark:border-kiwi-800">
-              <div className="text-3xl mb-3">⏰</div>
-              <h3 className="font-semibold text-surface-800 dark:text-surface-100 mb-2">
-                Programa Pedidos Estratégicamente
-              </h3>
-              <p className="text-sm text-surface-600 dark:text-surface-400">
-                Los mejores horarios son 10:00 AM, 3:00 PM y 8:00 PM cuando el tráfico es mínimo.
-              </p>
-            </div>
-
-            <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800">
-              <div className="text-3xl mb-3">📢</div>
-              <h3 className="font-semibold text-surface-800 dark:text-surface-100 mb-2">
-                Informa a tus Clientes
-              </h3>
-              <p className="text-sm text-surface-600 dark:text-surface-400">
-                Muestra alertas de tráfico en tu menú para que los clientes sepan cuando hay
-                retrasos.
-              </p>
-            </div>
-
-            <div className="p-4 rounded-xl bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800">
-              <div className="text-3xl mb-3">
-                <BarChart3 className="h-8 w-8" />
-              </div>
-              <h3 className="font-semibold text-surface-800 dark:text-surface-100 mb-2">
-                Revisa tus Métricas
-              </h3>
-              <p className="text-sm text-surface-600 dark:text-surface-400">
-                Usa este análisis para ajustar horarios de personal y preparación según el tráfico.
-              </p>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Daily Performance Chart */}
-        <motion.div
-          className="bg-white dark:bg-surface-800 rounded-2xl p-6 shadow-soft dark:shadow-dark"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.0 }}
-        >
-          <h2 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100 mb-6">
-            📈 Rendimiento Diario
-          </h2>
-
-          <div className="overflow-x-auto">
-            <div className="flex gap-2 min-w-[600px]">
-              {dailyStats.slice(-7).map((day, index) => (
-                <div key={day.date} className="flex-1">
-                  <div className="text-center mb-2">
-                    <p className="text-xs text-surface-500 dark:text-surface-400">
-                      {new Date(day.date).toLocaleDateString('es-CR', { weekday: 'short' })}
-                    </p>
-                    <p className="text-sm font-medium text-surface-800 dark:text-surface-200">
-                      {new Date(day.date).getDate()}
-                    </p>
-                  </div>
-
-                  <div className="h-32 flex items-end justify-center">
-                    <motion.div
-                      className="w-full max-w-[40px] rounded-t-lg"
-                      style={{
-                        height: `${(day.deliveries / 30) * 100}%`,
-                        backgroundColor:
-                          day.trafficLevel === 'heavy'
-                            ? '#ef4444'
-                            : day.trafficLevel === 'moderate'
-                              ? '#f97316'
-                              : day.trafficLevel === 'light'
-                                ? '#84cc16'
-                                : '#22c55e',
-                      }}
-                      initial={{ height: 0 }}
-                      animate={{ height: `${(day.deliveries / 30) * 100}%` }}
-                      transition={{ duration: 0.5, delay: 0.1 * index }}
-                    />
-                  </div>
-
-                  <div className="text-center mt-2">
-                    <p className="text-sm font-medium text-surface-800 dark:text-surface-200">
-                      {day.deliveries}
-                    </p>
-                    <p className="text-xs text-surface-500 dark:text-surface-400">
-                      ₡{day.revenue.toLocaleString()}
-                    </p>
-                  </div>
+                <div className="text-center py-4">
+                  <p className="text-6xl font-bold text-orange-600 dark:text-orange-400">
+                    {summary?.estimatedTimeLost ?? 0}
+                  </p>
+                  <p className="text-lg text-surface-600 mt-2">minutos totales de retraso</p>
+                  <p className="text-sm text-surface-500 mt-1">
+                    Nivel promedio: {levelLabel(summary?.averageTrafficLevel)}
+                  </p>
                 </div>
-              ))}
-            </div>
-          </div>
-        </motion.div>
+              </div>
+            </motion.div>
 
-        {/* Detected Patterns */}
-        <motion.div
-          className="bg-white dark:bg-surface-800 rounded-2xl p-6 shadow-soft dark:shadow-dark"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.1 }}
-        >
-          <h2 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100 mb-4">
-            <Target className="h-5 w-5 inline" /> Patrones Detectados
-          </h2>
-
-          <div className="space-y-3">
-            {analytics?.patterns.map((pattern, index) => (
+            {/* Best & Worst */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <motion.div
-                key={index}
-                className="flex items-center gap-4 p-4 rounded-xl bg-surface-50 dark:bg-surface-900"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 1.2 + index * 0.1 }}
+                className="bg-white dark:bg-surface-800 rounded-2xl p-6 shadow-soft dark:shadow-dark"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 }}
               >
-                <div className="w-20 text-center">
-                  <p className="text-sm font-semibold text-surface-800 dark:text-surface-200">
-                    {pattern.day}
-                  </p>
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm text-surface-800 dark:text-surface-200">
-                    {pattern.pattern}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-16 h-2 bg-surface-200 dark:bg-surface-700 rounded-full overflow-hidden">
+                <h2 className="text-lg font-display font-bold mb-2">🟢 Mejores horas</h2>
+                <p className="text-sm text-surface-500 mb-4">Tráfico libre o ligero observado</p>
+                <div className="space-y-3">
+                  {bestByHour.length === 0 && (
+                    <p className="text-sm text-surface-400">Sin datos suficientes todavía.</p>
+                  )}
+                  {bestByHour.map((t) => (
                     <div
-                      className="h-full bg-kiwi-500 rounded-full"
-                      style={{ width: `${pattern.confidence * 100}%` }}
-                    />
-                  </div>
-                  <span className="text-xs text-surface-500 dark:text-surface-400">
-                    {Math.round(pattern.confidence * 100)}%
-                  </span>
+                      key={t.hour}
+                      className="flex items-center gap-4 p-4 rounded-xl bg-kiwi-50 dark:bg-kiwi-900/30 border border-kiwi-200 dark:border-kiwi-800"
+                    >
+                      <p className="text-2xl font-bold text-kiwi-600 w-16 text-center">
+                        {t.hour}:00
+                      </p>
+                      <p className="text-sm flex-1">{t.samples} observaciones favorables</p>
+                      <Check className="h-6 w-6 text-kiwi-500" />
+                    </div>
+                  ))}
                 </div>
               </motion.div>
-            ))}
+
+              <motion.div
+                className="bg-white dark:bg-surface-800 rounded-2xl p-6 shadow-soft dark:shadow-dark"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.7 }}
+              >
+                <h2 className="text-lg font-display font-bold mb-2">🔴 Horas con más tráfico</h2>
+                <p className="text-sm text-surface-500 mb-4">Evítalas o avisa retrasos</p>
+                <div className="space-y-3">
+                  {worstByHour.length === 0 && (
+                    <p className="text-sm text-surface-400">Sin congestión registrada. 🎉</p>
+                  )}
+                  {worstByHour.map((t) => (
+                    <div
+                      key={t.hour}
+                      className="flex items-center gap-4 p-4 rounded-xl bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800"
+                    >
+                      <p className="text-2xl font-bold text-red-600 w-16 text-center">
+                        {t.hour}:00
+                      </p>
+                      <p className="text-sm flex-1">{t.samples} observaciones con congestión</p>
+                      <AlertTriangle className="h-6 w-6 text-red-500" />
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            </div>
+
+            {/* Heatmap from observed patterns */}
+            <motion.div
+              className="bg-white dark:bg-surface-800 rounded-2xl p-6 shadow-soft dark:shadow-dark"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.8 }}
+            >
+              <h2 className="text-lg font-display font-bold mb-4">
+                <Calendar className="h-5 w-5 inline" /> Mapa de calor observado
+              </h2>
+              <div className="grid grid-cols-8 gap-2">
+                <div className="text-xs text-surface-500 text-center">Hora</div>
+                {HEAT_HOURS.map((hour) => (
+                  <div key={hour} className="text-xs text-surface-500 text-center">
+                    {hour}:00
+                  </div>
+                ))}
+                {DAY_NAMES.map((day, d) => (
+                  <Fragment key={day}>
+                    <div className="text-xs font-medium text-surface-600 dark:text-surface-400">
+                      {day}
+                    </div>
+                    {HEAT_HOURS.map((hour) => (
+                      <div
+                        key={`${d}-${hour}`}
+                        className={`h-8 rounded ${levelColor(cellLevel(d, hour))}`}
+                      />
+                    ))}
+                  </Fragment>
+                ))}
+              </div>
+              <div className="flex items-center justify-center gap-6 mt-6">
+                {(
+                  [
+                    ['Libre', 'bg-kiwi-200 dark:bg-kiwi-800'],
+                    ['Ligero', 'bg-yellow-200 dark:bg-yellow-800'],
+                    ['Moderado', 'bg-orange-200 dark:bg-orange-800'],
+                    ['Pesado', 'bg-red-200 dark:bg-red-800'],
+                  ] as const
+                ).map(([label, cls]) => (
+                  <div key={label} className="flex items-center gap-2">
+                    <div className={`w-4 h-4 rounded ${cls}`} />
+                    <span className="text-xs text-surface-600 dark:text-surface-400">{label}</span>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+
+            {/* Daily deliveries from merchant analytics */}
+            <motion.div
+              className="bg-white dark:bg-surface-800 rounded-2xl p-6 shadow-soft dark:shadow-dark"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.9 }}
+            >
+              <h2 className="text-lg font-display font-bold mb-6">📈 Entregas por día</h2>
+              {dailyOrders.length === 0 ? (
+                <p className="text-sm text-surface-400">Sin entregas en el período.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <div className="flex gap-2 min-w-[600px]">
+                    {dailyOrders.slice(-7).map((day) => {
+                      const max = Math.max(...dailyOrders.map((d) => d.value), 1);
+                      const rev = dailyRevenue.find((r) => r.date === day.date)?.value ?? 0;
+                      return (
+                        <div key={day.date} className="flex-1">
+                          <div className="text-center mb-2">
+                            <p className="text-xs text-surface-500">
+                              {new Date(day.date).toLocaleDateString('es-CR', { weekday: 'short' })}
+                            </p>
+                            <p className="text-sm font-medium">{new Date(day.date).getDate()}</p>
+                          </div>
+                          <div className="h-32 flex items-end justify-center">
+                            <motion.div
+                              className="w-full max-w-[40px] rounded-t-lg bg-kiwi-500"
+                              initial={{ height: 0 }}
+                              animate={{ height: `${(day.value / max) * 100}%` }}
+                              transition={{ duration: 0.5 }}
+                            />
+                          </div>
+                          <div className="text-center mt-2">
+                            <p className="text-sm font-medium">{day.value}</p>
+                            <p className="text-xs text-surface-500">₡{rev.toLocaleString()}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </motion.div>
+
+            {/* Real backend recommendations */}
+            {(report?.recommendations?.length ?? 0) > 0 && (
+              <motion.div
+                className="bg-white dark:bg-surface-800 rounded-2xl p-6 shadow-soft dark:shadow-dark"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1.0 }}
+              >
+                <h2 className="text-lg font-display font-bold mb-4">
+                  <Target className="h-5 w-5 inline" /> Recomendaciones
+                </h2>
+                <ul className="space-y-2">
+                  {report!.recommendations.map((rec, i) => (
+                    <li
+                      key={i}
+                      className="flex gap-2 text-sm text-surface-700 dark:text-surface-300"
+                    >
+                      <span>💡</span>
+                      <span>{rec}</span>
+                    </li>
+                  ))}
+                </ul>
+              </motion.div>
+            )}
           </div>
-        </motion.div>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

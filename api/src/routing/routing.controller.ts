@@ -1,11 +1,13 @@
-import { Controller, Post, Get, Put, Body, Query, Param } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBody } from '@nestjs/swagger';
+import { Controller, Post, Get, Put, Body, Query, Param, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { RoutingService } from './routing.service';
 import { TrafficService } from './traffic.service';
 import { TrafficAlertsService } from './traffic-alerts.service';
 import { TrafficHistoryService } from './traffic-history.service';
 import { RouteSuggestionsService } from './route-suggestions.service';
 import { TrafficPredictionsService } from './traffic-predictions.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @ApiTags('Routing')
 @Controller('routing')
@@ -310,6 +312,15 @@ export class RoutingController {
     const start = startDate ? new Date(startDate) : undefined;
     const end = endDate ? new Date(endDate) : undefined;
     return this.trafficHistoryService.getTrafficHeatmap(start, end);
+  }
+
+  @Get('history/merchant/me')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get traffic report for the authenticated merchant' })
+  async getMyTrafficReport(@CurrentUser() user: any, @Query('period') period?: string) {
+    const p = (period as 'day' | 'week' | 'month') || 'week';
+    return this.trafficHistoryService.getMyTrafficReport(user.sub, p);
   }
 
   @Get('history/merchant/:merchantId')

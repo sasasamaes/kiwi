@@ -1,11 +1,38 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Check, Star, Car, Calendar, FileText } from 'lucide-react';
-import { AnimatedButton, StaggerContainer, StaggerItem } from '@kiwi/ui';
+import { AnimatedButton, StaggerContainer, StaggerItem, useAuth } from '@kiwi/ui';
 
 export default function Home() {
+  const router = useRouter();
+  const { user, loading } = useAuth();
+
+  useEffect(() => {
+    if (!loading && user) router.replace('/dashboard');
+  }, [user, loading, router]);
+
+  if (loading || user) {
+    return (
+      <main className="min-h-[100dvh] bg-bg-light flex items-center justify-center">
+        <motion.div
+          className="text-2xl font-bold text-kiwi-500"
+          animate={{ opacity: [1, 0.4, 1] }}
+          transition={{ duration: 1.2, repeat: Infinity }}
+        >
+          🥝
+        </motion.div>
+      </main>
+    );
+  }
+
+  return <Landing />;
+}
+
+function Landing() {
   return (
     <main className="min-h-[100dvh] bg-bg-light">
       {/* Hero Section */}

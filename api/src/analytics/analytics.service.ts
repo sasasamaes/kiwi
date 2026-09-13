@@ -318,7 +318,10 @@ export class AnalyticsService {
       if (page.length === 0) break;
 
       for (const order of page) {
-        const hour = new Date(order.createdAt).getHours();
+        // Hora Costa Rica (servidor en UTC): igual que traffic-history.
+        const hour = new Date(
+          new Date(order.createdAt).getTime() - 6 * 60 * 60 * 1000,
+        ).getUTCHours();
         if (hourlyData[hour]) {
           hourlyData[hour].orders++;
           hourlyData[hour].revenue += Number(order.totalAmount);
