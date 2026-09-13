@@ -1,6 +1,7 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Res } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
-import { HealthService, DriftReport } from './health.service';
+import type { Response } from 'express';
+import { HealthService, DriftReport, SocketTransportReport } from './health.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 @ApiTags('Health')
@@ -12,12 +13,20 @@ export class HealthController {
   ) {}
 
   /**
-   * Liveness: is the API process up at all.
+   * Liveness: process up AND the socket transport actually mounted. A missing
+   * @nestjs/platform-socket.io adapter historically shipped unnoticed (REST
+   * fine, every WS handshake 404) — this makes such a deploy fail its probe.
    */
   @Get()
-  @ApiOperation({ summary: 'Liveness probe' })
-  getHealth() {
-    return { status: 'ok', timestamp: new Date().toISOString() };
+  @ApiOperation({
+    summary: 'Liveness probe (503 when the socket transport is not mounted)',
+  })
+  async getHealth(@Res({ passthrough: true }) res: Response) {
+    const socket = await this.healthService.getSocketTransportReport();
+    if (socket.status === 'error') {
+      return res.status(503).json({ status: 'error', socket, timestamp: new Date().toISOString() });
+    }
+    return { status: 'ok', socket, timestamp: new Date().toISOString() };
   }
 
   /**
@@ -48,5 +57,15 @@ export class HealthController {
   @ApiOperation({ summary: 'Schema drift report (Prisma Client vs live DB)' })
   async getSchemaDrift(): Promise<DriftReport> {
     return this.healthService.getDriftReport();
+  }
+
+  /**
+   * Deep socket-transport diagnostics: adapter resolvability + a real engine.io
+   * self-handshake. Useful when liveness fails and you need the "why".
+   */
+  @Get('socket')
+  @ApiOperation({ summary: 'Socket transport diagnostics (adapter + self-handshake)' })
+  async getSocketHealth(): Promise<SocketTransportReport> {
+    return this.healthService.getSocketTransportReport();
   }
 }

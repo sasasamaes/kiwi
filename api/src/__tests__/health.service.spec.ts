@@ -1,6 +1,107 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { HttpAdapterHost } from '@nestjs/core';
+import * as http from 'node:http';
 import { PrismaService } from '../prisma/prisma.service';
 import { HealthService } from '../health/health.service';
+
+describe('HealthService — socket transport', () => {
+  let service: HealthService;
+  let httpServer: http.Server | undefined;
+
+  const makeModule = async (adapterHostValue: any) => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        HealthService,
+        { provide: PrismaService, useValue: { $queryRaw: jest.fn() } },
+        { provide: HttpAdapterHost, useValue: adapterHostValue },
+      ],
+    }).compile();
+    return module.get(HealthService);
+  };
+
+  afterEach((done) => {
+    if (httpServer) {
+      httpServer.close(() => done());
+      httpServer = undefined;
+    } else {
+      done();
+    }
+  });
+
+  it('reports error with adapter:missing when the adapter package is not resolvable', async () => {
+    service = await makeModule({ httpAdapter: { getHttpServer: () => null } });
+    (service as any).resolveSocketAdapter = () => 'missing';
+
+    const report = await service.getSocketTransportReport();
+
+    expect(report.status).toBe('error');
+    expect(report.adapter).toBe('missing');
+    expect(report.handshake).toBe('not_mounted');
+    expect(report.detail).toContain('platform-socket.io');
+  });
+
+  it('reports ok after a real engine.io OPEN-packet handshake (mounted transport)', async () => {
+    // Stand-in for the Nest HTTP server: answers the engine.io polling
+    // handshake exactly like a mounted socket.io does.
+    httpServer = http.createServer((_req, res) => {
+      res.writeHead(200, { 'Content-Type': 'text/plain' });
+      res.end('0{"sid":"test","upgrades":["websocket"],"pingInterval":25000}');
+    });
+    await new Promise<void>((r) => httpServer!.listen(0, '127.0.0.1', r));
+
+    service = await makeModule({
+      httpAdapter: { getHttpServer: () => httpServer },
+    });
+
+    const report = await service.getSocketTransportReport();
+
+    expect(report.status).toBe('ok');
+    expect(report.adapter).toBe('installed');
+    expect(report.handshake).toBe('ok');
+  });
+
+  it('detects the not_mounted signature (express-style 404 instead of OPEN packet)', async () => {
+    // This is EXACTLY what prod answered when the adapter was missing.
+    httpServer = http.createServer((_req, res) => {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(
+        '{"message":"Cannot GET /socket.io/?EIO=4&transport=polling","error":"Not Found","statusCode":404}',
+      );
+    });
+    await new Promise<void>((r) => httpServer!.listen(0, '127.0.0.1', r));
+
+    service = await makeModule({
+      httpAdapter: { getHttpServer: () => httpServer },
+    });
+
+    const report = await service.getSocketTransportReport();
+
+    expect(report.status).toBe('error');
+    expect(report.adapter).toBe('installed');
+    expect(report.handshake).toBe('not_mounted');
+  });
+
+  it('reports unreachable when the HTTP server refuses connections', async () => {
+    // A closed server on a fixed port = ECONNREFUSED on probe.
+    httpServer = http.createServer((_req, res) => res.end('0{}'));
+    const port: number = await new Promise((resolve) => {
+      httpServer!.listen(0, '127.0.0.1', () => resolve((httpServer!.address() as any).port));
+    });
+    httpServer.close();
+
+    service = await makeModule({
+      httpAdapter: {
+        getHttpServer: () => ({ address: () => ({ address: '127.0.0.1', port }) }),
+      },
+    });
+
+    const report = await service.getSocketTransportReport();
+
+    expect(report.status).toBe('error');
+    expect(report.handshake).toBe('unreachable');
+    expect(report.detail).toBeTruthy();
+  });
+});
 
 describe('HealthService — schema drift', () => {
   let service: HealthService;
@@ -10,7 +111,11 @@ describe('HealthService — schema drift', () => {
     prisma = { $queryRaw: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [HealthService, { provide: PrismaService, useValue: prisma }],
+      providers: [
+        HealthService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: HttpAdapterHost, useValue: { httpAdapter: { getHttpServer: () => null } } },
+      ],
     }).compile();
 
     service = module.get(HealthService);
