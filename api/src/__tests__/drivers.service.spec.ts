@@ -89,6 +89,22 @@ describe('DriversService', () => {
       const result = await service.getAvailableDrivers(10.0, -85.0);
       expect(result).toHaveLength(2);
     });
+
+    it('should return the FULL directory: offline and pending-KYC drivers included', async () => {
+      // A merchant must see the driver they just recruited even if he has
+      // never connected. The service must not filter by status or KYC.
+      prisma.driverProfile.findMany.mockResolvedValue([
+        { id: 'dp-1', fullName: 'Juan', status: 'available' },
+        { id: 'dp-2', fullName: 'Nuevo', status: 'offline' },
+        { id: 'dp-3', fullName: 'Ocupado', status: 'busy' },
+      ]);
+
+      const result = await service.getAvailableDrivers();
+      expect(result).toHaveLength(3);
+      // No status/kyc filter in the where clause.
+      const arg = prisma.driverProfile.findMany.mock.calls[0][0];
+      expect(arg.where).toBeUndefined();
+    });
   });
 
   describe('findById', () => {

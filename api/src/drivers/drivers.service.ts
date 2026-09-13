@@ -100,12 +100,15 @@ export class DriversService {
     });
   }
 
+  /**
+   * Real directory of drivers for merchants: every driver profile, whatever
+   * their current status. Merchants must be able to SEE (and favorite) the
+   * driver they just recruited even if he is offline or pending KYC —
+   * availability for assignment is enforced at assignment time, not by
+   * hiding people from the list.
+   */
   async getAvailableDrivers(latitude?: number, longitude?: number) {
     return this.prisma.driverProfile.findMany({
-      where: {
-        status: 'available',
-        kycStatus: 'approved',
-      },
       include: {
         user: {
           select: {
@@ -113,9 +116,7 @@ export class DriversService {
           },
         },
       },
-      orderBy: {
-        rating: 'desc',
-      },
+      orderBy: [{ status: 'asc' }, { rating: 'desc' }],
     });
   }
 

@@ -672,6 +672,20 @@ export class OrdersService {
       throw new NotFoundException('Repartidor no encontrado');
     }
 
+    // Only active drivers can be assigned: the merchant sees everyone in the
+    // directory, but a driver who is offline (or not KYC-approved) cannot be
+    // chosen — matching what the UI offers.
+    if (driverProfile.status !== 'available') {
+      throw new BadRequestException(
+        `${driverProfile.fullName} no está disponible ahora (estado: ${driverProfile.status}). Podrás asignárselo cuando se conecte.`,
+      );
+    }
+    if (driverProfile.kycStatus !== 'approved') {
+      throw new BadRequestException(
+        `${driverProfile.fullName} aún no está verificado (KYC ${driverProfile.kycStatus}).`,
+      );
+    }
+
     // Ownership check: only the merchant that owns the order can assign.
     // Keeps backward compat with existing tests that call without userId.
     if (merchantUserId) {

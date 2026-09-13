@@ -128,6 +128,7 @@ const orderStatusText = (status: string) => {
 export default function DriversPage() {
   const { isConnected, on } = useSocket();
   const [tab, setTab] = useState<'available' | 'favorites' | 'contest'>('available');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'available'>('all');
   const [filter, setFilter] = useState<VehicleType | 'all'>('all');
   const [showFilters, setShowFilters] = useState(false);
   const [search, setSearch] = useState('');
@@ -316,12 +317,14 @@ export default function DriversPage() {
   };
 
   const baseList = tab === 'favorites' ? drivers.filter((d) => favIds.has(d.id)) : drivers;
-  const filteredDrivers = baseList.filter((d) => {
-    if (filter !== 'all' && d.vehicleType !== filter) return false;
-    if (search.trim() && !d.fullName.toLowerCase().includes(search.trim().toLowerCase()))
-      return false;
-    return true;
-  });
+  const filteredDrivers = baseList
+    .filter((d) => statusFilter === 'all' || d.status === 'available')
+    .filter((d) => {
+      if (filter !== 'all' && d.vehicleType !== filter) return false;
+      if (search.trim() && !d.fullName.toLowerCase().includes(search.trim().toLowerCase()))
+        return false;
+      return true;
+    });
 
   const availableCount = drivers.filter((d) => d.status === 'available').length;
   const busyCount = drivers.filter((d) => d.status === 'busy').length;
@@ -419,7 +422,7 @@ export default function DriversPage() {
           />
         ) : (
           <>
-            {/* Search */}
+            {/* Search + status toggle */}
             <div className="mb-4 flex gap-2">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
@@ -429,6 +432,28 @@ export default function DriversPage() {
                   placeholder="Buscar por nombre…"
                   className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 pl-9 pr-4 py-2.5 text-sm text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:border-kiwi-500 focus:ring-2 focus:ring-kiwi-500/20"
                 />
+              </div>
+              <div className="flex rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 overflow-hidden">
+                <button
+                  onClick={() => setStatusFilter('all')}
+                  className={`px-3 py-2 text-sm font-medium transition-colors ${
+                    statusFilter === 'all'
+                      ? 'bg-kiwi-500 text-white'
+                      : 'text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-700'
+                  }`}
+                >
+                  Todos
+                </button>
+                <button
+                  onClick={() => setStatusFilter('available')}
+                  className={`px-3 py-2 text-sm font-medium transition-colors ${
+                    statusFilter === 'available'
+                      ? 'bg-kiwi-500 text-white'
+                      : 'text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-700'
+                  }`}
+                >
+                  Activos
+                </button>
               </div>
               <AnimatedButton variant="secondary" onClick={() => setShowFilters(!showFilters)}>
                 {showFilters ? 'Ocultar' : 'Vehículo'}
@@ -554,8 +579,8 @@ export default function DriversPage() {
                                 </button>
                               )}
                             </div>
-                            {driver.status === 'available' && (
-                              <div className="mt-2">
+                            <div className="mt-2">
+                              {driver.status === 'available' ? (
                                 <AnimatedButton
                                   variant="primary"
                                   size="sm"
@@ -563,8 +588,15 @@ export default function DriversPage() {
                                 >
                                   Asignar
                                 </AnimatedButton>
-                              </div>
-                            )}
+                              ) : (
+                                <span
+                                  className="inline-block rounded-lg bg-surface-100 dark:bg-surface-700 px-3 py-1.5 text-xs font-medium text-surface-400 dark:text-surface-500 cursor-not-allowed"
+                                  title="Se puede asignar cuando el repartidor esté conectado (Disponible)"
+                                >
+                                  No disponible
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </motion.div>

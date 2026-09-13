@@ -18,7 +18,7 @@ jest.mock('../events/events.gateway', () => ({
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { OrdersService } from '../orders/orders.service';
 import { EventsGateway } from '../events/events.gateway';
 import { DriversService } from '../drivers/drivers.service';
@@ -35,6 +35,7 @@ describe('OrdersService', () => {
         findUnique: jest.fn(),
         findMany: jest.fn(),
         update: jest.fn(),
+        updateMany: jest.fn(),
         aggregate: jest.fn(),
         count: jest.fn(),
       },
@@ -498,6 +499,47 @@ describe('OrdersService', () => {
       const loc: any = await service.getPublicDriverLocation('order-1');
       expect(loc.lat).toBe(10.2);
       expect(loc).not.toHaveProperty('driverId');
+    });
+  });
+
+  describe('assignDriver availability guard', () => {
+    const ORDER_ID = 'order-1';
+    const DRIVER_ID = 'dp-1';
+
+    it('rejects assigning an offline driver with a clear message', async () => {
+      prisma.driverProfile = {
+        ...prisma.driverProfile,
+        findUnique: jest.fn().mockResolvedValue({
+          id: DRIVER_ID,
+          fullName: 'Nuevo Repartidor',
+          status: 'offline',
+          kycStatus: 'approved',
+          userId: 'user-d',
+        }),
+      };
+
+      await expect(service.assignDriver(ORDER_ID, DRIVER_ID)).rejects.toThrow(
+        new BadRequestException(
+          'Nuevo Repartidor no está disponible ahora (estado: offline). Podrás asignárselo cuando se conecte.',
+        ),
+      );
+      expect(prisma.order.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('rejects a not-yet-verified (KYC pending) driver', async () => {
+      prisma.driverProfile = {
+        ...prisma.driverProfile,
+        findUnique: jest.fn().mockResolvedValue({
+          id: DRIVER_ID,
+          fullName: 'Nuevo Repartidor',
+          status: 'available',
+          kycStatus: 'pending',
+          userId: 'user-d',
+        }),
+      };
+
+      await expect(service.assignDriver(ORDER_ID, DRIVER_ID)).rejects.toThrow(BadRequestException);
+      expect(prisma.order.updateMany).not.toHaveBeenCalled();
     });
   });
 });
