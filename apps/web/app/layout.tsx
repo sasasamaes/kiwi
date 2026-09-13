@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Geist, Geist_Mono, Inter } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider, AuthProvider, LanguageProvider, SentryProvider } from '@kiwi/ui';
+import { OfflineBanner } from './offline-banner';
 
 const geist = Geist({
   subsets: ['latin'],
@@ -34,7 +35,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <SentryProvider>
           <LanguageProvider>
             <ThemeProvider>
-              <AuthProvider>{children}</AuthProvider>
+              <AuthProvider>
+                {children}
+                <OfflineBanner />
+              </AuthProvider>
             </ThemeProvider>
           </LanguageProvider>
         </SentryProvider>
