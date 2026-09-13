@@ -6,6 +6,7 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { UsersModule } from '../users/users.module';
+import { DEV_FALLBACK_SECRET } from './dev-fallback-secret';
 
 @Module({
   imports: [
@@ -19,7 +20,7 @@ import { UsersModule } from '../users/users.module';
           throw new Error('JWT_SECRET must be set in production');
         }
         return {
-          secret: secret ?? 'REDACTED',
+          secret: secret ?? DEV_FALLBACK_SECRET,
           signOptions: {
             expiresIn: configService.get<string>('JWT_EXPIRES_IN', '7d'),
           },

@@ -17,8 +17,8 @@ OnvoPay is a payment gateway that supports:
 
 ```bash
 # API .env file (api/.env)
-ONVO_SECRET_KEY="onvo_test_secret_key_REDACTED"
-ONVO_PUBLISHABLE_KEY="onvo_test_publishable_key_REDACTED"
+ONVO_SECRET_KEY="onvo_test_secret_key_****[OCULTA — pide la clave real a OnvoPay y ponla solo en api/.env o en las variables de entorno de Render. Nunca la commites.]"
+ONVO_PUBLISHABLE_KEY="onvo_test_publishable_key_****[OCULTA — ponla en las variables de entorno de Vercel (NEXT_PUBLIC_ONVO_PUBLISHABLE_KEY)]"
 ONVO_WEBHOOK_SECRET="your_webhook_secret_here"
 ONVO_BASE_URL="https://api.onvopay.com/v1"
 ```
