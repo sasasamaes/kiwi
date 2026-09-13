@@ -122,6 +122,15 @@ export class TrafficPredictionsService {
   constructor(private prisma: PrismaService) {}
 
   /**
+   * Hora/día en Costa Rica (UTC-6 sin horario de verano). El servidor corre
+   * en UTC: agrupar/etiquetar con hora local corre todo 6 horas.
+   */
+  private static costaRicaParts(date: Date): { hour: number; dayOfWeek: number } {
+    const shifted = new Date(date.getTime() - 6 * 60 * 60 * 1000);
+    return { hour: shifted.getUTCHours(), dayOfWeek: shifted.getUTCDay() };
+  }
+
+  /**
    * Get traffic prediction for a specific time
    */
   async getPrediction(lat: number, lng: number, targetTime: Date): Promise<TrafficPrediction> {
@@ -179,7 +188,7 @@ export class TrafficPredictionsService {
       const prediction = await this.getPrediction(lat, lng, targetTime);
 
       forecasts.push({
-        hour: targetTime.getHours(),
+        hour: TrafficPredictionsService.costaRicaParts(targetTime).hour,
         level: prediction.predictedLevel,
         speed: prediction.predictedSpeed,
         confidence: prediction.confidence,
@@ -240,7 +249,7 @@ export class TrafficPredictionsService {
 
       forecasts.push({
         date: targetDate.toISOString().split('T')[0],
-        dayOfWeek: dayNames[targetDate.getDay()],
+        dayOfWeek: dayNames[TrafficPredictionsService.costaRicaParts(targetDate).dayOfWeek],
         hourlyForecast,
         averageLevel,
         averageSpeed: Math.round(averageSpeed * 100) / 100,
@@ -448,8 +457,7 @@ export class TrafficPredictionsService {
   }
 
   private calculatePredictionFactors(targetTime: Date, historicalData: any[]): any {
-    const hour = targetTime.getHours();
-    const dayOfWeek = targetTime.getDay();
+    const { hour, dayOfWeek } = TrafficPredictionsService.costaRicaParts(targetTime);
     const month = targetTime.getMonth();
 
     // Time of day factor
@@ -485,10 +493,10 @@ export class TrafficPredictionsService {
       return 0.5; // Default factor
     }
 
-    // Filter data for similar hour and day
+    // Filter data for similar hour and day (both in Costa Rica time)
     const similarData = historicalData.filter((d) => {
-      const date = new Date(d.timestamp);
-      return date.getHours() === hour && date.getDay() === dayOfWeek;
+      const parts = TrafficPredictionsService.costaRicaParts(new Date(d.timestamp));
+      return parts.hour === hour && parts.dayOfWeek === dayOfWeek;
     });
 
     if (similarData.length === 0) {
@@ -563,7 +571,7 @@ export class TrafficPredictionsService {
     // Analyze hourly patterns
     const hourlyAvg: Record<number, number> = {};
     data.forEach((d) => {
-      const hour = new Date(d.timestamp).getHours();
+      const hour = TrafficPredictionsService.costaRicaParts(new Date(d.timestamp)).hour;
       if (!hourlyAvg[hour]) hourlyAvg[hour] = 0;
       hourlyAvg[hour] += d.speedFactor;
     });
@@ -585,7 +593,7 @@ export class TrafficPredictionsService {
     // Analyze weekly patterns
     const dailyAvg: Record<number, number> = {};
     data.forEach((d) => {
-      const day = new Date(d.timestamp).getDay();
+      const day = TrafficPredictionsService.costaRicaParts(new Date(d.timestamp)).dayOfWeek;
       if (!dailyAvg[day]) dailyAvg[day] = 0;
       dailyAvg[day] += d.speedFactor;
     });

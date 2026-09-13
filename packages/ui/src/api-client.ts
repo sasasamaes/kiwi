@@ -125,6 +125,30 @@ class ApiClient {
     });
   }
 
+  async getUsersAdmin(params?: {
+    role?: string;
+    status?: string;
+    search?: string;
+    take?: number;
+    skip?: number;
+  }) {
+    const q = new URLSearchParams();
+    if (params?.role) q.append('role', params.role);
+    if (params?.status) q.append('status', params.status);
+    if (params?.search) q.append('search', params.search);
+    if (params?.take != null) q.append('take', String(params.take));
+    if (params?.skip != null) q.append('skip', String(params.skip));
+    const qs = q.toString();
+    return this.request<any>(`/users${qs ? `?${qs}` : ''}`);
+  }
+
+  async setUserStatus(id: string, status: 'active' | 'inactive') {
+    return this.request<any>(`/users/${id}/status`, {
+      method: 'PUT',
+      body: { status },
+    });
+  }
+
   // ============================================
   // 🏪 MERCHANTS
   // ============================================
@@ -586,7 +610,6 @@ class ApiClient {
   async getWithdrawalById(id: string) {
     return this.request<any>(`/withdrawals/my/${id}`);
   }
-
   async cancelWithdrawal(id: string) {
     return this.request<any>(`/withdrawals/my/${id}/cancel`, {
       method: 'PUT',

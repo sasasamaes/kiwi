@@ -1,7 +1,18 @@
-import { Controller, Get, Put, Body, UseGuards, Param, ForbiddenException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Put,
+  Body,
+  UseGuards,
+  Param,
+  Query,
+  ForbiddenException,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @ApiTags('Users')
@@ -36,5 +47,39 @@ export class UsersController {
       throw new ForbiddenException('No tienes permiso para ver este perfil');
     }
     return this.usersService.findById(id);
+  }
+
+  @Get()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List users (admin)' })
+  async listUsers(
+    @Query('role') role?: string,
+    @Query('status') status?: string,
+    @Query('search') search?: string,
+    @Query('take') take?: string,
+    @Query('skip') skip?: string,
+  ) {
+    return this.usersService.listUsers({
+      role,
+      status,
+      search,
+      take: take ? Number(take) : undefined,
+      skip: skip ? Number(skip) : undefined,
+    });
+  }
+
+  @Put(':id/status')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Activate/deactivate a user (admin)' })
+  async setStatus(
+    @Param('id') id: string,
+    @Body('status') status: string,
+    @CurrentUser() user: any,
+  ) {
+    return this.usersService.setStatus(id, status, user?.sub ?? user?.id);
   }
 }
