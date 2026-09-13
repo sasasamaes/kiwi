@@ -38,14 +38,18 @@ interface SocketEvents {
 class SocketClient {
   private socket: Socket | null = null;
   private listeners: Map<string, Set<Function>> = new Map();
-  private reconnectAttempts = 0;
-  private maxReconnectAttempts = 5;
   private currentToken: string | null = null;
+  // Outage-aware logging: one line when a connection outage starts and one
+  // when it recovers, instead of a console.error per retry attempt.
+  private inOutage = false;
 
   connect(token: string): Socket {
-    // Re-auth when user/token changes instead of reusing a stale socket
-    if (this.socket?.connected) {
-      if (this.currentToken === token) return this.socket;
+    // Re-auth when the user/token changes. If the token is the same, REUSE the
+    // socket even while it's disconnected — socket.io keeps retrying with
+    // backoff on its own, so re-creating it on every page mount (the old
+    // behavior) stacked parallel retry loops while the API was down.
+    if (this.socket && this.currentToken === token) return this.socket;
+    if (this.socket) {
       this.socket.disconnect();
       this.socket = null;
     }
@@ -55,9 +59,14 @@ class SocketClient {
       auth: { token },
       transports: ['websocket', 'polling'],
       reconnection: true,
-      reconnectionAttempts: this.maxReconnectAttempts,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
+      // Retry forever with exponential backoff + jitter: a dead API must not
+      // spin the radio or flood the console, but the app must recover on its
+      // own the moment the API is back (drivers work with flaky networks).
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000, // 1s, 2s, 4s, 8s, ...
+      reconnectionDelayMax: 30000, // capped at 30s
+      randomizationFactor: 0.5, // ±50% jitter so fleets don't sync their retries
+      timeout: 10000,
     });
 
     this.setupEventListeners();
@@ -75,7 +84,10 @@ class SocketClient {
 
     this.socket.on('connect', () => {
       console.log('🟢 Socket connected:', this.socket?.id);
-      this.reconnectAttempts = 0;
+      if (this.inOutage) {
+        console.log('🟢 Socket recovered — back online');
+        this.inOutage = false;
+      }
       this.emit('socket:connected', { connected: true });
     });
 
@@ -84,12 +96,12 @@ class SocketClient {
       this.emit('socket:disconnected', { reason });
     });
 
-    this.socket.on('connect_error', (error) => {
-      console.error('❌ Socket connection error:', error.message);
-      this.reconnectAttempts++;
-
-      if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-        this.emit('socket:maxRetriesReached', {});
+    // One line per outage, not one per attempt: the transport-level error
+    // repeats every retry and previously spammed the console on dead APIs.
+    this.socket.on('connect_error', () => {
+      if (!this.inOutage) {
+        this.inOutage = true;
+        console.warn('🟡 Socket offline — retrying automatically (1s→30s exponential backoff)…');
       }
     });
 
@@ -135,6 +147,8 @@ class SocketClient {
     if (this.socket) {
       this.socket.disconnect();
       this.socket = null;
+      this.currentToken = null;
+      this.inOutage = false;
     }
   }
 
