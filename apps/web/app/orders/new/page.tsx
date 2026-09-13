@@ -22,6 +22,7 @@ interface Driver {
   fullName: string;
   vehicleType?: string;
   rating?: number;
+  status?: string;
 }
 
 interface OrderItem {
@@ -162,7 +163,13 @@ interface GeoSuggestion {
   lng: number;
 }
 
-function NewOrderInner({ presetKind }: { presetKind: 'food' | 'freight' }) {
+function NewOrderInner({
+  presetKind,
+  isPreset = false,
+}: {
+  presetKind: 'food' | 'freight';
+  isPreset?: boolean;
+}) {
   const router = useRouter();
   const { user } = useAuth();
   const { createOrder, isConnected } = useSocket();
@@ -174,6 +181,13 @@ function NewOrderInner({ presetKind }: { presetKind: 'food' | 'freight' }) {
   const [formError, setFormError] = useState<string | null>(null);
 
   const [kind, setKind] = useState<'food' | 'freight'>(presetKind);
+  // Si el tipo llega preseleccionado por la URL y la URL cambia (nav entre los
+  // botones del dashboard sin remount), síncrono con el nuevo preset.
+  useEffect(() => {
+    setKind(presetKind);
+  }, [presetKind]);
+  // Selector oculto cuando el tipo ya se eligió al entrar; "Cambiar" lo trae de vuelta.
+  const [showKindSelector, setShowKindSelector] = useState(!isPreset);
   const [items, setItems] = useState<OrderItem[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [menuQuery, setMenuQuery] = useState('');
@@ -641,28 +655,47 @@ function NewOrderInner({ presetKind }: { presetKind: 'food' | 'freight' }) {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -50 }}
             >
-              <div className="mb-4 grid grid-cols-2 gap-2">
-                {(
-                  [
-                    { id: 'food', label: '🍔 Comida', desc: 'Del menú' },
-                    { id: 'freight', label: '📦 Encomienda', desc: 'Paquete' },
-                  ] as const
-                ).map((k) => (
+              {' '}
+              {showKindSelector ? (
+                <div className="mb-4 grid grid-cols-2 gap-2">
+                  {(
+                    [
+                      { id: 'food', label: '🍔 Comida', desc: 'Del menú' },
+                      { id: 'freight', label: '📦 Encomienda', desc: 'Paquete' },
+                    ] as const
+                  ).map((k) => (
+                    <button
+                      key={k.id}
+                      onClick={() => {
+                        setKind(k.id);
+                        setShowKindSelector(false);
+                      }}
+                      className={`rounded-xl p-3 text-left transition-all ${
+                        kind === k.id
+                          ? 'border-2 border-kiwi-500 bg-kiwi-50 dark:bg-kiwi-900/30'
+                          : 'border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800'
+                      }`}
+                    >
+                      <p className="font-medium text-surface-800 dark:text-surface-200">
+                        {k.label}
+                      </p>
+                      <p className="text-xs text-surface-500">{k.desc}</p>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="mb-4 flex items-center justify-between rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2.5">
+                  <span className="text-sm font-medium text-surface-800 dark:text-surface-200">
+                    {kind === 'food' ? '🍔 Comida — Del menú' : '📦 Encomienda — Paquete'}
+                  </span>
                   <button
-                    key={k.id}
-                    onClick={() => setKind(k.id)}
-                    className={`rounded-xl p-3 text-left transition-all ${
-                      kind === k.id
-                        ? 'border-2 border-kiwi-500 bg-kiwi-50 dark:bg-kiwi-900/30'
-                        : 'border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800'
-                    }`}
+                    onClick={() => setShowKindSelector(true)}
+                    className="text-xs font-medium text-kiwi-600 dark:text-kiwi-400 underline"
                   >
-                    <p className="font-medium text-surface-800 dark:text-surface-200">{k.label}</p>
-                    <p className="text-xs text-surface-500">{k.desc}</p>
+                    Cambiar
                   </button>
-                ))}
-              </div>
-
+                </div>
+              )}
               {kind === 'food' ? (
                 <>
                   <input
@@ -821,7 +854,6 @@ function NewOrderInner({ presetKind }: { presetKind: 'food' | 'freight' }) {
                   </div>
                 </div>
               )}
-
               {/* Entrega */}
               <h3 className="mb-2 text-sm font-semibold text-surface-600 dark:text-surface-400">
                 📍 Entrega
@@ -940,23 +972,33 @@ function NewOrderInner({ presetKind }: { presetKind: 'food' | 'freight' }) {
                     />
                   ))}
                   <h3 className="pt-2 text-sm font-semibold text-surface-600 dark:text-surface-400">
-                    📍 Disponibles
+                    📍 Disponibles ahora
                   </h3>
-                  {availableDrivers.length === 0 && (
+                  {availableDrivers.filter((d) => d.status === 'available').length === 0 && (
                     <p className="text-xs text-surface-400">
                       Nadie disponible ahora. Quedará en concurso.
                     </p>
                   )}
-                  {availableDrivers.map((d) => (
-                    <DriverRow
-                      key={d.id}
-                      driver={d}
-                      selected={selectedDriverId === d.id}
-                      isFav={favoriteDrivers.some((f) => f.id === d.id)}
-                      onSelect={() => setSelectedDriverId(selectedDriverId === d.id ? null : d.id)}
-                      onFav={() => toggleFavorite(d)}
-                    />
-                  ))}
+                  {availableDrivers
+                    .filter((d) => d.status === 'available')
+                    .map((d) => (
+                      <DriverRow
+                        key={d.id}
+                        driver={d}
+                        selected={selectedDriverId === d.id}
+                        isFav={favoriteDrivers.some((f) => f.id === d.id)}
+                        onSelect={() =>
+                          setSelectedDriverId(selectedDriverId === d.id ? null : d.id)
+                        }
+                        onFav={() => toggleFavorite(d)}
+                      />
+                    ))}
+                  {favoriteDrivers.some((f) => f.status !== 'available') && (
+                    <p className="mt-2 text-xs font-medium text-surface-500">
+                      Tus favoritos offline aparecen arriba deshabilitados: se podrán elegir cuando
+                      se conecten.
+                    </p>
+                  )}
                 </div>
               )}
             </motion.div>
@@ -1143,20 +1185,28 @@ function DriverRow({
   onSelect: () => void;
   onFav: () => void;
 }) {
+  // Solo los repartidores activos (Disponible) se pueden elegir; el resto se
+  // muestra deshabilitado para que el comercio sepa que existe pero aún no
+  // está conectado.
+  const selectable = driver.status === 'available';
   return (
     <div
-      className={`flex items-center justify-between rounded-xl p-3 cursor-pointer transition-all ${
-        selected
-          ? 'border-2 border-kiwi-500 bg-kiwi-50 dark:bg-kiwi-900/30'
-          : 'border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800'
+      className={`flex items-center justify-between rounded-xl p-3 transition-all ${
+        !selectable
+          ? 'border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 opacity-60 cursor-not-allowed'
+          : selected
+            ? 'border-2 border-kiwi-500 bg-kiwi-50 dark:bg-kiwi-900/30 cursor-pointer'
+            : 'border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 cursor-pointer'
       }`}
-      onClick={onSelect}
+      onClick={selectable ? onSelect : undefined}
     >
       <div>
         <p className="text-sm font-medium">{driver.fullName}</p>
         <p className="text-xs text-surface-500">
           {driver.vehicleType}{' '}
           {driver.rating != null ? `• ⭐ ${Number(driver.rating).toFixed(1)}` : ''}
+          {!selectable &&
+            ` • ${driver.status === 'busy' ? 'Ocupado ahora' : driver.status === 'offline' ? 'Offline' : 'No disponible'}`}
         </p>
       </div>
       <button
@@ -1185,6 +1235,9 @@ export default function NewOrder() {
 
 function NewOrderWithKind() {
   const searchParams = useSearchParams();
-  const kind = searchParams.get('kind') === 'freight' ? 'freight' : 'food';
-  return <NewOrderInner presetKind={kind} />;
+  const presetParam = searchParams.get('kind');
+  const kind = presetParam === 'freight' ? 'freight' : 'food';
+  // Cuando la entrada ya preseleccionó el tipo (dashboard: Comida/Encomienda,
+  // agregados rápidos), el formulario NO vuelve a preguntar.
+  return <NewOrderInner presetKind={kind} isPreset={presetParam !== null} />;
 }
