@@ -22,7 +22,7 @@ export class UpdateDriverProfileDto {
   @Matches(/^[A-Za-z0-9\- ]*$/, { message: 'Placa con caracteres inválidos' })
   vehiclePlate?: string;
 
-  @ApiPropertyOptional({ example: 'https://cdn.kiwi.app/foto.jpg' })
+  @ApiPropertyOptional({ example: 'https://example.com/foto.jpg' })
   @IsOptional()
   @IsString()
   @Length(0, 500)
