@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Home,
   ClipboardList,
   MapPin,
   Bike,
@@ -16,7 +15,8 @@ import {
   X,
   Smartphone,
 } from 'lucide-react';
-import { api, Skeleton } from '@kiwi/ui';
+import { api, Skeleton, hoverCard, ScrollToTop, ThemeToggle } from '@kiwi/ui';
+import { BottomNav } from '../components/BottomNav';
 
 interface OrderHistory {
   id: string;
@@ -131,7 +131,7 @@ export default function OrderHistoryPage() {
   if (loading) {
     return (
       <main className="min-h-[100dvh] bg-bg-light dark:bg-surface-950">
-        <div className="sticky top-0 z-40 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl">
+        <div className="pt-safe sticky top-0 z-40 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl">
           <div className="mx-auto max-w-lg px-4 py-4">
             <Skeleton className="h-6 w-32" />
           </div>
@@ -141,13 +141,14 @@ export default function OrderHistoryPage() {
             <Skeleton key={i} className="h-32 w-full rounded-2xl" />
           ))}
         </div>
+        <BottomNav />
       </main>
     );
   }
 
   if (error) {
     return (
-      <main className="min-h-[100dvh] bg-bg-light dark:bg-surface-950 flex items-center justify-center">
+      <main className="min-h-[100dvh] bg-bg-light dark:bg-surface-950 flex flex-col items-center justify-center">
         <motion.div
           className="text-center px-4"
           initial={{ opacity: 0, scale: 0.9 }}
@@ -178,15 +179,16 @@ export default function OrderHistoryPage() {
             </button>
           </div>
         </motion.div>
+        <BottomNav />
       </main>
     );
   }
 
   return (
-    <main className="min-h-[100dvh] bg-bg-light dark:bg-surface-950 pb-24">
+    <main className="min-h-[100dvh] bg-bg-light dark:bg-surface-950 pb-28">
       {/* Header */}
       <motion.header
-        className="sticky top-0 z-40 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl"
+        className="pt-safe sticky top-0 z-40 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
       >
@@ -202,7 +204,7 @@ export default function OrderHistoryPage() {
             <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
               <ClipboardList className="h-4 w-4 inline" /> Mis Pedidos
             </h1>
-            <div className="w-16" />
+            <ThemeToggle />
           </div>
         </div>
       </motion.header>
@@ -282,8 +284,7 @@ export default function OrderHistoryPage() {
                   >
                     <Link href={`/order/${order.id}/tracking`}>
                       <motion.div
-                        className="rounded-2xl glass p-4 cursor-pointer overflow-hidden"
-                        whileHover={{ y: -2, boxShadow: '0 8px 24px -8px rgba(34, 197, 94, 0.2)' }}
+                        className={`rounded-2xl glass p-4 cursor-pointer overflow-hidden ${hoverCard}`}
                         whileTap={{ scale: 0.98 }}
                       >
                         <div className="flex items-start justify-between mb-3">
@@ -382,31 +383,8 @@ export default function OrderHistoryPage() {
       </div>
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 border-t border-surface-200/50 dark:border-surface-700/50 bg-white/80 dark:bg-surface-900/80 backdrop-blur-xl z-50">
-        <div className="mx-auto flex max-w-lg items-center justify-around py-2">
-          <Link
-            href="/"
-            className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
-          >
-            <Home className="text-xl h-6 w-6" />
-            <span className="text-xs font-medium">Inicio</span>
-          </Link>
-          <Link
-            href="/orders"
-            className="flex flex-col items-center gap-1 px-4 py-2 text-kiwi-600 dark:text-kiwi-400"
-          >
-            <ClipboardList className="text-xl h-6 w-6" />
-            <span className="text-xs font-medium">Pedidos</span>
-          </Link>
-          <Link
-            href="/tracking"
-            className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
-          >
-            <MapPin className="text-xl h-6 w-6" />
-            <span className="text-xs font-medium">Tracking</span>
-          </Link>
-        </div>
-      </nav>
+      <BottomNav />
+      <ScrollToTop />
     </main>
   );
 }

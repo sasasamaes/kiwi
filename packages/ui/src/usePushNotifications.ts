@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { requestNotificationPermission, onMessageListener } from './firebase';
 import { api } from './api-client';
 import { useAuth } from './AuthContext';
+import { playNotificationSound } from './notification-sound';
 
 interface UsePushNotificationsOptions {
   enabled?: boolean;
@@ -66,6 +67,9 @@ export function usePushNotifications(options: UsePushNotificationsOptions = {}) 
 
     const unsubscribePromise = onMessageListener((payload) => {
       console.log('Foreground notification:', payload);
+
+      // Suena aunque la app esté abierta (push en foreground no hace ruido solo)
+      playNotificationSound('default');
 
       // Show in-app notification
       if (onNotification) {

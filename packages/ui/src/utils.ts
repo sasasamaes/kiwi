@@ -104,3 +104,86 @@ export function getDriverLevelLabel(level: string): string {
 export function generateId(): string {
   return Math.random().toString(36).substring(2, 15);
 }
+
+/**
+ * Hosts a payment checkout URL is allowed to point at. Exact host or a
+ * proper subdomain only — `endsWith` alone would match attacker domains
+ * like `attackonvo.pay`.
+ */
+const ALLOWED_CHECKOUT_HOSTS = ['onvopay.com', 'onvo.pay'];
+
+/**
+ * Sentinel guard: el form del merchant guarda el NOMBRE del icono lucide
+ * ('Utensils') como `image` cuando no elige emoji — y el client app lo
+ * pintaba como texto literal gigante. Un emoji real tiene ≤8 chars y
+ * ningún código de icono; cualquier string ASCII más larga no es imagen.
+ */
+export function isEmojiImage(value: unknown): boolean {
+  if (typeof value !== 'string' || value.length === 0 || value.length > 8) return false;
+  // Al menos un char fuera del ASCII imprimible (emojis van más allá de U+007F)
+  // y sin caracteres de control.
+  return /[\u0080-\uFFFF]/.test(value) && !/[\u0000-\u001f]/.test(value);
+}
+
+/**
+ * True only for https:// URLs on an allow-listed payment host.
+ * Used to guard `window.location.href` redirects to hosted checkout,
+ * so a compromised/absent backend value can never produce a
+ * `javascript:` or lookalike-domain redirect.
+ */
+export function isSafeCheckoutUrl(url: unknown): boolean {
+  if (typeof url !== 'string' || url.length === 0 || url.length > 2048) return false;
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return false;
+  }
+  if (parsed.protocol !== 'https:') return false;
+  return ALLOWED_CHECKOUT_HOSTS.some(
+    (host) => parsed.hostname === host || parsed.hostname.endsWith(`.${host}`),
+  );
+}
+
+/**
+ * Navega SOLO si la URL pasa la validación; lanza en caso contrario.
+ *
+ * Único punto del repo autorizado a asignar location con URLs dinámicas
+ * (la regla ESLint `kiwi/no-raw-location-assign` dirige aquí). La decisión
+ * de qué hosts son legítimos vive en los predicados de arriba:
+ *  - URLs de checkout (OnvoPay) → isSafeCheckoutUrl
+ *  - Cualquier otra (p. ej. links de menú desde QR) → mismaorigen o
+ *    host en la allow-list de checkouts.
+ *
+ * Regresa true si navegó, false si la URL era inválida (el caller decide
+ * cómo informar; el helper nunca navega a algo no validado).
+ */
+export function safeNavigateToUrl(url: unknown, opts?: { requireHttps?: boolean }): boolean {
+  if (typeof url !== 'string' || url.length === 0 || url.length > 2048) return false;
+
+  // Rutas internas de la propia app: siempre legítimas.
+  if (url.startsWith('/') && !url.startsWith('//')) {
+    window.location.href = url;
+    return true;
+  }
+
+  let parsed: URL;
+  try {
+    parsed = new URL(url, window.location.href);
+  } catch {
+    return false;
+  }
+
+  const requireHttps = opts?.requireHttps ?? true;
+  const sameOrigin = typeof window !== 'undefined' && parsed.origin === window.location.origin;
+
+  if (requireHttps && parsed.protocol !== 'https:' && !sameOrigin) return false;
+
+  const isCheckoutHost = ALLOWED_CHECKOUT_HOSTS.some(
+    (host) => parsed.hostname === host || parsed.hostname.endsWith(`.${host}`),
+  );
+  if (!sameOrigin && !isCheckoutHost) return false;
+
+  window.location.href = parsed.toString();
+  return true;
+}

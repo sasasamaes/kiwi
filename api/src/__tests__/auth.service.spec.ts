@@ -3,7 +3,7 @@ import { AuthService } from '../auth/auth.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, HttpException, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 
 jest.mock('bcryptjs', () => ({
@@ -164,6 +164,88 @@ describe('AuthService', () => {
           password: 'wrongpassword',
         }),
       ).rejects.toThrow(UnauthorizedException);
+    });
+  });
+
+  describe('login — throttle por cuenta', () => {
+    const badUser = {
+      id: 'user-1',
+      email: 'victim@kiwi.app',
+      passwordHash: '$2a$10$hashed',
+      role: 'merchant',
+      status: 'active',
+    };
+
+    function mockVictim() {
+      prisma.user.findUnique.mockResolvedValue(badUser);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
+    }
+
+    it('bloquea la cuenta tras 5 intentos fallidos (429), aunque roten IPs', async () => {
+      mockVictim();
+
+      for (let i = 0; i < 5; i++) {
+        await expect(
+          service.login({ email: 'Victim@Kiwi.app', password: 'wrong123' }),
+        ).rejects.toThrow(UnauthorizedException);
+      }
+
+      // 6º intento — ya no llega a validar credenciales: 429.
+      await expect(
+        service.login({ email: 'victim@kiwi.app', password: 'wrong123' }),
+      ).rejects.toThrow(HttpException);
+
+      // Ni con la contraseña correcta se cede mientras esté bloqueada.
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      await expect(
+        service.login({ email: 'victim@kiwi.app', password: 'goodpass123' }),
+      ).rejects.toThrow(HttpException);
+    });
+
+    it('normaliza el email (mayúsculas/espacios) para contar intentos', async () => {
+      mockVictim();
+
+      for (const email of ['a@x.com', 'A@X.com', ' a@x.com ']) {
+        await expect(service.login({ email, password: 'wrong123' })).rejects.toThrow(
+          UnauthorizedException,
+        );
+      }
+      // El estado compartido ya lleva 3 intentos — no fue reiniciado por variantes.
+      expect(
+        // 2 intentos más alcanzan el límite de 5
+        (await service['loginAttempts'].get('a@x.com'))?.count,
+      ).toBe(3);
+    });
+
+    it('un login exitoso limpia el contador de la cuenta', async () => {
+      mockVictim();
+      await expect(service.login({ email: 'v@x.com', password: 'wrong123' })).rejects.toThrow(
+        UnauthorizedException,
+      );
+      await expect(service.login({ email: 'v@x.com', password: 'wrong123' })).rejects.toThrow(
+        UnauthorizedException,
+      );
+
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      prisma.user.findUnique.mockResolvedValue({ ...badUser, email: 'v@x.com' });
+
+      const result = await service.login({ email: 'v@x.com', password: 'good12345' });
+      expect(result.accessToken).toBe('mock-token');
+      expect(service['loginAttempts'].has('v@x.com')).toBe(false);
+    });
+
+    it('una cuenta bloqueada no afecta a otras cuentas', async () => {
+      mockVictim();
+      for (let i = 0; i < 5; i++) {
+        await expect(service.login({ email: 'a@x.com', password: 'wrong123' })).rejects.toThrow(
+          UnauthorizedException,
+        );
+      }
+
+      // otra cuenta sigue pudiendo intentar (fallo normal, 401 — no 429)
+      await expect(service.login({ email: 'b@x.com', password: 'wrong123' })).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
   });
 });

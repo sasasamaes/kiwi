@@ -11,12 +11,6 @@ type Tab = 'notifications' | 'preferences';
 export default function NotificationsPage() {
   const [activeTab, setActiveTab] = useState<Tab>('notifications');
 
-  const handlePreferencesSave = (preferences: Record<string, boolean>) => {
-    console.log('Saving preferences:', preferences);
-    // TODO: Save to API
-    alert('Preferencias guardadas');
-  };
-
   return (
     <main className="min-h-[100dvh] bg-bg-light dark:bg-surface-950">
       {/* Header */}
@@ -70,11 +64,7 @@ export default function NotificationsPage() {
         </div>
 
         {/* Content */}
-        {activeTab === 'notifications' ? (
-          <NotificationList />
-        ) : (
-          <NotificationPreferences onSave={handlePreferencesSave} />
-        )}
+        {activeTab === 'notifications' ? <NotificationList /> : <NotificationPreferences />}
       </main>
     </main>
   );

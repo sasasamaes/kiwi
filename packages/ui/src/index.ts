@@ -6,8 +6,7 @@
 // ============================================
 // ICONS
 // ============================================
-export { Icon, iconMap } from './icons';
-export type { IconName } from './icons';
+// Icon/iconMap (129 iconos lucide) sin consumidores: movidos a lazy-offline.
 
 // ============================================
 //   CORE COMPONENTS
@@ -33,6 +32,28 @@ export type { CardProps } from './Card';
 //   ANIMATED COMPONENTS
 // ============================================
 export { AnimatedCard } from './AnimatedCard';
+export { ScrollReveal } from './ScrollReveal';
+export type { ScrollRevealProps } from './ScrollReveal';
+export { TapButton } from './TapButton';
+export type { TapButtonProps } from './TapButton';
+export { ScrollToTop } from './ScrollToTop';
+export type { ScrollToTopProps } from './ScrollToTop';
+export { KiwiLoader, KiwiSplash } from './KiwiLoader';
+export type { KiwiLoaderProps, KiwiSplashProps } from './KiwiLoader';
+export { KiwiMark, KiwiSlice } from './KiwiMark';
+export type { KiwiMarkProps } from './KiwiMark';
+export { ErrorState, AppErrorBoundary, NotFoundState } from './ErrorScreens';
+export type { ErrorStateProps, NotFoundStateProps } from './ErrorScreens';
+export {
+  hoverCard,
+  hoverRow,
+  hoverLink,
+  hoverGhost,
+  hoverChip,
+  cursorClickable,
+  cursorDisabled,
+  HOVER_MEDIA,
+} from './hover';
 export { AnimatedButton } from './AnimatedButton';
 export { AnimatedCounter } from './AnimatedCounter';
 export { PageTransition } from './PageTransition';
@@ -89,7 +110,13 @@ export type { KYCData, KYCStatus } from './KYCVerification';
 // ============================================
 //   THEME COMPONENTS
 // ============================================
-export { ThemeProvider, ThemeToggle, useTheme } from './ThemeProvider';
+export {
+  ThemeProvider,
+  ThemeToggle,
+  ThemeScript,
+  useTheme,
+  THEME_STORAGE_KEY,
+} from './ThemeProvider';
 export type { Theme } from './ThemeProvider';
 
 // ============================================
@@ -147,6 +174,14 @@ export { NotificationPreferences } from './NotificationPreferences';
 export { NotificationList } from './NotificationList';
 export { usePushNotifications } from './usePushNotifications';
 export { requestNotificationPermission, initializeFirebase } from './firebase';
+export {
+  playNotificationSound,
+  isSoundEnabled,
+  setSoundEnabled,
+  subscribeSoundEnabled,
+} from './notification-sound';
+export type { NotificationSoundKind } from './notification-sound';
+export { SoundToggle } from './SoundToggle';
 
 // ============================================
 //   AUTH CONTEXT
@@ -177,22 +212,21 @@ export {
   getOrderStatusLabel,
   getDriverLevelLabel,
   generateId,
+  isSafeCheckoutUrl,
+  safeNavigateToUrl,
+  isEmojiImage,
 } from './utils';
 
 // ============================================
 //   OFFLINE SUPPORT
+//   La isla offline completa (~490KB: órdenes/pagos/navegación offline,
+//   compresión, conflictos, export…) vive en '@kiwi/ui/lazy-offline' para
+//   no entrar en el bundle inicial. Impórtala con dynamic import donde
+//   realmente se use. Aquí solo lo ligero y lo que las apps consumen hoy.
 // ============================================
-export { offlineQueue, offlineFetch } from './offline-queue';
 export { OfflineIndicator, OfflineIndicatorCompact, OfflineBanner } from './OfflineIndicator';
 export { offlineCache, CACHE_EXPIRATION, withOfflineCache } from './offline-cache';
 export type { CacheEntry, CacheStats } from './offline-cache';
-export {
-  useOfflineCache,
-  useTrafficCache,
-  useTrafficPredictionsCache,
-  useTrafficAlertsCache,
-} from './useOfflineCache';
-export type { UseOfflineCacheOptions, UseOfflineCacheResult } from './useOfflineCache';
 export {
   useNetworkStatus,
   useIsOffline,
@@ -215,113 +249,6 @@ export type {
   SyncStatus as BackgroundSyncStatus,
   ActionType,
 } from './background-sync';
-export {
-  useBackgroundSync,
-  useOrderSync,
-  useLocationSync,
-  usePaymentSync,
-} from './useBackgroundSync';
-export type { UseBackgroundSyncOptions, UseBackgroundSyncResult } from './useBackgroundSync';
-export { SyncStatus, SyncIndicatorCompact, SyncBanner, SyncActionStatus } from './SyncStatus';
-
-// ============================================
-//   OFFLINE ORDERS
-// ============================================
-export { offlineOrders } from './offline-orders';
-export type { OfflineOrder, OfflineOrderOptions, OrderStatus, OrderItem } from './offline-orders';
-export {
-  useOfflineOrders,
-  useMerchantOrders,
-  useDriverOrders,
-  useCustomerOrders,
-} from './useOfflineOrders';
-export type {
-  UseOfflineOrdersOptions,
-  UseOfflineOrdersResult,
-  CreateOrderData,
-} from './useOfflineOrders';
-export { OfflineOrderForm } from './OfflineOrderForm';
-export { OfflineOrderTracker, OfflineOrderList } from './OfflineOrderTracker';
-
-// ============================================
-//  ️ DATA COMPRESSION
-// ============================================
-export { compression } from './compression';
-export type {
-  CompressedData,
-  StorageStats,
-  CompressionOptions,
-  CompressionAlgorithm,
-} from './compression';
-export { StorageManager, StorageWarning, StorageIndicatorCompact } from './StorageManager';
-
-// ============================================
-//   CACHE WARMING
-// ============================================
-export { cacheWarming } from './cache-warming';
-export type {
-  WarmTask,
-  WarmPriority,
-  WarmStatus,
-  CacheWarmingOptions,
-  WarmProgress,
-} from './cache-warming';
-export { useCacheWarming, useKiwiCacheWarming, useCacheWarmingProgress } from './useCacheWarming';
-export type { UseCacheWarmingOptions, UseCacheWarmingResult } from './useCacheWarming';
-export { StartupProgress, StartupProgressCompact, StartupSplash } from './StartupProgress';
-
-// ============================================
-//  ️ CONFLICT RESOLUTION
-// ============================================
-export { conflictResolution } from './conflict-resolution';
-export type {
-  Conflict,
-  ConflictStrategy,
-  ConflictStatus,
-  MergeAction,
-  VersionedData,
-  ConflictResolutionOptions,
-  ConflictStats,
-} from './conflict-resolution';
-export { useConflictResolution, useConflict } from './useConflictResolution';
-export type {
-  UseConflictResolutionOptions,
-  UseConflictResolutionResult,
-} from './useConflictResolution';
-export { ConflictResolver, ConflictIndicator, ConflictBanner } from './ConflictResolver';
-
-// ============================================
-//   SYNC PROGRESS
-// ============================================
-export { syncProgress } from './sync-progress';
-export type {
-  SyncProgressItem,
-  SyncProgressState,
-  SyncProgressOptions,
-  SyncOperation,
-} from './sync-progress';
-export { useSyncProgress, useSingleSyncProgress } from './useSyncProgress';
-export type { UseSyncProgressOptions, UseSyncProgressResult } from './useSyncProgress';
-export { SyncProgressBar, SyncIndicator, SyncToast, SyncStatusPage } from './SyncProgressBar';
-
-// ============================================
-//   OFFLINE PAYMENTS
-// ============================================
-export { offlinePayments } from './offline-payments';
-export type {
-  PaymentItem,
-  ReceiptData,
-  OfflinePaymentOptions,
-  PaymentStatus,
-  PaymentType,
-} from './offline-payments';
-export { useOfflinePayments, useMerchantPayments, useCustomerPayments } from './useOfflinePayments';
-export type {
-  UseOfflinePaymentsOptions,
-  UseOfflinePaymentsResult,
-  CreatePaymentData,
-} from './useOfflinePayments';
-export { OfflinePaymentForm, PaymentReceipt } from './OfflinePaymentForm';
 
 // ============================================
 //   QR CODE
@@ -341,12 +268,6 @@ export { ShareTrackingButton, buildTrackingUrl } from './ShareTracking';
 // ============================================
 export { AddressInput } from './AddressInput';
 export type { AddressInputProps } from './AddressInput';
-
-// ============================================
-//  ️ ROUTE OPTIMIZER
-// ============================================
-export { RouteOptimizer } from './RouteOptimizer';
-export type { RouteOptimizerProps } from './RouteOptimizer';
 
 // ============================================
 //   ONVOPAY CHECKOUT
@@ -426,94 +347,6 @@ export type {
 } from './TrafficPredictions';
 
 // ============================================
-//  ️ OFFLINE NAVIGATION
-// ============================================
-export { offlineNavigation } from './offline-navigation';
-export type {
-  Route,
-  SavedWaypoint,
-  OfflineNavigationOptions,
-  RouteStep,
-  RoutePoint,
-  TransportMode,
-  Coordinates,
-} from './offline-navigation';
-export {
-  useOfflineNavigation,
-  useDriverNavigation,
-  useCustomerTracking,
-} from './useOfflineNavigation';
-export type {
-  UseOfflineNavigationOptions,
-  UseOfflineNavigationResult,
-} from './useOfflineNavigation';
-export { OfflineNavigation, NavigationButton } from './OfflineNavigation';
-
-// ============================================
-//   DATA EXPORT
-// ============================================
-export { dataExport } from './data-export';
-export type {
-  ExportOptions,
-  ExportData,
-  ImportResult,
-  ExportFormat,
-  ExportType,
-} from './data-export';
-export { useDataExport } from './useDataExport';
-export { DataExport } from './DataExport';
-
-// ============================================
-//   PAYMENT NOTIFICATIONS
-// ============================================
-export { paymentNotifications } from './payment-notifications';
-export type {
-  PaymentNotification,
-  NotificationType,
-  NotificationPriority,
-  PaymentNotificationOptions,
-} from './payment-notifications';
-export {
-  usePaymentNotifications,
-  useMerchantPaymentNotifications,
-  useCustomerPaymentNotifications,
-} from './usePaymentNotifications';
-export type {
-  UsePaymentNotificationsOptions,
-  UsePaymentNotificationsResult,
-} from './usePaymentNotifications';
-export {
-  PaymentNotifications,
-  NotificationBadge,
-  PaymentNotificationToast,
-} from './PaymentNotifications';
-
-// ============================================
-//   ADMIN SYNC MONITORING
-// ============================================
-export { adminSyncMonitoring } from './admin-sync-monitor';
-export type {
-  DeviceSyncInfo,
-  SyncEvent,
-  DevicePlatform,
-  DeviceStatus,
-  AdminSyncOptions,
-} from './admin-sync-monitor';
-export { AdminSyncDashboard } from './AdminSyncDashboard';
-
-// ============================================
-//   OFFLINE ANALYTICS
-// ============================================
-export { offlineAnalytics } from './offline-analytics';
-export type {
-  AnalyticsEvent,
-  AnalyticsEventType,
-  OfflineUsageStats,
-  OfflineAnalyticsOptions,
-} from './offline-analytics';
-export { OfflineAnalyticsDashboard } from './OfflineAnalyticsDashboard';
-
-// ============================================
 //   ANALYTICS TRACKING
 // ============================================
 export { analytics, events, trackPageView, trackPerformance, trackError } from './analytics';
@@ -524,12 +357,18 @@ export { analytics, events, trackPageView, trackPerformance, trackError } from '
 export { OrderSearch } from './OrderSearch';
 
 // ============================================
-// UNIFIED CACHE
-// ============================================
-export { unifiedCache, useUnifiedCache } from './unified-cache';
-
-// ============================================
 // SENTRY ERROR TRACKING
 // ============================================
 export { SentryProvider } from './SentryProvider';
 export { initSentry, captureException, captureMessage, setSentryUser } from './sentry';
+
+// ============================================
+// ISLA OFFLINE PESADA (bajo demanda)
+// ============================================
+// ~490KB de IndexedDB/compresión/navegación offline que NINGUNA app usa
+// hoy en el camino crítico. Disponibles vía dynamic import sin pagar el
+// peso en el bundle inicial:
+//   const { offlineOrders } = await import('@kiwi/ui/lazy-offline');
+//
+// Nota: Icon/iconMap también viven en lazy-offline — 129 iconos lucide
+// estáticos son ~340KB sin consumidores en el camino crítico.

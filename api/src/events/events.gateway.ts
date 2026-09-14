@@ -28,6 +28,11 @@ import { PrismaService } from '../prisma/prisma.service';
     credentials: true,
   },
   namespace: '/',
+  // Default is 1MB per message — far beyond any real payload this gateway
+  // carries (location pings, status strings, chat text ≤1000 chars). Capping
+  // at 8KB makes oversized-payload abuse (memory growth, log flooding) fail
+  // at the transport layer before any handler runs.
+  maxHttpBufferSize: 8 * 1024,
 })
 export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
@@ -91,14 +96,57 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return { error: 'Unauthorized' };
     }
 
-    // Broadcast new order to available drivers
-    this.server.to('role:driver').emit('order:new', {
-      orderId: data.orderId,
-      pickupAddress: data.pickupAddress,
-      deliveryAddress: data.deliveryAddress,
-      totalAmount: data.totalAmount,
-      distanceKm: data.distanceKm,
-    });
+    // Solo campos primitivos acotados: el broadcast llega a TODOS los
+    // repartidores conectados, así que nada escrito por el cliente puede
+    // viajar sin límite de tamaño/tipo.
+    const orderId =
+      typeof data?.orderId === 'string' && data.orderId.length <= 64 ? data.orderId : null;
+    const pickupAddress =
+      typeof data?.pickupAddress === 'string' ? data.pickupAddress.slice(0, 300) : '';
+    const deliveryAddress =
+      typeof data?.deliveryAddress === 'string' ? data.deliveryAddress.slice(0, 300) : '';
+    const totalAmount =
+      typeof data?.totalAmount === 'number' && Number.isFinite(data.totalAmount)
+        ? data.totalAmount
+        : null;
+    const distanceKm =
+      typeof data?.distanceKm === 'number' && Number.isFinite(data.distanceKm)
+        ? data.distanceKm
+        : null;
+
+    if (!orderId || totalAmount == null) {
+      return { error: 'orderId y totalAmount son requeridos' };
+    }
+
+    // Re-emitir con la forma canónica de order:new (id + payout reales desde
+    // la DB, no los del cliente). El service ya emite al crear: esto cubre
+    // reintentos sin duplicar datos distintos.
+    const stored = await this.prisma.order.findUnique({ where: { id: orderId } });
+    if (stored && (stored as any).status === 'pending' && !(stored as any).driverId) {
+      this.server.to('role:driver').emit('order:new', {
+        id: stored.id,
+        orderId: stored.id,
+        pickupAddress: (stored as any).pickupAddress,
+        deliveryAddress: (stored as any).deliveryAddress,
+        totalAmount: Number((stored as any).totalAmount),
+        driverPayout:
+          (stored as any).driverPayout != null ? Number((stored as any).driverPayout) : null,
+        distanceKm: Number((stored as any).distanceKm),
+        createdAt: (stored as any).createdAt,
+      });
+    } else if (!stored) {
+      // La orden aún no existe (carrera REST/socket): re-emitir parcial pero
+      // con `id` para que Aceptar apunte a la URL correcta al reintentar.
+      this.server.to('role:driver').emit('order:new', {
+        id: orderId,
+        orderId,
+        pickupAddress,
+        deliveryAddress,
+        totalAmount,
+        driverPayout: null,
+        distanceKm,
+      });
+    }
 
     return { success: true };
   }
@@ -112,6 +160,9 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (!userData || userData.role !== 'driver') {
       return { error: 'Unauthorized' };
     }
+    if (typeof data?.orderId !== 'string' || data.orderId.length > 64) {
+      return { error: 'orderId inválido' };
+    }
 
     // Notify merchant that order was accepted
     const order = await this.prisma.order.findUnique({
@@ -120,9 +171,10 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     });
 
     if (order?.merchant?.userId) {
+      // driverId SIEMPRE es el del token — el body nunca decide quién "aceptó".
       this.server.to(`user:${order.merchant.userId}`).emit('order:accepted', {
         orderId: data.orderId,
-        driverId: data.driverId,
+        driverId: userData.userId,
         message: 'Tu pedido fue aceptado por un repartidor',
       });
     }
@@ -138,6 +190,23 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const userData = this.connectedUsers.get(client.id);
     if (!userData) {
       return { error: 'Unauthorized' };
+    }
+    if (typeof data?.orderId !== 'string' || data.orderId.length > 64) {
+      return { error: 'orderId inválido' };
+    }
+
+    // Solo estados del flujo real: evita inyectar strings arbitrarios en las
+    // notificaciones de ambos participantes.
+    const VALID_STATUSES = new Set([
+      'assigned',
+      'in_transit_to_pickup',
+      'picked_up',
+      'in_transit_to_delivery',
+      'delivered',
+      'cancelled',
+    ]);
+    if (typeof data?.status !== 'string' || !VALID_STATUSES.has(data.status)) {
+      return { error: 'status inválido' };
     }
 
     // Get order details with owner ids (merchantId/driverId are profile ids, not user ids)
@@ -202,8 +271,15 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return { error: 'Unauthorized' };
     }
 
+    // Coordenadas acotadas: garbage aquí viaja directo al mapa de tracking.
+    const lat = typeof data?.lat === 'number' && Number.isFinite(data.lat) ? data.lat : null;
+    const lng = typeof data?.lng === 'number' && Number.isFinite(data.lng) ? data.lng : null;
+    if (lat == null || lng == null || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+      return { error: 'lat/lng inválidos' };
+    }
+
     // If tracking an order, notify the merchant
-    if (data.orderId) {
+    if (typeof data.orderId === 'string' && data.orderId.length > 0 && data.orderId.length <= 64) {
       const order = await this.prisma.order.findUnique({
         where: { id: data.orderId },
         include: { merchant: true },
@@ -230,6 +306,10 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const userData = this.connectedUsers.get(client.id);
     if (!userData || userData.role !== 'driver') {
       return { error: 'Unauthorized' };
+    }
+    // Estado acotado al enum real de DriverProfile.
+    if (data?.status !== 'available' && data?.status !== 'busy' && data?.status !== 'offline') {
+      return { error: 'status inválido' };
     }
 
     // Update driver status in database
@@ -261,8 +341,22 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return { error: 'Unauthorized' };
     }
 
+    // Allowlist estricta de temas reales del sistema: sin esto cualquier
+    // usuario puede suscribirse a "topic:admin" y recibir lo que se publique
+    // ahí. Si un solo tema pedido no existe, se rechaza completo — una lista
+    // mixta ("admin" + real) es probing, no una suscripción legítima.
+    const ALLOWED_TOPICS = new Set(['orders_zone', 'promotions', 'system']);
+    const topics: string[] = Array.isArray(data?.topics) ? data.topics : [];
+    const allValid =
+      topics.length > 0 &&
+      topics.length <= 10 &&
+      topics.every((t) => typeof t === 'string' && ALLOWED_TOPICS.has(t));
+    if (!allValid) {
+      return { error: 'topics inválidos' };
+    }
+
     // Join specified topics
-    data.topics.forEach((topic) => {
+    topics.forEach((topic) => {
       client.join(`topic:${topic}`);
     });
 

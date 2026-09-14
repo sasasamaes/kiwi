@@ -7,7 +7,7 @@ import { AnimatedButton, StaggerContainer, StaggerItem } from '@kiwi/ui';
 
 export default function DriverLanding() {
   return (
-    <main className="min-h-[100dvh] bg-gradient-to-br from-kiwi-50 via-white to-kiwi-100 flex flex-col">
+    <main className="min-h-[100dvh] bg-gradient-to-br from-kiwi-50 via-white to-kiwi-100 dark:from-surface-950 dark:via-surface-900 dark:to-surface-950 flex flex-col">
       {/* Background decorations */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <motion.div

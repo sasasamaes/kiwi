@@ -1,0 +1,11 @@
+{
+  "name": "@kiwi/eslint-plugin",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Reglas ESLint compartidas del monorepo Kiwi (políticas de seguridad transversales)",
+  "main": "index.js",
+  "files": [
+    "index.js",
+    "rules/"
+  ]
+}

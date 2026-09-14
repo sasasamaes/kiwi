@@ -1,7 +1,7 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono, Inter } from 'next/font/google';
 import './globals.css';
-import { ThemeProvider, AuthProvider, NotificationProvider } from '@kiwi/ui';
+import { ThemeProvider, ThemeScript, AuthProvider, NotificationProvider } from '@kiwi/ui';
 import { OfflineBanner } from './offline-banner';
 
 const geist = Geist({
@@ -19,17 +19,22 @@ const inter = Inter({
   variable: '--font-inter',
 });
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  // viewportFit: cover hace que env(safe-area-*) reporte la notch/home
+  // indicator; las barras fijas usan .pb-safe/.pt-safe para respetarla.
+  viewportFit: 'cover',
+  // Pinch-zoom habilitado: requisito de accesibilidad (WCAG 1.4.4).
+  maximumScale: 5,
+  userScalable: true,
+};
+
 export const metadata: Metadata = {
   title: 'Kiwi Driver - Repartidor',
   description: 'App de repartidores Kiwi - Nicoya, Costa Rica',
   manifest: '/manifest.json',
   themeColor: '#22c55e',
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
-  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -43,9 +48,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+        {/* Aplica la clase de tema antes del primer paint — sin flash blanco. */}
+        <ThemeScript />
       </head>
       <body
-        className="font-sans antialiased min-h-[100dvh] dark:bg-[#0b1326] dark:text-[#f8fafc]"
+        className="font-sans antialiased min-h-[100dvh] bg-bg-light dark:bg-[#0b1326] dark:text-[#f8fafc]"
         style={{ background: 'var(--bg-gradient)' }}
       >
         <ThemeProvider>

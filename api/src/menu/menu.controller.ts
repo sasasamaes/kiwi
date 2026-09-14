@@ -1,4 +1,5 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Public } from '../auth/decorators/public.decorator';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { MenuService } from './menu.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -15,12 +16,14 @@ export class MenuController {
   // 🌐 PUBLIC ENDPOINTS (no auth required)
   // ============================================
 
+  @Public()
   @Get('merchant/:id')
   @ApiOperation({ summary: 'Get merchant public profile' })
   async getMerchantProfile(@Param('id') id: string) {
     return this.menuService.getMerchantPublicProfile(id);
   }
 
+  @Public()
   @Get('merchant/:id/items')
   @ApiOperation({ summary: 'Get merchant menu items' })
   @ApiQuery({ name: 'category', required: false })

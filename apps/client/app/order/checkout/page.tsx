@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RefreshCw, Coins, Smartphone, CreditCard } from 'lucide-react';
-import { AnimatedButton, StaggerContainer, StaggerItem, api } from '@kiwi/ui';
+import { AnimatedButton, StaggerContainer, StaggerItem, api, safeNavigateToUrl } from '@kiwi/ui';
 
 interface CartItem {
   id: string;
@@ -126,8 +126,11 @@ function CheckoutContent() {
           });
 
           if (paymentResult?.checkoutUrl) {
-            window.location.href = paymentResult.checkoutUrl;
-            return;
+            // Redirect solo a checkout https allow-listed (validación en el helper)
+            if (safeNavigateToUrl(paymentResult.checkoutUrl)) {
+              return;
+            }
+            throw new Error('URL de pago inválida');
           }
         } catch (paymentError) {
           console.warn('Payment processing failed, order created:', paymentError);
@@ -200,7 +203,7 @@ function CheckoutContent() {
           <div className="space-y-3">
             {orderId && (
               <Link href={`/tracking/${orderId}`}>
-                <AnimatedButton className="w-full">Map Rastrear pedido</AnimatedButton>
+                <AnimatedButton className="w-full">Rastrear pedido</AnimatedButton>
               </Link>
             )}
             <Link href="/">
@@ -218,7 +221,7 @@ function CheckoutContent() {
     <main className="min-h-[100dvh] bg-bg-light dark:bg-surface-950">
       {/* Header */}
       <motion.header
-        className="sticky top-0 z-40 glass-strong"
+        className="pt-safe sticky top-0 z-40 glass-strong"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
       >

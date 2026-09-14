@@ -1,0 +1,6 @@
+import { NotFoundState } from '@kiwi/ui';
+
+/** 404 de marca: salida al dashboard (la home pública es la landing). */
+export default function NotFound() {
+  return <NotFoundState homeHref="/dashboard" homeLabel="Ir al dashboard" />;
+}

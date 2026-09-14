@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { BottomNav } from '../components/BottomNav';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, Package, Coins, Calendar, User, PartyPopper } from 'lucide-react';
+import { Home, PartyPopper } from 'lucide-react';
 import { AnimatedButton, StaggerContainer, StaggerItem } from '@kiwi/ui';
 
 const days = [
@@ -94,7 +95,7 @@ export default function Schedule() {
     <main className="min-h-[100dvh] flex flex-col bg-bg-light dark:bg-surface-950">
       {/* Header */}
       <motion.header
-        className="sticky top-0 z-50 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl"
+        className="pt-safe sticky top-0 z-50 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
       >
@@ -461,39 +462,7 @@ export default function Schedule() {
       </AnimatePresence>
 
       {/* Bottom Navigation */}
-      <nav className="sticky bottom-0 border-t border-surface-200/50 dark:border-surface-700/50 bg-white/80 dark:bg-surface-900/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-lg items-center justify-around py-2">
-          {[
-            { href: '/', icon: Home, label: 'Inicio', active: false },
-            { href: '/active', icon: Package, label: 'Activos', active: false },
-            { href: '/earnings', icon: Coins, label: 'Ganancias', active: false },
-            { href: '/schedule', icon: Calendar, label: 'Horario', active: true },
-            { href: '/profile', icon: User, label: 'Perfil', active: false },
-          ].map((item) => {
-            const NavIcon = item.icon as any;
-            return (
-              <Link key={item.href} href={item.href}>
-                <motion.div
-                  className={`flex flex-col items-center gap-1 px-4 py-2 ${
-                    item.active
-                      ? 'text-kiwi-600 dark:text-kiwi-400'
-                      : 'text-surface-400 hover:text-surface-600 dark:hover:text-surface-300'
-                  }`}
-                  whileHover={{ y: -2 }}
-                  whileTap={{ scale: 0.9 }}
-                >
-                  {typeof NavIcon === 'string' ? (
-                    <span className="text-xl">{NavIcon}</span>
-                  ) : (
-                    <NavIcon className="h-5 w-5" />
-                  )}
-                  <span className="text-xs font-medium">{item.label}</span>
-                </motion.div>
-              </Link>
-            );
-          })}
-        </div>
-      </nav>
+      <BottomNav />
     </main>
   );
 }

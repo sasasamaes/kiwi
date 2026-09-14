@@ -3,6 +3,7 @@
 import { useRef, useCallback } from 'react';
 import { QRCodeSVG, QRCodeCanvas } from 'qrcode.react';
 import { motion } from 'framer-motion';
+import { safeNavigateToUrl } from './utils';
 
 const MENU_BASE_URL = process.env.NEXT_PUBLIC_MENU_URL || 'https://kiwi-client-tau.vercel.app/menu';
 
@@ -343,8 +344,8 @@ export function QRScanner({ onScan, onError, isActive = true }: QRScannerProps) 
             onScan?.(merchantId, decodedText);
             scanner.stop().catch(() => {});
           } else if (isAllowedMenuUrl(decodedText)) {
-            // Only navigate to allowlisted menu URLs to avoid open-redirect phishing
-            window.location.href = decodedText;
+            // Solo navega a URLs de menú allow-listed (evita phishing por QR)
+            safeNavigateToUrl(decodedText);
           } else {
             onError?.('Código QR no válido para Kiwi');
           }

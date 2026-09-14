@@ -1,12 +1,97 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { FieldCipher } from '../security/field-cipher';
 
 @Injectable()
 export class KYCService {
-  constructor(private prisma: PrismaService) {}
+  /** Identity numbers: encrypted at rest (AES-256-GCM), masked for display. */
+  private static readonly ENCRYPTED_FIELDS = ['idNumber', 'licenseNumber', 'taxId'] as const;
+
+  /**
+   * Document URL fields: stored as-is and later opened/rendered by the admin
+   * panel, so they get the strictest content restriction — https-only, bounded
+   * length, no data:/javascript: URIs. (Uploads don't exist yet: when a real
+   * storage backend lands, these fields become server-generated URLs only.)
+   */
+  private static readonly URL_FIELDS = [
+    'idFrontUrl',
+    'idBackUrl',
+    'selfieUrl',
+    'licenseUrl',
+    'vehicleRegisterUrl',
+    'insuranceUrl',
+    'businessLicenseUrl',
+  ] as const;
+
+  constructor(
+    private prisma: PrismaService,
+    private cipher: FieldCipher,
+  ) {}
+
+  /** https-only, ≤512 chars, no embedded credentials or non-web schemes. */
+  private static isAllowedDocumentUrl(value: unknown): value is string {
+    if (typeof value !== 'string' || value.length === 0 || value.length > 512) return false;
+    try {
+      const parsed = new URL(value);
+      return parsed.protocol === 'https:' && !parsed.username && !parsed.password;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Sanitize document URLs: anything not passing the check is DROPPED (not
+   * thrown) so a single bad field never blocks a legitimate resubmission of
+   * the rest of the documents.
+   */
+  private sanitizeDocumentUrls<T extends Record<string, any>>(data: T): T {
+    const out: any = { ...data };
+    for (const field of KYCService.URL_FIELDS) {
+      if (out[field] !== undefined && !KYCService.isAllowedDocumentUrl(out[field])) {
+        delete out[field];
+      }
+    }
+    return out;
+  }
+
+  /** Mask a plaintext identity number for safe display: keep last 4. */
+  private static mask(value: string | null | undefined): string | null {
+    if (!value) return null;
+    const tail = value.slice(-4);
+    return `••••${tail.replace(/[^0-9A-Za-z]/g, '') || '••••'}`;
+  }
+
+  /** Encrypt identity numbers before they hit the database. */
+  private encryptIdentityFields<T extends Record<string, any>>(data: T): T {
+    const out: any = { ...data };
+    for (const field of KYCService.ENCRYPTED_FIELDS) {
+      if (typeof out[field] === 'string' && out[field].length > 0) {
+        out[field] = this.cipher.encrypt(out[field]);
+      }
+    }
+    return out;
+  }
+
+  /** Decrypt (or mask) identity numbers coming out of the database. */
+  private decryptIdentityFields(row: any, { mask }: { mask: boolean }): any {
+    if (!row) return row;
+    const out = { ...row };
+    for (const field of KYCService.ENCRYPTED_FIELDS) {
+      const v = out[field];
+      if (typeof v === 'string' && v.length > 0 && this.cipher.isEncrypted(v)) {
+        const plain = this.cipher.decrypt(v);
+        out[field] = mask ? KYCService.mask(plain) : plain;
+      } else if (typeof v === 'string' && v.length > 0) {
+        // Legacy plaintext row (pre-cipher): NEVER echoed back unmasked, whoever
+        // asks — display of full numbers requires the value to be encrypted.
+        out[field] = KYCService.mask(v);
+      }
+    }
+    return out;
+  }
 
   async getPendingVerifications() {
-    return this.prisma.kYCVerification.findMany({
+    const rows = await this.prisma.kYCVerification.findMany({
       where: {
         status: { in: ['pending', 'documents_submitted', 'under_review'] },
       },
@@ -22,6 +107,7 @@ export class KYCService {
       },
       orderBy: { createdAt: 'asc' },
     });
+    return rows.map((r) => this.decryptIdentityFields(r, { mask: false }));
   }
 
   async getAllVerifications(status?: string) {
@@ -30,26 +116,18 @@ export class KYCService {
       where.status = status;
     }
 
-    return this.prisma.kYCVerification.findMany({
+    const rows = await this.prisma.kYCVerification.findMany({
       where,
-      include: {
-        user: {
-          select: {
-            id: true,
-            email: true,
-            phone: true,
-            role: true,
-          },
-        },
-      },
       orderBy: { createdAt: 'desc' },
     });
+    return rows.map((r) => this.decryptIdentityFields(r, { mask: false }));
   }
 
-  async getVerificationByUserId(userId: string) {
-    return this.prisma.kYCVerification.findUnique({
+  async getVerificationByUserId(userId: string, opts?: { maskIdentity?: boolean }) {
+    const row = await this.prisma.kYCVerification.findUnique({
       where: { userId },
     });
+    return this.decryptIdentityFields(row, { mask: opts?.maskIdentity ?? false });
   }
 
   async getVerificationById(id: string) {
@@ -71,7 +149,7 @@ export class KYCService {
       throw new NotFoundException('Verificación no encontrada');
     }
 
-    return verification;
+    return this.decryptIdentityFields(verification, { mask: false });
   }
 
   async submitDocuments(
@@ -135,12 +213,16 @@ export class KYCService {
       if (!isNaN(parsed.getTime())) cleanData.licenseExpiry = parsed;
     }
 
+    // Identity numbers never touch the database unencrypted (AES-256-GCM),
+    // document URLs only ever stored when https and bounded.
+    const storedData = this.sanitizeDocumentUrls(this.encryptIdentityFields(cleanData));
+
     if (existing && existing.status === 'rejected') {
       // Allow resubmission after rejection
       return this.prisma.kYCVerification.update({
         where: { userId },
         data: {
-          ...cleanData,
+          ...storedData,
           status: 'documents_submitted',
           rejectionReason: null,
         },
@@ -152,7 +234,7 @@ export class KYCService {
       return this.prisma.kYCVerification.update({
         where: { userId },
         data: {
-          ...cleanData,
+          ...storedData,
           status: 'documents_submitted',
         },
       });
@@ -162,7 +244,7 @@ export class KYCService {
     return this.prisma.kYCVerification.create({
       data: {
         userId,
-        ...cleanData,
+        ...storedData,
         status: 'documents_submitted',
       },
     });
@@ -218,7 +300,7 @@ export class KYCService {
         },
       });
 
-      return updatedVerification;
+      return this.decryptIdentityFields(updatedVerification, { mask: false });
     });
 
     return updated;
@@ -272,7 +354,7 @@ export class KYCService {
         },
       });
 
-      return rejected;
+      return this.decryptIdentityFields(rejected, { mask: false });
     });
 
     return updated;

@@ -163,7 +163,7 @@ export default function RateOrderPage() {
   // ---------- Formulario ----------
 
   return (
-    <div className="min-h-screen bg-surface-50 dark:bg-surface-900 p-4 pb-32">
+    <div className="min-h-screen bg-surface-50 dark:bg-surface-900 p-4 pb-36">
       <div className="mx-auto max-w-md">
         <button
           onClick={() => router.back()}
@@ -302,7 +302,7 @@ export default function RateOrderPage() {
       </div>
 
       {/* Barra inferior fija */}
-      <div className="fixed bottom-0 inset-x-0 bg-surface-50 dark:bg-surface-900 border-t border-surface-200 dark:border-surface-700 p-4">
+      <div className="pb-safe fixed bottom-0 inset-x-0 bg-surface-50 dark:bg-surface-900 border-t border-surface-200 dark:border-surface-700 p-4">
         <div className="mx-auto max-w-md">
           <AnimatedButton
             onClick={handleSubmit}

@@ -3,8 +3,9 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AnimatedButton, ThemeToggle, QRScanner } from '@kiwi/ui';
+import { AnimatedButton, ThemeToggle, QRScanner, ScrollReveal, KiwiMark } from '@kiwi/ui';
 import { Camera, ClipboardList, CreditCard, Bike, Smartphone, X } from 'lucide-react';
+import { BottomNav } from './components/BottomNav';
 
 export default function ClientHome() {
   const router = useRouter();
@@ -48,21 +49,18 @@ export default function ClientHome() {
   }, []);
 
   return (
-    <main className="min-h-[100dvh] bg-bg-light dark:bg-surface-950">
+    <div className="min-h-[100dvh] bg-bg-light dark:bg-surface-950 pb-20">
       {/* Header */}
       <motion.header
-        className="sticky top-0 z-50 glass-strong"
+        className="pt-safe sticky top-0 z-50 glass-strong"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
       >
         <div className="mx-auto max-w-lg px-4 py-4">
           <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <span className="text-lg font-bold text-kiwi-500">Kiwi</span>
-              <h1 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100">
-                Kiwi
-              </h1>
-            </div>
+            <h1 className="text-xl font-display font-bold text-kiwi-600 dark:text-kiwi-400">
+              Kiwi
+            </h1>
             <ThemeToggle />
           </div>
         </div>
@@ -87,9 +85,9 @@ export default function ClientHome() {
                   </h2>
                   <motion.button
                     onClick={stopScanner}
-                    className="text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
-                    whileHover={{ scale: 1.1 }}
+                    aria-label="Cerrar escáner"
                     whileTap={{ scale: 0.9 }}
+                    className="rounded-full text-surface-400 hover:text-surface-600 dark:hover:text-surface-300 transition-colors"
                   >
                     <X className="h-5 w-5" />
                   </motion.button>
@@ -115,12 +113,17 @@ export default function ClientHome() {
           )}
         </AnimatePresence>
 
-        {/* QR Scanner Button */}
+        {/* QR Scanner Button — hero de la home */}
         {!showScanner && (
           <motion.div
             className="mb-6"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
+            transition={{
+              delay: 0.1,
+              duration: 0.45,
+              ease: [0.25, 0.46, 0.45, 0.94],
+            }}
           >
             <motion.div
               className="rounded-2xl bg-kiwi-gradient p-6 text-white glow-kiwi-lg cursor-pointer overflow-hidden relative tactile"
@@ -133,6 +136,10 @@ export default function ClientHome() {
                 animate={{ scale: [1, 1.2, 1] }}
                 transition={{ duration: 4, repeat: Infinity }}
               />
+              {/* Kiwi flotando dentro del hero (decorativo, no bloquea el tap) */}
+              <div className="pointer-events-none absolute -right-3 -top-4 opacity-90">
+                <KiwiMark size={64} />
+              </div>
               <div className="relative flex items-center gap-4">
                 <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/20">
                   <Camera className="h-8 w-8 text-white" />
@@ -148,22 +155,15 @@ export default function ClientHome() {
           </motion.div>
         )}
 
-        {/* Nearby restaurants — coming soon: entry is QR scan for now */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
+        {/* Nearby restaurants — coming soon: entrada real es el QR del hero */}
+        <ScrollReveal index={0}>
           <h2 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
             Restaurantes cercanos
           </h2>
 
-          <motion.div
-            className="rounded-2xl glass p-6 text-center cursor-pointer"
-            whileHover={{ y: -2 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={startScanner}
-          >
+          {/* Informativo, NO clickeable: el CTA del escáner ya vive en el hero
+              de arriba — dos targets idénticos juntos confunden. */}
+          <div className="rounded-2xl glass p-6 text-center">
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-kiwi-100 dark:bg-kiwi-900/30 mx-auto mb-3">
               <Camera className="h-8 w-8 text-kiwi-600 dark:text-kiwi-400" />
             </div>
@@ -171,17 +171,15 @@ export default function ClientHome() {
               Muy pronto por aquí
             </p>
             <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">
-              Por ahora escaneá el QR de tu restaurante favorito para ver su menú
+              Usá el botón de arriba para escanear el QR de tu restaurante favorito
             </p>
-          </motion.div>
-        </motion.div>
+          </div>
+        </ScrollReveal>
 
         {/* How it Works */}
-        <motion.div
+        <ScrollReveal
           className="mt-8 rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
+          index={1}
         >
           <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100 mb-4 text-center">
             ¿Cómo funciona?
@@ -204,8 +202,9 @@ export default function ClientHome() {
               </div>
             ))}
           </div>
-        </motion.div>
+        </ScrollReveal>
       </main>
-    </main>
+      <BottomNav />
+    </div>
   );
 }

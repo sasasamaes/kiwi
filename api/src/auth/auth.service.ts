@@ -1,4 +1,10 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
@@ -6,13 +12,77 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 
+/** Per-account brute-force throttle for login (independent of IP limits). */
+interface AttemptEntry {
+  count: number;
+  windowStart: number;
+  lockedUntil: number;
+}
+
+const LOGIN_MAX_ATTEMPTS = 5;
+const LOGIN_WINDOW_MS = 15 * 60 * 1000; // 15 min sliding window
+const LOGIN_LOCKOUT_MS = 15 * 60 * 1000; // 15 min lockout after too many fails
+
 @Injectable()
 export class AuthService {
+  /** email(lowercased) → failed-attempt state. Wins over any IP rotation. */
+  private readonly loginAttempts = new Map<string, AttemptEntry>();
+
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
     private configService: ConfigService,
-  ) {}
+  ) {
+    // Periodic cleanup so entries for abandoned accounts don't accumulate.
+    setInterval(
+      () => {
+        const now = Date.now();
+        for (const [k, e] of this.loginAttempts.entries()) {
+          if (now > e.windowStart + LOGIN_WINDOW_MS && now > e.lockedUntil) {
+            this.loginAttempts.delete(k);
+          }
+        }
+      },
+      10 * 60 * 1000,
+    ).unref();
+  }
+
+  /**
+   * Throttle failed logins per ACCOUNT (email), not per IP: an attacker with
+   * many IPs cannot rotate around it, and a shared-office NAT can't lock
+   * everyone out. Only failures count; success clears the account's state.
+   */
+  private assertNotLocked(emailKey: string) {
+    const entry = this.loginAttempts.get(emailKey);
+    if (entry?.lockedUntil && entry.lockedUntil > Date.now()) {
+      const retryAfter = Math.ceil((entry.lockedUntil - Date.now()) / 1000);
+      throw new HttpException(
+        {
+          statusCode: HttpStatus.TOO_MANY_REQUESTS,
+          message: 'Cuenta temporalmente bloqueada por intentos fallidos. Intenta en unos minutos.',
+          retryAfter,
+        },
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+  }
+
+  private recordFailedAttempt(emailKey: string) {
+    const now = Date.now();
+    let entry = this.loginAttempts.get(emailKey);
+    if (!entry || now - entry.windowStart > LOGIN_WINDOW_MS) {
+      entry = { count: 0, windowStart: now, lockedUntil: 0 };
+      this.loginAttempts.set(emailKey, entry);
+    }
+    entry.count++;
+    if (entry.count >= LOGIN_MAX_ATTEMPTS) {
+      entry.lockedUntil = now + LOGIN_LOCKOUT_MS;
+    }
+  }
+
+  private clearAttempts(emailKey: string) {
+    this.loginAttempts.delete(emailKey);
+  }
 
   async register(registerDto: RegisterDto) {
     const { email, password, phone, fullName, role, businessName, vehicleType } = registerDto;
@@ -84,6 +154,10 @@ export class AuthService {
 
   async login(loginDto: LoginDto) {
     const { email, password } = loginDto;
+    const emailKey = email.trim().toLowerCase();
+
+    // Per-account brute-force throttle (IP throttle is separate, in middleware).
+    this.assertNotLocked(emailKey);
 
     // Find user
     const user = await this.prisma.user.findUnique({
@@ -95,6 +169,7 @@ export class AuthService {
     });
 
     if (!user) {
+      this.recordFailedAttempt(emailKey);
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
@@ -109,8 +184,12 @@ export class AuthService {
 
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
     if (!isPasswordValid) {
+      this.recordFailedAttempt(emailKey);
       throw new UnauthorizedException('Credenciales inválidas');
     }
+
+    // Successful login: reset the account's failed-attempt state.
+    this.clearAttempts(emailKey);
 
     // Generate tokens
     const tokens = this.generateTokens(user.id, user.email, user.role);

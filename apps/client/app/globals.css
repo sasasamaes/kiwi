@@ -172,3 +172,12 @@ body {
   background: rgba(51, 65, 85, 0.5);
   color: #94a3b8;
 }
+
+/* Safe areas (iPhone notch / home indicator): barras fijas nunca quedan
+   debajo de la zona gestures. env() = 0 en desktop, ~34px en iPhone. */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}

@@ -13,14 +13,6 @@ export class InputSanitizationMiddleware implements NestMiddleware {
     /<embed\b[^<]*(?:(?!<\/embed>)<[^<]*)*<\/embed>/gi,
   ];
 
-  // SQL injection patterns
-  private readonly sqlPatterns = [
-    /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|EXECUTE|UNION|FETCH|DECLARE|TRUNCATE)\b)/gi,
-    /(--|;|\/\*|\*\/|xp_|sp_)/gi,
-    /(\b(OR|AND)\b\s+\d+\s*=\s*\d+)/gi,
-    /('\s*(OR|AND)\s+')/gi,
-  ];
-
   // Path traversal patterns
   private readonly pathTraversalPatterns = [
     /\.\.\//g,

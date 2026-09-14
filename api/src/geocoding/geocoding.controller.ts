@@ -35,6 +35,24 @@ export class GeocodingController {
     return this.geocodingService.searchNicoya(query, maxResults);
   }
 
+  @Get('resolve-link')
+  @ApiOperation({ summary: 'Resolve a shared/shortened map link to coordinates' })
+  @ApiQuery({
+    name: 'url',
+    required: true,
+    description: 'Shared map URL (goo.gl, maps.app.goo.gl, google maps…)',
+  })
+  async resolveLink(@Query('url') url: string) {
+    if (!url || typeof url !== 'string') {
+      return { error: 'Missing url parameter' };
+    }
+    const result = await this.geocodingService.resolveMapLink(url);
+    if (!result) {
+      return { error: 'No se pudo abrir ese link. Pedí el link completo de Google Maps.' };
+    }
+    return result;
+  }
+
   @Get('reverse')
   @ApiOperation({ summary: 'Reverse geocode coordinates to address' })
   @ApiQuery({ name: 'lat', required: true, description: 'Latitude' })

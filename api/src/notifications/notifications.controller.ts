@@ -55,6 +55,14 @@ export class NotificationsController {
     return this.notificationsService.markAllAsRead(user.sub);
   }
 
+  @Delete('device-token')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Remove a device token (logout/uninstall)' })
+  async removeDeviceToken(@CurrentUser() user: any, @Body() body: { token: string }) {
+    return this.notificationsService.removeDeviceToken(user.sub, body.token);
+  }
+
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -72,6 +80,39 @@ export class NotificationsController {
     @Body() body: { token: string; platform: 'ios' | 'android' | 'web' },
   ) {
     return this.notificationsService.registerDeviceToken(user.sub, body.token, body.platform);
+  }
+
+  // ============================================
+  // 📡 TOPICS
+  // ============================================
+
+  @Get('topics')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Topic catalog with my effective preferences' })
+  async getTopics(@CurrentUser() user: any) {
+    return this.notificationsService.getTopicPreferences(user.sub);
+  }
+
+  @Put('topics/:topic')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Enable/disable a topic and sync FCM subscriptions' })
+  async setTopic(
+    @CurrentUser() user: any,
+    @Param('topic') topic: string,
+    @Body() body: { enabled: boolean },
+  ) {
+    await this.notificationsService.setTopicPreference(user.sub, topic, body.enabled);
+    return { success: true };
+  }
+
+  @Post('topics/sync')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Re-sync my FCM topic subscriptions from preferences' })
+  async syncTopics(@CurrentUser() user: any) {
+    return this.notificationsService.syncTopicSubscriptions(user.sub);
   }
 
   // ============================================

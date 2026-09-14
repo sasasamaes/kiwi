@@ -455,6 +455,42 @@ class ApiClient {
     });
   }
 
+  async removeDeviceToken(token: string) {
+    return this.request<any>('/notifications/device-token', {
+      method: 'DELETE',
+      body: { token },
+    });
+  }
+
+  /** Catálogo de topics con las preferencias efectivas del usuario. */
+  async getNotificationTopics() {
+    return this.request<
+      Array<{
+        name: string;
+        label: string;
+        description: string;
+        enabled: boolean;
+        locked: boolean;
+        delivery: string;
+      }>
+    >('/notifications/topics');
+  }
+
+  /** Activa/desactiva un topic; el API re-sincroniza FCM. */
+  async setNotificationTopic(topic: string, enabled: boolean) {
+    return this.request<any>(`/notifications/topics/${encodeURIComponent(topic)}`, {
+      method: 'PUT',
+      body: { enabled },
+    });
+  }
+
+  /** Re-sincroniza las suscripciones FCM desde las preferencias. */
+  async syncNotificationTopics() {
+    return this.request<{ synced: number }>('/notifications/topics/sync', {
+      method: 'POST',
+    });
+  }
+
   // ============================================
   // 🚦 TRAFFIC NOTIFICATIONS
   // ============================================
@@ -660,6 +696,11 @@ class ApiClient {
   async reverseGeocode(lat: number, lng: number) {
     const params = new URLSearchParams({ lat: String(lat), lng: String(lng) });
     return this.request<any>(`/geocoding/reverse?${params.toString()}`);
+  }
+
+  async resolveMapLink(url: string) {
+    const params = new URLSearchParams({ url });
+    return this.request<any>(`/geocoding/resolve-link?${params.toString()}`);
   }
 
   async calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number) {

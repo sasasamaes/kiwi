@@ -18,6 +18,7 @@ jest.mock('../events/events.gateway', () => ({
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { OrdersService } from '../orders/orders.service';
 import { EventsGateway } from '../events/events.gateway';
@@ -64,6 +65,14 @@ describe('OrdersService', () => {
         {
           provide: GeocodingService,
           useValue: { searchCostaRica: jest.fn().mockResolvedValue([]) },
+        },
+        {
+          provide: NotificationsService,
+          useValue: {
+            notifyNewOrderTopic: jest.fn().mockResolvedValue({ delivered: 0, inbox: 0 }),
+            notifyOrderAccepted: jest.fn().mockResolvedValue({}),
+            notifyOrderStatusUpdate: jest.fn().mockResolvedValue({}),
+          },
         },
       ],
     }).compile();
@@ -458,7 +467,13 @@ describe('OrdersService', () => {
         deliveryLng: null,
         driverId: 'dp-1',
         merchant: { businessName: 'Bowl & Café' },
-        driver: { fullName: 'Juan', vehicleType: 'motorcycle', rating: '4.9' },
+        driver: {
+          fullName: 'Juan',
+          photoUrl: 'https://cdn.test/juan.jpg',
+          vehicleType: 'motorcycle',
+          vehiclePlate: 'NIC-1234',
+          rating: '4.9',
+        },
         items: [{ name: 'Bowl', quantity: 2 }],
         createdAt: new Date(),
         assignedAt: new Date(),
@@ -471,6 +486,8 @@ describe('OrdersService', () => {
       expect(dto.id).toBe('order-1');
       expect(dto.merchantName).toBe('Bowl & Café');
       expect(dto.driver.fullName).toBe('Juan');
+      expect(dto.driver.photoUrl).toBe('https://cdn.test/juan.jpg');
+      expect(dto.driver.vehiclePlate).toBe('NIC-1234');
       expect(dto.pickupLat).toBe(10.1);
       expect(dto).not.toHaveProperty('driverPayout');
       expect(dto).not.toHaveProperty('totalAmount');

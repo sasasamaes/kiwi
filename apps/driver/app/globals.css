@@ -19,11 +19,22 @@
 }
 
 body {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background: linear-gradient(180deg, #0b1326 0%, #0f172a 100%);
+  font-family:
+    'Inter',
+    system-ui,
+    -apple-system,
+    sans-serif;
+  /* Fallback claro; el layout pinta el gradiente real vía var(--bg-gradient)
+     que .dark redefine. Antes esto era el gradiente oscuro para TODOS. */
+  background: linear-gradient(180deg, #f0fdf4 0%, #fafaf9 50%, #f5f5f4 100%);
   min-height: 100dvh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  color: #18181b;
+}
+
+.dark body {
+  background: linear-gradient(180deg, #0b1326 0%, #0f172a 100%);
   color: #f8fafc;
 }
 
@@ -87,8 +98,13 @@ body {
    ============================================ */
 
 @keyframes pulse-soft {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
 }
 
 .animate-pulse-soft {
@@ -96,8 +112,13 @@ body {
 }
 
 @keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
 }
 
 .animate-float {
@@ -105,8 +126,12 @@ body {
 }
 
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 .shimmer {
@@ -176,4 +201,16 @@ body {
 .dark .badge-offline {
   background: rgba(51, 65, 85, 0.5);
   color: #94a3b8;
+}
+
+/* Safe areas (iPhone notch / home indicator): barras fijas nunca quedan
+   debajo de la zona gestures. env() = 0 en desktop, ~34px en iPhone. */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.mb-safe {
+  margin-bottom: env(safe-area-inset-bottom, 0px);
 }

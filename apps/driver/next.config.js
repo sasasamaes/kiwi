@@ -65,6 +65,8 @@ const withPWA = require('@ducanh2912/next-pwa').default({
   },
 });
 
+const { buildSecurityHeaders } = require('../../packages/ui/security-headers.cjs');
+
 const nextConfig = {
   transpilePackages: ['@kiwi/ui', '@kiwi/types'],
   eslint: {
@@ -73,6 +75,24 @@ const nextConfig = {
   },
   experimental: {
     optimizePackageImports: ['lucide-react'],
+  },
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        // Driver app: sí usa geolocation (ubicación en vivo del repartidor).
+        headers: buildSecurityHeaders({ allowGeolocation: true }),
+      },
+      {
+        // El service worker NO se cachea con heurísticas del navegador:
+        // max-age=0 garantiza que los updates de la PWA se detecten al vuelo.
+        source: '/sw.js',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=0, must-revalidate' },
+          { key: 'Service-Worker-Allowed', value: '/' },
+        ],
+      },
+    ];
   },
 };
 

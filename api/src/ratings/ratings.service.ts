@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventsGateway } from '../events/events.gateway';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CreateRatingDto } from './dto/create-rating.dto';
 
 const ROUNDING = 2;
@@ -30,6 +31,7 @@ export class RatingsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly events: EventsGateway,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   /**
@@ -86,6 +88,11 @@ export class RatingsService {
       rating: dto.rating,
       comment: rating.comment,
     });
+
+    // Push + inbox (topic driver.ratings, respeta preferencias)
+    await this.notificationsService
+      .notifyNewRating(order.driver.user.id, dto.rating, order.merchant.businessName)
+      .catch(() => null);
 
     return rating;
   }

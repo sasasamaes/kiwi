@@ -1,9 +1,13 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class WithdrawalsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notificationsService: NotificationsService,
+  ) {}
 
   async getBalance(driverUserId: string) {
     const driverProfile = await this.prisma.driverProfile.findUnique({
@@ -283,16 +287,10 @@ export class WithdrawalsService {
       },
     });
 
-    // Notify driver
-    await this.prisma.notification.create({
-      data: {
-        userId: withdrawal.driver.userId,
-        title: 'Retiro en Proceso',
-        body: `Tu retiro de ₡${Number(withdrawal.amount).toLocaleString()} está siendo procesado`,
-        type: 'withdrawal_processing',
-        data: { withdrawalId: id },
-      },
-    });
+    // Notify driver (push + inbox vía notifications service)
+    await this.notificationsService
+      .notifyWithdrawalStatus(withdrawal.driver.userId, 'processing', Number(withdrawal.amount))
+      .catch(() => null);
 
     return updated;
   }
@@ -319,16 +317,10 @@ export class WithdrawalsService {
       },
     });
 
-    // Notify driver
-    await this.prisma.notification.create({
-      data: {
-        userId: withdrawal.driver.userId,
-        title: 'Retiro Completado',
-        body: `Tu retiro de ₡${Number(withdrawal.amount).toLocaleString()} fue completado exitosamente`,
-        type: 'withdrawal_completed',
-        data: { withdrawalId: id },
-      },
-    });
+    // Notify driver (push + inbox vía notifications service)
+    await this.notificationsService
+      .notifyWithdrawalStatus(withdrawal.driver.userId, 'completed', Number(withdrawal.amount))
+      .catch(() => null);
 
     return updated;
   }
@@ -357,16 +349,10 @@ export class WithdrawalsService {
       },
     });
 
-    // Notify driver
-    await this.prisma.notification.create({
-      data: {
-        userId: withdrawal.driver.userId,
-        title: 'Retiro Rechazado',
-        body: `Tu retiro de ₡${Number(withdrawal.amount).toLocaleString()} fue rechazado: ${reason}`,
-        type: 'withdrawal_rejected',
-        data: { withdrawalId: id, reason },
-      },
-    });
+    // Notify driver (push + inbox vía notifications service)
+    await this.notificationsService
+      .notifyWithdrawalStatus(withdrawal.driver.userId, 'rejected', Number(withdrawal.amount))
+      .catch(() => null);
 
     return updated;
   }

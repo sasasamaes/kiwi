@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { DriversService } from '../drivers/drivers.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { NotFoundException } from '@nestjs/common';
+import { ForbiddenException, NotFoundException } from '@nestjs/common';
 
 describe('DriversService', () => {
   let service: DriversService;
@@ -18,6 +18,7 @@ describe('DriversService', () => {
         aggregate: jest.fn(),
         count: jest.fn(),
         findMany: jest.fn(),
+        findFirst: jest.fn(),
       },
       driverSchedule: {
         findMany: jest.fn(),
@@ -127,6 +128,40 @@ describe('DriversService', () => {
       prisma.driverProfile.findUnique.mockResolvedValue(null);
 
       await expect(service.findById('non-existent')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('getLocationForUser (row-level GPS guard)', () => {
+    it('permite al propio repartidor ver su ubicación', async () => {
+      prisma.driverProfile.findUnique.mockResolvedValue({ id: 'dp-1' });
+
+      await expect(
+        service.getLocationForUser('dp-1', { sub: 'u-1', role: 'driver' }),
+      ).resolves.toMatchObject({ driverId: 'dp-1' });
+    });
+
+    it('permite al comercio con pedido activo de ese repartidor', async () => {
+      prisma.driverProfile.findUnique.mockResolvedValue({ id: 'dp-otro' });
+      prisma.order.findFirst.mockResolvedValue({ id: 'o-1' });
+
+      await expect(
+        service.getLocationForUser('dp-1', { sub: 'u-merch', role: 'merchant' }),
+      ).resolves.toMatchObject({ known: expect.any(Boolean) });
+    });
+
+    it('bloquea a un usuario autenticado sin relación con el repartidor', async () => {
+      prisma.driverProfile.findUnique.mockResolvedValue({ id: 'dp-otro' });
+      prisma.order.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.getLocationForUser('dp-1', { sub: 'u-raro', role: 'merchant' }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('admin siempre puede', async () => {
+      await expect(
+        service.getLocationForUser('dp-1', { sub: 'u-admin', role: 'admin' }),
+      ).resolves.toMatchObject({ driverId: 'dp-1' });
     });
   });
 });

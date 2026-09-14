@@ -15,7 +15,6 @@ import {
   BarChart3,
   Bell,
   Plus,
-  Loader2,
 } from 'lucide-react';
 import {
   AnimatedButton,
@@ -28,9 +27,11 @@ import {
   useAuth,
   useSocket,
   usePushNotifications,
+  playNotificationSound,
   api,
   Order,
   staggerContainer,
+  KiwiLoader,
 } from '@kiwi/ui';
 
 export default function Dashboard() {
@@ -62,6 +63,7 @@ export default function Dashboard() {
     onConnect: () => console.log('🟢 Connected to real-time updates'),
     onOrderAccepted: (data) => {
       console.log('Order accepted:', data);
+      playNotificationSound('success');
       setNotifications((prev) => [
         ...prev,
         { type: 'success', message: data.message, time: new Date() },
@@ -71,6 +73,7 @@ export default function Dashboard() {
     },
     onOrderStatusChanged: (data) => {
       console.log('Order status changed:', data);
+      playNotificationSound('order_update');
       setNotifications((prev) => [
         ...prev,
         { type: 'info', message: data.message, time: new Date() },
@@ -122,13 +125,7 @@ export default function Dashboard() {
   if (authLoading || loading) {
     return (
       <div className="min-h-[100dvh] bg-bg-light flex items-center justify-center">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-          className="text-4xl"
-        >
-          <Loader2 className="h-8 w-8" />
-        </motion.div>
+        <KiwiLoader size={56} />
       </div>
     );
   }
@@ -281,34 +278,6 @@ export default function Dashboard() {
         {/* Quick Actions */}
         <StaggerContainer className="mb-8 grid gap-4 md:grid-cols-3">
           <StaggerItem>
-            <Link href="/orders/new?kind=food">
-              <motion.div
-                className="rounded-2xl bg-white/70 dark:bg-surface-800/70 backdrop-blur-xl border border-white/30 dark:border-surface-700/30 shadow-soft-md dark:shadow-dark p-4 cursor-pointer group"
-                whileHover={{ y: -4, boxShadow: '0 12px 32px -8px rgba(34, 197, 94, 0.25)' }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <div className="flex items-center gap-4">
-                  <motion.div
-                    className="flex h-14 w-14 items-center justify-center rounded-2xl bg-kiwi-100 dark:bg-kiwi-900/50 text-kiwi-600 dark:text-kiwi-400 transition-colors group-hover:bg-kiwi-500 group-hover:text-white"
-                    whileHover={{ rotate: 90 }}
-                    transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-                  >
-                    <Plus className="h-6 w-6" />
-                  </motion.div>
-                  <div>
-                    <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-                      Pedido Menú
-                    </h3>
-                    <p className="text-sm text-surface-500 dark:text-surface-400">
-                      Comida del menú
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
-            </Link>
-          </StaggerItem>
-
-          <StaggerItem>
             <Link href="/orders/new?kind=freight">
               <motion.div
                 className="rounded-2xl bg-white/70 dark:bg-surface-800/70 backdrop-blur-xl border border-white/30 dark:border-surface-700/30 shadow-soft-md dark:shadow-dark p-4 cursor-pointer group"
@@ -329,6 +298,34 @@ export default function Dashboard() {
                     </h3>
                     <p className="text-sm text-surface-500 dark:text-surface-400">
                       Paquete o mandado
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            </Link>
+          </StaggerItem>
+
+          <StaggerItem>
+            <Link href="/orders/new?kind=food">
+              <motion.div
+                className="rounded-2xl bg-white/70 dark:bg-surface-800/70 backdrop-blur-xl border border-white/30 dark:border-surface-700/30 shadow-soft-md dark:shadow-dark p-4 cursor-pointer group"
+                whileHover={{ y: -4, boxShadow: '0 12px 32px -8px rgba(34, 197, 94, 0.25)' }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <div className="flex items-center gap-4">
+                  <motion.div
+                    className="flex h-14 w-14 items-center justify-center rounded-2xl bg-kiwi-100 dark:bg-kiwi-900/50 text-kiwi-600 dark:text-kiwi-400 transition-colors group-hover:bg-kiwi-500 group-hover:text-white"
+                    whileHover={{ rotate: 90 }}
+                    transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+                  >
+                    <Plus className="h-6 w-6" />
+                  </motion.div>
+                  <div>
+                    <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">
+                      Pedido Menú
+                    </h3>
+                    <p className="text-sm text-surface-500 dark:text-surface-400">
+                      Comida del menú
                     </p>
                   </div>
                 </div>

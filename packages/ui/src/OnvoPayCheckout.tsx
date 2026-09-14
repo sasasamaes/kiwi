@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Clock, CreditCard, Smartphone } from 'lucide-react';
+import { safeNavigateToUrl } from './utils';
 
 export interface OnvoPayCheckoutProps {
   paymentIntentId: string;
@@ -35,21 +36,11 @@ export function OnvoPayCheckout({
 
     try {
       if (checkoutUrl) {
-        // Only redirect to https OnvoPay-hosted checkout URLs
-        let allowed = false;
-        try {
-          const parsed = new URL(checkoutUrl);
-          allowed =
-            parsed.protocol === 'https:' &&
-            (parsed.hostname.endsWith('onvopay.com') || parsed.hostname.endsWith('onvo.pay'));
-        } catch {
-          allowed = false;
-        }
-        if (!allowed) {
+        // Redirect solo a checkout https allow-listed (safeNavigateToUrl lanza
+        // vía el if y la validación vive en el helper).
+        if (!safeNavigateToUrl(checkoutUrl)) {
           throw new Error('URL de pago inválida');
         }
-        // Redirect to hosted checkout
-        window.location.href = checkoutUrl;
       } else {
         // For embedded checkout, you would use the OnvoPay SDK
         // For now, we'll simulate the flow

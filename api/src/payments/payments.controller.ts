@@ -14,6 +14,7 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
 import { PaymentsService } from './payments.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { Public } from '../auth/decorators/public.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { OnvoPayProvider } from './providers/onvopay.provider';
 import { StellarProvider } from './providers/stellar.provider';
@@ -71,16 +72,18 @@ export class PaymentsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get payment status' })
-  async getPaymentStatus(@Param('orderId') orderId: string) {
-    return this.paymentsService.getPaymentStatus(orderId);
+  async getPaymentStatus(@Param('orderId') orderId: string, @CurrentUser() user: any) {
+    return this.paymentsService.getPaymentStatusForUser(orderId, user);
   }
 
+  @Public()
   @Get('methods')
   @ApiOperation({ summary: 'Get available payment methods' })
   async getPaymentMethods() {
     return this.paymentsService.getPaymentMethods();
   }
 
+  @Public()
   @Post('webhook/:provider')
   @HttpCode(200)
   @ApiOperation({ summary: 'Handle payment webhook' })
@@ -108,7 +111,11 @@ export class PaymentsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get OnvoPay payment intent status' })
-  async getOnvoPaymentStatus(@Param('paymentIntentId') paymentIntentId: string) {
+  async getOnvoPaymentStatus(
+    @Param('paymentIntentId') paymentIntentId: string,
+    @CurrentUser() user: any,
+  ) {
+    await this.paymentsService.assertIntentAccess(paymentIntentId, user);
     return this.onvopayProvider.getPaymentIntentStatus(paymentIntentId);
   }
 
@@ -116,7 +123,11 @@ export class PaymentsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Cancel a payment intent' })
-  async cancelOnvoPayment(@Param('paymentIntentId') paymentIntentId: string) {
+  async cancelOnvoPayment(
+    @Param('paymentIntentId') paymentIntentId: string,
+    @CurrentUser() user: any,
+  ) {
+    await this.paymentsService.assertIntentAccess(paymentIntentId, user);
     return this.onvopayProvider.cancelPaymentIntent(paymentIntentId);
   }
 
@@ -135,7 +146,9 @@ export class PaymentsController {
   async refundPayment(
     @Param('paymentIntentId') paymentIntentId: string,
     @Body() body: { amount?: number },
+    @CurrentUser() user: any,
   ) {
+    await this.paymentsService.assertIntentAccess(paymentIntentId, user, true);
     return this.onvopayProvider.refundPayment(paymentIntentId, body.amount);
   }
 
@@ -143,7 +156,11 @@ export class PaymentsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get payment intent details' })
-  async getPaymentIntentDetails(@Param('paymentIntentId') paymentIntentId: string) {
+  async getPaymentIntentDetails(
+    @Param('paymentIntentId') paymentIntentId: string,
+    @CurrentUser() user: any,
+  ) {
+    await this.paymentsService.assertIntentAccess(paymentIntentId, user);
     return this.onvopayProvider.getPaymentIntent(paymentIntentId);
   }
 }

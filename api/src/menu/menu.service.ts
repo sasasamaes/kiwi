@@ -183,7 +183,20 @@ export class MenuService {
       if (data.image != null && typeof data.image !== 'string') {
         throw new BadRequestException('Imagen inválida');
       }
-      out.image = data.image;
+      // Campo acotado: en la práctica es un emoji o URL corta (así lo usan
+      // las apps); nada legítimo supera 256 chars — bloquea payloads gigantes
+      // y data-URIs base64 escondidos en el JSON.
+      if (data.image != null && data.image.length > 256) {
+        throw new BadRequestException('Imagen demasiado larga (máx 256)');
+      }
+      // Sentinel legacy: el form del merchant guardaba el NOMBRE del icono
+      // lucide ('Utensils') cuando no se elegía emoji, y el client app lo
+      // pintaba como texto literal. Normalizado a null (= sin imagen).
+      if (data.image === 'Utensils') {
+        out.image = null;
+      } else {
+        out.image = data.image;
+      }
     }
     if (data.isPopular !== undefined) out.isPopular = Boolean(data.isPopular);
     if (data.isAvailable !== undefined) out.isAvailable = Boolean(data.isAvailable);

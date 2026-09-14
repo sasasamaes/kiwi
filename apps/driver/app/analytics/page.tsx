@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { BottomNav } from '../components/BottomNav';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
@@ -10,7 +11,6 @@ import {
   BarChart3,
   Star,
   Home,
-  User,
   Calendar,
   CalendarDays,
   RefreshCw,
@@ -127,7 +127,7 @@ export default function DriverAnalyticsPage() {
   if (loading && !analytics) {
     return (
       <main className="min-h-[100dvh] bg-bg-light dark:bg-surface-950">
-        <div className="sticky top-0 z-40 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl">
+        <div className="pt-safe sticky top-0 z-40 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl">
           <div className="mx-auto max-w-lg px-4 py-4">
             <Skeleton className="h-6 w-32" />
           </div>
@@ -143,9 +143,9 @@ export default function DriverAnalyticsPage() {
 
   if (error && !analytics) {
     return (
-      <main className="min-h-[100dvh] bg-bg-light dark:bg-surface-950 flex items-center justify-center">
+      <main className="min-h-[100dvh] bg-bg-light dark:bg-surface-950 flex flex-col items-center justify-center">
         <motion.div
-          className="text-center"
+          className="text-center p-4"
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
         >
@@ -169,6 +169,7 @@ export default function DriverAnalyticsPage() {
             <RefreshCw className="h-4 w-4 inline" /> Reintentar
           </motion.button>
         </motion.div>
+        <BottomNav />
       </main>
     );
   }
@@ -177,7 +178,7 @@ export default function DriverAnalyticsPage() {
     <main className="min-h-[100dvh] bg-bg-light dark:bg-surface-950 pb-24">
       {/* Header */}
       <motion.header
-        className="sticky top-0 z-40 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl"
+        className="pt-safe sticky top-0 z-40 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
       >
@@ -550,45 +551,7 @@ export default function DriverAnalyticsPage() {
       </div>
 
       {/* Bottom Navigation */}
-      <nav className="sticky bottom-0 border-t border-surface-200/50 dark:border-surface-700/50 bg-white/80 dark:bg-surface-900/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-lg items-center justify-around py-2">
-          <Link
-            href="/"
-            className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
-          >
-            <Home className="text-xl h-5 w-5" />
-            <span className="text-xs font-medium">Inicio</span>
-          </Link>
-          <Link
-            href="/active"
-            className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
-          >
-            <Package className="text-xl h-5 w-5" />
-            <span className="text-xs font-medium">Activos</span>
-          </Link>
-          <Link
-            href="/earnings"
-            className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
-          >
-            <Coins className="text-xl h-5 w-5" />
-            <span className="text-xs font-medium">Ganancias</span>
-          </Link>
-          <Link
-            href="/analytics"
-            className="flex flex-col items-center gap-1 px-4 py-2 text-kiwi-600 dark:text-kiwi-400"
-          >
-            <BarChart3 className="text-xl h-5 w-5" />
-            <span className="text-xs font-medium">Analytics</span>
-          </Link>
-          <Link
-            href="/profile"
-            className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
-          >
-            <User className="text-xl h-5 w-5" />
-            <span className="text-xs font-medium">Perfil</span>
-          </Link>
-        </div>
-      </nav>
+      <BottomNav />
     </main>
   );
 }

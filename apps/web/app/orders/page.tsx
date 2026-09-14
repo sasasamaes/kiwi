@@ -42,7 +42,10 @@ export default function OrdersPage() {
 
   return (
     <main className="mx-auto max-w-3xl p-6">
-      <Link href="/dashboard" className="text-sm text-surface-500 hover:text-surface-800">
+      <Link
+        href="/dashboard"
+        className="text-sm text-surface-500 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200"
+      >
         ← Volver al dashboard
       </Link>
       <h1 className="mt-2 text-2xl font-semibold">Mis pedidos</h1>
@@ -57,7 +60,7 @@ export default function OrdersPage() {
         {orders.map((order: any) => (
           <li
             key={order.id}
-            className="flex items-center justify-between rounded-xl border border-surface-100 bg-white p-4"
+            className="flex items-center justify-between rounded-xl border border-surface-100 dark:border-surface-800 bg-white dark:bg-surface-900 p-4"
           >
             <div>
               <p className="font-medium">
@@ -68,7 +71,7 @@ export default function OrdersPage() {
               </p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              <span className="rounded-full bg-surface-100 px-3 py-1 text-xs font-medium">
+              <span className="rounded-full bg-surface-100 dark:bg-surface-800 px-3 py-1 text-xs font-medium">
                 {STATUS_LABELS[order.status] ?? order.status}
               </span>
               <ShareTrackingButton

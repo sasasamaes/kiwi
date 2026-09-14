@@ -41,7 +41,7 @@ export default function DriverKYCPage() {
     <div className="min-h-[100dvh] bg-bg-light">
       {/* Header */}
       <motion.header
-        className="sticky top-0 z-50 border-b border-surface-200/50 bg-white/70 backdrop-blur-xl"
+        className="pt-safe sticky top-0 z-50 border-b border-surface-200/50 bg-white/70 backdrop-blur-xl"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
       >

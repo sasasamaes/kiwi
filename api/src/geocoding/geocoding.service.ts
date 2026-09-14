@@ -210,8 +210,176 @@ export class GeocodingService {
   }
 
   /**
-   * Get current user location (browser geolocation)
+   * Resolve a shared map link (including shortened goo.gl / maps.app.goo.gl)
+   * by following redirects server-side (no CORS issues) and extracting
+   * coordinates from the final URL.
    */
+  async resolveMapLink(rawUrl: string): Promise<{
+    lat: number;
+    lng: number;
+    label: string;
+    resolvedUrl: string;
+  } | null> {
+    const match = rawUrl?.trim().match(/https?:\/\/[^\s]+/i);
+    if (!match) return null;
+
+    let initial: URL;
+    try {
+      initial = new URL(match[0]);
+    } catch {
+      return null;
+    }
+
+    const allowedHosts = [
+      'goo.gl',
+      'maps.app.goo.gl',
+      'google.com',
+      'www.google.com',
+      'maps.google.com',
+      'maps.app.goo.gl',
+      'apple.com',
+      'maps.apple.com',
+      'openstreetmap.org',
+      'www.openstreetmap.org',
+      'waze.com',
+      'www.waze.com',
+    ];
+    const host = initial.hostname.toLowerCase();
+    const allowed = allowedHosts.some((h) => host === h || host.endsWith(`.${h}`));
+    if (!allowed) return null;
+
+    const cacheKey = `resolvelink:${initial.toString().toLowerCase()}`;
+    const cached = this.getFromCache(cacheKey);
+    if (cached) return cached;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+    try {
+      // Seguir redirects a mano (algunos User-Agent reciben 200 con
+      // interstitial en vez de 302 si se deja el follow automático).
+      let current = initial.toString();
+      let finalUrl = current;
+      let lastResponse: Response | null = null;
+      for (let i = 0; i < 5; i++) {
+        const response = await fetch(current, {
+          redirect: 'manual',
+          signal: controller.signal,
+          headers: {
+            'User-Agent': 'Mozilla/5.0',
+          },
+        });
+        lastResponse = response;
+        const location = response.headers.get('location');
+        if (response.status >= 300 && response.status < 400 && location) {
+          current = new URL(location, current).toString();
+          finalUrl = current;
+          // No hace falta leer el body de un redirect
+          try {
+            await response.arrayBuffer();
+          } catch {
+            // ignore
+          }
+          continue;
+        }
+        finalUrl = current;
+        break;
+      }
+      const point = this.extractCoordsFromUrl(finalUrl);
+      if (!point) {
+        // Fallback: scan a bit of the HTML body for !3dLAT!4dLNG or @LAT,LNG
+        try {
+          const text = lastResponse ? await lastResponse.text() : '';
+          const bodyPoint = this.extractCoordsFromUrl(text.slice(0, 200000));
+          if (bodyPoint) {
+            const result = {
+              ...bodyPoint,
+              resolvedUrl: finalUrl,
+            };
+            this.setCache(cacheKey, result);
+            return result;
+          }
+        } catch {
+          // ignore body parse errors
+        }
+        return null;
+      }
+      const result = { ...point, resolvedUrl: finalUrl };
+      this.setCache(cacheKey, result);
+      return result;
+    } catch (error) {
+      this.logger.error(`Resolve map link failed: ${(error as Error)?.message}`);
+      return null;
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  /**
+   * Extract lat/lng from a Google/Apple/OSM map URL or HTML blob.
+   * Handles @lat,lng, ?q=/query=/ll=/destination=, mlat/mlon,
+   * and Google's !3dLAT!4dLNG pin pattern.
+   */
+  private extractCoordsFromUrl(
+    urlText: string,
+  ): { lat: number; lng: number; label: string } | null {
+    const numPair = (s: string | null): { lat: number; lng: number; label: string } | null => {
+      if (!s) return null;
+      const decoded = (() => {
+        try {
+          return decodeURIComponent(s);
+        } catch {
+          return s;
+        }
+      })();
+      const m = decoded.match(/(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/);
+      if (!m) return null;
+      const lat = Number(m[1]);
+      const lng = Number(m[2]);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+      if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
+      return { lat, lng, label: `${lat.toFixed(5)}, ${lng.toFixed(5)}` };
+    };
+
+    // Google pin pattern: !3dLAT!4dLNG (most reliable for shared pins)
+    const pin = urlText.match(/!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/);
+    if (pin) {
+      const p = numPair(`${pin[1]},${pin[2]}`);
+      if (p) return p;
+    }
+
+    try {
+      const url = new URL(urlText);
+      const q = (k: string) => url.searchParams.get(k);
+      for (const key of ['q', 'query', 'll', 'destination', 'daddr', 'saddr']) {
+        const p = numPair(q(key));
+        if (p) return p;
+      }
+      const mlat = url.searchParams.get('mlat');
+      const mlon = url.searchParams.get('mlon');
+      if (mlat && mlon) {
+        const p = numPair(`${mlat},${mlon}`);
+        if (p) return p;
+      }
+      const at = url.pathname.match(/@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/);
+      if (at) {
+        const p = numPair(`${at[1]},${at[2]}`);
+        if (p) return p;
+      }
+      // Last resort: any lat,lng pair anywhere in the URL
+      const generic = numPair(urlText);
+      // Only trust generic match if host looks like a maps URL
+      if (generic && /google|goo\.gl|apple|openstreetmap|waze/i.test(urlText)) return generic;
+    } catch {
+      // urlText may be an HTML blob, not a URL: try generic patterns
+      const at = urlText.match(/@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/);
+      if (at) {
+        const p = numPair(`${at[1]},${at[2]}`);
+        if (p) return p;
+      }
+      return numPair(urlText);
+    }
+    return null;
+  }
   async getCurrentLocation(): Promise<{ lat: number; lng: number } | null> {
     // This is a client-side operation
     // Return null and let the client handle geolocation

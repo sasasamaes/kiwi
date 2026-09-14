@@ -12,20 +12,22 @@ datasource db {
 
 // Users table
 model User {
-  id            String    @id @default(uuid())
-  email         String?   @unique
-  phone         String?   @unique
-  passwordHash  String?   @map("password_hash")
-  role          Role      @default(merchant)
-  status        UserStatus @default(active)
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
+  id           String     @id @default(uuid())
+  email        String?    @unique
+  phone        String?    @unique
+  passwordHash String?    @map("password_hash")
+  role         Role       @default(merchant)
+  status       UserStatus @default(active)
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
 
   // Relations
-  merchantProfile MerchantProfile?
-  driverProfile   DriverProfile?
-  kycVerification KYCVerification?
-  notifications   Notification[]
+  merchantProfile  MerchantProfile?
+  driverProfile    DriverProfile?
+  kycVerification  KYCVerification?
+  notifications    Notification[]
+  deviceTokens     DeviceToken[]
+  topicPreferences TopicPreference[]
 
   @@map("users")
 }
@@ -44,70 +46,70 @@ enum UserStatus {
 
 // Merchant profiles
 model MerchantProfile {
-  id            String   @id @default(uuid())
-  userId        String   @unique @map("user_id")
-  businessName  String   @map("business_name")
-  address       String
-  latitude      Decimal? @db.Decimal(10, 8)
-  longitude     Decimal? @db.Decimal(11, 8)
-  logoUrl       String?  @map("logo_url")
-  description   String?
-  openingHours  Json?    @map("opening_hours")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  id           String   @id @default(uuid())
+  userId       String   @unique @map("user_id")
+  businessName String   @map("business_name")
+  address      String
+  latitude     Decimal? @db.Decimal(10, 8)
+  longitude    Decimal? @db.Decimal(11, 8)
+  logoUrl      String?  @map("logo_url")
+  description  String?
+  openingHours Json?    @map("opening_hours")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
   // KYC
-  kycStatus      KYCStatus  @default(pending) @map("kyc_status")
-  kycVerifiedAt  DateTime?  @map("kyc_verified_at")
+  kycStatus     KYCStatus @default(pending) @map("kyc_status")
+  kycVerifiedAt DateTime? @map("kyc_verified_at")
 
   // Relations
-  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  orders         Order[]
-  menuItems      MenuItem[]
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders          Order[]
+  menuItems       MenuItem[]
   favoriteDrivers FavoriteDriver[]
-  ratings        Rating[]
+  ratings         Rating[]
 
   @@map("merchant_profiles")
 }
 
 // Driver profiles
 model DriverProfile {
-  id            String    @id @default(uuid())
-  userId        String    @unique @map("user_id")
-  fullName      String    @map("full_name")
-  photoUrl      String?   @map("photo_url")
-  vehicleType   VehicleType @map("vehicle_type")
-  vehiclePlate  String?   @map("vehicle_plate")
-  level         DriverLevel @default(bronce)
-  rating        Decimal   @default(5.0) @db.Decimal(3, 2)
-  totalTrips    Int       @default(0) @map("total_trips")
-  status        DriverStatus @default(offline)
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
+  id           String       @id @default(uuid())
+  userId       String       @unique @map("user_id")
+  fullName     String       @map("full_name")
+  photoUrl     String?      @map("photo_url")
+  vehicleType  VehicleType  @map("vehicle_type")
+  vehiclePlate String?      @map("vehicle_plate")
+  level        DriverLevel  @default(bronce)
+  rating       Decimal      @default(5.0) @db.Decimal(3, 2)
+  totalTrips   Int          @default(0) @map("total_trips")
+  status       DriverStatus @default(offline)
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
 
   // KYC
-  kycStatus      KYCStatus  @default(pending) @map("kyc_status")
-  kycVerifiedAt  DateTime?  @map("kyc_verified_at")
+  kycStatus     KYCStatus @default(pending) @map("kyc_status")
+  kycVerifiedAt DateTime? @map("kyc_verified_at")
 
   // Relations
-  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  schedules      DriverSchedule[]
-  orders         Order[]
-  proposals      DriverProposal[]
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  schedules       DriverSchedule[]
+  orders          Order[]
+  proposals       DriverProposal[]
   favoriteDrivers FavoriteDriver[]
-  ratings        Rating[]
-  incentives     DriverIncentive[]
-  withdrawals    Withdrawal[]
+  ratings         Rating[]
+  incentives      DriverIncentive[]
+  withdrawals     Withdrawal[]
 
   @@map("driver_profiles")
 }
 
 enum VehicleType {
-  motorcycle    // Moto
+  motorcycle // Moto
   motorized_bike // Bici bota
-  bicycle       // Bici
-  car           // Carro
-  truck         // Camión
+  bicycle // Bici
+  car // Carro
+  truck // Camión
 }
 
 enum DriverLevel {
@@ -126,42 +128,42 @@ enum DriverStatus {
 
 // KYC Verification
 model KYCVerification {
-  id              String    @id @default(uuid())
-  userId          String    @unique @map("user_id")
-  status          KYCStatus @default(pending)
-  
+  id     String    @id @default(uuid())
+  userId String    @unique @map("user_id")
+  status KYCStatus @default(pending)
+
   // Identity Documents
-  idType          String?   @map("id_type") // cedula, passport, etc.
-  idNumber        String?   @map("id_number")
-  idFrontUrl      String?   @map("id_front_url")
-  idBackUrl       String?   @map("id_back_url")
-  
+  idType     String? @map("id_type") // cedula, passport, etc.
+  idNumber   String? @map("id_number")
+  idFrontUrl String? @map("id_front_url")
+  idBackUrl  String? @map("id_back_url")
+
   // Selfie Verification
-  selfieUrl       String?   @map("selfie_url")
-  selfieVerified  Boolean   @default(false) @map("selfie_verified")
-  
+  selfieUrl      String? @map("selfie_url")
+  selfieVerified Boolean @default(false) @map("selfie_verified")
+
   // Driver License (for drivers)
-  licenseNumber   String?   @map("license_number")
-  licenseExpiry   DateTime? @map("license_expiry")
-  licenseUrl      String?   @map("license_url")
-  
+  licenseNumber String?   @map("license_number")
+  licenseExpiry DateTime? @map("license_expiry")
+  licenseUrl    String?   @map("license_url")
+
   // Vehicle Documents (for drivers)
-  vehicleRegisterUrl  String? @map("vehicle_register_url")
-  insuranceUrl        String? @map("insurance_url")
-  
+  vehicleRegisterUrl String? @map("vehicle_register_url")
+  insuranceUrl       String? @map("insurance_url")
+
   // Business Documents (for merchants)
-  businessLicenseUrl  String? @map("business_license_url")
-  taxId               String? @map("tax_id")
-  
+  businessLicenseUrl String? @map("business_license_url")
+  taxId              String? @map("tax_id")
+
   // Verification metadata
   verifiedAt      DateTime? @map("verified_at")
   verifiedBy      String?   @map("verified_by")
   rejectionReason String?   @map("rejection_reason")
   notes           String?
-  
+
   // Timestamps
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -195,55 +197,60 @@ model DriverSchedule {
 
 // Orders
 model Order {
-  id                String      @id @default(uuid())
-  merchantId        String      @map("merchant_id")
-  driverId          String?     @map("driver_id")
-  status            OrderStatus @default(pending)
-  orderType         OrderType   @map("order_type")
-  
+  id         String      @id @default(uuid())
+  merchantId String      @map("merchant_id")
+  driverId   String?     @map("driver_id")
+  status     OrderStatus @default(pending)
+  orderType  OrderType   @map("order_type")
+
   // Schedule
-  scheduledDate     DateTime?   @map("scheduled_date")
-  scheduledTime     String?     @map("scheduled_time")
-  
+  scheduledDate DateTime? @map("scheduled_date")
+  scheduledTime String?   @map("scheduled_time")
+
   // Addresses
-  pickupAddress     String      @map("pickup_address")
-  pickupLat         Decimal?    @map("pickup_lat") @db.Decimal(10, 8)
-  pickupLng         Decimal?    @map("pickup_lng") @db.Decimal(11, 8)
-  deliveryAddress   String      @map("delivery_address")
-  deliveryLat       Decimal?    @map("delivery_lat") @db.Decimal(10, 8)
-  deliveryLng       Decimal?    @map("delivery_lng") @db.Decimal(11, 8)
-  
+  pickupAddress   String   @map("pickup_address")
+  pickupLat       Decimal? @map("pickup_lat") @db.Decimal(10, 8)
+  pickupLng       Decimal? @map("pickup_lng") @db.Decimal(11, 8)
+  deliveryAddress String   @map("delivery_address")
+  deliveryLat     Decimal? @map("delivery_lat") @db.Decimal(10, 8)
+  deliveryLng     Decimal? @map("delivery_lng") @db.Decimal(11, 8)
+
   // Pricing
-  distanceKm        Decimal?    @map("distance_km") @db.Decimal(5, 2)
-  basePrice         Decimal     @map("base_price") @db.Decimal(10, 2)
-  commission        Decimal     @db.Decimal(10, 2)
-  driverPayout      Decimal     @map("driver_payout") @db.Decimal(10, 2)
-  totalAmount       Decimal     @map("total_amount") @db.Decimal(10, 2)
+  distanceKm         Decimal? @map("distance_km") @db.Decimal(5, 2)
+  basePrice          Decimal  @map("base_price") @db.Decimal(10, 2)
+  commission         Decimal  @db.Decimal(10, 2)
+  driverPayout       Decimal  @map("driver_payout") @db.Decimal(10, 2)
+  totalAmount        Decimal  @map("total_amount") @db.Decimal(10, 2)
   // Flete (fase 1: encomiendas)
-  productsTotal      Decimal   @default(0) @map("products_total") @db.Decimal(10, 2)
-  kind               String    @default("food") @map("kind")
-  packageDescription String?   @map("package_description")
-  packageSize        String?   @map("package_size")
-  declaredValue      Decimal?  @map("declared_value") @db.Decimal(10, 2)
-  weightKg           Decimal?  @map("weight_kg") @db.Decimal(8, 2)
-  
+  productsTotal      Decimal  @default(0) @map("products_total") @db.Decimal(10, 2)
+  kind               String   @default("food") @map("kind")
+  packageDescription String?  @map("package_description")
+  packageSize        String?  @map("package_size")
+  declaredValue      Decimal? @map("declared_value") @db.Decimal(10, 2)
+  weightKg           Decimal? @map("weight_kg") @db.Decimal(8, 2)
+
   // Instructions
-  specialInstructions String?   @map("special_instructions")
-  
+  specialInstructions String? @map("special_instructions")
+
   // Timestamps
-  createdAt         DateTime    @default(now()) @map("created_at")
-  assignedAt        DateTime?   @map("assigned_at")
-  pickedUpAt        DateTime?   @map("picked_up_at")
-  deliveredAt       DateTime?   @map("delivered_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  assignedAt  DateTime? @map("assigned_at")
+  pickedUpAt  DateTime? @map("picked_up_at")
+  deliveredAt DateTime? @map("delivered_at")
 
   // Relations
-  merchant   MerchantProfile @relation(fields: [merchantId], references: [id])
-  driver     DriverProfile?  @relation(fields: [driverId], references: [id])
-  proposals  DriverProposal[]
-  items      OrderItem[]
-  payment    Payment?
-  ratings    Rating[]
+  merchant  MerchantProfile  @relation(fields: [merchantId], references: [id])
+  driver    DriverProfile?   @relation(fields: [driverId], references: [id])
+  proposals DriverProposal[]
+  items     OrderItem[]
+  payment   Payment?
+  ratings   Rating[]
 
+  @@index([merchantId, status])
+  @@index([merchantId, createdAt])
+  @@index([driverId, status])
+  @@index([driverId, createdAt])
+  @@index([status, createdAt])
   @@map("orders")
 }
 
@@ -265,17 +272,17 @@ enum OrderType {
 
 // Driver proposals (for scheduled orders)
 model DriverProposal {
-  id              String           @id @default(uuid())
-  orderId         String           @map("order_id")
-  driverId        String           @map("driver_id")
-  status          ProposalStatus   @default(pending)
-  estimatedArrival String?         @map("estimated_arrival")
-  message         String?
-  createdAt       DateTime         @default(now()) @map("created_at")
+  id               String         @id @default(uuid())
+  orderId          String         @map("order_id")
+  driverId         String         @map("driver_id")
+  status           ProposalStatus @default(pending)
+  estimatedArrival String?        @map("estimated_arrival")
+  message          String?
+  createdAt        DateTime       @default(now()) @map("created_at")
 
   // Relations
-  order  Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  driver DriverProfile  @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  order  Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  driver DriverProfile @relation(fields: [driverId], references: [id], onDelete: Cascade)
 
   @@map("driver_proposals")
 }
@@ -288,28 +295,28 @@ enum ProposalStatus {
 
 // Payments
 model Payment {
-  id                String        @id @default(uuid())
-  orderId           String        @unique @map("order_id")
-  amount            Decimal       @db.Decimal(10, 2)
-  currency          String        @default("CRC")
-  method            PaymentMethod
-  status            PaymentStatus @default(pending)
-  
+  id       String        @id @default(uuid())
+  orderId  String        @unique @map("order_id")
+  amount   Decimal       @db.Decimal(10, 2)
+  currency String        @default("CRC")
+  method   PaymentMethod
+  status   PaymentStatus @default(pending)
+
   // OnvoPay
-  onvoPaymentId     String?       @map("onvo_payment_id")
-  onvoCheckoutUrl   String?       @map("onvo_checkout_url")
-  
+  onvoPaymentId   String? @map("onvo_payment_id")
+  onvoCheckoutUrl String? @map("onvo_checkout_url")
+
   // Crypto
-  cryptoCoin        String?       @map("crypto_coin")
-  cryptoNetwork     String?       @map("crypto_network")
-  cryptoWalletAddress String?     @map("crypto_wallet_address")
-  cryptoTxHash      String?       @map("crypto_tx_hash")
-  cryptoAmount      Decimal?      @map("crypto_amount") @db.Decimal(10, 6)
-  exchangeRate      Decimal?      @map("exchange_rate") @db.Decimal(10, 4)
-  
+  cryptoCoin          String?  @map("crypto_coin")
+  cryptoNetwork       String?  @map("crypto_network")
+  cryptoWalletAddress String?  @map("crypto_wallet_address")
+  cryptoTxHash        String?  @map("crypto_tx_hash")
+  cryptoAmount        Decimal? @map("crypto_amount") @db.Decimal(10, 6)
+  exchangeRate        Decimal? @map("exchange_rate") @db.Decimal(10, 4)
+
   // Timestamps
-  createdAt         DateTime      @default(now()) @map("created_at")
-  updatedAt         DateTime      @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
@@ -334,15 +341,15 @@ enum PaymentStatus {
 
 // Ratings
 model Rating {
-  id              String   @id @default(uuid())
-  orderId         String   @map("order_id")
-  driverId        String   @map("driver_id")
-  merchantId      String   @map("merchant_id")
-  rating          Int
-  comment         String?
-  onTime          Boolean? @map("on_time")
+  id               String   @id @default(uuid())
+  orderId          String   @map("order_id")
+  driverId         String   @map("driver_id")
+  merchantId       String   @map("merchant_id")
+  rating           Int
+  comment          String?
+  onTime           Boolean? @map("on_time")
   carefulWithOrder Boolean? @map("careful_with_order")
-  createdAt       DateTime @default(now()) @map("created_at")
+  createdAt        DateTime @default(now()) @map("created_at")
 
   // Relations
   order    Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
@@ -354,10 +361,10 @@ model Rating {
 
 // Favorite drivers
 model FavoriteDriver {
-  id          String   @id @default(uuid())
-  merchantId  String   @map("merchant_id")
-  driverId    String   @map("driver_id")
-  createdAt   DateTime @default(now()) @map("created_at")
+  id         String   @id @default(uuid())
+  merchantId String   @map("merchant_id")
+  driverId   String   @map("driver_id")
+  createdAt  DateTime @default(now()) @map("created_at")
 
   // Relations
   merchant MerchantProfile @relation(fields: [merchantId], references: [id], onDelete: Cascade)
@@ -369,12 +376,12 @@ model FavoriteDriver {
 
 // Driver incentives
 model DriverIncentive {
-  id              String          @id @default(uuid())
-  driverId        String          @map("driver_id")
-  incentiveType   IncentiveType   @map("incentive_type")
-  status          IncentiveStatus @default(pending)
-  deliveredAt     DateTime?       @map("delivered_at")
-  createdAt       DateTime        @default(now()) @map("created_at")
+  id            String          @id @default(uuid())
+  driverId      String          @map("driver_id")
+  incentiveType IncentiveType   @map("incentive_type")
+  status        IncentiveStatus @default(pending)
+  deliveredAt   DateTime?       @map("delivered_at")
+  createdAt     DateTime        @default(now()) @map("created_at")
 
   // Relations
   driver DriverProfile @relation(fields: [driverId], references: [id], onDelete: Cascade)
@@ -397,31 +404,31 @@ enum IncentiveStatus {
 
 // Withdrawals
 model Withdrawal {
-  id              String           @id @default(uuid())
-  driverId        String           @map("driver_id")
-  amount          Decimal          @db.Decimal(10, 2)
-  currency        String           @default("CRC")
-  status          WithdrawalStatus @default(pending)
-  paymentMethod   WithdrawalMethod @map("payment_method")
-  
+  id            String           @id @default(uuid())
+  driverId      String           @map("driver_id")
+  amount        Decimal          @db.Decimal(10, 2)
+  currency      String           @default("CRC")
+  status        WithdrawalStatus @default(pending)
+  paymentMethod WithdrawalMethod @map("payment_method")
+
   // SINPE details
-  sinpePhone      String?          @map("sinpe_phone")
-  sinpeName       String?          @map("sinpe_name")
-  
+  sinpePhone String? @map("sinpe_phone")
+  sinpeName  String? @map("sinpe_name")
+
   // Bank transfer details
-  bankName        String?          @map("bank_name")
-  accountNumber   String?          @map("account_number")
-  accountHolder   String?          @map("account_holder")
-  
+  bankName      String? @map("bank_name")
+  accountNumber String? @map("account_number")
+  accountHolder String? @map("account_holder")
+
   // Processing
-  processedAt     DateTime?        @map("processed_at")
-  processedBy     String?          @map("processed_by")
-  rejectionReason String?          @map("rejection_reason")
-  transactionId   String?          @map("transaction_id")
-  
+  processedAt     DateTime? @map("processed_at")
+  processedBy     String?   @map("processed_by")
+  rejectionReason String?   @map("rejection_reason")
+  transactionId   String?   @map("transaction_id")
+
   // Timestamps
-  createdAt       DateTime         @default(now()) @map("created_at")
-  updatedAt       DateTime         @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
   driver DriverProfile @relation(fields: [driverId], references: [id])
@@ -444,22 +451,22 @@ enum WithdrawalMethod {
 
 // Menu Items
 model MenuItem {
-  id            String   @id @default(uuid())
-  merchantId    String   @map("merchant_id")
-  name          String
-  description   String?
-  price         Decimal  @db.Decimal(10, 2)
-  image         String?
-  category      String
-  isPopular     Boolean  @default(false) @map("is_popular")
-  isAvailable   Boolean  @default(true) @map("is_available")
-  sortOrder     Int      @default(0) @map("sort_order")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  id          String   @id @default(uuid())
+  merchantId  String   @map("merchant_id")
+  name        String
+  description String?
+  price       Decimal  @db.Decimal(10, 2)
+  image       String?
+  category    String
+  isPopular   Boolean  @default(false) @map("is_popular")
+  isAvailable Boolean  @default(true) @map("is_available")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
   // Relations
-  merchant MerchantProfile @relation(fields: [merchantId], references: [id], onDelete: Cascade)
-  orderItems OrderItem[]
+  merchant      MerchantProfile        @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  orderItems    OrderItem[]
   variantGroups MenuItemVariantGroup[]
 
   @@index([merchantId, category])
@@ -483,11 +490,11 @@ model MenuItemVariantGroup {
 }
 
 model MenuItemVariantOption {
-  id         String  @id @default(uuid())
-  groupId    String  @map("group_id")
-  name       String
-  priceDelta Decimal @default(0) @db.Decimal(10, 2) @map("price_delta")
-  sortOrder  Int     @default(0) @map("sort_order")
+  id          String  @id @default(uuid())
+  groupId     String  @map("group_id")
+  name        String
+  priceDelta  Decimal @default(0) @map("price_delta") @db.Decimal(10, 2)
+  sortOrder   Int     @default(0) @map("sort_order")
   isAvailable Boolean @default(true) @map("is_available")
 
   // Relations
@@ -498,21 +505,21 @@ model MenuItemVariantOption {
 
 // Order Items (links orders to menu items)
 model OrderItem {
-  id          String   @id @default(uuid())
-  orderId     String   @map("order_id")
+  id               String   @id @default(uuid())
+  orderId          String   @map("order_id")
   // Optional: null for custom items written by hand in the order wizard
-  menuItemId  String?  @map("menu_item_id")
-  name        String
-  price       Decimal  @db.Decimal(10, 2)
-  quantity    Int      @default(1)
-  notes       String?
+  menuItemId       String?  @map("menu_item_id")
+  name             String
+  price            Decimal  @db.Decimal(10, 2)
+  quantity         Int      @default(1)
+  notes            String?
   // Snapshot of chosen variants [{group, option, priceDelta}]; price
   // already includes deltas, so totals never depend on live menu data.
-  selectedVariants Json? @map("selected_variants")
-  createdAt   DateTime @default(now()) @map("created_at")
+  selectedVariants Json?    @map("selected_variants")
+  createdAt        DateTime @default(now()) @map("created_at")
 
   // Relations
-  order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order    Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
   menuItem MenuItem? @relation(fields: [menuItemId], references: [id])
 
   @@map("order_items")
@@ -532,7 +539,38 @@ model Notification {
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId, read, createdAt])
   @@map("notifications")
+}
+
+/// Token FCM de un dispositivo. Uno por instalación de app/navegador.
+model DeviceToken {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  token      String   @unique
+  platform   String // ios | android | web
+  lastUsedAt DateTime @default(now()) @map("last_used_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("device_tokens")
+}
+
+/// Suscripción del usuario a un topic de notificaciones (v2).
+model TopicPreference {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  topic     String // ver TOPIC_CATALOG en notifications.service.ts
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, topic])
+  @@index([topic, enabled])
+  @@map("topic_preferences")
 }
 
 // Traffic history (time-series de condiciones viales por zona)
@@ -580,4 +618,18 @@ model TrafficAlertNotification {
 
   @@unique([driverId, alertId])
   @@map("traffic_alert_notifications")
+}
+
+// Mensajes del formulario de contacto (landing pública, sin auth).
+model ContactMessage {
+  id        String   @id @default(uuid())
+  name      String
+  email     String?
+  phone     String?
+  subject   String
+  message   String
+  status    String   @default("new") // new | read | resolved
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("contact_messages")
 }

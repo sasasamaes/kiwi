@@ -62,7 +62,8 @@ interface MenuItemFormData {
   description: string;
   price: number;
   category: string;
-  image: string;
+  /** Emoji o null. El sentinel 'Utensils' vive solo dentro del form. */
+  image: string | null;
   isPopular: boolean;
   isAvailable: boolean;
   variants: VariantGroupForm[];
@@ -103,7 +104,7 @@ export function MenuItemForm({
     description: initialData?.description || '',
     price: initialData?.price || 0,
     category: initialData?.category || categories[0] || 'Bowls',
-    image: initialData?.image || 'Utensils',
+    image: initialData?.image || null,
     isPopular: initialData?.isPopular || false,
     isAvailable: initialData?.isAvailable ?? true,
     variants: toVariantForm(initialData),
@@ -121,7 +122,8 @@ export function MenuItemForm({
         description: initialData.description || '',
         price: initialData.price || 0,
         category: initialData.category || categories[0] || 'Bowls',
-        image: initialData.image || 'Utensils',
+        // Sentinel legacy 'Utensils' en DB se trata como sin-imagen.
+        image: initialData.image === 'Utensils' ? null : initialData.image || null,
         isPopular: initialData.isPopular || false,
         isAvailable: initialData.isAvailable ?? true,
         variants: toVariantForm(initialData),
@@ -186,7 +188,15 @@ export function MenuItemForm({
 
     setLoading(true);
     try {
-      await onSubmit(formData);
+      // 'Utensils' es el placeholder del PICKER, no un valor real: guardarlo
+      // hacía que el client app pintara el texto literal "Utensils" como
+      // imagen del plato. Sin emoji elegido → null (el client muestra su
+      // icono por defecto). URLs de imagen subida se respetan tal cual.
+      const payload = {
+        ...formData,
+        image: formData.image === 'Utensils' ? null : formData.image,
+      };
+      await onSubmit(payload);
     } catch (error) {
       console.error('Failed to save menu item:', error);
     } finally {
@@ -246,7 +256,7 @@ export function MenuItemForm({
             >
               {imagePreview ? (
                 <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
-              ) : formData.image === 'Utensils' ? (
+              ) : !formData.image ? (
                 <Utensils className="h-10 w-10" />
               ) : (
                 formData.image

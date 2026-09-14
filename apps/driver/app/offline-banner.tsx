@@ -142,7 +142,7 @@ export function OfflineBanner() {
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed bottom-20 left-4 right-4 z-50"
+        className="fixed bottom-20 left-4 right-4 z-50 mb-safe"
         initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 100, opacity: 0 }}

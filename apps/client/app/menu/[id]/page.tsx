@@ -23,8 +23,8 @@ import {
 } from 'lucide-react';
 import {
   AnimatedButton,
-  StaggerContainer,
-  StaggerItem,
+  ScrollReveal,
+  TapButton,
   Skeleton,
   api,
   MenuItem,
@@ -33,6 +33,12 @@ import {
   AddressInput,
   OnvoPayCheckout,
   CryptoCheckout,
+  safeNavigateToUrl,
+  isEmojiImage,
+  hoverCard,
+  hoverChip,
+  hoverGhost,
+  ThemeToggle,
 } from '@kiwi/ui';
 
 interface CartItem extends MenuItem {
@@ -321,9 +327,10 @@ export default function MenuPage() {
           customerEmail: deliveryInfo.phone + '@guest.checkout.invalid', // Temporary
         });
 
-        if (paymentResult.checkoutUrl) {
-          // Redirect to OnvoPay checkout
-          window.location.href = paymentResult.checkoutUrl;
+        if (
+          paymentResult.checkoutUrl &&
+          safeNavigateToUrl(paymentResult.checkoutUrl) // https allow-listed host only
+        ) {
           return;
         }
 
@@ -450,7 +457,7 @@ export default function MenuPage() {
   if (loading) {
     return (
       <main className="min-h-[100dvh] bg-bg-light dark:bg-surface-950 pb-32">
-        <div className="sticky top-0 z-40 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl">
+        <div className="pt-safe sticky top-0 z-40 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl">
           <div className="mx-auto max-w-lg px-4 py-4">
             <div className="flex items-center justify-between">
               <Skeleton className="h-6 w-20" />
@@ -544,7 +551,7 @@ export default function MenuPage() {
     <main className="min-h-[100dvh] bg-bg-light dark:bg-surface-950 pb-32">
       {/* Header */}
       <motion.header
-        className="sticky top-0 z-40 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl"
+        className="pt-safe sticky top-0 z-40 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
       >
@@ -560,7 +567,7 @@ export default function MenuPage() {
             <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
               Menú
             </h1>
-            <div className="w-16" />
+            <ThemeToggle />
           </div>
         </div>
       </motion.header>
@@ -612,18 +619,17 @@ export default function MenuPage() {
       >
         <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
           {categories.map((cat) => (
-            <motion.button
+            <TapButton
               key={cat}
               className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all ${
                 selectedCategory === cat
                   ? 'bg-kiwi-500 text-white shadow-kiwi'
-                  : 'bg-white dark:bg-surface-800 text-surface-600 dark:text-surface-400 shadow-soft dark:shadow-dark'
+                  : `bg-white dark:bg-surface-800 text-surface-600 dark:text-surface-400 shadow-soft dark:shadow-dark ${hoverChip}`
               }`}
               onClick={() => setSelectedCategory(cat)}
-              whileTap={{ scale: 0.95 }}
             >
               {cat}
-            </motion.button>
+            </TapButton>
           ))}
         </div>
       </motion.div>
@@ -643,19 +649,15 @@ export default function MenuPage() {
             </p>
           </div>
         ) : (
-          <StaggerContainer className="space-y-4">
-            {filteredItems.map((item) => {
+          <div className="space-y-4">
+            {filteredItems.map((item, itemIndex) => {
               const quantity = getItemQuantity(item.id);
               return (
-                <StaggerItem key={item.id}>
-                  <motion.div className="rounded-2xl glass p-4" whileHover={{ y: -2 }}>
+                <ScrollReveal key={item.id} index={itemIndex} as="div">
+                  <motion.div className={`rounded-2xl glass p-4 ${hoverCard}`}>
                     <div className="flex gap-4">
                       <div className="flex h-20 w-20 items-center justify-center rounded-xl bg-surface-100 dark:bg-surface-700 text-3xl flex-shrink-0">
-                        {typeof item.image === 'string' && item.image ? (
-                          item.image
-                        ) : (
-                          <Utensils className="h-8 w-8" />
-                        )}
+                        {isEmojiImage(item.image) ? item.image : <Utensils className="h-8 w-8" />}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between">
@@ -693,36 +695,36 @@ export default function MenuPage() {
                                 initial={{ opacity: 0, scale: 0.8 }}
                                 animate={{ opacity: 1, scale: 1 }}
                               >
-                                <motion.button
+                                <TapButton
+                                  haptic
                                   className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400"
                                   onClick={() => decrementMenuItem(item.id)}
-                                  whileTap={{ scale: 0.9 }}
                                 >
                                   −
-                                </motion.button>
+                                </TapButton>
                                 <span className="w-6 text-center font-semibold text-surface-800 dark:text-surface-200">
                                   {quantity}
                                 </span>
                               </motion.div>
                             )}
-                            <motion.button
+                            <TapButton
+                              haptic
+                              success
                               className="flex h-10 w-10 items-center justify-center rounded-full bg-kiwi-500 text-white shadow-kiwi"
                               onClick={() => addToCart(item)}
-                              whileTap={{ scale: 0.9 }}
-                              whileHover={{ scale: 1.1 }}
                               disabled={!merchant.isOpen}
                             >
                               +
-                            </motion.button>
+                            </TapButton>
                           </div>
                         </div>
                       </div>
                     </div>
                   </motion.div>
-                </StaggerItem>
+                </ScrollReveal>
               );
             })}
-          </StaggerContainer>
+          </div>
         )}
       </motion.div>
 
@@ -749,7 +751,7 @@ export default function MenuPage() {
                 </h3>
                 <button
                   onClick={() => setPicking(null)}
-                  className="text-surface-400 hover:text-surface-600 px-2"
+                  className={`text-surface-400 px-2 ${hoverGhost}`}
                 >
                   ✕
                 </button>
@@ -828,7 +830,7 @@ export default function MenuPage() {
       <AnimatePresence>
         {cartCount > 0 && !showCheckout && (
           <motion.div
-            className="fixed bottom-6 left-4 right-4 z-50"
+            className="fixed bottom-6 left-4 right-4 z-50 pb-safe"
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
@@ -880,20 +882,18 @@ export default function MenuPage() {
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
             >
               {/* Handle */}
-              <div className="sticky top-0 bg-white dark:bg-surface-800 pt-4 pb-2 px-6 border-b border-surface-100 dark:border-surface-700 rounded-t-3xl sm:rounded-t-3xl">
+              <div className="pt-safe sticky top-0 bg-white dark:bg-surface-800 pt-4 pb-2 px-6 border-b border-surface-100 dark:border-surface-700 rounded-t-3xl sm:rounded-t-3xl">
                 <div className="w-12 h-1 bg-surface-300 dark:bg-surface-600 rounded-full mx-auto mb-3" />
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100">
                     <ShoppingCart className="h-4 w-4 inline" /> Tu Pedido
                   </h2>
-                  <motion.button
+                  <TapButton
                     onClick={() => setShowCheckout(false)}
                     className="text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
                   >
                     ✕
-                  </motion.button>
+                  </TapButton>
                 </div>
               </div>
 
@@ -907,7 +907,7 @@ export default function MenuPage() {
                     {cart.map((item) => (
                       <div key={item.lineId} className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          {typeof item.image === 'string' && item.image ? (
+                          {isEmojiImage(item.image) ? (
                             <span className="text-xl">{item.image}</span>
                           ) : (
                             <Utensils className="text-xl h-6 w-6" />
@@ -1344,7 +1344,7 @@ export default function MenuPage() {
       {/* Closed Store Banner */}
       {!merchant.isOpen && (
         <motion.div
-          className="fixed bottom-0 left-0 right-0 bg-red-500/90 text-white p-4 text-center backdrop-blur-xl"
+          className="pb-safe fixed bottom-0 left-0 right-0 bg-red-500/90 text-white p-4 text-center backdrop-blur-xl"
           initial={{ y: 100 }}
           animate={{ y: 0 }}
         >

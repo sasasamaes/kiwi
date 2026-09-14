@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, createContext, useContext, ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { playNotificationSound, type NotificationSoundKind } from './notification-sound';
 
 interface Notification {
   id: string;
@@ -40,6 +41,16 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     };
 
     setNotifications((prev) => [newNotification, ...prev].slice(0, 10)); // Keep last 10
+
+    // Cada toast visible suena (el módulo respeta el interruptor local)
+    const soundByType: Record<string, NotificationSoundKind> = {
+      new_order: 'new_order',
+      order_accepted: 'success',
+      order_status: 'order_update',
+      payment_received: 'payment',
+      chat: 'chat',
+    };
+    playNotificationSound(soundByType[notification.type] ?? 'default');
 
     // Auto-remove after 5 seconds
     setTimeout(() => {

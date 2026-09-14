@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 const VALID_DRIVER_STATUSES = ['offline', 'available', 'busy'] as const;
@@ -231,6 +236,44 @@ export class DriversService {
       isStale,
       known: true,
     };
+  }
+
+  /**
+   * Row-level guard for live GPS: the driver himself, a participant of one of
+   * his ACTIVE orders (merchant owner or the assigned driver himself), or an
+   * admin. Delivered/cancelled orders no longer grant tracking access.
+   */
+  async getLocationForUser(driverId: string, user: { sub?: string; role?: string }) {
+    if (user?.role === 'admin') {
+      return this.getLocation(driverId);
+    }
+
+    const userId = user?.sub;
+    if (userId) {
+      const profile = await this.prisma.driverProfile.findUnique({
+        where: { userId },
+        select: { id: true },
+      });
+      if (profile?.id === driverId) {
+        return this.getLocation(driverId);
+      }
+
+      const activeOrder = await this.prisma.order.findFirst({
+        where: {
+          driverId,
+          status: {
+            in: ['assigned', 'in_transit_to_pickup', 'picked_up', 'in_transit_to_delivery'],
+          },
+          OR: [{ merchant: { userId } }, { driver: { userId } }],
+        },
+        select: { id: true },
+      });
+      if (activeOrder) {
+        return this.getLocation(driverId);
+      }
+    }
+
+    throw new ForbiddenException('No tienes acceso a la ubicación de este repartidor');
   }
 
   async getEarnings(userId: string, period: string = 'all') {

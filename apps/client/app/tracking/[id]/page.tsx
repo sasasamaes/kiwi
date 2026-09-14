@@ -191,6 +191,15 @@ export default function TrackingPage() {
 
   const config = statusConfig[currentStatus] ?? fallbackConfig;
 
+  const driver = (order as any)?.driver ?? null;
+  const vehicleLabels: Record<string, string> = {
+    motorcycle: 'Moto',
+    motorized_bike: 'Bici con motor',
+    bicycle: 'Bicicleta',
+    car: 'Carro',
+    truck: 'Camión',
+  };
+
   // API may include real coords; fall back to Nicoya center when absent.
   const numOr = (v: unknown, fb: number) => {
     const n = Number(v);
@@ -208,7 +217,7 @@ export default function TrackingPage() {
   if (loading) {
     return (
       <div className="min-h-[100dvh] bg-bg-light dark:bg-surface-950">
-        <div className="sticky top-0 z-40 glass-strong">
+        <div className="pt-safe sticky top-0 z-40 glass-strong">
           <div className="mx-auto max-w-lg px-4 py-4">
             <Skeleton className="h-6 w-48" />
           </div>
@@ -240,7 +249,7 @@ export default function TrackingPage() {
   return (
     <main className="min-h-[100dvh] bg-bg-light dark:bg-surface-950">
       <motion.header
-        className="sticky top-0 z-40 glass-strong"
+        className="pt-safe sticky top-0 z-40 glass-strong"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
       >
@@ -336,6 +345,54 @@ export default function TrackingPage() {
             </motion.div>
           )}
         </motion.div>
+
+        {driver && currentStatus !== 'pending' && currentStatus !== 'cancelled' && (
+          <motion.div
+            className="rounded-2xl glass p-4 mb-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+          >
+            <h3 className="font-semibold text-surface-800 dark:text-surface-100 mb-3">
+              Tu repartidor
+            </h3>
+            <div className="flex items-center gap-3">
+              {driver.photoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={driver.photoUrl}
+                  alt={driver.fullName ?? 'Repartidor'}
+                  className="h-14 w-14 rounded-full object-cover bg-surface-100 dark:bg-surface-700"
+                />
+              ) : (
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-kiwi-100 dark:bg-kiwi-900/30 text-xl font-bold text-kiwi-600 dark:text-kiwi-400">
+                  {(driver.fullName ?? '?').charAt(0).toUpperCase()}
+                </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold text-surface-800 dark:text-surface-100 truncate">
+                  {driver.fullName ?? 'Repartidor'}
+                </p>
+                <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-surface-500 dark:text-surface-400">
+                  {driver.rating != null && (
+                    <span className="inline-flex items-center gap-1">
+                      <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />
+                      {Number(driver.rating).toFixed(1)}
+                    </span>
+                  )}
+                  {driver.vehicleType && (
+                    <span>{vehicleLabels[driver.vehicleType] ?? driver.vehicleType}</span>
+                  )}
+                  {driver.vehiclePlate && (
+                    <span className="rounded-md bg-surface-100 dark:bg-surface-700 px-2 py-0.5 font-mono text-xs font-semibold text-surface-700 dark:text-surface-200">
+                      {driver.vehiclePlate}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         <motion.div
           className="rounded-2xl glass p-4 mb-6"

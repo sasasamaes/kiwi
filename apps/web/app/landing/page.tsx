@@ -14,7 +14,8 @@ import {
   MapPin,
   Star,
 } from 'lucide-react';
-import { AnimatedButton, StaggerContainer, StaggerItem } from '@kiwi/ui';
+import { AnimatedButton, StaggerContainer, StaggerItem, KiwiMark, ThemeToggle } from '@kiwi/ui';
+import { ContactForm } from '../../components/ContactForm';
 
 const FEATURES = [
   {
@@ -96,7 +97,7 @@ export default function LandingPage() {
         <div className="mx-auto max-w-6xl px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="text-3xl"></span>
+              <KiwiMark size={34} floating={false} />
               <span className="font-display font-bold text-xl text-surface-800 dark:text-surface-100">
                 Kiwi
               </span>
@@ -120,6 +121,7 @@ export default function LandingPage() {
               >
                 Comercios
               </a>
+              <ThemeToggle />
               <Link href="/login">
                 <AnimatedButton size="sm">Iniciar sesión</AnimatedButton>
               </Link>
@@ -137,47 +139,67 @@ export default function LandingPage() {
         </div>
 
         <div className="relative mx-auto max-w-6xl px-4 py-24 md:py-32">
-          <StaggerContainer>
-            <StaggerItem>
-              <motion.div className="text-center max-w-3xl mx-auto">
-                <motion.div
-                  className="text-8xl mb-6"
-                  animate={{ y: [0, -15, 0] }}
-                  transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-                ></motion.div>
+          <div className="text-center max-w-3xl mx-auto">
+            {/* Marca: entrada con rebote suave + flotación ambiente */}
+            <motion.div
+              className="mb-6 flex justify-center"
+              initial={{ opacity: 0, scale: 0.6, y: 24 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ type: 'spring', stiffness: 200, damping: 16 }}
+            >
+              <KiwiMark size={104} />
+            </motion.div>
 
-                <h1 className="text-5xl md:text-7xl font-display font-bold text-surface-800 dark:text-surface-100 mb-6">
-                  Delivery{' '}
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-kiwi-500 to-kiwi-600">
-                    inteligente
-                  </span>{' '}
-                  en Nicoya
-                </h1>
+            <motion.h1
+              className="text-5xl md:text-7xl font-display font-bold text-surface-800 dark:text-surface-100 mb-6"
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15, duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+            >
+              Delivery{' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-kiwi-500 to-kiwi-600">
+                inteligente
+              </span>{' '}
+              en Nicoya
+            </motion.h1>
 
-                <p className="text-xl text-surface-600 dark:text-surface-400 mb-8 max-w-2xl mx-auto">
-                  Conectamos comerciantes, repartidores y clientes. Pide delivery, gestiona tu
-                  negocio o trabaja cuando quieras.
-                </p>
+            <motion.p
+              className="text-xl text-surface-600 dark:text-surface-400 mb-8 max-w-2xl mx-auto"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.28, duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+            >
+              Conectamos comerciantes, repartidores y clientes. Pide delivery, gestiona tu negocio o
+              trabaja cuando quieras.
+            </motion.p>
 
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                  <a href="#download">
-                    <AnimatedButton size="lg" className="text-lg px-8">
-                      Descargar Kiwi
-                    </AnimatedButton>
-                  </a>
-                  <a href="#how-it-works">
-                    <AnimatedButton variant="secondary" size="lg" className="text-lg px-8">
-                      Cómo funciona →
-                    </AnimatedButton>
-                  </a>
-                </div>
+            <motion.div
+              className="flex flex-col sm:flex-row items-center justify-center gap-4"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4, duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+            >
+              <a href="#download">
+                <AnimatedButton size="lg" className="text-lg px-8">
+                  Descargar Kiwi
+                </AnimatedButton>
+              </a>
+              <a href="#how-it-works">
+                <AnimatedButton variant="secondary" size="lg" className="text-lg px-8">
+                  Cómo funciona →
+                </AnimatedButton>
+              </a>
+            </motion.div>
 
-                <p className="mt-6 text-sm text-surface-500 dark:text-surface-400">
-                  🆓 Gratis para clientes • Genera dinero como repartidor
-                </p>
-              </motion.div>
-            </StaggerItem>
-          </StaggerContainer>
+            <motion.p
+              className="mt-6 text-sm text-surface-500 dark:text-surface-400"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.55, duration: 0.6 }}
+            >
+              🆓 Gratis para clientes • Genera dinero como repartidor
+            </motion.p>
+          </div>
         </div>
       </section>
 
@@ -394,6 +416,31 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Contacto */}
+      <section id="contact" className="py-20 bg-surface-50 dark:bg-surface-900">
+        <div className="mx-auto max-w-2xl px-4">
+          <motion.div
+            className="text-center mb-10"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+          >
+            <h2 className="text-3xl md:text-4xl font-display font-bold text-surface-800 dark:text-surface-100 mb-4">
+              Hablemos
+            </h2>
+            <p className="text-surface-600 dark:text-surface-400">
+              ¿Dudas, quieres tu comercio en Kiwi o te interesa repartir? Escríbenos.
+            </p>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            <ContactForm />
+          </motion.div>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="py-12 border-t border-surface-200 dark:border-surface-800">
         <div className="mx-auto max-w-6xl px-4">
@@ -457,6 +504,11 @@ export default function LandingPage() {
                 </li>
                 <li>
                   <MapPin className="h-4 w-4 inline" /> Nicoya, Guanacaste
+                </li>
+                <li>
+                  <a href="#contact" className="hover:text-kiwi-600">
+                    Formulario de contacto →
+                  </a>
                 </li>
               </ul>
             </div>

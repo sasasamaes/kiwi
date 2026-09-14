@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Star, Check, Loader2 } from 'lucide-react';
-import { api, useAuth } from '@kiwi/ui';
+import { api, useAuth, KiwiLoader } from '@kiwi/ui';
 import { MerchantNav } from '../../../components/MerchantNav';
 
 interface AdminUser {
@@ -127,7 +127,7 @@ export default function UsersPage() {
   if (authLoading) {
     return (
       <main className="min-h-[100dvh] flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-kiwi-500" />
+        <KiwiLoader size={56} />
       </main>
     );
   }

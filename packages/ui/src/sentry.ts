@@ -1,19 +1,40 @@
 'use client';
 
-import * as Sentry from '@sentry/react';
+/**
+ * 🥝 Kiwi Sentry — carga PEREZOSA.
+ *
+ * Antes: `import * as Sentry from '@sentry/react'` estático metía ~200KB de
+ * Sentry en el bundle inicial de las tres apps (via barrel → SentryProvider),
+ * aunque el DSN ni siquiera esté configurado.
+ *
+ * Ahora: el SDK se descarga bajo demanda, la primera vez que se necesita
+ * (initSentry o el primer capture*). Si no hay DSN configurado, nunca se
+ * descarga. Mantiene la MISMA superficie pública: initSentry, captureException,
+ * captureMessage, setSentryUser y el namespace `Sentry` (proxy delegado).
+ */
+import type { SeverityLevel } from '@sentry/react';
+
+type SentryModule = typeof import('@sentry/react');
+
+let sentryPromise: Promise<SentryModule | null> | null = null;
+let sentryReady = false;
+
+function getSentry(): Promise<SentryModule | null> {
+  if (!sentryPromise) {
+    sentryPromise = import('@sentry/react').catch(() => null);
+  }
+  return sentryPromise;
+}
 
 /**
  * Initialize Sentry for React apps
  *
  * Import this in the entry point of each app:
- *   import '@kiwi/ui/sentry';
+ *   import { initSentry } from '@kiwi/ui';
  *
- * Or call initSentry() in your index.tsx:
- *   import { initSentry } from '@kiwi/ui/sentry';
- *   initSentry();
+ * Or call initSentry() in your index.tsx
  */
-
-export function initSentry() {
+export async function initSentry(): Promise<void> {
   const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
 
   if (!dsn) {
@@ -22,12 +43,14 @@ export function initSentry() {
   }
 
   const environment = process.env.NODE_ENV || 'development';
+  const S = await getSentry();
+  if (!S) return;
 
-  Sentry.init({
+  S.init({
     dsn,
     environment,
 
-    integrations: [Sentry.browserTracingIntegration()],
+    integrations: [S.browserTracingIntegration()],
 
     // Performance monitoring
     tracesSampleRate: environment === 'production' ? 0.2 : 1.0,
@@ -67,6 +90,7 @@ export function initSentry() {
     ],
   });
 
+  sentryReady = true;
   console.log(`🐛 Sentry initialized (${environment})`);
 }
 
@@ -76,14 +100,18 @@ export function initSentry() {
  * Usage:
  *   captureException(error, { orderId: '123', action: 'checkout' });
  */
-export function captureException(error: Error | unknown, context?: Record<string, any>) {
-  Sentry.withScope((scope) => {
+export async function captureException(error: Error | unknown, context?: Record<string, any>) {
+  if (!sentryReady) return;
+  const S = await getSentry();
+  if (!S) return;
+
+  S.withScope((scope) => {
     if (context) {
       Object.entries(context).forEach(([key, value]) => {
         scope.setTag(key, String(value));
       });
     }
-    Sentry.captureException(error);
+    S.captureException(error);
   });
 }
 
@@ -93,19 +121,23 @@ export function captureException(error: Error | unknown, context?: Record<string
  * Usage:
  *   captureMessage('Payment failed', 'error', { orderId: '123' });
  */
-export function captureMessage(
+export async function captureMessage(
   message: string,
-  level: Sentry.SeverityLevel = 'info',
+  level: SeverityLevel = 'info',
   context?: Record<string, any>,
 ) {
-  Sentry.withScope((scope) => {
+  if (!sentryReady) return;
+  const S = await getSentry();
+  if (!S) return;
+
+  S.withScope((scope) => {
     scope.setLevel(level);
     if (context) {
       Object.entries(context).forEach(([key, value]) => {
         scope.setTag(key, String(value));
       });
     }
-    Sentry.captureMessage(message);
+    S.captureMessage(message);
   });
 }
 
@@ -115,12 +147,32 @@ export function captureMessage(
  * Usage:
  *   setSentryUser({ id: 'user-123', email: 'luis@kiwi.app' });
  */
-export function setSentryUser(user: { id: string; email?: string; name?: string }) {
-  Sentry.setUser({
+export async function setSentryUser(user: { id: string; email?: string; name?: string }) {
+  if (!sentryReady) return;
+  const S = await getSentry();
+  if (!S) return;
+
+  S.setUser({
     id: user.id,
     email: user.email,
     username: user.name,
   });
 }
 
-export { Sentry };
+/**
+ * Namespace `Sentry` compatible: delega cada llamada a la carga perezosa.
+ * Los métodos se resuelven como promesas (fire-and-forget es seguro).
+ */
+export const Sentry = new Proxy({} as SentryModule, {
+  get(_target, prop: string) {
+    return async (...args: unknown[]) => {
+      const S = await getSentry();
+      if (!S) return undefined;
+      const value = (S as unknown as Record<string, unknown>)[prop];
+      if (typeof value === 'function') {
+        return (value as (...a: unknown[]) => unknown).apply(S, args);
+      }
+      return value;
+    };
+  },
+});

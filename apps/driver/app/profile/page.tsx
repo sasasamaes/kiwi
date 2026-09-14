@@ -1,22 +1,11 @@
 'use client';
 
 import Link from 'next/link';
+import { BottomNav } from '../components/BottomNav';
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  Calendar,
-  Coins,
-  Package,
-  Bike,
-  Star,
-  Car,
-  Eye,
-  EyeOff,
-  Loader2,
-  Home,
-  User,
-} from 'lucide-react';
+import { Calendar, Coins, Package, Bike, Star, Car, Eye, EyeOff, Home } from 'lucide-react';
 import {
   AnimatedButton,
   StaggerContainer,
@@ -25,9 +14,12 @@ import {
   VehicleSelector,
   VehicleType,
   KYCStatusBadge,
+  SoundToggle,
   useAuth,
   api,
   type KYCStatus,
+  KiwiLoader,
+  ThemeToggle,
 } from '@kiwi/ui';
 
 const LEVEL_LABEL: Record<string, string> = {
@@ -147,7 +139,7 @@ export default function Profile() {
   if (authLoading || loading) {
     return (
       <main className="min-h-[100dvh] flex items-center justify-center bg-bg-light dark:bg-surface-950">
-        <Loader2 className="h-8 w-8 animate-spin text-kiwi-500" />
+        <KiwiLoader size={56} />
       </main>
     );
   }
@@ -166,7 +158,7 @@ export default function Profile() {
   return (
     <main className="min-h-[100dvh] flex flex-col bg-bg-light dark:bg-surface-950">
       <motion.header
-        className="sticky top-0 z-50 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl"
+        className="pt-safe sticky top-0 z-50 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
       >
@@ -182,7 +174,7 @@ export default function Profile() {
             <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
               Mi Perfil
             </h1>
-            <div className="w-16" />
+            <ThemeToggle />
           </div>
         </div>
       </motion.header>
@@ -374,6 +366,9 @@ export default function Profile() {
         </motion.div>
 
         {/* Logout real */}
+        <div className="mt-2 mb-6">
+          <SoundToggle />
+        </div>
         <div className="mt-6">
           <AnimatedButton
             variant="ghost"
@@ -453,28 +448,7 @@ export default function Profile() {
       </AnimatePresence>
 
       {/* Bottom Navigation */}
-      <nav className="sticky bottom-0 border-t border-surface-200/50 dark:border-surface-700/50 bg-white/80 dark:bg-surface-900/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-lg items-center justify-around py-2">
-          {[
-            { href: '/', icon: Home, label: 'Inicio' },
-            { href: '/active', icon: Package, label: 'Activos' },
-            { href: '/earnings', icon: Coins, label: 'Ganancias' },
-            { href: '/schedule', icon: Calendar, label: 'Horario' },
-            { href: '/profile', icon: User, label: 'Perfil', active: true },
-          ].map((item) => (
-            <Link key={item.href} href={item.href}>
-              <div
-                className={`flex flex-col items-center gap-1 px-4 py-2 ${
-                  item.active ? 'text-kiwi-600' : 'text-surface-400 hover:text-surface-600'
-                }`}
-              >
-                <item.icon className="h-5 w-5" />
-                <span className="text-xs font-medium">{item.label}</span>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </nav>
+      <BottomNav />
     </main>
   );
 }

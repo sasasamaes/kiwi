@@ -18,6 +18,7 @@ jest.mock('../events/events.gateway', () => ({
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { OrdersService } from '../orders/orders.service';
 import { EventsGateway } from '../events/events.gateway';
 import { DriversService } from '../drivers/drivers.service';
@@ -106,6 +107,14 @@ describe('Orders Integration: Full Lifecycle', () => {
           provide: GeocodingService,
           useValue: { searchCostaRica: jest.fn().mockResolvedValue([]) },
         },
+        {
+          provide: NotificationsService,
+          useValue: {
+            notifyNewOrderTopic: jest.fn().mockResolvedValue({ delivered: 0, inbox: 0 }),
+            notifyOrderAccepted: jest.fn().mockResolvedValue({}),
+            notifyOrderStatusUpdate: jest.fn().mockResolvedValue({}),
+          },
+        },
       ],
     }).compile();
 
@@ -172,7 +181,9 @@ describe('Orders Integration: Full Lifecycle', () => {
         'driver',
         'order:new',
         expect.objectContaining({
+          id: ORDER_ID,
           orderId: ORDER_ID,
+          driverPayout: 1425,
           merchantName: 'Bowl & Café Luis Alfredo',
         }),
       );

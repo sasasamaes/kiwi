@@ -1,4 +1,4 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { OnvoPayProvider } from './providers/onvopay.provider';
 import { StellarProvider } from './providers/stellar.provider';
@@ -154,6 +154,14 @@ export class PaymentsService {
   ): Promise<PaymentResult> {
     const paymentType = method === 'onvopay_card' ? 'Tarjeta' : 'SINPE';
 
+    // returnUrl/cancelUrl: SIEMPRE https. Un FRONTEND_URL mal configurado
+    // (http://) devolvería al usuario a un contexto inseguro justo después
+    // de pagar — su momento de mayor exposición.
+    const frontendBase = (process.env.FRONTEND_URL ?? process.env.CLIENT_URL ?? '').replace(
+      /^http:\/\//i,
+      'https://',
+    );
+
     // Create payment intent
     const intentResult = await this.onvopayProvider.createPaymentIntent({
       amount,
@@ -162,8 +170,8 @@ export class PaymentsService {
       orderId,
       customerEmail,
       customerPhone,
-      returnUrl: `${process.env.FRONTEND_URL ?? process.env.CLIENT_URL ?? ''}/orders/${orderId}/success`,
-      cancelUrl: `${process.env.FRONTEND_URL ?? process.env.CLIENT_URL ?? ''}/orders/${orderId}/cancel`,
+      returnUrl: `${frontendBase}/orders/${orderId}/success`,
+      cancelUrl: `${frontendBase}/orders/${orderId}/cancel`,
     });
 
     if (!intentResult.success) {
@@ -233,6 +241,67 @@ export class PaymentsService {
       success: true,
       paymentId,
     };
+  }
+
+  /**
+   * Row-level guard for payment-scoped endpoints. A user may act on a payment
+   * intent only through an order they participate in (merchant owner, assigned
+   * driver) or if they are admin. `requireMerchant` additionally refuses
+   * drivers — refunds/cancellations are merchant/admin actions.
+   */
+  async assertIntentAccess(
+    paymentIntentId: string,
+    user: { sub?: string; role?: string },
+    requireMerchant = false,
+  ) {
+    if (user?.role === 'admin') return;
+
+    const payment = await this.prisma.payment.findFirst({
+      where: { onvoPaymentId: paymentIntentId },
+      include: {
+        order: {
+          include: {
+            merchant: { select: { userId: true } },
+            driver: { select: { userId: true } },
+          },
+        },
+      },
+    });
+
+    if (!payment) {
+      throw new ForbiddenException('No tienes acceso a este pago');
+    }
+
+    const userId = user?.sub;
+    const isMerchant = payment.order?.merchant?.userId === userId;
+    const isDriver = payment.order?.driver?.userId === userId;
+
+    if (requireMerchant ? !isMerchant : !isMerchant && !isDriver) {
+      throw new ForbiddenException('No tienes acceso a este pago');
+    }
+  }
+
+  /** Ownership-scoped variant of getPaymentStatus for the controller. */
+  async getPaymentStatusForUser(orderId: string, user: { sub?: string; role?: string }) {
+    if (user?.role !== 'admin') {
+      const order = await this.prisma.order.findUnique({
+        where: { id: orderId },
+        select: {
+          merchant: { select: { userId: true } },
+          driver: { select: { userId: true } },
+        },
+      });
+
+      const userId = user?.sub;
+      const isMerchant = order?.merchant?.userId === userId;
+      const isDriver = order?.driver?.userId === userId;
+
+      if (!order || (!isMerchant && !isDriver)) {
+        throw new ForbiddenException('No tienes acceso a este pago');
+      }
+    }
+
+    return this.getPaymentStatus(orderId);
   }
 
   async getPaymentStatus(orderId: string) {

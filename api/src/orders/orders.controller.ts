@@ -1,4 +1,5 @@
 import { Controller, Get, Post, Put, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Public } from '../auth/decorators/public.decorator';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { OrdersService } from './orders.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -46,12 +47,14 @@ export class OrdersController {
     return this.ordersService.getAvailableOrders(latitude, longitude);
   }
 
+  @Public()
   @Get('track/:id')
   @ApiOperation({ summary: 'Public order tracking (share link, no auth)' })
   async trackOrder(@Param('id') id: string) {
     return this.ordersService.getPublicTracking(id);
   }
 
+  @Public()
   @Get('track/:id/location')
   @ApiOperation({ summary: 'Public driver location for a tracked order (no auth)' })
   async trackDriverLocation(@Param('id') id: string) {

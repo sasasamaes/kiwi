@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { BottomNav } from './components/BottomNav';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -13,23 +14,22 @@ import {
   ThemeToggle,
   useAuth,
   useSocket,
+  useNotifications,
+  playNotificationSound,
   api,
   Order,
   staggerContainer,
+  KiwiLoader,
 } from '@kiwi/ui';
 import {
   ClipboardList,
   Package,
   Truck,
-  Loader2,
   MapPin,
   Home as HomeIcon,
   Star,
   DollarSign,
   Target,
-  Calendar,
-  BarChart3,
-  User,
   Bike,
   Circle,
   CheckCircle2,
@@ -48,6 +48,7 @@ export default function Home() {
   const [acceptingOrder, setAcceptingOrder] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'delivery' | 'trip' | 'freight'>('all');
   const [pageError, setPageError] = useState<string | null>(null);
+  const { addNotification } = useNotifications();
 
   const tabs = [
     { id: 'all' as const, label: 'Todos', icon: ClipboardList },
@@ -55,28 +56,6 @@ export default function Home() {
     { id: 'trip' as const, label: 'Viajes', icon: Bike },
     { id: 'freight' as const, label: 'Fletes', icon: Truck },
   ];
-
-  // Pitido WebAudio (no hay asset /notification.mp3 en public/).
-  const beep = () => {
-    try {
-      const Ctx = window.AudioContext || (window as any).webkitAudioContext;
-      if (!Ctx) return;
-      const ctx = new Ctx();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.frequency.value = 880;
-      gain.gain.setValueAtTime(0.001, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + 0.05);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.45);
-      osc.onended = () => ctx.close();
-    } catch {
-      // Silencio si el navegador no lo permite
-    }
-  };
 
   // Real-time socket connection
   const {
@@ -88,13 +67,22 @@ export default function Home() {
     onConnect: () => console.log('🟢 Driver connected to real-time'),
     onNewOrder: (data) => {
       console.log('New order available:', data);
-      setNewOrderAlert(data);
-      // Add to available orders list
-      setAvailableOrders((prev) => [data, ...prev]);
-      beep();
+      // Normalizar: el evento trae orderId; la lista trabaja con id.
+      // Sin esto Aceptar llamaba a /orders/undefined/accept.
+      const id = data?.id ?? data?.orderId;
+      if (!id) return;
+      const normalized = { ...data, id };
+      // La creación emite hasta 2 veces (REST + socket): no duplicar.
+      setAvailableOrders((prev) => (prev.some((o) => o.id === id) ? prev : [normalized, ...prev]));
+      setNewOrderAlert((prev) => {
+        const prevId = prev?.id ?? prev?.orderId;
+        return prevId ? prev : normalized;
+      });
+      playNotificationSound('new_order');
     },
     onOrderStatusChanged: (data) => {
       console.log('Order status changed:', data);
+      playNotificationSound('order_update');
       // Refresh active orders
       fetchActiveOrders();
     },
@@ -103,7 +91,15 @@ export default function Home() {
   const fetchAvailableOrders = useCallback(async () => {
     try {
       const data = await api.getAvailableOrders();
-      setAvailableOrders(data);
+      const list = Array.isArray(data) ? data : [];
+      const seen = new Set<string>();
+      setAvailableOrders(
+        list.filter((o: any) => {
+          if (!o?.id || seen.has(o.id)) return false;
+          seen.add(o.id);
+          return true;
+        }),
+      );
     } catch (error) {
       console.error('Failed to fetch available orders:', error);
     }
@@ -170,6 +166,10 @@ export default function Home() {
   };
 
   const handleAcceptOrder = async (orderId: string) => {
+    if (!orderId) {
+      setPageError('Ese pedido llegó incompleto. Cerrá y volvé a abrir la app.');
+      return;
+    }
     setAcceptingOrder(orderId);
     setPageError(null);
     try {
@@ -186,7 +186,10 @@ export default function Home() {
       await fetchActiveOrders();
     } catch (error) {
       console.error('Failed to accept order:', error);
-      setPageError('No se pudo aceptar el pedido. Quizás otro repartidor lo tomó primero.');
+      const msg = 'No se pudo aceptar el pedido. Quizás otro repartidor lo tomó primero.';
+      setPageError(msg);
+      // El banner queda arriba (fuera de vista): toast para que sí se vea
+      addNotification({ type: 'order_status', title: 'No se pudo aceptar', body: msg });
     } finally {
       setAcceptingOrder(null);
     }
@@ -232,7 +235,7 @@ export default function Home() {
   if (authLoading || loading) {
     return (
       <div className="min-h-[100dvh] bg-bg-light dark:bg-surface-950 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-kiwi-500" />
+        <KiwiLoader size={56} />
       </div>
     );
   }
@@ -258,7 +261,7 @@ export default function Home() {
     <main className="min-h-[100dvh] flex flex-col">
       {/* Header */}
       <motion.header
-        className="sticky top-0 z-50 glass-strong"
+        className="pt-safe sticky top-0 z-50 glass-strong"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         transition={{ type: 'spring', stiffness: 260, damping: 20 }}
@@ -602,7 +605,9 @@ export default function Home() {
                         <span className="text-xs text-surface-400">
                           Ganancia:{' '}
                           <span className="font-mono">
-                            ₡{Number(order.driverPayout || 0).toLocaleString()}
+                            {order.driverPayout != null
+                              ? `₡${Number(order.driverPayout).toLocaleString()}`
+                              : '—'}
                           </span>
                         </span>
                       </div>
@@ -719,7 +724,9 @@ export default function Home() {
                   <div className="flex items-center justify-between">
                     <span className="text-surface-500 dark:text-surface-400">Ganancia</span>
                     <span className="text-2xl font-bold text-kiwi-600 dark:text-kiwi-400 font-mono">
-                      ₡{Number(newOrderAlert.totalAmount || 0).toLocaleString()}
+                      {newOrderAlert.driverPayout != null
+                        ? `₡${Number(newOrderAlert.driverPayout).toLocaleString()}`
+                        : `₡${Number(newOrderAlert.totalAmount || 0).toLocaleString()}`}
                     </span>
                   </div>
                 </div>
@@ -749,37 +756,7 @@ export default function Home() {
       </AnimatePresence>
 
       {/* Bottom Navigation */}
-      <motion.nav
-        className="sticky bottom-0 glass-strong border-t border-surface-200/50 dark:border-surface-700/50"
-        initial={{ y: 100 }}
-        animate={{ y: 0 }}
-        transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.3 }}
-      >
-        <div className="mx-auto flex max-w-lg items-center justify-around py-2">
-          {[
-            { href: '/', icon: HomeIcon, label: 'Inicio', active: true },
-            { href: '/active', icon: Package, label: 'Activos', active: false },
-            { href: '/scheduled', icon: Calendar, label: 'Programados', active: false },
-            { href: '/analytics', icon: BarChart3, label: 'Analytics', active: false },
-            { href: '/profile', icon: User, label: 'Perfil', active: false },
-          ].map((item) => (
-            <Link key={item.href} href={item.href}>
-              <motion.div
-                className={`flex flex-col items-center gap-1 px-4 py-2 ${
-                  item.active
-                    ? 'text-kiwi-600'
-                    : 'text-surface-400 hover:text-surface-600 dark:hover:text-surface-300'
-                }`}
-                whileHover={{ y: -2 }}
-                whileTap={{ scale: 0.9 }}
-              >
-                <item.icon className="h-5 w-5" />
-                <span className="text-xs font-medium">{item.label}</span>
-              </motion.div>
-            </Link>
-          ))}
-        </div>
-      </motion.nav>
+      <BottomNav />
     </main>
   );
 }

@@ -9,6 +9,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { EventsGateway } from '../events/events.gateway';
 import { DriversService } from '../drivers/drivers.service';
 import { GeocodingService } from '../geocoding/geocoding.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class OrdersService {
@@ -19,6 +20,7 @@ export class OrdersService {
     private eventsGateway: EventsGateway,
     private driversService: DriversService,
     private geocodingService: GeocodingService,
+    private notificationsService: NotificationsService,
   ) {}
 
   async create(merchantId: string, data: any) {
@@ -264,15 +266,28 @@ export class OrdersService {
     }
 
     // Broadcast new order to all available drivers via Socket.io
+    // Forma canónica: los drivers tratan cada item como Order (id + payout).
+    // Sin `id`, Aceptar llamaría a /orders/undefined/accept y fallaría siempre.
     if (order.status === 'pending') {
       this.eventsGateway.sendToRole('driver', 'order:new', {
+        id: order.id,
         orderId: order.id,
         pickupAddress: order.pickupAddress,
         deliveryAddress: order.deliveryAddress,
         totalAmount: Number(order.totalAmount),
+        driverPayout: order.driverPayout != null ? Number(order.driverPayout) : null,
         distanceKm: Number(order.distanceKm),
         merchantName: merchantProfile.businessName,
         createdAt: order.createdAt,
+      });
+
+      // Push a todos los drivers suscritos al topic (app cerrada incluida).
+      void this.notificationsService.notifyNewOrderTopic({
+        id: order.id,
+        pickupAddress: order.pickupAddress,
+        deliveryAddress: order.deliveryAddress,
+        totalAmount: order.totalAmount,
+        distanceKm: order.distanceKm,
       });
     }
 
@@ -357,7 +372,8 @@ export class OrdersService {
    * Public tracking view (no auth): order IDs are unguessable UUIDs, so the
    * link itself is the credential ("anyone with the link" pattern, same as
    * the public menu). Only share-safe fields are exposed — never phones,
-   * emails, amounts or payouts.
+   * emails, amounts or payouts. Driver identity is limited to what the
+   * customer needs to recognize the driver (name, photo, vehicle, plate).
    */
   async getPublicTracking(orderId: string) {
     const order = await this.prisma.order.findUnique({
@@ -365,7 +381,14 @@ export class OrdersService {
       include: {
         merchant: { select: { businessName: true } },
         driver: {
-          select: { id: true, fullName: true, vehicleType: true, rating: true },
+          select: {
+            id: true,
+            fullName: true,
+            photoUrl: true,
+            vehicleType: true,
+            vehiclePlate: true,
+            rating: true,
+          },
         },
         items: { select: { name: true, quantity: true, selectedVariants: true } },
       },
@@ -389,7 +412,9 @@ export class OrdersService {
       driver: order.driverId
         ? {
             fullName: (order as any).driver?.fullName ?? null,
+            photoUrl: (order as any).driver?.photoUrl ?? null,
             vehicleType: (order as any).driver?.vehicleType ?? null,
+            vehiclePlate: (order as any).driver?.vehiclePlate ?? null,
             rating:
               (order as any).driver?.rating != null ? Number((order as any).driver.rating) : null,
           }
@@ -628,35 +653,20 @@ export class OrdersService {
       timestamp: new Date(),
     };
 
-    // Notify merchant
+    // Create in-app notifications + push 1:1 (copy por estado vive en el
+    // servicio de notificaciones).
     if (order.merchant?.userId) {
       this.eventsGateway.sendToUser(order.merchant.userId, 'order:statusChanged', notification);
-    }
-
-    // Notify driver
-    if (order.driver?.userId) {
-      this.eventsGateway.sendToUser(order.driver.userId, 'order:statusChanged', notification);
-    }
-
-    // Create in-app notifications for both parties
-    if (order.merchant?.userId) {
-      await this.createNotification(
-        order.merchant.userId,
-        'Order Status',
-        statusLabels[status] || 'Estado actualizado',
-        'order_status',
-        { orderId: updatedOrder.id, status },
-      );
+      await this.notificationsService
+        .notifyOrderStatusUpdate(orderId, order.merchant.userId, status)
+        .catch(() => null);
     }
 
     if (order.driver?.userId && status !== 'assigned') {
-      await this.createNotification(
-        order.driver.userId,
-        'Order Status',
-        statusLabels[status] || 'Estado actualizado',
-        'order_status',
-        { orderId: updatedOrder.id, status },
-      );
+      this.eventsGateway.sendToUser(order.driver.userId, 'order:statusChanged', notification);
+      await this.notificationsService
+        .notifyOrderStatusUpdate(orderId, order.driver.userId, status)
+        .catch(() => null);
     }
 
     return updatedOrder;
@@ -973,13 +983,9 @@ export class OrdersService {
         message: `${driverProfile.fullName} aceptó tu pedido`,
       });
 
-      await this.createNotification(
-        updatedOrder.merchant.userId,
-        'Pedido Aceptado',
-        `${driverProfile.fullName} aceptó tu pedido`,
-        'order_accepted',
-        { orderId: updatedOrder.id },
-      );
+      await this.notificationsService
+        .notifyOrderAccepted(updatedOrder.id, updatedOrder.merchant.userId, driverProfile.fullName)
+        .catch(() => null);
     }
 
     // Notify driver confirmation

@@ -1,5 +1,6 @@
 {
   "rules": {
-    "react-hooks/set-state-in-effect": "off"
+    "react-hooks/set-state-in-effect": "off",
+    "@kiwi/no-raw-location-assign": "error"
   }
 }

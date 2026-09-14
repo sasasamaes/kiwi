@@ -1,10 +1,12 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import helmet from 'helmet';
 import * as Sentry from '@sentry/nestjs';
 import { nodeProfilingIntegration } from '@sentry/profiling-node';
 import { execSync } from 'node:child_process';
 import { join } from 'node:path';
+import * as express from 'express';
 import { AppModule } from './app.module';
 
 // Initialize Sentry before anything else
@@ -92,7 +94,30 @@ async function ensureDatabaseReady(): Promise<void> {
 async function bootstrap() {
   await ensureDatabaseReady();
 
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    // Cap JSON bodies at 256KB. These parsers register BEFORE Nest's built-in
+    // ones (which happen at listen()), so this limit is the one that applies.
+    // Largest legitimate payloads are order/menu writes; uploads don't exist.
+    bodyParser: true,
+  });
+  const expressApp = app.getHttpAdapter().getInstance() as {
+    set: (k: string, v: unknown) => void;
+    use: (...handlers: any[]) => void;
+  };
+  expressApp.use(express.json({ limit: '256kb' }));
+  expressApp.use(express.urlencoded({ extended: true, limit: '256kb' }));
+
+  // Render terminates TLS/routes via one proxy hop: trust X-Forwarded-For so
+  // req.ip is the real client IP. Without this, every client shares the
+  // proxy's IP and the login rate limit locks out the whole platform.
+  const httpAdapter = app.getHttpAdapter().getInstance() as {
+    set: (k: string, v: unknown) => void;
+  };
+  httpAdapter.set('trust proxy', 1);
+
+  // Security headers (HSTS, no-sniff, frameguard, referrer-policy, …).
+  // CSP stays off here: the API serves JSON + Swagger only.
+  app.use(helmet());
 
   // Sentry request handling is automatic via httpIntegration/expressIntegration.
   // No manual request middleware needed in @sentry/nestjs v10.
@@ -133,16 +158,19 @@ async function bootstrap() {
     }),
   );
 
-  // Swagger documentation
-  const config = new DocumentBuilder()
-    .setTitle('Kiwi API')
-    .setDescription('Kiwi Delivery Platform API')
-    .setVersion('1.0')
-    .addBearerAuth()
-    .build();
+  // Swagger documentation — solo fuera de producción: no publica el mapa
+  // completo de endpoints (y sus formas de payload) a internet.
+  if (process.env.NODE_ENV !== 'production') {
+    const config = new DocumentBuilder()
+      .setTitle('Kiwi API')
+      .setDescription('Kiwi Delivery Platform API')
+      .setVersion('1.0')
+      .addBearerAuth()
+      .build();
 
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('docs', app, document);
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('docs', app, document);
+  }
 
   // Sentry error handler (must be after routes)
   if (process.env.SENTRY_DSN) {

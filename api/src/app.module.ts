@@ -8,10 +8,12 @@ import { MerchantsModule } from './merchants/merchants.module';
 import { DriversModule } from './drivers/drivers.module';
 import { OrdersModule } from './orders/orders.module';
 import { RatingsModule } from './ratings/ratings.module';
+import { ContactModule } from './contact/contact.module';
 import { MenuModule } from './menu/menu.module';
 import { KYCModule } from './kyc/kyc.module';
 import { EventsModule } from './events/events.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { NotificationsForwardModule } from './notifications/module-ref';
 import { PaymentsModule } from './payments/payments.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { WithdrawalsModule } from './withdrawals/withdrawals.module';
@@ -40,10 +42,12 @@ import { SentryModule } from './sentry/sentry.module';
     DriversModule,
     OrdersModule,
     RatingsModule,
+    ContactModule,
     MenuModule,
     KYCModule,
     EventsModule,
     NotificationsModule,
+    NotificationsForwardModule,
     PaymentsModule,
     AnalyticsModule,
     WithdrawalsModule,

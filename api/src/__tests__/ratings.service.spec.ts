@@ -8,6 +8,7 @@ import {
 import { RatingsService } from '../ratings/ratings.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventsGateway } from '../events/events.gateway';
+import { NotificationsService } from '../notifications/notifications.service';
 
 describe('RatingsService', () => {
   let service: RatingsService;
@@ -47,6 +48,10 @@ describe('RatingsService', () => {
         RatingsService,
         { provide: PrismaService, useValue: prisma },
         { provide: EventsGateway, useValue: events },
+        {
+          provide: NotificationsService,
+          useValue: { notifyNewRating: jest.fn().mockResolvedValue({}) },
+        },
       ],
     }).compile();
 

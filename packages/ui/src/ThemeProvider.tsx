@@ -1,10 +1,13 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { Monitor, Moon, Sun } from 'lucide-react';
 
 type Theme = 'light' | 'dark' | 'system';
 export type { Theme };
+
+export const THEME_STORAGE_KEY = 'kiwi-theme';
 
 interface ThemeContextType {
   theme: Theme;
@@ -14,6 +17,20 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
+/**
+ * Script inline que corre ANTES de la hidratación y pinta la clase correcta
+ * en <html> de inmediato. Sin esto, un usuario en modo oscuro ve un flash
+ * blanco en cada carga fría: el SSR no conoce su preferencia y el classList
+ * solo se aplicaría en el primer useEffect (demasiado tarde).
+ *
+ * Debe montarse en el <head> del layout raíz de cada app. suppressHydrationWarning
+ * en <html> evita el warning de mismatch de clase.
+ */
+export function ThemeScript() {
+  const code = `(function(){try{var t=localStorage.getItem('${THEME_STORAGE_KEY}');var d=t==='dark'||((!t||t==='system')&&window.matchMedia('(prefers-color-scheme: dark)').matches);var c=document.documentElement.classList;if(d){c.add('dark');}else{c.add('light');}}catch(e){}})();`;
+  return <script dangerouslySetInnerHTML={{ __html: code }} />;
+}
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>('system');
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light');
@@ -21,39 +38,33 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setMounted(true);
-    // Load theme from localStorage
-    const savedTheme = localStorage.getItem('kiwi-theme') as Theme;
-    if (savedTheme) {
+    const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) as Theme | null;
+    if (savedTheme === 'light' || savedTheme === 'dark' || savedTheme === 'system') {
       setTheme(savedTheme);
     }
+    // Resolved inicial consistente con lo que ya pintó ThemeScript.
+    setResolvedTheme(document.documentElement.classList.contains('dark') ? 'dark' : 'light');
   }, []);
 
   useEffect(() => {
     if (!mounted) return;
 
     const root = document.documentElement;
+    const effectiveTheme =
+      theme === 'system'
+        ? window.matchMedia('(prefers-color-scheme: dark)').matches
+          ? 'dark'
+          : 'light'
+        : theme;
 
-    // Remove existing theme classes
     root.classList.remove('light', 'dark');
-
-    let effectiveTheme: 'light' | 'dark';
-
-    if (theme === 'system') {
-      effectiveTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    } else {
-      effectiveTheme = theme;
-    }
-
-    // Add theme class with smooth transition
-    root.style.setProperty('transition', 'background-color 0.3s ease, color 0.3s ease');
     root.classList.add(effectiveTheme);
     setResolvedTheme(effectiveTheme);
 
-    // Save to localStorage
-    localStorage.setItem('kiwi-theme', theme);
+    localStorage.setItem(THEME_STORAGE_KEY, theme);
   }, [theme, mounted]);
 
-  // Listen for system theme changes
+  // Cambios de preferencia del sistema mientras theme === 'system'.
   useEffect(() => {
     if (theme !== 'system') return;
 
@@ -70,8 +81,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, [theme]);
 
-  // Always provide the context (with defaults until mounted) so that
-  // consumers don't crash during SSR/prerendering.
+  // Siempre proveer el contexto (defaults hasta mounted) para no romper SSR.
   return (
     <ThemeContext.Provider value={{ theme, setTheme, resolvedTheme }}>
       {children}
@@ -87,21 +97,17 @@ export function useTheme() {
   return context;
 }
 
-// Dark mode toggle button
+/** Cicla claro → oscuro → sistema. Icono + etiqueta según el estado real. */
 export function ThemeToggle({ className = '' }: { className?: string }) {
   const { theme, setTheme, resolvedTheme } = useTheme();
 
   const cycleTheme = () => {
     const themes: Theme[] = ['light', 'dark', 'system'];
-    const currentIndex = themes.indexOf(theme);
-    const nextIndex = (currentIndex + 1) % themes.length;
+    const nextIndex = (themes.indexOf(theme) + 1) % themes.length;
     setTheme(themes[nextIndex]);
   };
 
-  const getIcon = () => {
-    if (theme === 'system') return '💻';
-    return resolvedTheme === 'dark' ? '🌙' : '☀️';
-  };
+  const Icon = theme === 'system' ? Monitor : resolvedTheme === 'dark' ? Moon : Sun;
 
   const getLabel = () => {
     if (theme === 'system') return 'Sistema';
@@ -119,15 +125,17 @@ export function ThemeToggle({ className = '' }: { className?: string }) {
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
       title={`Tema: ${getLabel()}`}
+      aria-label={`Tema: ${getLabel()}. Cambiar a ${
+        theme === 'system' ? 'claro' : theme === 'light' ? 'oscuro' : 'sistema'
+      }`}
     >
       <motion.span
         key={theme}
         initial={{ rotate: -90, opacity: 0 }}
         animate={{ rotate: 0, opacity: 1 }}
-        exit={{ rotate: 90, opacity: 0 }}
         transition={{ duration: 0.2 }}
       >
-        {getIcon()}
+        <Icon className="h-4 w-4" />
       </motion.span>
       <span className="hidden sm:inline">{getLabel()}</span>
     </motion.button>

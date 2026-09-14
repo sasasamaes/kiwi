@@ -1,7 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { TOPIC_CATALOG, getTopic, topicsForRole } from './topics';
 
-interface PushNotification {
+export { TOPIC_CATALOG, getTopic, topicsForRole };
+export interface PushNotification {
   title: string;
   body: string;
   data?: Record<string, string>;
@@ -22,12 +24,11 @@ export class NotificationsService {
   private fcmAdmin: any = null;
 
   constructor(private prisma: PrismaService) {
-    this.initializeFCM();
+    void this.initializeFCM();
   }
 
   private async initializeFCM() {
     try {
-      // Try to import Firebase Admin SDK
       // In production, set FIREBASE_SERVICE_ACCOUNT env var with the service account JSON
       const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT;
 
@@ -47,30 +48,201 @@ export class NotificationsService {
       } else {
         this.logger.warn('FIREBASE_SERVICE_ACCOUNT not set, using in-app notifications only');
       }
-    } catch (error) {
+    } catch {
       this.logger.warn('FCM not configured, using in-app notifications only');
     }
   }
 
   // ============================================
-  // 📤 SEND NOTIFICATIONS
+  // 📡 TOPICS — suscripción y publicación
+  // ============================================
+
+  /**
+   * Sincroniza las suscripciones FCM de TODOS los tokens del usuario con sus
+   * preferencias para su rol. Idempotente: FCM ignora re-suscripciones.
+   */
+  async syncTopicSubscriptions(userId: string): Promise<{ synced: number }> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+    if (!user) return { synced: 0 };
+
+    const roleTopics = topicsForRole(user.role);
+    const prefs = await this.prisma.topicPreference.findMany({ where: { userId } });
+    const prefMap = new Map(prefs.map((p) => [p.topic, p.enabled]));
+
+    const tokens = await this.prisma.deviceToken.findMany({
+      where: { userId },
+      select: { token: true },
+    });
+    if (!this.fcmAdmin || tokens.length === 0) {
+      // Sin FCM o sin tokens: solo persistimos defaults para que el primer
+      // login con push ya tenga preferencias.
+      for (const t of roleTopics) {
+        if (!prefMap.has(t.name)) {
+          await this.prisma.topicPreference.create({
+            data: { userId, topic: t.name, enabled: t.defaultEnabled },
+          });
+        }
+      }
+      return { synced: 0 };
+    }
+
+    let synced = 0;
+    for (const topic of roleTopics) {
+      const enabled = prefMap.get(topic.name) ?? topic.defaultEnabled;
+      if (!prefMap.has(topic.name)) {
+        await this.prisma.topicPreference.create({
+          data: { userId, topic: topic.name, enabled },
+        });
+      }
+      for (const { token } of tokens) {
+        try {
+          if (enabled) {
+            await this.fcmAdmin.subscribeToTopic([token], topic.name);
+          } else {
+            await this.fcmAdmin.unsubscribeFromTopic([token], topic.name);
+          }
+          synced++;
+        } catch (error) {
+          this.logger.warn(`FCM topic sync failed (${topic.name}): ${String(error)}`);
+        }
+      }
+    }
+    return { synced };
+  }
+
+  /** Cambia una preferencia y re-sincroniza FCM para ese usuario. */
+  async setTopicPreference(userId: string, topic: string, enabled: boolean) {
+    const def = getTopic(topic);
+    if (!def) throw new Error(`Unknown topic: ${topic}`);
+    if (def.locked && !enabled) throw new Error(`Topic ${topic} es obligatorio`);
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+    if (!user || def.audience !== user.role) {
+      throw new Error(`Topic ${topic} no disponible para rol ${user?.role ?? 'desconocido'}`);
+    }
+
+    await this.prisma.topicPreference.upsert({
+      where: { userId_topic: { userId, topic } },
+      update: { enabled },
+      create: { userId, topic, enabled },
+    });
+
+    await this.syncTopicSubscriptions(userId);
+    return { success: true };
+  }
+
+  /** Preferencias del usuario para su rol, con defaults aplicados. */
+  async getTopicPreferences(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+    if (!user) return [];
+
+    const roleTopics = topicsForRole(user.role);
+    const prefs = await this.prisma.topicPreference.findMany({ where: { userId } });
+    const prefMap = new Map(prefs.map((p) => [p.topic, p.enabled]));
+
+    return roleTopics.map((t) => ({
+      ...t,
+      enabled: prefMap.get(t.name) ?? t.defaultEnabled,
+    }));
+  }
+
+  /**
+   * Publica a un topic. Crea la fila in-app SOLO para topics push+inbox
+   * (los de audiencia amplia no ensucian la campana — el socket ya cubre
+   * lo in-app). Sin FCM configurado, degrada a inbox-only silencioso.
+   */
+  async publishToTopic(topicName: string, notification: PushNotification) {
+    const def = getTopic(topicName);
+    if (!def) {
+      this.logger.warn(`publishToTopic: topic desconocido ${topicName}`);
+      return { delivered: 0, inbox: 0 };
+    }
+
+    let delivered = 0;
+    if (this.fcmAdmin) {
+      try {
+        const resp = await this.fcmAdmin.send({
+          topic: topicName,
+          notification: {
+            title: notification.title,
+            body: notification.body,
+            imageUrl: notification.imageUrl,
+          },
+          data: notification.data ?? {},
+        });
+        delivered = 1; // FCM confirma aceptación del mensaje al topic
+        this.logger.log(`Published to ${topicName}: ${resp}`);
+      } catch (error) {
+        this.logger.error(`FCM publish to ${topicName} failed: ${String(error)}`);
+      }
+    }
+
+    let inbox = 0;
+    if (def.delivery === 'push+inbox') {
+      // Destinatarios = usuarios del rol con la preferencia activa.
+      const roleWhere =
+        def.audience === 'admin'
+          ? { role: 'admin' as const }
+          : { role: def.audience as 'driver' | 'merchant', status: 'active' as const };
+
+      const users = await this.prisma.user.findMany({
+        where: roleWhere,
+        select: { id: true },
+      });
+      const prefs = await this.prisma.topicPreference.findMany({
+        where: { topic: topicName, enabled: true, userId: { in: users.map((u) => u.id) } },
+        select: { userId: true },
+      });
+
+      if (prefs.length > 0) {
+        const rows = await Promise.allSettled(
+          prefs.map((p) =>
+            this.prisma.notification.create({
+              data: {
+                userId: p.userId,
+                title: notification.title,
+                body: notification.body,
+                type: `topic:${topicName}`,
+                data: notification.data ?? {},
+              },
+            }),
+          ),
+        );
+        inbox = rows.filter((r) => r.status === 'fulfilled').length;
+      }
+    }
+
+    return { delivered, inbox };
+  }
+
+  // ============================================
+  // 📤 SEND NOTIFICATIONS (directas, 1:1)
   // ============================================
 
   async sendToUser(userId: string, notification: PushNotification) {
-    // Save to database
+    // Guard: respeta la preferencia del destinatario cuando el tipo mapea a
+    // un topic (las directas 1:1 de eventos críticos no se filtran).
     const savedNotification = await this.prisma.notification.create({
       data: {
         userId,
         title: notification.title,
         body: notification.body,
-        type: 'push',
+        type: notification.data?.type ? `push:${notification.data.type}` : 'push',
         data: notification.data || {},
       },
     });
 
-    // Try to send push notification
     if (this.fcmAdmin) {
-      await this.sendPushNotification(userId, notification);
+      await this.sendPushToTokens(userId, notification);
     }
 
     return savedNotification;
@@ -99,50 +271,56 @@ export class NotificationsService {
     );
   }
 
-  private async sendPushNotification(userId: string, notification: PushNotification) {
-    try {
-      // Get user's device tokens from database
-      // In production, you'd have a device_tokens table
-      // For now, we'll use a mock approach
+  /** Push real 1:1 a todos los tokens registrados del usuario. */
+  private async sendPushToTokens(userId: string, notification: PushNotification) {
+    if (!this.fcmAdmin) return;
 
-      if (!this.fcmAdmin) {
-        this.logger.log(`Push notification would be sent to user ${userId}: ${notification.title}`);
-        return;
+    try {
+      const tokens = await this.prisma.deviceToken.findMany({
+        where: { userId },
+        select: { token: true },
+      });
+      if (tokens.length === 0) return;
+
+      const expired: string[] = [];
+      for (const { token } of tokens) {
+        try {
+          await this.fcmAdmin.send({
+            token,
+            notification: {
+              title: notification.title,
+              body: notification.body,
+              imageUrl: notification.imageUrl,
+            },
+            data: notification.data ?? {},
+            webpush: {
+              fcmOptions: {
+                link: notification.data?.orderId
+                  ? `/order/${notification.data.orderId}/tracking`
+                  : '/',
+              },
+            },
+          });
+        } catch (error: any) {
+          const code = error?.errorInfo?.code ?? error?.code ?? '';
+          if (
+            code.includes('unregistered') ||
+            code.includes('invalid-registration-token') ||
+            code.includes('registration-token-not-registered')
+          ) {
+            expired.push(token);
+          }
+          this.logger.warn(`Push to token failed: ${code || String(error)}`);
+        }
       }
 
-      // In production, fetch device tokens from database:
-      // const tokens = await this.prisma.deviceToken.findMany({
-      //   where: { userId },
-      //   select: { token: true, platform: true },
-      // });
-
-      // Send to each token
-      // for (const device of tokens) {
-      //   try {
-      //     await this.fcmAdmin.send({
-      //       token: device.token,
-      //       notification: {
-      //         title: notification.title,
-      //         body: notification.body,
-      //         imageUrl: notification.imageUrl,
-      //       },
-      //       data: notification.data,
-      //       webpush: {
-      //         fcmOptions: {
-      //           link: notification.data?.orderId
-      //             ? `/order/${notification.data.orderId}/tracking`
-      //             : '/',
-      //         },
-      //       },
-      //     });
-      //   } catch (error) {
-      //     this.logger.error(`Failed to send to token ${device.token}:`, error);
-      //   }
-      // }
-
-      this.logger.log(`Push notification sent to user ${userId}: ${notification.title}`);
+      // Limpieza de tokens muertos — sin esto el registro se pudre.
+      if (expired.length > 0) {
+        await this.prisma.deviceToken.deleteMany({ where: { token: { in: expired } } });
+        this.logger.log(`Removed ${expired.length} expired device tokens`);
+      }
     } catch (error) {
-      this.logger.error(`Failed to send push notification to ${userId}:`, error);
+      this.logger.error(`sendPushToTokens(${userId}) failed: ${String(error)}`);
     }
   }
 
@@ -204,19 +382,27 @@ export class NotificationsService {
   }
 
   // ============================================
-  // 🔔 ORDER NOTIFICATIONS
+  // 🔔 EVENTOS → TOPICS (llamados desde órdenes, retiros, ratings)
   // ============================================
 
-  async notifyNewOrder(merchantId: string, orderId: string) {
-    return this.sendToRole('driver', {
+  /** Pedido nuevo publicado → topic amplio de drivers. */
+  async notifyNewOrderTopic(order: {
+    id: string;
+    pickupAddress: string;
+    deliveryAddress: string;
+    totalAmount: any;
+    distanceKm: any;
+  }) {
+    return this.publishToTopic('driver.orders.new', {
       title: '📦 Nuevo pedido disponible',
-      body: 'Un comerciante necesita un repartidor',
-      data: { orderId, type: 'new_order' },
+      body: `₡${Number(order.totalAmount).toLocaleString()} · ${order.pickupAddress} → ${order.deliveryAddress}`,
+      data: { orderId: order.id, type: 'new_order' },
     });
   }
 
-  async notifyOrderAccepted(orderId: string, merchantId: string, driverName: string) {
-    return this.sendToUser(merchantId, {
+  /** Estado del pedido → al comercio (push directo + inbox). */
+  async notifyOrderAccepted(orderId: string, merchantUserId: string, driverName: string) {
+    return this.sendToUser(merchantUserId, {
       title: '✅ Pedido aceptado',
       body: `${driverName} aceptó tu pedido #${orderId.slice(0, 8)}`,
       data: { orderId, type: 'order_accepted' },
@@ -240,16 +426,16 @@ export class NotificationsService {
     });
   }
 
-  async notifyPaymentReceived(orderId: string, merchantId: string, amount: number) {
-    return this.sendToUser(merchantId, {
+  async notifyPaymentReceived(orderId: string, merchantUserId: string, amount: number) {
+    return this.sendToUser(merchantUserId, {
       title: '💰 Pago recibido',
       body: `Recibiste ₡${amount.toLocaleString()} por el pedido #${orderId.slice(0, 8)}`,
       data: { orderId, type: 'payment_received' },
     });
   }
 
-  async notifyNewRating(driverId: string, rating: number, merchantName: string) {
-    return this.sendToUser(driverId, {
+  async notifyNewRating(driverUserId: string, rating: number, merchantName: string) {
+    return this.sendToUser(driverUserId, {
       title: '⭐ Nueva calificación',
       body: `${merchantName} te calificó con ${rating} estrellas`,
       data: { type: 'new_rating', rating: String(rating) },
@@ -289,27 +475,22 @@ export class NotificationsService {
   // ============================================
 
   async registerDeviceToken(userId: string, token: string, platform: 'ios' | 'android' | 'web') {
-    // Store device token for push notifications
-    this.logger.log(`Device token registered for user ${userId}: ${platform}`);
+    await this.prisma.deviceToken.upsert({
+      where: { token },
+      update: { userId, platform, lastUsedAt: new Date() },
+      create: { userId, token, platform },
+    });
 
-    // In production, store in a device_tokens table:
-    // await this.prisma.deviceToken.upsert({
-    //   where: { token },
-    //   update: { userId, platform, lastUsedAt: new Date() },
-    //   create: { userId, token, platform },
-    // });
+    // Asegura preferencias por defecto y suscripción FCM para este token.
+    await this.syncTopicSubscriptions(userId);
 
     return { success: true };
   }
 
   async removeDeviceToken(userId: string, token: string) {
-    this.logger.log(`Device token removed for user ${userId}`);
-
-    // In production, remove from device_tokens table:
-    // await this.prisma.deviceToken.deleteMany({
-    //   where: { userId, token },
-    // });
-
+    await this.prisma.deviceToken.deleteMany({
+      where: { userId, token },
+    });
     return { success: true };
   }
 }

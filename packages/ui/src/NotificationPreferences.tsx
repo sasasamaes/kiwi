@@ -1,115 +1,133 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Package, RefreshCw, Coins, Star, Gift, Settings, Save } from 'lucide-react';
+import { Loader2, RefreshCw } from 'lucide-react';
+import { api } from './api-client';
+import { useAuth } from './AuthContext';
+import { SoundToggle } from './SoundToggle';
 
-interface NotificationPreference {
-  id: string;
+interface TopicItem {
+  name: string;
   label: string;
   description: string;
-  icon: string;
   enabled: boolean;
+  locked: boolean;
+  delivery: string;
 }
 
-interface NotificationPreferencesProps {
-  onSave: (preferences: Record<string, boolean>) => void;
-}
+/**
+ * Preferencias de notificaciones REALES.
+ *
+ * Cada toggle llama a PUT /notifications/topics/:topic, que persiste la
+ * preferencia en topic_preferences y re-sincroniza las suscripciones FCM
+ * de todos los dispositivos del usuario. El catálogo viene del API
+ * (GET /notifications/topics) y ya está filtrado por el rol del usuario:
+ * un driver ve topics de driver, un merchant los suyos.
+ */
+export function NotificationPreferences() {
+  const { user } = useAuth();
+  const [topics, setTopics] = useState<TopicItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [savingTopic, setSavingTopic] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
 
-export function NotificationPreferences({ onSave }: NotificationPreferencesProps) {
-  const [preferences, setPreferences] = useState<NotificationPreference[]>([
-    {
-      id: 'new_orders',
-      label: 'Nuevos pedidos',
-      description: 'Cuando hay un nuevo pedido disponible',
-      icon: 'package',
-      enabled: true,
-    },
-    {
-      id: 'order_updates',
-      label: 'Actualizaciones de pedido',
-      description: 'Cambios de estado en tus pedidos',
-      icon: 'refresh',
-      enabled: true,
-    },
-    {
-      id: 'payments',
-      label: 'Pagos',
-      description: 'Cuando recibes un pago',
-      icon: 'coins',
-      enabled: true,
-    },
-    {
-      id: 'ratings',
-      label: 'Calificaciones',
-      description: 'Cuando un cliente te califica',
-      icon: 'star',
-      enabled: true,
-    },
-    {
-      id: 'promotions',
-      label: 'Promociones',
-      description: 'Ofertas y descuentos especiales',
-      icon: 'gift',
-      enabled: false,
-    },
-    {
-      id: 'system',
-      label: 'Sistema',
-      description: 'Actualizaciones de la plataforma',
-      icon: 'settings',
-      enabled: true,
-    },
-  ]);
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const list = await api.getNotificationTopics();
+      setTopics(list);
+    } catch (e: any) {
+      setError(e?.message ?? 'No se pudieron cargar las preferencias');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  const togglePreference = (id: string) => {
-    setPreferences((prev) => prev.map((p) => (p.id === id ? { ...p, enabled: !p.enabled } : p)));
+  useEffect(() => {
+    if (user) void load();
+  }, [user, load]);
+
+  const toggle = async (topic: TopicItem) => {
+    if (topic.locked) return;
+    setSavingTopic(topic.name);
+    try {
+      await api.setNotificationTopic(topic.name, !topic.enabled);
+      setTopics((prev) =>
+        prev.map((t) => (t.name === topic.name ? { ...t, enabled: !t.enabled } : t)),
+      );
+    } catch (e: any) {
+      setError(e?.message ?? 'No se pudo guardar');
+    } finally {
+      setSavingTopic(null);
+    }
   };
 
-  const handleSave = () => {
-    const prefs = preferences.reduce(
-      (acc, p) => {
-        acc[p.id] = p.enabled;
-        return acc;
-      },
-      {} as Record<string, boolean>,
+  const resync = async () => {
+    setSyncing(true);
+    try {
+      await api.syncNotificationTopics();
+      await load();
+    } catch (e: any) {
+      setError(e?.message ?? 'No se pudo sincronizar');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center gap-3 py-10 text-surface-500 dark:text-surface-400">
+        <Loader2 className="h-5 w-5 animate-spin" />
+        Cargando preferencias…
+      </div>
     );
-    onSave(prefs);
-  };
+  }
 
   return (
     <div className="space-y-4">
+      {error && (
+        <p className="rounded-xl bg-red-50 dark:bg-red-900/30 px-4 py-3 text-sm text-red-600 dark:text-red-400">
+          {error}
+        </p>
+      )}
+
+      {/* Sonido local del dispositivo (no viaja al servidor) */}
+      <SoundToggle />
+
       <div className="space-y-2">
-        {preferences.map((pref) => (
+        {topics.map((topic) => (
           <motion.div
-            key={pref.id}
+            key={topic.name}
             className="flex items-center justify-between rounded-xl glass p-4"
             whileHover={{ x: 4 }}
           >
-            <div className="flex items-center gap-4">
-              <span className="text-2xl">
-                {pref.icon === 'package' && <Package className="h-6 w-6" />}
-                {pref.icon === 'refresh' && <RefreshCw className="h-6 w-6" />}
-                {pref.icon === 'coins' && <Coins className="h-6 w-6" />}
-                {pref.icon === 'star' && <Star className="h-6 w-6" />}
-                {pref.icon === 'gift' && <Gift className="h-6 w-6" />}
-                {pref.icon === 'settings' && <Settings className="h-6 w-6" />}
-              </span>
-              <div>
-                <p className="font-medium text-surface-800 dark:text-surface-200">{pref.label}</p>
-                <p className="text-sm text-surface-500 dark:text-surface-400">{pref.description}</p>
-              </div>
+            <div>
+              <p className="font-medium text-surface-800 dark:text-surface-200">
+                {topic.label}
+                {topic.locked && (
+                  <span className="ml-2 rounded-full bg-surface-100 dark:bg-surface-800 px-2 py-0.5 text-xs text-surface-500 dark:text-surface-400">
+                    siempre activo
+                  </span>
+                )}
+              </p>
+              <p className="text-sm text-surface-500 dark:text-surface-400">{topic.description}</p>
             </div>
             <motion.button
-              onClick={() => togglePreference(pref.id)}
-              className={`relative h-8 w-14 rounded-full p-1 transition-colors ${
-                pref.enabled ? 'bg-kiwi-500' : 'bg-surface-300 dark:bg-surface-600'
-              }`}
-              whileTap={{ scale: 0.95 }}
+              onClick={() => toggle(topic)}
+              disabled={topic.locked || savingTopic === topic.name}
+              aria-pressed={topic.enabled}
+              aria-label={`${topic.label}: ${topic.enabled ? 'activado' : 'desactivado'}`}
+              className={`relative h-8 w-14 shrink-0 rounded-full p-1 transition-colors ${
+                topic.enabled ? 'bg-kiwi-500' : 'bg-surface-300 dark:bg-surface-600'
+              } ${topic.locked ? 'opacity-50 cursor-not-allowed' : ''}`}
+              whileTap={topic.locked ? undefined : { scale: 0.95 }}
             >
               <motion.div
-                className="h-6 w-6 rounded-full bg-white shadow-md"
-                animate={{ x: pref.enabled ? 24 : 0 }}
+                layout
+                className={`h-6 w-6 rounded-full bg-white shadow ${topic.enabled ? 'ml-auto' : ''}`}
                 transition={{ type: 'spring', stiffness: 500, damping: 30 }}
               />
             </motion.button>
@@ -117,14 +135,14 @@ export function NotificationPreferences({ onSave }: NotificationPreferencesProps
         ))}
       </div>
 
-      <motion.button
-        className="w-full py-3 rounded-xl bg-kiwi-gradient text-white font-semibold shadow-kiwi"
-        onClick={handleSave}
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
+      <button
+        onClick={resync}
+        disabled={syncing}
+        className="flex items-center gap-2 text-sm text-surface-500 dark:text-surface-400 hover:text-kiwi-600 dark:hover:text-kiwi-400 transition-colors disabled:opacity-50"
       >
-        Guardar Preferencias
-      </motion.button>
+        <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
+        Re-sincronizar dispositivos
+      </button>
     </div>
   );
 }

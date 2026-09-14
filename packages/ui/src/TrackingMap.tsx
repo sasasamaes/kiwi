@@ -63,6 +63,20 @@ const MARKER_SVGS = {
   },
 };
 
+// Proveedor primario (CDN rápido, sin key) + respaldo OSM si falla en la
+// red del dispositivo. Ambos exigen atribución: se muestra en la leyenda.
+const CARTO_URL = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+const CARTO_OPTIONS = {
+  maxZoom: 20,
+  subdomains: 'abcd',
+  attribution: '© OpenStreetMap contributors © CARTO',
+};
+const OSM_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+const OSM_OPTIONS = {
+  maxZoom: 19,
+  attribution: '© OpenStreetMap contributors',
+};
+
 export function TrackingMap({
   pickup,
   delivery,
@@ -76,16 +90,25 @@ export function TrackingMap({
   const mapInstanceRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
   const routeRef = useRef<any>(null);
+  const tileLayerRef = useRef<any>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
     if (typeof window === 'undefined' || !mapRef.current || mapInstanceRef.current) return;
+
+    let cancelled = false;
+    let tilesOk = false;
+    let tileErrors = 0;
+    let fallbackAdded = false;
+    let failTimer: ReturnType<typeof setTimeout> | null = null;
 
     const initMap = async () => {
       try {
         L = await import('leaflet');
         await import('leaflet/dist/leaflet.css' as string);
+        if (cancelled || !mapRef.current) return;
 
         const map = L.map(mapRef.current, {
           center: [10.1483, -85.4527],
@@ -94,29 +117,59 @@ export function TrackingMap({
           attributionControl: false,
         });
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          maxZoom: 19,
-          attribution: '\u00a9 OpenStreetMap contributors',
-        }).addTo(map);
+        const addTileLayer = (url: string, options: any) => {
+          const layer = L.tileLayer(url, options);
+          layer.on('tileload', () => {
+            tilesOk = true;
+          });
+          layer.on('tileerror', () => {
+            tileErrors += 1;
+            // Si el proveedor primario falla, cambiar a OSM una sola vez.
+            if (!fallbackAdded && tileErrors >= 3 && !tilesOk) {
+              fallbackAdded = true;
+              if (tileLayerRef.current) {
+                tileLayerRef.current.remove();
+              }
+              tileErrors = 0;
+              tileLayerRef.current = addTileLayer(OSM_URL, OSM_OPTIONS);
+            }
+          });
+          layer.addTo(map);
+          tileLayerRef.current = layer;
+          return layer;
+        };
+
+        addTileLayer(CARTO_URL, CARTO_OPTIONS);
+
+        // Sin ningún mosaico en 10s: mostrar error accionable en vez de
+        // una pantalla azul muda (red bloqueada, DNS, proveedor caído…).
+        failTimer = setTimeout(() => {
+          if (!cancelled && !tilesOk) {
+            setError('El mapa no cargó. Revisá tu conexión e intentá de nuevo.');
+          }
+        }, 10000);
 
         L.control.zoom({ position: 'bottomright' }).addTo(map);
         mapInstanceRef.current = map;
         setIsLoaded(true);
       } catch (err) {
         console.error('Failed to initialize map:', err);
-        setError('No se pudo cargar el mapa');
+        if (!cancelled) setError('No se pudo cargar el mapa');
       }
     };
 
     initMap();
 
     return () => {
+      cancelled = true;
+      if (failTimer) clearTimeout(failTimer);
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
       }
+      tileLayerRef.current = null;
     };
-  }, []);
+  }, [retryKey]);
 
   useEffect(() => {
     if (!mapInstanceRef.current || !L) return;
@@ -188,9 +241,19 @@ export function TrackingMap({
         className={`flex items-center justify-center bg-surface-100 dark:bg-surface-800 rounded-2xl ${className}`}
         style={{ height }}
       >
-        <div className="text-center">
+        <div className="text-center px-6">
           <AlertTriangle className="h-10 w-10 text-surface-400 mx-auto mb-2" />
-          <p className="text-sm text-surface-500 dark:text-surface-400">{error}</p>
+          <p className="text-sm text-surface-500 dark:text-surface-400 mb-3">{error}</p>
+          <button
+            className="rounded-xl bg-kiwi-500 px-4 py-2 text-sm font-semibold text-white"
+            onClick={() => {
+              setError(null);
+              setIsLoaded(false);
+              setRetryKey((k) => k + 1);
+            }}
+          >
+            Reintentar
+          </button>
         </div>
       </div>
     );
@@ -240,6 +303,9 @@ export function TrackingMap({
               </div>
             )}
           </div>
+          <p className="mt-1 text-[10px] text-surface-400 dark:text-surface-500">
+            © OpenStreetMap · © CARTO
+          </p>
         </motion.div>
       )}
 

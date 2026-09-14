@@ -7,6 +7,7 @@ import { DriversModule } from '../drivers/drivers.module';
 import { GeocodingModule } from '../geocoding/geocoding.module';
 
 @Module({
+  // NotificationsService llega vía NotificationsForwardModule (@Global).
   imports: [PrismaModule, EventsModule, DriversModule, GeocodingModule],
   providers: [OrdersService],
   controllers: [OrdersController],

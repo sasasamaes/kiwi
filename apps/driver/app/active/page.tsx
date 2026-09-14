@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import { BottomNav } from '../components/BottomNav';
 import {
   MapPin,
   Home,
@@ -27,6 +28,7 @@ import {
   offlineCache,
   backgroundSync,
   type SyncAction,
+  KiwiLoader,
 } from '@kiwi/ui';
 
 // Estados considerados "activos" para el repartidor
@@ -66,7 +68,7 @@ function openMaps(lat?: number | string | null, lng?: number | string | null, ad
   const dest = coords
     ? `https://www.google.com/maps/dir/?api=1&destination=${coords}`
     : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address || '')}`;
-  window.open(dest, '_blank');
+  window.open(dest, '_blank', 'noopener,noreferrer');
 }
 
 // Clave de caché para render offline
@@ -259,7 +261,7 @@ export default function ActiveOrders() {
   if (authLoading || (loading && user)) {
     return (
       <main className="min-h-[100dvh] flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-kiwi-500" />
+        <KiwiLoader size={56} />
       </main>
     );
   }
@@ -267,7 +269,7 @@ export default function ActiveOrders() {
   if (error && orders.length === 0) {
     return (
       <main className="min-h-[100dvh] flex flex-col">
-        <header className="sticky top-0 z-50 glass-strong">
+        <header className="pt-safe sticky top-0 z-50 glass-strong">
           <div className="mx-auto max-w-lg px-4 py-4 flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2 text-surface-600">
               <span>←</span>
@@ -296,7 +298,7 @@ export default function ActiveOrders() {
   if (orders.length === 0) {
     return (
       <main className="min-h-[100dvh] flex flex-col">
-        <header className="sticky top-0 z-50 glass-strong">
+        <header className="pt-safe sticky top-0 z-50 glass-strong">
           <div className="mx-auto max-w-lg px-4 py-4 flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2 text-surface-600">
               <span>←</span>
@@ -327,6 +329,9 @@ export default function ActiveOrders() {
 
   const order = orders.find((o) => o.id === selectedId) ?? orders[0];
   const step = STATUS_STEP[order.status] ?? 1;
+  // Nav visible solo antes de iniciar el viaje: en plena entrega la pantalla
+  // dueña de la atención es la navegación, no el menú.
+  const showBottomNav = order.status === 'assigned';
   const flow = NEXT_STATUS[order.status];
   const isDelivered = false; // los entregados no aparecen en activos
   const driverPayout = Number(order.driverPayout ?? order.totalAmount ?? 0);
@@ -338,7 +343,7 @@ export default function ActiveOrders() {
   return (
     <main className="min-h-[100dvh] flex flex-col bg-bg-light dark:bg-surface-950">
       {/* Header */}
-      <header className="sticky top-0 z-50 glass-strong">
+      <header className="pt-safe sticky top-0 z-50 glass-strong">
         <div className="mx-auto max-w-lg px-4 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 text-surface-600">
             <span>←</span>
@@ -604,6 +609,7 @@ export default function ActiveOrders() {
           )}
         </div>
       </main>
+      {showBottomNav && <BottomNav />}
     </main>
   );
 }

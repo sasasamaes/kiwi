@@ -50,6 +50,9 @@ const toDriverList = (data: any): Driver[] => {
         fullName: p.fullName ?? 'Repartidor',
         vehicleType: p.vehicleType,
         rating: p.rating != null ? Number(p.rating) : undefined,
+        // Sin status todo se veía "No disponible" aunque el driver
+        // estuviera en línea: el backend sí lo manda.
+        status: p.status,
       } as Driver;
     })
     .filter(Boolean) as Driver[];
@@ -83,9 +86,10 @@ interface GeoPoint {
 
 /**
  * Extrae coords de links de mapa compartidos por WhatsApp:
- * Google Maps (?q=, ?query=, ll=, @lat,lng,z), geo:, Apple Maps, OSM.
- * Los acortados (goo.gl/maps.app.goo.gl) no se pueden expandir en el
- * navegador por CORS: se pide el link completo en ese caso.
+ * Google Maps (?q=, ?query=, ll=, @lat,lng,z, !3dLAT!4dLNG), geo:, Apple Maps, OSM.
+ * Los acortados (goo.gl/maps.app.goo.gl) se resuelven vía backend
+ * (GET /geocoding/resolve-link) porque el navegador no puede
+ * seguirlos por CORS.
  */
 function parseMapLink(
   raw: string,
@@ -138,6 +142,13 @@ function parseMapLink(
   const atMatch = url.pathname.match(/@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/);
   if (atMatch) {
     const p = numPair(`${atMatch[1]},${atMatch[2]}`);
+    if (p) return { kind: 'coords', point: p };
+  }
+
+  // Pin compartido de Google: .../data=!3m...!3dLAT!4dLNG
+  const pinMatch = urlMatch[0].match(/!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/);
+  if (pinMatch) {
+    const p = numPair(`${pinMatch[1]},${pinMatch[2]}`);
     if (p) return { kind: 'coords', point: p };
   }
 
@@ -336,13 +347,51 @@ function NewOrderInner({
     setMapLinkMsg(null);
     const parsed = parseMapLink(mapLink);
     if (!parsed) {
+      // El parser local no entendió el link: intentar resolver vía backend
+      // (cubre acortados pegados con texto extra y formatos raros).
+      setMapLinkMsg('Abriendo link…');
+      try {
+        const r: any = await api.resolveMapLink(mapLink);
+        if (r && Number.isFinite(Number(r.lat)) && Number.isFinite(Number(r.lng))) {
+          const lat = Number(r.lat);
+          const lng = Number(r.lng);
+          const label = r.label || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+          setDeliveryLat(lat);
+          setDeliveryLng(lng);
+          setDeliveryAddress((prev) => prev || label);
+          setDeliverySuggest([]);
+          setMapLink('');
+          setMapLinkMsg(`Ubicación fijada: ${label}`);
+          return;
+        }
+      } catch {
+        // cae al mensaje de ayuda
+      }
       setMapLinkMsg('Pega el link que te enviaron por WhatsApp (maps.google.com…)');
       return;
     }
     if (parsed.kind === 'short') {
-      setMapLinkMsg(
-        'Ese link acortado no se puede abrir aquí: pedí el link completo de Google Maps.',
-      );
+      setMapLinkMsg('Abriendo link acortado…');
+      try {
+        const r: any = await api.resolveMapLink(mapLink);
+        if (r && Number.isFinite(Number(r.lat)) && Number.isFinite(Number(r.lng))) {
+          const lat = Number(r.lat);
+          const lng = Number(r.lng);
+          const label = r.label || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+          setDeliveryLat(lat);
+          setDeliveryLng(lng);
+          setDeliveryAddress((prev) => prev || label);
+          setDeliverySuggest([]);
+          setMapLink('');
+          setMapLinkMsg(`Ubicación fijada: ${label}`);
+          return;
+        }
+        setMapLinkMsg(
+          r?.error || 'No se pudo abrir ese link. Pedí el link completo de Google Maps.',
+        );
+      } catch {
+        setMapLinkMsg('No se pudo abrir ese link. Pedí el link completo de Google Maps.');
+      }
       return;
     }
     if (parsed.kind === 'coords') {
@@ -433,6 +482,16 @@ function NewOrderInner({
     deliveryName.trim().length > 0 &&
     deliveryPhone.trim().length >= 8 &&
     deliveryAddress.trim().length > 0;
+
+  // El botón deshabilitado no explica nada: decir qué falta.
+  // Las notas son opcionales y por eso no aparecen aquí.
+  const step1Missing: string[] = [];
+  if (kind === 'food' ? items.length === 0 : packageDescription.trim().length === 0) {
+    step1Missing.push(kind === 'food' ? 'agregar productos' : 'qué hay que llevar');
+  }
+  if (deliveryName.trim().length === 0) step1Missing.push('nombre del cliente');
+  if (deliveryPhone.trim().length < 8) step1Missing.push('teléfono (8 dígitos)');
+  if (deliveryAddress.trim().length === 0) step1Missing.push('dirección de entrega');
 
   const toggleFavorite = async (driver: Driver) => {
     const isFav = favoriteDrivers.some((d) => d.id === driver.id);
@@ -660,8 +719,8 @@ function NewOrderInner({
                 <div className="mb-4 grid grid-cols-2 gap-2">
                   {(
                     [
-                      { id: 'food', label: '🍔 Comida', desc: 'Del menú' },
                       { id: 'freight', label: '📦 Encomienda', desc: 'Paquete' },
+                      { id: 'food', label: '🍔 Comida', desc: 'Del menú' },
                     ] as const
                   ).map((k) => (
                     <button
@@ -1125,6 +1184,11 @@ function NewOrderInner({
               {formError}
             </div>
           )}
+          {step === 1 && !step1Valid && (
+            <p className="mb-3 text-center text-xs text-surface-500 dark:text-surface-400">
+              Te falta: {step1Missing.join(' · ')}
+            </p>
+          )}
         </div>
         <div className="mx-auto max-w-lg flex gap-3">
           {step > 1 && (
@@ -1189,6 +1253,13 @@ function DriverRow({
   // muestra deshabilitado para que el comercio sepa que existe pero aún no
   // está conectado.
   const selectable = driver.status === 'available';
+  const vehicleLabels: Record<string, string> = {
+    motorcycle: 'Moto',
+    motorized_bike: 'Bici con motor',
+    bicycle: 'Bicicleta',
+    car: 'Carro',
+    truck: 'Camión',
+  };
   return (
     <div
       className={`flex items-center justify-between rounded-xl p-3 transition-all ${
@@ -1203,7 +1274,7 @@ function DriverRow({
       <div>
         <p className="text-sm font-medium">{driver.fullName}</p>
         <p className="text-xs text-surface-500">
-          {driver.vehicleType}{' '}
+          {driver.vehicleType ? (vehicleLabels[driver.vehicleType] ?? driver.vehicleType) : ''}{' '}
           {driver.rating != null ? `• ⭐ ${Number(driver.rating).toFixed(1)}` : ''}
           {!selectable &&
             ` • ${driver.status === 'busy' ? 'Ocupado ahora' : driver.status === 'offline' ? 'Offline' : 'No disponible'}`}
@@ -1236,7 +1307,7 @@ export default function NewOrder() {
 function NewOrderWithKind() {
   const searchParams = useSearchParams();
   const presetParam = searchParams.get('kind');
-  const kind = presetParam === 'freight' ? 'freight' : 'food';
+  const kind = presetParam === 'food' ? 'food' : 'freight';
   // Cuando la entrada ya preseleccionó el tipo (dashboard: Comida/Encomienda,
   // agregados rápidos), el formulario NO vuelve a preguntar.
   return <NewOrderInner presetKind={kind} isPreset={presetParam !== null} />;

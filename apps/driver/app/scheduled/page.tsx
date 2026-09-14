@@ -100,7 +100,7 @@ export default function ScheduledOrdersPage() {
   if (authLoading || loading) {
     return (
       <div className="min-h-[100dvh] bg-bg-light dark:bg-surface-950">
-        <div className="sticky top-0 z-50 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl">
+        <div className="pt-safe sticky top-0 z-50 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl">
           <div className="mx-auto max-w-lg px-4 py-4">
             <Skeleton className="h-6 w-48" />
           </div>
@@ -127,7 +127,7 @@ export default function ScheduledOrdersPage() {
     <main className="min-h-[100dvh] bg-bg-light dark:bg-surface-950 pb-24">
       {/* Header */}
       <motion.header
-        className="sticky top-0 z-50 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl"
+        className="pt-safe sticky top-0 z-50 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         transition={{ type: 'spring', stiffness: 260, damping: 20 }}

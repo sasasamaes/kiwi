@@ -12,3 +12,5 @@ import { RoutingModule } from '../routing/routing.module';
   exports: [NotificationsService, TrafficNotificationService],
 })
 export class NotificationsModule {}
+
+export { NotificationsForwardModule } from './module-ref';

@@ -5,6 +5,9 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { UpdateDriverProfileDto } from './dto/update-driver-profile.dto';
+import { UpdateLocationDto } from './dto/update-location.dto';
+import { UpdateScheduleDto } from './dto/update-schedule.dto';
 
 @ApiTags('Drivers')
 @Controller('drivers')
@@ -25,7 +28,7 @@ export class DriversController {
   @Roles('driver')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update driver profile' })
-  async updateMe(@CurrentUser() user: any, @Body() updateData: any) {
+  async updateMe(@CurrentUser() user: any, @Body() updateData: UpdateDriverProfileDto) {
     return this.driversService.updateProfile(user.sub, updateData);
   }
 
@@ -43,10 +46,7 @@ export class DriversController {
   @Roles('driver')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update driver location' })
-  async updateLocation(
-    @CurrentUser() user: any,
-    @Body() data: { lat: number; lng: number; orderId?: string },
-  ) {
+  async updateLocation(@CurrentUser() user: any, @Body() data: UpdateLocationDto) {
     return this.driversService.updateLocation(user.sub, data.lat, data.lng, data.orderId);
   }
 
@@ -54,8 +54,8 @@ export class DriversController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get driver location' })
-  async getLocation(@Param('id') id: string) {
-    return this.driversService.getLocation(id);
+  async getLocation(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.driversService.getLocationForUser(id, user);
   }
 
   @Get('me/earnings')
@@ -82,8 +82,8 @@ export class DriversController {
   @Roles('driver')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update driver schedule' })
-  async updateSchedule(@CurrentUser() user: any, @Body() schedules: any[]) {
-    return this.driversService.updateSchedule(user.sub, schedules);
+  async updateSchedule(@CurrentUser() user: any, @Body() body: UpdateScheduleDto) {
+    return this.driversService.updateSchedule(user.sub, body.schedules);
   }
 
   @Get('available')

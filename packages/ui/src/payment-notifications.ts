@@ -9,6 +9,7 @@
 
 import { offlineCache } from './offline-cache';
 import { backgroundSync } from './background-sync';
+import { playNotificationSound } from './notification-sound';
 
 const DB_NAME = 'kiwi-payment-notifications';
 const DB_VERSION = 1;
@@ -360,6 +361,15 @@ class PaymentNotificationService {
    * Show local browser notification
    */
   private showLocalNotification(notification: PaymentNotification): void {
+    // El banner del sistema no garantiza sonido: sonar aquí también
+    playNotificationSound(
+      notification.priority === 'urgent'
+        ? 'new_order'
+        : notification.priority === 'high'
+          ? 'payment'
+          : 'default',
+    );
+
     if (typeof window === 'undefined' || !('Notification' in window)) {
       return;
     }

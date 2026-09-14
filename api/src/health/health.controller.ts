@@ -1,4 +1,5 @@
 import { Controller, Get, Res } from '@nestjs/common';
+import { Public } from '../auth/decorators/public.decorator';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { HealthService, DriftReport, SocketTransportReport } from './health.service';
@@ -17,6 +18,7 @@ export class HealthController {
    * @nestjs/platform-socket.io adapter historically shipped unnoticed (REST
    * fine, every WS handshake 404) — this makes such a deploy fail its probe.
    */
+  @Public() // liveness probe para Render — sin datos, solo “el proceso vive”
   @Get()
   @ApiOperation({
     summary: 'Liveness probe (503 when the socket transport is not mounted)',

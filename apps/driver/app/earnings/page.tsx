@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { BottomNav } from '../components/BottomNav';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Package, Calendar, CalendarDays, Home, Coins, User, BarChart3 } from 'lucide-react';
-import { api } from '@kiwi/ui';
+import { Package, Calendar, CalendarDays, Home, BarChart3 } from 'lucide-react';
+import { api, ScrollToTop } from '@kiwi/ui';
 
 interface EarningsData {
   period: string;
@@ -96,7 +97,7 @@ export default function EarningsPage() {
     return (
       <main className="min-h-[100dvh] flex flex-col bg-bg-light dark:bg-surface-950">
         {/* Header */}
-        <header className="sticky top-0 z-50 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl">
+        <header className="pt-safe sticky top-0 z-50 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl">
           <div className="mx-auto max-w-lg px-4 py-4">
             <div className="flex items-center justify-between">
               <Link
@@ -133,7 +134,7 @@ export default function EarningsPage() {
     return (
       <main className="min-h-[100dvh] flex flex-col bg-bg-light dark:bg-surface-950">
         {/* Header */}
-        <header className="sticky top-0 z-50 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl">
+        <header className="pt-safe sticky top-0 z-50 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl">
           <div className="mx-auto max-w-lg px-4 py-4">
             <div className="flex items-center justify-between">
               <Link
@@ -185,7 +186,7 @@ export default function EarningsPage() {
   return (
     <main className="min-h-[100dvh] flex flex-col bg-bg-light dark:bg-surface-950">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl">
+      <header className="pt-safe sticky top-0 z-50 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl">
         <div className="mx-auto max-w-lg px-4 py-4">
           <div className="flex items-center justify-between">
             <Link
@@ -440,45 +441,8 @@ export default function EarningsPage() {
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="sticky bottom-0 border-t border-surface-200/50 dark:border-surface-700/50 bg-white/80 dark:bg-surface-900/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-lg items-center justify-around py-2">
-          <Link
-            href="/"
-            className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
-          >
-            <Home className="text-xl h-5 w-5" />
-            <span className="text-xs font-medium">Inicio</span>
-          </Link>
-          <Link
-            href="/active"
-            className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
-          >
-            <Package className="text-xl h-5 w-5" />
-            <span className="text-xs font-medium">Activos</span>
-          </Link>
-          <Link
-            href="/earnings"
-            className="flex flex-col items-center gap-1 px-4 py-2 text-kiwi-600 dark:text-kiwi-400"
-          >
-            <Coins className="text-xl h-5 w-5" />
-            <span className="text-xs font-medium">Ganancias</span>
-          </Link>
-          <Link
-            href="/schedule"
-            className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
-          >
-            <Calendar className="text-xl h-5 w-5" />
-            <span className="text-xs font-medium">Horario</span>
-          </Link>
-          <Link
-            href="/profile"
-            className="flex flex-col items-center gap-1 px-4 py-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
-          >
-            <User className="text-xl h-5 w-5" />
-            <span className="text-xs font-medium">Perfil</span>
-          </Link>
-        </div>
-      </nav>
+      <ScrollToTop className="bottom-24" />
+      <BottomNav />
     </main>
   );
 }
