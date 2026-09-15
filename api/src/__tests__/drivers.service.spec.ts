@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { DriversService } from '../drivers/drivers.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { FeatureFlagsService } from '../feature-flags/feature-flags';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 
 describe('DriversService', () => {
@@ -31,7 +32,11 @@ describe('DriversService', () => {
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [DriversService, { provide: PrismaService, useValue: prisma }],
+      providers: [
+        DriversService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: FeatureFlagsService, useValue: { kycRequired: false } },
+      ],
     }).compile();
 
     service = module.get<DriversService>(DriversService);

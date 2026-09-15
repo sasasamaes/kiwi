@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { isKycRequired } from '../feature-flags/feature-flags';
 
 @Injectable()
 export class WithdrawalsService {
@@ -77,8 +78,8 @@ export class WithdrawalsService {
       throw new NotFoundException('Perfil de repartidor no encontrado');
     }
 
-    // Check KYC status
-    if (driverProfile.kycStatus !== 'approved') {
+    // Check KYC status — desactivado de momento (KYC_REQUIRED != 'true').
+    if (isKycRequired() && driverProfile.kycStatus !== 'approved') {
       throw new BadRequestException('Debes completar la verificación KYC para retirar ganancias');
     }
 

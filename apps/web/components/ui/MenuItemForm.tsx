@@ -2,8 +2,8 @@
 
 import { useState, useEffect, Fragment } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Utensils, Check, Clock, Pencil } from 'lucide-react';
-import { AnimatedButton } from '@kiwi/ui';
+import { Utensils, Check, Clock, Pencil, Loader2, Trash2 } from 'lucide-react';
+import { AnimatedButton, isEmojiImage, api } from '@kiwi/ui';
 
 const DEFAULT_CATEGORIES = [
   'Bowls',
@@ -112,8 +112,9 @@ export function MenuItemForm({
 
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof MenuItemFormData, string>>>({});
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   useEffect(() => {
     if (initialData) {
@@ -181,6 +182,12 @@ export function MenuItemForm({
     return Object.keys(newErrors).length === 0;
   };
 
+  const removeImage = () => {
+    setFormData((prev) => ({ ...prev, image: null }));
+    setImagePreview(null);
+    setUploadError(null);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -204,15 +211,33 @@ export function MenuItemForm({
     }
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      // For now, just show a preview URL
-      // In production, upload to S3/Cloudflare R2
-      const url = URL.createObjectURL(file);
+    // Reset del input para poder re-subir el mismo archivo tras un error.
+    e.target.value = '';
+    if (!file) return;
+
+    // Pre-chequeos amigables antes de gastar el upload (el backend valida
+    // magic bytes de todos modos — esto es UX, no seguridad).
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError('La imagen supera 5 MB. Elige una más liviana.');
+      return;
+    }
+    if (file.type && !/^image\/(jpeg|png|webp|gif)$/.test(file.type)) {
+      setUploadError('Formato no soportado. Usa JPG, PNG, WEBP o GIF.');
+      return;
+    }
+
+    setUploading(true);
+    setUploadError(null);
+    try {
+      const { url } = await api.uploadMenuImage(file);
+      setFormData((prev) => ({ ...prev, image: url }));
       setImagePreview(url);
-      // TODO: Upload to storage and set formData.image to the URL
-      console.log('📸 Image selected:', file.name);
+    } catch (err: any) {
+      setUploadError(err?.message || 'No se pudo subir la imagen. Intenta de nuevo.');
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -254,8 +279,12 @@ export function MenuItemForm({
               className="relative flex h-24 w-24 items-center justify-center rounded-2xl bg-surface-100 dark:bg-surface-700 text-5xl overflow-hidden"
               whileHover={{ scale: 1.05 }}
             >
-              {imagePreview ? (
-                <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+              {imagePreview || (formData.image && !isEmojiImage(formData.image)) ? (
+                <img
+                  src={(imagePreview || formData.image) as string}
+                  alt="Preview"
+                  className="w-full h-full object-cover"
+                />
               ) : !formData.image ? (
                 <Utensils className="h-10 w-10" />
               ) : (
@@ -286,6 +315,7 @@ export function MenuItemForm({
                     onClick={() => {
                       setFormData({ ...formData, image: emoji });
                       setImagePreview(null);
+                      setUploadError(null);
                     }}
                     whileTap={{ scale: 0.9 }}
                   >
@@ -294,8 +324,23 @@ export function MenuItemForm({
                 ))}
               </div>
               <p className="text-xs text-surface-400 dark:text-surface-500 mt-2">
-                O sube una foto del producto
+                O sube una foto del producto (JPG/PNG/WEBP/GIF, máx 5 MB)
               </p>
+              {uploading && (
+                <p className="mt-1 flex items-center gap-1.5 text-xs text-kiwi-600 dark:text-kiwi-400">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Subiendo imagen…
+                </p>
+              )}
+              {uploadError && <p className="mt-1 text-xs text-red-500">{uploadError}</p>}
+              {formData.image && !uploading && (
+                <button
+                  type="button"
+                  onClick={removeImage}
+                  className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-red-400 hover:text-red-600"
+                >
+                  <Trash2 className="h-3.5 w-3.5" /> Quitar imagen
+                </button>
+              )}
             </div>
           </div>
         </div>

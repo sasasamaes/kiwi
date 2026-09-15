@@ -240,9 +240,10 @@ export function AuthForm({
               />
               <motion.button
                 type="button"
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-surface-400 hover:text-surface-600"
+                className="absolute right-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center text-surface-400 hover:text-surface-600"
                 onClick={() => setShowPassword(!showPassword)}
                 whileTap={{ scale: 0.9 }}
+                aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
               >
                 {showPassword ? <Eye className="h-5 w-5" /> : <EyeOff className="h-5 w-5" />}
               </motion.button>
@@ -303,7 +304,7 @@ export function AuthForm({
             >
               <button
                 type="button"
-                className="text-sm text-kiwi-600 hover:text-kiwi-700 font-medium"
+                className="inline-flex min-h-[44px] items-center px-1 text-sm text-kiwi-600 hover:text-kiwi-700 font-medium"
               >
                 ¿Olvidaste tu contraseña?
               </button>
@@ -322,7 +323,7 @@ export function AuthForm({
             {type === 'login' ? '¿No tienes cuenta?' : '¿Ya tienes cuenta?'}
             <button
               onClick={onToggle}
-              className="ml-2 font-semibold text-kiwi-600 hover:text-kiwi-700"
+              className="ml-2 inline-flex min-h-[44px] items-center px-1 font-semibold text-kiwi-600 hover:text-kiwi-700"
             >
               {type === 'login' ? 'Regístrate' : 'Inicia sesión'}
             </button>

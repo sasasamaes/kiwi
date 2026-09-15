@@ -15,7 +15,12 @@ const nextConfig = {
       {
         source: '/:path*',
         // Dashboard admin/merchant: no usa geolocation del navegador.
-        headers: buildSecurityHeaders({ allowGeolocation: false }),
+        headers: buildSecurityHeaders({
+          allowGeolocation: false,
+          apiOrigin: process.env.NEXT_PUBLIC_API_URL
+            ? new URL(process.env.NEXT_PUBLIC_API_URL).origin
+            : undefined,
+        }),
       },
     ];
   },

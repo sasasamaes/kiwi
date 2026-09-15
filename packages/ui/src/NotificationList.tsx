@@ -122,7 +122,7 @@ export function NotificationList({ onNotificationClick }: NotificationListProps)
       {/* Filter Tabs */}
       <div className="flex gap-2 mb-4">
         <motion.button
-          className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+          className={`inline-flex min-h-[44px] items-center px-4 py-2 rounded-full text-sm font-medium transition-colors ${
             filter === 'all'
               ? 'bg-kiwi-500 text-white'
               : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400'
@@ -133,7 +133,7 @@ export function NotificationList({ onNotificationClick }: NotificationListProps)
           Todas
         </motion.button>
         <motion.button
-          className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+          className={`inline-flex min-h-[44px] items-center px-4 py-2 rounded-full text-sm font-medium transition-colors ${
             filter === 'unread'
               ? 'bg-kiwi-500 text-white'
               : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400'
@@ -145,7 +145,7 @@ export function NotificationList({ onNotificationClick }: NotificationListProps)
         </motion.button>
         {notifications.some((n) => !n.read) && (
           <motion.button
-            className="ml-auto text-sm text-kiwi-600 dark:text-kiwi-400 font-medium"
+            className="ml-auto inline-flex min-h-[44px] items-center px-1 text-sm text-kiwi-600 dark:text-kiwi-400 font-medium"
             onClick={markAllAsRead}
             whileTap={{ scale: 0.95 }}
           >
@@ -218,14 +218,15 @@ export function NotificationList({ onNotificationClick }: NotificationListProps)
                   )}
                 </div>
 
-                {/* Delete button */}
+                {/* Delete button — visible siempre (en touch no existe hover) */}
                 <motion.button
-                  className="absolute top-2 right-2 text-surface-300 hover:text-surface-500 opacity-0 group-hover:opacity-100"
+                  className="absolute right-1 top-1 flex h-11 w-11 items-center justify-center rounded-full text-surface-300 hover:text-surface-500 dark:text-surface-500 dark:hover:text-surface-300 md:opacity-0 md:group-hover:opacity-100"
                   onClick={(e) => {
                     e.stopPropagation();
                     deleteNotification(notification.id);
                   }}
                   whileTap={{ scale: 0.9 }}
+                  aria-label="Eliminar notificación"
                 >
                   ✕
                 </motion.button>

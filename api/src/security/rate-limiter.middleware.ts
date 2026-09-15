@@ -25,6 +25,15 @@ export class RateLimiterMiddleware implements NestMiddleware {
       maxRequests: 10,
       message: 'Demasiados intentos de login. Intenta de nuevo en 15 minutos.',
     },
+
+    // Subida de imágenes: cada request cuesta bandwidth + storage en el
+    // proveedor. 15/15min por IP cubre con holgura la carga manual de un
+    // comercio armando su menú; mata scripts que suban en loop.
+    'POST:/api/menu/my/image': {
+      windowMs: 15 * 60 * 1000,
+      maxRequests: 15,
+      message: 'Demasiadas subidas de imagen. Espera unos minutos.',
+    },
     'POST:/api/auth/register': {
       windowMs: 60 * 60 * 1000,
       maxRequests: 3,

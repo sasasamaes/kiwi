@@ -17,14 +17,26 @@
  */
 
 const GOOGLE_FONTS = 'https://fonts.gstatic.com';
-const API_ORIGIN = 'https://kiwi-api-fe54.onrender.com';
+/**
+ * Debe ESPEJAR el fallback de runtime de api-client.ts
+ * (NEXT_PUBLIC_API_URL || 'http://localhost:4000/api'): si el código va a
+ * llamar a X, el CSP tiene que permitir X. Con env en prod → prod; sin env
+ * en local → localhost.
+ */
+const DEFAULT_API_ORIGIN = 'http://localhost:4000';
 
 /**
- * @param {{ allowGeolocation?: boolean }} [options]
+ * @param {{ allowGeolocation?: boolean, apiOrigin?: string }} [options]
  * @returns {{ key: string, value: string }[]}
  */
-function buildSecurityHeaders({ allowGeolocation = false } = {}) {
+function buildSecurityHeaders({ allowGeolocation = false, apiOrigin } = {}) {
   const geo = allowGeolocation ? 'geolocation=(self)' : 'geolocation=()';
+
+  // Origen del API según build: en dev apunta a localhost (NEXT_PUBLIC_API_URL),
+  // en prod al host de Render. Sin esto, el CSP bloquea las llamadas del app
+  // a su propio API ("Failed to fetch" en TODO el app).
+  const API = (apiOrigin || DEFAULT_API_ORIGIN).replace(/\/$/, '');
+  const WS = API.replace(/^http/, 'ws'); // http→ws, https→wss
 
   const csp = [
     "default-src 'self'",
@@ -35,9 +47,9 @@ function buildSecurityHeaders({ allowGeolocation = false } = {}) {
     "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
     // Mapas Leaflet: mosaicos OSM + CARTO (respaldo). Sin esto el mapa queda
     // en azul si alguna vez se aplica esta política en vez de la de vercel.json.
-    "img-src 'self' data: blob: https://*.tile.openstreetmap.org https://tile.openstreetmap.org https://*.basemaps.cartocdn.com",
+    "img-src 'self' data: blob: https://res.cloudinary.com https://*.tile.openstreetmap.org https://tile.openstreetmap.org https://*.basemaps.cartocdn.com",
     `font-src 'self' ${GOOGLE_FONTS}`,
-    `connect-src 'self' ${API_ORIGIN} wss://${API_ORIGIN.replace('https://', '')}`,
+    `connect-src 'self' ${API} ${WS}`,
     "object-src 'none'",
     "base-uri 'none'",
     "form-action 'self'",

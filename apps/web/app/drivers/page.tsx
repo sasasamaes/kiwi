@@ -6,8 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Star, Package, Search, MessageCircle, X, Send, Trophy } from 'lucide-react';
 import {
   AnimatedButton,
-  StaggerContainer,
-  StaggerItem,
+  ScrollReveal,
   VehicleBadge,
   VehicleType,
   useSocket,
@@ -340,7 +339,7 @@ export default function DriversPage() {
           <div className="flex items-center justify-between">
             <Link
               href="/dashboard"
-              className="flex items-center gap-2 text-surface-600 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200"
+              className="flex min-h-[44px] items-center gap-2 text-surface-600 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200"
             >
               <span>←</span>
               <span className="text-sm font-medium">Dashboard</span>
@@ -516,14 +515,14 @@ export default function DriversPage() {
                 </div>
               </div>
             ) : (
-              <StaggerContainer className="space-y-4">
-                {filteredDrivers.map((driver) => {
+              <div className="space-y-4">
+                {filteredDrivers.map((driver, driverIndex) => {
                   const isFav = favIds.has(driver.id);
                   const sharedOrder = openOrders.find(
                     (o) => o.driver?.id === driver.id || o.driverId === driver.id,
                   );
                   return (
-                    <StaggerItem key={driver.id}>
+                    <ScrollReveal key={driver.id} index={driverIndex} as="div">
                       <motion.div
                         className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft"
                         whileHover={{ y: -2, boxShadow: '0 8px 24px 0 rgb(0 0 0 / 0.08)' }}
@@ -563,7 +562,7 @@ export default function DriversPage() {
                               <button
                                 onClick={() => toggleFavorite(driver)}
                                 title={isFav ? 'Quitar de favoritos' : 'Marcar favorito'}
-                                className="rounded-lg p-2 text-surface-400 hover:text-gold-500 transition-colors"
+                                className="flex h-11 w-11 items-center justify-center rounded-lg text-surface-400 hover:text-gold-500 transition-colors"
                               >
                                 <Star
                                   className={`h-5 w-5 ${isFav ? 'fill-gold-500 text-gold-500' : ''}`}
@@ -573,7 +572,7 @@ export default function DriversPage() {
                                 <button
                                   onClick={() => openChat(driver)}
                                   title="Chatear"
-                                  className="rounded-lg p-2 text-surface-400 hover:text-kiwi-500 transition-colors"
+                                  className="flex h-11 w-11 items-center justify-center rounded-lg text-surface-400 hover:text-kiwi-500 transition-colors"
                                 >
                                   <MessageCircle className="h-5 w-5" />
                                 </button>
@@ -600,10 +599,10 @@ export default function DriversPage() {
                           </div>
                         </div>
                       </motion.div>
-                    </StaggerItem>
+                    </ScrollReveal>
                   );
                 })}
-              </StaggerContainer>
+              </div>
             )}
 
             {!loading && !error && filteredDrivers.length === 0 && (

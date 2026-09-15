@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useAnimationControls, useReducedMotion } from 'framer-motion';
 import {
   Utensils,
   Star,
@@ -35,6 +35,7 @@ import {
   CryptoCheckout,
   safeNavigateToUrl,
   isEmojiImage,
+  isHttpUrl,
   hoverCard,
   hoverChip,
   hoverGhost,
@@ -99,6 +100,10 @@ export default function MenuPage() {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [categories, setCategories] = useState<string[]>(['Todos']);
   const [selectedCategory, setSelectedCategory] = useState('Todos');
+  /** Clave que reinicia la animación de rebote del carrito (TapButton onSuccess). */
+  const [cartBounceKey, setCartBounceKey] = useState(0);
+  const cartControls = useAnimationControls();
+  const prefersReducedMotion = useReducedMotion();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -557,9 +562,10 @@ export default function MenuPage() {
       >
         <div className="mx-auto max-w-lg px-4 py-4">
           <div className="flex items-center justify-between">
+            {' '}
             <Link
               href="/"
-              className="flex items-center gap-2 text-surface-600 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200"
+              className="flex min-h-[44px] items-center gap-2 text-surface-600 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200"
             >
               <span>←</span>
               <span className="text-sm font-medium">Volver</span>
@@ -621,7 +627,7 @@ export default function MenuPage() {
           {categories.map((cat) => (
             <TapButton
               key={cat}
-              className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+              className={`inline-flex min-h-[44px] flex-shrink-0 items-center rounded-full px-4 py-2 text-sm font-medium transition-all ${
                 selectedCategory === cat
                   ? 'bg-kiwi-500 text-white shadow-kiwi'
                   : `bg-white dark:bg-surface-800 text-surface-600 dark:text-surface-400 shadow-soft dark:shadow-dark ${hoverChip}`
@@ -657,7 +663,18 @@ export default function MenuPage() {
                   <motion.div className={`rounded-2xl glass p-4 ${hoverCard}`}>
                     <div className="flex gap-4">
                       <div className="flex h-20 w-20 items-center justify-center rounded-xl bg-surface-100 dark:bg-surface-700 text-3xl flex-shrink-0">
-                        {isEmojiImage(item.image) ? item.image : <Utensils className="h-8 w-8" />}
+                        {isHttpUrl(item.image) ? (
+                          // eslint-disable-next-line @next/next/no-img-element -- avatares dinámicos de Cloudinary, next/image no aporta aquí
+                          <img
+                            src={item.image}
+                            alt={item.name}
+                            className="h-full w-full object-cover rounded-xl"
+                          />
+                        ) : isEmojiImage(item.image) ? (
+                          item.image
+                        ) : (
+                          <Utensils className="h-8 w-8" />
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between">
@@ -697,7 +714,7 @@ export default function MenuPage() {
                               >
                                 <TapButton
                                   haptic
-                                  className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400"
+                                  className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400"
                                   onClick={() => decrementMenuItem(item.id)}
                                 >
                                   −
@@ -710,6 +727,7 @@ export default function MenuPage() {
                             <TapButton
                               haptic
                               success
+                              onSuccess={() => setCartBounceKey((k) => k + 1)}
                               className="flex h-10 w-10 items-center justify-center rounded-full bg-kiwi-500 text-white shadow-kiwi"
                               onClick={() => addToCart(item)}
                               disabled={!merchant.isOpen}
@@ -777,7 +795,7 @@ export default function MenuPage() {
                           key={o.id}
                           disabled={soldOut}
                           onClick={() => togglePick(g.id, o.id, g.multiple)}
-                          className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
+                          className={`inline-flex min-h-[44px] items-center rounded-full px-3.5 py-2 text-sm font-medium transition-colors ${
                             soldOut
                               ? 'bg-surface-100 dark:bg-surface-800 text-surface-400 dark:text-surface-500 line-through opacity-60'
                               : active
@@ -832,11 +850,19 @@ export default function MenuPage() {
           <motion.div
             className="fixed bottom-6 left-4 right-4 z-50 pb-safe"
             initial={{ y: 100, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
+            animate={cartControls}
             exit={{ y: 100, opacity: 0 }}
           >
             <motion.div
               className="mx-auto max-w-lg rounded-2xl bg-kiwi-gradient p-4 text-white shadow-kiwi-lg cursor-pointer"
+              animate={cartBounceKey > 0 && !prefersReducedMotion ? 'bounce' : 'idle'}
+              variants={{
+                idle: { scale: 1 },
+                bounce: {
+                  scale: [1, 1.08, 0.96, 1.03, 1],
+                  transition: { duration: 0.5, ease: 'easeInOut' },
+                },
+              }}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => setShowCheckout(true)}
@@ -844,7 +870,15 @@ export default function MenuPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20">
-                    <span className="font-bold">{cartCount}</span>
+                    <motion.span
+                      key={cartBounceKey}
+                      className="font-bold"
+                      initial={cartBounceKey > 0 && !prefersReducedMotion ? { scale: 1.5 } : false}
+                      animate={{ scale: 1 }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 18 }}
+                    >
+                      {cartCount}
+                    </motion.span>
                   </div>
                   <span className="font-semibold">Ver carrito</span>
                 </div>
@@ -907,7 +941,14 @@ export default function MenuPage() {
                     {cart.map((item) => (
                       <div key={item.lineId} className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          {isEmojiImage(item.image) ? (
+                          {isHttpUrl(item.image) ? (
+                            // eslint-disable-next-line @next/next/no-img-element -- avatares dinámicos de Cloudinary
+                            <img
+                              src={item.image}
+                              alt={item.name}
+                              className="h-6 w-6 rounded object-cover"
+                            />
+                          ) : isEmojiImage(item.image) ? (
                             <span className="text-xl">{item.image}</span>
                           ) : (
                             <Utensils className="text-xl h-6 w-6" />

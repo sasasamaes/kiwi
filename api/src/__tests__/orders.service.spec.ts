@@ -8,6 +8,7 @@ const mockEventsGateway = {
   notifyOrderUpdate: jest.fn(),
   broadcast: jest.fn(),
   sendToRole: jest.fn(),
+  sendToUser: jest.fn(),
   handleConnection: jest.fn(),
   handleDisconnect: jest.fn(),
 };
@@ -24,6 +25,7 @@ import { OrdersService } from '../orders/orders.service';
 import { EventsGateway } from '../events/events.gateway';
 import { DriversService } from '../drivers/drivers.service';
 import { GeocodingService } from '../geocoding/geocoding.service';
+import { ProximityService } from '../orders/proximity.service';
 
 describe('OrdersService', () => {
   let service: OrdersService;
@@ -63,6 +65,14 @@ describe('OrdersService', () => {
         { provide: EventsGateway, useValue: mockEventsGateway },
         { provide: DriversService, useValue: { getLocation: jest.fn() } },
         {
+          provide: ProximityService,
+          useValue: {
+            findNearbyDrivers: jest
+              .fn()
+              .mockResolvedValue({ candidates: null, radiusUsedKm: 12, staleSkipped: 0 }),
+          },
+        },
+        {
           provide: GeocodingService,
           useValue: { searchCostaRica: jest.fn().mockResolvedValue([]) },
         },
@@ -70,6 +80,7 @@ describe('OrdersService', () => {
           provide: NotificationsService,
           useValue: {
             notifyNewOrderTopic: jest.fn().mockResolvedValue({ delivered: 0, inbox: 0 }),
+            notifyDriverNewOrderTargeted: jest.fn().mockResolvedValue({ delivered: true }),
             notifyOrderAccepted: jest.fn().mockResolvedValue({}),
             notifyOrderStatusUpdate: jest.fn().mockResolvedValue({}),
           },
@@ -555,8 +566,26 @@ describe('OrdersService', () => {
         }),
       };
 
-      await expect(service.assignDriver(ORDER_ID, DRIVER_ID)).rejects.toThrow(BadRequestException);
-      expect(prisma.order.updateMany).not.toHaveBeenCalled();
+      // Flag por defecto (KYC_REQUIRED=false): el KYC NO bloquea la asignación.
+      prisma.order.updateMany.mockResolvedValue({ count: 1 });
+      prisma.order.findUnique.mockResolvedValue({
+        id: ORDER_ID,
+        merchant: {},
+        driver: {},
+      });
+      await expect(service.assignDriver(ORDER_ID, DRIVER_ID)).resolves.toBeDefined();
+
+      // Flag activado (reactivar KYC): vuelve a bloquear.
+      prisma.order.updateMany.mockClear();
+      (process.env as any).KYC_REQUIRED = 'true';
+      try {
+        await expect(service.assignDriver(ORDER_ID, DRIVER_ID)).rejects.toThrow(
+          new BadRequestException('Nuevo Repartidor aún no está verificado (KYC pending).'),
+        );
+        expect(prisma.order.updateMany).not.toHaveBeenCalled();
+      } finally {
+        delete process.env.KYC_REQUIRED;
+      }
     });
   });
 });

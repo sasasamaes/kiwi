@@ -187,6 +187,27 @@ class ApiClient {
     });
   }
 
+  /**
+   * Sube la imagen de un producto (multipart). Devuelve { url } https lista
+   * para <img>. El backend valida magic bytes + tamaño; sin credenciales de
+   * Cloudinary responde 503 — el form muestra el aviso y el picker de emoji
+   * sigue siendo el fallback.
+   */
+  async uploadMenuImage(file: File): Promise<{ url: string }> {
+    const fd = new FormData();
+    fd.append('image', file);
+    const response = await fetch(`${this.baseUrl}/menu/my/image`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${this.getToken() ?? ''}` },
+      body: fd,
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error((data as any)?.message || `Error al subir imagen (${response.status})`);
+    }
+    return data as { url: string };
+  }
+
   async getMerchantProfile() {
     return this.request<any>('/merchants/me');
   }

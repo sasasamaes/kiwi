@@ -5,7 +5,14 @@ import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RefreshCw, Coins, Smartphone, CreditCard } from 'lucide-react';
-import { AnimatedButton, StaggerContainer, StaggerItem, api, safeNavigateToUrl } from '@kiwi/ui';
+import {
+  AnimatedButton,
+  TapButton,
+  StaggerContainer,
+  StaggerItem,
+  api,
+  safeNavigateToUrl,
+} from '@kiwi/ui';
 
 interface CartItem {
   id: string;
@@ -410,12 +417,14 @@ function CheckoutContent() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
         >
-          <button
+          {' '}
+          <TapButton
+            haptic
             onClick={placeOrder}
             disabled={!canPlaceOrder || loading}
-            className={`w-full py-4 rounded-2xl font-bold text-lg text-white transition-all ${
+            className={`w-full h-14 rounded-2xl font-bold text-lg text-white shadow-lg ${
               canPlaceOrder && !loading
-                ? 'bg-gradient-to-r from-kiwi-500 to-kiwi-600 hover:from-kiwi-600 hover:to-kiwi-700 shadow-lg'
+                ? 'bg-gradient-to-r from-kiwi-500 to-kiwi-600 hover:from-kiwi-600 hover:to-kiwi-700'
                 : 'bg-surface-300 dark:bg-surface-700 cursor-not-allowed'
             }`}
           >
@@ -426,7 +435,7 @@ function CheckoutContent() {
             ) : (
               `Ordenar — ₡${total.toLocaleString()}`
             )}
-          </button>
+          </TapButton>
           <p className="text-center text-xs text-surface-400 mt-3">
             {paymentMethod === 'cash' && (
               <span>

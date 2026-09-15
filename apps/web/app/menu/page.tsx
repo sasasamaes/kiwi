@@ -18,9 +18,9 @@ import {
 } from 'lucide-react';
 import {
   AnimatedButton,
-  StaggerContainer,
-  StaggerItem,
+  ScrollReveal,
   Skeleton,
+  isHttpUrl,
   ThemeToggle,
   useAuth,
   api,
@@ -649,7 +649,14 @@ export default function MenuManagementPage() {
                   <div className="flex items-center gap-4">
                     <div className="text-surface-400 dark:text-surface-500">⋮⋮</div>
                     <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-surface-100 dark:bg-surface-700 text-2xl flex-shrink-0">
-                      {item.image && item.image !== 'Utensils' ? (
+                      {isHttpUrl(item.image) ? (
+                        // eslint-disable-next-line @next/next/no-img-element -- avatares dinámicos de Cloudinary, next/image no aporta aquí
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          className="h-full w-full object-cover rounded-xl"
+                        />
+                      ) : item.image && item.image !== 'Utensils' ? (
                         item.image
                       ) : (
                         <Utensils className="h-6 w-6" />
@@ -675,9 +682,9 @@ export default function MenuManagementPage() {
               ))}
             </Reorder.Group>
           ) : (
-            <StaggerContainer className="space-y-3">
-              {filteredItems.map((item) => (
-                <StaggerItem key={item.id}>
+            <div className="space-y-3">
+              {filteredItems.map((item, itemIndex) => (
+                <ScrollReveal key={item.id} index={itemIndex} as="div">
                   <motion.div
                     className={`rounded-2xl glass p-4 transition-all ${
                       !item.isAvailable ? 'opacity-60' : ''
@@ -704,7 +711,14 @@ export default function MenuManagementPage() {
 
                       {/* Item Image */}
                       <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-surface-100 dark:bg-surface-700 text-3xl flex-shrink-0">
-                        {item.image && item.image !== 'Utensils' ? (
+                        {isHttpUrl(item.image) ? (
+                          // eslint-disable-next-line @next/next/no-img-element -- avatares dinámicos de Cloudinary, next/image no aporta aquí
+                          <img
+                            src={item.image}
+                            alt={item.name}
+                            className="h-full w-full object-cover rounded-xl"
+                          />
+                        ) : item.image && item.image !== 'Utensils' ? (
                           item.image
                         ) : (
                           <Utensils className="h-8 w-8" />
@@ -881,9 +895,9 @@ export default function MenuManagementPage() {
                       )}
                     </AnimatePresence>
                   </motion.div>
-                </StaggerItem>
+                </ScrollReveal>
               ))}
-            </StaggerContainer>
+            </div>
           )}
         </motion.div>
 

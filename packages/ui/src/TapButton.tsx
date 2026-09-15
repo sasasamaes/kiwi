@@ -4,6 +4,7 @@ import { motion, useReducedMotion, AnimatePresence } from 'framer-motion';
 import { useCallback, useRef, useState } from 'react';
 import { Check } from 'lucide-react';
 import { cn } from './utils';
+import { buttonVariantClasses, type ButtonVariant } from './AnimatedButton';
 
 /**
  * Microinteracciones de botón — la capa táctil que hace que un botón se
@@ -26,18 +27,33 @@ export interface TapButtonProps extends Omit<
   React.ComponentProps<typeof motion.button>,
   'ref' | 'onDrag' | 'onDragStart' | 'onDragEnd'
 > {
+  /**
+   * Variante visual — mismas variantes que AnimatedButton (fuente única de
+   * tokens). Default 'ghost': TapButton siempre fue un botón de icono
+   * desnudo al que le pasabas el estilo por className; el default conserva
+   * ese comportamiento exacto.
+   */
+  variant?: ButtonVariant;
   /** Vibración háptica al presionar (10ms, imperceptible si no existe). */
   haptic?: boolean;
   /** true = muestra check de éxito; número = ms custom (default 600). */
   success?: boolean | number;
+  /**
+   * Evento de éxito: se dispara en el mismo instante en que empieza el flash
+   * del check. Úsalo para efectos coordinados en otro lugar (ej. rebote del
+   * carrito cuando se agrega un ítem) sin duplicar timers.
+   */
+  onSuccess?: () => void;
   /** Se dispara al presionar, ANTES de tu onClick si envuelven lógica async. */
   onPressStart?: () => void;
   children: React.ReactNode;
 }
 
 export function TapButton({
+  variant,
   haptic = false,
   success = false,
+  onSuccess,
   onPressStart,
   onClick,
   className,
@@ -61,20 +77,25 @@ export function TapButton({
 
       if (success) {
         setShowSuccess(true);
+        onSuccess?.();
         if (timerRef.current) clearTimeout(timerRef.current);
         timerRef.current = setTimeout(() => setShowSuccess(false), successMs);
       }
 
       onClick?.(e);
     },
-    [onClick, onPressStart, haptic, success, successMs, prefersReduced],
+    [onClick, onPressStart, onSuccess, haptic, success, successMs, prefersReduced],
   );
 
   return (
     <motion.button
       whileTap={disabled || prefersReduced ? undefined : { scale: 0.94 }}
       transition={{ type: 'spring', stiffness: 500, damping: 25 }}
-      className={cn('relative select-none', className)}
+      className={cn(
+        'relative select-none',
+        variant ? buttonVariantClasses[variant] : null,
+        className,
+      )}
       onClick={handleClick}
       disabled={disabled}
       {...props}

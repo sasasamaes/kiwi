@@ -74,6 +74,7 @@ export default function Profile() {
   const [profile, setProfile] = useState<any>(null);
   const [earnings, setEarnings] = useState(0);
   const [kycStatus, setKycStatus] = useState<KYCStatus>('pending');
+  const [kycRequired, setKycRequired] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showVehicleModal, setShowVehicleModal] = useState(false);
@@ -89,6 +90,7 @@ export default function Profile() {
         api.getKycStatus().catch(() => null),
       ]);
       setProfile(p);
+      setKycRequired(p.kycRequired === true);
       setSelectedVehicle((p.vehicleType as VehicleType) || 'motorcycle');
       setPlate(p.vehiclePlate || '');
       if (kyc?.status) setKycStatus(normalizeKyc(kyc.status));
@@ -153,7 +155,8 @@ export default function Profile() {
   const since = profile?.createdAt
     ? new Date(profile.createdAt).toLocaleDateString('es-CR', { month: 'long', year: 'numeric' })
     : null;
-  const visible = status === 'available' && kycStatus === 'approved';
+  // Con KYC desactivado (flag), la disponibilidad basta para ser visible.
+  const visible = status === 'available' && (!kycRequired || kycStatus === 'approved');
 
   return (
     <main className="min-h-[100dvh] flex flex-col bg-bg-light dark:bg-surface-950">
@@ -249,7 +252,7 @@ export default function Profile() {
                 {visible ? 'Visible para comercios' : 'No apareces en búsquedas'}
               </p>
               <p className="text-xs text-surface-500 dark:text-surface-400">
-                {kycStatus !== 'approved'
+                {kycRequired && kycStatus !== 'approved'
                   ? 'Completa tu verificación para aparecer.'
                   : status !== 'available'
                     ? 'Ponte disponible desde el inicio para aparecer.'
@@ -257,7 +260,7 @@ export default function Profile() {
               </p>
             </div>
           </div>
-          {kycStatus !== 'approved' && (
+          {kycRequired && kycStatus !== 'approved' && (
             <Link href="/kyc">
               <AnimatedButton variant="primary" className="w-full mt-4">
                 Verificar identidad
@@ -321,7 +324,7 @@ export default function Profile() {
             </h3>
             <KYCStatusBadge status={kycStatus} size="sm" />
           </div>
-          {kycStatus !== 'approved' && (
+          {kycRequired && kycStatus !== 'approved' && (
             <>
               <p className="text-sm text-surface-500 dark:text-surface-400 mb-4">
                 Verifica tu identidad para empezar a trabajar

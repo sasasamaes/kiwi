@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { api, useAuth, type Order, ShareTrackingButton } from '@kiwi/ui';
+import { api, useAuth, type Order, ShareTrackingButton, ScrollReveal } from '@kiwi/ui';
 
 const STATUS_LABELS: Record<string, string> = {
   pending: 'Pendiente',
@@ -44,7 +44,7 @@ export default function OrdersPage() {
     <main className="mx-auto max-w-3xl p-6">
       <Link
         href="/dashboard"
-        className="text-sm text-surface-500 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200"
+        className="inline-flex min-h-[44px] items-center text-sm text-surface-500 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200"
       >
         ← Volver al dashboard
       </Link>
@@ -57,9 +57,11 @@ export default function OrdersPage() {
       )}
 
       <ul className="mt-6 space-y-3">
-        {orders.map((order: any) => (
-          <li
+        {orders.map((order: any, orderIndex: number) => (
+          <ScrollReveal
             key={order.id}
+            index={orderIndex}
+            as="li"
             className="flex items-center justify-between rounded-xl border border-surface-100 dark:border-surface-800 bg-white dark:bg-surface-900 p-4"
           >
             <div>
@@ -80,7 +82,7 @@ export default function OrdersPage() {
                 className="!px-3 !py-1.5 !text-xs"
               />
             </div>
-          </li>
+          </ScrollReveal>
         ))}
       </ul>
     </main>

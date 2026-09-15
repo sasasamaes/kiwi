@@ -40,6 +40,9 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private connectedUsers = new Map<string, { socketId: string; role: string; userId: string }>();
 
+  /** Throttle de persistencia de ubicación por userId (ms). */
+  private lastLocationPersist = new Map<string, number>();
+
   constructor(
     private jwtService: JwtService,
     private prisma: PrismaService,
@@ -276,6 +279,21 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const lng = typeof data?.lng === 'number' && Number.isFinite(data.lng) ? data.lng : null;
     if (lat == null || lng == null || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
       return { error: 'lat/lng inválidos' };
+    }
+
+    // Persistencia de última conocida (throttle 15s por driver): alimenta el
+    // targeting por proximidad de alertas. Los pings con orden activa pasan
+    // sin throttle (el mapa del comercio es la lectura crítica).
+    const now = Date.now();
+    const lastPing = this.lastLocationPersist.get(userData.userId) ?? 0;
+    if (!data.orderId && now - lastPing > 15_000) {
+      this.lastLocationPersist.set(userData.userId, now);
+      this.prisma.driverProfile
+        .update({
+          where: { userId: userData.userId },
+          data: { lastLat: lat, lastLng: lng, lastSeenAt: new Date() },
+        })
+        .catch(() => undefined); // fire-and-forget: un fallo no tumba el ping
     }
 
     // If tracking an order, notify the merchant

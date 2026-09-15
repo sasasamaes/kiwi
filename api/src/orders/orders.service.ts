@@ -10,6 +10,8 @@ import { EventsGateway } from '../events/events.gateway';
 import { DriversService } from '../drivers/drivers.service';
 import { GeocodingService } from '../geocoding/geocoding.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { ProximityService } from './proximity.service';
+import { isKycRequired } from '../feature-flags/feature-flags';
 
 @Injectable()
 export class OrdersService {
@@ -20,6 +22,7 @@ export class OrdersService {
     private eventsGateway: EventsGateway,
     private driversService: DriversService,
     private geocodingService: GeocodingService,
+    private proximity: ProximityService,
     private notificationsService: NotificationsService,
   ) {}
 
@@ -265,11 +268,12 @@ export class OrdersService {
       }
     }
 
-    // Broadcast new order to all available drivers via Socket.io
+    // Alerta de pedido nuevo a los drivers con probabilidad real de tomarlo:
+    // targeting por proximidad al punto de recojo (socket 1:1 + push 1:1).
     // Forma canónica: los drivers tratan cada item como Order (id + payout).
     // Sin `id`, Aceptar llamaría a /orders/undefined/accept y fallaría siempre.
     if (order.status === 'pending') {
-      this.eventsGateway.sendToRole('driver', 'order:new', {
+      const payload = {
         id: order.id,
         orderId: order.id,
         pickupAddress: order.pickupAddress,
@@ -279,9 +283,73 @@ export class OrdersService {
         distanceKm: Number(order.distanceKm),
         merchantName: merchantProfile.businessName,
         createdAt: order.createdAt,
-      });
+      };
 
-      // Push a todos los drivers suscritos al topic (app cerrada incluida).
+      void this.alertNearbyDrivers(order, payload);
+    }
+
+    return order;
+  }
+
+  /**
+   * Targeting de la alerta de pedido nuevo: drivers cerca del punto de
+   * recojo (socket 1:1 + push 1:1). Sin candidatos ni al radio máximo →
+   * fail-open al broadcast por rol (topic FCM + socket role:driver), porque
+   * un pedido que nadie ve es peor que una alerta de más.
+   *
+   * Fire-and-forget: un fallo de notificación NUNCA revierte el pedido.
+   */
+  private async alertNearbyDrivers(
+    order: {
+      id: string;
+      pickupLat: any;
+      pickupLng: any;
+      pickupAddress: string;
+      deliveryAddress: string;
+      totalAmount: any;
+      distanceKm: any;
+    },
+    payload: Record<string, unknown>,
+  ) {
+    try {
+      const pickupLat = order.pickupLat != null ? Number(order.pickupLat) : null;
+      const pickupLng = order.pickupLng != null ? Number(order.pickupLng) : null;
+
+      if (pickupLat != null && pickupLng != null) {
+        const { candidates, radiusUsedKm, staleSkipped } = await this.proximity.findNearbyDrivers(
+          pickupLat,
+          pickupLng,
+        );
+
+        if (candidates && candidates.length > 0) {
+          for (const c of candidates) {
+            this.eventsGateway.sendToUser(c.userId, 'order:new', {
+              ...payload,
+              distanceToPickupKm: Math.round(c.distanceKm * 10) / 10,
+            });
+            void this.notificationsService
+              .notifyDriverNewOrderTargeted(c.userId, {
+                id: order.id,
+                pickupAddress: order.pickupAddress,
+                deliveryAddress: order.deliveryAddress,
+                totalAmount: order.totalAmount,
+                distanceKm: order.distanceKm,
+              })
+              .catch(() => undefined);
+          }
+          this.logger.log(
+            `order ${order.id}: targeted alert → ${candidates.length} driver(s) within ${radiusUsedKm}km` +
+              (staleSkipped > 0 ? ` (${staleSkipped} skipped by stale location)` : ''),
+          );
+          return;
+        }
+        this.logger.warn(
+          `order ${order.id}: no drivers within ${radiusUsedKm}km — falling back to broadcast`,
+        );
+      }
+
+      // Fail-open: sin coords del pickup o sin candidatos.
+      this.eventsGateway.sendToRole('driver', 'order:new', payload);
       void this.notificationsService.notifyNewOrderTopic({
         id: order.id,
         pickupAddress: order.pickupAddress,
@@ -289,9 +357,15 @@ export class OrdersService {
         totalAmount: order.totalAmount,
         distanceKm: order.distanceKm,
       });
+    } catch (error) {
+      // Última línea de defensa: la alerta jamás tumba la creación.
+      this.logger.error(`alertNearbyDrivers(${order.id}) failed: ${String(error)}`);
+      try {
+        this.eventsGateway.sendToRole('driver', 'order:new', payload);
+      } catch {
+        // ignore
+      }
     }
-
-    return order;
   }
 
   async findById(id: string, userId: string) {
@@ -683,14 +757,16 @@ export class OrdersService {
     }
 
     // Only active drivers can be assigned: the merchant sees everyone in the
-    // directory, but a driver who is offline (or not KYC-approved) cannot be
-    // chosen — matching what the UI offers.
+    // directory, but a driver who is offline cannot be chosen — matching what
+    // the UI offers.
     if (driverProfile.status !== 'available') {
       throw new BadRequestException(
         `${driverProfile.fullName} no está disponible ahora (estado: ${driverProfile.status}). Podrás asignárselo cuando se conecte.`,
       );
     }
-    if (driverProfile.kycStatus !== 'approved') {
+    // KYC gate — desactivado de momento (KYC_REQUIRED != 'true'). El flag
+    // reactiva el bloqueo sin cambios de código.
+    if (isKycRequired() && driverProfile.kycStatus !== 'approved') {
       throw new BadRequestException(
         `${driverProfile.fullName} aún no está verificado (KYC ${driverProfile.kycStatus}).`,
       );

@@ -17,6 +17,7 @@ jest.mock('../events/events.gateway', () => ({
 }));
 
 import { Test, TestingModule } from '@nestjs/testing';
+import { ProximityService } from '../orders/proximity.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { OrdersService } from '../orders/orders.service';
@@ -103,6 +104,17 @@ describe('Orders Integration: Full Lifecycle', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: EventsGateway, useValue: mockEventsGateway },
         { provide: DriversService, useValue: { getLocation: jest.fn() } },
+        {
+          provide: ProximityService,
+          useValue: {
+            // Sin driverProfile.findMany en el mock global: el selector no
+            // encuentra candidatos → fail-open a broadcast (comportamiento
+            // que estos tests de integración ya esperan).
+            findNearbyDrivers: jest
+              .fn()
+              .mockResolvedValue({ candidates: null, radiusUsedKm: 12, staleSkipped: 0 }),
+          },
+        },
         {
           provide: GeocodingService,
           useValue: { searchCostaRica: jest.fn().mockResolvedValue([]) },

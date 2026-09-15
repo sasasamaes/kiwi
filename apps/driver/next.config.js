@@ -81,7 +81,12 @@ const nextConfig = {
       {
         source: '/:path*',
         // Driver app: sí usa geolocation (ubicación en vivo del repartidor).
-        headers: buildSecurityHeaders({ allowGeolocation: true }),
+        headers: buildSecurityHeaders({
+          allowGeolocation: true,
+          apiOrigin: process.env.NEXT_PUBLIC_API_URL
+            ? new URL(process.env.NEXT_PUBLIC_API_URL).origin
+            : undefined,
+        }),
       },
       {
         // El service worker NO se cachea con heurísticas del navegador:

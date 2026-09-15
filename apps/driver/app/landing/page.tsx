@@ -117,7 +117,10 @@ export default function DriverLanding() {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.7 }}
           >
-            <Link href="/" className="text-sm text-surface-400 hover:text-kiwi-500">
+            <Link
+              href="/"
+              className="inline-flex min-h-[44px] items-center text-sm text-surface-400 hover:text-kiwi-500"
+            >
               ← Volver al inicio
             </Link>
           </motion.div>

@@ -167,7 +167,7 @@ export default function RateOrderPage() {
       <div className="mx-auto max-w-md">
         <button
           onClick={() => router.back()}
-          className="flex items-center gap-2 text-surface-600 dark:text-surface-400 mb-6"
+          className="flex min-h-[44px] items-center gap-2 text-surface-600 dark:text-surface-400 mb-6"
         >
           ← Volver
         </button>

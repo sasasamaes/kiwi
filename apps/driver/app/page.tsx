@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   AnimatedButton,
   AnimatedCounter,
+  TapButton,
   StaggerContainer,
   StaggerItem,
   VehicleBadge,
@@ -164,6 +165,37 @@ export default function Home() {
       setPageError('No se pudo cambiar tu estado. Revisa tu conexión.');
     }
   };
+
+  // Ping de ubicación mientras está disponible (cada 30s): alimenta el
+  // targeting por proximidad — sin esto el repartidor no recibe alertas de
+  // pedidos cercanos y el sistema decae a broadcast. Pausado si no está
+  // online o la pestaña está oculta (ahorro de batería).
+  useEffect(() => {
+    if (!user || !isOnline) return;
+    let cancelled = false;
+
+    const ping = () => {
+      if (cancelled || document.hidden) return;
+      if (!navigator.geolocation) return;
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          if (cancelled) return;
+          api
+            .updateDriverLocation(pos.coords.latitude, pos.coords.longitude)
+            .catch(() => undefined); // best-effort: targeting, no tracking
+        },
+        () => undefined, // sin permiso/GPS: decae a broadcast, no spamea
+        { enableHighAccuracy: false, maximumAge: 30_000, timeout: 10_000 },
+      );
+    };
+
+    ping();
+    const t = setInterval(ping, 30_000);
+    return () => {
+      cancelled = true;
+      clearInterval(t);
+    };
+  }, [user, isOnline]);
 
   const handleAcceptOrder = async (orderId: string) => {
     if (!orderId) {
@@ -493,13 +525,14 @@ export default function Home() {
                       </div>
 
                       {nextStatus && (
-                        <AnimatedButton
+                        <TapButton
                           variant="gradient"
-                          className="w-full"
+                          haptic
+                          className="w-full rounded-xl h-11 text-sm"
                           onClick={() => handleUpdateStatus(order.id, nextStatus)}
                         >
                           {nextStatusLabel} →
-                        </AnimatedButton>
+                        </TapButton>
                       )}
                     </motion.div>
                   </StaggerItem>
@@ -622,14 +655,15 @@ export default function Home() {
                       >
                         Rechazar
                       </AnimatedButton>
-                      <AnimatedButton
+                      <TapButton
                         variant="gradient"
-                        className="flex-1"
+                        haptic
+                        className="flex-1 rounded-xl h-11 text-sm"
                         onClick={() => handleAcceptOrder(order.id)}
                         disabled={acceptingOrder === order.id}
                       >
                         {acceptingOrder === order.id ? 'Aceptando...' : 'Aceptar'}
-                      </AnimatedButton>
+                      </TapButton>
                     </div>
                   </motion.div>
                 </StaggerItem>

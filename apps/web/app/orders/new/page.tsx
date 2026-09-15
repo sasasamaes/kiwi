@@ -665,7 +665,7 @@ function NewOrderInner({
           <div className="flex items-center justify-between">
             <Link
               href="/dashboard"
-              className="flex items-center gap-2 text-surface-600 dark:text-surface-400"
+              className="flex min-h-[44px] items-center gap-2 text-surface-600 dark:text-surface-400"
             >
               <span>←</span>
               <span className="text-sm font-medium">Cancelar</span>
@@ -962,11 +962,11 @@ function NewOrderInner({
                       value={mapLink}
                       onChange={(e) => setMapLink(e.target.value)}
                       placeholder="https://maps.google.com/…"
-                      className="flex-1 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-2 text-xs"
+                      className="min-h-[44px] flex-1 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 text-sm"
                     />
                     <button
                       onClick={applyMapLink}
-                      className="rounded-lg bg-kiwi-500 px-3 py-2 text-xs font-semibold text-white"
+                      className="min-h-[44px] rounded-lg bg-kiwi-500 px-3 text-sm font-semibold text-white"
                     >
                       Usar
                     </button>
@@ -974,7 +974,7 @@ function NewOrderInner({
                       onClick={useCurrentLocation}
                       disabled={locating}
                       title="Usar mi ubicación actual"
-                      className="rounded-lg bg-surface-200 dark:bg-surface-700 px-3 py-2 text-xs"
+                      className="min-h-[44px] rounded-lg bg-surface-200 dark:bg-surface-700 px-3 text-sm"
                     >
                       {locating ? '…' : '📍'}
                     </button>

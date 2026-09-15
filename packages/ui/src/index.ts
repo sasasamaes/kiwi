@@ -215,6 +215,7 @@ export {
   isSafeCheckoutUrl,
   safeNavigateToUrl,
   isEmojiImage,
+  isHttpUrl,
 } from './utils';
 
 // ============================================

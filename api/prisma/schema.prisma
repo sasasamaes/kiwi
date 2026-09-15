@@ -91,6 +91,12 @@ model DriverProfile {
   kycStatus     KYCStatus @default(pending) @map("kyc_status")
   kycVerifiedAt DateTime? @map("kyc_verified_at")
 
+  // Última ubicación conocida (targeting de alertas por proximidad).
+  // Backfill histórico: centro de Nicoya; lastSeenAt null = nunca reportó.
+  lastLat    Decimal?  @map("last_lat") @db.Decimal(10, 8)
+  lastLng    Decimal?  @map("last_lng") @db.Decimal(11, 8)
+  lastSeenAt DateTime? @map("last_seen_at")
+
   // Relations
   user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   schedules       DriverSchedule[]
@@ -101,6 +107,7 @@ model DriverProfile {
   incentives      DriverIncentive[]
   withdrawals     Withdrawal[]
 
+  @@index([status, lastLat, lastLng], map: "driver_profiles_targeting_idx")
   @@map("driver_profiles")
 }
 

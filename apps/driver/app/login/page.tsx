@@ -55,7 +55,7 @@ export default function DriverLoginPage() {
       >
         <Link
           href="/"
-          className="inline-flex items-center gap-2 text-surface-600 hover:text-surface-800"
+          className="inline-flex min-h-[44px] items-center gap-2 text-surface-600 hover:text-surface-800"
         >
           <span>←</span>
           <span className="text-sm font-medium">Volver</span>
@@ -81,13 +81,19 @@ export default function DriverLoginPage() {
         animate={{ opacity: 1 }}
         transition={{ delay: 1 }}
       >
-        <p className="text-xs text-surface-400">
+        <p className="flex flex-wrap items-center justify-center gap-x-1 gap-y-2 text-xs text-surface-400">
           Al iniciar sesión, aceptas nuestros{' '}
-          <a href="#" className="text-kiwi-600 hover:underline">
+          <a
+            href="#"
+            className="inline-flex min-h-[44px] items-center px-1 text-kiwi-600 hover:underline"
+          >
             Términos
           </a>{' '}
           y{' '}
-          <a href="#" className="text-kiwi-600 hover:underline">
+          <a
+            href="#"
+            className="inline-flex min-h-[44px] items-center px-1 text-kiwi-600 hover:underline"
+          >
             Privacidad
           </a>
         </p>

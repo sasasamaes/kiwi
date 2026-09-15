@@ -126,6 +126,15 @@ export function isEmojiImage(value: unknown): boolean {
 }
 
 /**
+ * True si el valor es una URL http(s) — imagen subida a storage (Cloudinary,
+ * S3/R2). Type-guard: permite `isHttpUrl(x) ? <img src={x}>` sin casts.
+ */
+export function isHttpUrl(value: unknown): value is string {
+  if (typeof value !== 'string' || value.length === 0 || value.length > 2048) return false;
+  return /^https?:\/\/\S+$/i.test(value);
+}
+
+/**
  * True only for https:// URLs on an allow-listed payment host.
  * Used to guard `window.location.href` redirects to hosted checkout,
  * so a compromised/absent backend value can never produce a

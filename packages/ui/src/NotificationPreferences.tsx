@@ -120,14 +120,14 @@ export function NotificationPreferences() {
               disabled={topic.locked || savingTopic === topic.name}
               aria-pressed={topic.enabled}
               aria-label={`${topic.label}: ${topic.enabled ? 'activado' : 'desactivado'}`}
-              className={`relative h-8 w-14 shrink-0 rounded-full p-1 transition-colors ${
+              className={`relative h-11 w-[66px] shrink-0 rounded-full p-1.5 transition-colors ${
                 topic.enabled ? 'bg-kiwi-500' : 'bg-surface-300 dark:bg-surface-600'
               } ${topic.locked ? 'opacity-50 cursor-not-allowed' : ''}`}
               whileTap={topic.locked ? undefined : { scale: 0.95 }}
             >
               <motion.div
                 layout
-                className={`h-6 w-6 rounded-full bg-white shadow ${topic.enabled ? 'ml-auto' : ''}`}
+                className={`h-8 w-8 rounded-full bg-white shadow ${topic.enabled ? 'ml-auto' : ''}`}
                 transition={{ type: 'spring', stiffness: 500, damping: 30 }}
               />
             </motion.button>

@@ -19,6 +19,7 @@ import {
 import {
   AnimatedButton,
   AnimatedCounter,
+  ScrollReveal,
   StaggerContainer,
   StaggerItem,
   StatCard,
@@ -444,11 +445,7 @@ export default function Dashboard() {
         </StaggerContainer>
 
         {/* Recent Orders */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-        >
+        <ScrollReveal as="section">
           <div className="rounded-2xl bg-white dark:bg-surface-800 shadow-soft dark:shadow-dark p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100">
@@ -479,8 +476,8 @@ export default function Dashboard() {
                 <p className="text-xs text-surface-400 mt-1">Crea tu primer pedido para empezar</p>
               </motion.div>
             ) : (
-              <StaggerContainer className="space-y-4">
-                {orders.slice(0, 5).map((order: any) => {
+              <div className="space-y-4">
+                {orders.slice(0, 5).map((order: any, orderIndex) => {
                   const statusMap: Record<string, { label: string; color: string }> = {
                     pending: { label: 'Pendiente', color: 'bg-gold-100 text-gold-700' },
                     assigned: { label: 'Asignado', color: 'bg-blue-100 text-blue-700' },
@@ -506,7 +503,7 @@ export default function Dashboard() {
                   });
 
                   return (
-                    <StaggerItem key={order.id}>
+                    <ScrollReveal key={order.id} index={orderIndex} as="div">
                       <motion.div
                         className="group flex items-center justify-between rounded-xl border border-surface-100 dark:border-surface-700 bg-surface-50/50 dark:bg-surface-900/50 p-4 transition-all hover:border-kiwi-200 hover:bg-white dark:hover:bg-surface-800 hover:shadow-soft-md"
                         whileHover={{ x: 4 }}
@@ -556,13 +553,13 @@ export default function Dashboard() {
                           <span className="text-sm text-surface-400">{time}</span>
                         </div>
                       </motion.div>
-                    </StaggerItem>
+                    </ScrollReveal>
                   );
                 })}
-              </StaggerContainer>
+              </div>
             )}
           </div>
-        </motion.div>
+        </ScrollReveal>
       </main>
     </div>
   );

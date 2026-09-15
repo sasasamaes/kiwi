@@ -400,6 +400,41 @@ export class NotificationsService {
     });
   }
 
+  /**
+   * Alerta de pedido nuevo dirigida a UN driver (targeting por proximidad).
+   *
+   * Push-only + socket: SIN fila en la campana (el topic 'driver.orders.new'
+   * es delivery 'push' — el in-app lo cubre el evento socket 'order:new').
+   * Respeta la preferencia del topic: si el driver lo apagó, no lo alertamos
+   * ni por socket ni por push.
+   */
+  async notifyDriverNewOrderTargeted(
+    userId: string,
+    order: {
+      id: string;
+      pickupAddress: string;
+      deliveryAddress: string;
+      totalAmount: any;
+      distanceKm: any;
+      driverPayout?: any;
+    },
+  ) {
+    const prefs = await this.prisma.topicPreference.findMany({
+      where: { userId, topic: 'driver.orders.new', enabled: true },
+      select: { userId: true },
+    });
+    if (prefs.length === 0) return { skipped: 'preference_off' as const };
+
+    if (this.fcmAdmin) {
+      await this.sendPushToTokens(userId, {
+        title: '📦 Nuevo pedido cerca de ti',
+        body: `₡${Number(order.totalAmount).toLocaleString()} · ${order.pickupAddress} → ${order.deliveryAddress}`,
+        data: { orderId: order.id, type: 'new_order' },
+      });
+    }
+    return { delivered: true };
+  }
+
   /** Estado del pedido → al comercio (push directo + inbox). */
   async notifyOrderAccepted(orderId: string, merchantUserId: string, driverName: string) {
     return this.sendToUser(merchantUserId, {

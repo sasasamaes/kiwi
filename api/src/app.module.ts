@@ -21,6 +21,7 @@ import { GeocodingModule } from './geocoding/geocoding.module';
 import { RoutingModule } from './routing/routing.module';
 import { SecurityModule } from './security/security.module';
 import { SentryModule } from './sentry/sentry.module';
+import { FeatureFlagsModule } from './feature-flags/feature-flags.module';
 
 @Module({
   imports: [
@@ -31,6 +32,9 @@ import { SentryModule } from './sentry/sentry.module';
 
     // Database
     PrismaModule,
+
+    // Feature flags (global — KYC_REQUIRED, …)
+    FeatureFlagsModule,
 
     // Health probes (liveness, DB, schema drift)
     HealthModule,

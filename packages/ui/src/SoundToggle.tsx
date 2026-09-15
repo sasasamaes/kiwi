@@ -40,13 +40,13 @@ export function SoundToggle({ label = 'Sonido de notificaciones' }: { label?: st
         <span className="font-medium">{label}</span>
       </span>
       <span
-        className={`relative h-8 w-14 shrink-0 rounded-full p-1 transition-colors ${
+        className={`relative h-11 w-[66px] shrink-0 rounded-full p-1.5 transition-colors ${
           enabled ? 'bg-kiwi-500' : 'bg-surface-300 dark:bg-surface-600'
         }`}
       >
         <span
-          className={`block h-6 w-6 rounded-full bg-white shadow transition-transform ${
-            enabled ? 'translate-x-6' : ''
+          className={`block h-8 w-8 rounded-full bg-white shadow transition-transform ${
+            enabled ? 'translate-x-[22px]' : ''
           }`}
         />
       </span>

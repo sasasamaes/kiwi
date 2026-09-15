@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, Clock, MapPin, Home, Coins, Star, Check, ClipboardList } from 'lucide-react';
 import {
   AnimatedButton,
+  ScrollReveal,
   StaggerContainer,
   StaggerItem,
   Skeleton,
@@ -210,9 +211,9 @@ export default function ScheduledOrdersPage() {
             </Link>
           </motion.div>
         ) : (
-          <StaggerContainer className="space-y-4">
-            {scheduledOrders.map((order) => (
-              <StaggerItem key={order.id}>
+          <div className="space-y-4">
+            {scheduledOrders.map((order, orderIndex) => (
+              <ScrollReveal key={order.id} index={orderIndex} as="div">
                 <motion.div
                   className="rounded-2xl glass p-4 cursor-pointer"
                   whileHover={{ y: -2, boxShadow: '0 12px 32px -8px rgba(34, 197, 94, 0.25)' }}
@@ -263,9 +264,9 @@ export default function ScheduledOrdersPage() {
                     </div>
                   </div>
                 </motion.div>
-              </StaggerItem>
+              </ScrollReveal>
             ))}
-          </StaggerContainer>
+          </div>
         )}
       </main>
 

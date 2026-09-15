@@ -5,12 +5,17 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { FeatureFlagsService } from '../feature-flags/feature-flags';
+import { isKycRequired } from '../feature-flags/feature-flags';
 
 const VALID_DRIVER_STATUSES = ['offline', 'available', 'busy'] as const;
 
 @Injectable()
 export class DriversService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private flags: FeatureFlagsService,
+  ) {}
 
   async findById(id: string) {
     const driver = await this.prisma.driverProfile.findUnique({
@@ -61,7 +66,9 @@ export class DriversService {
       throw new NotFoundException('Perfil de repartidor no encontrado');
     }
 
-    return driver;
+    // El front necesita saber si el KYC bloquea hoy (feature flag), no solo
+    // el estado del trámite de este repartidor.
+    return { ...driver, kycRequired: isKycRequired() };
   }
 
   async updateProfile(userId: string, data: any) {
@@ -194,18 +201,24 @@ export class DriversService {
       throw new NotFoundException('Perfil de repartidor no encontrado');
     }
 
-    // Store location in memory (in production, use Redis with TTL)
-    this.driverLocations.set(driver.id, {
-      lat,
-      lng,
-      updatedAt: new Date(),
+    const now = new Date();
+
+    // Cache en memoria (mapas de tracking, lectura caliente).
+    this.driverLocations.set(driver.id, { lat, lng, updatedAt: now });
+
+    // Persistencia de "última conocida": alimenta el targeting por proximidad
+    // de alertas de pedidos (ProximityService). Write-through barato: 1 update
+    // por ping (el driver reporta cada ~30s mientras está available).
+    await this.prisma.driverProfile.update({
+      where: { id: driver.id },
+      data: { lastLat: lat, lastLng: lng, lastSeenAt: now },
     });
 
     return {
       driverId: driver.id,
       lat,
       lng,
-      updatedAt: new Date(),
+      updatedAt: now,
     };
   }
 

@@ -29,6 +29,7 @@ import {
   backgroundSync,
   type SyncAction,
   KiwiLoader,
+  TapButton,
 } from '@kiwi/ui';
 
 // Estados considerados "activos" para el repartidor
@@ -271,7 +272,7 @@ export default function ActiveOrders() {
       <main className="min-h-[100dvh] flex flex-col">
         <header className="pt-safe sticky top-0 z-50 glass-strong">
           <div className="mx-auto max-w-lg px-4 py-4 flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2 text-surface-600">
+            <Link href="/" className="flex min-h-[44px] items-center gap-2 text-surface-600">
               <span>←</span>
               <span className="text-sm font-medium">Volver</span>
             </Link>
@@ -300,7 +301,7 @@ export default function ActiveOrders() {
       <main className="min-h-[100dvh] flex flex-col">
         <header className="pt-safe sticky top-0 z-50 glass-strong">
           <div className="mx-auto max-w-lg px-4 py-4 flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2 text-surface-600">
+            <Link href="/" className="flex min-h-[44px] items-center gap-2 text-surface-600">
               <span>←</span>
               <span className="text-sm font-medium">Volver</span>
             </Link>
@@ -388,7 +389,7 @@ export default function ActiveOrders() {
               <button
                 key={o.id}
                 onClick={() => setSelectedId(o.id)}
-                className={`whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                className={`inline-flex min-h-[44px] items-center whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors ${
                   o.id === order.id
                     ? 'bg-kiwi-500 text-white'
                     : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400'
@@ -589,13 +590,15 @@ export default function ActiveOrders() {
             </button>
           ) : (
             flow && (
-              <button
+              <TapButton
+                haptic
+                variant="gradient"
                 onClick={() => advanceStatus(order)}
                 disabled={updating}
-                className="w-full rounded-2xl bg-kiwi-gradient py-4 text-lg font-semibold text-white shadow-kiwi-lg hover:shadow-kiwi-xl transition-all active:scale-[0.98] disabled:opacity-60"
+                className="w-full rounded-2xl h-14 text-lg font-semibold"
               >
                 {updating ? <Loader2 className="h-5 w-5 inline animate-spin" /> : flow.label}
-              </button>
+              </TapButton>
             )
           )}
 

@@ -16,7 +16,13 @@ const nextConfig = {
     return [
       {
         source: '/:path*',
-        headers: buildSecurityHeaders({ allowGeolocation: true }),
+        headers: buildSecurityHeaders({
+          allowGeolocation: true,
+          // CSP conecta al API real del build (localhost en dev).
+          apiOrigin: process.env.NEXT_PUBLIC_API_URL
+            ? new URL(process.env.NEXT_PUBLIC_API_URL).origin
+            : undefined,
+        }),
       },
     ];
   },

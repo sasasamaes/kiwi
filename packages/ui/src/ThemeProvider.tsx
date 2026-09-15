@@ -117,7 +117,7 @@ export function ThemeToggle({ className = '' }: { className?: string }) {
   return (
     <motion.button
       onClick={cycleTheme}
-      className={`relative flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition-colors ${
+      className={`relative flex min-h-[44px] items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition-colors ${
         resolvedTheme === 'dark'
           ? 'bg-surface-800 text-surface-200 hover:bg-surface-700'
           : 'bg-surface-100 text-surface-700 hover:bg-surface-200'

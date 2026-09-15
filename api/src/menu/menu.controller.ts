@@ -1,7 +1,22 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  HttpCode,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { Public } from '../auth/decorators/public.decorator';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiConsumes } from '@nestjs/swagger';
 import { MenuService } from './menu.service';
+import { ImageUploadService } from './image-upload.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -10,7 +25,40 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 @ApiTags('Menu')
 @Controller('menu')
 export class MenuController {
-  constructor(private readonly menuService: MenuService) {}
+  constructor(
+    private readonly menuService: MenuService,
+    private readonly imageUpload: ImageUploadService,
+  ) {}
+
+  // ============================================
+  // 📸 Imagen de producto
+  // ============================================
+
+  /**
+   * Subida de imagen de producto. Multipart (Multer memoryStorage), validación
+   * estricta en el service (magic bytes, 5MB, allow-list), y rate limit propio
+   * (registrado en rate-limiter.middleware.ts).
+   */
+  @Post('my/image')
+  @HttpCode(200)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('merchant')
+  @UseInterceptors(FileInterceptor('image', { limits: { fileSize: 5 * 1024 * 1024 } }))
+  @ApiOperation({ summary: 'Upload product image (multipart/form-data)' })
+  @ApiBearerAuth()
+  @ApiConsumes('multipart/form-data')
+  async uploadImage(@UploadedFile() file: any) {
+    return this.imageUpload.uploadProductImage(file);
+  }
+
+  /** Estado de la subida para la UI (pintar el picker una vez configurado). */
+  @Get('my/image-status')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('merchant')
+  @ApiOperation({ summary: 'Whether image upload is configured' })
+  async imageStatus() {
+    return { enabled: this.imageUpload.isConfigured() };
+  }
 
   // ============================================
   // 🌐 PUBLIC ENDPOINTS (no auth required)

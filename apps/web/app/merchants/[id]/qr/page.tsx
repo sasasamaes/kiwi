@@ -78,7 +78,10 @@ export default function MerchantQRPage() {
             <X className="h-12 w-12" />
           </span>
           <p className="text-surface-500 dark:text-surface-400">Comercio no encontrado</p>
-          <Link href="/dashboard" className="mt-4 inline-block text-kiwi-600 hover:text-kiwi-700">
+          <Link
+            href="/dashboard"
+            className="mt-4 inline-flex min-h-[44px] items-center text-kiwi-600 hover:text-kiwi-700"
+          >
             ← Volver al dashboard
           </Link>
         </div>
