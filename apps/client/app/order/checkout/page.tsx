@@ -10,9 +10,11 @@ import {
   TapButton,
   StaggerContainer,
   StaggerItem,
+  DeliveryZoneSelect,
   api,
   safeNavigateToUrl,
 } from '@kiwi/ui';
+import { findDeliveryZone } from '@kiwi/types';
 
 interface CartItem {
   id: string;
@@ -37,6 +39,7 @@ function CheckoutContent() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [address, setAddress] = useState('');
+  const [deliveryZone, setDeliveryZone] = useState('');
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
@@ -82,13 +85,17 @@ function CheckoutContent() {
   }, [searchParams]);
 
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const deliveryFee = subtotal >= 5000 ? 0 : 500;
-  const total = subtotal + deliveryFee;
+  // Espejo del backend: el viaje es el precio del barrio y la comisión 10%.
+  const zoneTrip = findDeliveryZone(deliveryZone)?.price ?? null;
+  const deliveryFee = zoneTrip ?? (subtotal >= 5000 ? 0 : 500);
+  const serviceFee = zoneTrip != null ? Math.round(zoneTrip * 0.1) : 0;
+  const total = subtotal + deliveryFee + serviceFee;
 
   const canPlaceOrder =
     customerName.trim().length > 0 &&
     phoneNumber.trim().length >= 8 &&
     address.trim().length > 0 &&
+    deliveryZone.trim().length > 0 &&
     cart.length > 0;
 
   const placeOrder = useCallback(async () => {
@@ -103,6 +110,7 @@ function CheckoutContent() {
         merchantId,
         pickupAddress: pickupAddress || 'Nicoya Centro',
         deliveryAddress: address,
+        deliveryZone,
         orderType: 'immediate',
         items: cart.map((item) => ({
           menuItemId: item.menuItemId || item.id,
@@ -170,6 +178,7 @@ function CheckoutContent() {
     merchantId,
     pickupAddress,
     address,
+    deliveryZone,
     cart,
     notes,
     phoneNumber,
@@ -299,9 +308,17 @@ function CheckoutContent() {
                     : 'text-surface-700 dark:text-surface-300'
                 }
               >
-                {deliveryFee === 0 ? 'Gratis' : `₡${deliveryFee}`}
+                {deliveryFee === 0 ? 'Gratis' : `₡${deliveryFee.toLocaleString()}`}
               </span>
             </div>
+            {serviceFee > 0 && (
+              <div className="flex justify-between text-sm mt-1">
+                <span className="text-surface-500">Servicio (10%)</span>
+                <span className="text-surface-700 dark:text-surface-300">
+                  ₡{serviceFee.toLocaleString()}
+                </span>
+              </div>
+            )}
             <div className="flex justify-between font-bold text-lg mt-2">
               <span className="text-surface-800 dark:text-surface-100">Total</span>
               <span className="text-kiwi-600">₡{total.toLocaleString()}</span>
@@ -351,6 +368,7 @@ function CheckoutContent() {
                 className="w-full px-3 py-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-500"
               />
             </div>
+            <DeliveryZoneSelect value={deliveryZone} onChange={setDeliveryZone} />
             <div>
               <label className="block text-sm text-surface-500 mb-1">
                 Instrucciones (opcional)

@@ -205,21 +205,35 @@ export default function Home() {
     setAcceptingOrder(orderId);
     setPageError(null);
     try {
-      await api.acceptOrder(orderId);
+      const accepted: any = await api.acceptOrder(orderId);
       // Remove from available orders
       setAvailableOrders((prev) => prev.filter((o) => o.id !== orderId));
       // Add to active orders
       const order = availableOrders.find((o) => o.id === orderId);
       if (order) {
         setActiveOrders((prev) => [{ ...order, status: 'assigned' }, ...prev]);
+      } else if (accepted?.id) {
+        // Venía de popup viejo: igual sumarlo para que no parezca perdido
+        setActiveOrders((prev) =>
+          prev.some((o) => o.id === accepted.id)
+            ? prev
+            : [{ ...accepted, status: 'assigned' }, ...prev],
+        );
       }
       setNewOrderAlert(null);
       // Refresh data
       await fetchActiveOrders();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to accept order:', error);
-      const msg = 'No se pudo aceptar el pedido. Quizás otro repartidor lo tomó primero.';
+      // Mostrar el mensaje REAL del servidor (programado, ya asignado,
+      // cancelado, etc.) en vez del genérico "otro repartidor".
+      const msg =
+        error?.message || 'No se pudo aceptar el pedido. Quizás otro repartidor lo tomó primero.';
       setPageError(msg);
+      // Refrescar: si ya es tuyo (doble tap), aparece en Activos;
+      // si ya no existe, sale de Disponibles.
+      await fetchActiveOrders();
+      await fetchAvailableOrders();
       // El banner queda arriba (fuera de vista): toast para que sí se vea
       addNotification({ type: 'order_status', title: 'No se pudo aceptar', body: msg });
     } finally {
@@ -625,7 +639,11 @@ export default function Home() {
                             {order.deliveryAddress}
                           </p>
                           <p className="text-xs text-surface-400">
-                            {order.distanceKm ? `${order.distanceKm} km` : 'Destino'}
+                            {(order as any).deliveryZone
+                              ? String((order as any).deliveryZone)
+                              : order.distanceKm
+                                ? `${order.distanceKm} km`
+                                : 'Destino'}
                           </p>
                         </div>
                       </div>

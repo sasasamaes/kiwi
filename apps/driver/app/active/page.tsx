@@ -8,17 +8,25 @@ import { BottomNav } from '../components/BottomNav';
 import {
   MapPin,
   Home,
-  Star,
-  Map,
+  Store,
+  Navigation,
   Phone,
-  PartyPopper,
+  MessageCircle,
   Package,
   Loader2,
   RefreshCw,
   Weight,
-  ClipboardList,
   CloudOff,
   CloudUpload,
+  Check,
+  Timer,
+  Copy,
+  ChevronDown,
+  Wallet,
+  PartyPopper,
+  Inbox,
+  AlertTriangle,
+  Flag,
 } from 'lucide-react';
 import {
   useAuth,
@@ -30,6 +38,7 @@ import {
   type SyncAction,
   KiwiLoader,
   TapButton,
+  AnimatedCounter,
 } from '@kiwi/ui';
 
 // Estados considerados "activos" para el repartidor
@@ -40,25 +49,28 @@ const ACTIVE_STATUSES = [
   'in_transit_to_delivery',
 ] as const;
 
-const STATUS_STEP: Record<string, 1 | 2 | 3> = {
-  assigned: 1,
-  in_transit_to_pickup: 1,
-  picked_up: 2,
-  in_transit_to_delivery: 2,
+// Flujo lineal con etiquetas de acción
+const FLOW_ORDER = [
+  'assigned',
+  'in_transit_to_pickup',
+  'picked_up',
+  'in_transit_to_delivery',
+  'delivered',
+] as const;
+
+const STEP_META: Record<string, { label: string; hint: string }> = {
+  assigned: { label: 'Aceptado', hint: 'Andá al comercio a recoger' },
+  in_transit_to_pickup: { label: 'En camino', hint: 'Vas hacia el comercio' },
+  picked_up: { label: 'Recogido', hint: 'Llevá el pedido al cliente' },
+  in_transit_to_delivery: { label: 'Entregando', hint: 'Estás por llegar' },
+  delivered: { label: 'Entregado', hint: 'Pedido completado' },
 };
 
-const NEXT_STATUS: Record<string, { next: string; label: string }> = {
-  assigned: { next: 'in_transit_to_pickup', label: 'Voy a recoger' },
+const NEXT_STATUS: Record<string, { next: string; label: string; final?: boolean }> = {
+  assigned: { next: 'in_transit_to_pickup', label: 'Voy en camino' },
   in_transit_to_pickup: { next: 'picked_up', label: 'Recogí el pedido' },
   picked_up: { next: 'in_transit_to_delivery', label: 'Voy a entregar' },
-  in_transit_to_delivery: { next: 'delivered', label: 'Entregué el pedido' },
-};
-
-const STATUS_LABEL: Record<string, string> = {
-  assigned: 'Asignado',
-  in_transit_to_pickup: 'En camino a recoger',
-  picked_up: 'Recogido',
-  in_transit_to_delivery: 'Entregando',
+  in_transit_to_delivery: { next: 'delivered', label: 'Entregué el pedido', final: true },
 };
 
 function openMaps(lat?: number | string | null, lng?: number | string | null, address?: string) {
@@ -72,6 +84,30 @@ function openMaps(lat?: number | string | null, lng?: number | string | null, ad
   window.open(dest, '_blank', 'noopener,noreferrer');
 }
 
+/** "Cliente: Ana (8888-1234) · Sin cebolla" -> { name, phone } */
+function parseCustomer(special?: string | null): { name?: string; phone?: string } {
+  if (!special) return {};
+  const m = special.match(/Cliente:\s*([^(·]+?)\s*\(([^)]+)\)/);
+  if (m) return { name: m[1].trim(), phone: m[2].trim() };
+  const phone = special.match(/(\+?\d[\d\s-]{7,}\d)/);
+  return phone ? { phone: phone[1].trim() } : {};
+}
+
+function toWaLink(phone: string): string {
+  const digits = phone.replace(/\D/g, '');
+  const normalized = digits.length === 8 ? `506${digits}` : digits;
+  return `https://wa.me/${normalized}`;
+}
+
+function elapsedLabel(iso?: string | null): string {
+  if (!iso) return '';
+  const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+  if (mins < 1) return 'ahora mismo';
+  if (mins < 60) return `hace ${mins} min`;
+  const h = Math.floor(mins / 60);
+  return `hace ${h} h${mins % 60 ? ` ${mins % 60} min` : ''}`;
+}
+
 // Clave de caché para render offline
 const ORDERS_CACHE_KEY = 'driver_active_orders';
 
@@ -83,16 +119,31 @@ export default function ActiveOrders() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [updating, setUpdating] = useState(false);
   // Offline: pedidos vistos desde caché, acciones esperando sync
   const [fromCache, setFromCache] = useState(false);
   const [online, setOnline] = useState(true);
   const [notice, setNotice] = useState<string | null>(null);
+  // Interactividad: dirección copiada, sección abierta, confirmación de entrega
+  const [copied, setCopied] = useState<'pickup' | 'delivery' | null>(null);
+  const [showItems, setShowItems] = useState(true);
+  const [confirmArmed, setConfirmArmed] = useState(false);
+  const [celebration, setCelebration] = useState<{ payout: number } | null>(null);
+  // Reloj vivo para "hace X min"
+  const [, setTick] = useState(0);
   // orderId -> estado al que se quiere avanzar mientras está encolado
   const [queuedTransitions, setQueuedTransitions] = useState<Record<string, string>>({});
   const queuedTransitionsRef = useRef(queuedTransitions);
-  queuedTransitionsRef.current = queuedTransitions;
+  useEffect(() => {
+    queuedTransitionsRef.current = queuedTransitions;
+  }, [queuedTransitions]);
+
+  useEffect(() => {
+    const t = setInterval(() => setTick((n) => n + 1), 30000);
+    return () => clearInterval(t);
+  }, []);
 
   const fetchActiveOrders = useCallback(async () => {
     try {
@@ -127,6 +178,7 @@ export default function ActiveOrders() {
       }
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, []);
 
@@ -158,12 +210,23 @@ export default function ActiveOrders() {
     const flow = NEXT_STATUS[order.status];
     if (!flow || updating) return;
 
+    // Paso final con doble confirmación: un toque accidental no debe cerrar el pedido
+    if (flow.final && !confirmArmed) {
+      setConfirmArmed(true);
+      setTimeout(() => setConfirmArmed(false), 5000);
+      return;
+    }
+    setConfirmArmed(false);
+
     // ¿Ya hay una transición encolada para este pedido? No duplicar.
     if (queuedTransitionsRef.current[order.id]) return;
 
     setUpdating(true);
     try {
       await api.updateOrderStatus(order.id, flow.next);
+      if (flow.next === 'delivered') {
+        setCelebration({ payout: Number(order.driverPayout ?? order.totalAmount ?? 0) });
+      }
       await fetchActiveOrders();
     } catch (err) {
       console.error('Status update failed, queuing for background sync:', err);
@@ -185,6 +248,16 @@ export default function ActiveOrders() {
     } finally {
       setUpdating(false);
       setOnline(navigator.onLine);
+    }
+  };
+
+  const copyAddress = async (kind: 'pickup' | 'delivery', text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(kind);
+      setTimeout(() => setCopied(null), 2000);
+    } catch {
+      setNotice('No se pudo copiar la dirección.');
     }
   };
 
@@ -282,7 +355,7 @@ export default function ActiveOrders() {
         </header>
         <main className="flex-1 flex items-center justify-center p-4">
           <motion.div className="text-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <div className="text-5xl mb-4">😕</div>
+            <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-amber-500" />
             <p className="text-surface-500 mb-6">{error}</p>
             <button
               onClick={fetchActiveOrders}
@@ -310,8 +383,17 @@ export default function ActiveOrders() {
           </div>
         </header>
         <main className="flex-1 flex items-center justify-center p-4">
-          <motion.div className="text-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <div className="text-6xl mb-4">📭</div>
+          <motion.div
+            className="text-center"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <motion.div
+              animate={{ y: [0, -8, 0] }}
+              transition={{ duration: 2.5, repeat: Infinity }}
+            >
+              <Inbox className="h-14 w-14 mx-auto mb-4 text-surface-300 dark:text-surface-600" />
+            </motion.div>
             <h2 className="text-lg font-semibold text-surface-800 mb-2">Sin pedidos activos</h2>
             <p className="text-sm text-surface-500 mb-6">
               Acepta un pedido desde el inicio para verlo aquí.
@@ -324,22 +406,29 @@ export default function ActiveOrders() {
             </Link>
           </motion.div>
         </main>
+        <BottomNav />
       </main>
     );
   }
 
   const order = orders.find((o) => o.id === selectedId) ?? orders[0];
-  const step = STATUS_STEP[order.status] ?? 1;
+  const stepIndex = Math.max(0, FLOW_ORDER.indexOf(order.status as (typeof FLOW_ORDER)[number]));
+  const meta = STEP_META[order.status] ?? { label: order.status, hint: '' };
   // Nav visible solo antes de iniciar el viaje: en plena entrega la pantalla
   // dueña de la atención es la navegación, no el menú.
   const showBottomNav = order.status === 'assigned';
   const flow = NEXT_STATUS[order.status];
-  const isDelivered = false; // los entregados no aparecen en activos
   const driverPayout = Number(order.driverPayout ?? order.totalAmount ?? 0);
   const distanceKm = Number(order.distanceKm ?? 0);
+  const customer = parseCustomer(order.specialInstructions);
+  const notes = (order.specialInstructions || '')
+    .replace(/Cliente:[^·]*/g, '')
+    .replace(/^·\s*/, '')
+    .trim();
   // Transición encolada esperando sync para el pedido mostrado
   const pendingStatus = queuedTransitions[order.id];
   const showOfflineBanner = !online || fromCache;
+  const progress = Math.min(100, Math.round((stepIndex / (FLOW_ORDER.length - 1)) * 100));
 
   return (
     <main className="min-h-[100dvh] flex flex-col bg-bg-light dark:bg-surface-950">
@@ -352,24 +441,38 @@ export default function ActiveOrders() {
           </Link>
           <h1 className="font-display font-semibold text-surface-800">Pedido Activo</h1>
           <button
-            onClick={fetchActiveOrders}
+            onClick={() => {
+              setRefreshing(true);
+              fetchActiveOrders();
+            }}
             className="w-16 flex justify-end text-surface-500"
             aria-label="Refrescar"
           >
-            <RefreshCw className="h-4 w-4" />
+            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
           </button>
         </div>
       </header>
 
-      <main className="flex-1 mx-auto w-full max-w-lg px-4 py-6">
-        {notice && (
-          <div className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 p-3">
-            <p className="text-xs font-medium text-amber-800 dark:text-amber-300">{notice}</p>
-            <button onClick={() => setNotice(null)} className="text-amber-600 dark:text-amber-400">
-              ✕
-            </button>
-          </div>
-        )}
+      <main className="flex-1 mx-auto w-full max-w-lg px-4 py-6 pb-40">
+        <AnimatePresence>
+          {notice && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 p-3"
+            >
+              <p className="text-xs font-medium text-amber-800 dark:text-amber-300">{notice}</p>
+              <button
+                onClick={() => setNotice(null)}
+                className="text-amber-600 dark:text-amber-400"
+              >
+                ✕
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Banner offline / caché */}
         {showOfflineBanner && (
           <div className="mb-4 flex items-center gap-3 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 p-3">
@@ -385,233 +488,447 @@ export default function ActiveOrders() {
         {/* Selector cuando hay varios activos */}
         {orders.length > 1 && (
           <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
-            {orders.map((o) => (
-              <button
-                key={o.id}
-                onClick={() => setSelectedId(o.id)}
-                className={`inline-flex min-h-[44px] items-center whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                  o.id === order.id
-                    ? 'bg-kiwi-500 text-white'
-                    : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400'
-                }`}
-              >
-                #{o.id.slice(0, 6)} · {STATUS_LABEL[o.status] ?? o.status}
-                {queuedTransitions[o.id] ? ' ⏳' : ''}
-              </button>
-            ))}
+            {orders.map((o) => {
+              const active = o.id === order.id;
+              return (
+                <motion.button
+                  key={o.id}
+                  onClick={() => {
+                    setSelectedId(o.id);
+                    setConfirmArmed(false);
+                  }}
+                  whileTap={{ scale: 0.95 }}
+                  className={`inline-flex min-h-[44px] shrink-0 items-center gap-2 whitespace-nowrap rounded-2xl px-4 py-2 text-sm font-medium transition-colors ${
+                    active
+                      ? 'bg-kiwi-500 text-white shadow-kiwi'
+                      : 'glass text-surface-600 dark:text-surface-400'
+                  }`}
+                >
+                  <Wallet className="h-4 w-4" />₡
+                  {Number(o.driverPayout ?? o.totalAmount ?? 0).toLocaleString()}
+                  <span className={active ? 'text-white/80' : 'text-surface-400'}>
+                    {(STEP_META[o.status]?.label ?? o.status).split(' ')[0]}
+                  </span>
+                  {queuedTransitions[o.id] ? ' ⏳' : ''}
+                </motion.button>
+              );
+            })}
           </div>
         )}
 
-        {/* Status Progress */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-2">
-            <div
-              className={`flex items-center gap-2 ${step >= 1 ? 'text-kiwi-600' : 'text-surface-400'}`}
-            >
-              <span
-                className={`flex h-8 w-8 items-center justify-center rounded-full ${
-                  step >= 1 ? 'bg-kiwi-500 text-white' : 'bg-surface-200 dark:bg-surface-700'
-                }`}
-              >
-                1
-              </span>
-              <span className="text-sm font-medium">Recoger</span>
-            </div>
-            <div className="flex-1 mx-2 h-1 bg-surface-200 dark:bg-surface-700 rounded">
-              <div
-                className={`h-1 bg-kiwi-500 rounded transition-all ${step >= 2 ? 'w-full' : 'w-0'}`}
-              />
-            </div>
-            <div
-              className={`flex items-center gap-2 ${step >= 2 ? 'text-kiwi-600' : 'text-surface-400'}`}
-            >
-              <span
-                className={`flex h-8 w-8 items-center justify-center rounded-full ${
-                  step >= 2 ? 'bg-kiwi-500 text-white' : 'bg-surface-200 dark:bg-surface-700'
-                }`}
-              >
-                2
-              </span>
-              <span className="text-sm font-medium">Entregar</span>
-            </div>
-            <div className="flex-1 mx-2 h-1 bg-surface-200 dark:bg-surface-700 rounded">
-              <div
-                className={`h-1 bg-kiwi-500 rounded transition-all ${step >= 3 ? 'w-full' : 'w-0'}`}
-              />
-            </div>
-            <div
-              className={`flex items-center gap-2 ${step >= 3 ? 'text-kiwi-600' : 'text-surface-400'}`}
-            >
-              <span
-                className={`flex h-8 w-8 items-center justify-center rounded-full ${
-                  step >= 3 ? 'bg-kiwi-500 text-white' : 'bg-surface-200 dark:bg-surface-700'
-                }`}
-              >
-                3
-              </span>
-              <span className="text-sm font-medium">Listo</span>
-            </div>
-          </div>
-        </div>
+        {/* HERO: estado + ganancia + progreso */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={order.id + order.status}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ type: 'spring', stiffness: 260, damping: 24 }}
+            className="mb-4 overflow-hidden rounded-3xl bg-kiwi-gradient p-5 text-white glow-kiwi-lg relative"
+          >
+            <motion.div
+              className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/10"
+              animate={{ scale: [1, 1.2, 1] }}
+              transition={{ duration: 4, repeat: Infinity }}
+            />
+            <div className="relative">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <motion.p
+                    key={order.status}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-2xl font-display font-bold"
+                  >
+                    {meta.label}
+                  </motion.p>
+                  <p className="text-white/80 text-sm">{meta.hint}</p>
+                  <p className="mt-1 flex items-center gap-1 text-xs text-white/70">
+                    <Timer className="h-3 w-3" />
+                    {elapsedLabel((order as any).assignedAt ?? order.createdAt)} · #
+                    {order.id.slice(0, 8).toUpperCase()}
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-xs text-white/70">Ganás</p>
+                  <AnimatedCounter value={driverPayout} className="text-2xl font-bold font-mono" />
+                  <p className="text-xs text-white/70">CRC</p>
+                </div>
+              </div>
 
-        {/* Order Details */}
-        <div className="mb-6 rounded-2xl glass p-5">
-          <div className="mb-4 flex items-center justify-between">
-            <span className="rounded-full bg-kiwi-100 dark:bg-kiwi-900/50 px-3 py-1 text-xs font-medium text-kiwi-700 dark:text-kiwi-300">
-              #{order.id.slice(0, 8)} · {STATUS_LABEL[order.status] ?? order.status}
-            </span>
-            <span className="text-lg font-bold text-surface-800 dark:text-surface-100">
-              ₡{driverPayout.toLocaleString()}
-            </span>
-          </div>
-
-          {/* Package info para fletes */}
-          {order.kind === 'freight' && (
-            <div className="mb-4 rounded-xl bg-surface-50 dark:bg-surface-800 p-3 space-y-1">
-              <p className="text-sm font-medium text-surface-800 dark:text-surface-200">
-                📦 {order.packageDescription || 'Encomienda'}
-              </p>
-              {order.weightKg != null && (
-                <p className="text-xs text-surface-500 dark:text-surface-400 flex items-center gap-1">
-                  <Weight className="h-3 w-3" /> {Number(order.weightKg)} kg
-                  {Number(order.weightKg) > 5 ? ' (los primeros 5 kg incluidos)' : ''}
-                </p>
-              )}
-              {order.packageSize && (
-                <p className="text-xs text-surface-500 dark:text-surface-400">
-                  Tamaño: {order.packageSize}
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* Pickup Location */}
-          <div className="mb-4 rounded-xl glass p-4">
-            <div className="mb-2 flex items-center gap-2">
-              <MapPin className="text-lg h-5 w-5" />
-              <span className="text-sm font-semibold text-kiwi-700 dark:text-kiwi-400">
-                {order.status === 'picked_up' || order.status === 'in_transit_to_delivery'
-                  ? 'Recogido'
-                  : 'Ir a recoger'}
-              </span>
-            </div>
-            <p className="text-sm font-medium text-surface-800 dark:text-surface-100">
-              {order.merchant?.businessName || 'Comercio'}
-            </p>
-            <p className="text-xs text-surface-500 dark:text-surface-400">{order.pickupAddress}</p>
-            <button
-              onClick={() =>
-                openMaps(
-                  order.pickupLat ? Number(order.pickupLat) : null,
-                  order.pickupLng ? Number(order.pickupLng) : null,
-                  order.pickupAddress,
-                )
-              }
-              className="mt-3 w-full rounded-xl bg-kiwi-500 py-2.5 text-sm font-medium text-white shadow-kiwi hover:bg-kiwi-600 transition-colors"
-            >
-              <Map className="h-4 w-4 inline" /> Abrir en Maps
-            </button>
-          </div>
-
-          {/* Delivery Location */}
-          <div className="rounded-xl glass p-4">
-            <div className="mb-2 flex items-center gap-2">
-              <Home className="text-lg h-5 w-5" />
-              <span className="text-sm font-semibold text-kiwi-700 dark:text-kiwi-400">
-                {order.status === 'in_transit_to_delivery' ? 'Ir a entregar' : 'Entrega'}
-              </span>
-            </div>
-            <p className="text-sm font-medium text-surface-800 dark:text-surface-100">
-              {order.deliveryAddress}
-            </p>
-            {distanceKm > 0 && (
-              <p className="text-xs text-surface-500 dark:text-surface-400">{distanceKm} km</p>
-            )}
-            <button
-              onClick={() =>
-                openMaps(
-                  order.deliveryLat ? Number(order.deliveryLat) : null,
-                  order.deliveryLng ? Number(order.deliveryLng) : null,
-                  order.deliveryAddress,
-                )
-              }
-              className="mt-3 w-full rounded-xl bg-surface-800 dark:bg-surface-700 py-2.5 text-sm font-medium text-white hover:bg-surface-700 dark:hover:bg-surface-600 transition-colors"
-            >
-              <Map className="h-4 w-4 inline" /> Abrir en Maps
-            </button>
-          </div>
-
-          {/* Instrucciones */}
-          {order.specialInstructions && (
-            <div className="mt-4 rounded-xl bg-surface-50 dark:bg-surface-800 p-3">
-              <p className="text-xs font-medium text-surface-600 dark:text-surface-300 mb-1">
-                📝 Instrucciones
-              </p>
-              <p className="text-xs text-surface-500 dark:text-surface-400">
-                {order.specialInstructions}
-              </p>
-            </div>
-          )}
-
-          {/* Contenido del pedido */}
-          {Array.isArray((order as any).items) && (order as any).items.length > 0 && (
-            <div className="mt-4 rounded-xl bg-surface-50 dark:bg-surface-800 p-3">
-              <p className="text-xs font-medium text-surface-600 dark:text-surface-300 mb-2">
-                🛍️ Qué llevar
-              </p>
-              <div className="space-y-1.5">
-                {(order as any).items.map((it: any, i: number) => (
-                  <div key={it.id ?? i} className="flex justify-between text-xs">
-                    <span className="text-surface-700 dark:text-surface-200">
-                      {it.quantity}x {it.name}
-                      {Array.isArray(it.selectedVariants) && it.selectedVariants.length > 0 && (
-                        <span className="text-surface-500">
-                          {' '}
-                          ({it.selectedVariants.map((v: any) => v.option).join(', ')})
-                        </span>
+              {/* Stepper */}
+              <div className="mt-4 flex items-center">
+                {FLOW_ORDER.map((s, i) => {
+                  const done = i < stepIndex;
+                  const current = i === stepIndex;
+                  return (
+                    <div key={s} className="flex flex-1 items-center last:flex-none">
+                      <motion.div
+                        className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${
+                          done
+                            ? 'bg-white text-kiwi-600'
+                            : current
+                              ? 'bg-white text-kiwi-600 ring-4 ring-white/30'
+                              : 'bg-white/20 text-white/70'
+                        }`}
+                        animate={current ? { scale: [1, 1.12, 1] } : {}}
+                        transition={{ duration: 1.6, repeat: Infinity }}
+                      >
+                        {done ? <Check className="h-4 w-4" /> : i + 1}
+                      </motion.div>
+                      {i < FLOW_ORDER.length - 1 && (
+                        <div className="mx-1 h-1 flex-1 overflow-hidden rounded bg-white/20">
+                          <motion.div
+                            className="h-1 rounded bg-white"
+                            initial={false}
+                            animate={{ width: done ? '100%' : '0%' }}
+                            transition={{ type: 'spring', stiffness: 120, damping: 20 }}
+                          />
+                        </div>
                       )}
-                    </span>
-                  </div>
-                ))}
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="mt-2 flex justify-between text-[11px] text-white/80">
+                <span>Aceptado</span>
+                <span>Recogido</span>
+                <span>Entregado</span>
+              </div>
+              <div className="mt-1 h-1 overflow-hidden rounded bg-white/20">
+                <motion.div
+                  className="h-1 rounded bg-white"
+                  initial={false}
+                  animate={{ width: `${progress}%` }}
+                />
               </div>
             </div>
-          )}
-        </div>
+          </motion.div>
+        </AnimatePresence>
 
-        {/* Action Buttons */}
-        <div className="space-y-3">
-          {pendingStatus ? (
-            // Cambio encolado: bloquear avance hasta confirmar sync
-            <button
-              disabled
-              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-surface-200 dark:bg-surface-700 py-4 text-lg font-semibold text-surface-600 dark:text-surface-300"
-            >
-              <CloudUpload className="h-5 w-5 animate-pulse" /> Esperando sincronización…
-            </button>
-          ) : (
-            flow && (
-              <TapButton
-                haptic
-                variant="gradient"
-                onClick={() => advanceStatus(order)}
-                disabled={updating}
-                className="w-full rounded-2xl h-14 text-lg font-semibold"
+        {/* TIMELINE: recoger -> entregar */}
+        <div className="mb-4 rounded-3xl glass p-5">
+          {/* Recoger */}
+          <div className="flex gap-3">
+            <div className="flex flex-col items-center">
+              <motion.div
+                className={`flex h-10 w-10 items-center justify-center rounded-2xl ${
+                  stepIndex >= 2
+                    ? 'bg-kiwi-100 text-kiwi-600'
+                    : 'bg-kiwi-500 text-white shadow-kiwi'
+                }`}
+                animate={stepIndex < 2 ? { scale: [1, 1.06, 1] } : {}}
+                transition={{ duration: 2, repeat: Infinity }}
               >
-                {updating ? <Loader2 className="h-5 w-5 inline animate-spin" /> : flow.label}
+                {stepIndex >= 2 ? <Check className="h-5 w-5" /> : <Store className="h-5 w-5" />}
+              </motion.div>
+              <div className="my-1 w-0.5 flex-1 rounded bg-surface-200 dark:bg-surface-700" />
+            </div>
+            <div className="flex-1 pb-5">
+              <p className="text-xs font-semibold uppercase tracking-wide text-kiwi-600">
+                {stepIndex >= 2 ? 'Recogido en' : 'Ir a recoger a'}
+              </p>
+              <p className="text-base font-semibold text-surface-800 dark:text-surface-100">
+                {order.merchant?.businessName || 'Comercio'}
+              </p>
+              <button
+                onClick={() => copyAddress('pickup', order.pickupAddress)}
+                className="group mt-0.5 flex items-start gap-1 text-left text-sm text-surface-500"
+              >
+                <span className="flex-1">{order.pickupAddress}</span>
+                {copied === 'pickup' ? (
+                  <Check className="h-4 w-4 shrink-0 text-kiwi-500" />
+                ) : (
+                  <Copy className="h-4 w-4 shrink-0 opacity-0 transition-opacity group-hover:opacity-60" />
+                )}
+              </button>
+              <TapButton
+                variant="secondary"
+                haptic
+                className="mt-3 h-11 w-full rounded-xl text-sm"
+                onClick={() =>
+                  openMaps(
+                    order.pickupLat ? Number(order.pickupLat) : null,
+                    order.pickupLng ? Number(order.pickupLng) : null,
+                    order.pickupAddress,
+                  )
+                }
+              >
+                <Navigation className="h-4 w-4" /> Cómo llegar
               </TapButton>
-            )
-          )}
+            </div>
+          </div>
 
-          {isDelivered && (
-            <Link
-              href="/"
-              className="block w-full rounded-2xl bg-kiwi-gradient py-4 text-center text-lg font-semibold text-white shadow-kiwi-lg"
-            >
-              <PartyPopper className="h-5 w-5 inline" /> ¡Pedido completado!
-            </Link>
-          )}
+          {/* Entregar */}
+          <div className="flex gap-3">
+            <div className="flex flex-col items-center">
+              <motion.div
+                className={`flex h-10 w-10 items-center justify-center rounded-2xl ${
+                  stepIndex >= 3
+                    ? 'bg-gold-100 text-gold-600'
+                    : 'bg-surface-800 text-white dark:bg-surface-700'
+                }`}
+                animate={stepIndex === 2 ? { scale: [1, 1.06, 1] } : {}}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                <Home className="h-5 w-5" />
+              </motion.div>
+            </div>
+            <div className="flex-1">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gold-600">
+                {order.status === 'in_transit_to_delivery' ? 'Ir a entregar a' : 'Entregar en'}
+              </p>
+              <p className="text-base font-semibold text-surface-800 dark:text-surface-100">
+                {order.deliveryAddress}
+              </p>
+              <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-surface-500">
+                {(order as any).deliveryZone && (
+                  <span className="rounded-full bg-kiwi-100 dark:bg-kiwi-900/50 px-2.5 py-0.5 font-medium text-kiwi-700 dark:text-kiwi-300">
+                    <MapPin className="h-3 w-3 inline" /> {String((order as any).deliveryZone)}
+                  </span>
+                )}
+                {distanceKm > 0 && <span>{distanceKm} km</span>}
+                {customer.name && <span>· {customer.name}</span>}
+              </div>
+              <button
+                onClick={() => copyAddress('delivery', order.deliveryAddress)}
+                className="mt-1 flex items-center gap-1 text-xs text-surface-400"
+              >
+                {copied === 'delivery' ? (
+                  <span className="flex items-center gap-1 text-kiwi-600">
+                    <Check className="h-3 w-3" /> Copiada
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1">
+                    <Copy className="h-3 w-3" /> Copiar dirección
+                  </span>
+                )}
+              </button>
+              <TapButton
+                variant="gradient"
+                haptic
+                className="mt-3 h-11 w-full rounded-xl text-sm"
+                onClick={() =>
+                  openMaps(
+                    order.deliveryLat ? Number(order.deliveryLat) : null,
+                    order.deliveryLng ? Number(order.deliveryLng) : null,
+                    order.deliveryAddress,
+                  )
+                }
+              >
+                <Navigation className="h-4 w-4" /> Cómo llegar
+              </TapButton>
+            </div>
+          </div>
         </div>
+
+        {/* Contacto cliente */}
+        {customer.phone && (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4 grid grid-cols-2 gap-3"
+          >
+            <a
+              href={`tel:${customer.phone.replace(/\s/g, '')}`}
+              className="flex h-12 items-center justify-center gap-2 rounded-2xl glass text-sm font-semibold text-surface-700 dark:text-surface-200"
+            >
+              <Phone className="h-4 w-4 text-kiwi-500" /> Llamar
+            </a>
+            <a
+              href={toWaLink(customer.phone)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex h-12 items-center justify-center gap-2 rounded-2xl glass text-sm font-semibold text-surface-700 dark:text-surface-200"
+            >
+              <MessageCircle className="h-4 w-4 text-kiwi-500" /> WhatsApp
+            </a>
+          </motion.div>
+        )}
+
+        {/* Paquete / flete */}
+        {order.kind === 'freight' && (
+          <div className="mb-4 rounded-2xl glass p-4">
+            <p className="flex items-center gap-2 text-sm font-semibold text-surface-800 dark:text-surface-200">
+              <Package className="h-4 w-4 text-kiwi-500" />
+              {order.packageDescription || 'Encomienda'}
+            </p>
+            <div className="mt-1 flex flex-wrap gap-2 text-xs text-surface-500">
+              {order.weightKg != null && (
+                <span className="flex items-center gap-1">
+                  <Weight className="h-3 w-3" /> {Number(order.weightKg)} kg
+                </span>
+              )}
+              {order.packageSize && <span>Tamaño {order.packageSize}</span>}
+            </div>
+          </div>
+        )}
+
+        {/* Qué llevar (colapsable) */}
+        {Array.isArray((order as any).items) && (order as any).items.length > 0 && (
+          <div className="mb-4 overflow-hidden rounded-2xl glass">
+            <button
+              onClick={() => setShowItems((v) => !v)}
+              className="flex w-full items-center justify-between p-4 text-sm font-semibold text-surface-700 dark:text-surface-200"
+            >
+              <span className="flex items-center gap-2">
+                <Package className="h-4 w-4 text-kiwi-500" />
+                Qué llevar (
+                {(order as any).items.reduce(
+                  (s: number, it: any) => s + Number(it.quantity || 0),
+                  0,
+                )}
+                )
+              </span>
+              <motion.span animate={{ rotate: showItems ? 180 : 0 }}>
+                <ChevronDown className="h-4 w-4" />
+              </motion.span>
+            </button>
+            <AnimatePresence initial={false}>
+              {showItems && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="overflow-hidden"
+                >
+                  <div className="space-y-2 px-4 pb-4">
+                    {(order as any).items.map((it: any, i: number) => (
+                      <div
+                        key={it.id ?? i}
+                        className="flex items-center justify-between rounded-xl bg-surface-50 dark:bg-surface-800 px-3 py-2 text-sm"
+                      >
+                        <span className="font-medium text-surface-700 dark:text-surface-200">
+                          {it.name}
+                          {Array.isArray(it.selectedVariants) && it.selectedVariants.length > 0 && (
+                            <span className="block text-xs font-normal text-surface-500">
+                              {it.selectedVariants.map((v: any) => v.option).join(', ')}
+                            </span>
+                          )}
+                        </span>
+                        <span className="rounded-full bg-kiwi-100 dark:bg-kiwi-900/50 px-2.5 py-0.5 text-xs font-bold text-kiwi-700 dark:text-kiwi-300">
+                          x{it.quantity}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
+
+        {/* Notas */}
+        {notes && (
+          <div className="mb-4 rounded-2xl bg-gold-50 dark:bg-gold-900/20 border border-gold-200 dark:border-gold-800 p-4">
+            <p className="mb-1 flex items-center gap-1 text-xs font-semibold text-gold-700 dark:text-gold-300">
+              <Flag className="h-3 w-3" /> Notas del pedido
+            </p>
+            <p className="text-sm text-surface-700 dark:text-surface-200">{notes}</p>
+          </div>
+        )}
       </main>
+
+      {/* Barra de acción fija */}
+      <div className="fixed inset-x-0 bottom-0 z-40 pb-safe">
+        <div className="mx-auto max-w-lg px-4 pb-4">
+          <motion.div
+            layout
+            className="rounded-3xl glass-strong p-3 shadow-kiwi-lg flex items-center gap-3"
+          >
+            <div className="pl-2">
+              <p className="text-[11px] text-surface-400">Ganancia</p>
+              <p className="font-mono text-lg font-bold text-kiwi-600">
+                ₡{driverPayout.toLocaleString()}
+              </p>
+            </div>
+            <div className="flex-1">
+              {pendingStatus ? (
+                <button
+                  disabled
+                  className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-surface-200 dark:bg-surface-700 font-semibold text-surface-600 dark:text-surface-300"
+                >
+                  <CloudUpload className="h-5 w-5 animate-pulse" />
+                  <span className="text-sm">Sincronizando…</span>
+                </button>
+              ) : (
+                flow && (
+                  <TapButton
+                    haptic
+                    variant={confirmArmed ? 'secondary' : 'gradient'}
+                    onClick={() => advanceStatus(order)}
+                    disabled={updating}
+                    className="h-14 w-full rounded-2xl text-base font-bold"
+                  >
+                    {updating ? (
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                    ) : confirmArmed ? (
+                      'Tocá de nuevo para confirmar'
+                    ) : (
+                      flow.label
+                    )}
+                  </TapButton>
+                )
+              )}
+            </div>
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Celebración de entrega */}
+      <AnimatePresence>
+        {celebration && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="w-full max-w-sm rounded-3xl bg-white dark:bg-surface-800 p-8 text-center"
+              initial={{ scale: 0.8, y: 40 }}
+              animate={{ scale: 1, y: 0 }}
+              transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+            >
+              <motion.div
+                initial={{ scale: 0, rotate: -20 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ type: 'spring', stiffness: 200, delay: 0.15 }}
+              >
+                <PartyPopper className="h-14 w-14 mx-auto mb-3 text-kiwi-500" />
+              </motion.div>
+              <h2 className="text-2xl font-display font-bold text-surface-800 dark:text-surface-100">
+                ¡Entregado!
+              </h2>
+              <p className="mt-1 text-sm text-surface-500">Ganaste</p>
+              <AnimatedCounter
+                value={celebration.payout}
+                className="font-mono text-4xl font-bold text-kiwi-600"
+              />
+              <div className="mt-6 space-y-2">
+                <TapButton
+                  haptic
+                  variant="gradient"
+                  className="h-12 w-full rounded-2xl"
+                  onClick={() => {
+                    setCelebration(null);
+                    router.push('/');
+                  }}
+                >
+                  Buscar más pedidos
+                </TapButton>
+                <button
+                  onClick={() => setCelebration(null)}
+                  className="h-11 w-full rounded-2xl text-sm font-medium text-surface-500"
+                >
+                  Quedarme aquí
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {showBottomNav && <BottomNav />}
     </main>
   );

@@ -135,6 +135,10 @@ export interface Order {
   deliveredAt?: Date;
 }
 
+// Delivery zones (Nicoya pricing catalog — server is source of truth)
+export { NICOYA_DELIVERY_ZONES, findDeliveryZone, getDeliveryZonePrice } from './deliveryZones';
+export type { DeliveryZone } from './deliveryZones';
+
 // Driver Proposal types
 export type ProposalStatus = 'pending' | 'accepted' | 'rejected';
 

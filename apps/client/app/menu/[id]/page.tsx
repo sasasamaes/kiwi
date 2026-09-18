@@ -31,6 +31,7 @@ import {
   MerchantPublicProfile,
   useSocket,
   AddressInput,
+  DeliveryZoneSelect,
   OnvoPayCheckout,
   CryptoCheckout,
   safeNavigateToUrl,
@@ -41,6 +42,7 @@ import {
   hoverGhost,
   ThemeToggle,
 } from '@kiwi/ui';
+import { findDeliveryZone } from '@kiwi/types';
 
 interface CartItem extends MenuItem {
   quantity: number;
@@ -83,6 +85,7 @@ interface DeliveryInfo {
   phone: string;
   name: string;
   instructions: string;
+  zone: string;
 }
 
 const SAVED_ADDRESSES = [
@@ -121,6 +124,7 @@ export default function MenuPage() {
     phone: '',
     name: '',
     instructions: '',
+    zone: '',
   });
   const [selectedAddressType, setSelectedAddressType] = useState<string>('home');
 
@@ -279,8 +283,11 @@ export default function MenuPage() {
 
   const cartTotal = cart.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
-  const deliveryFee = cartTotal >= 5000 ? 0 : 500; // Free delivery over ₡5,000
-  const totalWithDelivery = cartTotal + deliveryFee;
+  // Espejo del backend: el viaje es el precio del barrio y la comisión 10%.
+  const zoneTrip = findDeliveryZone(deliveryInfo.zone)?.price ?? null;
+  const deliveryFee = zoneTrip ?? (cartTotal >= 5000 ? 0 : 500); // Sin barrio: regla anterior
+  const serviceFee = zoneTrip != null ? Math.round(zoneTrip * 0.1) : 0;
+  const totalWithDelivery = cartTotal + deliveryFee + serviceFee;
 
   // Filter items by category
   const filteredItems =
@@ -291,6 +298,7 @@ export default function MenuPage() {
   // Validate checkout
   const canCheckout =
     deliveryInfo.address.trim().length > 0 &&
+    deliveryInfo.zone.trim().length > 0 &&
     deliveryInfo.phone.trim().length >= 8 &&
     deliveryInfo.name.trim().length > 0;
 
@@ -304,6 +312,7 @@ export default function MenuPage() {
         merchantId: merchant.id,
         pickupAddress: merchant.address,
         deliveryAddress: deliveryInfo.address,
+        deliveryZone: deliveryInfo.zone,
         orderType: 'immediate',
         items: cart.map((item) => ({
           menuItemId: item.id,
@@ -664,7 +673,7 @@ export default function MenuPage() {
                     <div className="flex gap-4">
                       <div className="flex h-20 w-20 items-center justify-center rounded-xl bg-surface-100 dark:bg-surface-700 text-3xl flex-shrink-0">
                         {isHttpUrl(item.image) ? (
-                          // eslint-disable-next-line @next/next/no-img-element -- avatares dinámicos de Cloudinary, next/image no aporta aquí
+                          // NOTE: <img> intencional — avatares dinámicos de Cloudinary, next/image no aporta aquí
                           <img
                             src={item.image}
                             alt={item.name}
@@ -942,7 +951,7 @@ export default function MenuPage() {
                       <div key={item.lineId} className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           {isHttpUrl(item.image) ? (
-                            // eslint-disable-next-line @next/next/no-img-element -- avatares dinámicos de Cloudinary
+                            // NOTE: <img> intencional — avatares dinámicos de Cloudinary
                             <img
                               src={item.image}
                               alt={item.name}
@@ -1022,6 +1031,12 @@ export default function MenuPage() {
                     placeholder="Buscar dirección en Nicoya..."
                     nicoyaOnly={true}
                   />
+                  <div className="mt-3">
+                    <DeliveryZoneSelect
+                      value={deliveryInfo.zone}
+                      onChange={(zone) => setDeliveryInfo({ ...deliveryInfo, zone })}
+                    />
+                  </div>
                 </div>
 
                 {/* Contact Info */}
@@ -1274,11 +1289,21 @@ export default function MenuPage() {
                         )}
                       </span>
                     </div>
-                    {cartTotal < 5000 && (
+                    {zoneTrip == null && cartTotal < 5000 && (
                       <p className="text-xs text-kiwi-600 dark:text-kiwi-400">
                         <PartyPopper className="h-4 w-4 inline" /> Envío gratis en pedidos mayores a
                         ₡5,000
                       </p>
+                    )}
+                    {serviceFee > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-surface-500 dark:text-surface-400">
+                          Servicio (10%)
+                        </span>
+                        <span className="text-surface-800 dark:text-surface-200">
+                          ₡{serviceFee.toLocaleString()}
+                        </span>
+                      </div>
                     )}
                     <div className="border-t border-surface-200 dark:border-surface-700 pt-2 mt-2">
                       <div className="flex justify-between">

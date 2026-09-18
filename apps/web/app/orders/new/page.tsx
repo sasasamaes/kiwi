@@ -13,7 +13,9 @@ import {
   MenuItem,
   calculateDistance,
   ShareTrackingButton,
+  DeliveryZoneSelect,
 } from '@kiwi/ui';
+import { findDeliveryZone } from '@kiwi/types';
 
 type Step = 1 | 2 | 3;
 
@@ -207,6 +209,7 @@ function NewOrderInner({
   const [deliveryName, setDeliveryName] = useState('');
   const [deliveryPhone, setDeliveryPhone] = useState('');
   const [deliveryAddress, setDeliveryAddress] = useState('');
+  const [deliveryZone, setDeliveryZone] = useState('');
   const [deliveryLat, setDeliveryLat] = useState<number | undefined>(undefined);
   const [deliveryLng, setDeliveryLng] = useState<number | undefined>(undefined);
   const [pickupAddress, setPickupAddress] = useState(user?.merchantProfile?.address || '');
@@ -467,10 +470,15 @@ function NewOrderInner({
   };
 
   // ---- Precio espejo del backend ----
+  // Si hay barrio elegido, manda el catálogo (el servidor revalida).
+  // Sin barrio, fallback a la lógica anterior por distancia.
   const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
+  const zonePrice = findDeliveryZone(deliveryZone)?.price ?? null;
   const inZone =
     deliveryLat != null ? inNicoyaZone(deliveryLat, deliveryLng) : (routeKm ?? 0) <= NICOYA_ZONE_KM;
-  const baseTrip = inZone ? NICOYA_FLAT : routeKm != null ? tripPriceForKm(routeKm) : NICOYA_FLAT;
+  const baseTrip =
+    zonePrice ?? (inZone ? NICOYA_FLAT : routeKm != null ? tripPriceForKm(routeKm) : NICOYA_FLAT);
+  const zoneLabel = findDeliveryZone(deliveryZone)?.label ?? null;
   const weightSurcharge = kind === 'freight' && weightKg > 5 ? Math.ceil(weightKg - 5) * 500 : 0;
   const trip = baseTrip + weightSurcharge;
   const commission = Math.round(trip * 0.1);
@@ -481,7 +489,8 @@ function NewOrderInner({
     (kind === 'food' ? items.length > 0 : packageDescription.trim().length > 0) &&
     deliveryName.trim().length > 0 &&
     deliveryPhone.trim().length >= 8 &&
-    deliveryAddress.trim().length > 0;
+    deliveryAddress.trim().length > 0 &&
+    deliveryZone.trim().length > 0;
 
   // El botón deshabilitado no explica nada: decir qué falta.
   // Las notas son opcionales y por eso no aparecen aquí.
@@ -492,6 +501,7 @@ function NewOrderInner({
   if (deliveryName.trim().length === 0) step1Missing.push('nombre del cliente');
   if (deliveryPhone.trim().length < 8) step1Missing.push('teléfono (8 dígitos)');
   if (deliveryAddress.trim().length === 0) step1Missing.push('dirección de entrega');
+  if (deliveryZone.trim().length === 0) step1Missing.push('barrio de entrega');
 
   const toggleFavorite = async (driver: Driver) => {
     const isFav = favoriteDrivers.some((d) => d.id === driver.id);
@@ -508,6 +518,10 @@ function NewOrderInner({
 
   const createOrderHandler = async () => {
     setFormError(null);
+    if (!deliveryZone) {
+      setFormError('Elegí el barrio de entrega para calcular el envío');
+      return;
+    }
     if (isScheduled && !scheduledDate) {
       setFormError('Elegí fecha y hora para programar el pedido');
       return;
@@ -517,6 +531,7 @@ function NewOrderInner({
       const result = await api.createOrder({
         pickupAddress: pickupAddress || profileAddress || 'Nicoya Centro',
         deliveryAddress,
+        deliveryZone,
         deliveryLat,
         deliveryLng,
         orderType: isScheduled ? 'scheduled' : 'immediate',
@@ -572,6 +587,7 @@ function NewOrderInner({
           orderId: result.id,
           pickupAddress,
           deliveryAddress,
+          deliveryZone,
           totalAmount: total,
           distanceKm: routeKm ?? undefined,
         });
@@ -940,6 +956,7 @@ function NewOrderInner({
                   rows={2}
                   className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm"
                 />
+                <DeliveryZoneSelect value={deliveryZone} onChange={setDeliveryZone} />
                 {deliverySuggest.length > 0 && (
                   <div className="overflow-hidden rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800">
                     {deliverySuggest.map((s, i) => (
@@ -1098,7 +1115,8 @@ function NewOrderInner({
                 </div>
                 <div className="flex justify-between">
                   <span className="text-surface-500">
-                    Envío{routeKm != null ? ` (~${routeKm} km)` : ''}
+                    Envío
+                    {zoneLabel ? ` (${zoneLabel})` : routeKm != null ? ` (~${routeKm} km)` : ''}
                   </span>
                   <span className="text-kiwi-600 font-medium">₡{trip.toLocaleString()}</span>
                 </div>

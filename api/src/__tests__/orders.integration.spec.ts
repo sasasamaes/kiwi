@@ -582,11 +582,19 @@ describe('Orders Integration: Full Lifecycle', () => {
       prisma.order.findUnique.mockResolvedValue({
         id: ORDER_ID,
         status: 'delivered', // Already delivered
+        driverId: null,
+        orderType: 'immediate',
         merchant: { userId: MERCHANT_USER_ID },
       });
 
+      prisma.driverProfile.findUnique.mockResolvedValue({
+        id: DRIVER_PROFILE_ID,
+        userId: DRIVER_USER_ID,
+        fullName: 'Juan Carlos Rodríguez',
+      });
+
       await expect(ordersService.acceptOrderAsDriver(ORDER_ID, DRIVER_USER_ID)).rejects.toThrow(
-        'El pedido ya fue tomado por otro repartidor',
+        'ya no está disponible',
       );
     });
 

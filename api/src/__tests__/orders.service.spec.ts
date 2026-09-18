@@ -170,6 +170,50 @@ describe('OrdersService', () => {
       );
       expect(prisma.order.create).not.toHaveBeenCalled();
     });
+
+    it('should price by deliveryZone catalog (server is source of truth)', async () => {
+      prisma.merchantProfile.findUnique.mockResolvedValue({
+        id: 'merchant-1',
+        userId: 'user-1',
+        businessName: 'Bowl & Café',
+      });
+      prisma.order.create.mockImplementation(async ({ data }: any) => ({
+        id: 'order-1',
+        status: 'pending',
+        ...data,
+      }));
+
+      const order: any = await service.create('user-1', {
+        pickupAddress: 'Nicoya Centro',
+        deliveryAddress: 'Hojancha centro',
+        deliveryZone: 'hojancha',
+        distanceKm: 1,
+      });
+
+      // Viaje ₡7000 + comisión 10% ₡700 = ₡7700 (sin productos)
+      expect(order.deliveryZone).toBe('hojancha');
+      expect(order.basePrice).toBe(7000);
+      expect(order.driverPayout).toBe(7000);
+      expect(order.commission).toBe(700);
+      expect(order.totalAmount).toBe(7700);
+    });
+
+    it('should reject unknown deliveryZone', async () => {
+      prisma.merchantProfile.findUnique.mockResolvedValue({
+        id: 'merchant-1',
+        userId: 'user-1',
+        businessName: 'Bowl & Café',
+      });
+
+      await expect(
+        service.create('user-1', {
+          pickupAddress: 'A',
+          deliveryAddress: 'B',
+          deliveryZone: 'barrio-inexistente',
+        }),
+      ).rejects.toThrow('Barrio de entrega inválido');
+      expect(prisma.order.create).not.toHaveBeenCalled();
+    });
   });
 
   describe('Nicoya centro flat rate (₡2000 within 10 km)', () => {

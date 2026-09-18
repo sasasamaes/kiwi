@@ -269,6 +269,7 @@ export { ShareTrackingButton, buildTrackingUrl } from './ShareTracking';
 // ============================================
 export { AddressInput } from './AddressInput';
 export type { AddressInputProps } from './AddressInput';
+export { DeliveryZoneSelect } from './DeliveryZoneSelect';
 
 // ============================================
 //   ONVOPAY CHECKOUT

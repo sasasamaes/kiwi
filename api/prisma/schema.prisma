@@ -224,6 +224,7 @@ model Order {
 
   // Pricing
   distanceKm         Decimal? @map("distance_km") @db.Decimal(5, 2)
+  deliveryZone       String?  @map("delivery_zone")
   basePrice          Decimal  @map("base_price") @db.Decimal(10, 2)
   commission         Decimal  @db.Decimal(10, 2)
   driverPayout       Decimal  @map("driver_payout") @db.Decimal(10, 2)

@@ -11,6 +11,7 @@ import { DriversService } from '../drivers/drivers.service';
 import { GeocodingService } from '../geocoding/geocoding.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { ProximityService } from './proximity.service';
+import { findDeliveryZone } from './delivery-zones';
 import { isKycRequired } from '../feature-flags/feature-flags';
 
 @Injectable()
@@ -204,12 +205,28 @@ export class OrdersService {
     }
     const weightSurcharge = weightKg ? this.freightWeightSurcharge(weightKg) : 0;
 
+    // Precio por zona (catálogo Nicoya): si el cliente manda deliveryZone
+    // válida, esa manda y el servidor pone el precio — el cliente nunca
+    // decide el monto. Sin zona, se conserva la lógica anterior por distancia
+    // (compatibilidad con clientes viejos y tests).
+    let deliveryZone: string | null = null;
+    let zoneBase: number | null = null;
+    if (data.deliveryZone != null && String(data.deliveryZone).trim() !== '') {
+      const zone = findDeliveryZone(data.deliveryZone);
+      if (!zone) {
+        throw new BadRequestException('Barrio de entrega inválido');
+      }
+      deliveryZone = zone.id;
+      zoneBase = zone.price;
+    }
+
     const tripPrice =
-      this.calculateBasePrice(
-        distanceKm,
-        { lat: data.pickupLat, lng: data.pickupLng },
-        { lat: data.deliveryLat, lng: data.deliveryLng },
-      ) + weightSurcharge;
+      (zoneBase ??
+        this.calculateBasePrice(
+          distanceKm,
+          { lat: data.pickupLat, lng: data.pickupLng },
+          { lat: data.deliveryLat, lng: data.deliveryLng },
+        )) + weightSurcharge;
     const commission = Math.round(tripPrice * 0.1) + this.commissionForProducts(productsTotal);
     const driverPayout = tripPrice;
     const totalAmount = productsTotal + tripPrice + commission;
@@ -231,6 +248,7 @@ export class OrdersService {
         deliveryLat: data.deliveryLat,
         deliveryLng: data.deliveryLng,
         distanceKm,
+        deliveryZone,
         basePrice: tripPrice,
         commission,
         driverPayout,
@@ -278,6 +296,7 @@ export class OrdersService {
         orderId: order.id,
         pickupAddress: order.pickupAddress,
         deliveryAddress: order.deliveryAddress,
+        deliveryZone: (order as any).deliveryZone ?? deliveryZone,
         totalAmount: Number(order.totalAmount),
         driverPayout: order.driverPayout != null ? Number(order.driverPayout) : null,
         distanceKm: Number(order.distanceKm),
@@ -1013,9 +1032,6 @@ export class OrdersService {
   async acceptOrderAsDriver(orderId: string, driverUserId: string) {
     const order = await this.prisma.order.findUnique({ where: { id: orderId } });
     if (!order) throw new NotFoundException('Pedido no encontrado');
-    if ((order as any).status !== 'pending' || (order as any).driverId) {
-      throw new BadRequestException('El pedido ya fue tomado por otro repartidor');
-    }
 
     const driverProfile = await this.prisma.driverProfile.findUnique({
       where: { userId: driverUserId },
@@ -1023,6 +1039,37 @@ export class OrdersService {
 
     if (!driverProfile) {
       throw new NotFoundException('Perfil de repartidor no encontrado');
+    }
+
+    // Idempotente: si YA lo tomó este mismo driver (doble tap, popup
+    // viejo, reintento), devolverlo en vez de error. Sin esto el tester
+    // solo ve "otro repartidor lo tomó" aunque fue él mismo.
+    if (
+      (order as any).driverId === driverProfile.id &&
+      ['assigned', 'in_transit_to_pickup', 'picked_up', 'in_transit_to_delivery'].includes(
+        (order as any).status,
+      )
+    ) {
+      return this.prisma.order.findUnique({
+        where: { id: orderId },
+        include: { merchant: true, driver: true },
+      });
+    }
+
+    if ((order as any).driverId) {
+      throw new BadRequestException('El pedido ya fue tomado por otro repartidor');
+    }
+
+    if ((order as any).status === 'driver_proposals' || (order as any).orderType === 'scheduled') {
+      throw new BadRequestException(
+        'Es un pedido programado: se toma con propuesta, no con Aceptar',
+      );
+    }
+
+    if ((order as any).status !== 'pending') {
+      throw new BadRequestException(
+        `El pedido ya no está disponible (estado: ${(order as any).status})`,
+      );
     }
 
     // Atomic claim: only pending orders with no driver can be taken
@@ -1036,9 +1083,24 @@ export class OrdersService {
     });
 
     if (claimed.count === 0) {
-      const existing = await this.prisma.order.findUnique({ where: { id: orderId } });
+      const existing: any = await this.prisma.order.findUnique({ where: { id: orderId } });
       if (!existing) throw new NotFoundException('Pedido no encontrado');
-      throw new BadRequestException('El pedido ya fue tomado por otro repartidor');
+      // Carrerita perdida contra vos mismo (doble tap): devolverlo, no error.
+      if (existing.driverId === driverProfile.id) {
+        return this.prisma.order.findUnique({
+          where: { id: orderId },
+          include: { merchant: true, driver: true },
+        });
+      }
+      if (existing.driverId) {
+        throw new BadRequestException('El pedido ya fue tomado por otro repartidor');
+      }
+      if (existing.status === 'driver_proposals' || existing.orderType === 'scheduled') {
+        throw new BadRequestException(
+          'Es un pedido programado: se toma con propuesta, no con Aceptar',
+        );
+      }
+      throw new BadRequestException(`El pedido ya no está disponible (estado: ${existing.status})`);
     }
 
     // Assign driver
