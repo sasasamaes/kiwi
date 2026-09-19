@@ -47,6 +47,25 @@ export class OrdersController {
     return this.ordersService.getAvailableOrders(latitude, longitude);
   }
 
+  @Get('admin/all')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List all orders with stats (admin only)' })
+  async listForAdmin(
+    @Query('take') take?: string,
+    @Query('skip') skip?: string,
+    @Query('status') status?: string,
+    @Query('search') search?: string,
+  ) {
+    return this.ordersService.listForAdmin({
+      take: take != null ? Number(take) : undefined,
+      skip: skip != null ? Number(skip) : undefined,
+      status,
+      search,
+    });
+  }
+
   @Public()
   @Get('track/:id')
   @ApiOperation({ summary: 'Public order tracking (share link, no auth)' })

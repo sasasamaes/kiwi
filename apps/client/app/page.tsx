@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AnimatedButton, ThemeToggle, QRScanner, ScrollReveal, KiwiMark } from '@kiwi/ui';
+import { AnimatedButton, ThemeToggle, QRScanner, ScrollReveal, KiwiMark, KiwiLogo } from '@kiwi/ui';
 import { Camera, ClipboardList, CreditCard, Bike, Smartphone, X } from 'lucide-react';
 import { BottomNav } from './components/BottomNav';
 
@@ -58,9 +58,7 @@ export default function ClientHome() {
       >
         <div className="mx-auto max-w-lg px-4 py-4">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-xl font-display font-bold text-kiwi-600 dark:text-kiwi-400">
-              Kiwi
-            </h1>
+            <KiwiLogo size={30} />
             <ThemeToggle />
           </div>
         </div>

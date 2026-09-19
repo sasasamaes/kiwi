@@ -33,6 +33,7 @@ import {
   Order,
   staggerContainer,
   KiwiLoader,
+  KiwiLogo,
 } from '@kiwi/ui';
 import { MerchantNav } from '../../components/MerchantNav';
 
@@ -155,16 +156,7 @@ export default function Dashboard() {
         <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             <Link href="/" className="flex items-center gap-3">
-              <motion.span
-                className="text-3xl"
-                animate={{ rotate: [0, -10, 10, -10, 0] }}
-                transition={{ duration: 0.5, delay: 0.5 }}
-              >
-                🥝
-              </motion.span>
-              <h1 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100">
-                Kiwi
-              </h1>
+              <KiwiLogo size={30} />
             </Link>
             <div className="flex items-center gap-4">
               {/* Connection Status */}

@@ -42,7 +42,7 @@ import {
   hoverGhost,
   ThemeToggle,
 } from '@kiwi/ui';
-import { findDeliveryZone } from '@kiwi/types';
+import { computeAppCommission, findDeliveryZone } from '@kiwi/types';
 
 interface CartItem extends MenuItem {
   quantity: number;
@@ -283,10 +283,10 @@ export default function MenuPage() {
 
   const cartTotal = cart.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
-  // Espejo del backend: el viaje es el precio del barrio y la comisión 10%.
+  // Espejo del backend: viaje = precio del barrio + comisión 10% + 15% productos.
   const zoneTrip = findDeliveryZone(deliveryInfo.zone)?.price ?? null;
   const deliveryFee = zoneTrip ?? (cartTotal >= 5000 ? 0 : 500); // Sin barrio: regla anterior
-  const serviceFee = zoneTrip != null ? Math.round(zoneTrip * 0.1) : 0;
+  const serviceFee = zoneTrip != null ? computeAppCommission(zoneTrip, cartTotal) : 0;
   const totalWithDelivery = cartTotal + deliveryFee + serviceFee;
 
   // Filter items by category
@@ -1298,7 +1298,7 @@ export default function MenuPage() {
                     {serviceFee > 0 && (
                       <div className="flex justify-between text-sm">
                         <span className="text-surface-500 dark:text-surface-400">
-                          Servicio (10%)
+                          Servicio (envío 10% + productos 15%)
                         </span>
                         <span className="text-surface-800 dark:text-surface-200">
                           ₡{serviceFee.toLocaleString()}

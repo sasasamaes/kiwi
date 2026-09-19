@@ -91,3 +91,31 @@ export function KiwiMark({ size = 96, floating = true, className = '' }: KiwiMar
     </div>
   );
 }
+
+export interface KiwiLogoProps {
+  /** Diámetro de la rebanada en px (default 28). */
+  size?: number;
+  /** Variante del wordmark. Default 'brand'. */
+  variant?: 'brand' | 'mono';
+  className?: string;
+}
+
+/**
+ * Lockup oficial de marca: rebanada + wordmark. Para headers, navs y auth
+ * de las 3 apps — un solo lugar para que el logo se vea igual en todos lados.
+ */
+export function KiwiLogo({ size = 28, variant = 'brand', className = '' }: KiwiLogoProps) {
+  return (
+    <span className={`inline-flex items-center gap-2 ${className}`}>
+      <KiwiSlice size={size} />
+      <span
+        className={`font-display font-bold leading-none ${
+          variant === 'brand' ? 'text-kiwi-500' : 'text-surface-800 dark:text-surface-100'
+        }`}
+        style={{ fontSize: size * 0.72 }}
+      >
+        Kiwi
+      </span>
+    </span>
+  );
+}

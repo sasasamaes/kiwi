@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from './utils';
+import { KiwiMark } from './KiwiMark';
 import { Bike, Car, Truck, Smartphone, MessageCircle, Eye, EyeOff, Loader } from 'lucide-react';
 
 export interface AuthFormProps {
@@ -65,11 +66,11 @@ export function AuthForm({
         transition={{ delay: 0.2 }}
       >
         <motion.span
-          className="text-6xl inline-block"
+          className="inline-block"
           animate={{ rotate: [0, -10, 10, -10, 0] }}
           transition={{ duration: 0.5, delay: 0.5 }}
         >
-          Kiwi
+          <KiwiMark size={72} floating={false} />
         </motion.span>
         <h1 className="text-3xl font-display font-bold text-surface-800 mt-4">
           Kiwi {role === 'merchant' ? 'Business' : 'Driver'}

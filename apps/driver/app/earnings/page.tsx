@@ -4,7 +4,19 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { BottomNav } from '../components/BottomNav';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Package, Calendar, CalendarDays, Home, BarChart3 } from 'lucide-react';
+import {
+  Package,
+  Calendar,
+  CalendarDays,
+  BarChart3,
+  Infinity as InfinityIcon,
+  Truck,
+  Car,
+  Clock,
+  Inbox,
+  AlertTriangle,
+  ClipboardList,
+} from 'lucide-react';
 import { api, ScrollToTop } from '@kiwi/ui';
 
 interface EarningsData {
@@ -34,16 +46,16 @@ interface EarningsData {
 
 const PERIODS = [
   { id: 'today', label: 'Hoy', icon: Calendar },
-  { id: 'week', label: 'Semana', icon: '📆' },
-  { id: 'month', label: 'Mes', icon: CalendarDays },
-  { id: 'all', label: 'Todo', icon: '♾️' },
+  { id: 'week', label: 'Semana', icon: CalendarDays },
+  { id: 'month', label: 'Mes', icon: Calendar },
+  { id: 'all', label: 'Todo', icon: InfinityIcon },
 ];
 
 const ORDER_TYPE_ICONS: Record<string, any> = {
   immediate: Package,
   scheduled: Calendar,
-  freight: '🚚',
-  trip: '🚕',
+  freight: Truck,
+  trip: Car,
 };
 
 export default function EarningsPage() {
@@ -158,13 +170,7 @@ export default function EarningsPage() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
           >
-            <motion.div
-              className="text-6xl mb-4"
-              animate={{ y: [0, -10, 0] }}
-              transition={{ duration: 2, repeat: Infinity }}
-            >
-              😕
-            </motion.div>
+            <AlertTriangle className="h-14 w-14 mx-auto mb-4 text-amber-500" />
             <h2 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100 mb-2">
               No pudimos cargar las ganancias
             </h2>
@@ -243,7 +249,7 @@ export default function EarningsPage() {
                 <span>{earnings?.totalTrips || 0} viajes</span>
               </div>
               <div className="flex items-center gap-1 text-white/80">
-                <span className="text-kiwi-200">⏱️</span>
+                <Clock className="h-5 w-5 text-kiwi-200" />
                 <span>{earnings?.totalHours?.toFixed(1) || 0}h</span>
               </div>
             </div>
@@ -365,8 +371,8 @@ export default function EarningsPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
         >
-          <h3 className="mb-3 text-sm font-semibold text-surface-600 dark:text-surface-400">
-            ClipboardList Transacciones Recientes
+          <h3 className="mb-3 text-sm font-semibold text-surface-600 dark:text-surface-400 flex items-center gap-2">
+            <ClipboardList className="h-4 w-4" /> Transacciones Recientes
           </h3>
 
           {earnings?.transactions && earnings.transactions.length > 0 ? (
@@ -410,7 +416,7 @@ export default function EarningsPage() {
             </div>
           ) : (
             <div className="text-center py-8">
-              <span className="text-4xl mb-2 block">📭</span>
+              <Inbox className="h-10 w-10 mx-auto mb-2 text-surface-300 dark:text-surface-600" />
               <p className="text-surface-500 dark:text-surface-400 text-sm">
                 No hay transacciones en este período
               </p>

@@ -4,26 +4,44 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { BottomNav } from '../components/BottomNav';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, PartyPopper } from 'lucide-react';
+import {
+  Home,
+  PartyPopper,
+  Sun,
+  Briefcase,
+  Moon,
+  CalendarDays,
+  Zap,
+  ChevronDown,
+  Copy,
+  Save,
+  Check,
+  X,
+  Lightbulb,
+} from 'lucide-react';
 import { AnimatedButton, StaggerContainer, StaggerItem } from '@kiwi/ui';
 
 const days = [
-  { short: 'Dom', full: 'Domingo', icon: '🌅' },
-  { short: 'Lun', full: 'Lunes', icon: '💼' },
-  { short: 'Mar', full: 'Martes', icon: '💼' },
-  { short: 'Mié', full: 'Miércoles', icon: '💼' },
-  { short: 'Jue', full: 'Jueves', icon: '💼' },
-  { short: 'Vie', full: 'Viernes', icon: '💼' },
+  { short: 'Dom', full: 'Domingo', icon: Sun },
+  { short: 'Lun', full: 'Lunes', icon: Briefcase },
+  { short: 'Mar', full: 'Martes', icon: Briefcase },
+  { short: 'Mié', full: 'Miércoles', icon: Briefcase },
+  { short: 'Jue', full: 'Jueves', icon: Briefcase },
+  { short: 'Vie', full: 'Viernes', icon: Briefcase },
   { short: 'Sáb', full: 'Sábado', icon: PartyPopper },
 ];
 
 const hours = Array.from({ length: 15 }, (_, i) => i + 7); // 7am to 9pm
 
 const presets = [
-  { name: '🌅 Mañana', hours: [7, 8, 9, 10, 11, 12] },
-  { name: '☀️ Tarde', hours: [13, 14, 15, 16, 17, 18] },
-  { name: '🌙 Noche', hours: [18, 19, 20, 21] },
-  { name: '📅 Día completo', hours: [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18] },
+  { name: 'Mañana', icon: Sun, hours: [7, 8, 9, 10, 11, 12] },
+  { name: 'Tarde', icon: Sun, hours: [13, 14, 15, 16, 17, 18] },
+  { name: 'Noche', icon: Moon, hours: [18, 19, 20, 21] },
+  {
+    name: 'Día completo',
+    icon: CalendarDays,
+    hours: [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
+  },
 ];
 
 export default function Schedule() {
@@ -203,12 +221,8 @@ export default function Schedule() {
           transition={{ delay: 0.15 }}
         >
           <div>
-            <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100">
-              {typeof SelectedDayIcon === 'string' ? (
-                SelectedDayIcon
-              ) : (
-                <SelectedDayIcon className="h-5 w-5 inline" />
-              )}{' '}
+            <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 flex items-center gap-2">
+              <SelectedDayIcon className="h-5 w-5 text-kiwi-500" />
               {days[selectedDay].full}
             </h3>
             <p className="text-sm text-surface-500 dark:text-surface-400">
@@ -216,11 +230,11 @@ export default function Schedule() {
             </p>
           </div>
           <motion.button
-            className="text-sm text-kiwi-600 dark:text-kiwi-400 font-medium"
+            className="text-sm text-kiwi-600 dark:text-kiwi-400 font-medium flex items-center gap-1"
             onClick={() => setShowCopyModal(true)}
             whileTap={{ scale: 0.95 }}
           >
-            ClipboardList Copiar a...
+            <Copy className="h-4 w-4" /> Copiar a...
           </motion.button>
         </motion.div>
 
@@ -236,11 +250,11 @@ export default function Schedule() {
             onClick={() => setShowPresets(!showPresets)}
             whileTap={{ scale: 0.98 }}
           >
-            <span className="text-sm font-medium text-surface-700 dark:text-surface-300">
-              ⚡ Atajos rápidos
+            <span className="flex items-center gap-2 text-sm font-medium text-surface-700 dark:text-surface-300">
+              <Zap className="h-4 w-4 text-gold-500" /> Atajos rápidos
             </span>
             <motion.span animate={{ rotate: showPresets ? 180 : 0 }} className="text-surface-400">
-              ▼
+              <ChevronDown className="h-4 w-4" />
             </motion.span>
           </motion.button>
 
@@ -259,7 +273,8 @@ export default function Schedule() {
                     onClick={() => applyPreset(preset.hours)}
                     whileTap={{ scale: 0.95 }}
                   >
-                    <span className="text-sm font-medium text-surface-700 dark:text-surface-300">
+                    <span className="flex items-center gap-2 text-sm font-medium text-surface-700 dark:text-surface-300">
+                      <preset.icon className="h-4 w-4 text-kiwi-500" />
                       {preset.name}
                     </span>
                     <span className="block text-xs text-surface-400 mt-1">
@@ -306,7 +321,7 @@ export default function Schedule() {
                       animate={{ scale: 1 }}
                       transition={{ type: 'spring', stiffness: 500 }}
                     >
-                      <span className="text-xs">✓</span>
+                      <Check className="h-3 w-3" />
                     </motion.div>
                   )}
                 </motion.button>
@@ -368,10 +383,12 @@ export default function Schedule() {
                 animate={{ scale: 1 }}
                 className="flex items-center justify-center gap-2"
               >
-                Guardado
+                <Check className="h-5 w-5" /> Guardado
               </motion.span>
             ) : (
-              '💾 Guardar Horario'
+              <span className="flex items-center justify-center gap-2">
+                <Save className="h-5 w-5" /> Guardar Horario
+              </span>
             )}
           </AnimatedButton>
         </motion.div>
@@ -383,9 +400,12 @@ export default function Schedule() {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4 }}
         >
-          <p className="text-xs text-surface-500 dark:text-surface-400 text-center">
-            💡 <strong>Consejo:</strong> Los repartidores con horarios consistentes reciben más
-            pedidos programados.
+          <p className="flex items-center justify-center gap-1 text-xs text-surface-500 dark:text-surface-400 text-center">
+            <Lightbulb className="h-4 w-4 shrink-0 text-gold-500" />
+            <span>
+              <strong>Consejo:</strong> Los repartidores con horarios consistentes reciben más
+              pedidos programados.
+            </span>
           </p>
         </motion.div>
       </main>
@@ -409,14 +429,14 @@ export default function Schedule() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="mb-6 flex items-center justify-between">
-                <h3 className="font-display text-lg font-semibold text-surface-800 dark:text-surface-100">
-                  ClipboardList Copiar horario
+                <h3 className="flex items-center gap-2 font-display text-lg font-semibold text-surface-800 dark:text-surface-100">
+                  <Copy className="h-5 w-5 text-kiwi-500" /> Copiar horario
                 </h3>
                 <button
                   onClick={() => setShowCopyModal(false)}
                   className="text-surface-400 hover:text-surface-600"
                 >
-                  ✕
+                  <X className="h-5 w-5" />
                 </button>
               </div>
 
@@ -439,12 +459,8 @@ export default function Schedule() {
                       disabled={index === selectedDay}
                       whileTap={index !== selectedDay ? { scale: 0.95 } : {}}
                     >
-                      <span className="font-medium text-surface-800 dark:text-surface-200">
-                        {typeof DayIcon === 'string' ? (
-                          DayIcon
-                        ) : (
-                          <DayIcon className="h-4 w-4 inline" />
-                        )}{' '}
+                      <span className="flex items-center gap-1 font-medium text-surface-800 dark:text-surface-200">
+                        <DayIcon className="h-4 w-4 text-kiwi-500" />
                         {day.short}
                       </span>
                       <span className="block text-xs text-surface-400 mt-1">

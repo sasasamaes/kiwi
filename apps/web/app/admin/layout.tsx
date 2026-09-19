@@ -14,7 +14,7 @@ import {
   BadgeCheck,
   Star,
 } from 'lucide-react';
-import { ThemeToggle, useAuth } from '@kiwi/ui';
+import { ThemeToggle, useAuth, KiwiLogo } from '@kiwi/ui';
 
 const menuItems = [
   { href: '/admin', icon: BarChart3, label: 'Dashboard', exact: true },
@@ -79,15 +79,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* Logo */}
         <div className="p-4 border-b border-surface-200 dark:border-surface-700">
           <Link href="/admin" className="flex items-center gap-3">
-            <motion.span
-              className="text-3xl"
-              animate={{ rotate: [0, -10, 10, -10, 0] }}
-              transition={{ duration: 0.5, delay: 0.5 }}
-            ></motion.span>
+            <KiwiLogo size={30} />
             {sidebarOpen && (
               <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
                 <h1 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100">
-                  Kiwi Admin
+                  Admin
                 </h1>
                 <p className="text-xs text-surface-500 dark:text-surface-400">
                   Panel de administración

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { BottomNav } from './components/BottomNav';
 import { useRouter } from 'next/navigation';
@@ -22,6 +22,7 @@ import {
   Order,
   staggerContainer,
   KiwiLoader,
+  KiwiLogo,
 } from '@kiwi/ui';
 import {
   ClipboardList,
@@ -67,6 +68,12 @@ export default function Home() {
     { id: 'freight' as const, label: 'Fletes', icon: Truck },
   ];
 
+  // El socket no sabe si estás offline: el backend solo targetea a
+  // disponibles, pero este guard evita que un evento viejo te pinte
+  // pedidos cuando pausaste.
+  const isOnlineRef = useRef(isOnline);
+  isOnlineRef.current = isOnline;
+
   // Real-time socket connection
   const {
     isConnected,
@@ -76,6 +83,7 @@ export default function Home() {
   } = useSocket({
     onConnect: () => console.log('🟢 Driver connected to real-time'),
     onNewOrder: (data) => {
+      if (!isOnlineRef.current) return;
       console.log('New order available:', data);
       // Normalizar: el evento trae orderId; la lista trabaja con id.
       // Sin esto Aceptar llamaba a /orders/undefined/accept.
@@ -147,8 +155,14 @@ export default function Home() {
           rating: Number(profile.rating) || 5.0,
         });
         setIsOnline(profile.status === 'available');
-        // Fetch real orders
-        await fetchAvailableOrders();
+        // Offline = fuera de la lista: no se piden ni se muestran disponibles.
+        // El backend además solo targetea a disponibles por socket/push.
+        if (profile.status === 'available') {
+          await fetchAvailableOrders();
+        } else {
+          setAvailableOrders([]);
+          setNewOrderAlert(null);
+        }
         await fetchActiveOrders();
       } catch (error) {
         console.error('Failed to fetch driver data:', error);
@@ -163,12 +177,21 @@ export default function Home() {
   }, [user, fetchAvailableOrders, fetchActiveOrders]);
 
   const toggleOnlineStatus = async () => {
-    const newStatus = isOnline ? 'offline' : 'available';
+    const goingOnline = !isOnline;
+    const newStatus = goingOnline ? 'available' : 'offline';
     setPageError(null);
     try {
       await api.updateDriverStatus(newStatus as any);
       socketUpdateStatus(newStatus as any);
-      setIsOnline(!isOnline);
+      setIsOnline(goingOnline);
+      if (goingOnline) {
+        // Al volver: lista fresca para entrar en la rotación
+        await fetchAvailableOrders();
+      } else {
+        // Al pausar: salir de la lista de inmediato
+        setAvailableOrders([]);
+        setNewOrderAlert(null);
+      }
     } catch (error) {
       console.error('Failed to update status:', error);
       setPageError('No se pudo cambiar tu estado. Revisa tu conexión.');
@@ -329,9 +352,9 @@ export default function Home() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.2 }}
             >
-              <span className="text-lg font-bold text-kiwi-500">Kiwi</span>
+              <KiwiLogo size={30} />
               <h1 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100">
-                Kiwi Driver
+                Driver
               </h1>
               <VehicleBadge
                 type={(user?.driverProfile?.vehicleType as any) || 'motorcycle'}
@@ -406,7 +429,9 @@ export default function Home() {
         )}
         {/* Status Toggle */}
         <motion.div
-          className="mb-6 rounded-2xl bg-kiwi-gradient p-6 text-white glow-kiwi-lg overflow-hidden relative"
+          className={`mb-6 rounded-3xl p-6 text-white overflow-hidden relative transition-colors ${
+            isOnline ? 'bg-kiwi-gradient glow-kiwi-lg' : 'bg-surface-800 dark:bg-surface-800'
+          }`}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
@@ -424,31 +449,48 @@ export default function Home() {
 
           <div className="relative flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-display font-semibold">Estado</h2>
-              <p className="text-white/80 text-sm">Tú decides cuándo y qué trabajar</p>
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={isOnline ? 'on' : 'off'}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                >
+                  <h2 className="text-xl font-display font-bold">
+                    {isOnline ? 'En línea' : 'En pausa'}
+                  </h2>
+                  <p className="text-white/80 text-sm">
+                    {isOnline
+                      ? 'Estás en la lista · te llegan pedidos'
+                      : 'Fuera de la lista · no te llegan pedidos'}
+                  </p>
+                </motion.div>
+              </AnimatePresence>
             </div>
             <motion.button
-              className={`relative h-12 w-20 rounded-full p-1 transition-colors ${
+              className={`relative h-14 w-24 rounded-full p-1 transition-colors ${
                 isOnline ? 'bg-white' : 'bg-white/20'
               }`}
               onClick={toggleOnlineStatus}
               whileTap={{ scale: 0.95 }}
+              aria-label={isOnline ? 'Ponerme en pausa' : 'Ponerme en línea'}
             >
               <motion.div
-                className={`flex h-10 w-10 items-center justify-center rounded-full shadow-md ${
+                className={`flex h-12 w-12 items-center justify-center rounded-full shadow-md ${
                   isOnline ? 'bg-kiwi-500 text-white' : 'bg-surface-300 text-surface-500'
                 }`}
-                animate={{ x: isOnline ? 32 : 0 }}
+                animate={{ x: isOnline ? 40 : 0 }}
                 transition={{ type: 'spring', stiffness: 500, damping: 30 }}
               >
-                <span className="text-lg">{isOnline ? '🟢' : '⚪'}</span>
+                {isOnline ? <Bike className="h-6 w-6" /> : <CircleOff className="h-6 w-6" />}
               </motion.div>
             </motion.button>
           </div>
 
           <AnimatePresence>
-            {isOnline && (
+            {isOnline ? (
               <motion.div
+                key="online"
                 className="relative mt-4 space-y-3"
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
@@ -461,7 +503,10 @@ export default function Home() {
                   >
                     ●
                   </motion.span>
-                  <span>En línea - Recibiendo pedidos</span>
+                  <span>
+                    Recibiendo pedidos
+                    {isConnected ? '' : ' (reconectando…)'}
+                  </span>
                 </div>
 
                 <div className="flex gap-2">
@@ -480,6 +525,23 @@ export default function Home() {
                     </motion.button>
                   ))}
                 </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="offline"
+                className="relative mt-4"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+              >
+                <TapButton
+                  variant="secondary"
+                  haptic
+                  className="w-full rounded-xl h-12 text-sm font-bold"
+                  onClick={toggleOnlineStatus}
+                >
+                  Ponerme en línea y recibir pedidos
+                </TapButton>
               </motion.div>
             )}
           </AnimatePresence>
@@ -625,15 +687,33 @@ export default function Home() {
             >
               {' '}
               <motion.div
-                animate={{ y: [0, -10, 0] }}
+                animate={isOnline ? { y: [0, -10, 0] } : {}}
                 transition={{ duration: 2, repeat: Infinity }}
               >
-                <Package className="h-12 w-12 text-surface-300 dark:text-surface-600 mx-auto mb-3" />
+                {isOnline ? (
+                  <Package className="h-12 w-12 text-surface-300 dark:text-surface-600 mx-auto mb-3" />
+                ) : (
+                  <CircleOff className="h-12 w-12 text-surface-300 dark:text-surface-600 mx-auto mb-3" />
+                )}
               </motion.div>
               <p className="text-surface-500 dark:text-surface-400">
-                No hay pedidos disponibles ahora
+                {isOnline ? 'No hay pedidos disponibles ahora' : 'Estás en pausa'}
               </p>
-              <p className="text-xs text-surface-400 mt-1">Cuando haya pedidos, aparecerán aquí</p>
+              <p className="text-xs text-surface-400 mt-1">
+                {isOnline
+                  ? 'Cuando haya pedidos, aparecerán aquí'
+                  : 'Ponte en línea para entrar en la lista y recibir pedidos'}
+              </p>
+              {!isOnline && (
+                <TapButton
+                  variant="gradient"
+                  haptic
+                  className="mt-4 rounded-xl h-11 px-6 text-sm"
+                  onClick={toggleOnlineStatus}
+                >
+                  Ponerme en línea
+                </TapButton>
+              )}
             </motion.div>
           ) : (
             <StaggerContainer className="space-y-3">

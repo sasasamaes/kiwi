@@ -5,7 +5,14 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Check, Star, Car, Calendar, FileText } from 'lucide-react';
-import { AnimatedButton, StaggerContainer, StaggerItem, useAuth } from '@kiwi/ui';
+import {
+  AnimatedButton,
+  StaggerContainer,
+  StaggerItem,
+  useAuth,
+  KiwiMark,
+  KiwiLogo,
+} from '@kiwi/ui';
 
 export default function Home() {
   const router = useRouter();
@@ -23,7 +30,7 @@ export default function Home() {
           animate={{ opacity: [1, 0.4, 1] }}
           transition={{ duration: 1.2, repeat: Infinity }}
         >
-          🥝
+          <KiwiMark size={64} floating={false} />
         </motion.div>
       </main>
     );
@@ -70,10 +77,12 @@ function Landing() {
                 transition={{ duration: 3, repeat: Infinity }}
               />
               <motion.div
-                className="relative text-8xl"
+                className="relative"
                 animate={{ y: [-10, 10, -10] }}
                 transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-              ></motion.div>
+              >
+                <KiwiMark size={128} />
+              </motion.div>
             </div>
           </motion.div>
 
@@ -368,8 +377,7 @@ function Landing() {
       <footer className="border-t border-surface-200 bg-white px-6 py-8 lg:px-8">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 md:flex-row">
           <motion.div className="flex items-center gap-2" whileHover={{ scale: 1.05 }}>
-            <span className="text-2xl"></span>
-            <span className="font-display font-bold text-surface-800">Kiwi</span>
+            <KiwiLogo size={26} />
           </motion.div>
           <p className="text-sm text-surface-400">
             © 2026 Kiwi. Hecho con 💚 en Nicoya, Costa Rica

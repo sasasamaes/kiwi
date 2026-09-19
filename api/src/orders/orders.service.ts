@@ -12,7 +12,11 @@ import { GeocodingService } from '../geocoding/geocoding.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { ProximityService } from './proximity.service';
 import { findDeliveryZone } from './delivery-zones';
-import { isKycRequired } from '../feature-flags/feature-flags';
+import {
+  isKycRequired,
+  productCommissionCap,
+  productCommissionPct,
+} from '../feature-flags/feature-flags';
 
 @Injectable()
 export class OrdersService {
@@ -70,7 +74,9 @@ export class OrdersService {
     }
 
     // Pricing: trip (zone flat or distance table) + 10% trip commission.
-    // Products pass through with 0% commission until phase 2.
+    // Products add the platform commission (PRODUCT_COMMISSION_PCT, default
+    // 15% con tope opcional PRODUCT_COMMISSION_CAP) — el cargo lo paga el
+    // cliente en el total; el comercio recibe su precio intacto.
     const kind = data.kind ?? 'food';
     if (kind !== 'food' && kind !== 'freight') {
       throw new BadRequestException('kind inválido: use food o freight');
@@ -631,6 +637,67 @@ export class OrdersService {
     }
   }
 
+  /**
+   * Todos los pedidos para el admin: paginado, filtro por estado y búsqueda
+   * por id/direcciones/nombres. Incluye stats globales del mismo filtro.
+   */
+  async listForAdmin(opts: { take?: number; skip?: number; status?: string; search?: string }) {
+    if (opts.status) this.validateOrderStatus(opts.status);
+    const take = Math.min(Math.max(Number(opts.take ?? 30), 1), 100);
+    const skip = Math.max(Number(opts.skip ?? 0), 0);
+    const q = (opts.search ?? '').trim();
+
+    const where: any = {};
+    if (opts.status) where.status = opts.status;
+    if (q) {
+      where.OR = [
+        { id: { contains: q, mode: 'insensitive' } },
+        { pickupAddress: { contains: q, mode: 'insensitive' } },
+        { deliveryAddress: { contains: q, mode: 'insensitive' } },
+        { merchant: { businessName: { contains: q, mode: 'insensitive' } } },
+        { driver: { fullName: { contains: q, mode: 'insensitive' } } },
+      ];
+    }
+
+    const [total, items, stats] = await Promise.all([
+      this.prisma.order.count({ where }),
+      this.prisma.order.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        take,
+        skip,
+        include: {
+          merchant: { select: { businessName: true } },
+          driver: { select: { fullName: true } },
+          items: { select: { name: true, quantity: true } },
+        },
+      }),
+      this.prisma.order.aggregate({
+        where,
+        _count: { id: true },
+        _sum: { totalAmount: true, commission: true },
+      }),
+    ]);
+
+    const byStatus = await this.prisma.order.groupBy({
+      by: ['status'],
+      where: q ? { OR: where.OR } : {},
+      _count: { status: true },
+    });
+    const counts: Record<string, number> = {};
+    for (const row of byStatus) counts[row.status] = row._count.status;
+
+    return {
+      total,
+      items,
+      stats: {
+        revenue: Number(stats._sum?.totalAmount || 0),
+        platformFee: Number(stats._sum?.commission || 0),
+        byStatus: counts,
+      },
+    };
+  }
+
   async findByMerchant(userId: string, status?: string) {
     const merchantProfile = await this.prisma.merchantProfile.findUnique({
       where: { userId },
@@ -1177,9 +1244,17 @@ export class OrdersService {
     );
   }
 
-  /** Phase-2 seam: commission on products. Currently 0 (merchant keeps 100%). */
-  private commissionForProducts(_productsTotal: number): number {
-    return 0;
+  /**
+   * Comisión de la app sobre productos: PRODUCT_COMMISSION_PCT (default 15)
+   * con tope opcional PRODUCT_COMMISSION_CAP en colones. Redondeo al colón.
+   */
+  private commissionForProducts(productsTotal: number): number {
+    if (productsTotal <= 0) return 0;
+    const pct = productCommissionPct();
+    let fee = Math.round((productsTotal * pct) / 100);
+    const cap = productCommissionCap();
+    if (cap != null && fee > cap) fee = Math.round(cap);
+    return fee;
   }
 
   /**

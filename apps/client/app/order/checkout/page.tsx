@@ -14,7 +14,7 @@ import {
   api,
   safeNavigateToUrl,
 } from '@kiwi/ui';
-import { findDeliveryZone } from '@kiwi/types';
+import { computeAppCommission, findDeliveryZone } from '@kiwi/types';
 
 interface CartItem {
   id: string;
@@ -85,10 +85,10 @@ function CheckoutContent() {
   }, [searchParams]);
 
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  // Espejo del backend: el viaje es el precio del barrio y la comisión 10%.
+  // Espejo del backend: viaje = precio del barrio + comisión 10% + 15% productos.
   const zoneTrip = findDeliveryZone(deliveryZone)?.price ?? null;
   const deliveryFee = zoneTrip ?? (subtotal >= 5000 ? 0 : 500);
-  const serviceFee = zoneTrip != null ? Math.round(zoneTrip * 0.1) : 0;
+  const serviceFee = zoneTrip != null ? computeAppCommission(zoneTrip, subtotal) : 0;
   const total = subtotal + deliveryFee + serviceFee;
 
   const canPlaceOrder =
@@ -313,7 +313,7 @@ function CheckoutContent() {
             </div>
             {serviceFee > 0 && (
               <div className="flex justify-between text-sm mt-1">
-                <span className="text-surface-500">Servicio (10%)</span>
+                <span className="text-surface-500">Servicio (envío 10% + productos 15%)</span>
                 <span className="text-surface-700 dark:text-surface-300">
                   ₡{serviceFee.toLocaleString()}
                 </span>

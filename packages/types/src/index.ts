@@ -136,7 +136,14 @@ export interface Order {
 }
 
 // Delivery zones (Nicoya pricing catalog — server is source of truth)
-export { NICOYA_DELIVERY_ZONES, findDeliveryZone, getDeliveryZonePrice } from './deliveryZones';
+export {
+  NICOYA_DELIVERY_ZONES,
+  findDeliveryZone,
+  getDeliveryZonePrice,
+  computeAppCommission,
+  TRIP_COMMISSION_PCT,
+  PRODUCT_COMMISSION_PCT,
+} from './deliveryZones';
 export type { DeliveryZone } from './deliveryZones';
 
 // Driver Proposal types

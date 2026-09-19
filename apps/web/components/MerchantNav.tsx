@@ -14,7 +14,7 @@ import {
   Utensils,
   X,
 } from 'lucide-react';
-import { useAuth, ThemeToggle } from '@kiwi/ui';
+import { useAuth, ThemeToggle, KiwiLogo } from '@kiwi/ui';
 
 const LINKS = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -42,10 +42,7 @@ export function MerchantNav() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between py-3">
           <Link href="/dashboard" className="flex items-center gap-2">
-            <span className="text-xl font-bold text-kiwi-500">🥝</span>
-            <span className="font-display font-semibold text-surface-800 dark:text-surface-100">
-              Kiwi
-            </span>
+            <KiwiLogo size={26} />
           </Link>
 
           {/* Desktop: links inline */}

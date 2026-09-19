@@ -40,7 +40,7 @@ export { ScrollToTop } from './ScrollToTop';
 export type { ScrollToTopProps } from './ScrollToTop';
 export { KiwiLoader, KiwiSplash } from './KiwiLoader';
 export type { KiwiLoaderProps, KiwiSplashProps } from './KiwiLoader';
-export { KiwiMark, KiwiSlice } from './KiwiMark';
+export { KiwiMark, KiwiSlice, KiwiLogo } from './KiwiMark';
 export type { KiwiMarkProps } from './KiwiMark';
 export { ErrorState, AppErrorBoundary, NotFoundState } from './ErrorScreens';
 export type { ErrorStateProps, NotFoundStateProps } from './ErrorScreens';

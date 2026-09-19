@@ -15,7 +15,7 @@ import {
   ShareTrackingButton,
   DeliveryZoneSelect,
 } from '@kiwi/ui';
-import { findDeliveryZone } from '@kiwi/types';
+import { computeAppCommission, findDeliveryZone } from '@kiwi/types';
 
 type Step = 1 | 2 | 3;
 
@@ -481,7 +481,7 @@ function NewOrderInner({
   const zoneLabel = findDeliveryZone(deliveryZone)?.label ?? null;
   const weightSurcharge = kind === 'freight' && weightKg > 5 ? Math.ceil(weightKg - 5) * 500 : 0;
   const trip = baseTrip + weightSurcharge;
-  const commission = Math.round(trip * 0.1);
+  const commission = computeAppCommission(trip, subtotal);
   const total = subtotal + trip + commission;
   const etaMin = routeKm != null ? Math.max(5, Math.round((routeKm / 25) * 60)) : null;
 
@@ -1122,7 +1122,9 @@ function NewOrderInner({
                   <span className="text-kiwi-600 font-medium">₡{trip.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-surface-500">Plataforma (10%)</span>
+                  <span className="text-surface-500">
+                    Comisión Kiwi (envío 10% + productos 15%)
+                  </span>
                   <span className="text-surface-600 dark:text-surface-300 font-medium">
                     ₡{commission.toLocaleString()}
                   </span>

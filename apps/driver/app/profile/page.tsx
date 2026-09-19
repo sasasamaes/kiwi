@@ -5,7 +5,22 @@ import { BottomNav } from '../components/BottomNav';
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, Coins, Package, Bike, Star, Car, Eye, EyeOff, Home } from 'lucide-react';
+import {
+  Calendar,
+  Coins,
+  Package,
+  Bike,
+  Star,
+  Car,
+  Eye,
+  EyeOff,
+  Medal,
+  Trophy,
+  Crown,
+  Gem,
+  BadgeCheck,
+  Power,
+} from 'lucide-react';
 import {
   AnimatedButton,
   StaggerContainer,
@@ -30,12 +45,18 @@ const LEVEL_LABEL: Record<string, string> = {
   vip: 'VIP',
 };
 
-const LEVEL_MEDAL: Record<string, string> = {
-  bronce: '🥉',
-  plata: '🥈',
-  oro: '🥇',
-  diamante: '💎',
-  vip: '👑',
+const LEVEL_MEDAL: Record<string, any> = {
+  bronce: Medal,
+  plata: Medal,
+  oro: Trophy,
+  diamante: Gem,
+  vip: Crown,
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  available: 'Disponible',
+  offline: 'En pausa',
+  busy: 'Ocupado',
 };
 
 const VEHICLE_LABEL: Record<string, string> = {
@@ -228,8 +249,11 @@ export default function Profile() {
               <p className="text-xs text-white/70">Viajes</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold">{LEVEL_MEDAL[level] ?? '🥉'}</p>
-              <p className="text-xs text-white/70">Nivel {LEVEL_LABEL[level] ?? level}</p>
+              {(() => {
+                const LevelIcon = LEVEL_MEDAL[level] ?? Medal;
+                return <LevelIcon className="h-7 w-7 mx-auto text-white/90" />;
+              })()}
+              <p className="text-xs text-white/70 mt-1">Nivel {LEVEL_LABEL[level] ?? level}</p>
             </div>
           </div>
         </motion.div>
@@ -247,7 +271,7 @@ export default function Profile() {
             ) : (
               <EyeOff className="h-6 w-6 text-surface-400" />
             )}
-            <div>
+            <div className="flex-1">
               <p className="font-medium text-surface-800 dark:text-surface-200">
                 {visible ? 'Visible para comercios' : 'No apareces en búsquedas'}
               </p>
@@ -255,11 +279,28 @@ export default function Profile() {
                 {kycRequired && kycStatus !== 'approved'
                   ? 'Completa tu verificación para aparecer.'
                   : status !== 'available'
-                    ? 'Ponte disponible desde el inicio para aparecer.'
+                    ? 'Estás en pausa: no recibís pedidos ni aparecés en búsquedas.'
                     : 'Los comercios pueden encontrarte y asignarte.'}
               </p>
             </div>
           </div>
+          {status !== 'available' && (!kycRequired || kycStatus === 'approved') && (
+            <AnimatedButton
+              variant="gradient"
+              className="w-full mt-4"
+              onClick={async () => {
+                setError(null);
+                try {
+                  await api.updateDriverStatus('available');
+                  await load();
+                } catch {
+                  setError('No se pudo cambiar tu estado');
+                }
+              }}
+            >
+              <Power className="h-4 w-4 inline mr-1" /> Ponerme disponible
+            </AnimatedButton>
+          )}
           {kycRequired && kycStatus !== 'approved' && (
             <Link href="/kyc">
               <AnimatedButton variant="primary" className="w-full mt-4">
@@ -303,8 +344,8 @@ export default function Profile() {
           <StaggerItem>
             <div className="rounded-xl bg-white dark:bg-surface-800 p-4 shadow-soft text-center">
               <Package className="text-2xl h-6 w-6 mx-auto" />
-              <p className="mt-2 text-xl font-bold text-surface-800 dark:text-surface-100 capitalize">
-                {status}
+              <p className="mt-2 text-xl font-bold text-surface-800 dark:text-surface-100">
+                {STATUS_LABEL[status] ?? status}
               </p>
               <p className="text-xs text-surface-500">Estado</p>
             </div>
@@ -319,8 +360,8 @@ export default function Profile() {
           transition={{ delay: 0.1 }}
         >
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-              🪪 Verificación
+            <h3 className="flex items-center gap-2 font-display font-semibold text-surface-800 dark:text-surface-100">
+              <BadgeCheck className="h-5 w-5 text-kiwi-500" /> Verificación
             </h3>
             <KYCStatusBadge status={kycStatus} size="sm" />
           </div>
