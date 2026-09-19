@@ -12,11 +12,7 @@ import { GeocodingService } from '../geocoding/geocoding.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { ProximityService } from './proximity.service';
 import { findDeliveryZone } from './delivery-zones';
-import {
-  isKycRequired,
-  productCommissionCap,
-  productCommissionPct,
-} from '../feature-flags/feature-flags';
+import { isKycRequired } from '../feature-flags/feature-flags';
 
 @Injectable()
 export class OrdersService {
@@ -73,10 +69,9 @@ export class OrdersService {
       }
     }
 
-    // Pricing: trip (zone flat or distance table) + 10% trip commission.
-    // Products add the platform commission (PRODUCT_COMMISSION_PCT, default
-    // 15% con tope opcional PRODUCT_COMMISSION_CAP) — el cargo lo paga el
-    // cliente en el total; el comercio recibe su precio intacto.
+    // Pricing: trip (zone flat or distance table) + comisión SOLO sobre el
+    // viaje (10% crédito, 15% otros medios). Kiwi une comercios con
+    // repartidores: los productos son 100% del comercio, sin comisión.
     const kind = data.kind ?? 'food';
     if (kind !== 'food' && kind !== 'freight') {
       throw new BadRequestException('kind inválido: use food o freight');
@@ -238,8 +233,7 @@ export class OrdersService {
     // manda payWithCredit y el servidor lo convierte en tasa — nunca en monto.
     const payWithCredit = data.payWithCredit === true;
     const commissionRate = payWithCredit ? 0.1 : 0.15;
-    const commission =
-      Math.round(tripPrice * commissionRate) + this.commissionForProducts(productsTotal);
+    const commission = Math.round(tripPrice * commissionRate);
     const driverPayout = tripPrice;
     const totalAmount = productsTotal + tripPrice + commission;
     if (data.packageSize != null && !['S', 'M', 'L'].includes(data.packageSize)) {
@@ -1249,19 +1243,6 @@ export class OrdersService {
         OrdersService.NICOYA_CENTRO_LNG,
       ) <= OrdersService.NICOYA_ZONE_KM
     );
-  }
-
-  /**
-   * Comisión de la app sobre productos: PRODUCT_COMMISSION_PCT (default 15)
-   * con tope opcional PRODUCT_COMMISSION_CAP en colones. Redondeo al colón.
-   */
-  private commissionForProducts(productsTotal: number): number {
-    if (productsTotal <= 0) return 0;
-    const pct = productCommissionPct();
-    let fee = Math.round((productsTotal * pct) / 100);
-    const cap = productCommissionCap();
-    if (cap != null && fee > cap) fee = Math.round(cap);
-    return fee;
   }
 
   /**

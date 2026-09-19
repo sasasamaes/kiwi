@@ -314,7 +314,7 @@ export default function MenuPage() {
   // Espejo del backend: viaje = precio del barrio + comisión 15% + 15% productos.
   const zoneTrip = findDeliveryZone(deliveryInfo.zone)?.price ?? null;
   const deliveryFee = zoneTrip ?? (cartTotal >= 5000 ? 0 : 500); // Sin barrio: regla anterior
-  const serviceFee = zoneTrip != null ? computeAppCommission(zoneTrip, cartTotal) : 0;
+  const serviceFee = zoneTrip != null ? computeAppCommission(zoneTrip, false) : 0;
   const totalWithDelivery = cartTotal + deliveryFee + serviceFee;
 
   // Filter items by category
@@ -1328,7 +1328,7 @@ export default function MenuPage() {
                     {serviceFee > 0 && (
                       <div className="flex justify-between text-sm">
                         <span className="text-surface-500 dark:text-surface-400">
-                          Servicio (envío 15% + productos 15%)
+                          Servicio (15% del envío)
                         </span>
                         <span className="text-surface-800 dark:text-surface-200">
                           ₡{serviceFee.toLocaleString()}

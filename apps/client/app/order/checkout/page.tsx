@@ -119,7 +119,7 @@ function CheckoutContent() {
   // Espejo del backend: viaje = precio del barrio + comisión 15% + 15% productos.
   const zoneTrip = findDeliveryZone(deliveryZone)?.price ?? null;
   const deliveryFee = zoneTrip ?? (subtotal >= 5000 ? 0 : 500);
-  const serviceFee = zoneTrip != null ? computeAppCommission(zoneTrip, subtotal) : 0;
+  const serviceFee = zoneTrip != null ? computeAppCommission(zoneTrip, false) : 0;
   const total = subtotal + deliveryFee + serviceFee;
 
   const canPlaceOrder =
@@ -344,7 +344,7 @@ function CheckoutContent() {
             </div>
             {serviceFee > 0 && (
               <div className="flex justify-between text-sm mt-1">
-                <span className="text-surface-500">Servicio (envío 15% + productos 15%)</span>
+                <span className="text-surface-500">Servicio (15% del envío)</span>
                 <span className="text-surface-700 dark:text-surface-300">
                   ₡{serviceFee.toLocaleString()}
                 </span>

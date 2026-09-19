@@ -50,22 +50,17 @@ const byLabel = new Map(NICOYA_DELIVERY_ZONES.map((z) => [z.label.trim().toLower
 
 /**
  * Comisión de la app — espejo del backend (orders.service).
- * - Viaje: 10% con crédito prepago, 15% con otros medios.
- * - Productos (comida): PRODUCT_COMMISSION_PCT, default 15.
+ * SOLO sobre el viaje: 10% con crédito prepago, 15% con otros medios.
+ * Kiwi une comercios con repartidores: los productos son 100% del comercio.
  */
 export const TRIP_CREDIT_COMMISSION_PCT = 10;
 export const TRIP_STANDARD_COMMISSION_PCT = 15;
 /** @deprecated usar TRIP_CREDIT/STANDARD_COMMISSION_PCT */
 export const TRIP_COMMISSION_PCT = 10;
-export const PRODUCT_COMMISSION_PCT = 15;
 
-export function computeAppCommission(
-  trip: number,
-  products: number,
-  payWithCredit = false,
-): number {
+export function computeAppCommission(trip: number, payWithCredit = false): number {
   const tripPct = payWithCredit ? TRIP_CREDIT_COMMISSION_PCT : TRIP_STANDARD_COMMISSION_PCT;
-  return Math.round((trip * tripPct) / 100) + Math.round((products * PRODUCT_COMMISSION_PCT) / 100);
+  return Math.round((trip * tripPct) / 100);
 }
 
 /** Busca por id o por nombre (insensible a mayúsculas/espacios). */

@@ -416,7 +416,7 @@ describe('OrdersService', () => {
       expect(prisma.order.create).not.toHaveBeenCalled();
     });
 
-    it('comida en zona: comisión de productos al 15% + 10% del envío', async () => {
+    it('comida en zona: productos sin comisión, solo 10% del envío', async () => {
       const order: any = await service.create('user-1', {
         pickupAddress: 'Parque Nicoya',
         deliveryAddress: 'Barrio San Martín',
@@ -425,29 +425,10 @@ describe('OrdersService', () => {
         payWithCredit: true,
         productsTotal: 5000,
       });
-      // 10% de 2000 (envío) + 15% de 5000 (productos) = 200 + 750
+      // 10% de 2000 (envío); productos 100% del comercio
       expect(order.basePrice).toBe(2000);
-      expect(order.commission).toBe(950);
-      expect(order.totalAmount).toBe(2000 + 5000 + 950);
-    });
-
-    it('PRODUCT_COMMISSION_PCT=0 restaura el pass-through de productos', async () => {
-      process.env.PRODUCT_COMMISSION_PCT = '0';
-      try {
-        const order: any = await service.create('user-1', {
-          pickupAddress: 'Parque Nicoya',
-          deliveryAddress: 'Barrio San Martín',
-          distanceKm: 2.5,
-          kind: 'food',
-          payWithCredit: true,
-          productsTotal: 5000,
-        });
-        // Solo 10% del envío; productos intactos
-        expect(order.commission).toBe(200);
-        expect(order.totalAmount).toBe(7200);
-      } finally {
-        delete process.env.PRODUCT_COMMISSION_PCT;
-      }
+      expect(order.commission).toBe(200);
+      expect(order.totalAmount).toBe(2000 + 5000 + 200);
     });
 
     it('rechaza kind invalido y productsTotal negativo', async () => {

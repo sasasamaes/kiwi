@@ -144,7 +144,6 @@ export {
   TRIP_COMMISSION_PCT,
   TRIP_CREDIT_COMMISSION_PCT,
   TRIP_STANDARD_COMMISSION_PCT,
-  PRODUCT_COMMISSION_PCT,
 } from './deliveryZones';
 export type { DeliveryZone } from './deliveryZones';
 

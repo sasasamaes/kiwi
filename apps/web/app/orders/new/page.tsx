@@ -520,7 +520,7 @@ function NewOrderInner({
   const zoneLabel = findDeliveryZone(deliveryZone)?.label ?? null;
   const weightSurcharge = kind === 'freight' && weightKg > 5 ? Math.ceil(weightKg - 5) * 500 : 0;
   const trip = baseTrip + weightSurcharge;
-  const commission = computeAppCommission(trip, subtotal, paymentMethod === 'credit');
+  const commission = computeAppCommission(trip, paymentMethod === 'credit');
   const total = subtotal + trip + commission;
   const etaMin = routeKm != null ? Math.max(5, Math.round((routeKm / 25) * 60)) : null;
 
@@ -1183,8 +1183,7 @@ function NewOrderInner({
                 </div>
                 <div className="flex justify-between">
                   <span className="text-surface-500">
-                    Comisión Kiwi (envío {paymentMethod === 'credit' ? '10%' : '15%'} + productos
-                    15%)
+                    Comisión Kiwi ({paymentMethod === 'credit' ? '10%' : '15%'} del envío)
                   </span>
                   <span className="text-surface-600 dark:text-surface-300 font-medium">
                     ₡{commission.toLocaleString()}
