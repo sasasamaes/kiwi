@@ -34,6 +34,7 @@ import {
   staggerContainer,
   KiwiLoader,
 } from '@kiwi/ui';
+import { MerchantNav } from '../../components/MerchantNav';
 
 export default function Dashboard() {
   const router = useRouter();
@@ -143,6 +144,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-[100dvh] bg-bg-light">
+      <MerchantNav />
       {/* Header */}
       <motion.header
         className="sticky top-0 z-50 border-b border-surface-200/50 bg-white/70 backdrop-blur-xl"

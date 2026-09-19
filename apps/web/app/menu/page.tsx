@@ -27,6 +27,7 @@ import {
   MenuItem,
 } from '@kiwi/ui';
 import { MenuItemForm } from '../../components/ui/MenuItemForm';
+import { MerchantNav } from '../../components/MerchantNav';
 
 const CATEGORIES = [
   'Todos',
@@ -286,6 +287,7 @@ export default function MenuManagementPage() {
 
   return (
     <div className="min-h-[100dvh] bg-bg-light dark:bg-surface-950">
+      <MerchantNav />
       {/* Header */}
       <motion.header
         className="sticky top-0 z-50 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl"
@@ -650,7 +652,7 @@ export default function MenuManagementPage() {
                     <div className="text-surface-400 dark:text-surface-500">⋮⋮</div>
                     <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-surface-100 dark:bg-surface-700 text-2xl flex-shrink-0">
                       {isHttpUrl(item.image) ? (
-                        // eslint-disable-next-line @next/next/no-img-element -- avatares dinámicos de Cloudinary, next/image no aporta aquí
+                        // NOTE: <img> intencional — avatares dinámicos de Cloudinary, next/image no aporta aquí
                         <img
                           src={item.image}
                           alt={item.name}
@@ -712,7 +714,7 @@ export default function MenuManagementPage() {
                       {/* Item Image */}
                       <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-surface-100 dark:bg-surface-700 text-3xl flex-shrink-0">
                         {isHttpUrl(item.image) ? (
-                          // eslint-disable-next-line @next/next/no-img-element -- avatares dinámicos de Cloudinary, next/image no aporta aquí
+                          // NOTE: <img> intencional — avatares dinámicos de Cloudinary, next/image no aporta aquí
                           <img
                             src={item.image}
                             alt={item.name}

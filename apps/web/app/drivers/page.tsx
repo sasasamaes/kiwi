@@ -13,6 +13,7 @@ import {
   socketClient,
   api,
 } from '@kiwi/ui';
+import { MerchantNav } from '../../components/MerchantNav';
 
 interface Driver {
   id: string;
@@ -330,6 +331,7 @@ export default function DriversPage() {
 
   return (
     <div className="min-h-[100dvh] bg-bg-light dark:bg-surface-950">
+      <MerchantNav />
       <motion.header
         className="sticky top-0 z-50 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl"
         initial={{ y: -100 }}
