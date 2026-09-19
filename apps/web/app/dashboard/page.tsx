@@ -44,6 +44,8 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  // Crédito prepago: solo cubre envíos. Se recarga por semana con Kiwi.
+  const [creditBalance, setCreditBalance] = useState<number | null>(null);
 
   // Push notifications
   const { requestPermission } = usePushNotifications({
@@ -109,6 +111,13 @@ export default function Dashboard() {
     const fetchData = async () => {
       await fetchOrders();
       setLoading(false);
+      // Saldo de crédito prepago (solo envíos)
+      try {
+        const c = await api.getCreditBalance();
+        setCreditBalance(Number(c?.balance ?? 0));
+      } catch {
+        setCreditBalance(null);
+      }
       // Fetch unread count
       try {
         const data = await api.getUnreadNotificationCount();
@@ -124,7 +133,6 @@ export default function Dashboard() {
       fetchData();
     }
   }, [user, requestPermission]);
-
   if (authLoading || loading) {
     return (
       <div className="min-h-[100dvh] bg-bg-light flex items-center justify-center">
@@ -211,6 +219,35 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        {/* Crédito prepago */}
+        {creditBalance != null && (
+          <motion.div
+            className={`mb-6 flex flex-col gap-2 rounded-2xl border p-4 sm:flex-row sm:items-center sm:justify-between ${
+              creditBalance < 2000
+                ? 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20'
+                : 'border-kiwi-200 bg-kiwi-50 dark:border-kiwi-800 dark:bg-kiwi-900/20'
+            }`}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <div>
+              <p className="text-sm font-semibold text-surface-800 dark:text-surface-100">
+                Crédito prepago: ₡{creditBalance.toLocaleString()}
+              </p>
+              <p className="text-xs text-surface-500 dark:text-surface-400">
+                {creditBalance < 2000
+                  ? 'Te estás quedando sin saldo para envíos. Llamá a los encargados de Kiwi para recargar tu usuario.'
+                  : 'Cubre tus envíos (viaje + plataforma). Se recarga por semana con Kiwi.'}
+              </p>
+            </div>
+            <Link
+              href="/orders/new"
+              className="rounded-xl bg-kiwi-500 px-4 py-2 text-center text-sm font-semibold text-white hover:bg-kiwi-600"
+            >
+              Pedir con crédito
+            </Link>
+          </motion.div>
+        )}
         {/* Welcome Section */}
         <motion.div
           className="mb-8"

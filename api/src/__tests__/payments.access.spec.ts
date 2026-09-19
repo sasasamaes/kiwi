@@ -4,6 +4,7 @@ import { PaymentsService } from '../payments/payments.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { OnvoPayProvider } from '../payments/providers/onvopay.provider';
 import { StellarProvider } from '../payments/providers/stellar.provider';
+import { CreditsService } from '../credits/credits.service';
 
 describe('PaymentsService — row-level payment access', () => {
   let service: PaymentsService;
@@ -28,6 +29,7 @@ describe('PaymentsService — row-level payment access', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: OnvoPayProvider, useValue: {} },
         { provide: StellarProvider, useValue: {} },
+        { provide: CreditsService, useValue: { spend: jest.fn() } },
       ],
     }).compile();
 

@@ -13,6 +13,7 @@ import {
   Users,
   BadgeCheck,
   Star,
+  Wallet,
 } from 'lucide-react';
 import { ThemeToggle, useAuth, KiwiLogo } from '@kiwi/ui';
 
@@ -20,6 +21,7 @@ const menuItems = [
   { href: '/admin', icon: BarChart3, label: 'Dashboard', exact: true },
   { href: '/admin/users', icon: Users, label: 'Usuarios' },
   { href: '/admin/orders', icon: Package, label: 'Pedidos' },
+  { href: '/admin/credits', icon: Wallet, label: 'Crédito prepago' },
   { href: '/admin/ratings', icon: Star, label: 'Comentarios' },
   { href: '/admin/kyc', icon: BadgeCheck, label: 'Verificaciones KYC' },
   { href: '/admin/payments', icon: Coins, label: 'Pagos' },

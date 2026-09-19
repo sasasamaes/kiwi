@@ -560,7 +560,7 @@ class ApiClient {
 
   async createPayment(data: {
     orderId: string;
-    method: 'onvopay_card' | 'onvopay_sinpe' | 'crypto' | 'cash';
+    method: 'onvopay_card' | 'onvopay_sinpe' | 'crypto' | 'cash' | 'credit';
     amount: number;
     customerEmail?: string;
     customerPhone?: string;
@@ -634,6 +634,37 @@ class ApiClient {
 
   async getAnalyticsSummary() {
     return this.request<any>('/analytics/summary');
+  }
+
+  // Crédito prepago del comercio (solo envío: viaje + plataforma)
+  async getCreditBalance() {
+    return this.request<{ merchantId: string; balance: number }>('/credits/balance');
+  }
+
+  async getCreditHistory(take = 30, skip = 0) {
+    return this.request<any>(`/credits/history?take=${take}&skip=${skip}`);
+  }
+
+  async getCreditMerchants() {
+    return this.request<any[]>('/credits/admin/merchants');
+  }
+
+  async rechargeMerchantCredit(id: string, amount: number, reason?: string) {
+    return this.request<any>(`/credits/admin/merchants/${id}/recharge`, {
+      method: 'POST',
+      body: { amount, reason },
+    });
+  }
+
+  async refundMerchantCredit(id: string, amount: number, reason?: string) {
+    return this.request<any>(`/credits/admin/merchants/${id}/refund`, {
+      method: 'POST',
+      body: { amount, reason },
+    });
+  }
+
+  async getMerchantCreditHistory(id: string, take = 30, skip = 0) {
+    return this.request<any>(`/credits/admin/merchants/${id}/history?take=${take}&skip=${skip}`);
   }
 
   async getLivePulse() {

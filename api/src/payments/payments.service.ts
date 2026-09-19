@@ -2,11 +2,12 @@ import { Injectable, Logger, BadRequestException, ForbiddenException } from '@ne
 import { PrismaService } from '../prisma/prisma.service';
 import { OnvoPayProvider } from './providers/onvopay.provider';
 import { StellarProvider } from './providers/stellar.provider';
+import { CreditsService } from '../credits/credits.service';
 import { PaymentMethod, PaymentStatus } from '@prisma/client';
 
 export interface CreatePaymentDTO {
   orderId: string;
-  method: 'onvopay_card' | 'onvopay_sinpe' | 'crypto' | 'cash';
+  method: 'onvopay_card' | 'onvopay_sinpe' | 'crypto' | 'cash' | 'credit';
   amount: number;
   currency?: string;
   customerEmail?: string;
@@ -35,6 +36,7 @@ export class PaymentsService {
     private prisma: PrismaService,
     private onvopayProvider: OnvoPayProvider,
     private stellarProvider: StellarProvider,
+    private creditsService: CreditsService,
   ) {}
 
   async createPayment(dto: CreatePaymentDTO, payerUserId?: string): Promise<PaymentResult> {
@@ -87,6 +89,10 @@ export class PaymentsService {
     }
 
     let result: PaymentResult;
+
+    if (method === 'credit') {
+      return this.createCreditPayment(orderId, order, payerUserId);
+    }
 
     switch (method) {
       case 'onvopay_card':
@@ -142,6 +148,57 @@ export class PaymentsService {
     }
 
     return result;
+  }
+
+  /**
+   * Pago con crédito prepago: solo el dueño comercio del pedido puede usarlo.
+   * Descuenta viaje (payout) + comisión de la app — los productos nunca salen
+   * del crédito. Si ya hay pago completado, no duplica el gasto.
+   */
+  private async createCreditPayment(
+    orderId: string,
+    order: any,
+    payerUserId?: string,
+  ): Promise<PaymentResult> {
+    if (!payerUserId) {
+      throw new BadRequestException('Iniciá sesión como comercio para pagar con crédito');
+    }
+    const merchant = await this.prisma.merchantProfile.findUnique({
+      where: { userId: payerUserId },
+    });
+    if (!merchant || merchant.id !== order.merchantId) {
+      throw new ForbiddenException('Solo el comercio dueño puede pagar con crédito');
+    }
+    const existing = await this.prisma.payment.findUnique({ where: { orderId } });
+    if (existing && existing.status === PaymentStatus.completed) {
+      throw new BadRequestException('El pedido ya tiene un pago completado');
+    }
+
+    // Viaje + comisión (NO productos): basePrice ya es el viaje con recargos.
+    const spend = Math.round(Number(order.basePrice) + Number(order.commission));
+    if (!Number.isFinite(spend) || spend <= 0) {
+      throw new BadRequestException('Monto del envío inválido');
+    }
+
+    const { balance } = await this.creditsService.spend(merchant.id, spend, orderId);
+
+    const data = {
+      amount: spend,
+      currency: 'CRC',
+      method: 'credit' as PaymentMethod,
+      status: PaymentStatus.completed as PaymentStatus,
+    };
+    let payment: any;
+    if (existing) {
+      payment = await this.prisma.payment.update({ where: { orderId }, data });
+    } else {
+      payment = await this.prisma.payment.create({
+        data: { order: { connect: { id: orderId } }, ...data },
+      });
+    }
+
+    this.logger.log(`Credit payment for order ${orderId}: spent=${spend} balance=${balance}`);
+    return { success: true, paymentId: payment.id };
   }
 
   private async createOnvoPayPayment(

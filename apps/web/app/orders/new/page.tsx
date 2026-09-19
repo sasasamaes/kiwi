@@ -225,7 +225,18 @@ function NewOrderInner({
   const [isScheduled, setIsScheduled] = useState(false);
   const [scheduledDate, setScheduledDate] = useState('');
   const [scheduledTime, setScheduledTime] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'sinpe' | 'card' | 'crypto'>('sinpe');
+  const [paymentMethod, setPaymentMethod] = useState<
+    'cash' | 'sinpe' | 'card' | 'crypto' | 'credit'
+  >('sinpe');
+  // Crédito prepago: solo cubre envío (viaje + plataforma). Se descuenta al crear.
+  const [creditBalance, setCreditBalance] = useState<number | null>(null);
+
+  useEffect(() => {
+    api
+      .getCreditBalance()
+      .then((r) => setCreditBalance(Number(r?.balance ?? 0)))
+      .catch(() => setCreditBalance(null));
+  }, []);
 
   const [favoriteDrivers, setFavoriteDrivers] = useState<Driver[]>([]);
   const [availableDrivers, setAvailableDrivers] = useState<Driver[]>([]);
@@ -523,6 +534,14 @@ function NewOrderInner({
       setFormError('Elegí el barrio de entrega para calcular el envío');
       return;
     }
+    // Chequeo previo (el backend revalida atómicamente): evita crear el
+    // pedido si el crédito no cubre el envío.
+    if (paymentMethod === 'credit' && creditBalance != null && creditBalance < trip + commission) {
+      setFormError(
+        `Saldo insuficiente (₡${creditBalance.toLocaleString()}): este envío cuesta ₡${(trip + commission).toLocaleString()}. Llamá a Kiwi para recargar tu crédito.`,
+      );
+      return;
+    }
     if (isScheduled && !scheduledDate) {
       setFormError('Elegí fecha y hora para programar el pedido');
       return;
@@ -574,11 +593,23 @@ function NewOrderInner({
             amount: total,
             cryptoCoin: 'USDC',
           });
+        } else if (paymentMethod === 'credit') {
+          // Solo envío (viaje + plataforma): el backend lo valida y descuenta.
+          await api.createPayment({
+            orderId: result.id,
+            method: 'credit',
+            amount: trip + commission,
+          });
+          setCreditBalance((b) => (b == null ? b : b - (trip + commission)));
         } else {
           await api.createPayment({ orderId: result.id, method: 'cash', amount: total });
         }
-      } catch (paymentError) {
+      } catch (paymentError: any) {
         console.error('Failed to create payment:', paymentError);
+        setFormError(
+          paymentError?.message ||
+            'No se pudo procesar el pago. Si pagás con crédito y no alcanza, llamá a Kiwi para recargar.',
+        );
       }
 
       setCreatedOrderId(result.id);
@@ -1184,6 +1215,13 @@ function NewOrderInner({
                     { id: 'card', label: 'Tarjeta' },
                     { id: 'crypto', label: 'USDC' },
                     { id: 'cash', label: 'Efectivo' },
+                    {
+                      id: 'credit',
+                      label:
+                        creditBalance == null
+                          ? 'Crédito'
+                          : `Crédito (₡${creditBalance.toLocaleString()})`,
+                    },
                   ] as const
                 ).map((m) => (
                   <button
@@ -1199,6 +1237,12 @@ function NewOrderInner({
                   </button>
                 ))}
               </div>
+              {paymentMethod === 'credit' && (
+                <p className="mb-2 text-xs text-surface-500 dark:text-surface-400">
+                  Se descuenta solo el envío (₡{(trip + commission).toLocaleString()}) de tu
+                  crédito. Si no alcanza, llamá a Kiwi para recargar.
+                </p>
+              )}
             </motion.div>
           )}
         </AnimatePresence>

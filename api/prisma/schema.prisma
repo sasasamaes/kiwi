@@ -62,14 +62,42 @@ model MerchantProfile {
   kycStatus     KYCStatus @default(pending) @map("kyc_status")
   kycVerifiedAt DateTime? @map("kyc_verified_at")
 
+  // Crédito prepago: el admin recarga, el comercio lo gasta en envíos
+  // (viaje + plataforma). Solo envío — los productos los cobra el comercio.
+  creditBalance Decimal @default(0) @map("credit_balance") @db.Decimal(10, 2)
+
   // Relations
   user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   orders          Order[]
   menuItems       MenuItem[]
   favoriteDrivers FavoriteDriver[]
   ratings         Rating[]
+  creditLedger    CreditTransaction[]
 
   @@map("merchant_profiles")
+}
+
+// Libro mayor del crédito prepago (auditable: toda recarga y gasto queda aquí)
+model CreditTransaction {
+  id         String   @id @default(uuid())
+  merchantId String   @map("merchant_id")
+  amount     Decimal  @db.Decimal(10, 2) // + recarga, − gasto
+  kind       CreditTransactionKind
+  reason     String?
+  orderId    String?  @map("order_id")
+  createdBy  String?  @map("created_by") // userId del admin que recargó
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  merchant MerchantProfile @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  @@index([merchantId, createdAt])
+  @@map("credit_transactions")
+}
+
+enum CreditTransactionKind {
+  recharge
+  spend
+  refund
 }
 
 // Driver profiles
@@ -337,6 +365,7 @@ enum PaymentMethod {
   onvopay_sinpe
   crypto
   cash
+  credit
 }
 
 enum PaymentStatus {

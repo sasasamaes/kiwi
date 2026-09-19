@@ -2,7 +2,7 @@ import { IsString, IsNumber, IsOptional, IsIn } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
-export type PaymentMethodType = 'onvopay_card' | 'onvopay_sinpe' | 'crypto' | 'cash';
+export type PaymentMethodType = 'onvopay_card' | 'onvopay_sinpe' | 'crypto' | 'cash' | 'credit';
 
 export class CreatePaymentDto {
   @ApiProperty({ description: 'Order ID to pay for' })
@@ -11,9 +11,9 @@ export class CreatePaymentDto {
 
   @ApiProperty({
     description: 'Payment method to use',
-    enum: ['onvopay_card', 'onvopay_sinpe', 'crypto', 'cash'],
+    enum: ['onvopay_card', 'onvopay_sinpe', 'crypto', 'cash', 'credit'],
   })
-  @IsIn(['onvopay_card', 'onvopay_sinpe', 'crypto', 'cash'])
+  @IsIn(['onvopay_card', 'onvopay_sinpe', 'crypto', 'cash', 'credit'])
   method: PaymentMethodType;
 
   @ApiProperty({

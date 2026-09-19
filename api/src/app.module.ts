@@ -15,6 +15,7 @@ import { EventsModule } from './events/events.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { NotificationsForwardModule } from './notifications/module-ref';
 import { PaymentsModule } from './payments/payments.module';
+import { CreditsModule } from './credits/credits.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { WithdrawalsModule } from './withdrawals/withdrawals.module';
 import { GeocodingModule } from './geocoding/geocoding.module';
@@ -53,6 +54,7 @@ import { FeatureFlagsModule } from './feature-flags/feature-flags.module';
     NotificationsModule,
     NotificationsForwardModule,
     PaymentsModule,
+    CreditsModule,
     AnalyticsModule,
     WithdrawalsModule,
     GeocodingModule,
