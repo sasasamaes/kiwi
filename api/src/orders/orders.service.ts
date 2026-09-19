@@ -727,6 +727,7 @@ export class OrdersService {
             },
           },
         },
+        items: { select: { name: true, quantity: true } },
         _count: { select: { proposals: true } },
       },
       orderBy: { createdAt: 'desc' },

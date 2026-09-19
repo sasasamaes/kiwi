@@ -4,7 +4,7 @@ import { Suspense, useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BarChart3 } from 'lucide-react';
+import { BarChart3, Package } from 'lucide-react';
 import {
   AnimatedButton,
   useAuth,
@@ -702,6 +702,11 @@ function NewOrderInner({
             <Link href="/dashboard">
               <AnimatedButton variant="gradient" className="w-full">
                 <BarChart3 className="h-4 w-4 inline" /> Volver al Dashboard
+              </AnimatedButton>
+            </Link>
+            <Link href="/orders">
+              <AnimatedButton variant="secondary" className="w-full">
+                <Package className="h-4 w-4 inline" /> Seguir mis envíos en vivo
               </AnimatedButton>
             </Link>
             <AnimatedButton
