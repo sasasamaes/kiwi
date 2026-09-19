@@ -5,15 +5,15 @@
 importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js');
 
-// Firebase configuration
-// Replace with your actual Firebase config
+// Firebase configuration — inyectada en build por scripts/gen-firebase-sw.js
+// desde NEXT_PUBLIC_FIREBASE_* (config pública por diseño: viaja en el bundle).
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  "apiKey": "MISSING",
+  "authDomain": "MISSING",
+  "projectId": "MISSING",
+  "storageBucket": "MISSING",
+  "messagingSenderId": "MISSING",
+  "appId": "MISSING"
 };
 
 // Initialize Firebase
@@ -98,15 +98,12 @@ self.addEventListener('notificationclick', (event) => {
   // Determine URL to open
   let url = '/';
   if (data?.orderId) {
-    if (data.type === 'new_order' || data.type === 'order_accepted') {
-      // Driver app - go to order
-      url = `/order/${data.orderId}`;
-    } else if (data.type === 'order_status') {
-      // Client app - go to tracking
-      url = `/order/${data.orderId}/tracking`;
-    } else if (data.type === 'payment_received') {
-      // Merchant app - go to earnings
-      url = `/dashboard`;
+    if (data.type === 'new_order') {
+      // Driver: el pedido nuevo se acepta desde el inicio
+      url = '/';
+    } else {
+      // Pedido asignado/en curso
+      url = '/active';
     }
   } else if (action === 'view') {
     url = '/';

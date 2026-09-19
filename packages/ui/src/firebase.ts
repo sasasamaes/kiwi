@@ -55,9 +55,22 @@ export async function requestNotificationPermission(): Promise<string | null> {
     const firebase = await initializeFirebase();
     if (!firebase) return null;
 
+    // Service worker explícito: sin esto getToken falla cuando el navegador
+    // todavía no registró /firebase-messaging-sw.js (el push en background
+    // con la app cerrada depende de ese archivo).
+    let registration: ServiceWorkerRegistration | undefined;
+    try {
+      if ('serviceWorker' in navigator) {
+        registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+      }
+    } catch (swError) {
+      console.warn('SW registration failed, trying getToken anyway:', swError);
+    }
+
     const { getToken } = await import('firebase/messaging');
     const token = await getToken(firebase.messaging, {
       vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
+      ...(registration ? { serviceWorkerRegistration: registration } : {}),
     });
 
     console.log('FCM Token:', token);

@@ -16,6 +16,7 @@ import {
   useAuth,
   useSocket,
   useNotifications,
+  usePushNotifications,
   playNotificationSound,
   api,
   Order,
@@ -50,6 +51,14 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<'all' | 'delivery' | 'trip' | 'freight'>('all');
   const [pageError, setPageError] = useState<string | null>(null);
   const { addNotification } = useNotifications();
+  // Push web: avisa pedidos nuevos con la app cerrada o en segundo plano.
+  // El permiso lo pide el botón del banner (el navegador exige gesto).
+  const {
+    isSupported: pushSupported,
+    permission: pushPermission,
+    requestPermission: requestPushPermission,
+  } = usePushNotifications({ enabled: false });
+  const [pushBusy, setPushBusy] = useState(false);
 
   const tabs = [
     { id: 'all' as const, label: 'Todos', icon: ClipboardList },
@@ -355,6 +364,44 @@ export default function Home() {
         {pageError && (
           <div className="mb-4 rounded-xl bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 px-4 py-3 text-sm text-red-600 dark:text-red-400">
             {pageError}
+          </div>
+        )}
+        {/* Alertas push: solo si el navegador las soporta y aún no se decidió */}
+        {pushSupported && pushPermission === 'default' && (
+          <div className="mb-4 rounded-2xl glass p-4">
+            <p className="text-sm font-semibold text-surface-800 dark:text-surface-100">
+              Recibí pedidos con el celu bloqueado
+            </p>
+            <p className="mt-0.5 text-xs text-surface-500 dark:text-surface-400">
+              Activá las alertas para que te avisemos aunque la app esté cerrada.
+            </p>
+            <TapButton
+              variant="gradient"
+              haptic
+              className="mt-3 h-11 w-full rounded-xl text-sm"
+              disabled={pushBusy}
+              onClick={async () => {
+                setPushBusy(true);
+                try {
+                  const ok = await requestPushPermission();
+                  if (!ok) {
+                    setPageError(
+                      'No se pudieron activar las alertas. Revisá el permiso en tu navegador.',
+                    );
+                  }
+                } finally {
+                  setPushBusy(false);
+                }
+              }}
+            >
+              {pushBusy ? 'Activando…' : 'Activar alertas'}
+            </TapButton>
+          </div>
+        )}
+        {pushSupported && pushPermission === 'denied' && isOnline && (
+          <div className="mb-4 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 px-4 py-3 text-xs text-amber-800 dark:text-amber-300">
+            Las alertas están bloqueadas en tu navegador: activalas en los ajustes del sitio para
+            recibir pedidos con la app cerrada.
           </div>
         )}
         {/* Status Toggle */}
