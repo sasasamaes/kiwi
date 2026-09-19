@@ -233,7 +233,13 @@ export class OrdersService {
           { lat: data.pickupLat, lng: data.pickupLng },
           { lat: data.deliveryLat, lng: data.deliveryLng },
         )) + weightSurcharge;
-    const commission = Math.round(tripPrice * 0.1) + this.commissionForProducts(productsTotal);
+    // Comisión por método de pago: 10% con crédito prepago, 15% con
+    // cualquier otro medio (SINPE, tarjeta, cripto, efectivo). El cliente
+    // manda payWithCredit y el servidor lo convierte en tasa — nunca en monto.
+    const payWithCredit = data.payWithCredit === true;
+    const commissionRate = payWithCredit ? 0.1 : 0.15;
+    const commission =
+      Math.round(tripPrice * commissionRate) + this.commissionForProducts(productsTotal);
     const driverPayout = tripPrice;
     const totalAmount = productsTotal + tripPrice + commission;
     if (data.packageSize != null && !['S', 'M', 'L'].includes(data.packageSize)) {
@@ -257,6 +263,7 @@ export class OrdersService {
         deliveryZone,
         basePrice: tripPrice,
         commission,
+        commissionRate,
         driverPayout,
         totalAmount,
         productsTotal,

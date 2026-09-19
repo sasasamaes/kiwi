@@ -188,6 +188,7 @@ describe('OrdersService', () => {
         deliveryAddress: 'Hojancha centro',
         deliveryZone: 'hojancha',
         distanceKm: 1,
+        payWithCredit: true,
       });
 
       // Viaje ₡7000 + comisión 10% ₡700 = ₡7700 (sin productos)
@@ -195,7 +196,34 @@ describe('OrdersService', () => {
       expect(order.basePrice).toBe(7000);
       expect(order.driverPayout).toBe(7000);
       expect(order.commission).toBe(700);
+      expect(order.commissionRate).toBe(0.1);
       expect(order.totalAmount).toBe(7700);
+    });
+
+    it('sin crédito aplica 15% al envío (onvo/efectivo)', async () => {
+      prisma.merchantProfile.findUnique.mockResolvedValue({
+        id: 'merchant-1',
+        userId: 'user-1',
+        businessName: 'Bowl & Café',
+      });
+      prisma.order.create.mockImplementation(async ({ data }: any) => ({
+        id: 'order-1',
+        status: 'pending',
+        ...data,
+      }));
+
+      const order: any = await service.create('user-1', {
+        pickupAddress: 'Nicoya Centro',
+        deliveryAddress: 'Hojancha centro',
+        deliveryZone: 'hojancha',
+        distanceKm: 1,
+      });
+
+      // Viaje ₡7000 + comisión 15% ₡1050 = ₡8050
+      expect(order.commission).toBe(1050);
+      expect(order.commissionRate).toBe(0.15);
+      expect(order.totalAmount).toBe(8050);
+      expect(order.driverPayout).toBe(7000);
     });
 
     it('should reject unknown deliveryZone', async () => {
@@ -233,6 +261,7 @@ describe('OrdersService', () => {
         deliveryLat: 10.15,
         deliveryLng: -85.455,
         distanceKm: 1.2,
+        payWithCredit: true,
       });
 
       expect(order.basePrice).toBe(2000);
@@ -300,6 +329,7 @@ describe('OrdersService', () => {
         deliveryLng: -85.455,
         distanceKm: 2,
         kind: 'freight',
+        payWithCredit: true,
         packageDescription: 'Caja con repuestos',
         packageSize: 'M',
       });
@@ -319,6 +349,7 @@ describe('OrdersService', () => {
         deliveryLng: -85.455,
         distanceKm: 2,
         kind: 'freight',
+        payWithCredit: true,
         packageDescription: 'Caja pesada',
         weightKg: 12,
       });
@@ -365,6 +396,7 @@ describe('OrdersService', () => {
         deliveryAddress: 'Barrio San Martín',
         distanceKm: 2.5,
         kind: 'food',
+        payWithCredit: true,
         productsTotal: 5000,
       });
       // 10% de 2000 (envío) + 15% de 5000 (productos) = 200 + 750
@@ -381,6 +413,7 @@ describe('OrdersService', () => {
           deliveryAddress: 'Barrio San Martín',
           distanceKm: 2.5,
           kind: 'food',
+          payWithCredit: true,
           productsTotal: 5000,
         });
         // Solo 10% del envío; productos intactos

@@ -283,7 +283,7 @@ export default function MenuPage() {
 
   const cartTotal = cart.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
-  // Espejo del backend: viaje = precio del barrio + comisión 10% + 15% productos.
+  // Espejo del backend: viaje = precio del barrio + comisión 15% + 15% productos.
   const zoneTrip = findDeliveryZone(deliveryInfo.zone)?.price ?? null;
   const deliveryFee = zoneTrip ?? (cartTotal >= 5000 ? 0 : 500); // Sin barrio: regla anterior
   const serviceFee = zoneTrip != null ? computeAppCommission(zoneTrip, cartTotal) : 0;
@@ -1298,7 +1298,7 @@ export default function MenuPage() {
                     {serviceFee > 0 && (
                       <div className="flex justify-between text-sm">
                         <span className="text-surface-500 dark:text-surface-400">
-                          Servicio (envío 10% + productos 15%)
+                          Servicio (envío 15% + productos 15%)
                         </span>
                         <span className="text-surface-800 dark:text-surface-200">
                           ₡{serviceFee.toLocaleString()}

@@ -391,7 +391,7 @@ export default function AdminDashboard() {
             <div className="flex items-center justify-between mb-2">
               <Coins className="h-6 w-6 text-kiwi-600 dark:text-kiwi-400" />
               <span className="text-xs font-medium text-kiwi-600 dark:text-kiwi-400">
-                5% comisión
+                10% crédito · 15% otros
               </span>
             </div>
             <p className="text-2xl font-bold text-kiwi-700 dark:text-kiwi-300">
@@ -633,7 +633,7 @@ export default function AdminDashboard() {
                       Comisión Plataforma
                     </p>
                     <p className="text-sm text-surface-500 dark:text-surface-400">
-                      5% de cada pedido
+                      10% con crédito · 15% otros medios
                     </p>
                   </div>
                 </div>

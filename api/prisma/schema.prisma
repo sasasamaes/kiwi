@@ -255,6 +255,8 @@ model Order {
   deliveryZone       String?  @map("delivery_zone")
   basePrice          Decimal  @map("base_price") @db.Decimal(10, 2)
   commission         Decimal  @db.Decimal(10, 2)
+  // Tasa aplicada: 0.10 con crédito prepago, 0.15 con otros medios
+  commissionRate     Decimal  @default(0.10) @map("commission_rate") @db.Decimal(4, 3)
   driverPayout       Decimal  @map("driver_payout") @db.Decimal(10, 2)
   totalAmount        Decimal  @map("total_amount") @db.Decimal(10, 2)
   // Flete (fase 1: encomiendas)
