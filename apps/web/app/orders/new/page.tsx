@@ -1120,6 +1120,12 @@ function NewOrderInner({
                   </span>
                   <span className="text-kiwi-600 font-medium">₡{trip.toLocaleString()}</span>
                 </div>
+                <div className="flex justify-between">
+                  <span className="text-surface-500">Plataforma (10%)</span>
+                  <span className="text-surface-600 dark:text-surface-300 font-medium">
+                    ₡{commission.toLocaleString()}
+                  </span>
+                </div>
                 <div className="flex justify-between text-lg font-bold pt-2 border-t border-surface-100 dark:border-surface-700">
                   <span>Total</span>
                   <span className="text-kiwi-600">₡{total.toLocaleString()}</span>
