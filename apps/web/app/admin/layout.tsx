@@ -14,6 +14,7 @@ import {
   BadgeCheck,
   Star,
   Wallet,
+  LogOut,
 } from 'lucide-react';
 import { ThemeToggle, useAuth, KiwiLogo } from '@kiwi/ui';
 
@@ -31,7 +32,7 @@ const menuItems = [
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, loading } = useAuth();
+  const { user, loading, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   // Solo rol admin: sin login → /login; logueado sin rol → /dashboard.
@@ -167,6 +168,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   <p className="text-xs text-surface-500 dark:text-surface-400">Super Admin</p>
                 </div>
               </div>
+              <button
+                onClick={() => {
+                  logout();
+                  router.replace('/login');
+                }}
+                title="Cerrar sesión"
+                className="rounded-xl p-2.5 text-surface-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 transition-colors"
+              >
+                <LogOut className="h-5 w-5" />
+              </button>
             </div>
           </div>
         </header>
