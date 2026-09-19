@@ -6,6 +6,7 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ImageUploadService } from '../menu/image-upload.service';
+import { v2 as cloudinary } from 'cloudinary';
 
 /**
  * Validación de la subida de imágenes SIN red: las reglas de aceptación
@@ -65,7 +66,7 @@ describe('ImageUploadService', () => {
     ]);
     // Mock del stream de Cloudinary para no depender de red: responde error
     // genérico; lo importante es que NO sea BadRequest (pasó la validación).
-    jest.spyOn(require('cloudinary').v2.uploader, 'upload_stream').mockImplementation(((
+    jest.spyOn(cloudinary.uploader, 'upload_stream').mockImplementation(((
       _options: any,
       cb: (e: any) => void,
     ) => {

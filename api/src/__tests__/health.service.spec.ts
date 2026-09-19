@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { HttpAdapterHost } from '@nestjs/core';
 import * as http from 'node:http';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { HealthService } from '../health/health.service';
 
@@ -124,7 +125,6 @@ describe('HealthService — schema drift', () => {
   it('reports ok when every expected column exists', async () => {
     // Any table the DMMF declares must return its own columns; derive the
     // answer from the DMMF itself so the test does not hardcode the schema.
-    const { Prisma } = require('@prisma/client');
     const models = Prisma.dmmf.datamodel.models.filter((m: any) => m.dbName);
     prisma.$queryRaw.mockImplementation(
       (_strings: any, table: string) =>
@@ -147,7 +147,6 @@ describe('HealthService — schema drift', () => {
   it('detects a missing column (column-level drift)', async () => {
     // Simulate prod missing orders.weight_kg: return all real columns except
     // one scalar column of the orders table.
-    const { Prisma } = require('@prisma/client');
     const orders = Prisma.dmmf.datamodel.models.find((m: any) => m.name === 'Order');
     const orderColumns = orders.fields
       .filter((f: any) => f.kind === 'scalar')
@@ -177,7 +176,6 @@ describe('HealthService — schema drift', () => {
   });
 
   it('reports the whole table as missing when P2021 (table does not exist)', async () => {
-    const { Prisma } = require('@prisma/client');
     prisma.$queryRaw.mockImplementation((_strings: any, table: string) => {
       if (table === 'orders') {
         const err: any = new Error('table does not exist');

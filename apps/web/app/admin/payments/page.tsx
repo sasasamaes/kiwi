@@ -1,184 +1,150 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Smartphone, CreditCard, DollarSign, Coins, Bike, Clock } from 'lucide-react';
-import { AreaChartComponent, PieChartComponent, StatCard } from '@kiwi/ui';
+import { Smartphone, CreditCard, DollarSign, Coins, Clock, Wallet, Landmark } from 'lucide-react';
+import { AreaChartComponent, PieChartComponent, StatCard, api } from '@kiwi/ui';
 
-const mockPayments = [
-  {
-    id: 'PAY-001',
-    orderId: 'KIWI-1234',
-    merchant: 'Bowl & Café Luis Alfredo',
-    driver: 'Juan Carlos',
-    amount: 5700,
-    fee: 570,
-    driverPayout: 5130,
-    method: 'sinpe',
-    status: 'completed',
-    createdAt: '2024-03-20T11:05:00',
-  },
-  {
-    id: 'PAY-002',
-    orderId: 'KIWI-1231',
-    merchant: 'Twentis',
-    driver: 'Joel',
-    amount: 2800,
-    fee: 280,
-    driverPayout: 2520,
-    method: 'card',
-    status: 'completed',
-    createdAt: '2024-03-20T10:00:00',
-  },
-  {
-    id: 'PAY-003',
-    orderId: 'KIWI-1230',
-    merchant: 'Bowl & Café Luis Alfredo',
-    driver: null,
-    amount: 3500,
-    fee: 350,
-    driverPayout: 0,
-    method: 'cash',
-    status: 'refunded',
-    createdAt: '2024-03-20T09:15:00',
-  },
-  {
-    id: 'PAY-004',
-    orderId: 'KIWI-1229',
-    merchant: 'Punto Ácido',
-    driver: 'Fran',
-    amount: 4200,
-    fee: 420,
-    driverPayout: 3780,
-    method: 'crypto',
-    status: 'completed',
-    createdAt: '2024-03-19T18:30:00',
-  },
-  {
-    id: 'PAY-005',
-    orderId: 'KIWI-1228',
-    merchant: 'Los Efes',
-    driver: 'Juan Carlos',
-    amount: 6500,
-    fee: 650,
-    driverPayout: 5850,
-    method: 'sinpe',
-    status: 'completed',
-    createdAt: '2024-03-19T17:45:00',
-  },
-];
+interface AdminPayment {
+  id: string;
+  orderId: string;
+  amount: number | string;
+  method: string;
+  status: string;
+  createdAt: string;
+  order?: {
+    id: string;
+    status: string;
+    totalAmount: number | string;
+    merchant?: { businessName?: string | null } | null;
+    driver?: { fullName?: string | null } | null;
+  } | null;
+}
 
-const dailyRevenue = Array.from({ length: 30 }, (_, i) => {
-  const date = new Date();
-  date.setDate(date.getDate() - (29 - i));
-  return {
-    date: date.toISOString().split('T')[0],
-    value: Math.floor(Math.random() * 500000) + 100000,
-  };
-});
+const METHOD_META: Record<string, { label: string; icon: any }> = {
+  onvopay_sinpe: { label: 'SINPE', icon: Smartphone },
+  onvopay_card: { label: 'Tarjeta', icon: CreditCard },
+  cash: { label: 'Efectivo', icon: DollarSign },
+  crypto: { label: 'Cripto', icon: Coins },
+  credit: { label: 'Crédito', icon: Wallet },
+};
 
-const paymentMethods = [
-  { name: 'SINPE', value: 45 },
-  { name: 'Tarjeta', value: 30 },
-  { name: 'Efectivo', value: 20 },
-  { name: 'Crypto', value: 5 },
+const STATUS_LABEL: Record<string, string> = {
+  completed: 'Completado',
+  pending: 'Pendiente',
+  processing: 'Procesando',
+  failed: 'Fallido',
+  refunded: 'Reembolsado',
+};
+
+const STATUS_COLOR: Record<string, string> = {
+  completed: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
+  pending: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300',
+  processing: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+  failed: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
+  refunded: 'bg-surface-200 text-surface-600 dark:bg-surface-700 dark:text-surface-300',
+};
+
+const STATUS_FILTERS = [
+  { id: '', label: 'Todos' },
+  { id: 'completed', label: 'Completados' },
+  { id: 'pending', label: 'Pendientes' },
+  { id: 'failed', label: 'Fallidos' },
+  { id: 'refunded', label: 'Reembolsados' },
 ];
 
 export default function PaymentsPage() {
-  const [payments, setPayments] = useState(mockPayments);
-  const [filter, setFilter] = useState<'all' | 'completed' | 'pending' | 'refunded'>('all');
+  const [payments, setPayments] = useState<AdminPayment[]>([]);
+  const [total, setTotal] = useState(0);
+  const [summary, setSummary] = useState<{
+    byStatus: Record<string, { count: number; amount: number }>;
+    byMethod: Record<string, { count: number; amount: number }>;
+    daily30: Array<{ date: string; amount: number }>;
+  } | null>(null);
+  const [statusFilter, setStatusFilter] = useState('');
+  const [methodFilter, setMethodFilter] = useState('');
+  const [page, setPage] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const filteredPayments = payments.filter((p) => filter === 'all' || p.status === filter);
+  const PAGE_SIZE = 20;
 
-  const stats = {
-    totalRevenue: payments
-      .filter((p) => p.status === 'completed')
-      .reduce((sum, p) => sum + p.amount, 0),
-    totalFees: payments.filter((p) => p.status === 'completed').reduce((sum, p) => sum + p.fee, 0),
-    totalPayouts: payments
-      .filter((p) => p.status === 'completed')
-      .reduce((sum, p) => sum + p.driverPayout, 0),
-    pendingPayouts: payments
-      .filter((p) => p.status === 'pending')
-      .reduce((sum, p) => sum + p.driverPayout, 0),
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return 'bg-green-100 text-green-700';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-700';
-      case 'refunded':
-        return 'bg-red-100 text-red-700';
-      default:
-        return 'bg-surface-100 text-surface-500';
+  const load = useCallback(async (status: string, method: string, p: number) => {
+    if (p === 0) setLoading(true);
+    setError(null);
+    try {
+      const res = await api.getPaymentsAdmin({
+        take: PAGE_SIZE,
+        skip: p * PAGE_SIZE,
+        status: status || undefined,
+        method: method || undefined,
+      });
+      const items = Array.isArray(res?.items) ? res.items : [];
+      setPayments((prev) => (p === 0 ? items : [...prev, ...items]));
+      setTotal(Number(res?.total ?? 0));
+      setSummary(res?.summary ?? null);
+    } catch (e: any) {
+      setError(e?.message || 'No se pudieron cargar los pagos');
+    } finally {
+      setLoading(false);
     }
-  };
+  }, []);
 
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return 'Completado';
-      case 'pending':
-        return 'Pendiente';
-      case 'refunded':
-        return 'Reembolsado';
-      default:
-        return status;
-    }
-  };
+  useEffect(() => {
+    load(statusFilter, methodFilter, page);
+  }, [statusFilter, methodFilter, page, load]);
 
-  const getMethodIcon = (method: string) => {
-    switch (method) {
-      case 'sinpe':
-        return Smartphone;
-      case 'card':
-        return CreditCard;
-      case 'cash':
-        return DollarSign;
-      case 'crypto':
-        return '₿';
-      default:
-        return Coins;
-    }
-  };
+  const completed = summary?.byStatus?.completed;
+  const pending = summary?.byStatus?.pending;
+  const methodChart = Object.entries(summary?.byMethod ?? {}).map(([name, v]) => ({
+    name: METHOD_META[name]?.label ?? name,
+    value: v.amount,
+  }));
+  const dailyChart = (summary?.daily30 ?? []).map((d) => ({ date: d.date, value: d.amount }));
+  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
         <h1 className="text-2xl font-display font-bold text-surface-800 dark:text-surface-100">
           Gestión de Pagos
         </h1>
-        <p className="text-surface-500 dark:text-surface-400">Resumen de transacciones y pagos</p>
+        <p className="text-surface-500 dark:text-surface-400">
+          {total} transacciones · datos reales, sin mocks
+        </p>
       </div>
+
+      {error && (
+        <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600">
+          {error}
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard
-          title="Ingresos Totales"
-          value={`₡${stats.totalRevenue.toLocaleString()}`}
+          title="Cobrado"
+          value={`₡${Number(completed?.amount ?? 0).toLocaleString()}`}
           icon={<Coins className="h-6 w-6" />}
           color="kiwi"
         />
         <StatCard
-          title="Comisiones"
-          value={`₡${stats.totalFees.toLocaleString()}`}
-          icon="🏦"
+          title="Operaciones OK"
+          value={String(completed?.count ?? 0)}
+          icon={<Landmark className="h-6 w-6" />}
           color="blue"
         />
         <StatCard
-          title="Pagos a Repartidores"
-          value={`₡${stats.totalPayouts.toLocaleString()}`}
-          icon={<Bike className="h-6 w-6" />}
-          color="bark"
-        />
-        <StatCard
-          title="Pagos Pendientes"
-          value={`₡${stats.pendingPayouts.toLocaleString()}`}
+          title="Pendientes"
+          value={`₡${Number(pending?.amount ?? 0).toLocaleString()}`}
           icon={<Clock className="h-6 w-6" />}
           color="gold"
+        />
+        <StatCard
+          title="Con crédito"
+          value={`₡${Number(summary?.byMethod?.credit?.amount ?? 0).toLocaleString()}`}
+          icon={<Wallet className="h-6 w-6" />}
+          color="bark"
         />
       </div>
 
@@ -190,9 +156,13 @@ export default function PaymentsPage() {
           animate={{ opacity: 1, y: 0 }}
         >
           <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-            Ingresos Diarios
+            Cobrado por día (30 días)
           </h3>
-          <AreaChartComponent data={dailyRevenue} height={250} />
+          {dailyChart.length > 0 ? (
+            <AreaChartComponent data={dailyChart} height={250} />
+          ) : (
+            <p className="py-10 text-center text-sm text-surface-400">Sin cobros aún</p>
+          )}
         </motion.div>
 
         <motion.div
@@ -202,37 +172,72 @@ export default function PaymentsPage() {
           transition={{ delay: 0.1 }}
         >
           <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-            Metodos de Pago
+            Por método
           </h3>
-          <PieChartComponent data={paymentMethods} height={200} />
+          {methodChart.length > 0 ? (
+            <PieChartComponent data={methodChart} height={200} />
+          ) : (
+            <p className="py-10 text-center text-sm text-surface-400">Sin datos</p>
+          )}
         </motion.div>
       </div>
 
       {/* Filters */}
-      <div className="flex gap-2">
-        {[
-          { value: 'all', label: 'Todos' },
-          { value: 'completed', label: 'Completados' },
-          { value: 'pending', label: 'Pendientes' },
-          { value: 'refunded', label: 'Reembolsados' },
-        ].map((tab) => (
+      <div className="flex flex-col gap-2">
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {STATUS_FILTERS.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => {
+                setStatusFilter(tab.id);
+                setPage(0);
+              }}
+              className={`whitespace-nowrap px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                statusFilter === tab.id
+                  ? 'bg-kiwi-500 text-white'
+                  : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-2 overflow-x-auto pb-1">
           <button
-            key={tab.value}
-            onClick={() => setFilter(tab.value as any)}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-              filter === tab.value
-                ? 'bg-kiwi-500 text-white'
-                : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400 hover:bg-surface-200 dark:hover:bg-surface-700'
+            onClick={() => {
+              setMethodFilter('');
+              setPage(0);
+            }}
+            className={`whitespace-nowrap px-4 py-2 text-sm font-medium rounded-full transition-colors ${
+              methodFilter === ''
+                ? 'bg-surface-800 text-white dark:bg-surface-100 dark:text-surface-800'
+                : 'bg-surface-100 dark:bg-surface-800 text-surface-600'
             }`}
           >
-            {tab.label}
+            Todos los métodos
           </button>
-        ))}
+          {Object.entries(METHOD_META).map(([id, m]) => (
+            <button
+              key={id}
+              onClick={() => {
+                setMethodFilter(methodFilter === id ? '' : id);
+                setPage(0);
+              }}
+              className={`flex whitespace-nowrap items-center gap-1 px-4 py-2 text-sm font-medium rounded-full transition-colors ${
+                methodFilter === id
+                  ? 'bg-surface-800 text-white dark:bg-surface-100 dark:text-surface-800'
+                  : 'bg-surface-100 dark:bg-surface-800 text-surface-600'
+              }`}
+            >
+              <m.icon className="h-4 w-4" /> {m.label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Payments Table */}
+      {/* Table */}
       <motion.div
-        className="rounded-2xl bg-white dark:bg-surface-800 shadow-soft dark:shadow-dark overflow-hidden"
+        className="rounded-2xl bg-white dark:bg-surface-800 shadow-soft overflow-hidden"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
@@ -240,107 +245,91 @@ export default function PaymentsPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-surface-200 dark:border-surface-700">
-                <th className="text-left py-4 px-6 text-sm font-medium text-surface-500 dark:text-surface-400">
-                  ID
-                </th>
-                <th className="text-left py-4 px-6 text-sm font-medium text-surface-500 dark:text-surface-400">
-                  Pedido
-                </th>
-                <th className="text-left py-4 px-6 text-sm font-medium text-surface-500 dark:text-surface-400">
-                  Comercio
-                </th>
-                <th className="text-left py-4 px-6 text-sm font-medium text-surface-500 dark:text-surface-400">
-                  Método
-                </th>
-                <th className="text-left py-4 px-6 text-sm font-medium text-surface-500 dark:text-surface-400">
-                  Monto
-                </th>
-                <th className="text-left py-4 px-6 text-sm font-medium text-surface-500 dark:text-surface-400">
-                  Comisión
-                </th>
-                <th className="text-left py-4 px-6 text-sm font-medium text-surface-500 dark:text-surface-400">
-                  Pago Repartidor
-                </th>
-                <th className="text-left py-4 px-6 text-sm font-medium text-surface-500 dark:text-surface-400">
-                  Estado
-                </th>
-                <th className="text-left py-4 px-6 text-sm font-medium text-surface-500 dark:text-surface-400">
-                  Fecha
-                </th>
+                {['Pedido', 'Comercio', 'Repartidor', 'Método', 'Monto', 'Estado', 'Fecha'].map(
+                  (h) => (
+                    <th
+                      key={h}
+                      className="text-left py-4 px-6 text-sm font-medium text-surface-500 dark:text-surface-400"
+                    >
+                      {h}
+                    </th>
+                  ),
+                )}
               </tr>
             </thead>
             <tbody>
-              {filteredPayments.map((payment, index) => {
-                const MethodIcon = getMethodIcon(payment.method) as any;
-                return (
-                  <motion.tr
-                    key={payment.id}
-                    className="border-b border-surface-100 dark:border-surface-700/50 hover:bg-surface-50 dark:hover:bg-surface-700/50 transition-colors"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                  >
-                    <td className="py-4 px-6">
-                      <span className="font-mono text-sm text-surface-800 dark:text-surface-200">
-                        {payment.id}
-                      </span>
-                    </td>
-                    <td className="py-4 px-6">
-                      <span className="font-mono text-sm text-surface-800 dark:text-surface-200">
-                        {payment.orderId}
-                      </span>
-                    </td>
-                    <td className="py-4 px-6">
-                      <span className="text-sm text-surface-800 dark:text-surface-200">
-                        {payment.merchant}
-                      </span>
-                    </td>
-                    <td className="py-4 px-6">
-                      <span className="flex items-center gap-2">
-                        {typeof MethodIcon === 'string' ? (
-                          <span>{MethodIcon}</span>
-                        ) : (
-                          <MethodIcon className="h-5 w-5" />
-                        )}
-                        <span className="text-sm text-surface-800 dark:text-surface-200 capitalize">
-                          {payment.method}
+              {loading ? (
+                <tr>
+                  <td colSpan={7} className="py-10 text-center text-sm text-surface-400">
+                    Cargando…
+                  </td>
+                </tr>
+              ) : payments.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-10 text-center text-sm text-surface-400">
+                    Sin pagos con este filtro
+                  </td>
+                </tr>
+              ) : (
+                payments.map((p) => {
+                  const meta = METHOD_META[p.method] ?? { label: p.method, icon: Coins };
+                  return (
+                    <tr
+                      key={p.id}
+                      className="border-b border-surface-100 dark:border-surface-700/50 hover:bg-surface-50 dark:hover:bg-surface-700/50"
+                    >
+                      <td className="py-4 px-6 font-mono text-xs text-surface-500">
+                        #{p.orderId.slice(0, 8).toUpperCase()}
+                      </td>
+                      <td className="py-4 px-6 text-sm">
+                        {p.order?.merchant?.businessName ?? '—'}
+                      </td>
+                      <td className="py-4 px-6 text-sm">
+                        {p.order?.driver?.fullName ?? <span className="text-surface-400">—</span>}
+                      </td>
+                      <td className="py-4 px-6">
+                        <span className="flex items-center gap-1.5 text-sm">
+                          <meta.icon className="h-4 w-4 text-surface-400" />
+                          {meta.label}
                         </span>
-                      </span>
-                    </td>
-                    <td className="py-4 px-6">
-                      <span className="font-medium text-surface-800 dark:text-surface-200">
-                        ₡{payment.amount.toLocaleString()}
-                      </span>
-                    </td>
-                    <td className="py-4 px-6">
-                      <span className="text-sm text-kiwi-600 dark:text-kiwi-400">
-                        ₡{payment.fee.toLocaleString()}
-                      </span>
-                    </td>
-                    <td className="py-4 px-6">
-                      <span className="text-sm text-blue-600 dark:text-blue-400">
-                        {payment.driver ? `₡${payment.driverPayout.toLocaleString()}` : '-'}
-                      </span>
-                    </td>
-                    <td className="py-4 px-6">
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(payment.status)}`}
-                      >
-                        {getStatusLabel(payment.status)}
-                      </span>
-                    </td>
-                    <td className="py-4 px-6">
-                      <span className="text-sm text-surface-500 dark:text-surface-400">
-                        {new Date(payment.createdAt).toLocaleDateString('es-CR')}
-                      </span>
-                    </td>
-                  </motion.tr>
-                );
-              })}
+                      </td>
+                      <td className="py-4 px-6 font-medium">
+                        ₡{Number(p.amount).toLocaleString()}
+                      </td>
+                      <td className="py-4 px-6">
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-medium ${STATUS_COLOR[p.status] ?? 'bg-surface-100 text-surface-500'}`}
+                        >
+                          {STATUS_LABEL[p.status] ?? p.status}
+                        </span>
+                      </td>
+                      <td className="py-4 px-6 text-sm text-surface-500">
+                        {new Date(p.createdAt).toLocaleDateString('es-CR', {
+                          day: 'numeric',
+                          month: 'short',
+                        })}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>
       </motion.div>
+
+      {pages > 1 && (
+        <p className="text-center text-xs text-surface-400">
+          Página {page + 1} de {pages} ·{' '}
+          <button
+            onClick={() => setPage((p) => Math.min(pages - 1, p + 1))}
+            disabled={page >= pages - 1}
+            className="font-semibold text-kiwi-600 disabled:opacity-40"
+          >
+            Cargar más
+          </button>
+        </p>
+      )}
     </div>
   );
 }

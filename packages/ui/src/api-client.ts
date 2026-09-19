@@ -682,6 +682,36 @@ class ApiClient {
     );
   }
 
+  async getOrdersAdmin(params?: {
+    take?: number;
+    skip?: number;
+    status?: string;
+    search?: string;
+  }) {
+    const q = new URLSearchParams();
+    if (params?.take != null) q.append('take', String(params.take));
+    if (params?.skip != null) q.append('skip', String(params.skip));
+    if (params?.status) q.append('status', params.status);
+    if (params?.search) q.append('search', params.search);
+    const s = q.toString();
+    return this.request<any>(`/orders/admin/all${s ? `?${s}` : ''}`);
+  }
+
+  async getPaymentsAdmin(params?: {
+    take?: number;
+    skip?: number;
+    status?: string;
+    method?: string;
+  }) {
+    const q = new URLSearchParams();
+    if (params?.take != null) q.append('take', String(params.take));
+    if (params?.skip != null) q.append('skip', String(params.skip));
+    if (params?.status) q.append('status', params.status);
+    if (params?.method) q.append('method', params.method);
+    const s = q.toString();
+    return this.request<any>(`/payments/admin/all${s ? `?${s}` : ''}`);
+  }
+
   async getLivePulse() {
     return this.request<any>('/analytics/live');
   }

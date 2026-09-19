@@ -358,7 +358,7 @@ export default function TrackingPage() {
             </h3>
             <div className="flex items-center gap-3">
               {driver.photoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
+                // NOTE: <img> intencional — foto dinámica externa, next/image no aporta aquí
                 <img
                   src={driver.photoUrl}
                   alt={driver.fullName ?? 'Repartidor'}

@@ -301,6 +301,71 @@ export class PaymentsService {
   }
 
   /**
+   * Todos los pagos para el admin: paginado, filtro por estado/método y
+   * resumen (totales + últimos 30 días + por método). Sin mocks.
+   */
+  async listForAdmin(opts: { take?: number; skip?: number; status?: string; method?: string }) {
+    const take = Math.min(Math.max(Number(opts.take ?? 30), 1), 100);
+    const skip = Math.max(Number(opts.skip ?? 0), 0);
+    const where: any = {};
+    const validStatus = ['pending', 'processing', 'completed', 'failed', 'refunded'];
+    const validMethod = ['onvopay_card', 'onvopay_sinpe', 'crypto', 'cash', 'credit'];
+    if (opts.status && validStatus.includes(opts.status)) where.status = opts.status;
+    if (opts.method && validMethod.includes(opts.method)) where.method = opts.method;
+
+    const [total, items, byStatus, byMethod, daily] = await Promise.all([
+      this.prisma.payment.count({ where }),
+      this.prisma.payment.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        take,
+        skip,
+        include: {
+          order: {
+            select: {
+              id: true,
+              status: true,
+              totalAmount: true,
+              merchant: { select: { businessName: true } },
+              driver: { select: { fullName: true } },
+            },
+          },
+        },
+      }),
+      this.prisma.payment.groupBy({
+        by: ['status'],
+        _count: { status: true },
+        _sum: { amount: true },
+      }),
+      this.prisma.payment.groupBy({
+        by: ['method'],
+        _count: { method: true },
+        _sum: { amount: true },
+      }),
+      this.prisma.$queryRaw<Array<{ day: string; total: number }>>`
+        SELECT TO_CHAR("created_at", 'YYYY-MM-DD') AS day, SUM("amount")::float AS total
+        FROM "payments"
+        WHERE "status" = 'completed' AND "created_at" >= NOW() - INTERVAL '30 days'
+        GROUP BY day ORDER BY day`,
+    ]);
+
+    const sum = (rows: any[], key: string) =>
+      Object.fromEntries(
+        rows.map((r) => [r[key], { count: r._count[key], amount: Number(r._sum?.amount || 0) }]),
+      );
+
+    return {
+      total,
+      items: items.map((p) => ({ ...p, amount: Number(p.amount) })),
+      summary: {
+        byStatus: sum(byStatus, 'status'),
+        byMethod: sum(byMethod, 'method'),
+        daily30: daily.map((d) => ({ date: d.day, amount: Number(d.total) })),
+      },
+    };
+  }
+
+  /**
    * Row-level guard for payment-scoped endpoints. A user may act on a payment
    * intent only through an order they participate in (merchant owner, assigned
    * driver) or if they are admin. `requireMerchant` additionally refuses

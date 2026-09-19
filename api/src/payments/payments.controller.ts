@@ -14,6 +14,8 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
 import { PaymentsService } from './payments.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { Public } from '../auth/decorators/public.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { OnvoPayProvider } from './providers/onvopay.provider';
@@ -74,6 +76,25 @@ export class PaymentsController {
   @ApiOperation({ summary: 'Get payment status' })
   async getPaymentStatus(@Param('orderId') orderId: string, @CurrentUser() user: any) {
     return this.paymentsService.getPaymentStatusForUser(orderId, user);
+  }
+
+  @Get('admin/all')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List all payments with summary (admin only)' })
+  async listForAdmin(
+    @Query('take') take?: string,
+    @Query('skip') skip?: string,
+    @Query('status') status?: string,
+    @Query('method') method?: string,
+  ) {
+    return this.paymentsService.listForAdmin({
+      take: take != null ? Number(take) : undefined,
+      skip: skip != null ? Number(skip) : undefined,
+      status,
+      method,
+    });
   }
 
   @Public()

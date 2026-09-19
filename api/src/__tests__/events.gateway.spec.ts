@@ -16,7 +16,7 @@ describe('EventsGateway payload restrictions', () => {
       {} as any,
       {
         order: { findUnique: jest.fn() },
-        driverProfile: { update: jest.fn() },
+        driverProfile: { update: jest.fn().mockResolvedValue({}) },
       } as any,
     );
     (gateway as any).server = { to: jest.fn().mockReturnValue({ emit: emitMock }) };

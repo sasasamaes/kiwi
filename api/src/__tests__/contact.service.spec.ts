@@ -3,6 +3,7 @@ import { BadRequestException, ValidationPipe } from '@nestjs/common';
 import { ContactService } from '../contact/contact.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateContactMessageDto } from '../contact/dto/create-contact-message.dto';
+import { plainToInstance } from 'class-transformer';
 
 /**
  * Valida el contrato del formulario de contacto: el DTO (con Transform de
@@ -19,7 +20,6 @@ describe('Contact validation', () => {
   };
 
   // class-transformer sin decoradores de transform explícitos en el test:
-  const { plainToInstance } = require('class-transformer');
 
   beforeEach(async () => {
     prisma = {
