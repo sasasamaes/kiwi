@@ -485,8 +485,9 @@ function NewOrderInner({
   const total = subtotal + trip + commission;
   const etaMin = routeKm != null ? Math.max(5, Math.round((routeKm / 25) * 60)) : null;
 
+  // Encomienda: la descripción es opcional — solo pide los datos de entrega.
   const step1Valid =
-    (kind === 'food' ? items.length > 0 : packageDescription.trim().length > 0) &&
+    (kind === 'food' ? items.length > 0 : true) &&
     deliveryName.trim().length > 0 &&
     deliveryPhone.trim().length >= 8 &&
     deliveryAddress.trim().length > 0 &&
@@ -495,8 +496,8 @@ function NewOrderInner({
   // El botón deshabilitado no explica nada: decir qué falta.
   // Las notas son opcionales y por eso no aparecen aquí.
   const step1Missing: string[] = [];
-  if (kind === 'food' ? items.length === 0 : packageDescription.trim().length === 0) {
-    step1Missing.push(kind === 'food' ? 'agregar productos' : 'qué hay que llevar');
+  if (kind === 'food' && items.length === 0) {
+    step1Missing.push('agregar productos');
   }
   if (deliveryName.trim().length === 0) step1Missing.push('nombre del cliente');
   if (deliveryPhone.trim().length < 8) step1Missing.push('teléfono (8 dígitos)');
@@ -894,7 +895,7 @@ function NewOrderInner({
                   <textarea
                     value={packageDescription}
                     onChange={(e) => setPackageDescription(e.target.value)}
-                    placeholder="¿Qué hay que llevar? Ej: Caja con repuestos"
+                    placeholder="¿Qué hay que llevar? (opcional) Ej: Caja con repuestos"
                     rows={2}
                     className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-3 text-sm"
                   />
