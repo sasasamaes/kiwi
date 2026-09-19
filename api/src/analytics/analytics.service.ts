@@ -116,6 +116,66 @@ export class AnalyticsService {
     };
   }
 
+  /**
+   * Pulso en vivo para el admin: qué pasa AHORA en cada app.
+   * Liviano (counts + 1 aggregate) para refrescar cada 30s sin dolor.
+   */
+  async getLivePulse() {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    const [driversByStatus, usersByRole, pendingOrders, activeOrders, todayStats] =
+      await Promise.all([
+        this.prisma.driverProfile.groupBy({
+          by: ['status'],
+          _count: { status: true },
+        }),
+        this.prisma.user.groupBy({
+          by: ['role'],
+          _count: { role: true },
+          where: { status: 'active' },
+        }),
+        this.prisma.order.count({ where: { status: 'pending', driverId: null } }),
+        this.prisma.order.count({
+          where: {
+            status: {
+              in: ['assigned', 'in_transit_to_pickup', 'picked_up', 'in_transit_to_delivery'],
+            },
+          },
+        }),
+        this.prisma.order.aggregate({
+          where: { status: OrderStatus.delivered, createdAt: { gte: todayStart } },
+          _count: { id: true },
+          _sum: { totalAmount: true, commission: true },
+        }),
+      ]);
+
+    const drivers: Record<string, number> = {};
+    for (const row of driversByStatus) drivers[row.status] = row._count.status;
+    const users: Record<string, number> = {};
+    for (const row of usersByRole) users[row.role] = row._count.role;
+
+    return {
+      at: now,
+      drivers: {
+        online: drivers['available'] ?? 0,
+        offline: drivers['offline'] ?? 0,
+        busy: drivers['busy'] ?? 0,
+        total: Object.values(drivers).reduce((s, n) => s + n, 0),
+      },
+      users,
+      orders: {
+        waiting: pendingOrders,
+        inProgress: activeOrders,
+      },
+      today: {
+        delivered: todayStats._count.id,
+        revenue: Number(todayStats._sum?.totalAmount || 0),
+        platformFee: Number(todayStats._sum?.commission || 0),
+      },
+    };
+  }
+
   private getDateRange(period: AnalyticsPeriod, startDate?: string, endDate?: string) {
     const now = new Date();
     let start: Date;

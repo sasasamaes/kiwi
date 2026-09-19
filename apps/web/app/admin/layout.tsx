@@ -1,24 +1,65 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BarChart3, Package, Coins, Settings } from 'lucide-react';
-import { ThemeToggle } from '@kiwi/ui';
+import {
+  BarChart3,
+  Package,
+  Coins,
+  Settings,
+  ShieldAlert,
+  Users,
+  BadgeCheck,
+  Star,
+} from 'lucide-react';
+import { ThemeToggle, useAuth } from '@kiwi/ui';
 
 const menuItems = [
   { href: '/admin', icon: BarChart3, label: 'Dashboard', exact: true },
-  { href: '/admin/users', icon: '👥', label: 'Usuarios' },
+  { href: '/admin/users', icon: Users, label: 'Usuarios' },
   { href: '/admin/orders', icon: Package, label: 'Pedidos' },
-  { href: '/admin/kyc', icon: '🪪', label: 'Verificaciones KYC' },
+  { href: '/admin/ratings', icon: Star, label: 'Comentarios' },
+  { href: '/admin/kyc', icon: BadgeCheck, label: 'Verificaciones KYC' },
   { href: '/admin/payments', icon: Coins, label: 'Pagos' },
   { href: '/admin/settings', icon: Settings, label: 'Configuración' },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, loading } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  // Solo rol admin: sin login → /login; logueado sin rol → /dashboard.
+  useEffect(() => {
+    if (loading) return;
+    if (!user) router.replace('/login');
+    else if ((user as any).role !== 'admin') router.replace('/dashboard');
+  }, [user, loading, router]);
+
+  if (loading || !user) {
+    return (
+      <div className="min-h-[100dvh] flex items-center justify-center bg-bg-light dark:bg-surface-950">
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-kiwi-500 border-t-transparent" />
+      </div>
+    );
+  }
+
+  if ((user as any).role !== 'admin') {
+    return (
+      <div className="min-h-[100dvh] flex items-center justify-center bg-bg-light dark:bg-surface-950 p-6">
+        <div className="text-center">
+          <ShieldAlert className="h-12 w-12 mx-auto mb-3 text-red-500" />
+          <h1 className="text-lg font-bold text-surface-800 dark:text-surface-100">
+            Acceso restringido
+          </h1>
+          <p className="text-sm text-surface-500">Solo usuarios con rol admin.</p>
+        </div>
+      </div>
+    );
+  }
 
   const isActive = (href: string, exact?: boolean) => {
     if (exact) return pathname === href;

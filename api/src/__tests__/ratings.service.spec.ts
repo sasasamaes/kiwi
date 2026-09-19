@@ -155,4 +155,33 @@ describe('RatingsService', () => {
       ForbiddenException,
     );
   });
+
+  it('listForAdmin returns paginated ratings with summary', async () => {
+    (prisma.rating as any).count = jest.fn().mockResolvedValue(2);
+    (prisma.rating as any).findMany = jest
+      .fn()
+      .mockResolvedValue([{ id: 'r1', rating: 5, comment: 'Excelente', createdAt: new Date() }]);
+    prisma.rating.aggregate.mockResolvedValue({ _avg: { rating: 4.5 }, _count: { rating: 2 } });
+
+    const result = await service.listForAdmin({ take: 20, onlyWithComment: true });
+
+    expect(result.total).toBe(2);
+    expect(result.items).toHaveLength(1);
+    expect(result.summary.average).toBe(4.5);
+    expect((prisma.rating as any).findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ comment: { not: null } }) }),
+    );
+  });
+
+  it('listForAdmin filters by maxRating', async () => {
+    (prisma.rating as any).count = jest.fn().mockResolvedValue(1);
+    (prisma.rating as any).findMany = jest.fn().mockResolvedValue([]);
+    prisma.rating.aggregate.mockResolvedValue({ _avg: { rating: 2 }, _count: { rating: 1 } });
+
+    await service.listForAdmin({ maxRating: 3 });
+
+    expect((prisma.rating as any).findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ rating: { lte: 3 } }) }),
+    );
+  });
 });

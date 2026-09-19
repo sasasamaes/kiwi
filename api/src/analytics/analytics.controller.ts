@@ -38,6 +38,15 @@ export class AnalyticsController {
     return this.analyticsService.getPlatformAnalytics(query);
   }
 
+  @Get('live')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Live pulse: online drivers, open orders, today revenue (admin only)' })
+  async getLivePulse() {
+    return this.analyticsService.getLivePulse();
+  }
+
   @Get('summary')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()

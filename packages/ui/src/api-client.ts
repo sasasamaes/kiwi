@@ -636,6 +636,27 @@ class ApiClient {
     return this.request<any>('/analytics/summary');
   }
 
+  async getLivePulse() {
+    return this.request<any>('/analytics/live');
+  }
+
+  async getRatingsAdmin(params?: {
+    take?: number;
+    skip?: number;
+    minRating?: number;
+    maxRating?: number;
+    onlyWithComment?: boolean;
+  }) {
+    const q = new URLSearchParams();
+    if (params?.take != null) q.append('take', String(params.take));
+    if (params?.skip != null) q.append('skip', String(params.skip));
+    if (params?.minRating != null) q.append('minRating', String(params.minRating));
+    if (params?.maxRating != null) q.append('maxRating', String(params.maxRating));
+    if (params?.onlyWithComment) q.append('onlyWithComment', 'true');
+    const s = q.toString();
+    return this.request<any>(`/ratings${s ? `?${s}` : ''}`);
+  }
+
   // ============================================
   // 💰 WITHDRAWALS
   // ============================================

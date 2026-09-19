@@ -12,6 +12,13 @@ import {
   CalendarDays,
   RefreshCw,
   ClipboardList,
+  Store,
+  Users,
+  Timer,
+  TrendingUp,
+  AlertTriangle,
+  BadgeCheck,
+  Star,
 } from 'lucide-react';
 import { api, StatCard, StaggerContainer, StaggerItem } from '@kiwi/ui';
 
@@ -52,17 +59,39 @@ interface PlatformAnalytics {
 
 const PERIODS = [
   { id: 'today', label: 'Hoy', icon: Calendar },
-  { id: 'week', label: 'Semana', icon: '📆' },
-  { id: 'month', label: 'Mes', icon: CalendarDays },
+  { id: 'week', label: 'Semana', icon: CalendarDays },
+  { id: 'month', label: 'Mes', icon: Calendar },
   { id: 'quarter', label: 'Trimestre', icon: BarChart3 },
-  { id: 'year', label: 'Año', icon: '📈' },
+  { id: 'year', label: 'Año', icon: TrendingUp },
 ];
+
+interface LivePulse {
+  drivers: { online: number; offline: number; busy: number; total: number };
+  users: Record<string, number>;
+  orders: { waiting: number; inProgress: number };
+  today: { delivered: number; revenue: number; platformFee: number };
+}
 
 export default function AdminDashboard() {
   const [analytics, setAnalytics] = useState<PlatformAnalytics | null>(null);
+  const [live, setLive] = useState<LivePulse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState('week');
+
+  const fetchLive = useCallback(async () => {
+    try {
+      setLive(await api.getLivePulse());
+    } catch (err) {
+      console.error('Failed to fetch live pulse:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchLive();
+    const t = setInterval(fetchLive, 30000);
+    return () => clearInterval(t);
+  }, [fetchLive]);
 
   const fetchAnalytics = useCallback(async (period: string) => {
     try {
@@ -141,11 +170,11 @@ export default function AdminDashboard() {
           animate={{ opacity: 1, scale: 1 }}
         >
           <motion.div
-            className="text-6xl mb-4"
+            className="mb-4 flex justify-center"
             animate={{ y: [0, -10, 0] }}
             transition={{ duration: 2, repeat: Infinity }}
           >
-            😕
+            <AlertTriangle className="h-14 w-14 text-amber-500" />
           </motion.div>
           <h2 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100 mb-2">
             No pudimos cargar las analíticas
@@ -217,12 +246,71 @@ export default function AdminDashboard() {
         })}
       </motion.div>
 
+      {/* Pulso en vivo: qué pasa AHORA en cada app */}
+      <motion.div
+        className="rounded-2xl glass p-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="flex items-center gap-2 text-lg font-display font-semibold text-surface-800 dark:text-surface-100">
+            <span className="relative flex h-3 w-3">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-kiwi-400 opacity-75" />
+              <span className="relative inline-flex h-3 w-3 rounded-full bg-kiwi-500" />
+            </span>
+            Pulso en vivo
+          </h3>
+          <button
+            onClick={fetchLive}
+            className="flex items-center gap-1 text-xs font-medium text-surface-500 hover:text-surface-700"
+          >
+            <RefreshCw className="h-3 w-3" /> Ahora
+          </button>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="rounded-xl bg-kiwi-50 dark:bg-kiwi-900/30 border border-kiwi-200 dark:border-kiwi-800 p-4 text-center">
+            <Bike className="h-6 w-6 mx-auto text-kiwi-600 dark:text-kiwi-400" />
+            <p className="mt-1 text-2xl font-bold text-kiwi-700 dark:text-kiwi-300">
+              {live?.drivers.online ?? '—'}
+            </p>
+            <p className="text-xs text-kiwi-600 dark:text-kiwi-400">
+              Drivers en línea{live ? ` (${live.drivers.offline} en pausa)` : ''}
+            </p>
+          </div>
+          <div className="rounded-xl bg-surface-50 dark:bg-surface-700/50 p-4 text-center">
+            <Timer className="h-6 w-6 mx-auto text-gold-600" />
+            <p className="mt-1 text-2xl font-bold text-surface-800 dark:text-surface-100">
+              {live?.orders.waiting ?? '—'}
+            </p>
+            <p className="text-xs text-surface-500">
+              Esperando repartidor{live ? ` · ${live.orders.inProgress} en curso` : ''}
+            </p>
+          </div>
+          <div className="rounded-xl bg-surface-50 dark:bg-surface-700/50 p-4 text-center">
+            <Store className="h-6 w-6 mx-auto text-blue-600" />
+            <p className="mt-1 text-2xl font-bold text-surface-800 dark:text-surface-100">
+              {live ? (live.users.merchant ?? 0) : '—'}
+            </p>
+            <p className="text-xs text-surface-500">Comercios activos</p>
+          </div>
+          <div className="rounded-xl bg-surface-50 dark:bg-surface-700/50 p-4 text-center">
+            <Coins className="h-6 w-6 mx-auto text-kiwi-600" />
+            <p className="mt-1 text-2xl font-bold text-surface-800 dark:text-surface-100">
+              {live ? `₡${Number(live.today.revenue).toLocaleString()}` : '—'}
+            </p>
+            <p className="text-xs text-surface-500">
+              Hoy{live ? ` · ${live.today.delivered} entregas` : ''}
+            </p>
+          </div>
+        </div>
+      </motion.div>
+
       {/* Overview Stats */}
       <StaggerContainer className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StaggerItem>
           <motion.div className="rounded-2xl glass p-4" whileHover={{ y: -2 }}>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-2xl">👥</span>
+              <Users className="h-6 w-6 text-surface-400" />
               <span
                 className={`text-xs font-medium ${getGrowthColor(analytics?.growth?.userGrowth || 0)}`}
               >
@@ -240,7 +328,10 @@ export default function AdminDashboard() {
         <StaggerItem>
           <motion.div className="rounded-2xl glass p-4" whileHover={{ y: -2 }}>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-2xl">🟢</span>
+              <span className="relative flex h-3 w-3">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-kiwi-400 opacity-75" />
+                <span className="relative inline-flex h-3 w-3 rounded-full bg-kiwi-500" />
+              </span>
               <span className="text-xs font-medium text-kiwi-600 dark:text-kiwi-400">
                 {analytics?.overview?.activeUsers || 0} activos
               </span>
@@ -298,7 +389,7 @@ export default function AdminDashboard() {
             whileHover={{ y: -2 }}
           >
             <div className="flex items-center justify-between mb-2">
-              <span className="text-2xl">🏦</span>
+              <Coins className="h-6 w-6 text-kiwi-600 dark:text-kiwi-400" />
               <span className="text-xs font-medium text-kiwi-600 dark:text-kiwi-400">
                 5% comisión
               </span>
@@ -330,7 +421,7 @@ export default function AdminDashboard() {
         <StaggerItem>
           <motion.div className="rounded-2xl glass p-4" whileHover={{ y: -2 }}>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-2xl">🏪</span>
+              <Store className="h-6 w-6 text-surface-400" />
               <span className="text-xs font-medium text-surface-500 dark:text-surface-400">
                 {analytics?.users?.merchants || 0} registrados
               </span>
@@ -459,15 +550,15 @@ export default function AdminDashboard() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
         >
-          <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-            📈 Crecimiento
+          <h3 className="flex items-center gap-2 text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
+            <TrendingUp className="h-5 w-5" /> Crecimiento
           </h3>
           <div className="space-y-6">
             {/* User Growth */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/50">
-                  <span className="text-lg">👥</span>
+                  <Users className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
                   <p className="font-medium text-surface-800 dark:text-surface-200">Usuarios</p>
@@ -535,7 +626,7 @@ export default function AdminDashboard() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-kiwi-100 dark:bg-kiwi-900/50">
-                    <span className="text-lg">🏦</span>
+                    <Coins className="h-5 w-5 text-kiwi-600" />
                   </div>
                   <div>
                     <p className="font-medium text-surface-800 dark:text-surface-200">
@@ -562,8 +653,8 @@ export default function AdminDashboard() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5 }}
       >
-        <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-          ⚡ Acciones Rápidas
+        <h3 className="flex items-center gap-2 text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
+          <Bike className="h-5 w-5" /> Acciones Rápidas
         </h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Link href="/admin/users">
@@ -572,7 +663,9 @@ export default function AdminDashboard() {
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.95 }}
             >
-              <span className="text-2xl block mb-2">👥</span>
+              <span className="mb-2 flex justify-center">
+                <Users className="h-7 w-7 text-kiwi-600 dark:text-kiwi-400" />
+              </span>
               <span className="text-sm font-medium">Gestionar Usuarios</span>
             </motion.button>
           </Link>
@@ -594,8 +687,22 @@ export default function AdminDashboard() {
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.95 }}
             >
-              <span className="text-2xl block mb-2">🪪</span>
+              <span className="mb-2 flex justify-center">
+                <BadgeCheck className="h-7 w-7 text-yellow-600 dark:text-yellow-400" />
+              </span>
               <span className="text-sm font-medium">Aprobar KYC</span>
+            </motion.button>
+          </Link>
+          <Link href="/admin/ratings">
+            <motion.button
+              className="w-full p-4 rounded-xl bg-gold-50 dark:bg-gold-900/30 text-gold-600 dark:text-gold-400 hover:bg-gold-100 dark:hover:bg-gold-900/50 transition-colors"
+              whileHover={{ y: -2 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <span className="mb-2 flex justify-center">
+                <Star className="h-7 w-7" />
+              </span>
+              <span className="text-sm font-medium">Comentarios</span>
             </motion.button>
           </Link>
           <Link href="/admin/payments">

@@ -97,6 +97,53 @@ export class RatingsService {
     return rating;
   }
 
+  /**
+   * Lista de comentarios para el admin: paginada, filtrable por estrellas
+   * y con nombres de comercio/repartidor. Solo comentarios con texto o
+   * con baja calificación suben primero si se pide.
+   */
+  async listForAdmin(opts: {
+    take?: number;
+    skip?: number;
+    minRating?: number;
+    maxRating?: number;
+    onlyWithComment?: boolean;
+  }) {
+    const take = Math.min(Math.max(Number(opts.take ?? 20), 1), 100);
+    const skip = Math.max(Number(opts.skip ?? 0), 0);
+    const where: any = {};
+    if (opts.minRating != null)
+      where.rating = { ...(where.rating ?? {}), gte: Number(opts.minRating) };
+    if (opts.maxRating != null)
+      where.rating = { ...(where.rating ?? {}), lte: Number(opts.maxRating) };
+    if (opts.onlyWithComment) where.comment = { not: null };
+
+    const [total, items, avg] = await Promise.all([
+      this.prisma.rating.count({ where }),
+      this.prisma.rating.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        take,
+        skip,
+        include: {
+          driver: { select: { fullName: true } },
+          merchant: { select: { businessName: true } },
+          order: { select: { id: true, deliveryAddress: true, createdAt: true } },
+        },
+      }),
+      this.prisma.rating.aggregate({ _avg: { rating: true }, _count: { rating: true } }),
+    ]);
+
+    return {
+      total,
+      items,
+      summary: {
+        average: Number(avg._avg?.rating ?? 0),
+        count: avg._count.rating,
+      },
+    };
+  }
+
   /** Rating existente para un pedido (o null) — el usuario debe ser parte del pedido. */
   async findByOrder(orderId: string, userId: string) {
     const order = await this.prisma.order.findUnique({
