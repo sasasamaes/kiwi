@@ -667,6 +667,21 @@ class ApiClient {
     return this.request<any>(`/credits/admin/merchants/${id}/history?take=${take}&skip=${skip}`);
   }
 
+  // Ajustes de plataforma (admin + disponibilidad pública de pagos)
+  async getAdminSettings() {
+    return this.request<any>('/settings/admin');
+  }
+
+  async saveAdminSettings(data: any) {
+    return this.request<any>('/settings/admin', { method: 'PUT', body: data });
+  }
+
+  async getPaymentAvailability() {
+    return this.request<{ sinpe: boolean; card: boolean; cash: boolean; crypto: boolean }>(
+      '/settings/payments',
+    );
+  }
+
   async getLivePulse() {
     return this.request<any>('/analytics/live');
   }

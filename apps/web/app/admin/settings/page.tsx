@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Settings,
@@ -16,6 +16,7 @@ import {
   Star,
   PartyPopper,
 } from 'lucide-react';
+import { api } from '@kiwi/ui';
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState({
@@ -31,7 +32,7 @@ export default function SettingsPage() {
       cardEnabled: true,
       cashEnabled: true,
       cryptoEnabled: true,
-      cryptoWallet: 'GAX47HJZUAW...',
+      cryptoWallet: '',
       payoutSchedule: 'weekly',
       minimumPayout: 5000,
     },
@@ -44,20 +45,55 @@ export default function SettingsPage() {
       promotion: false,
     },
     security: {
-      requireKYC: true,
+      requireKYC: false,
       requirePhoneVerification: true,
       twoFactorAuth: false,
       sessionTimeout: 30,
     },
   });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [saveState, setSaveState] = useState<'idle' | 'ok' | 'error'>('idle');
+
+  // Carga real desde el backend (con defaults si es la primera vez)
+  useEffect(() => {
+    api
+      .getAdminSettings()
+      .then((data) => {
+        setSettings((prev) => ({
+          platform: { ...prev.platform, ...(data?.platform ?? {}) },
+          payments: { ...prev.payments, ...(data?.payments ?? {}) },
+          notifications: { ...prev.notifications, ...(data?.notifications ?? {}) },
+          security: { ...prev.security, ...(data?.security ?? {}) },
+        }));
+      })
+      .catch((e) => setLoadError(e?.message || 'No se pudieron cargar los ajustes'))
+      .finally(() => setLoading(false));
+  }, []);
 
   const [activeTab, setActiveTab] = useState<
     'platform' | 'payments' | 'notifications' | 'security'
   >('platform');
 
   const handleSave = async () => {
-    // Save settings
-    alert('Configuración guardada');
+    setSaving(true);
+    setSaveState('idle');
+    try {
+      const saved = await api.saveAdminSettings(settings);
+      setSettings((prev) => ({
+        platform: { ...prev.platform, ...(saved?.platform ?? {}) },
+        payments: { ...prev.payments, ...(saved?.payments ?? {}) },
+        notifications: { ...prev.notifications, ...(saved?.notifications ?? {}) },
+        security: { ...prev.security, ...(saved?.security ?? {}) },
+      }));
+      setSaveState('ok');
+    } catch {
+      setSaveState('error');
+    } finally {
+      setSaving(false);
+      setTimeout(() => setSaveState('idle'), 3000);
+    }
   };
 
   return (
@@ -74,11 +110,32 @@ export default function SettingsPage() {
         </div>
         <button
           onClick={handleSave}
-          className="px-6 py-2 text-sm font-medium bg-kiwi-500 text-white rounded-lg hover:bg-kiwi-600 transition-colors"
+          disabled={saving || loading}
+          className="px-6 py-2 text-sm font-medium bg-kiwi-500 text-white rounded-lg hover:bg-kiwi-600 transition-colors disabled:opacity-50"
         >
-          💾 Guardar Cambios
+          {saving ? 'Guardando…' : saveState === 'ok' ? 'Guardado' : 'Guardar Cambios'}
         </button>
       </div>
+      {loadError && (
+        <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600">
+          {loadError}
+        </div>
+      )}
+      {saveState === 'error' && (
+        <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600">
+          No se pudo guardar. Revisá tu conexión.
+        </div>
+      )}
+      {loading && (
+        <div className="space-y-3">
+          {[...Array(3)].map((_, i) => (
+            <div
+              key={i}
+              className="h-24 animate-pulse rounded-2xl bg-surface-200 dark:bg-surface-800"
+            />
+          ))}
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex gap-2 border-b border-surface-200 dark:border-surface-700 pb-2">

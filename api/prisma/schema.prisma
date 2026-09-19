@@ -100,6 +100,16 @@ enum CreditTransactionKind {
   refund
 }
 
+// Ajustes de plataforma (admin). Clave-valor: lo que ves en /admin/settings
+// se guarda acá — nada vive solo en el navegador.
+model PlatformSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("platform_settings")
+}
+
 // Driver profiles
 model DriverProfile {
   id           String       @id @default(uuid())

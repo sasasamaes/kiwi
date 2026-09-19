@@ -231,11 +231,39 @@ function NewOrderInner({
   // Crédito prepago: solo cubre envío (viaje + plataforma). Se descuenta al crear.
   const [creditBalance, setCreditBalance] = useState<number | null>(null);
 
+  // Métodos habilitados por el admin (/admin/settings). Crédito siempre va.
+  const [payAvailability, setPayAvailability] = useState({
+    sinpe: true,
+    card: true,
+    cash: true,
+    crypto: true,
+  });
+
   useEffect(() => {
     api
       .getCreditBalance()
       .then((r) => setCreditBalance(Number(r?.balance ?? 0)))
       .catch(() => setCreditBalance(null));
+    api
+      .getPaymentAvailability()
+      .then((a) => {
+        const next = {
+          sinpe: a.sinpe !== false,
+          card: a.card !== false,
+          cash: a.cash !== false,
+          crypto: a.crypto !== false,
+        };
+        setPayAvailability(next);
+        // Si el método elegido quedó deshabilitado, caer al primero válido
+        setPaymentMethod((prev) => {
+          const enabled: string[] = (Object.entries(next) as [string, boolean][])
+            .filter(([, on]) => on)
+            .map(([k]) => k);
+          if (prev === 'credit' || enabled.includes(prev)) return prev;
+          return ((enabled[0] as any) ?? 'credit') as typeof prev;
+        });
+      })
+      .catch(() => undefined);
   }, []);
 
   const [favoriteDrivers, setFavoriteDrivers] = useState<Driver[]>([]);
@@ -1213,31 +1241,34 @@ function NewOrderInner({
               <div className="mb-2 grid grid-cols-2 gap-2">
                 {(
                   [
-                    { id: 'sinpe', label: 'SINPE' },
-                    { id: 'card', label: 'Tarjeta' },
-                    { id: 'crypto', label: 'USDC' },
-                    { id: 'cash', label: 'Efectivo' },
+                    { id: 'sinpe', label: 'SINPE', on: payAvailability.sinpe },
+                    { id: 'card', label: 'Tarjeta', on: payAvailability.card },
+                    { id: 'crypto', label: 'USDC', on: payAvailability.crypto },
+                    { id: 'cash', label: 'Efectivo', on: payAvailability.cash },
                     {
                       id: 'credit',
+                      on: true,
                       label:
                         creditBalance == null
                           ? 'Crédito'
                           : `Crédito (₡${creditBalance.toLocaleString()})`,
                     },
                   ] as const
-                ).map((m) => (
-                  <button
-                    key={m.id}
-                    onClick={() => setPaymentMethod(m.id)}
-                    className={`rounded-xl p-3 text-sm font-medium ${
-                      paymentMethod === m.id
-                        ? 'border-2 border-kiwi-500 bg-kiwi-50 dark:bg-kiwi-900/30'
-                        : 'border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800'
-                    }`}
-                  >
-                    {m.label}
-                  </button>
-                ))}
+                )
+                  .filter((m) => m.on)
+                  .map((m) => (
+                    <button
+                      key={m.id}
+                      onClick={() => setPaymentMethod(m.id)}
+                      className={`rounded-xl p-3 text-sm font-medium ${
+                        paymentMethod === m.id
+                          ? 'border-2 border-kiwi-500 bg-kiwi-50 dark:bg-kiwi-900/30'
+                          : 'border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800'
+                      }`}
+                    >
+                      {m.label}
+                    </button>
+                  ))}
               </div>
               {paymentMethod === 'credit' && (
                 <p className="mb-2 text-xs text-surface-500 dark:text-surface-400">

@@ -131,6 +131,34 @@ export default function MenuPage() {
   // Payment method
   type PaymentMethod = 'sinpe' | 'card' | 'cash' | 'crypto_usdc' | 'crypto_usdt';
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('sinpe');
+  // Métodos habilitados por el admin (/admin/settings)
+  const [payAvailability, setPayAvailability] = useState({
+    sinpe: true,
+    card: true,
+    cash: true,
+    crypto: true,
+  });
+
+  useEffect(() => {
+    api
+      .getPaymentAvailability()
+      .then((a) => {
+        const next = {
+          sinpe: a.sinpe !== false,
+          card: a.card !== false,
+          cash: a.cash !== false,
+          crypto: a.crypto !== false,
+        };
+        setPayAvailability(next);
+        setPaymentMethod((prev) => {
+          const avail = next as Record<string, boolean>;
+          if (avail[prev === 'crypto_usdt' ? 'crypto' : prev]) return prev;
+          const fallback: PaymentMethod[] = ['sinpe', 'card', 'cash'];
+          return fallback.find((f) => avail[f]) ?? prev;
+        });
+      })
+      .catch(() => undefined);
+  }, []);
 
   // Payment state
   const [paymentPending, setPaymentPending] = useState(false);
@@ -1108,52 +1136,54 @@ export default function MenuPage() {
                         label: 'Efectivo',
                         desc: 'Al repartidor',
                       },
-                    ].map((method) => {
-                      const MethodIcon = method.icon as any;
-                      return (
-                        <motion.button
-                          key={method.id}
-                          type="button"
-                          className={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all ${
-                            paymentMethod === method.id
-                              ? 'bg-kiwi-100 dark:bg-kiwi-900/50 ring-2 ring-kiwi-500 shadow-kiwi'
-                              : 'bg-surface-100 dark:bg-surface-700 hover:bg-surface-200 dark:hover:bg-surface-600'
-                          }`}
-                          onClick={() => setPaymentMethod(method.id)}
-                          whileTap={{ scale: 0.95 }}
-                        >
-                          <span className="text-2xl">
-                            {typeof method.icon === 'string' ? (
-                              method.icon
-                            ) : (
-                              <MethodIcon className="h-6 w-6" />
-                            )}
-                          </span>
-                          <span
-                            className={`text-sm font-semibold ${
+                    ]
+                      .filter((method) => (payAvailability as Record<string, boolean>)[method.id])
+                      .map((method) => {
+                        const MethodIcon = method.icon as any;
+                        return (
+                          <motion.button
+                            key={method.id}
+                            type="button"
+                            className={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all ${
                               paymentMethod === method.id
-                                ? 'text-kiwi-700 dark:text-kiwi-400'
-                                : 'text-surface-700 dark:text-surface-300'
+                                ? 'bg-kiwi-100 dark:bg-kiwi-900/50 ring-2 ring-kiwi-500 shadow-kiwi'
+                                : 'bg-surface-100 dark:bg-surface-700 hover:bg-surface-200 dark:hover:bg-surface-600'
                             }`}
+                            onClick={() => setPaymentMethod(method.id)}
+                            whileTap={{ scale: 0.95 }}
                           >
-                            {method.label}
-                          </span>
-                          <span className="text-xs text-surface-400 dark:text-surface-500">
-                            {method.desc}
-                          </span>
-                          {paymentMethod === method.id && (
-                            <motion.div
-                              className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-kiwi-500 text-white text-xs flex items-center justify-center"
-                              initial={{ scale: 0 }}
-                              animate={{ scale: 1 }}
-                              transition={{ type: 'spring', stiffness: 500 }}
+                            <span className="text-2xl">
+                              {typeof method.icon === 'string' ? (
+                                method.icon
+                              ) : (
+                                <MethodIcon className="h-6 w-6" />
+                              )}
+                            </span>
+                            <span
+                              className={`text-sm font-semibold ${
+                                paymentMethod === method.id
+                                  ? 'text-kiwi-700 dark:text-kiwi-400'
+                                  : 'text-surface-700 dark:text-surface-300'
+                              }`}
                             >
-                              ✓
-                            </motion.div>
-                          )}
-                        </motion.button>
-                      );
-                    })}
+                              {method.label}
+                            </span>
+                            <span className="text-xs text-surface-400 dark:text-surface-500">
+                              {method.desc}
+                            </span>
+                            {paymentMethod === method.id && (
+                              <motion.div
+                                className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-kiwi-500 text-white text-xs flex items-center justify-center"
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                transition={{ type: 'spring', stiffness: 500 }}
+                              >
+                                ✓
+                              </motion.div>
+                            )}
+                          </motion.button>
+                        );
+                      })}
                   </div>
 
                   {/* Crypto Options */}

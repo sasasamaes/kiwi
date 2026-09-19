@@ -22,6 +22,7 @@ import { GeocodingModule } from './geocoding/geocoding.module';
 import { RoutingModule } from './routing/routing.module';
 import { SecurityModule } from './security/security.module';
 import { SentryModule } from './sentry/sentry.module';
+import { SettingsModule } from './settings/settings.module';
 import { FeatureFlagsModule } from './feature-flags/feature-flags.module';
 
 @Module({
@@ -61,6 +62,7 @@ import { FeatureFlagsModule } from './feature-flags/feature-flags.module';
     RoutingModule,
     SecurityModule,
     SentryModule,
+    SettingsModule,
   ],
 })
 export class AppModule {}

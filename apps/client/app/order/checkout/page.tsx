@@ -36,6 +36,37 @@ function CheckoutContent() {
   const [merchantName, setMerchantName] = useState('');
   const [pickupAddress, setPickupAddress] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
+  // Métodos habilitados por el admin (/admin/settings)
+  const [payAvailability, setPayAvailability] = useState({
+    sinpe: true,
+    card: true,
+    cash: true,
+    crypto: true,
+  });
+
+  useEffect(() => {
+    api
+      .getPaymentAvailability()
+      .then((a) =>
+        setPayAvailability({
+          sinpe: a.sinpe !== false,
+          card: a.card !== false,
+          cash: a.cash !== false,
+          crypto: a.crypto !== false,
+        }),
+      )
+      .catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    const keyOf = (m: PaymentMethod) => (m === 'crypto_usdc' || m === 'crypto_usdt' ? 'crypto' : m);
+    setPaymentMethod((prev) => {
+      const avail = payAvailability as Record<string, boolean>;
+      if (avail[keyOf(prev)]) return prev;
+      const fallback: PaymentMethod[] = ['cash', 'sinpe', 'card', 'crypto_usdc'];
+      return fallback.find((f) => avail[keyOf(f)]) ?? prev;
+    });
+  }, [payAvailability]);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [address, setAddress] = useState('');
@@ -401,24 +432,30 @@ function CheckoutContent() {
                 { id: 'cash', label: 'Efectivo', desc: 'Pagar al repartidor' },
                 { id: 'sinpe', label: 'SINPE', desc: 'Transferencia' },
                 { id: 'card', label: 'Tarjeta', desc: 'Crédito/Débito' },
-                { id: 'crypto_usdc', label: '💎 USDC', desc: 'Cripto' },
+                { id: 'crypto_usdc', label: 'USDC', desc: 'Cripto' },
               ] as const
-            ).map((method) => (
-              <button
-                key={method.id}
-                onClick={() => setPaymentMethod(method.id)}
-                className={`p-3 rounded-xl border-2 text-left transition-all ${
-                  paymentMethod === method.id
-                    ? 'border-kiwi-500 bg-kiwi-50 dark:bg-kiwi-900/20'
-                    : 'border-surface-200 dark:border-surface-700 hover:border-surface-300'
-                }`}
-              >
-                <span className="text-sm font-medium text-surface-800 dark:text-surface-100">
-                  {method.label}
-                </span>
-                <span className="block text-xs text-surface-500 mt-0.5">{method.desc}</span>
-              </button>
-            ))}
+            )
+              .filter((method) =>
+                method.id === 'crypto_usdc'
+                  ? payAvailability.crypto
+                  : (payAvailability as Record<string, boolean>)[method.id],
+              )
+              .map((method) => (
+                <button
+                  key={method.id}
+                  onClick={() => setPaymentMethod(method.id)}
+                  className={`p-3 rounded-xl border-2 text-left transition-all ${
+                    paymentMethod === method.id
+                      ? 'border-kiwi-500 bg-kiwi-50 dark:bg-kiwi-900/20'
+                      : 'border-surface-200 dark:border-surface-700 hover:border-surface-300'
+                  }`}
+                >
+                  <span className="text-sm font-medium text-surface-800 dark:text-surface-100">
+                    {method.label}
+                  </span>
+                  <span className="block text-xs text-surface-500 mt-0.5">{method.desc}</span>
+                </button>
+              ))}
           </div>
         </motion.div>
 
