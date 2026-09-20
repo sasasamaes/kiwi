@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { findNearestZone } from '../orders/delivery-zones';
 
 export interface GeocodingResult {
   placeId: string;
@@ -384,6 +385,34 @@ export class GeocodingService {
     // This is a client-side operation
     // Return null and let the client handle geolocation
     return null;
+  }
+
+  /**
+   * Zona de referencia más cercana a un GPS (detect → validar → tarifa).
+   * Mientras las zonas sean `referenceOnly` (sin polígono), el resultado con
+   * `confident: false` NO debe usarse para cobrar: pedir confirmación.
+   * PUNTO DE EXTENSIÓN POSTGIS: el point-in-polygon vivirá en
+   * orders/delivery-zones (findNearestZone); este método no cambia de firma.
+   */
+  nearestZone(lat: number, lng: number) {
+    const match = findNearestZone(lat, lng);
+    if (!match) return null;
+    return {
+      zone: { id: match.zone.id, label: match.zone.label, price: match.zone.price },
+      distanceKm: Math.round(match.distanceKm * 100) / 100,
+      confident: match.confident,
+      runnerUp: match.runnerUp
+        ? {
+            zone: {
+              id: match.runnerUp.zone.id,
+              label: match.runnerUp.zone.label,
+              price: match.runnerUp.zone.price,
+            },
+            distanceKm: Math.round(match.runnerUp.distanceKm * 100) / 100,
+          }
+        : null,
+      referenceOnly: match.referenceOnly,
+    };
   }
 
   /**

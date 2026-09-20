@@ -7,7 +7,7 @@ import { socketClient } from './socket-client';
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<User>;
   register: (data: any) => Promise<void>;
   logout: () => void;
   updateUser: (data: Partial<User>) => void;
@@ -43,6 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     const result = await api.login(email, password);
     setUser(result.user);
+    return result.user as User;
   };
 
   const register = async (data: any) => {

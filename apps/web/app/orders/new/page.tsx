@@ -14,8 +14,14 @@ import {
   calculateDistance,
   ShareTrackingButton,
   DeliveryZoneSelect,
+  DeliveryZonesMap,
 } from '@kiwi/ui';
-import { computeAppCommission, findDeliveryZone } from '@kiwi/types';
+import {
+  computeDriverCommission,
+  findDeliveryZone,
+  detectDeliveryZoneFromText,
+  findNearestZone,
+} from '@kiwi/types';
 
 type Step = 1 | 2 | 3;
 
@@ -217,6 +223,7 @@ function NewOrderInner({
   const [mapLinkMsg, setMapLinkMsg] = useState<string | null>(null);
   const [deliverySuggest, setDeliverySuggest] = useState<GeoSuggestion[]>([]);
   const [locating, setLocating] = useState(false);
+  const [showZonesMap, setShowZonesMap] = useState(false);
 
   const [packageDescription, setPackageDescription] = useState('');
   const [packageSize, setPackageSize] = useState<'' | 'S' | 'M' | 'L'>('');
@@ -228,8 +235,10 @@ function NewOrderInner({
   const [paymentMethod, setPaymentMethod] = useState<
     'cash' | 'sinpe' | 'card' | 'crypto' | 'credit'
   >('sinpe');
-  // Crédito prepago: solo cubre envío (viaje + plataforma). Se descuenta al crear.
+  // Crédito prepago: solo cubre el viaje. Se descuenta al crear.
   const [creditBalance, setCreditBalance] = useState<number | null>(null);
+  // % de comisión del repartidor (admin). Solo espejo visual: el backend manda.
+  const [commissionPct, setCommissionPct] = useState(15);
 
   // Métodos habilitados por el admin (/admin/settings). Crédito siempre va.
   const [payAvailability, setPayAvailability] = useState({
@@ -244,6 +253,10 @@ function NewOrderInner({
       .getCreditBalance()
       .then((r) => setCreditBalance(Number(r?.balance ?? 0)))
       .catch(() => setCreditBalance(null));
+    api
+      .getDriverCommissionPct()
+      .then((p) => setCommissionPct(p))
+      .catch(() => undefined);
     api
       .getPaymentAvailability()
       .then((a) => {
@@ -355,6 +368,10 @@ function NewOrderInner({
       setDeliverySuggest([]);
       return;
     }
+    // Si el texto ya nombra un barrio ("Matabuey, 100m este…") y aún no hay
+    // zona elegida, preseleccionarla. Nunca pisa una elección manual previa.
+    const typedZone = detectDeliveryZoneFromText(q);
+    if (typedZone) setDeliveryZone((prev) => prev || typedZone.id);
     try {
       const res = await api.searchNicoyaAddresses(q.trim(), 5);
       setDeliverySuggest(
@@ -383,6 +400,64 @@ function NewOrderInner({
     setDeliveryLat(s.lat);
     setDeliveryLng(s.lng);
     setDeliverySuggest([]);
+    void autoDetectZone(s.lat, s.lng, s.displayName);
+  };
+
+  /**
+   * GPS → zona → tarifa (referencia). Orden:
+   * 1) texto explícito (dirección escrita o label del link),
+   * 2) punto de referencia más cercano — SOLO si es claro (confident),
+   * 3) reverse-geocode + match por texto.
+   * Cerca de un límite (confident=false) NO se fija nada: se muestran las
+   * candidatas y el comercio confirma en la lista o el mapa.
+   */
+  const autoDetectZone = async (lat: number, lng: number, fixedLabel: string) => {
+    const base = `Ubicación fijada: ${fixedLabel}`;
+    const apply = (zoneId: string, zoneLabel: string, zonePrice: number, note: string) => {
+      setDeliveryZone(zoneId);
+      setMapLinkMsg(`${base} · Zona: ${zoneLabel} — ₡${zonePrice.toLocaleString()}. ${note}`);
+    };
+    const direct = detectDeliveryZoneFromText(fixedLabel, deliveryAddress);
+    if (direct) {
+      apply(direct.id, direct.label, direct.price, 'Detectada por nombre. Revisala.');
+      return;
+    }
+    const near = findNearestZone(lat, lng);
+    if (near?.confident) {
+      apply(
+        near.zone.id,
+        near.zone.label,
+        near.zone.price,
+        'Punto de referencia más cercano. Revisala.',
+      );
+      return;
+    }
+    const candidatesMsg =
+      near?.runnerUp != null
+        ? `Estás entre ${near.zone.label} (₡${near.zone.price.toLocaleString()}) y ${near.runnerUp.zone.label} (₡${near.runnerUp.zone.price.toLocaleString()}): elegí la zona en la lista o el mapa.`
+        : 'No pudimos detectar el barrio: elegilo manualmente.';
+    try {
+      const rev: any = await api.reverseGeocode(lat, lng);
+      const addr = rev?.address ?? {};
+      const zone = detectDeliveryZoneFromText(
+        addr.neighbourhood,
+        addr.suburb,
+        addr.road,
+        addr.village,
+        addr.hamlet,
+        addr.town,
+        addr.city,
+        rev?.displayName,
+        rev?.shortName,
+      );
+      if (zone) {
+        apply(zone.id, zone.label, zone.price, 'Detectada por dirección. Revisala.');
+      } else {
+        setMapLinkMsg(`${base}. ${candidatesMsg}`);
+      }
+    } catch {
+      setMapLinkMsg(`${base}. ${candidatesMsg}`);
+    }
   };
 
   const applyMapLink = async () => {
@@ -403,7 +478,7 @@ function NewOrderInner({
           setDeliveryAddress((prev) => prev || label);
           setDeliverySuggest([]);
           setMapLink('');
-          setMapLinkMsg(`Ubicación fijada: ${label}`);
+          await autoDetectZone(lat, lng, label);
           return;
         }
       } catch {
@@ -425,7 +500,7 @@ function NewOrderInner({
           setDeliveryAddress((prev) => prev || label);
           setDeliverySuggest([]);
           setMapLink('');
-          setMapLinkMsg(`Ubicación fijada: ${label}`);
+          await autoDetectZone(lat, lng, label);
           return;
         }
         setMapLinkMsg(
@@ -442,7 +517,7 @@ function NewOrderInner({
       setDeliveryAddress((prev) => prev || parsed.point.label);
       setDeliverySuggest([]);
       setMapLink('');
-      setMapLinkMsg(`Ubicación fijada: ${parsed.point.label}`);
+      await autoDetectZone(parsed.point.lat, parsed.point.lng, parsed.point.label);
       return;
     }
     // query de texto: buscar y tomar el primer resultado
@@ -454,7 +529,7 @@ function NewOrderInner({
         setDeliveryLng(Number(first.lng));
         setDeliveryAddress(first.displayName);
         setMapLink('');
-        setMapLinkMsg(`Ubicación fijada: ${first.shortName || first.displayName}`);
+        await autoDetectZone(Number(first.lat), Number(first.lng), first.displayName);
       } else {
         setMapLinkMsg('No encontramos ese lugar. Escribí la dirección a mano.');
       }
@@ -469,16 +544,19 @@ function NewOrderInner({
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         const { latitude, longitude } = pos.coords;
+        let name = `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
         try {
           const rev = await api.reverseGeocode(latitude, longitude);
-          setDeliveryAddress(rev?.displayName || `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`);
+          name = rev?.displayName || name;
+          setDeliveryAddress(name);
         } catch {
-          setDeliveryAddress(`${latitude.toFixed(5)}, ${longitude.toFixed(5)}`);
+          setDeliveryAddress(name);
         } finally {
           setDeliveryLat(latitude);
           setDeliveryLng(longitude);
           setLocating(false);
         }
+        await autoDetectZone(latitude, longitude, name);
       },
       () => setLocating(false),
       { enableHighAccuracy: true, timeout: 10000 },
@@ -520,8 +598,10 @@ function NewOrderInner({
   const zoneLabel = findDeliveryZone(deliveryZone)?.label ?? null;
   const weightSurcharge = kind === 'freight' && weightKg > 5 ? Math.ceil(weightKg - 5) * 500 : 0;
   const trip = baseTrip + weightSurcharge;
-  const commission = computeAppCommission(trip, paymentMethod === 'credit');
-  const total = subtotal + trip + commission;
+  // El comercio NO paga comisión: paga productos + viaje.
+  // La comisión (configurable por admin) la paga el repartidor desde su payout.
+  const driverFee = computeDriverCommission(trip, commissionPct);
+  const total = subtotal + trip;
   const etaMin = routeKm != null ? Math.max(5, Math.round((routeKm / 25) * 60)) : null;
 
   // Encomienda: la descripción es opcional — solo pide los datos de entrega.
@@ -563,10 +643,10 @@ function NewOrderInner({
       return;
     }
     // Chequeo previo (el backend revalida atómicamente): evita crear el
-    // pedido si el crédito no cubre el envío.
-    if (paymentMethod === 'credit' && creditBalance != null && creditBalance < trip + commission) {
+    // pedido si el crédito no cubre el viaje (sin comisión: la paga el driver).
+    if (paymentMethod === 'credit' && creditBalance != null && creditBalance < trip) {
       setFormError(
-        `Saldo insuficiente (₡${creditBalance.toLocaleString()}): este envío cuesta ₡${(trip + commission).toLocaleString()}. Llamá a Kiwi para recargar tu crédito.`,
+        `Saldo insuficiente (₡${creditBalance.toLocaleString()}): este envío cuesta ₡${trip.toLocaleString()}. Llamá a Kiwi para recargar tu crédito.`,
       );
       return;
     }
@@ -623,13 +703,13 @@ function NewOrderInner({
             cryptoCoin: 'USDC',
           });
         } else if (paymentMethod === 'credit') {
-          // Solo envío (viaje + plataforma): el backend lo valida y descuenta.
+          // Solo el viaje (sin comisión): el backend lo valida y descuenta.
           await api.createPayment({
             orderId: result.id,
             method: 'credit',
-            amount: trip + commission,
+            amount: trip,
           });
-          setCreditBalance((b) => (b == null ? b : b - (trip + commission)));
+          setCreditBalance((b) => (b == null ? b : b - trip));
         } else {
           await api.createPayment({ orderId: result.id, method: 'cash', amount: total });
         }
@@ -1023,6 +1103,27 @@ function NewOrderInner({
                   className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm"
                 />
                 <DeliveryZoneSelect value={deliveryZone} onChange={setDeliveryZone} />
+                <div>
+                  <button
+                    onClick={() => setShowZonesMap((v) => !v)}
+                    className="text-xs font-medium text-kiwi-600 dark:text-kiwi-400 underline underline-offset-2"
+                  >
+                    {showZonesMap ? 'Ocultar mapa de zonas' : 'Ver zonas y precios en mapa'}
+                  </button>
+                  {showZonesMap && (
+                    <div className="mt-2">
+                      <DeliveryZonesMap
+                        selectedId={deliveryZone}
+                        onSelect={setDeliveryZone}
+                        height={300}
+                      />
+                      <p className="mt-1 text-[11px] text-surface-400">
+                        Tocá un precio para elegir esa zona. Son puntos de referencia, no límites
+                        del barrio.
+                      </p>
+                    </div>
+                  )}
+                </div>
                 {deliverySuggest.length > 0 && (
                   <div className="overflow-hidden rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800">
                     {deliverySuggest.map((s, i) => (
@@ -1187,11 +1288,9 @@ function NewOrderInner({
                   <span className="text-kiwi-600 font-medium">₡{trip.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-surface-500">
-                    Comisión Kiwi ({paymentMethod === 'credit' ? '10%' : '15%'} del envío)
-                  </span>
+                  <span className="text-surface-500">Repartidor recibe</span>
                   <span className="text-surface-600 dark:text-surface-300 font-medium">
-                    ₡{commission.toLocaleString()}
+                    ₡{(trip - driverFee).toLocaleString()} (viaje − {commissionPct}% Kiwi)
                   </span>
                 </div>
                 <div className="flex justify-between text-lg font-bold pt-2 border-t border-surface-100 dark:border-surface-700">
@@ -1276,8 +1375,9 @@ function NewOrderInner({
               </div>
               {paymentMethod === 'credit' && (
                 <p className="mb-2 text-xs text-surface-500 dark:text-surface-400">
-                  Se descuenta solo el envío (₡{(trip + commission).toLocaleString()}) de tu
-                  crédito. Si no alcanza, llamá a Kiwi para recargar.
+                  Se descuenta solo el viaje (₡{trip.toLocaleString()}) de tu crédito. Vos no pagás
+                  comisión: el {commissionPct}% lo paga el repartidor. Si no alcanza, llamá a Kiwi
+                  para recargar.
                 </p>
               )}
             </motion.div>

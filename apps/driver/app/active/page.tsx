@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BottomNav } from '../components/BottomNav';
+import { DriverMap } from '../components/DriverMap';
 import {
   MapPin,
   Home,
@@ -82,6 +83,22 @@ function openMaps(lat?: number | string | null, lng?: number | string | null, ad
     ? `https://www.google.com/maps/dir/?api=1&destination=${coords}`
     : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address || '')}`;
   window.open(dest, '_blank', 'noopener,noreferrer');
+}
+
+/** Lleva la vista al mapa dentro de la app (estilo Uber). Fallback: Maps externo. */
+function scrollToMap() {
+  document.getElementById('driver-map')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function toMapPoint(
+  lat?: number | string | null,
+  lng?: number | string | null,
+  label?: string,
+): { lat: number; lng: number; label?: string } | null {
+  const la = Number(lat);
+  const ln = Number(lng);
+  if (!Number.isFinite(la) || !Number.isFinite(ln) || la === 0 || ln === 0) return null;
+  return { lat: la, lng: ln, label };
 }
 
 /** "Cliente: Ana (8888-1234) · Sin cebolla" -> { name, phone } */
@@ -419,6 +436,8 @@ export default function ActiveOrders() {
   const showBottomNav = order.status === 'assigned';
   const flow = NEXT_STATUS[order.status];
   const driverPayout = Number(order.driverPayout ?? order.totalAmount ?? 0);
+  // % real del pedido (el admin la puede cambiar; el backend la guarda).
+  const feePct = Math.round(Number((order as any).commissionRate ?? 0.15) * 100);
   const distanceKm = Number(order.distanceKm ?? 0);
   const customer = parseCustomer(order.specialInstructions);
   const notes = (order.specialInstructions || '')
@@ -429,6 +448,18 @@ export default function ActiveOrders() {
   const pendingStatus = queuedTransitions[order.id];
   const showOfflineBanner = !online || fromCache;
   const progress = Math.min(100, Math.round((stepIndex / (FLOW_ORDER.length - 1)) * 100));
+  // Mapa in-app tipo Uber: a dónde voy ahora depende del estado
+  const pickupPoint = toMapPoint(
+    order.pickupLat,
+    order.pickupLng,
+    order.merchant?.businessName || order.pickupAddress,
+  );
+  const deliveryPoint = toMapPoint(order.deliveryLat, order.deliveryLng, order.deliveryAddress);
+  const mapTarget = stepIndex >= 2 ? ('delivery' as const) : ('pickup' as const);
+  const mapTargetLabel =
+    mapTarget === 'pickup'
+      ? `Vas a recoger · ${order.merchant?.businessName || 'Comercio'}`
+      : `Vas a entregar · ${order.deliveryAddress}`;
 
   return (
     <main className="min-h-[100dvh] flex flex-col bg-bg-light dark:bg-surface-950">
@@ -454,6 +485,17 @@ export default function ActiveOrders() {
       </header>
 
       <main className="flex-1 mx-auto w-full max-w-lg px-4 py-6 pb-40">
+        {/* Mapa in-app tipo Uber: navegación sin salir de la app */}
+        <div id="driver-map" className="mb-4 scroll-mt-24">
+          <DriverMap
+            pickup={pickupPoint}
+            delivery={deliveryPoint}
+            target={mapTarget}
+            targetLabel={mapTargetLabel}
+            height={340}
+          />
+        </div>
+
         <AnimatePresence>
           {notice && (
             <motion.div
@@ -553,6 +595,10 @@ export default function ActiveOrders() {
                   <p className="text-xs text-white/70">Ganás</p>
                   <AnimatedCounter value={driverPayout} className="text-2xl font-bold font-mono" />
                   <p className="text-xs text-white/70">CRC</p>
+                  <p className="mt-0.5 text-[11px] text-white/60">
+                    Viaje ₡{Number(order.basePrice ?? driverPayout).toLocaleString()} − {feePct}%
+                    Kiwi
+                  </p>
                 </div>
               </div>
 
@@ -646,6 +692,11 @@ export default function ActiveOrders() {
                 variant="secondary"
                 haptic
                 className="mt-3 h-11 w-full rounded-xl text-sm"
+                onClick={scrollToMap}
+              >
+                <Navigation className="h-4 w-4" /> Ver en mapa
+              </TapButton>
+              <button
                 onClick={() =>
                   openMaps(
                     order.pickupLat ? Number(order.pickupLat) : null,
@@ -653,9 +704,10 @@ export default function ActiveOrders() {
                     order.pickupAddress,
                   )
                 }
+                className="mt-2 w-full text-center text-xs text-surface-400 underline-offset-2 hover:underline"
               >
-                <Navigation className="h-4 w-4" /> Cómo llegar
-              </TapButton>
+                Abrir en Google Maps
+              </button>
             </div>
           </div>
 
@@ -708,6 +760,11 @@ export default function ActiveOrders() {
                 variant="gradient"
                 haptic
                 className="mt-3 h-11 w-full rounded-xl text-sm"
+                onClick={scrollToMap}
+              >
+                <Navigation className="h-4 w-4" /> Navegar en la app
+              </TapButton>
+              <button
                 onClick={() =>
                   openMaps(
                     order.deliveryLat ? Number(order.deliveryLat) : null,
@@ -715,9 +772,10 @@ export default function ActiveOrders() {
                     order.deliveryAddress,
                   )
                 }
+                className="mt-2 w-full text-center text-xs text-surface-400 underline-offset-2 hover:underline"
               >
-                <Navigation className="h-4 w-4" /> Cómo llegar
-              </TapButton>
+                Abrir en Google Maps
+              </button>
             </div>
           </div>
         </div>
@@ -841,6 +899,7 @@ export default function ActiveOrders() {
               <p className="font-mono text-lg font-bold text-kiwi-600">
                 ₡{driverPayout.toLocaleString()}
               </p>
+              <p className="text-[10px] text-surface-400">neta (−{feePct}% Kiwi)</p>
             </div>
             <div className="flex-1">
               {pendingStatus ? (

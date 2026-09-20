@@ -22,7 +22,7 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState({
     platform: {
       name: 'Kiwi',
-      commission: 10,
+      commission: 15,
       minimumOrder: 2000,
       maximumDeliveryDistance: 20,
       freeDeliveryThreshold: 10000,
@@ -194,7 +194,7 @@ export default function SettingsPage() {
 
             <div>
               <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
-                Comisión de la plataforma (%)
+                Comisión al repartidor (% del viaje)
               </label>
               <input
                 type="number"
@@ -207,6 +207,9 @@ export default function SettingsPage() {
                 }
                 className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-500"
               />
+              <p className="mt-1 text-xs text-surface-400">
+                Rige para pedidos nuevos (cada pedido guarda su tasa). El comercio no paga comisión.
+              </p>
             </div>
 
             <div>

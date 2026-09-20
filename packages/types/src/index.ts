@@ -138,14 +138,23 @@ export interface Order {
 // Delivery zones (Nicoya pricing catalog — server is source of truth)
 export {
   NICOYA_DELIVERY_ZONES,
+  NEAREST_ZONE_AMBIGUITY_KM,
   findDeliveryZone,
+  detectDeliveryZoneFromText,
+  findNearestZone,
+  isReferenceOnly,
+  haversineKm,
   getDeliveryZonePrice,
-  computeAppCommission,
-  TRIP_COMMISSION_PCT,
-  TRIP_CREDIT_COMMISSION_PCT,
-  TRIP_STANDARD_COMMISSION_PCT,
+  computeDriverCommission,
+  computeDriverPayout,
+  DRIVER_COMMISSION_PCT,
 } from './deliveryZones';
-export type { DeliveryZone } from './deliveryZones';
+export type {
+  DeliveryZone,
+  ZoneGeometry,
+  NearestZoneCandidate,
+  NearestZoneResult,
+} from './deliveryZones';
 
 // Driver Proposal types
 export type ProposalStatus = 'pending' | 'accepted' | 'rejected';

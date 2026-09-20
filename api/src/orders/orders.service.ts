@@ -11,6 +11,7 @@ import { DriversService } from '../drivers/drivers.service';
 import { GeocodingService } from '../geocoding/geocoding.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { ProximityService } from './proximity.service';
+import { SettingsService } from '../settings/settings.service';
 import { findDeliveryZone } from './delivery-zones';
 import { isKycRequired } from '../feature-flags/feature-flags';
 
@@ -25,6 +26,7 @@ export class OrdersService {
     private geocodingService: GeocodingService,
     private proximity: ProximityService,
     private notificationsService: NotificationsService,
+    private settingsService: SettingsService,
   ) {}
 
   async create(merchantId: string, data: any) {
@@ -69,9 +71,10 @@ export class OrdersService {
       }
     }
 
-    // Pricing: trip (zone flat or distance table) + comisión SOLO sobre el
-    // viaje (10% crédito, 15% otros medios). Kiwi une comercios con
-    // repartidores: los productos son 100% del comercio, sin comisión.
+    // Pricing: el comercio paga productos + viaje, SIN comisión.
+    // La comisión (15% fija por viaje) la paga el repartidor: se descuenta
+    // de su payout. Kiwi une comercios con repartidores: los productos son
+    // 100% del comercio, sin comisión.
     const kind = data.kind ?? 'food';
     if (kind !== 'food' && kind !== 'freight') {
       throw new BadRequestException('kind inválido: use food o freight');
@@ -195,8 +198,8 @@ export class OrdersService {
     }
 
     // Encomiendas por peso: los primeros 5 kg van incluidos en la tarifa del
-    // viaje; cada kg adicional (iniciado) suma ₡500 al viaje (y por ende al
-    // payout del repartidor). La comisión de la app sigue siendo el 10%.
+    // viaje; cada kg adicional (iniciado) suma ₡500 al viaje (y por ende a la
+    // base sobre la que se calcula el payout del repartidor).
     let weightKg: number | null = null;
     if (kind === 'freight' && data.weightKg != null) {
       weightKg = Number(data.weightKg);
@@ -228,14 +231,16 @@ export class OrdersService {
           { lat: data.pickupLat, lng: data.pickupLng },
           { lat: data.deliveryLat, lng: data.deliveryLng },
         )) + weightSurcharge;
-    // Comisión por método de pago: 10% con crédito prepago, 15% con
-    // cualquier otro medio (SINPE, tarjeta, cripto, efectivo). El cliente
-    // manda payWithCredit y el servidor lo convierte en tasa — nunca en monto.
-    const payWithCredit = data.payWithCredit === true;
-    const commissionRate = payWithCredit ? 0.1 : 0.15;
+    // Comisión del repartidor: % configurable por el admin
+    // (/admin/settings). El medio de pago (payWithCredit) solo elige cómo
+    // paga el comercio, no cambia la tasa. La tasa queda guardada por pedido
+    // (commissionRate): cambiar el setting solo afecta pedidos NUEVOS.
+    // El servidor pone el monto, el cliente nunca lo decide.
+    const commissionPct = await this.settingsService.getDriverCommissionPct();
+    const commissionRate = commissionPct / 100;
     const commission = Math.round(tripPrice * commissionRate);
-    const driverPayout = tripPrice;
-    const totalAmount = productsTotal + tripPrice + commission;
+    const driverPayout = tripPrice - commission;
+    const totalAmount = productsTotal + tripPrice;
     if (data.packageSize != null && !['S', 'M', 'L'].includes(data.packageSize)) {
       throw new BadRequestException('packageSize inválido');
     }

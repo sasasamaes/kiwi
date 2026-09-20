@@ -3,7 +3,8 @@ import { PrismaService } from '../prisma/prisma.service';
 
 /**
  * Crédito prepago de comercios: el admin recarga, el comercio lo gasta en
- * envíos. Cada gasto = viaje (payout del repartidor) + comisión de la app.
+ * envíos. Cada gasto = solo el viaje (el comercio no paga comisión: la paga
+ * el repartidor desde su payout).
  * Los productos los cobra el comercio aparte — nunca salen del crédito.
  * Todo movimiento queda en el libro mayor (credit_transactions).
  */

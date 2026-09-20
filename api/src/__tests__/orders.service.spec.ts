@@ -22,6 +22,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { OrdersService } from '../orders/orders.service';
+import { SettingsService } from '../settings/settings.service';
 import { EventsGateway } from '../events/events.gateway';
 import { DriversService } from '../drivers/drivers.service';
 import { GeocodingService } from '../geocoding/geocoding.service';
@@ -30,6 +31,7 @@ import { ProximityService } from '../orders/proximity.service';
 describe('OrdersService', () => {
   let service: OrdersService;
   let prisma: any;
+  let settingsStub: { getDriverCommissionPct: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
@@ -58,6 +60,8 @@ describe('OrdersService', () => {
 
     jest.clearAllMocks();
 
+    settingsStub = { getDriverCommissionPct: jest.fn().mockResolvedValue(15) };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         OrdersService,
@@ -85,6 +89,7 @@ describe('OrdersService', () => {
             notifyOrderStatusUpdate: jest.fn().mockResolvedValue({}),
           },
         },
+        { provide: SettingsService, useValue: settingsStub },
       ],
     }).compile();
 
@@ -191,16 +196,16 @@ describe('OrdersService', () => {
         payWithCredit: true,
       });
 
-      // Viaje ₡7000 + comisión 10% ₡700 = ₡7700 (sin productos)
+      // Viaje ₡7000: el comercio paga ₡7000, el driver paga 15% (₡1050)
       expect(order.deliveryZone).toBe('hojancha');
       expect(order.basePrice).toBe(7000);
-      expect(order.driverPayout).toBe(7000);
-      expect(order.commission).toBe(700);
-      expect(order.commissionRate).toBe(0.1);
-      expect(order.totalAmount).toBe(7700);
+      expect(order.driverPayout).toBe(5950);
+      expect(order.commission).toBe(1050);
+      expect(order.commissionRate).toBe(0.15);
+      expect(order.totalAmount).toBe(7000);
     });
 
-    it('sin crédito aplica 15% al envío (onvo/efectivo)', async () => {
+    it('el medio de pago no cambia la comisión: siempre 15% del driver', async () => {
       prisma.merchantProfile.findUnique.mockResolvedValue({
         id: 'merchant-1',
         userId: 'user-1',
@@ -219,11 +224,37 @@ describe('OrdersService', () => {
         distanceKm: 1,
       });
 
-      // Viaje ₡7000 + comisión 15% ₡1050 = ₡8050
+      // Viaje ₡7000: comercio paga ₡7000, driver recibe ₡5950 (15% Kiwi)
       expect(order.commission).toBe(1050);
       expect(order.commissionRate).toBe(0.15);
-      expect(order.totalAmount).toBe(8050);
-      expect(order.driverPayout).toBe(7000);
+      expect(order.totalAmount).toBe(7000);
+      expect(order.driverPayout).toBe(5950);
+    });
+
+    it('la tasa del admin manda: 20% configured → comisión 1400 en viaje 7000', async () => {
+      prisma.merchantProfile.findUnique.mockResolvedValue({
+        id: 'merchant-1',
+        userId: 'user-1',
+        businessName: 'Bowl & Café',
+      });
+      prisma.order.create.mockImplementation(async ({ data }: any) => ({
+        id: 'order-1',
+        status: 'pending',
+        ...data,
+      }));
+      settingsStub.getDriverCommissionPct.mockResolvedValue(20);
+
+      const order: any = await service.create('user-1', {
+        pickupAddress: 'Nicoya Centro',
+        deliveryAddress: 'Hojancha centro',
+        deliveryZone: 'hojancha',
+        distanceKm: 1,
+      });
+
+      expect(order.commissionRate).toBe(0.2);
+      expect(order.commission).toBe(1400);
+      expect(order.driverPayout).toBe(5600);
+      expect(order.totalAmount).toBe(7000);
     });
 
     it('should reject unknown deliveryZone', async () => {
@@ -265,7 +296,9 @@ describe('OrdersService', () => {
       });
 
       expect(order.basePrice).toBe(2000);
-      expect(order.totalAmount).toBe(2200);
+      expect(order.totalAmount).toBe(2000);
+      expect(order.commission).toBe(300);
+      expect(order.driverPayout).toBe(1700);
     });
 
     it('charges flat ₡2000 without coords when distance is within the zone', async () => {
@@ -332,7 +365,7 @@ describe('OrdersService', () => {
     });
   });
 
-  describe('flete pricing (trip + 10pct)', () => {
+  describe('flete pricing (comisión 15% del driver)', () => {
     beforeEach(() => {
       prisma.merchantProfile.findUnique.mockResolvedValue({
         id: 'merchant-1',
@@ -345,7 +378,7 @@ describe('OrdersService', () => {
       }));
     });
 
-    it('flete en zona: 2000 + 200, driver recibe 2000', async () => {
+    it('flete en zona: 2000, driver recibe 1700 (15%)', async () => {
       const order: any = await service.create('user-1', {
         pickupAddress: 'Parque Nicoya',
         pickupLat: 10.1467,
@@ -360,9 +393,9 @@ describe('OrdersService', () => {
         packageSize: 'M',
       });
       expect(order.basePrice).toBe(2000);
-      expect(order.commission).toBe(200);
-      expect(order.driverPayout).toBe(2000);
-      expect(order.totalAmount).toBe(2200);
+      expect(order.commission).toBe(300);
+      expect(order.driverPayout).toBe(1700);
+      expect(order.totalAmount).toBe(2000);
     });
 
     it('encomienda por peso: 12kg suma ₡3500 por 7kg extra', async () => {
@@ -379,11 +412,11 @@ describe('OrdersService', () => {
         packageDescription: 'Caja pesada',
         weightKg: 12,
       });
-      // 2000 viaje + 7*500 peso = 5500; comisión 10% = 550; driver = 5500
+      // 2000 viaje + 7*500 peso = 5500; comisión 15% = 825; driver = 4675
       expect(order.basePrice).toBe(5500);
-      expect(order.commission).toBe(550);
-      expect(order.driverPayout).toBe(5500);
-      expect(order.totalAmount).toBe(6050);
+      expect(order.commission).toBe(825);
+      expect(order.driverPayout).toBe(4675);
+      expect(order.totalAmount).toBe(5500);
     });
 
     it('rechaza weightKg inválido', async () => {
@@ -416,7 +449,7 @@ describe('OrdersService', () => {
       expect(prisma.order.create).not.toHaveBeenCalled();
     });
 
-    it('comida en zona: productos sin comisión, solo 10% del envío', async () => {
+    it('comida en zona: productos sin comisión, comercio paga envío pleno', async () => {
       const order: any = await service.create('user-1', {
         pickupAddress: 'Parque Nicoya',
         deliveryAddress: 'Barrio San Martín',
@@ -425,10 +458,11 @@ describe('OrdersService', () => {
         payWithCredit: true,
         productsTotal: 5000,
       });
-      // 10% de 2000 (envío); productos 100% del comercio
+      // 15% de 2000 (envío) lo paga el driver; productos 100% del comercio
       expect(order.basePrice).toBe(2000);
-      expect(order.commission).toBe(200);
-      expect(order.totalAmount).toBe(2000 + 5000 + 200);
+      expect(order.commission).toBe(300);
+      expect(order.driverPayout).toBe(1700);
+      expect(order.totalAmount).toBe(2000 + 5000);
     });
 
     it('rechaza kind invalido y productsTotal negativo', async () => {

@@ -68,6 +68,28 @@ export class GeocodingController {
     return this.geocodingService.reverseGeocode(latitude, longitude);
   }
 
+  @Get('nearest-zone')
+  @ApiOperation({
+    summary:
+      'Zona de referencia más cercana (GPS → zona → tarifa). referenceOnly hasta tener polígonos.',
+  })
+  @ApiQuery({ name: 'lat', required: true, description: 'Latitude (WGS84)' })
+  @ApiQuery({ name: 'lng', required: true, description: 'Longitude (WGS84)' })
+  async nearestZone(@Query('lat') lat: string, @Query('lng') lng: string) {
+    const latitude = parseFloat(lat);
+    const longitude = parseFloat(lng);
+
+    if (isNaN(latitude) || isNaN(longitude)) {
+      return { error: 'Invalid coordinates' };
+    }
+
+    const match = this.geocodingService.nearestZone(latitude, longitude);
+    if (!match) {
+      return { error: 'No hay zonas con punto de referencia' };
+    }
+    return match;
+  }
+
   @Get('distance')
   @ApiOperation({ summary: 'Calculate distance between two points' })
   @ApiQuery({ name: 'lat1', required: true })

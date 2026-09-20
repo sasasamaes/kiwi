@@ -18,6 +18,13 @@ export class SettingsController {
     return this.settingsService.getPaymentAvailability();
   }
 
+  @Public()
+  @Get('driver-commission')
+  @ApiOperation({ summary: '% comisión del repartidor (público, espejo de pricing)' })
+  async driverCommission() {
+    return { pct: await this.settingsService.getDriverCommissionPct() };
+  }
+
   @Get('admin')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')

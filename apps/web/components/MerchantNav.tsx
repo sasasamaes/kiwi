@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   BarChart3,
+  Bell,
   Bike,
   LayoutDashboard,
   LogOut,
@@ -24,7 +25,19 @@ const LINKS = [
   { href: '/analytics', label: 'Analytics', icon: BarChart3 },
 ];
 
-export function MerchantNav() {
+interface MerchantNavProps {
+  /** Si se pasa, muestra el punto En vivo/Desconectado. */
+  isConnected?: boolean;
+  /** Si se pasa businessName, muestra campana + avatar del negocio. */
+  unreadCount?: number;
+  businessName?: string | null;
+}
+
+/**
+ * Único header del comercio: logo + links + (opcional) estado, campana y
+ * avatar. Las páginas NO deben agregar otro header con logo encima.
+ */
+export function MerchantNav({ isConnected, unreadCount = 0, businessName }: MerchantNavProps = {}) {
   const pathname = usePathname();
   const router = useRouter();
   const { logout } = useAuth();
@@ -65,6 +78,40 @@ export function MerchantNav() {
                 </Link>
               );
             })}
+            {isConnected !== undefined && (
+              <span className="flex items-center gap-1.5 px-2 text-xs text-surface-400">
+                <motion.span
+                  className={`h-2 w-2 rounded-full ${isConnected ? 'bg-kiwi-500' : 'bg-red-500'}`}
+                  animate={isConnected ? { scale: [1, 1.2, 1] } : {}}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                />
+                <span className="hidden lg:inline">{isConnected ? 'En vivo' : 'Desconectado'}</span>
+              </span>
+            )}
+            {businessName !== undefined && (
+              <>
+                <Link
+                  href="/notifications"
+                  aria-label="Notificaciones"
+                  className="relative rounded-full p-2 text-surface-500 hover:bg-surface-100 hover:text-surface-700 transition-colors dark:hover:bg-surface-800"
+                >
+                  <Bell className="h-5 w-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-kiwi-500 text-white text-xs font-bold flex items-center justify-center">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                </Link>
+                <span className="hidden items-center gap-2 lg:flex">
+                  <span className="text-sm font-medium text-surface-600 dark:text-surface-400">
+                    {businessName || 'Mi Negocio'}
+                  </span>
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-kiwi-gradient text-white text-sm font-semibold shadow-kiwi">
+                    {(businessName || 'M').charAt(0)}
+                  </span>
+                </span>
+              </>
+            )}
             <ThemeToggle />
             <button
               onClick={handleLogout}
@@ -80,6 +127,20 @@ export function MerchantNav() {
             <span className="text-sm font-medium text-surface-600 dark:text-surface-300">
               {LINKS.find((l) => isActive(l.href))?.label ?? 'Kiwi'}
             </span>
+            {businessName !== undefined && (
+              <Link
+                href="/notifications"
+                aria-label="Notificaciones"
+                className="relative rounded-xl p-2 text-surface-600 dark:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+              >
+                <Bell className="h-5 w-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-kiwi-500 text-white text-[10px] font-bold flex items-center justify-center">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </Link>
+            )}
             <button
               onClick={() => setMobileOpen((v) => !v)}
               aria-label={mobileOpen ? 'Cerrar menú' : 'Abrir menú'}

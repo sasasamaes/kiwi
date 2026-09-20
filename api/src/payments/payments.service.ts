@@ -152,8 +152,9 @@ export class PaymentsService {
 
   /**
    * Pago con crédito prepago: solo el dueño comercio del pedido puede usarlo.
-   * Descuenta viaje (payout) + comisión de la app — los productos nunca salen
-   * del crédito. Si ya hay pago completado, no duplica el gasto.
+   * Descuenta SOLO el viaje — el comercio no paga comisión (la paga el
+   * repartidor desde su payout) y los productos nunca salen del crédito.
+   * Si ya hay pago completado, no duplica el gasto.
    */
   private async createCreditPayment(
     orderId: string,
@@ -174,8 +175,9 @@ export class PaymentsService {
       throw new BadRequestException('El pedido ya tiene un pago completado');
     }
 
-    // Viaje + comisión (NO productos): basePrice ya es el viaje con recargos.
-    const spend = Math.round(Number(order.basePrice) + Number(order.commission));
+    // Solo el viaje (NO productos, NO comisión): basePrice ya es el viaje
+    // con recargos. La comisión la paga el repartidor desde su payout.
+    const spend = Math.round(Number(order.basePrice));
     if (!Number.isFinite(spend) || spend <= 0) {
       throw new BadRequestException('Monto del envío inválido');
     }

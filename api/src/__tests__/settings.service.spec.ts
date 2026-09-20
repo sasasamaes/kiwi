@@ -62,4 +62,24 @@ describe('SettingsService', () => {
 
     await expect(service.saveAll({ intruso: true } as any)).rejects.toThrow(BadRequestException);
   });
+
+  it('getDriverCommissionPct: default 15, respeta guardado y sanea', async () => {
+    prisma.platformSetting.findMany.mockResolvedValue([]);
+    await expect(service.getDriverCommissionPct()).resolves.toBe(15);
+
+    prisma.platformSetting.findMany.mockResolvedValue([
+      { key: 'platform', value: { commission: 20 } },
+    ]);
+    await expect(service.getDriverCommissionPct()).resolves.toBe(20);
+
+    prisma.platformSetting.findMany.mockResolvedValue([
+      { key: 'platform', value: { commission: 999 } },
+    ]);
+    await expect(service.getDriverCommissionPct()).resolves.toBe(100);
+
+    prisma.platformSetting.findMany.mockResolvedValue([
+      { key: 'platform', value: { commission: 'no-numérico' } },
+    ]);
+    await expect(service.getDriverCommissionPct()).resolves.toBe(15);
+  });
 });

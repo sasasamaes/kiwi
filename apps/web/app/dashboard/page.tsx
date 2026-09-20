@@ -13,33 +13,27 @@ import {
   Bike,
   Calendar,
   BarChart3,
-  Bell,
   Plus,
 } from 'lucide-react';
 import {
-  AnimatedButton,
-  AnimatedCounter,
   ScrollReveal,
   StaggerContainer,
   StaggerItem,
   StatCard,
   VehicleBadge,
-  ThemeToggle,
   useAuth,
   useSocket,
   usePushNotifications,
   playNotificationSound,
   api,
   Order,
-  staggerContainer,
   KiwiLoader,
-  KiwiLogo,
 } from '@kiwi/ui';
 import { MerchantNav } from '../../components/MerchantNav';
 
 export default function Dashboard() {
   const router = useRouter();
-  const { user, loading: authLoading, logout } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -153,101 +147,14 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-[100dvh] bg-bg-light">
-      <MerchantNav />
-      {/* Header */}
-      <motion.header
-        className="sticky top-0 z-50 border-b border-surface-200/50 bg-white/70 backdrop-blur-xl"
-        initial={{ y: -100 }}
-        animate={{ y: 0 }}
-        transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-      >
-        <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-3">
-              <KiwiLogo size={30} />
-            </Link>
-            <div className="flex items-center gap-4">
-              {/* Connection Status */}
-              <div className="flex items-center gap-2">
-                <motion.div
-                  className={`h-2 w-2 rounded-full ${isConnected ? 'bg-kiwi-500' : 'bg-red-500'}`}
-                  animate={isConnected ? { scale: [1, 1.2, 1] } : {}}
-                  transition={{ duration: 1.5, repeat: Infinity }}
-                />
-                <span className="text-xs text-surface-400 hidden sm:inline">
-                  {isConnected ? 'En vivo' : 'Desconectado'}
-                </span>
-              </div>
-              <ThemeToggle />
-              <Link href="/notifications">
-                <motion.button
-                  className="relative rounded-full p-2 text-surface-500 hover:bg-surface-100 hover:text-surface-700 transition-colors dark:hover:bg-surface-800"
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                >
-                  <span className="text-xl">
-                    <Bell className="h-5 w-5" />
-                  </span>
-                  {unreadCount > 0 && (
-                    <motion.span
-                      className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-kiwi-500 text-white text-xs font-bold flex items-center justify-center"
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ type: 'spring', stiffness: 500 }}
-                    >
-                      {unreadCount > 9 ? '9+' : unreadCount}
-                    </motion.span>
-                  )}
-                </motion.button>
-              </Link>
-              <div className="flex items-center gap-3">
-                <span className="hidden text-sm font-medium text-surface-600 dark:text-surface-400 md:block">
-                  Mi Negocio
-                </span>
-                <motion.div
-                  className="flex h-10 w-10 items-center justify-center rounded-full bg-kiwi-gradient text-white font-semibold shadow-kiwi"
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                >
-                  {user?.merchantProfile?.businessName?.charAt(0) || 'M'}
-                </motion.div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </motion.header>
+      <MerchantNav
+        isConnected={isConnected}
+        unreadCount={unreadCount}
+        businessName={user?.merchantProfile?.businessName}
+      />
 
       {/* Main Content */}
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        {/* Crédito prepago */}
-        {creditBalance != null && (
-          <motion.div
-            className={`mb-6 flex flex-col gap-2 rounded-2xl border p-4 sm:flex-row sm:items-center sm:justify-between ${
-              creditBalance < 2000
-                ? 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20'
-                : 'border-kiwi-200 bg-kiwi-50 dark:border-kiwi-800 dark:bg-kiwi-900/20'
-            }`}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <div>
-              <p className="text-sm font-semibold text-surface-800 dark:text-surface-100">
-                Crédito prepago: ₡{creditBalance.toLocaleString()}
-              </p>
-              <p className="text-xs text-surface-500 dark:text-surface-400">
-                {creditBalance < 2000
-                  ? 'Te estás quedando sin saldo para envíos. Llamá a los encargados de Kiwi para recargar tu usuario.'
-                  : 'Cubre tus envíos (viaje + plataforma). Se recarga por semana con Kiwi.'}
-              </p>
-            </div>
-            <Link
-              href="/orders/new"
-              className="rounded-xl bg-kiwi-500 px-4 py-2 text-center text-sm font-semibold text-white hover:bg-kiwi-600"
-            >
-              Pedir con crédito
-            </Link>
-          </motion.div>
-        )}
         {/* Welcome Section */}
         <motion.div
           className="mb-8"
@@ -262,50 +169,6 @@ export default function Dashboard() {
             Aquí está el resumen de tu negocio hoy
           </p>
         </motion.div>
-
-        {/* Stats Grid */}
-        <StaggerContainer className="mb-8 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          <StaggerItem>
-            <StatCard
-              title="Pedidos Hoy"
-              value={String(todayOrders.length)}
-              change={`${orders.length} total`}
-              changeType="neutral"
-              icon={<Package className="h-6 w-6" />}
-              color="kiwi"
-            />
-          </StaggerItem>
-          <StaggerItem>
-            <StatCard
-              title="Ingresos"
-              value={`₡${totalRevenue.toLocaleString()}`}
-              change={`${deliveredOrders.length} entregados`}
-              changeType="positive"
-              icon={<Coins className="h-6 w-6" />}
-              color="gold"
-            />
-          </StaggerItem>
-          <StaggerItem>
-            <StatCard
-              title="Pendientes"
-              value={String(pendingOrders.length)}
-              change={pendingOrders.length > 0 ? 'Esperando repartidor' : 'Todo al día'}
-              changeType={pendingOrders.length > 0 ? 'negative' : 'positive'}
-              icon={<Clock className="h-6 w-6" />}
-              color="blue"
-            />
-          </StaggerItem>
-          <StaggerItem>
-            <StatCard
-              title="Tasa Éxito"
-              value={`${orders.length > 0 ? Math.round((deliveredOrders.length / orders.length) * 100) : 100}%`}
-              change="de pedidos"
-              changeType="positive"
-              icon={<Check className="h-6 w-6" />}
-              color="bark"
-            />
-          </StaggerItem>
-        </StaggerContainer>
 
         {/* Quick Actions */}
         <StaggerContainer className="mb-8 grid gap-4 md:grid-cols-3">
@@ -474,6 +337,80 @@ export default function Dashboard() {
             </Link>
           </StaggerItem>
         </StaggerContainer>
+
+        {/* Stats Grid */}
+        <StaggerContainer className="mb-8 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          <StaggerItem>
+            <StatCard
+              title="Pedidos Hoy"
+              value={String(todayOrders.length)}
+              change={`${orders.length} total`}
+              changeType="neutral"
+              icon={<Package className="h-6 w-6" />}
+              color="kiwi"
+            />
+          </StaggerItem>
+          <StaggerItem>
+            <StatCard
+              title="Ingresos"
+              value={`₡${totalRevenue.toLocaleString()}`}
+              change={`${deliveredOrders.length} entregados`}
+              changeType="positive"
+              icon={<Coins className="h-6 w-6" />}
+              color="gold"
+            />
+          </StaggerItem>
+          <StaggerItem>
+            <StatCard
+              title="Pendientes"
+              value={String(pendingOrders.length)}
+              change={pendingOrders.length > 0 ? 'Esperando repartidor' : 'Todo al día'}
+              changeType={pendingOrders.length > 0 ? 'negative' : 'positive'}
+              icon={<Clock className="h-6 w-6" />}
+              color="blue"
+            />
+          </StaggerItem>
+          <StaggerItem>
+            <StatCard
+              title="Tasa Éxito"
+              value={`${orders.length > 0 ? Math.round((deliveredOrders.length / orders.length) * 100) : 100}%`}
+              change="de pedidos"
+              changeType="positive"
+              icon={<Check className="h-6 w-6" />}
+              color="bark"
+            />
+          </StaggerItem>
+        </StaggerContainer>
+
+        {/* Crédito prepago */}
+        {creditBalance != null && (
+          <motion.div
+            className={`mb-8 flex flex-col gap-2 rounded-2xl border p-4 sm:flex-row sm:items-center sm:justify-between ${
+              creditBalance < 2000
+                ? 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20'
+                : 'border-kiwi-200 bg-kiwi-50 dark:border-kiwi-800 dark:bg-kiwi-900/20'
+            }`}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <div>
+              <p className="text-sm font-semibold text-surface-800 dark:text-surface-100">
+                Crédito prepago: ₡{creditBalance.toLocaleString()}
+              </p>
+              <p className="text-xs text-surface-500 dark:text-surface-400">
+                {creditBalance < 2000
+                  ? 'Te estás quedando sin saldo para envíos. Llamá a los encargados de Kiwi para recargar tu usuario.'
+                  : 'Cubre tus envíos (solo el viaje). Se recarga por semana con Kiwi.'}
+              </p>
+            </div>
+            <Link
+              href="/orders/new"
+              className="rounded-xl bg-kiwi-500 px-4 py-2 text-center text-sm font-semibold text-white hover:bg-kiwi-600"
+            >
+              Pedir con crédito
+            </Link>
+          </motion.div>
+        )}
 
         {/* Recent Orders */}
         <ScrollReveal as="section">

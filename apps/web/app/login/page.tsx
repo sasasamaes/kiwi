@@ -1,28 +1,40 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { AuthForm, useAuth } from '@kiwi/ui';
 
+/** Destino post-login según rol: el admin va a su panel, no al dashboard. */
+function homeForRole(role?: string): string {
+  return role === 'admin' ? '/admin' : '/dashboard';
+}
+
 export default function LoginPage() {
   const router = useRouter();
-  const { login } = useAuth();
-  const [loading, setLoading] = useState(false);
+  const { login, user, loading } = useAuth();
+  const [formLoading, setFormLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Ya logueado y cae en /login: mandar a su home (ej. admin → /admin).
+  useEffect(() => {
+    if (!loading && user) {
+      router.replace(homeForRole((user as any).role));
+    }
+  }, [user, loading, router]);
+
   const handleSubmit = async (data: any) => {
-    setLoading(true);
+    setFormLoading(true);
     setError(null);
 
     try {
-      await login(data.email, data.password);
-      router.push('/dashboard');
+      const loggedUser = await login(data.email, data.password);
+      router.push(homeForRole((loggedUser as any)?.role));
     } catch (err: any) {
       setError(err.message || 'Error al iniciar sesión. Intenta de nuevo.');
     } finally {
-      setLoading(false);
+      setFormLoading(false);
     }
   };
 
@@ -69,7 +81,7 @@ export default function LoginPage() {
           role="merchant"
           onSubmit={handleSubmit}
           onToggle={() => router.push('/register')}
-          loading={loading}
+          loading={formLoading}
           error={error || undefined}
         />
       </main>

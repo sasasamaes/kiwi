@@ -5,6 +5,7 @@ import { EventsGateway } from '../events/events.gateway';
 import { DriversService } from '../drivers/drivers.service';
 import { GeocodingService } from '../geocoding/geocoding.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { SettingsService } from '../settings/settings.service';
 import {
   ProximityService,
   haversineKm,
@@ -186,6 +187,10 @@ describe('OrdersService targeting de order:new', () => {
         { provide: ProximityService, useValue: proximity },
         { provide: GeocodingService, useValue: { searchCostaRica: jest.fn() } },
         { provide: NotificationsService, useValue: notifications },
+        {
+          provide: SettingsService,
+          useValue: { getDriverCommissionPct: jest.fn().mockResolvedValue(15) },
+        },
       ],
     }).compile();
     service = module.get(OrdersService);

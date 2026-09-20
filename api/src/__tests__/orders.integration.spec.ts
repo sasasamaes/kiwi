@@ -21,6 +21,7 @@ import { ProximityService } from '../orders/proximity.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { OrdersService } from '../orders/orders.service';
+import { SettingsService } from '../settings/settings.service';
 import { EventsGateway } from '../events/events.gateway';
 import { DriversService } from '../drivers/drivers.service';
 import { GeocodingService } from '../geocoding/geocoding.service';
@@ -123,9 +124,14 @@ describe('Orders Integration: Full Lifecycle', () => {
           provide: NotificationsService,
           useValue: {
             notifyNewOrderTopic: jest.fn().mockResolvedValue({ delivered: 0, inbox: 0 }),
+            notifyDriverNewOrderTargeted: jest.fn().mockResolvedValue({ delivered: true }),
             notifyOrderAccepted: jest.fn().mockResolvedValue({}),
             notifyOrderStatusUpdate: jest.fn().mockResolvedValue({}),
           },
+        },
+        {
+          provide: SettingsService,
+          useValue: { getDriverCommissionPct: jest.fn().mockResolvedValue(15) },
         },
       ],
     }).compile();
@@ -156,8 +162,8 @@ describe('Orders Integration: Full Lifecycle', () => {
         deliveryLng: -84.998,
         distanceKm: 2.5,
         basePrice: 1500,
-        commission: 75,
-        driverPayout: 1425,
+        commission: 225,
+        driverPayout: 1275,
         totalAmount: 1500,
         specialInstructions: 'Sin cebolla',
         createdAt: new Date(),
@@ -185,8 +191,8 @@ describe('Orders Integration: Full Lifecycle', () => {
       expect(result.id).toBe(ORDER_ID);
       expect(result.status).toBe('pending');
       expect(result.basePrice).toBe(1500);
-      expect(result.commission).toBe(75);
-      expect(result.driverPayout).toBe(1425);
+      expect(result.commission).toBe(225);
+      expect(result.driverPayout).toBe(1275);
 
       // Socket.io should notify available drivers
       expect(mockEventsGateway.sendToRole).toHaveBeenCalledWith(
@@ -195,7 +201,7 @@ describe('Orders Integration: Full Lifecycle', () => {
         expect.objectContaining({
           id: ORDER_ID,
           orderId: ORDER_ID,
-          driverPayout: 1425,
+          driverPayout: 1275,
           merchantName: 'Bowl & Café Luis Alfredo',
         }),
       );

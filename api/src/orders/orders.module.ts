@@ -6,10 +6,18 @@ import { EventsModule } from '../events/events.module';
 import { DriversModule } from '../drivers/drivers.module';
 import { GeocodingModule } from '../geocoding/geocoding.module';
 import { ProximityModule } from './proximity.module';
+import { SettingsModule } from '../settings/settings.module';
 
 @Module({
   // NotificationsService llega vía NotificationsForwardModule (@Global).
-  imports: [PrismaModule, EventsModule, DriversModule, GeocodingModule, ProximityModule],
+  imports: [
+    PrismaModule,
+    EventsModule,
+    DriversModule,
+    GeocodingModule,
+    ProximityModule,
+    SettingsModule,
+  ],
   providers: [OrdersService],
   controllers: [OrdersController],
   exports: [OrdersService],

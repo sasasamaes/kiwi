@@ -38,7 +38,7 @@ export interface PlatformSettings {
 export const DEFAULT_SETTINGS: PlatformSettings = {
   platform: {
     name: 'Kiwi',
-    commission: 10,
+    commission: 15,
     minimumOrder: 2000,
     maximumDeliveryDistance: 20,
     freeDeliveryThreshold: 10000,
@@ -119,7 +119,6 @@ export class SettingsService {
     );
     return next;
   }
-
   /** Métodos habilitados (público: lo usan los checkouts para ocultar). */
   async getPaymentAvailability() {
     const all = await this.getAll();
@@ -129,5 +128,18 @@ export class SettingsService {
       cash: !!all.payments.cashEnabled,
       crypto: !!all.payments.cryptoEnabled,
     };
+  }
+
+  /**
+   * % de comisión que paga el REPARTIDOR por viaje (lo cobra Kiwi).
+   * Lo edita el admin en /admin/settings; el pricing lo lee por pedido.
+   * Saneado 0–100, default 15. Queda guardado por pedido en commissionRate,
+   * así que cambiarlo solo afecta pedidos NUEVOS.
+   */
+  async getDriverCommissionPct(): Promise<number> {
+    const all = await this.getAll();
+    const raw = Number(all.platform?.commission);
+    if (!Number.isFinite(raw)) return 15;
+    return Math.min(Math.max(raw, 0), 100);
   }
 }

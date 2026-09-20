@@ -42,7 +42,7 @@ import {
   hoverGhost,
   ThemeToggle,
 } from '@kiwi/ui';
-import { computeAppCommission, findDeliveryZone } from '@kiwi/types';
+import { findDeliveryZone } from '@kiwi/types';
 
 interface CartItem extends MenuItem {
   quantity: number;
@@ -311,11 +311,10 @@ export default function MenuPage() {
 
   const cartTotal = cart.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
-  // Espejo del backend: viaje = precio del barrio + comisión 15% + 15% productos.
+  // Sin comisión al cliente: paga productos + envío. El 15% lo paga el driver.
   const zoneTrip = findDeliveryZone(deliveryInfo.zone)?.price ?? null;
   const deliveryFee = zoneTrip ?? (cartTotal >= 5000 ? 0 : 500); // Sin barrio: regla anterior
-  const serviceFee = zoneTrip != null ? computeAppCommission(zoneTrip, false) : 0;
-  const totalWithDelivery = cartTotal + deliveryFee + serviceFee;
+  const totalWithDelivery = cartTotal + deliveryFee;
 
   // Filter items by category
   const filteredItems =
@@ -1324,16 +1323,6 @@ export default function MenuPage() {
                         <PartyPopper className="h-4 w-4 inline" /> Envío gratis en pedidos mayores a
                         ₡5,000
                       </p>
-                    )}
-                    {serviceFee > 0 && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-surface-500 dark:text-surface-400">
-                          Servicio (15% del envío)
-                        </span>
-                        <span className="text-surface-800 dark:text-surface-200">
-                          ₡{serviceFee.toLocaleString()}
-                        </span>
-                      </div>
                     )}
                     <div className="border-t border-surface-200 dark:border-surface-700 pt-2 mt-2">
                       <div className="flex justify-between">

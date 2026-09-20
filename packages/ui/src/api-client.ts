@@ -682,6 +682,18 @@ class ApiClient {
     );
   }
 
+  /** % de comisión del repartidor (público; el backend es fuente de verdad). */
+  async getDriverCommissionPct(): Promise<number> {
+    try {
+      const r = await this.request<any>('/settings/driver-commission');
+      const pct = Number(r?.pct);
+      if (Number.isFinite(pct)) return Math.min(Math.max(pct, 0), 100);
+    } catch {
+      // sin red o backend viejo: default
+    }
+    return 15;
+  }
+
   async getOrdersAdmin(params?: {
     take?: number;
     skip?: number;
@@ -814,6 +826,12 @@ class ApiClient {
   async reverseGeocode(lat: number, lng: number) {
     const params = new URLSearchParams({ lat: String(lat), lng: String(lng) });
     return this.request<any>(`/geocoding/reverse?${params.toString()}`);
+  }
+
+  /** Zona de referencia más cercana (el servidor marca confident/referenceOnly). */
+  async nearestZone(lat: number, lng: number) {
+    const params = new URLSearchParams({ lat: String(lat), lng: String(lng) });
+    return this.request<any>(`/geocoding/nearest-zone?${params.toString()}`);
   }
 
   async resolveMapLink(url: string) {
