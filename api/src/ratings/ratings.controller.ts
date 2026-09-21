@@ -5,6 +5,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { Public } from '../auth/decorators/public.decorator';
 import { CreateRatingDto } from './dto/create-rating.dto';
 
 @ApiTags('Ratings')
@@ -24,6 +25,20 @@ export class RatingsController {
   @ApiOperation({ summary: 'Get the rating of an order (if any) and whether the caller can rate' })
   async findByOrder(@Param('orderId') orderId: string, @CurrentUser() user: any) {
     return this.ratingsService.findByOrder(orderId, user.sub);
+  }
+
+  @Public()
+  @Get('public/:orderId')
+  @ApiOperation({ summary: 'Public rating lookup for the order link (guests)' })
+  async findByOrderPublic(@Param('orderId') orderId: string) {
+    return this.ratingsService.findByOrderPublic(orderId);
+  }
+
+  @Public()
+  @Post('public')
+  @ApiOperation({ summary: 'Submit a rating from the order link (guests, once, delivered only)' })
+  async createPublic(@Body() dto: CreateRatingDto) {
+    return this.ratingsService.createPublic(dto);
   }
 
   @Get()

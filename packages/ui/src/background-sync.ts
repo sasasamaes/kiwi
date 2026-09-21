@@ -124,6 +124,24 @@ class BackgroundSyncService {
         this.isInitialized = true;
         console.log('🥝 Background sync initialized');
 
+        // Recovery: una recarga a mitad de sync deja filas en 'syncing' que
+        // el poll (solo 'pending') jamás retoma → UI bloqueada en
+        // "Sincronizando…". Se devuelven a 'pending' al arrancar.
+        try {
+          const tx = this.db.transaction([STORE_NAME], 'readwrite');
+          const store = tx.objectStore(STORE_NAME);
+          const stuck = store.index('status').getAll('syncing');
+          stuck.onsuccess = () => {
+            const rows = (stuck.result as SyncAction[]) || [];
+            for (const r of rows) {
+              store.put({ ...r, status: 'pending', nextRetryAt: 0, updatedAt: Date.now() });
+            }
+            if (rows.length > 0) console.log(`🥝 Recovered ${rows.length} stuck sync action(s)`);
+          };
+        } catch {
+          // best-effort: si falla, el flujo normal sigue igual
+        }
+
         // Start polling for pending syncs
         this.startPolling();
 

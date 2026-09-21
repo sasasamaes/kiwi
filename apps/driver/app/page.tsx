@@ -39,6 +39,24 @@ import {
   CircleOff,
 } from 'lucide-react';
 
+/** Mensaje exacto según el paso que falló (permiso vs token vs servidor). */
+function pushErrorMessage(reason?: string): string {
+  switch (reason) {
+    case 'denied':
+      return 'No se pudieron activar las alertas. Revisá el permiso en tu navegador.';
+    case 'no-push-manager':
+    case 'unsupported':
+      return 'Este navegador no soporta alertas. Probá con Chrome o instalando la app.';
+    case 'missing-vapid':
+    case 'missing-config':
+      return 'Falta configuración del servidor para alertas. Avisanos por WhatsApp.';
+    case 'sync-failed':
+      return 'Se activó en el celu pero no llegó al servidor. Revisá tu conexión y reintentá.';
+    default:
+      return 'No se pudo completar la activación. Reintentá con buena conexión.';
+  }
+}
+
 export default function Home() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
@@ -56,6 +74,8 @@ export default function Home() {
   // El permiso lo pide el botón del banner (el navegador exige gesto).
   const {
     isSupported: pushSupported,
+    needsInstall: pushNeedsInstall,
+    unsupportedReason: pushUnsupported,
     permission: pushPermission,
     requestPermission: requestPushPermission,
   } = usePushNotifications({ enabled: false });
@@ -73,6 +93,20 @@ export default function Home() {
   // pedidos cuando pausaste.
   const isOnlineRef = useRef(isOnline);
   isOnlineRef.current = isOnline;
+
+  // Saca un pedido de Disponibles + popup cuando deja de estar vigente.
+  const removeFromAvailable = useCallback((data: any) => {
+    const goneId = data?.id ?? data?.orderId;
+    const st = data?.status;
+    if (!goneId) return;
+    // Sin estado o con estado no-pending: ya no se puede aceptar.
+    if (st !== undefined && (st === 'pending' || st === 'driver_proposals')) return;
+    setAvailableOrders((prev) => prev.filter((o) => o.id !== goneId));
+    setNewOrderAlert((prev) => {
+      const prevId = prev?.id ?? prev?.orderId;
+      return prevId === goneId ? null : prev;
+    });
+  }, []);
 
   // Real-time socket connection
   const {
@@ -103,6 +137,13 @@ export default function Home() {
       playNotificationSound('order_update');
       // Refresh active orders
       fetchActiveOrders();
+      // Fantasmas fuera: si otro driver tomó/canceló un disponible, sacarlo
+      // de la lista en vez de esperar un refetch manual.
+      removeFromAvailable(data);
+    },
+    onOrderAccepted: (data) => {
+      // Otro driver aceptó: el pedido ya no está disponible para mí.
+      removeFromAvailable(data);
     },
   });
 
@@ -133,7 +174,13 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if (!authLoading && !user) {
+    if (authLoading) return;
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+    // App del repartidor: otras cuentas (comercio/admin) no entran.
+    if ((user as any).role && (user as any).role !== 'driver') {
       router.push('/login');
     }
   }, [user, authLoading, router]);
@@ -278,17 +325,6 @@ export default function Home() {
     setNewOrderAlert(null);
   };
 
-  const handleUpdateStatus = async (orderId: string, newStatus: string) => {
-    setPageError(null);
-    try {
-      await api.updateOrderStatus(orderId, newStatus);
-      await fetchActiveOrders();
-    } catch (error) {
-      console.error('Failed to update status:', error);
-      setPageError('No se pudo actualizar el pedido. Se reintentará al reconectar.');
-    }
-  };
-
   const getStatusLabel = (status: string) => {
     const labels: Record<string, string> = {
       assigned: 'Asignado',
@@ -389,8 +425,28 @@ export default function Home() {
             {pageError}
           </div>
         )}
+        {/* iPhone sin instalar: el push es imposible en Safari → guía */}
+        {pushNeedsInstall && (
+          <div className="mb-4 rounded-2xl glass p-4">
+            <p className="text-sm font-semibold text-surface-800 dark:text-surface-100">
+              Recibí pedidos con el celu bloqueado
+            </p>
+            <p className="mt-0.5 text-xs text-surface-500 dark:text-surface-400">
+              En iPhone las alertas solo funcionan con la app instalada: en Safari tocá{' '}
+              <span className="font-semibold">Compartir → Agregar a inicio</span>, abrí Kiwi desde
+              el ícono nuevo y activá las alertas ahí.
+            </p>
+          </div>
+        )}
+        {/* iPhone instalado pero viejo: push requiere iOS 16.4+ */}
+        {!pushNeedsInstall && pushUnsupported === 'ios-old' && (
+          <div className="mb-4 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 px-4 py-3 text-xs text-amber-800 dark:text-amber-300">
+            Tu iPhone necesita iOS 16.4 o más nuevo para las alertas. Actualizalo en Ajustes →
+            General → Actualización.
+          </div>
+        )}
         {/* Alertas push: solo si el navegador las soporta y aún no se decidió */}
-        {pushSupported && pushPermission === 'default' && (
+        {!pushNeedsInstall && !pushUnsupported && pushSupported && pushPermission === 'default' && (
           <div className="mb-4 rounded-2xl glass p-4">
             <p className="text-sm font-semibold text-surface-800 dark:text-surface-100">
               Recibí pedidos con el celu bloqueado
@@ -406,11 +462,9 @@ export default function Home() {
               onClick={async () => {
                 setPushBusy(true);
                 try {
-                  const ok = await requestPushPermission();
-                  if (!ok) {
-                    setPageError(
-                      'No se pudieron activar las alertas. Revisá el permiso en tu navegador.',
-                    );
+                  const res = await requestPushPermission();
+                  if (!res.ok) {
+                    setPageError(pushErrorMessage(res.reason));
                   }
                 } finally {
                   setPushBusy(false);
@@ -421,7 +475,7 @@ export default function Home() {
             </TapButton>
           </div>
         )}
-        {pushSupported && pushPermission === 'denied' && isOnline && (
+        {!pushNeedsInstall && pushSupported && pushPermission === 'denied' && isOnline && (
           <div className="mb-4 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 px-4 py-3 text-xs text-amber-800 dark:text-amber-300">
             Las alertas están bloqueadas en tu navegador: activalas en los ajustes del sitio para
             recibir pedidos con la app cerrada.
@@ -617,9 +671,12 @@ export default function Home() {
                             <Target className="h-3 w-3" /> {getStatusLabel(order.status)}
                           </motion.span>
                         </div>
-                        <span className="text-sm font-semibold text-surface-700">
-                          ₡{Number(order.totalAmount).toLocaleString()}
-                        </span>
+                        <div className="text-right">
+                          <p className="text-sm font-semibold text-surface-700">
+                            ₡{Number(order.driverPayout ?? order.totalAmount ?? 0).toLocaleString()}
+                          </p>
+                          <p className="text-[11px] text-surface-400">tu ganancia</p>
+                        </div>
                       </div>
 
                       <div className="mb-4 space-y-2">
@@ -648,14 +705,15 @@ export default function Home() {
                       </div>
 
                       {nextStatus && (
-                        <TapButton
-                          variant="gradient"
-                          haptic
-                          className="w-full rounded-xl h-11 text-sm"
-                          onClick={() => handleUpdateStatus(order.id, nextStatus)}
-                        >
-                          {nextStatusLabel} →
-                        </TapButton>
+                        <Link href="/active">
+                          <TapButton
+                            variant="gradient"
+                            haptic
+                            className="w-full rounded-xl h-11 text-sm"
+                          >
+                            {nextStatusLabel} →
+                          </TapButton>
+                        </Link>
                       )}
                     </motion.div>
                   </StaggerItem>
@@ -853,85 +911,101 @@ export default function Home() {
 
       {/* New Order Alert Popup */}
       <AnimatePresence>
-        {newOrderAlert && (
-          <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-md"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <motion.div
-              className="mx-4 w-full max-w-md rounded-3xl glass-elevated p-6"
-              initial={{ scale: 0.8, y: 50 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.8, y: 50 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-            >
-              <div className="text-center mb-4">
+        {newOrderAlert &&
+          (() => {
+            // ID normalizado UNA vez: el socket manda orderId o id según el
+            // evento; si onClick y disabled usan campos distintos, el guard
+            // anti doble-tap nunca se activa.
+            const alertId = newOrderAlert.orderId || newOrderAlert.id;
+            const hasPayout = newOrderAlert.driverPayout != null;
+            const busy = acceptingOrder === alertId;
+            return (
+              <motion.div
+                className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-md"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
                 <motion.div
-                  className="text-6xl mb-2"
-                  animate={{ rotate: [0, -10, 10, 0] }}
-                  transition={{ duration: 0.5 }}
+                  className="mx-4 w-full max-w-md rounded-3xl glass-elevated p-6"
+                  initial={{ scale: 0.8, y: 50 }}
+                  animate={{ scale: 1, y: 0 }}
+                  exit={{ scale: 0.8, y: 50 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 25 }}
                 >
-                  <Package className="h-12 w-12 text-kiwi-500" />
-                </motion.div>
-                <h3 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100">
-                  Nuevo Pedido
-                </h3>
-              </div>
-
-              <div className="space-y-3 mb-6">
-                <div className="flex items-center justify-between">
-                  <span className="text-surface-500 dark:text-surface-400">Desde</span>
-                  <span className="font-medium text-surface-800 dark:text-surface-200">
-                    {newOrderAlert.pickupAddress}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-surface-500 dark:text-surface-400">Hasta</span>
-                  <span className="font-medium text-surface-800 dark:text-surface-200">
-                    {newOrderAlert.deliveryAddress}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-surface-500 dark:text-surface-400">Distancia</span>
-                  <span className="font-medium text-surface-800 dark:text-surface-200">
-                    {newOrderAlert.distanceKm || '?'} km
-                  </span>
-                </div>
-                <div className="border-t border-surface-200 dark:border-surface-700 pt-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-surface-500 dark:text-surface-400">Ganancia</span>
-                    <span className="text-2xl font-bold text-kiwi-600 dark:text-kiwi-400 font-mono">
-                      {newOrderAlert.driverPayout != null
-                        ? `₡${Number(newOrderAlert.driverPayout).toLocaleString()}`
-                        : `₡${Number(newOrderAlert.totalAmount || 0).toLocaleString()}`}
-                    </span>
+                  <div className="text-center mb-4">
+                    <motion.div
+                      className="text-6xl mb-2"
+                      animate={{ rotate: [0, -10, 10, 0] }}
+                      transition={{ duration: 0.5 }}
+                    >
+                      <Package className="h-12 w-12 text-kiwi-500" />
+                    </motion.div>
+                    <h3 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100">
+                      Nuevo Pedido
+                    </h3>
                   </div>
-                </div>
-              </div>
 
-              <div className="flex gap-3">
-                <AnimatedButton
-                  variant="secondary"
-                  className="flex-1"
-                  onClick={() => handleRejectOrder(newOrderAlert.orderId || newOrderAlert.id)}
-                  disabled={acceptingOrder === newOrderAlert.orderId}
-                >
-                  Rechazar
-                </AnimatedButton>
-                <AnimatedButton
-                  variant="gradient"
-                  className="flex-1"
-                  onClick={() => handleAcceptOrder(newOrderAlert.orderId || newOrderAlert.id)}
-                  disabled={acceptingOrder === newOrderAlert.orderId}
-                >
-                  {acceptingOrder === newOrderAlert.orderId ? 'Aceptando...' : 'Aceptar'}
-                </AnimatedButton>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
+                  <div className="space-y-3 mb-6">
+                    <div className="flex items-center justify-between">
+                      <span className="text-surface-500 dark:text-surface-400">Desde</span>
+                      <span className="font-medium text-surface-800 dark:text-surface-200">
+                        {newOrderAlert.pickupAddress}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-surface-500 dark:text-surface-400">Hasta</span>
+                      <span className="font-medium text-surface-800 dark:text-surface-200">
+                        {newOrderAlert.deliveryAddress}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-surface-500 dark:text-surface-400">Distancia</span>
+                      <span className="font-medium text-surface-800 dark:text-surface-200">
+                        {newOrderAlert.distanceKm || '?'} km
+                      </span>
+                    </div>
+                    <div className="border-t border-surface-200 dark:border-surface-700 pt-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-surface-500 dark:text-surface-400">
+                          {hasPayout ? 'Ganancia' : 'Total del pedido'}
+                        </span>
+                        <span className="text-2xl font-bold text-kiwi-600 dark:text-kiwi-400 font-mono">
+                          {hasPayout
+                            ? `₡${Number(newOrderAlert.driverPayout).toLocaleString()}`
+                            : `₡${Number(newOrderAlert.totalAmount || 0).toLocaleString()}`}
+                        </span>
+                      </div>
+                      {!hasPayout && (
+                        <p className="mt-1 text-right text-[11px] text-surface-400">
+                          Tu ganancia se confirma al aceptar
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <AnimatedButton
+                      variant="secondary"
+                      className="flex-1"
+                      onClick={() => handleRejectOrder(alertId)}
+                      disabled={busy}
+                    >
+                      Rechazar
+                    </AnimatedButton>
+                    <AnimatedButton
+                      variant="gradient"
+                      className="flex-1"
+                      onClick={() => handleAcceptOrder(alertId)}
+                      disabled={busy}
+                    >
+                      {busy ? 'Aceptando...' : 'Aceptar'}
+                    </AnimatedButton>
+                  </div>
+                </motion.div>
+              </motion.div>
+            );
+          })()}
       </AnimatePresence>
 
       {/* Bottom Navigation */}

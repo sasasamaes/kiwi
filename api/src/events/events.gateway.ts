@@ -173,6 +173,19 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       include: { merchant: true },
     });
 
+    // Anti-fantasma: solo avisar si el pedido está realmente asignado al
+    // driver que emite. Sin esto, cualquier driver podía mostrar "aceptado"
+    // en el comercio sin haber tomado el pedido por REST.
+    const emitterProfile = await this.prisma.driverProfile.findUnique({
+      where: { userId: userData.userId },
+    });
+    if (!order || (order as any).driverId == null) {
+      return { error: 'El pedido aún no fue aceptado' };
+    }
+    if (!emitterProfile || (order as any).driverId !== (emitterProfile as any).id) {
+      return { error: 'No sos el repartidor asignado' };
+    }
+
     if (order?.merchant?.userId) {
       // driverId SIEMPRE es el del token — el body nunca decide quién "aceptó".
       this.server.to(`user:${order.merchant.userId}`).emit('order:accepted', {

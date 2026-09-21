@@ -332,11 +332,8 @@ export default function DriversPage() {
   return (
     <div className="min-h-[100dvh] bg-bg-light dark:bg-surface-950">
       <MerchantNav />
-      <motion.header
-        className="sticky top-0 z-50 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl"
-        initial={{ y: -100 }}
-        animate={{ y: 0 }}
-      >
+      {/* Sub-header local (no sticky: MerchantNav ya ocupa el top) */}
+      <div className="border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl">
         <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             <Link
@@ -358,7 +355,7 @@ export default function DriversPage() {
             </div>
           </div>
         </div>
-      </motion.header>
+      </div>
 
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {actionError && (

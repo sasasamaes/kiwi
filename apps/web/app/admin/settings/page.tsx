@@ -15,6 +15,7 @@ import {
   Coins,
   Star,
   PartyPopper,
+  Calculator,
 } from 'lucide-react';
 import { api } from '@kiwi/ui';
 
@@ -50,6 +51,12 @@ export default function SettingsPage() {
       twoFactorAuth: false,
       sessionTimeout: 30,
     },
+    operations: {
+      fixedMonthlyCost: 150000,
+      supportPerTrip: 25,
+      gatewayPct: 2.9,
+      digitalPct: 40,
+    },
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -66,6 +73,7 @@ export default function SettingsPage() {
           payments: { ...prev.payments, ...(data?.payments ?? {}) },
           notifications: { ...prev.notifications, ...(data?.notifications ?? {}) },
           security: { ...prev.security, ...(data?.security ?? {}) },
+          operations: { ...prev.operations, ...(data?.operations ?? {}) },
         }));
       })
       .catch((e) => setLoadError(e?.message || 'No se pudieron cargar los ajustes'))
@@ -73,7 +81,7 @@ export default function SettingsPage() {
   }, []);
 
   const [activeTab, setActiveTab] = useState<
-    'platform' | 'payments' | 'notifications' | 'security'
+    'platform' | 'payments' | 'notifications' | 'security' | 'operations'
   >('platform');
 
   const handleSave = async () => {
@@ -86,6 +94,7 @@ export default function SettingsPage() {
         payments: { ...prev.payments, ...(saved?.payments ?? {}) },
         notifications: { ...prev.notifications, ...(saved?.notifications ?? {}) },
         security: { ...prev.security, ...(saved?.security ?? {}) },
+        operations: { ...prev.operations, ...(saved?.operations ?? {}) },
       }));
       setSaveState('ok');
     } catch {
@@ -141,6 +150,7 @@ export default function SettingsPage() {
       <div className="flex gap-2 border-b border-surface-200 dark:border-surface-700 pb-2">
         {[
           { id: 'platform', label: 'Plataforma', icon: Settings },
+          { id: 'operations', label: 'Costos', icon: Calculator },
           { id: 'payments', label: 'Pagos', icon: CreditCard },
           { id: 'notifications', label: 'Notificaciones', icon: Bell },
           { id: 'security', label: 'Seguridad', icon: Lock },
@@ -267,6 +277,124 @@ export default function SettingsPage() {
                 }
                 className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-500"
               />
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Operating Costs Settings */}
+      {activeTab === 'operations' && (
+        <motion.div
+          className="rounded-2xl glass p-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-1">
+            Costos operativos reales
+          </h3>
+          <p className="mb-6 text-sm text-surface-500 dark:text-surface-400">
+            Alimentan la ganancia neta del reporte "Real vs Proyección". Se aplican a cada mes según
+            sus viajes y su GMV.
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
+                Costos fijos mensuales (₡)
+              </label>
+              <input
+                type="number"
+                min={0}
+                value={settings.operations.fixedMonthlyCost}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    operations: {
+                      ...settings.operations,
+                      fixedMonthlyCost: Number(e.target.value),
+                    },
+                  })
+                }
+                className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-500"
+              />
+              <p className="mt-1 text-xs text-surface-400">
+                Hosting, infraestructura, equipo base.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
+                Soporte por viaje (₡)
+              </label>
+              <input
+                type="number"
+                min={0}
+                value={settings.operations.supportPerTrip}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    operations: {
+                      ...settings.operations,
+                      supportPerTrip: Number(e.target.value),
+                    },
+                  })
+                }
+                className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-500"
+              />
+              <p className="mt-1 text-xs text-surface-400">
+                Chats, llamadas e incidencias por pedido entregado.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
+                Fee de pasarela (%)
+              </label>
+              <input
+                type="number"
+                min={0}
+                max={100}
+                step={0.1}
+                value={settings.operations.gatewayPct}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    operations: {
+                      ...settings.operations,
+                      gatewayPct: Number(e.target.value),
+                    },
+                  })
+                }
+                className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-500"
+              />
+              <p className="mt-1 text-xs text-surface-400">
+                Comisión de tarjeta/SINPE web del banco o procesador.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
+                % de pagos digitales
+              </label>
+              <input
+                type="number"
+                min={0}
+                max={100}
+                value={settings.operations.digitalPct}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    operations: {
+                      ...settings.operations,
+                      digitalPct: Number(e.target.value),
+                    },
+                  })
+                }
+                className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-500"
+              />
+              <p className="mt-1 text-xs text-surface-400">
+                El fee solo aplica a la parte digital del GMV — el efectivo no pasa por la pasarela.
+              </p>
             </div>
           </div>
         </motion.div>

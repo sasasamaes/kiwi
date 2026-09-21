@@ -58,9 +58,39 @@ describe('SettingsService', () => {
     } as any);
 
     expect(res.payments.sinpeEnabled).toBe(false);
-    expect(prisma.platformSetting.upsert).toHaveBeenCalledTimes(4);
+    expect(prisma.platformSetting.upsert).toHaveBeenCalledTimes(5); // 5 secciones
 
     await expect(service.saveAll({ intruso: true } as any)).rejects.toThrow(BadRequestException);
+  });
+
+  it('saveAll sanea los costos operativos (operations)', async () => {
+    prisma.platformSetting.findMany.mockResolvedValue([]);
+    prisma.platformSetting.upsert.mockImplementation(async (a: any) => a);
+
+    const res = await service.saveAll({
+      operations: {
+        fixedMonthlyCost: -500, // negativo → 0
+        supportPerTrip: 12.7, // redondeo → 13
+        gatewayPct: 250, // > 100 → 100
+        digitalPct: -3, // → 0
+      },
+    } as any);
+
+    expect(res.operations.fixedMonthlyCost).toBe(0);
+    expect(res.operations.supportPerTrip).toBe(13);
+    expect(res.operations.gatewayPct).toBe(100);
+    expect(res.operations.digitalPct).toBe(0);
+  });
+
+  it('getAll fusiona operations guardadas sobre defaults', async () => {
+    prisma.platformSetting.findMany.mockResolvedValue([
+      { key: 'operations', value: { fixedMonthlyCost: 200000 } },
+    ]);
+
+    const res = await service.getAll();
+
+    expect(res.operations.fixedMonthlyCost).toBe(200000);
+    expect(res.operations.gatewayPct).toBe(2.9); // default intacto
   });
 
   it('getDriverCommissionPct: default 15, respeta guardado y sanea', async () => {

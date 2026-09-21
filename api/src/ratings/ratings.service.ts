@@ -169,4 +169,104 @@ export class RatingsService {
 
     return { rating, canRate: isMerchant && order.status === 'delivered' && !rating };
   }
+
+  /**
+   * Lookup público para el link de calificación (invitados que pidieron sin
+   * cuenta). Mismo modelo de confianza que el tracking público: quien tiene
+   * el link es parte del pedido. Solo datos necesarios para calificar.
+   */
+  async findByOrderPublic(orderId: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        merchant: { select: { businessName: true } },
+        driver: { select: { id: true, fullName: true, rating: true, vehicleType: true } },
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Pedido no encontrado');
+    }
+
+    const rating = await this.prisma.rating.findFirst({
+      where: { orderId },
+    });
+
+    return {
+      order: {
+        id: order.id,
+        status: order.status,
+        merchant: order.merchant ? { businessName: (order.merchant as any).businessName } : null,
+        driver: order.driverId
+          ? {
+              id: (order.driver as any)?.id ?? null,
+              fullName: (order.driver as any)?.fullName ?? null,
+              rating: (order.driver as any)?.rating ?? null,
+              vehicleType: (order.driver as any)?.vehicleType ?? null,
+            }
+          : null,
+      },
+      rating,
+      canRate: order.status === 'delivered' && !rating && !!order.driverId,
+    };
+  }
+
+  /**
+   * Calificación pública desde el link (invitado). Sin chequeo de dueño —
+   * el link ES la credencial — pero con todos los demás guards: entregado,
+   * con repartidor, una sola vez, 1-5 estrellas (vía DTO).
+   */
+  async createPublic(dto: CreateRatingDto) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: dto.orderId },
+      include: {
+        driver: { include: { user: { select: { id: true } } } },
+        merchant: { include: { user: { select: { id: true } } } },
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Pedido no encontrado');
+    }
+    if (order.status !== 'delivered') {
+      throw new BadRequestException('Solo se pueden calificar pedidos entregados');
+    }
+    if (!order.driver) {
+      throw new BadRequestException('El pedido no tiene repartidor asignado');
+    }
+
+    const existing = await this.prisma.rating.findFirst({
+      where: { orderId: order.id },
+    });
+    if (existing) {
+      throw new ConflictException('Este pedido ya fue calificado');
+    }
+
+    const rating = await this.prisma.rating.create({
+      data: {
+        orderId: order.id,
+        driverId: order.driver.id,
+        merchantId: order.merchant.id,
+        rating: dto.rating,
+        comment: dto.comment?.trim() || null,
+        onTime: dto.onTime ?? null,
+        carefulWithOrder: dto.carefulWithOrder ?? null,
+      },
+    });
+
+    await recalcDriverRating(this.prisma, order.driver.id);
+
+    this.events.sendToUser(order.driver.user.id, 'rating:new', {
+      ratingId: rating.id,
+      orderId: order.id,
+      rating: dto.rating,
+      comment: rating.comment,
+    });
+
+    await this.notificationsService
+      .notifyNewRating(order.driver.user.id, dto.rating, order.merchant.businessName)
+      .catch(() => null);
+
+    return rating;
+  }
 }

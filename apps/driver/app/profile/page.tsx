@@ -31,6 +31,7 @@ import {
   KYCStatusBadge,
   SoundToggle,
   useAuth,
+  useSocket,
   api,
   type KYCStatus,
   KiwiLoader,
@@ -102,6 +103,8 @@ export default function Profile() {
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleType>('motorcycle');
   const [plate, setPlate] = useState('');
   const [savingVehicle, setSavingVehicle] = useState(false);
+  // Presencia socket: el toggle de Home avisa por socket; este también debe.
+  const { updateDriverStatus: socketUpdateStatus } = useSocket({});
 
   const load = useCallback(async () => {
     setError(null);
@@ -130,7 +133,9 @@ export default function Profile() {
   }, []);
 
   useEffect(() => {
-    if (!authLoading && !user) router.push('/login');
+    if (authLoading) return;
+    if (!user) router.push('/login');
+    else if ((user as any).role && (user as any).role !== 'driver') router.push('/login');
   }, [user, authLoading, router]);
 
   useEffect(() => {
@@ -292,6 +297,7 @@ export default function Profile() {
                 setError(null);
                 try {
                   await api.updateDriverStatus('available');
+                  socketUpdateStatus('available' as any);
                   await load();
                 } catch {
                   setError('No se pudo cambiar tu estado');

@@ -184,4 +184,56 @@ describe('RatingsService', () => {
       expect.objectContaining({ where: expect.objectContaining({ rating: { lte: 3 } }) }),
     );
   });
+
+  it('findByOrderPublic devuelve datos mínimos + canRate sin login', async () => {
+    prisma.order.findUnique.mockResolvedValue({
+      id: 'order-1',
+      status: 'delivered',
+      driverId: 'driver-1',
+      merchant: { businessName: 'Soda' },
+      driver: { id: 'driver-1', fullName: 'Juan', rating: 4.5, vehicleType: 'motorcycle' },
+    });
+    prisma.rating.findFirst.mockResolvedValue(null);
+
+    const res = await service.findByOrderPublic('order-1');
+
+    expect(res.order).toMatchObject({ id: 'order-1', status: 'delivered' });
+    expect(res.order.driver).toMatchObject({ fullName: 'Juan' });
+    expect(res.order).not.toHaveProperty('pickupLat');
+    expect(res.canRate).toBe(true);
+  });
+
+  it('findByOrderPublic 404 si no existe', async () => {
+    prisma.order.findUnique.mockResolvedValue(null);
+    await expect(service.findByOrderPublic('nope')).rejects.toThrow(NotFoundException);
+  });
+
+  it('createPublic califica sin dueño pero con todos los guards', async () => {
+    prisma.order.findUnique.mockResolvedValue(buildOrder());
+    prisma.rating.create.mockResolvedValue({ id: 'rating-1', rating: 5, comment: null });
+    prisma.rating.aggregate.mockResolvedValue({ _avg: { rating: 5 } });
+
+    const res = await service.createPublic({ orderId: 'order-1', rating: 5 });
+    expect(res.rating).toBe(5);
+    expect(events.sendToUser).toHaveBeenCalledWith('user-driver', 'rating:new', expect.any(Object));
+  });
+
+  it('createPublic rechaza no-entregado, sin driver y duplicado', async () => {
+    prisma.order.findUnique.mockResolvedValue(buildOrder({ status: 'picked_up' }));
+    await expect(service.createPublic({ orderId: 'order-1', rating: 5 })).rejects.toThrow(
+      BadRequestException,
+    );
+
+    prisma.order.findUnique.mockResolvedValue(buildOrder({ driver: null, driverId: null }));
+    await expect(service.createPublic({ orderId: 'order-1', rating: 5 })).rejects.toThrow(
+      BadRequestException,
+    );
+
+    prisma.order.findUnique.mockResolvedValue(buildOrder());
+    prisma.rating.findFirst.mockResolvedValue({ id: 'rating-viejo' });
+    await expect(service.createPublic({ orderId: 'order-1', rating: 5 })).rejects.toThrow(
+      ConflictException,
+    );
+    expect(prisma.rating.create).not.toHaveBeenCalled();
+  });
 });

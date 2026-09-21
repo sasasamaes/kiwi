@@ -66,7 +66,9 @@ export class PaymentsController {
   async confirmPayment(
     @Param('paymentIntentId') paymentIntentId: string,
     @Body() dto: ConfirmPaymentDto,
+    @CurrentUser() user: any,
   ) {
+    await this.paymentsService.assertIntentAccess(paymentIntentId, user);
     return this.onvopayProvider.confirmPaymentIntent(paymentIntentId, dto.paymentMethodId);
   }
 

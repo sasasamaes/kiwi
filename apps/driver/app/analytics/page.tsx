@@ -91,7 +91,9 @@ export default function DriverAnalyticsPage() {
   }, []);
 
   useEffect(() => {
-    if (!authLoading && !user) router.push('/login');
+    if (authLoading) return;
+    if (!user) router.push('/login');
+    else if ((user as any).role && (user as any).role !== 'driver') router.push('/login');
   }, [user, authLoading, router]);
 
   useEffect(() => {

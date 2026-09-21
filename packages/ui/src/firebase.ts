@@ -35,25 +35,34 @@ export async function initializeFirebase() {
   }
 }
 
-export async function requestNotificationPermission(): Promise<string | null> {
+export async function requestNotificationPermission(): Promise<string> {
   try {
     // Check if browser supports notifications
     if (!('Notification' in window)) {
-      console.log('Browser does not support notifications');
-      return null;
+      throw new Error('PUSH:unsupported');
+    }
+
+    // Sin PushManager no hay push posible (iPhone en Safari sin instalar):
+    // fallar acá con código claro en vez de reventar en getToken.
+    if (!('PushManager' in window)) {
+      throw new Error('PUSH:no-push-manager');
     }
 
     // Request permission
     const permission = await Notification.requestPermission();
 
     if (permission !== 'granted') {
-      console.log('Notification permission denied');
-      return null;
+      throw new Error('PUSH:denied');
+    }
+
+    // Config incompleta = getToken falla seguro: decirlo explícito.
+    if (!process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY) {
+      throw new Error('PUSH:missing-vapid');
     }
 
     // Initialize Firebase and get token
     const firebase = await initializeFirebase();
-    if (!firebase) return null;
+    if (!firebase) throw new Error('PUSH:missing-config');
 
     // Service worker explícito: sin esto getToken falla cuando el navegador
     // todavía no registró /firebase-messaging-sw.js (el push en background
@@ -68,16 +77,24 @@ export async function requestNotificationPermission(): Promise<string | null> {
     }
 
     const { getToken } = await import('firebase/messaging');
-    const token = await getToken(firebase.messaging, {
-      vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
-      ...(registration ? { serviceWorkerRegistration: registration } : {}),
-    });
+    let token: string;
+    try {
+      token = await getToken(firebase.messaging, {
+        vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
+        ...(registration ? { serviceWorkerRegistration: registration } : {}),
+      });
+    } catch {
+      throw new Error('PUSH:token-failed');
+    }
+    if (!token) throw new Error('PUSH:token-failed');
 
-    console.log('FCM Token:', token);
     return token;
   } catch (error) {
+    // Códigos propios (unsupported, denied, ...) pasan tal cual para que la
+    // UI explique el paso exacto que falló; lo desconocido se agrupa.
+    if (error instanceof Error && !error.message.includes(' ')) throw error;
     console.error('Failed to get notification permission:', error);
-    return null;
+    throw new Error('PUSH:token-failed');
   }
 }
 

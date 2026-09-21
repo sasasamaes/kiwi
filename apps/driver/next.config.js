@@ -8,30 +8,10 @@ const withPWA = require('@ducanh2912/next-pwa').default({
     // NOTE (@ducanh2912/next-pwa): custom rules live under workboxOptions,
     // not top-level (v5 accepted top-level runtimeCaching).
     runtimeCaching: [
-      {
-        // Real API host: https://kiwi-api-fe54.onrender.com/api
-        // Short TTL: these GETs can be authenticated, so a long cache risks
-        // stale cross-user data on shared devices.
-        urlPattern: (() => {
-          try {
-            const origin = new URL(
-              process.env.NEXT_PUBLIC_API_URL || 'https://kiwi-api-fe54.onrender.com/api',
-            ).origin.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            return new RegExp(`^${origin}/.*`, 'i');
-          } catch {
-            return /^https:\/\/kiwi-api-fe54\.onrender\.com\/.*/i;
-          }
-        })(),
-        handler: 'NetworkFirst',
-        options: {
-          cacheName: 'api-cache',
-          expiration: {
-            maxEntries: 50,
-            maxAgeSeconds: 60 * 5, // 5 minutes
-          },
-          networkTimeoutSeconds: 10,
-        },
-      },
+      // NOTA: a propósito NO se cachea el API. Los GETs van autenticados
+      // (ganancias, pedidos, perfil): en un celu compartido el caché del SW
+      // filtra datos entre usuarios, y el offline real ya lo cubre la app
+      // con IndexedDB (offlineCache + backgroundSync).
       {
         urlPattern: /^https:\/\/fonts\.(?:googleapis|gstatic)\.com\/.*/i,
         handler: 'CacheFirst',

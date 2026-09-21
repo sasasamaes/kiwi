@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { BottomNav } from '../components/BottomNav';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -19,7 +20,7 @@ import {
   X,
   Lightbulb,
 } from 'lucide-react';
-import { AnimatedButton, StaggerContainer, StaggerItem } from '@kiwi/ui';
+import { AnimatedButton, StaggerContainer, StaggerItem, useAuth, api } from '@kiwi/ui';
 
 const days = [
   { short: 'Dom', full: 'Domingo', icon: Sun },
@@ -33,6 +34,80 @@ const days = [
 
 const hours = Array.from({ length: 15 }, (_, i) => i + 7); // 7am to 9pm
 
+/**
+ * La UI trabaja por horas sueltas; el API guarda bloques
+ * {dayOfWeek, startTime, endTime}. La fecha es solo vehículo del horario
+ * (el backend usa día + duración): domingo base 2026-01-04.
+ */
+function toApiRows(schedule: Record<number, string[]>): Array<{
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+  isAvailable: boolean;
+}> {
+  const rows: Array<{
+    dayOfWeek: number;
+    startTime: string;
+    endTime: string;
+    isAvailable: boolean;
+  }> = [];
+  for (const [dayKey, slots] of Object.entries(schedule)) {
+    const day = Number(dayKey);
+    const hs = [...new Set((slots || []).map((s) => parseInt(s, 10)))]
+      .filter((h) => Number.isInteger(h) && h >= 0 && h < 24)
+      .sort((a, b) => a - b);
+    let start: number | null = null;
+    let prev = -2;
+    const flush = (endExclusive: number) => {
+      if (start == null) return;
+      const d = new Date(Date.UTC(2026, 0, 4 + day));
+      const iso = (h: number) =>
+        new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), h)).toISOString();
+      rows.push({
+        dayOfWeek: day,
+        startTime: iso(start),
+        endTime: iso(endExclusive),
+        isAvailable: true,
+      });
+      start = null;
+    };
+    for (const h of hs) {
+      if (start == null || h !== prev + 1) {
+        flush(prev + 1);
+        start = h;
+      }
+      prev = h;
+    }
+    flush(prev + 1);
+  }
+  return rows;
+}
+
+/** Inverso: expande bloques del API a slots "HH:00" por día. */
+function fromApiRows(rows: any[]): Record<number, string[]> {
+  const next: Record<number, string[]> = {};
+  for (const r of rows || []) {
+    const day = Number(r?.dayOfWeek);
+    if (!Number.isInteger(day) || day < 0 || day > 6) continue;
+    if (r?.isAvailable === false) continue;
+    const s = new Date(r?.startTime);
+    const e = new Date(r?.endTime);
+    if (isNaN(s.getTime()) || isNaN(e.getTime()) || e <= s) continue;
+    // Horas UTC del bloque (el API guarda el instante; la hora local CR es
+    // lo que el comercio ve — se usa UTC para no depender del TZ del celu).
+    const sh = s.getUTCHours();
+    const eh = e.getUTCHours() + (e.getUTCMinutes() > 0 || e.getUTCSeconds() > 0 ? 1 : 0);
+    for (let h = sh; h < eh && h < 24; h++) {
+      const slot = `${String(h).padStart(2, '0')}:00`;
+      next[day] = [...(next[day] || []), slot];
+    }
+  }
+  for (const k of Object.keys(next)) {
+    next[Number(k)] = [...new Set(next[Number(k)])].sort();
+  }
+  return next;
+}
+
 const presets = [
   { name: 'Mañana', icon: Sun, hours: [7, 8, 9, 10, 11, 12] },
   { name: 'Tarde', icon: Sun, hours: [13, 14, 15, 16, 17, 18] },
@@ -45,6 +120,8 @@ const presets = [
 ];
 
 export default function Schedule() {
+  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   const [selectedDay, setSelectedDay] = useState(new Date().getDay());
   const [schedule, setSchedule] = useState<Record<number, string[]>>({
     1: ['08:00', '09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00'],
@@ -57,6 +134,28 @@ export default function Schedule() {
   const [showPresets, setShowPresets] = useState(false);
   const [showCopyModal, setShowCopyModal] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [scheduleError, setScheduleError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+    if ((user as any).role && (user as any).role !== 'driver') {
+      router.push('/login');
+      return;
+    }
+    // Hidratar agenda guardada (si no hay, queda el default local).
+    api
+      .getDriverSchedule()
+      .then((rows) => {
+        const next = fromApiRows(Array.isArray(rows) ? rows : (rows?.schedules ?? []));
+        if (Object.keys(next).length > 0) setSchedule(next);
+      })
+      .catch(() => undefined);
+  }, [user, authLoading, router]);
 
   const toggleHour = (hour: number) => {
     const hourStr = `${hour.toString().padStart(2, '0')}:00`;
@@ -92,10 +191,17 @@ export default function Schedule() {
   };
 
   const saveSchedule = async () => {
-    // Mock API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    setScheduleError(null);
+    setSaving(true);
+    try {
+      await api.updateDriverSchedule(toApiRows(schedule));
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch {
+      setScheduleError('No se pudo guardar tu horario. Revisá tu conexión.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const weeklyHours = Object.values(schedule).flat().length;
@@ -376,6 +482,7 @@ export default function Schedule() {
             size="lg"
             className="w-full shadow-kiwi-lg"
             onClick={saveSchedule}
+            disabled={saving}
           >
             {saved ? (
               <motion.span
@@ -387,10 +494,15 @@ export default function Schedule() {
               </motion.span>
             ) : (
               <span className="flex items-center justify-center gap-2">
-                <Save className="h-5 w-5" /> Guardar Horario
+                <Save className="h-5 w-5" /> {saving ? 'Guardando…' : 'Guardar Horario'}
               </span>
             )}
           </AnimatedButton>
+          {scheduleError && (
+            <p className="mt-2 text-center text-sm text-red-600 dark:text-red-400">
+              {scheduleError}
+            </p>
+          )}
         </motion.div>
 
         {/* Tips */}

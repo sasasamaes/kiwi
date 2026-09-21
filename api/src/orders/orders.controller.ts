@@ -66,6 +66,32 @@ export class OrdersController {
     });
   }
 
+  @Get('admin/zone-mix')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Mezcla real de zonas de pedidos entregados (para el simulador de ganancias)',
+  })
+  async getDeliveredZoneMix() {
+    return this.ordersService.getDeliveredZoneMix();
+  }
+
+  @Get('admin/monthly-actuals')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'Ingresos reales por mes de pedidos entregados (reporte Real vs Proyección). Incluye last30: ventana móvil de los últimos 30 días.',
+  })
+  async getMonthlyActuals(@Query('months') months?: string) {
+    const n = months != null ? Number(months) : 6;
+    return this.ordersService.getMonthlyActuals(
+      Number.isFinite(n) && n >= 1 && n <= 24 ? Math.floor(n) : 6,
+    );
+  }
+
   @Public()
   @Get('track/:id')
   @ApiOperation({ summary: 'Public order tracking (share link, no auth)' })
@@ -85,7 +111,7 @@ export class OrdersController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get order by ID' })
   async getOrder(@Param('id') id: string, @CurrentUser() user: any) {
-    return this.ordersService.findById(id, user.sub);
+    return this.ordersService.findById(id, user.sub, user.role);
   }
 
   @Put(':id/status')
@@ -97,7 +123,7 @@ export class OrdersController {
     @Body('status') status: string,
     @CurrentUser() user: any,
   ) {
-    return this.ordersService.updateStatus(id, status, user.sub);
+    return this.ordersService.updateStatus(id, status, user.sub, user.role);
   }
 
   @Get(':id/messages')
@@ -133,6 +159,17 @@ export class OrdersController {
   @ApiOperation({ summary: 'Driver accepts a pending order' })
   async acceptOrder(@Param('id') id: string, @CurrentUser() user: any) {
     return this.ordersService.acceptOrderAsDriver(id, user.sub);
+  }
+
+  @Post(':id/reject')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('driver')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Assigned driver rejects the order back to contest (notifies merchant)',
+  })
+  async rejectOrder(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.ordersService.rejectOrderAsDriver(id, user.sub);
   }
 
   @Post(':id/proposals')

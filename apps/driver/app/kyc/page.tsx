@@ -1,37 +1,52 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Car, Shield } from 'lucide-react';
-import { KYCVerification, KYCStatusBadge } from '@kiwi/ui';
+import { KYCVerification, KYCStatusBadge, useAuth, api } from '@kiwi/ui';
 
 export default function DriverKYCPage() {
   const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [kycStatus, setKycStatus] = useState<
     'pending' | 'documents_submitted' | 'under_review' | 'approved' | 'rejected'
   >('pending');
 
+  useEffect(() => {
+    if (!authLoading && !user) router.push('/login');
+  }, [user, authLoading, router]);
+
+  // Estado real: si ya envió, muestra en qué va (no un mock local).
+  useEffect(() => {
+    if (!user) return;
+    api
+      .getKycStatus()
+      .then((s) => {
+        if (s?.status) setKycStatus(s.status);
+      })
+      .catch(() => undefined);
+  }, [user]);
+
   const handleSubmit = async (data: any) => {
     setLoading(true);
+    setSubmitError(null);
 
     try {
-      // Mock API call - replace with real backend
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      console.log('Driver KYC submitted:', data);
-
-      // Update status to submitted
-      setKycStatus('documents_submitted');
-
-      // After a while, simulate review
-      setTimeout(() => {
-        setKycStatus('under_review');
-      }, 3000);
-    } catch (error) {
+      const res = await api.submitKycDocuments({
+        idType: data.idType,
+        idNumber: data.idNumber,
+        licenseNumber: data.licenseNumber,
+        licenseExpiry: data.licenseExpiry,
+        taxId: data.taxId,
+      });
+      setKycStatus(res?.status ?? 'documents_submitted');
+    } catch (error: any) {
       console.error('KYC error:', error);
+      setSubmitError(error?.message || 'No se pudo enviar. Intentá de nuevo.');
     } finally {
       setLoading(false);
     }
@@ -140,6 +155,9 @@ export default function DriverKYCPage() {
             onSubmit={handleSubmit}
             loading={loading}
           />
+          {submitError && (
+            <p className="mt-3 text-center text-sm text-red-600 dark:text-red-400">{submitError}</p>
+          )}
         </motion.div>
 
         {/* Help Section */}

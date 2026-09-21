@@ -101,6 +101,16 @@ function toMapPoint(
   return { lat: la, lng: ln, label };
 }
 
+/** Ganancia neta: payout del servidor; si falta, se deriva del viaje y la tasa. */
+function netPayout(order: Order): number {
+  const p = Number((order as any).driverPayout);
+  if (Number.isFinite(p)) return p;
+  const base = Number((order as any).basePrice ?? 0);
+  const rate = Number((order as any).commissionRate ?? 0.15);
+  if (!Number.isFinite(base) || !Number.isFinite(rate)) return 0;
+  return Math.round(base * (1 - Math.min(Math.max(rate, 0), 1)));
+}
+
 /** "Cliente: Ana (8888-1234) · Sin cebolla" -> { name, phone } */
 function parseCustomer(special?: string | null): { name?: string; phone?: string } {
   if (!special) return {};
@@ -147,6 +157,8 @@ export default function ActiveOrders() {
   const [copied, setCopied] = useState<'pickup' | 'delivery' | null>(null);
   const [showItems, setShowItems] = useState(true);
   const [confirmArmed, setConfirmArmed] = useState(false);
+  const [rejectArmed, setRejectArmed] = useState(false);
+  const [rejecting, setRejecting] = useState(false);
   const [celebration, setCelebration] = useState<{ payout: number } | null>(null);
   // Reloj vivo para "hace X min"
   const [, setTick] = useState(0);
@@ -200,7 +212,12 @@ export default function ActiveOrders() {
   }, []);
 
   useEffect(() => {
-    if (!authLoading && !user) {
+    if (authLoading) return;
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+    if ((user as any).role && (user as any).role !== 'driver') {
       router.push('/login');
     }
   }, [user, authLoading, router]);
@@ -217,10 +234,65 @@ export default function ActiveOrders() {
     return off;
   }, [onSocketEvent, fetchActiveOrders]);
 
+  // Ping de ubicación también en /active: el loop vive en Home y al aceptar
+  // se desmonta — justo cuando el tracking más importa (pickup→delivery).
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+
+    const ping = () => {
+      if (cancelled || document.hidden) return;
+      if (!navigator.geolocation) return;
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          if (cancelled) return;
+          api
+            .updateDriverLocation(pos.coords.latitude, pos.coords.longitude)
+            .catch(() => undefined);
+        },
+        () => undefined,
+        { enableHighAccuracy: false, maximumAge: 30_000, timeout: 10_000 },
+      );
+    };
+
+    ping();
+    const t = setInterval(ping, 30_000);
+    return () => {
+      cancelled = true;
+      clearInterval(t);
+    };
+  }, [user]);
+
   // Aplica la transición localmente (UI optimista) y marca el pedido como encolado
   const applyOptimistic = (orderId: string, nextStatus: string) => {
     setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: nextStatus } : o)));
     setQueuedTransitions((prev) => ({ ...prev, [orderId]: nextStatus }));
+  };
+
+  const rejectOrder = async () => {
+    if (rejecting) return;
+    if (!rejectArmed) {
+      setRejectArmed(true);
+      setTimeout(() => setRejectArmed(false), 5000);
+      return;
+    }
+    setRejectArmed(false);
+    setRejecting(true);
+    try {
+      await api.rejectOrder(order.id);
+      const rest = orders.filter((o) => o.id !== order.id);
+      setOrders(rest);
+      setSelectedId(rest[0]?.id ?? null);
+      if (rest.length === 0) {
+        router.push('/');
+      } else {
+        setNotice('Pedido devuelto. El comercio fue avisado para reasignarlo.');
+      }
+    } catch (err) {
+      setNotice(err instanceof Error ? err.message : 'No se pudo rechazar el pedido.');
+    } finally {
+      setRejecting(false);
+    }
   };
 
   const advanceStatus = async (order: Order) => {
@@ -242,7 +314,7 @@ export default function ActiveOrders() {
     try {
       await api.updateOrderStatus(order.id, flow.next);
       if (flow.next === 'delivered') {
-        setCelebration({ payout: Number(order.driverPayout ?? order.totalAmount ?? 0) });
+        setCelebration({ payout: netPayout({ ...order, status: flow.next }) });
       }
       await fetchActiveOrders();
     } catch (err) {
@@ -435,7 +507,7 @@ export default function ActiveOrders() {
   // dueña de la atención es la navegación, no el menú.
   const showBottomNav = order.status === 'assigned';
   const flow = NEXT_STATUS[order.status];
-  const driverPayout = Number(order.driverPayout ?? order.totalAmount ?? 0);
+  const driverPayout = netPayout(order);
   // % real del pedido (el admin la puede cambiar; el backend la guarda).
   const feePct = Math.round(Number((order as any).commissionRate ?? 0.15) * 100);
   const distanceKm = Number(order.distanceKm ?? 0);
@@ -538,6 +610,7 @@ export default function ActiveOrders() {
                   onClick={() => {
                     setSelectedId(o.id);
                     setConfirmArmed(false);
+                    setRejectArmed(false);
                   }}
                   whileTap={{ scale: 0.95 }}
                   className={`inline-flex min-h-[44px] shrink-0 items-center gap-2 whitespace-nowrap rounded-2xl px-4 py-2 text-sm font-medium transition-colors ${
@@ -546,8 +619,7 @@ export default function ActiveOrders() {
                       : 'glass text-surface-600 dark:text-surface-400'
                   }`}
                 >
-                  <Wallet className="h-4 w-4" />₡
-                  {Number(o.driverPayout ?? o.totalAmount ?? 0).toLocaleString()}
+                  <Wallet className="h-4 w-4" />₡{netPayout(o).toLocaleString()}
                   <span className={active ? 'text-white/80' : 'text-surface-400'}>
                     {(STEP_META[o.status]?.label ?? o.status).split(' ')[0]}
                   </span>
@@ -883,6 +955,24 @@ export default function ActiveOrders() {
               <Flag className="h-3 w-3" /> Notas del pedido
             </p>
             <p className="text-sm text-surface-700 dark:text-surface-200">{notes}</p>
+          </div>
+        )}
+
+        {/* Rechazar: solo asignado sin recoger. Vuelve a concurso y avisa
+            al comercio para que reasigne. Doble toque para confirmar. */}
+        {order.status === 'assigned' && (
+          <div className="mb-4 text-center">
+            <button
+              onClick={rejectOrder}
+              disabled={rejecting}
+              className="text-xs font-medium text-surface-400 underline-offset-2 hover:underline disabled:opacity-50"
+            >
+              {rejecting
+                ? 'Rechazando…'
+                : rejectArmed
+                  ? 'Tocá de nuevo para devolver el pedido'
+                  : 'No puedo hacerlo: rechazar pedido'}
+            </button>
           </div>
         )}
       </main>

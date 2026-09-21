@@ -155,6 +155,11 @@ export class PaymentsService {
    * Descuenta SOLO el viaje — el comercio no paga comisión (la paga el
    * repartidor desde su payout) y los productos nunca salen del crédito.
    * Si ya hay pago completado, no duplica el gasto.
+   *
+   * Anti doble-cobro: la fila payment (orderId UNIQUE) se reclama PRIMERO con
+   * create. Dos llamadas concurrentes (doble tap/retry) chocan en P2002 y la
+   * perdedora no llega al spend. Sin esto, ambas descontaban crédito y el
+   * upsert final pisaba una sola fila (cobro 2×, una fila).
    */
   private async createCreditPayment(
     orderId: string,
@@ -182,7 +187,44 @@ export class PaymentsService {
       throw new BadRequestException('Monto del envío inválido');
     }
 
-    const { balance } = await this.creditsService.spend(merchant.id, spend, orderId);
+    // Reclamo atómico de la fila (orderId UNIQUE). Si ya existe una fila no
+    // completada de otro intento/método, no se pisa: se descuenta una sola vez.
+    if (!existing) {
+      try {
+        await this.prisma.payment.create({
+          data: {
+            order: { connect: { id: orderId } },
+            amount: spend,
+            currency: 'CRC',
+            method: 'credit' as PaymentMethod,
+            status: PaymentStatus.processing as PaymentStatus,
+          },
+        });
+      } catch (e: any) {
+        if (e?.code === 'P2002') {
+          const raced = await this.prisma.payment.findUnique({ where: { orderId } });
+          if (raced?.status === PaymentStatus.completed) {
+            throw new BadRequestException('El pedido ya tiene un pago completado');
+          }
+          throw new BadRequestException('Ya hay un pago en curso para este pedido');
+        }
+        throw e;
+      }
+    } else if (existing.status !== PaymentStatus.failed) {
+      // Hay un pago pendiente/en curso de otro intento: no gastar de más.
+      throw new BadRequestException('Ya hay un pago en curso para este pedido');
+    }
+
+    let balance = 0;
+    try {
+      ({ balance } = await this.creditsService.spend(merchant.id, spend, orderId));
+    } catch (e) {
+      // Liberar el reclamo para que se pueda reintentar.
+      await this.prisma.payment
+        .update({ where: { orderId }, data: { status: PaymentStatus.failed } })
+        .catch(() => null);
+      throw e;
+    }
 
     const data = {
       amount: spend,
@@ -190,14 +232,11 @@ export class PaymentsService {
       method: 'credit' as PaymentMethod,
       status: PaymentStatus.completed as PaymentStatus,
     };
-    let payment: any;
-    if (existing) {
-      payment = await this.prisma.payment.update({ where: { orderId }, data });
-    } else {
-      payment = await this.prisma.payment.create({
-        data: { order: { connect: { id: orderId } }, ...data },
-      });
-    }
+    const payment = await this.prisma.payment.upsert({
+      where: { orderId },
+      update: data,
+      create: { order: { connect: { id: orderId } }, ...data },
+    });
 
     this.logger.log(`Credit payment for order ${orderId}: spent=${spend} balance=${balance}`);
     return { success: true, paymentId: payment.id };
@@ -229,8 +268,8 @@ export class PaymentsService {
       orderId,
       customerEmail,
       customerPhone,
-      returnUrl: `${frontendBase}/orders/${orderId}/success`,
-      cancelUrl: `${frontendBase}/orders/${orderId}/cancel`,
+      returnUrl: `${frontendBase}/tracking/${orderId}?paid=1`,
+      cancelUrl: `${frontendBase}/tracking/${orderId}?cancelled=1`,
     });
 
     if (!intentResult.success) {
@@ -312,8 +351,14 @@ export class PaymentsService {
     const where: any = {};
     const validStatus = ['pending', 'processing', 'completed', 'failed', 'refunded'];
     const validMethod = ['onvopay_card', 'onvopay_sinpe', 'crypto', 'cash', 'credit'];
-    if (opts.status && validStatus.includes(opts.status)) where.status = opts.status;
-    if (opts.method && validMethod.includes(opts.method)) where.method = opts.method;
+    if (opts.status && !validStatus.includes(opts.status)) {
+      throw new BadRequestException(`status inválido: ${opts.status}`);
+    }
+    if (opts.method && !validMethod.includes(opts.method)) {
+      throw new BadRequestException(`method inválido: ${opts.method}`);
+    }
+    if (opts.status) where.status = opts.status;
+    if (opts.method) where.method = opts.method;
 
     const [total, items, byStatus, byMethod, daily] = await Promise.all([
       this.prisma.payment.count({ where }),

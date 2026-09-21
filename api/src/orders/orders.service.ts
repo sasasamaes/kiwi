@@ -12,7 +12,8 @@ import { GeocodingService } from '../geocoding/geocoding.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { ProximityService } from './proximity.service';
 import { SettingsService } from '../settings/settings.service';
-import { findDeliveryZone } from './delivery-zones';
+import { findDeliveryZone, findNearestZone, detectDeliveryZoneFromText } from './delivery-zones';
+import { parseScheduledCR } from '../common/costa-rica-time';
 import { isKycRequired } from '../feature-flags/feature-flags';
 
 @Injectable()
@@ -56,8 +57,9 @@ export class OrdersService {
     );
     let scheduledDate: Date | null = null;
     if (data.scheduledDate) {
-      scheduledDate = new Date(data.scheduledDate);
-      if (isNaN(scheduledDate.getTime())) {
+      // Sin offset se interpreta como hora CR (no UTC del servidor).
+      scheduledDate = parseScheduledCR(data.scheduledDate);
+      if (!scheduledDate) {
         throw new BadRequestException('scheduledDate inválida');
       }
     }
@@ -69,6 +71,43 @@ export class OrdersService {
       if (scheduledDate.getTime() < Date.now() - 2 * 60 * 1000) {
         throw new BadRequestException('La fecha programada ya pasó — elige una fecha futura');
       }
+    }
+
+    // Sanitizar crudos que se persisten tal cual: un NaN/Infinity/garbage
+    // tumba el create con 500 de Prisma en vez de un 400 claro.
+    const finiteOrUndef = (v: unknown): number | undefined => {
+      if (v == null || v === '') return undefined;
+      const n = Number(v);
+      return Number.isFinite(n) ? n : undefined;
+    };
+    for (const [k, v, min, max] of [
+      ['pickupLat', data.pickupLat, -90, 90],
+      ['pickupLng', data.pickupLng, -180, 180],
+      ['deliveryLat', data.deliveryLat, -90, 90],
+      ['deliveryLng', data.deliveryLng, -180, 180],
+    ] as const) {
+      if (v != null && v !== '') {
+        const n = finiteOrUndef(v);
+        if (n === undefined || n < min || n > max) {
+          throw new BadRequestException(`${k} inválida`);
+        }
+      }
+    }
+    if (data.declaredValue != null && data.declaredValue !== '') {
+      const dv = Number(data.declaredValue);
+      if (!Number.isFinite(dv) || dv < 0) {
+        throw new BadRequestException('declaredValue inválido');
+      }
+    }
+    if (data.specialInstructions != null && String(data.specialInstructions).length > 2000) {
+      throw new BadRequestException('specialInstructions muy largas (máx 2000)');
+    }
+    if (
+      data.scheduledTime != null &&
+      data.scheduledTime !== '' &&
+      !/^\d{2}:\d{2}$/.test(String(data.scheduledTime))
+    ) {
+      throw new BadRequestException('scheduledTime inválida (formato HH:MM)');
     }
 
     // Pricing: el comercio paga productos + viaje, SIN comisión.
@@ -224,13 +263,18 @@ export class OrdersService {
       zoneBase = zone.price;
     }
 
-    const tripPrice =
+    // Colones enteros: SINPE/efectivo no aceptan fracciones y las sumas
+    // (retiros, analytics) arrastrarían decimales. Todo se redondea ANTES
+    // de persistir: viaje, productos, comisión y payout derivan enteros.
+    productsTotal = Math.round(productsTotal);
+    const tripPrice = Math.round(
       (zoneBase ??
         this.calculateBasePrice(
           distanceKm,
           { lat: data.pickupLat, lng: data.pickupLng },
           { lat: data.deliveryLat, lng: data.deliveryLng },
-        )) + weightSurcharge;
+        )) + weightSurcharge,
+    );
     // Comisión del repartidor: % configurable por el admin
     // (/admin/settings). El medio de pago (payWithCredit) solo elige cómo
     // paga el comercio, no cambia la tasa. La tasa queda guardada por pedido
@@ -272,31 +316,28 @@ export class OrdersService {
         declaredValue: data.declaredValue ?? null,
         weightKg: weightKg != null ? weightKg : null,
         specialInstructions: data.specialInstructions,
+        // Atómico: los items se crean en la misma escritura. Antes era un
+        // createMany best-effort que podía dejar el pedido cobrado sin items
+        // (el driver no veía qué llevar).
+        ...(resolvedItems.length > 0
+          ? {
+              items: {
+                create: resolvedItems.map((item) => ({
+                  menuItemId: item.menuItemId,
+                  name: item.name,
+                  price: item.price,
+                  quantity: item.quantity,
+                  notes: item.notes || undefined,
+                  selectedVariants: item.selectedVariants,
+                })),
+              },
+            }
+          : {}),
       },
       include: {
         merchant: true,
       },
     });
-
-    // Persist line items so drivers and reports see exactly what to carry.
-    // Best-effort: a failure here must not roll back a created order.
-    if (resolvedItems.length > 0) {
-      try {
-        await this.prisma.orderItem.createMany({
-          data: resolvedItems.map((item) => ({
-            orderId: order.id,
-            menuItemId: item.menuItemId,
-            name: item.name,
-            price: item.price,
-            quantity: item.quantity,
-            notes: item.notes,
-            selectedVariants: item.selectedVariants,
-          })),
-        });
-      } catch (error) {
-        console.error('Failed to persist order items:', error);
-      }
-    }
 
     // Alerta de pedido nuevo a los drivers con probabilidad real de tomarlo:
     // targeting por proximidad al punto de recojo (socket 1:1 + push 1:1).
@@ -364,6 +405,7 @@ export class OrdersService {
                 pickupAddress: order.pickupAddress,
                 deliveryAddress: order.deliveryAddress,
                 totalAmount: order.totalAmount,
+                driverPayout: (order as any).driverPayout,
                 distanceKm: order.distanceKm,
               })
               .catch(() => undefined);
@@ -386,6 +428,7 @@ export class OrdersService {
         pickupAddress: order.pickupAddress,
         deliveryAddress: order.deliveryAddress,
         totalAmount: order.totalAmount,
+        driverPayout: (order as any).driverPayout,
         distanceKm: order.distanceKm,
       });
     } catch (error) {
@@ -399,7 +442,7 @@ export class OrdersService {
     }
   }
 
-  async findById(id: string, userId: string) {
+  async findById(id: string, userId: string, role?: string) {
     const order = await this.prisma.order.findUnique({
       where: { id },
       include: {
@@ -438,7 +481,7 @@ export class OrdersService {
     const isMerchant = order.merchant?.userId === userId;
     const isDriver = order.driver?.userId === userId;
 
-    if (!isMerchant && !isDriver) {
+    if (!isMerchant && !isDriver && role !== 'admin') {
       throw new ForbiddenException('No tienes acceso a este pedido');
     }
 
@@ -548,12 +591,17 @@ export class OrdersService {
     }
 
     const loc: any = await this.driversService.getLocation(order.driverId);
+    // Sin fix conocido (o rancio): 404 en vez de plotear el centro de Nicoya
+    // como si fuera el repartidor.
+    if (!loc || loc.known !== true) {
+      throw new NotFoundException('Ubicación no disponible');
+    }
     return {
       lat: loc.lat,
       lng: loc.lng,
       updatedAt: loc.updatedAt,
       isStale: !!loc.isStale,
-      known: loc.known ?? !loc.isStale,
+      known: true,
     };
   }
 
@@ -704,6 +752,181 @@ export class OrdersService {
     };
   }
 
+  /**
+   * Mezcla real de zonas de los pedidos ENTREGADOS: distribución por zona del
+   * catálogo Nicoya (para el simulador de ganancias del admin).
+   *
+   * Fuente por pedido, en orden de precisión:
+   *  1. deliveryZone fija en el pedido (el pricing del servidor la validó).
+   *  2. Zona más cercana por GPS de entrega (findNearestZone); se descarta si
+   *     el gap con la 2ª zona es ambiguo (confident=false).
+   *  3. Detección por texto de la dirección (detectDeliveryZoneFromText).
+   * Lo que no clasifica queda en `unclassified` y NO entra a los pesos.
+   */
+  async getDeliveredZoneMix() {
+    const delivered = await this.prisma.order.findMany({
+      where: { status: 'delivered' },
+      select: {
+        deliveryZone: true,
+        deliveryAddress: true,
+        deliveryLat: true,
+        deliveryLng: true,
+      },
+    });
+
+    const counts: Record<string, number> = {};
+    let unclassified = 0;
+    for (const o of delivered) {
+      let zoneId: string | null = null;
+      if (o.deliveryZone) {
+        zoneId = findDeliveryZone(o.deliveryZone)?.id ?? null;
+      }
+      if (!zoneId && o.deliveryLat != null && o.deliveryLng != null) {
+        const near = findNearestZone(o.deliveryLat, o.deliveryLng);
+        if (near?.confident) zoneId = near.zone.id;
+      }
+      if (!zoneId) {
+        zoneId = detectDeliveryZoneFromText(o.deliveryAddress)?.id ?? null;
+      }
+      if (zoneId) counts[zoneId] = (counts[zoneId] ?? 0) + 1;
+      else unclassified += 1;
+    }
+
+    const classified = delivered.length - unclassified;
+    const weights: Record<string, number> = {};
+    if (classified > 0) {
+      // Peso entero % por zona; el residuo de redondeo se lo lleva la zona
+      // mayor para que la suma sea exactamente 100 (lo que espera la UI).
+      const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+      let assigned = 0;
+      for (const [id, n] of entries.slice(1)) {
+        weights[id] = Math.round((n / classified) * 100);
+        assigned += weights[id];
+      }
+      weights[entries[0][0]] = 100 - assigned;
+    }
+
+    return {
+      delivered: delivered.length,
+      classified,
+      unclassified,
+      // Zonas con conteo y peso % (detalle para la UI).
+      zones: Object.entries(counts)
+        .map(([id, count]) => ({
+          id,
+          count,
+          weight: Math.round((count / (classified || 1)) * 100),
+        }))
+        .sort((a, b) => b.count - a.count),
+      weights,
+    };
+  }
+
+  /**
+   * Ingresos REALES por mes para el reporte "Real vs Proyección" del admin.
+   * Usa los montos históricos guardados en cada pedido entregado: deliveryFee
+   * (precio del viaje, GMV logístico), commission y commissionRate (lo cobrado
+   * al repartidor, con el % vigente al momento del pedido).
+   *
+   * `months` = 3 devuelve los últimos 3 meses incluyendo el mes en curso
+   * (más antiguo primero) para la tendencia.
+   *
+   * Además devuelve `last30`: ventana móvil de los últimos 30 días naturales
+   * (viajes, GMV, comisión y ritmo diario) para ajustar el escenario del
+   * simulador al rendimiento real.
+   */
+  async getMonthlyActuals(months = 6) {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth() - (months - 1), 1);
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const start30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    const orders = await this.prisma.order.findMany({
+      where: { status: 'delivered', deliveredAt: { gte: start, lt: end } },
+      select: {
+        deliveredAt: true,
+        deliveryZone: true,
+        basePrice: true,
+        commission: true,
+        commissionRate: true,
+      },
+    });
+
+    const buckets = new Map<
+      string,
+      {
+        trips: number;
+        gmv: number;
+        commission: number;
+        rates: number[];
+        zones: Record<string, number>;
+      }
+    >();
+    const key = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+
+    for (let i = 0; i < months; i += 1) {
+      buckets.set(key(new Date(now.getFullYear(), now.getMonth() - (months - 1) + i, 1)), {
+        trips: 0,
+        gmv: 0,
+        commission: 0,
+        rates: [],
+        zones: {},
+      });
+    }
+
+    for (const o of orders) {
+      if (!o.deliveredAt) continue;
+      const b = buckets.get(key(o.deliveredAt));
+      if (!b) continue;
+      const fee = Number(o.basePrice ?? 0);
+      const comm = Number(o.commission ?? 0);
+      b.trips += 1;
+      b.gmv += fee;
+      b.commission += comm;
+      if (o.commissionRate != null) b.rates.push(Number(o.commissionRate));
+      if (o.deliveryZone) b.zones[o.deliveryZone] = (b.zones[o.deliveryZone] ?? 0) + 1;
+    }
+
+    const monthly = [...buckets.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([month, b]) => ({
+        month,
+        trips: b.trips,
+        gmv: Math.round(b.gmv),
+        commission: Math.round(b.commission),
+        avgCommissionRate: b.rates.length
+          ? b.rates.reduce((s, r) => s + r, 0) / b.rates.length
+          : null,
+        tripsByZone: Object.fromEntries(Object.entries(b.zones).sort((a, c) => c[1] - a[1])),
+      }));
+
+    // Ventana móvil de los últimos 30 días (independiente del corte de mes).
+    let last30 = { trips: 0, gmv: 0, commission: 0 };
+    for (const o of orders) {
+      if (!o.deliveredAt) continue;
+      if (o.deliveredAt >= start30) {
+        last30.trips += 1;
+        last30.gmv += Number(o.basePrice ?? 0);
+        last30.commission += Number(o.commission ?? 0);
+      }
+    }
+    last30 = {
+      trips: last30.trips,
+      gmv: Math.round(last30.gmv),
+      commission: Math.round(last30.commission),
+    };
+
+    return {
+      months,
+      monthly,
+      last30: {
+        ...last30,
+        tripsPerDay: last30.trips / 30,
+        commissionPerDay: last30.commission / 30,
+      },
+    };
+  }
+
   async findByMerchant(userId: string, status?: string) {
     const merchantProfile = await this.prisma.merchantProfile.findUnique({
       where: { userId },
@@ -764,7 +987,7 @@ export class OrdersService {
     });
   }
 
-  async updateStatus(orderId: string, status: string, userId: string) {
+  async updateStatus(orderId: string, status: string, userId: string, role?: string) {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
       include: { merchant: true, driver: true },
@@ -776,7 +999,7 @@ export class OrdersService {
 
     const isMerchantOwner = order.merchant?.userId === userId;
     const isAssignedDriver = order.driver?.userId === userId;
-    if (!isMerchantOwner && !isAssignedDriver) {
+    if (!isMerchantOwner && !isAssignedDriver && role !== 'admin') {
       throw new ForbiddenException('No tienes permiso para actualizar este pedido');
     }
 
@@ -909,10 +1132,15 @@ export class OrdersService {
 
     // Notify the assigned driver
     this.eventsGateway.sendToUser(driverProfile.userId, 'order:assigned', {
+      id: updatedOrder.id,
       orderId: updatedOrder.id,
       pickupAddress: updatedOrder.pickupAddress,
       deliveryAddress: updatedOrder.deliveryAddress,
       totalAmount: Number(updatedOrder.totalAmount),
+      driverPayout:
+        (updatedOrder as any).driverPayout != null
+          ? Number((updatedOrder as any).driverPayout)
+          : null,
       message: 'Te asignaron un pedido',
     });
 
@@ -938,6 +1166,7 @@ export class OrdersService {
         merchant: true,
       },
       orderBy: { createdAt: 'desc' },
+      take: 100,
     });
   }
 
@@ -1207,6 +1436,56 @@ export class OrdersService {
     });
 
     return updatedOrder;
+  }
+
+  /**
+   * El repartidor asignado rechaza el pedido ANTES de recoger: vuelve a
+   * pendiente (concurso) y se avisa al comercio para que reasigne.
+   * Atómico: solo el asignado y solo en assigned/in_transit_to_pickup.
+   * Después de recoger ya no se puede rechazar (hay que entregar).
+   */
+  async rejectOrderAsDriver(orderId: string, driverUserId: string) {
+    const driverProfile = await this.prisma.driverProfile.findUnique({
+      where: { userId: driverUserId },
+    });
+    if (!driverProfile) {
+      throw new NotFoundException('Perfil de repartidor no encontrado');
+    }
+
+    const claimed = await this.prisma.order.updateMany({
+      where: {
+        id: orderId,
+        driverId: driverProfile.id,
+        status: { in: ['assigned', 'in_transit_to_pickup'] },
+      },
+      data: { driverId: null, status: 'pending', assignedAt: null },
+    });
+    if (claimed.count === 0) {
+      const existing = await this.prisma.order.findUnique({ where: { id: orderId } });
+      if (!existing) throw new NotFoundException('Pedido no encontrado');
+      throw new BadRequestException(
+        'Solo podés rechazar un pedido asignado a vos antes de recoger',
+      );
+    }
+
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { merchant: true },
+    });
+
+    // Avisar al comercio por las dos vías: socket en vivo + push/inbox.
+    if (order?.merchant?.userId) {
+      this.eventsGateway.sendToUser(order.merchant.userId, 'order:rejected', {
+        orderId,
+        driverName: driverProfile.fullName,
+        message: `${driverProfile.fullName} rechazó tu pedido`,
+      });
+      await this.notificationsService
+        .notifyOrderRejected(order.id, order.merchant.userId, driverProfile.fullName)
+        .catch(() => null);
+    }
+
+    return order;
   }
 
   // Tarifa plana de Nicoya centro: ₡2000 dentro de un radio de 10 km

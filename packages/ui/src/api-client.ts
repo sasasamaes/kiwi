@@ -10,7 +10,13 @@ interface RequestOptions {
   method?: string;
   body?: any;
   headers?: Record<string, string>;
+  /** Timeout en ms (default 25000). Sin esto, un API dormido = spinner eterno. */
+  timeout?: number;
 }
+
+// Render (plan gratuito) duerme el API por inactividad: el cold start tarda
+// hasta ~60s. 25s evita cuelgues eternos sin cortar un cold start normal.
+const DEFAULT_TIMEOUT_MS = 25000;
 
 class ApiClient {
   private baseUrl: string;
@@ -43,7 +49,7 @@ class ApiClient {
   }
 
   private async request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
-    const { method = 'GET', body, headers = {} } = options;
+    const { method = 'GET', body, headers = {}, timeout = DEFAULT_TIMEOUT_MS } = options;
 
     const requestHeaders: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -55,11 +61,24 @@ class ApiClient {
       requestHeaders['Authorization'] = `Bearer ${token}`;
     }
 
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
-      method,
-      headers: requestHeaders,
-      body: body ? JSON.stringify(body) : undefined,
-    });
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeout);
+    let response: Response;
+    try {
+      response = await fetch(`${this.baseUrl}${endpoint}`, {
+        method,
+        headers: requestHeaders,
+        body: body ? JSON.stringify(body) : undefined,
+        signal: controller.signal,
+      });
+    } catch (err: any) {
+      if (err?.name === 'AbortError') {
+        throw new Error('El servidor tardó demasiado. Revisá tu conexión e intentá de nuevo.');
+      }
+      throw err;
+    } finally {
+      clearTimeout(timer);
+    }
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ message: 'Error desconocido' }));
@@ -357,10 +376,38 @@ class ApiClient {
     return this.request<{ rating: any | null; canRate: boolean }>(`/ratings/order/${orderId}`);
   }
 
+  /** Lookup público para calificar desde el link (invitados). */
+  async getPublicRating(orderId: string) {
+    return this.request<{ order: any; rating: any | null; canRate: boolean }>(
+      `/ratings/public/${orderId}`,
+    );
+  }
+
+  /** Calificación pública desde el link (invitados, una sola vez). */
+  async submitPublicRating(data: {
+    orderId: string;
+    rating: number;
+    comment?: string;
+    onTime?: boolean;
+    carefulWithOrder?: boolean;
+  }) {
+    return this.request<any>('/ratings/public', {
+      method: 'POST',
+      body: data,
+    });
+  }
+
   async assignDriver(orderId: string, driverId: string) {
     return this.request<any>(`/orders/${orderId}/assign`, {
       method: 'PUT',
       body: { driverId },
+    });
+  }
+
+  /** El asignado devuelve el pedido a concurso (avisa al comercio). */
+  async rejectOrder(orderId: string) {
+    return this.request<any>(`/orders/${orderId}/reject`, {
+      method: 'POST',
     });
   }
 
@@ -680,6 +727,96 @@ class ApiClient {
     return this.request<{ sinpe: boolean; card: boolean; cash: boolean; crypto: boolean }>(
       '/settings/payments',
     );
+  }
+
+  /**
+   * Mezcla real de zonas de pedidos entregados (admin): pesos % por zona id
+   * para el simulador de ganancias.
+   */
+  async getDeliveredZoneMix(): Promise<{
+    delivered: number;
+    classified: number;
+    unclassified: number;
+    zones: Array<{ id: string; count: number; weight: number }>;
+    weights: Record<string, number>;
+  }> {
+    return this.request<any>('/orders/admin/zone-mix');
+  }
+
+  /**
+   * Ingresos reales por mes de pedidos entregados (admin): base del reporte
+   * "Real vs Proyección" del simulador. Los montos son históricos (guardados
+   * al crear/entregar cada pedido), no recalculados.
+   */
+  async getMonthlyActuals(months = 6): Promise<{
+    months: number;
+    monthly: Array<{
+      month: string; // "YYYY-MM"
+      trips: number;
+      gmv: number; // suma de basePrice del mes
+      commission: number; // suma de commission del mes
+      avgCommissionRate: number | null; // 0..1, promedio de commissionRate
+      tripsByZone: Record<string, number>;
+    }>;
+    /** Ventana móvil de los últimos 30 días (para ajustar el escenario). */
+    last30: {
+      trips: number;
+      gmv: number;
+      commission: number;
+      tripsPerDay: number;
+      commissionPerDay: number;
+    };
+  }> {
+    return this.request<any>(
+      `/orders/admin/monthly-actuals?months=${encodeURIComponent(String(months))}`,
+    );
+  }
+
+  /**
+   * Historial mensual de escenarios fijados (reporte Real vs Proyección):
+   * la proyección que el admin dejó sellada al cierre de cada mes.
+   */
+  async getScenarioHistory(): Promise<
+    Array<{
+      month: string; // "YYYY-MM"
+      ordersPerDay: number;
+      expectedTrip: number;
+      commissionPct: number;
+      operations: {
+        fixedMonthlyCost: number;
+        supportPerTrip: number;
+        gatewayPct: number;
+        digitalPct: number;
+      };
+      projectedCommission: number;
+      projectedNet: number;
+      note: string | null;
+      createdAt: string;
+    }>
+  > {
+    return this.request<any>('/settings/scenario-history');
+  }
+
+  /** Fija (o re-fija) el escenario proyectado de un mes. Un snapshot por mes. */
+  async saveScenarioSnapshot(input: {
+    month: string;
+    ordersPerDay: number;
+    expectedTrip: number;
+    commissionPct: number;
+    operations: {
+      fixedMonthlyCost: number;
+      supportPerTrip: number;
+      gatewayPct: number;
+      digitalPct: number;
+    };
+    projectedCommission: number;
+    projectedNet: number;
+    note?: string | null;
+  }) {
+    return this.request<any>('/settings/scenario-history', {
+      method: 'PUT',
+      body: input,
+    });
   }
 
   /** % de comisión del repartidor (público; el backend es fuente de verdad). */

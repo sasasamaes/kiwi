@@ -87,6 +87,7 @@ describe('OrdersService', () => {
             notifyDriverNewOrderTargeted: jest.fn().mockResolvedValue({ delivered: true }),
             notifyOrderAccepted: jest.fn().mockResolvedValue({}),
             notifyOrderStatusUpdate: jest.fn().mockResolvedValue({}),
+            notifyOrderRejected: jest.fn().mockResolvedValue({}),
           },
         },
         { provide: SettingsService, useValue: settingsStub },
@@ -525,7 +526,7 @@ describe('OrdersService', () => {
         items: [{ menuItemId: 'item-1', quantity: 2, variants: [{ optionId: 'opt-big' }] }],
       });
 
-      const persisted = prisma.orderItem.createMany.mock.calls[0][0].data[0];
+      const persisted = prisma.order.create.mock.calls[0][0].data.items.create[0];
       expect(persisted.price).toBe(5500); // 4500 + delta DB 1000 (no el del cliente)
       expect(persisted.selectedVariants).toEqual([
         { group: 'Tamaño', option: 'Grande', priceDelta: 1000 },
@@ -723,6 +724,96 @@ describe('OrdersService', () => {
       } finally {
         delete process.env.KYC_REQUIRED;
       }
+    });
+  });
+
+  describe('rejectOrderAsDriver', () => {
+    it('reject asignado: vuelve a concurso y avisa al comercio', async () => {
+      prisma.driverProfile = {
+        findUnique: jest.fn().mockResolvedValue({ id: 'dp-1', fullName: 'Juan', userId: 'user-d' }),
+      };
+      prisma.order.updateMany.mockResolvedValue({ count: 1 });
+      prisma.order.findUnique.mockResolvedValue({
+        id: 'order-1',
+        merchant: { userId: 'merchant-user-1' },
+      });
+
+      const res = await service.rejectOrderAsDriver('order-1', 'user-d');
+
+      expect(prisma.order.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            id: 'order-1',
+            driverId: 'dp-1',
+            status: { in: ['assigned', 'in_transit_to_pickup'] },
+          },
+          data: expect.objectContaining({ driverId: null, status: 'pending' }),
+        }),
+      );
+      expect(res.id).toBe('order-1');
+    });
+
+    it('reject ajeno o ya recogido: 400 sin tocar nada', async () => {
+      prisma.driverProfile = {
+        findUnique: jest.fn().mockResolvedValue({ id: 'dp-9', fullName: 'Otro', userId: 'user-x' }),
+      };
+      prisma.order.updateMany.mockResolvedValue({ count: 0 });
+      prisma.order.findUnique.mockResolvedValue({ id: 'order-1', status: 'picked_up' });
+
+      await expect(service.rejectOrderAsDriver('order-1', 'user-x')).rejects.toThrow(
+        'Solo podés rechazar un pedido asignado a vos antes de recoger',
+      );
+    });
+
+    it('reject de inexistente: 404', async () => {
+      prisma.driverProfile = {
+        findUnique: jest.fn().mockResolvedValue({ id: 'dp-1', fullName: 'Juan', userId: 'user-d' }),
+      };
+      prisma.order.updateMany.mockResolvedValue({ count: 0 });
+      prisma.order.findUnique.mockResolvedValue(null);
+
+      await expect(service.rejectOrderAsDriver('nope', 'user-d')).rejects.toThrow(
+        'Pedido no encontrado',
+      );
+    });
+  });
+
+  describe('getDeliveredZoneMix', () => {
+    it('clasifica por zona fija, GPS claro y texto; lo ambiguo queda fuera', async () => {
+      prisma.order.findMany.mockResolvedValue([
+        { deliveryZone: 'hojancha', deliveryAddress: 'x', deliveryLat: null, deliveryLng: null },
+        // GPS exacto de Centro (runner-up Carmen a ~230m → confident)
+        { deliveryZone: null, deliveryAddress: 'x', deliveryLat: 10.14828, deliveryLng: -85.45201 },
+        // Punto medio Centro/Carmen → ambiguo, cae a texto que tampoco matchea
+        {
+          deliveryZone: null,
+          deliveryAddress: 'Calle sin nombre',
+          deliveryLat: 10.14864,
+          deliveryLng: -85.453,
+        },
+        // Sin coords: texto "Matabuey"
+        {
+          deliveryZone: null,
+          deliveryAddress: 'Matabuey, 100m este',
+          deliveryLat: null,
+          deliveryLng: null,
+        },
+      ]);
+
+      const res = await service.getDeliveredZoneMix();
+
+      expect(res.delivered).toBe(4);
+      expect(res.classified).toBe(3);
+      expect(res.unclassified).toBe(1);
+      expect(res.weights).toMatchObject({ hojancha: expect.any(Number) });
+      const totalWeight = Object.values(res.weights).reduce((s: number, w) => s + (w as number), 0);
+      expect(totalWeight).toBe(100);
+    });
+
+    it('sin entregados devuelve ceros sin romper', async () => {
+      prisma.order.findMany.mockResolvedValue([]);
+      const res = await service.getDeliveredZoneMix();
+      expect(res).toMatchObject({ delivered: 0, classified: 0, unclassified: 0, weights: {} });
     });
   });
 });

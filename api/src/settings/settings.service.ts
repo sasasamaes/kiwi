@@ -32,6 +32,20 @@ export interface PlatformSettings {
     twoFactorAuth: boolean;
     sessionTimeout: number;
   };
+  /**
+   * Costos operativos reales (los edita el admin; base del reporte
+   * "Real vs Proyección" para calcular la GANANCIA NETA real).
+   */
+  operations: {
+    /** Costos fijos mensuales: hosting, infra, equipo base. */
+    fixedMonthlyCost: number;
+    /** Costo de soporte/operación por viaje (chats, incidencias). */
+    supportPerTrip: number;
+    /** Fee % de la pasarela de pago (tarjeta/SINPE web). */
+    gatewayPct: number;
+    /** % de pagos que llegan por canal digital (el efectivo no paga fee). */
+    digitalPct: number;
+  };
 }
 
 /** Valores con los que nace la plataforma (y fallback si algo falta). */
@@ -66,9 +80,15 @@ export const DEFAULT_SETTINGS: PlatformSettings = {
     twoFactorAuth: false,
     sessionTimeout: 30,
   },
+  operations: {
+    fixedMonthlyCost: 150_000,
+    supportPerTrip: 25,
+    gatewayPct: 2.9,
+    digitalPct: 40,
+  },
 };
 
-const KNOWN_KEYS = ['platform', 'payments', 'notifications', 'security'] as const;
+const KNOWN_KEYS = ['platform', 'payments', 'notifications', 'security', 'operations'] as const;
 
 @Injectable()
 export class SettingsService {
@@ -84,6 +104,7 @@ export class SettingsService {
       payments: { ...DEFAULT_SETTINGS.payments, ...(stored.payments ?? {}) },
       notifications: { ...DEFAULT_SETTINGS.notifications, ...(stored.notifications ?? {}) },
       security: { ...DEFAULT_SETTINGS.security, ...(stored.security ?? {}) },
+      operations: { ...DEFAULT_SETTINGS.operations, ...(stored.operations ?? {}) },
     };
   }
 
@@ -100,6 +121,7 @@ export class SettingsService {
       payments: { ...current.payments, ...(input.payments ?? {}) },
       notifications: { ...current.notifications, ...(input.notifications ?? {}) },
       security: { ...current.security, ...(input.security ?? {}) },
+      operations: { ...current.operations, ...(input.operations ?? {}) },
     };
     // Saneos numéricos mínimos
     next.platform.commission = Math.min(Math.max(Number(next.platform.commission) || 0, 0), 100);
@@ -107,6 +129,22 @@ export class SettingsService {
     next.security.sessionTimeout = Math.min(
       Math.max(Math.round(Number(next.security.sessionTimeout) || 30), 5),
       480,
+    );
+    next.operations.fixedMonthlyCost = Math.max(
+      Math.round(Number(next.operations.fixedMonthlyCost) || 0),
+      0,
+    );
+    next.operations.supportPerTrip = Math.max(
+      Math.round(Number(next.operations.supportPerTrip) || 0),
+      0,
+    );
+    next.operations.gatewayPct = Math.min(
+      Math.max(Number(next.operations.gatewayPct) || 0, 0),
+      100,
+    );
+    next.operations.digitalPct = Math.min(
+      Math.max(Number(next.operations.digitalPct) || 0, 0),
+      100,
     );
     await this.prisma.$transaction(
       (Object.entries(next) as [string, unknown][]).map(([key, value]) =>
@@ -141,5 +179,71 @@ export class SettingsService {
     const raw = Number(all.platform?.commission);
     if (!Number.isFinite(raw)) return 15;
     return Math.min(Math.max(raw, 0), 100);
+  }
+
+  /** Historial mensual de escenarios fijados (más antiguo primero). */
+  async listScenarioSnapshots() {
+    return this.prisma.scenarioSnapshot.findMany({ orderBy: { month: 'asc' } });
+  }
+
+  /**
+   * Fija (o re-fija) el escenario proyectado de un mes: es la foto con la que
+   * después se comparará lo realmente ocurrido. Un snapshot por mes.
+   */
+  async upsertScenarioSnapshot(input: {
+    month?: string;
+    ordersPerDay?: number;
+    expectedTrip?: number;
+    commissionPct?: number;
+    operations?: {
+      fixedMonthlyCost?: number;
+      supportPerTrip?: number;
+      gatewayPct?: number;
+      digitalPct?: number;
+    };
+    projectedCommission?: number;
+    projectedNet?: number;
+    note?: string | null;
+  }) {
+    const month = String(input?.month ?? '');
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) {
+      throw new BadRequestException('month debe tener formato YYYY-MM');
+    }
+    const ordersPerDay = Math.max(0, Math.round(Number(input.ordersPerDay) || 0));
+    const expectedTrip = Math.max(0, Number(input.expectedTrip) || 0);
+    const commissionPct = Math.min(Math.max(Number(input.commissionPct) || 0, 0), 100);
+    const operations = {
+      fixedMonthlyCost: Math.max(0, Number(input.operations?.fixedMonthlyCost) || 0),
+      supportPerTrip: Math.max(0, Number(input.operations?.supportPerTrip) || 0),
+      gatewayPct: Math.min(Math.max(Number(input.operations?.gatewayPct) || 0, 0), 100),
+      digitalPct: Math.min(Math.max(Number(input.operations?.digitalPct) || 0, 0), 100),
+    };
+    const projectedCommission = Math.max(0, Number(input.projectedCommission) || 0);
+    const projectedNet = Number(input.projectedNet) || 0;
+    const note =
+      typeof input.note === 'string' && input.note.trim() ? input.note.trim().slice(0, 200) : null;
+
+    return this.prisma.scenarioSnapshot.upsert({
+      where: { month },
+      update: {
+        ordersPerDay,
+        expectedTrip,
+        commissionPct,
+        operations,
+        projectedCommission,
+        projectedNet,
+        note,
+      },
+      create: {
+        month,
+        ordersPerDay,
+        expectedTrip,
+        commissionPct,
+        operations,
+        projectedCommission,
+        projectedNet,
+        note,
+      },
+    });
   }
 }

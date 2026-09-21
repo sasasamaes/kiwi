@@ -19,7 +19,9 @@ export default function Home() {
   const { user, loading } = useAuth();
 
   useEffect(() => {
-    if (!loading && user) router.replace('/dashboard');
+    if (loading || !user) return;
+    const role = (user as any)?.role;
+    router.replace(role === 'admin' ? '/admin' : '/dashboard');
   }, [user, loading, router]);
 
   if (loading || user) {

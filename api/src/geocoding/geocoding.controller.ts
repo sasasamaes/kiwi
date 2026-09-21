@@ -1,4 +1,4 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Query, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { GeocodingService } from './geocoding.service';
 
@@ -17,7 +17,7 @@ export class GeocodingController {
     @Query('limit') limit?: string,
     @Query('country') country?: string,
   ) {
-    const maxResults = limit ? parseInt(limit) : 5;
+    const maxResults = Math.min(Math.max(parseInt(limit ?? '') || 5, 1), 20);
 
     if (country === 'cr') {
       return this.geocodingService.searchCostaRica(query, maxResults);
@@ -31,7 +31,7 @@ export class GeocodingController {
   @ApiQuery({ name: 'q', required: true, description: 'Search query' })
   @ApiQuery({ name: 'limit', required: false, description: 'Max results (default: 5)' })
   async searchNicoya(@Query('q') query: string, @Query('limit') limit?: string) {
-    const maxResults = limit ? parseInt(limit) : 5;
+    const maxResults = Math.min(Math.max(parseInt(limit ?? '') || 5, 1), 20);
     return this.geocodingService.searchNicoya(query, maxResults);
   }
 
@@ -102,11 +102,15 @@ export class GeocodingController {
     @Query('lat2') lat2: string,
     @Query('lng2') lng2: string,
   ) {
+    const coords = [lat1, lng1, lat2, lng2].map(Number);
+    if (coords.some((n) => !Number.isFinite(n))) {
+      throw new BadRequestException('Coordenadas inválidas');
+    }
     const distance = this.geocodingService.calculateDistance(
-      parseFloat(lat1),
-      parseFloat(lng1),
-      parseFloat(lat2),
-      parseFloat(lng2),
+      coords[0],
+      coords[1],
+      coords[2],
+      coords[3],
     );
 
     return {

@@ -1,5 +1,6 @@
 'use client';
 
+import 'leaflet/dist/leaflet.css';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AlertTriangle, LocateFixed, Navigation } from 'lucide-react';
 
@@ -19,8 +20,8 @@ interface DriverMapProps {
   className?: string;
 }
 
-// CARTO claro (rápido, sin key) + respaldo OSM. Ambos exigen atribución.
-const CARTO_URL = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+// OpenStreetMap directo (sin key). CARTO ahora exige API key y sus
+// mosaicos de error disparan tileload: el fallback nunca se enteraba.
 const OSM_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 
 function haversineM(a: DriverMapPoint, b: DriverMapPoint): number {
@@ -32,6 +33,15 @@ function haversineM(a: DriverMapPoint, b: DriverMapPoint): number {
   const aa =
     s1 * s1 + Math.cos((a.lat * Math.PI) / 180) * Math.cos((b.lat * Math.PI) / 180) * s2 * s2;
   return 2 * R * Math.asin(Math.sqrt(aa));
+}
+
+/** Escapa texto para interpolar en popups Leaflet (direcciones con <>&). */
+function esc(s?: string): string {
+  return (s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 function formatDist(meters: number): string {
@@ -89,37 +99,25 @@ export function DriverMap({
     const init = async () => {
       try {
         L = await import('leaflet');
-        await import('leaflet/dist/leaflet.css' as string);
         if (cancelled || !mapRef.current) return;
 
         const map = L.map(mapRef.current, {
-          center: [9.935, -85.1], // Nicoya default; se ajusta con fitBounds
+          center: [10.14828, -85.45201], // Nicoya; se ajusta con fitBounds
           zoom: 13,
           zoomControl: false,
           attributionControl: false,
         });
 
-        const primary = L.tileLayer(CARTO_URL, {
-          maxZoom: 20,
-          subdomains: 'abcd',
-          attribution: '© OpenStreetMap contributors © CARTO',
+        // Un tile suelto que falla es normal (404 de borde): el error
+        // accionable sale solo si en 10s no cargó NADA.
+        const layer = L.tileLayer(OSM_URL, {
+          maxZoom: 19,
+          attribution: '© OpenStreetMap contributors',
         });
-        primary.on('tileload', () => {
+        layer.on('tileload', () => {
           tilesOk = true;
         });
-        primary.on('tileerror', () => {
-          // Fallback silencioso a OSM si CARTO falla
-          try {
-            map.removeLayer(primary);
-            L.tileLayer(OSM_URL, {
-              maxZoom: 19,
-              attribution: '© OpenStreetMap contributors',
-            }).addTo(map);
-          } catch {
-            /* noop */
-          }
-        });
-        primary.addTo(map);
+        layer.addTo(map);
         L.control.zoom({ position: 'bottomright' }).addTo(map);
 
         failTimer = setTimeout(() => {
@@ -195,7 +193,7 @@ export function DriverMap({
         icon: mk(dot('#22c55e', '◈'), 40),
       })
         .addTo(mapInstanceRef.current)
-        .bindPopup(`<b>Recoger</b><br>${pickup.label ?? ''}`);
+        .bindPopup(`<b>Recoger</b><br>${esc(pickup.label)}`);
       markersRef.current.push(m);
       bounds.extend([pickup.lat, pickup.lng]);
     }
@@ -204,7 +202,7 @@ export function DriverMap({
         icon: mk(dot('#f59e0b', '◎'), 40),
       })
         .addTo(mapInstanceRef.current)
-        .bindPopup(`<b>Entregar</b><br>${delivery.label ?? ''}`);
+        .bindPopup(`<b>Entregar</b><br>${esc(delivery.label)}`);
       markersRef.current.push(m);
       bounds.extend([delivery.lat, delivery.lng]);
     }
@@ -286,7 +284,7 @@ export function DriverMap({
     }
     if (routeGeom && routeGeom.length >= 2) {
       routeLineRef.current = L.polyline(routeGeom, {
-        color: '#16a34a',
+        color: target === 'pickup' ? '#16a34a' : '#f59e0b',
         weight: 5,
         opacity: 0.9,
         lineJoin: 'round',
@@ -302,7 +300,7 @@ export function DriverMap({
         { color: '#94a3b8', weight: 2, opacity: 0.5, dashArray: '6,8' },
       ).addTo(mapInstanceRef.current);
     }
-  }, [routeGeom, pickup, delivery, driver, mapReady]);
+  }, [routeGeom, pickup, delivery, driver, target, mapReady]);
 
   const recenter = useCallback(() => {
     const map = mapInstanceRef.current;
@@ -420,7 +418,7 @@ export function DriverMap({
       </button>
 
       <p className="absolute bottom-3 left-3 rounded-lg bg-white/80 dark:bg-surface-900/80 px-2 py-0.5 text-[10px] text-surface-400 backdrop-blur">
-        © OpenStreetMap · © CARTO
+        © OpenStreetMap
       </p>
     </div>
   );

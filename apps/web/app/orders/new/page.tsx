@@ -198,6 +198,11 @@ function NewOrderInner({
   const [orderCreated, setOrderCreated] = useState(false);
   const [createdOrderId, setCreatedOrderId] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  // El pedido puede existir sin pago (falló el cobro): se muestra reintento
+  // en vez de un éxito limpio que esconde la deuda.
+  const [paymentFailed, setPaymentFailed] = useState(false);
+  const [payError, setPayError] = useState<string | null>(null);
+  const [orderNotice, setOrderNotice] = useState<string | null>(null);
 
   const [kind, setKind] = useState<'food' | 'freight'>(presetKind);
   // Si el tipo llega preseleccionado por la URL y la URL cambia (nav entre los
@@ -286,6 +291,14 @@ function NewOrderInner({
 
   const [routeKm, setRouteKm] = useState<number | null>(null);
   const deliveryDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchSeq = useRef(0);
+
+  // El timer del buscador no debe dispararse tras desmontar.
+  useEffect(() => {
+    return () => {
+      if (deliveryDebounce.current) clearTimeout(deliveryDebounce.current);
+    };
+  }, []);
 
   const profileAddress = user?.merchantProfile?.address || '';
   useEffect(() => {
@@ -372,8 +385,11 @@ function NewOrderInner({
     // zona elegida, preseleccionarla. Nunca pisa una elección manual previa.
     const typedZone = detectDeliveryZoneFromText(q);
     if (typedZone) setDeliveryZone((prev) => prev || typedZone.id);
+    const seq = (searchSeq.current += 1);
     try {
       const res = await api.searchNicoyaAddresses(q.trim(), 5);
+      // Respuesta vieja (el usuario siguió escribiendo): descartar.
+      if (seq !== searchSeq.current) return;
       setDeliverySuggest(
         (Array.isArray(res) ? res : []).map((r: any) => ({
           displayName: r.displayName,
@@ -383,6 +399,7 @@ function NewOrderInner({
         })),
       );
     } catch {
+      if (seq !== searchSeq.current) return;
       setDeliverySuggest([]);
     }
   };
@@ -636,23 +653,87 @@ function NewOrderInner({
     }
   };
 
+  // Cobra el pedido ya creado (mismo switch que al crear, reutilizable para
+  // el botón "Reintentar pago"). Lanza si falla: quien llama decide.
+  const payForOrder = async (orderId: string, method: typeof paymentMethod): Promise<void> => {
+    if (method === 'sinpe') {
+      await api.createPayment({ orderId, method: 'onvopay_sinpe', amount: total });
+    } else if (method === 'card') {
+      await api.createPayment({ orderId, method: 'onvopay_card', amount: total });
+    } else if (method === 'crypto') {
+      await api.createPayment({ orderId, method: 'crypto', amount: total, cryptoCoin: 'USDC' });
+    } else if (method === 'credit') {
+      // Solo el viaje (sin comisión): el backend lo valida y descuenta.
+      await api.createPayment({ orderId, method: 'credit', amount: trip });
+    } else {
+      await api.createPayment({ orderId, method: 'cash', amount: total });
+    }
+  };
+
+  const retryPayment = async () => {
+    if (!createdOrderId) return;
+    setLoading(true);
+    setPayError(null);
+    try {
+      await payForOrder(createdOrderId, paymentMethod);
+      setPaymentFailed(false);
+      if (paymentMethod === 'credit') {
+        try {
+          const r = await api.getCreditBalance();
+          setCreditBalance(Number(r?.balance ?? 0));
+        } catch {
+          // noop
+        }
+      }
+    } catch (err: any) {
+      setPayError(err?.message || 'No se pudo procesar el pago.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const createOrderHandler = async () => {
     setFormError(null);
+    setPayError(null);
+    setPaymentFailed(false);
+    setOrderNotice(null);
     if (!deliveryZone) {
       setFormError('Elegí el barrio de entrega para calcular el envío');
       return;
     }
-    // Chequeo previo (el backend revalida atómicamente): evita crear el
-    // pedido si el crédito no cubre el viaje (sin comisión: la paga el driver).
-    if (paymentMethod === 'credit' && creditBalance != null && creditBalance < trip) {
-      setFormError(
-        `Saldo insuficiente (₡${creditBalance.toLocaleString()}): este envío cuesta ₡${trip.toLocaleString()}. Llamá a Kiwi para recargar tu crédito.`,
-      );
-      return;
+    // Saldo fresco (el del mount puede estar viejo si hubo otra pestaña):
+    // el backend revalida atómicamente de todos modos.
+    if (paymentMethod === 'credit') {
+      try {
+        const r = await api.getCreditBalance();
+        const fresh = Number(r?.balance ?? NaN);
+        if (Number.isFinite(fresh)) setCreditBalance(fresh);
+        if (Number.isFinite(fresh) && fresh < trip) {
+          setFormError(
+            `Saldo insuficiente (₡${fresh.toLocaleString()}): este envío cuesta ₡${trip.toLocaleString()}. Llamá a Kiwi para recargar tu crédito.`,
+          );
+          return;
+        }
+      } catch {
+        // Sin red no se puede validar: el backend decide.
+      }
+      if (creditBalance != null && creditBalance < trip) {
+        setFormError(
+          `Saldo insuficiente (₡${creditBalance.toLocaleString()}): este envío cuesta ₡${trip.toLocaleString()}. Llamá a Kiwi para recargar tu crédito.`,
+        );
+        return;
+      }
     }
-    if (isScheduled && !scheduledDate) {
+    if (isScheduled && (!scheduledDate || !scheduledTime)) {
       setFormError('Elegí fecha y hora para programar el pedido');
       return;
+    }
+    if (isScheduled && scheduledDate && scheduledTime) {
+      const when = new Date(`${scheduledDate}T${scheduledTime}`);
+      if (!Number.isFinite(when.getTime()) || when.getTime() < Date.now()) {
+        setFormError('La fecha y hora programadas deben ser futuras');
+        return;
+      }
     }
     setLoading(true);
     try {
@@ -687,35 +768,26 @@ function NewOrderInner({
       });
 
       if (selectedDriverId) {
-        await api.assignDriver(result.id, selectedDriverId);
+        // Asignar es best-effort: si el driver se desconectó, el pedido
+        // igual se crea y se paga (queda en concurso), sin duplicados.
+        try {
+          await api.assignDriver(result.id, selectedDriverId);
+        } catch (assignErr) {
+          console.warn('Assign failed, order continues in contest:', assignErr);
+          setOrderNotice('No se pudo asignar al repartidor elegido: quedó en concurso.');
+        }
       }
 
       try {
-        if (paymentMethod === 'sinpe') {
-          await api.createPayment({ orderId: result.id, method: 'onvopay_sinpe', amount: total });
-        } else if (paymentMethod === 'card') {
-          await api.createPayment({ orderId: result.id, method: 'onvopay_card', amount: total });
-        } else if (paymentMethod === 'crypto') {
-          await api.createPayment({
-            orderId: result.id,
-            method: 'crypto',
-            amount: total,
-            cryptoCoin: 'USDC',
-          });
-        } else if (paymentMethod === 'credit') {
-          // Solo el viaje (sin comisión): el backend lo valida y descuenta.
-          await api.createPayment({
-            orderId: result.id,
-            method: 'credit',
-            amount: trip,
-          });
+        await payForOrder(result.id, paymentMethod);
+        if (paymentMethod === 'credit') {
           setCreditBalance((b) => (b == null ? b : b - trip));
-        } else {
-          await api.createPayment({ orderId: result.id, method: 'cash', amount: total });
         }
       } catch (paymentError: any) {
         console.error('Failed to create payment:', paymentError);
-        setFormError(
+        // El pedido SÍ existe: no mostrar éxito limpio, sino reintento.
+        setPaymentFailed(true);
+        setPayError(
           paymentError?.message ||
             'No se pudo procesar el pago. Si pagás con crédito y no alcanza, llamá a Kiwi para recargar.',
         );
@@ -761,6 +833,28 @@ function NewOrderInner({
           <p className="text-surface-500 dark:text-surface-400 mb-4">
             {selectedDriverId ? 'Repartidor asignado' : 'Tu pedido está buscando repartidor'}
           </p>
+          {orderNotice && (
+            <div className="mb-4 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 px-4 py-3 text-sm text-amber-800 dark:text-amber-300">
+              {orderNotice}
+            </div>
+          )}
+          {paymentFailed && (
+            <div className="mb-4 rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/30 px-4 py-3 text-left">
+              <p className="text-sm font-semibold text-red-700 dark:text-red-300">
+                El pedido se creó pero el pago falló
+              </p>
+              {payError && (
+                <p className="mt-1 text-xs text-red-600 dark:text-red-400">{payError}</p>
+              )}
+              <button
+                onClick={retryPayment}
+                disabled={loading}
+                className="mt-3 w-full rounded-xl bg-kiwi-500 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+              >
+                {loading ? 'Procesando…' : 'Reintentar pago'}
+              </button>
+            </div>
+          )}
           <div className="rounded-2xl glass p-6 mb-6">
             <div className="flex justify-between">
               <span className="text-surface-500">Número</span>
@@ -795,6 +889,9 @@ function NewOrderInner({
               onClick={() => {
                 setOrderCreated(false);
                 setCreatedOrderId(null);
+                setPaymentFailed(false);
+                setPayError(null);
+                setOrderNotice(null);
                 setItems([]);
                 setDeliveryName('');
                 setDeliveryPhone('');

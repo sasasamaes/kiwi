@@ -41,17 +41,30 @@ export default function RateOrderPage() {
 
   const fetchOrder = useCallback(async () => {
     try {
-      const data = await api.getOrderById(orderId);
-      setOrder(data);
-      // ¿Ya fue calificado? El backend decide quién puede calificar.
-      const ratingInfo = await api.getRatingForOrder(orderId);
-      if (ratingInfo.rating) {
-        setDone(true);
+      // Logueado: vista completa. Invitado con link: endpoints públicos.
+      if (api.getToken()) {
+        const data = await api.getOrderById(orderId);
+        setOrder(data);
+        // ¿Ya fue calificado? El backend decide quién puede calificar.
+        const ratingInfo = await api.getRatingForOrder(orderId);
+        if (ratingInfo.rating) {
+          setDone(true);
+        }
+      } else {
+        const pub = await api.getPublicRating(orderId);
+        setOrder(pub.order);
+        // Ya calificado → gracias. Si aún no está entregado, NO marcar done:
+        // la pantalla de "esperá la entrega" se encarga.
+        if (pub.rating) {
+          setDone(true);
+        }
       }
       setError(null);
     } catch (err) {
       console.error('Failed to fetch order:', err);
-      setError(err instanceof Error ? err.message : 'No se pudo cargar el pedido');
+      const msg = err instanceof Error ? err.message : 'No se pudo cargar el pedido';
+      // Nunca mostrar el crudo del backend ("Unauthorized") al cliente.
+      setError(/unauthor|forbidden|401|403/i.test(msg) ? 'No se pudo cargar el pedido' : msg);
     } finally {
       setLoading(false);
     }
@@ -66,13 +79,18 @@ export default function RateOrderPage() {
     setSubmitting(true);
     setSubmitError(null);
     try {
-      await api.submitRating({
+      const payload = {
         orderId,
         rating: stars,
         comment: comment.trim() || undefined,
         onTime: onTime ?? undefined,
         carefulWithOrder: careful ?? undefined,
-      });
+      };
+      if (api.getToken()) {
+        await api.submitRating(payload);
+      } else {
+        await api.submitPublicRating(payload);
+      }
       setDone(true);
     } catch (err) {
       console.error('Failed to submit rating:', err);

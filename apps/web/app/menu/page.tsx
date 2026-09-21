@@ -288,13 +288,8 @@ export default function MenuManagementPage() {
   return (
     <div className="min-h-[100dvh] bg-bg-light dark:bg-surface-950">
       <MerchantNav />
-      {/* Header */}
-      <motion.header
-        className="sticky top-0 z-50 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl"
-        initial={{ y: -100 }}
-        animate={{ y: 0 }}
-        transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-      >
+      {/* Sub-header local (no sticky: MerchantNav ya ocupa el top) */}
+      <div className="border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl">
         <div className="mx-auto max-w-4xl px-4 py-4">
           <div className="flex items-center justify-between">
             <Link
@@ -315,11 +310,10 @@ export default function MenuManagementPage() {
               >
                 📂
               </motion.button>
-              <ThemeToggle />
             </div>
           </div>
         </div>
-      </motion.header>
+      </div>
 
       <main className="mx-auto max-w-4xl px-4 py-8">
         {/* QR Code Banner */}

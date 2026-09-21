@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence, useAnimationControls, useReducedMotion } from 'framer-motion';
@@ -62,6 +62,9 @@ const lineIdFor = (menuItemId: string, picks: SelectedOption[]) =>
 const unitPriceFor = (base: number, picks: SelectedOption[]) =>
   Math.round((base + picks.reduce((s, p) => s + p.priceDelta, 0)) * 100) / 100;
 
+/** Email invitado sanitizado (solo dígitos: "8888 1234" rompía OnvoPay). */
+const guestEmailFor = (digits: string) => `${digits || 'cliente'}@guest.checkout.invalid`;
+
 interface SelectedOption {
   groupId: string;
   groupName: string;
@@ -87,12 +90,6 @@ interface DeliveryInfo {
   instructions: string;
   zone: string;
 }
-
-const SAVED_ADDRESSES = [
-  { id: 'home', label: 'Casa', address: '' },
-  { id: 'work', label: '💼 Trabajo', address: '' },
-  { id: 'other', label: 'Otro', address: '' },
-];
 
 export default function MenuPage() {
   const params = useParams();
@@ -126,7 +123,6 @@ export default function MenuPage() {
     instructions: '',
     zone: '',
   });
-  const [selectedAddressType, setSelectedAddressType] = useState<string>('home');
 
   // Payment method
   type PaymentMethod = 'sinpe' | 'card' | 'cash' | 'crypto_usdc' | 'crypto_usdt';
@@ -152,7 +148,8 @@ export default function MenuPage() {
         setPayAvailability(next);
         setPaymentMethod((prev) => {
           const avail = next as Record<string, boolean>;
-          if (avail[prev === 'crypto_usdt' ? 'crypto' : prev]) return prev;
+          const key = prev.startsWith('crypto_') ? 'crypto' : prev;
+          if (avail[key]) return prev;
           const fallback: PaymentMethod[] = ['sinpe', 'card', 'cash'];
           return fallback.find((f) => avail[f]) ?? prev;
         });
@@ -163,6 +160,16 @@ export default function MenuPage() {
   // Payment state
   const [paymentPending, setPaymentPending] = useState(false);
   const [paymentIntent, setPaymentIntent] = useState<any>(null);
+  // Pedido ya creado con pago pendiente (modal descartado): reintentar el
+  // pago SIN crear otro pedido.
+  const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
+  // Espejo ref: los callbacks de pago se memoizan y verían el valor viejo.
+  const pendingOrderIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    pendingOrderIdRef.current = pendingOrderId;
+  }, [pendingOrderId]);
+  // Total congelado para el recibo (el carrito se vacía al pagar).
+  const [placedTotal, setPlacedTotal] = useState(0);
 
   // Socket for real-time order updates
   const { isConnected } = useSocket();
@@ -192,6 +199,18 @@ export default function MenuPage() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // Otro comercio (navegación cliente entre menús): carrito, zona y pedido
+  // pendiente son del anterior — resetear para no cobrarle a quien no es.
+  useEffect(() => {
+    setCart([]);
+    setDeliveryInfo({ address: '', phone: '', name: '', instructions: '', zone: '' });
+    setPendingOrderId(null);
+    setOrderSuccess(null);
+    setShowCheckout(false);
+    setPaymentPending(false);
+    setPaymentIntent(null);
+  }, [merchantId]);
 
   // Cart functions
   const addLine = useCallback((item: MenuItem, selected: SelectedOption[]) => {
@@ -311,10 +330,14 @@ export default function MenuPage() {
 
   const cartTotal = cart.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
-  // Sin comisión al cliente: paga productos + envío. El 15% lo paga el driver.
+  // Sin comisión al cliente: paga productos + envío. El envío es SIEMPRE el
+  // precio del barrio (sin "gratis +₡5000": el servidor no tiene esa regla).
   const zoneTrip = findDeliveryZone(deliveryInfo.zone)?.price ?? null;
-  const deliveryFee = zoneTrip ?? (cartTotal >= 5000 ? 0 : 500); // Sin barrio: regla anterior
+  const deliveryFee = zoneTrip ?? 500;
   const totalWithDelivery = cartTotal + deliveryFee;
+
+  /** Solo dígitos para validar y para el email invitado. */
+  const phoneDigits = deliveryInfo.phone.replace(/\D/g, '');
 
   // Filter items by category
   const filteredItems =
@@ -326,12 +349,20 @@ export default function MenuPage() {
   const canCheckout =
     deliveryInfo.address.trim().length > 0 &&
     deliveryInfo.zone.trim().length > 0 &&
-    deliveryInfo.phone.trim().length >= 8 &&
-    deliveryInfo.name.trim().length > 0;
+    phoneDigits.length >= 8 &&
+    deliveryInfo.name.trim().length > 0 &&
+    merchant?.isOpen !== false;
 
   // Checkout handler
   const handleCheckout = useCallback(async () => {
     if (cart.length === 0 || !merchant || !canCheckout) return;
+    if (merchant.isOpen === false) return;
+
+    // Pago pendiente de un pedido ya creado: reintentar SOLO el pago.
+    if (pendingOrderId) {
+      await retryPendingPayment();
+      return;
+    }
 
     setCheckingOut(true);
     try {
@@ -350,12 +381,13 @@ export default function MenuPage() {
         })),
         specialInstructions: deliveryInfo.instructions,
         distanceKm: 2.5,
-        customerPhone: deliveryInfo.phone,
+        customerPhone: phoneDigits,
         customerName: deliveryInfo.name,
         paymentMethod,
       };
 
       const order = await api.createOrder(orderData);
+      setPendingOrderId(order.id);
 
       // Handle payment based on method
       if (paymentMethod === 'sinpe' || paymentMethod === 'card') {
@@ -364,8 +396,8 @@ export default function MenuPage() {
           orderId: order.id,
           method: paymentMethod === 'sinpe' ? 'onvopay_sinpe' : 'onvopay_card',
           amount: totalWithDelivery,
-          customerPhone: deliveryInfo.phone,
-          customerEmail: deliveryInfo.phone + '@guest.checkout.invalid', // Temporary
+          customerPhone: phoneDigits,
+          customerEmail: guestEmailFor(phoneDigits),
         });
 
         if (
@@ -391,8 +423,10 @@ export default function MenuPage() {
         setPaymentPending(true);
       } else {
         // Cash payment - no external processing needed
+        setPlacedTotal(totalWithDelivery);
         setCart([]);
         setShowCheckout(false);
+        setPendingOrderId(null);
         setOrderSuccess(order.id);
       }
     } catch (err) {
@@ -401,18 +435,73 @@ export default function MenuPage() {
     } finally {
       setCheckingOut(false);
     }
-  }, [cart, merchant, deliveryInfo, canCheckout, paymentMethod, totalWithDelivery]);
+  }, [
+    cart,
+    merchant,
+    deliveryInfo,
+    canCheckout,
+    paymentMethod,
+    totalWithDelivery,
+    phoneDigits,
+    pendingOrderId,
+  ]);
+
+  // Reintenta SOLO el pago de un pedido ya creado (el modal se descartó).
+  const retryPendingPayment = useCallback(async () => {
+    if (!pendingOrderId) return;
+    setCheckingOut(true);
+    try {
+      if (paymentMethod === 'sinpe' || paymentMethod === 'card') {
+        const paymentResult = await api.createPayment({
+          orderId: pendingOrderId,
+          method: paymentMethod === 'sinpe' ? 'onvopay_sinpe' : 'onvopay_card',
+          amount: totalWithDelivery,
+          customerPhone: phoneDigits,
+          customerEmail: guestEmailFor(phoneDigits),
+        });
+        if (paymentResult.checkoutUrl && safeNavigateToUrl(paymentResult.checkoutUrl)) return;
+        setPaymentIntent(paymentResult);
+        setPaymentPending(true);
+      } else if (paymentMethod === 'crypto_usdc' || paymentMethod === 'crypto_usdt') {
+        const coin = paymentMethod === 'crypto_usdc' ? 'USDC' : 'USDT';
+        const paymentResult = await api.createPayment({
+          orderId: pendingOrderId,
+          method: 'crypto',
+          amount: totalWithDelivery,
+          cryptoCoin: coin,
+        });
+        setPaymentIntent(paymentResult);
+        setPaymentPending(true);
+      } else {
+        setPlacedTotal(totalWithDelivery);
+        setCart([]);
+        setShowCheckout(false);
+        setPendingOrderId(null);
+        setOrderSuccess(pendingOrderId);
+      }
+    } catch (err) {
+      console.error('Failed to retry payment:', err);
+      alert('No se pudo reintentar el pago. Intenta de nuevo.');
+    } finally {
+      setCheckingOut(false);
+    }
+  }, [pendingOrderId, paymentMethod, totalWithDelivery, phoneDigits]);
 
   // Payment success handler
   const handlePaymentSuccess = useCallback(
     (paymentId: string) => {
       setPaymentPending(false);
       setPaymentIntent(null);
+      // El recibo usa el total congelado y el ID real del pedido (el
+      // paymentId es del intent/proveedor y el tracking 404ea con él).
+      setPlacedTotal(totalWithDelivery);
       setCart([]);
       setShowCheckout(false);
-      setOrderSuccess(paymentIntent?.orderId || paymentId);
+      const realOrderId = pendingOrderIdRef.current;
+      setPendingOrderId(null);
+      setOrderSuccess(realOrderId || paymentId);
     },
-    [paymentIntent],
+    [totalWithDelivery],
   );
 
   // Payment error handler
@@ -464,7 +553,7 @@ export default function MenuPage() {
               <div className="flex justify-between">
                 <span className="text-surface-500 dark:text-surface-400">Total</span>
                 <span className="font-bold text-kiwi-600 dark:text-kiwi-400">
-                  ₡{totalWithDelivery.toLocaleString()}
+                  ₡{placedTotal.toLocaleString()}
                 </span>
               </div>
             </div>
@@ -1024,29 +1113,6 @@ export default function MenuPage() {
                     <MapPin className="h-4 w-4 inline" /> Dirección de entrega
                   </h3>
 
-                  {/* Saved Addresses */}
-                  <div className="flex gap-2 mb-3">
-                    {SAVED_ADDRESSES.map((addr) => (
-                      <motion.button
-                        key={addr.id}
-                        className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all ${
-                          selectedAddressType === addr.id
-                            ? 'bg-kiwi-100 dark:bg-kiwi-900/50 text-kiwi-700 dark:text-kiwi-400 ring-2 ring-kiwi-500'
-                            : 'bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400'
-                        }`}
-                        onClick={() => setSelectedAddressType(addr.id)}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        {addr.id === 'home' ? (
-                          <Home className="h-4 w-4 inline" />
-                        ) : addr.id === 'other' ? (
-                          <MapPin className="h-4 w-4 inline" />
-                        ) : null}{' '}
-                        {addr.label}
-                      </motion.button>
-                    ))}
-                  </div>
-
                   <AddressInput
                     value={deliveryInfo.address}
                     onChange={(address, coordinates) => {
@@ -1186,59 +1252,61 @@ export default function MenuPage() {
                   </div>
 
                   {/* Crypto Options */}
-                  <div className="grid grid-cols-2 gap-3 mt-3">
-                    {[
-                      {
-                        id: 'crypto_usdc' as const,
-                        icon: DollarSign,
-                        label: 'USDC',
-                        desc: 'Stellar',
-                      },
-                      {
-                        id: 'crypto_usdt' as const,
-                        icon: DollarSign,
-                        label: 'USDT',
-                        desc: 'Stellar',
-                      },
-                    ].map((method) => {
-                      const CryptoIcon = method.icon as any;
-                      return (
-                        <motion.button
-                          key={method.id}
-                          type="button"
-                          className={`flex items-center gap-3 p-3 rounded-xl transition-all ${
-                            paymentMethod === method.id
-                              ? 'bg-purple-100 dark:bg-purple-900/50 ring-2 ring-purple-500 shadow-purple'
-                              : 'bg-surface-100 dark:bg-surface-700 hover:bg-surface-200 dark:hover:bg-surface-600'
-                          }`}
-                          onClick={() => setPaymentMethod(method.id)}
-                          whileTap={{ scale: 0.95 }}
-                        >
-                          <span className="text-xl">
-                            {typeof method.icon === 'string' ? (
-                              method.icon
-                            ) : (
-                              <CryptoIcon className="h-6 w-6" />
-                            )}
-                          </span>
-                          <div className="text-left">
-                            <span
-                              className={`text-sm font-semibold ${
-                                paymentMethod === method.id
-                                  ? 'text-purple-700 dark:text-purple-400'
-                                  : 'text-surface-700 dark:text-surface-300'
-                              }`}
-                            >
-                              {method.label}
+                  {payAvailability.crypto && (
+                    <div className="grid grid-cols-2 gap-3 mt-3">
+                      {[
+                        {
+                          id: 'crypto_usdc' as const,
+                          icon: DollarSign,
+                          label: 'USDC',
+                          desc: 'Stellar',
+                        },
+                        {
+                          id: 'crypto_usdt' as const,
+                          icon: DollarSign,
+                          label: 'USDT',
+                          desc: 'Stellar',
+                        },
+                      ].map((method) => {
+                        const CryptoIcon = method.icon as any;
+                        return (
+                          <motion.button
+                            key={method.id}
+                            type="button"
+                            className={`flex items-center gap-3 p-3 rounded-xl transition-all ${
+                              paymentMethod === method.id
+                                ? 'bg-purple-100 dark:bg-purple-900/50 ring-2 ring-purple-500 shadow-purple'
+                                : 'bg-surface-100 dark:bg-surface-700 hover:bg-surface-200 dark:hover:bg-surface-600'
+                            }`}
+                            onClick={() => setPaymentMethod(method.id)}
+                            whileTap={{ scale: 0.95 }}
+                          >
+                            <span className="text-xl">
+                              {typeof method.icon === 'string' ? (
+                                method.icon
+                              ) : (
+                                <CryptoIcon className="h-6 w-6" />
+                              )}
                             </span>
-                            <span className="text-xs text-surface-400 dark:text-surface-500 block">
-                              {method.desc}
-                            </span>
-                          </div>
-                        </motion.button>
-                      );
-                    })}
-                  </div>
+                            <div className="text-left">
+                              <span
+                                className={`text-sm font-semibold ${
+                                  paymentMethod === method.id
+                                    ? 'text-purple-700 dark:text-purple-400'
+                                    : 'text-surface-700 dark:text-surface-300'
+                                }`}
+                              >
+                                {method.label}
+                              </span>
+                              <span className="text-xs text-surface-400 dark:text-surface-500 block">
+                                {method.desc}
+                              </span>
+                            </div>
+                          </motion.button>
+                        );
+                      })}
+                    </div>
+                  )}
 
                   {/* SINPE Phone Input */}
                   {paymentMethod === 'sinpe' && (
@@ -1318,12 +1386,6 @@ export default function MenuPage() {
                         )}
                       </span>
                     </div>
-                    {zoneTrip == null && cartTotal < 5000 && (
-                      <p className="text-xs text-kiwi-600 dark:text-kiwi-400">
-                        <PartyPopper className="h-4 w-4 inline" /> Envío gratis en pedidos mayores a
-                        ₡5,000
-                      </p>
-                    )}
                     <div className="border-t border-surface-200 dark:border-surface-700 pt-2 mt-2">
                       <div className="flex justify-between">
                         <span className="font-semibold text-surface-800 dark:text-surface-200">

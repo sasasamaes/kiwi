@@ -88,6 +88,8 @@ export default function OrdersPage() {
   const [search, setSearch] = useState('');
   const [expanded, setExpanded] = useState<string | null>(null);
   const [flashId, setFlashId] = useState<string | null>(null);
+  // Aviso de rechazo: el asignado devolvió el pedido, hay que reasignar.
+  const [rejected, setRejected] = useState<{ orderId: string; driverName?: string } | null>(null);
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchOrders = useCallback(async (silent = false) => {
@@ -133,6 +135,12 @@ export default function OrdersPage() {
     const offs = [
       onSocket('order:driverAssigned', (d: any) => scheduleRefresh(d?.orderId)),
       onSocket('order:proposalReceived', (d: any) => scheduleRefresh(d?.orderId)),
+      onSocket('order:rejected', (d: any) => {
+        scheduleRefresh(d?.orderId);
+        if (d?.orderId) {
+          setRejected({ orderId: d.orderId, driverName: d?.driverName });
+        }
+      }),
     ];
     return () => offs.forEach((off) => off());
   }, [onSocket, scheduleRefresh]);
@@ -195,6 +203,33 @@ export default function OrdersPage() {
         </div>
 
         {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+
+        {rejected && (
+          <div className="mt-4 flex items-center gap-3 rounded-2xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 p-4">
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">
+                {rejected.driverName ? `${rejected.driverName} rechazó` : 'Rechazaron'} el pedido #
+                {rejected.orderId.slice(0, 8).toUpperCase()}
+              </p>
+              <p className="text-xs text-amber-700 dark:text-amber-300">
+                Volvió a concurso. Reasignalo a otro repartidor.
+              </p>
+            </div>
+            <Link
+              href="/drivers"
+              className="shrink-0 rounded-xl bg-kiwi-500 px-4 py-2 text-sm font-semibold text-white"
+            >
+              Reasignar
+            </Link>
+            <button
+              onClick={() => setRejected(null)}
+              aria-label="Descartar aviso"
+              className="shrink-0 rounded-xl p-2 text-amber-600 dark:text-amber-400"
+            >
+              ✕
+            </button>
+          </div>
+        )}
 
         {/* Tabs */}
         <div className="mt-4 flex gap-2 overflow-x-auto pb-1">

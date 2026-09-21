@@ -7,6 +7,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { FeatureFlagsService } from '../feature-flags/feature-flags';
 import { isKycRequired } from '../feature-flags/feature-flags';
+import { startOfTodayCR, startOfMonthCR, toCRDateKey } from '../common/costa-rica-time';
 
 const VALID_DRIVER_STATUSES = ['offline', 'available', 'busy'] as const;
 
@@ -226,8 +227,24 @@ export class DriversService {
     const location = this.driverLocations.get(driverId);
 
     if (!location) {
-      // No fix ever reported: coords are map-center fallback only.
-      // Consumers must check `known === false` / isStale before plotting.
+      // Fallback a la última conocida en DB (reinicios, multi-instancia o
+      // pings que entraron por otro canal). Solo si no hay nada: fallback
+      // ciego marcado como desconocido — el consumidor NO debe plotearlo.
+      // try/catch (no .catch encadenado) porque el mock/driver puede
+      // devolver no-promesa en tests.
+      let db: any = null;
+      try {
+        db = await this.prisma.driverProfile.findUnique({ where: { id: driverId } });
+      } catch {
+        db = null;
+      }
+      const lat = Number((db as any)?.lastLat);
+      const lng = Number((db as any)?.lastLng);
+      if (db && Number.isFinite(lat) && Number.isFinite(lng)) {
+        const at = (db as any).lastSeenAt ? new Date((db as any).lastSeenAt) : null;
+        const isStale = !at || Date.now() - at.getTime() > 5 * 60 * 1000;
+        return { driverId, lat, lng, updatedAt: at, isStale, known: true };
+      }
       return {
         driverId,
         lat: 10.1483,
@@ -304,13 +321,13 @@ export class DriversService {
 
     switch (period) {
       case 'today':
-        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        startDate = startOfTodayCR(now);
         break;
       case 'week':
         startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
         break;
       case 'month':
-        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        startDate = startOfMonthCR(now, 0);
         break;
       default:
         startDate = undefined;
@@ -344,9 +361,7 @@ export class DriversService {
     // Daily breakdown for chart
     const dailyBreakdown: Record<string, number> = {};
     orders.forEach((order) => {
-      const date = order.deliveredAt
-        ? new Date(order.deliveredAt).toISOString().split('T')[0]
-        : new Date(order.createdAt).toISOString().split('T')[0];
+      const date = toCRDateKey(order.deliveredAt ?? order.createdAt);
       dailyBreakdown[date] = (dailyBreakdown[date] || 0) + Number(order.driverPayout);
     });
 

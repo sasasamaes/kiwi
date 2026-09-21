@@ -1,5 +1,6 @@
 'use client';
 
+import 'leaflet/dist/leaflet.css';
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Bike, MapPin, Home, AlertTriangle } from 'lucide-react';
@@ -63,15 +64,10 @@ const MARKER_SVGS = {
   },
 };
 
-// Proveedor primario (CDN rápido, sin key) + respaldo OSM si falla en la
-// red del dispositivo. Ambos exigen atribución: se muestra en la leyenda.
-const CARTO_URL = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
-const CARTO_OPTIONS = {
-  maxZoom: 20,
-  subdomains: 'abcd',
-  attribution: '© OpenStreetMap contributors © CARTO',
-};
-const OSM_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+// OpenStreetMap directo (sin key). CARTO ahora exige API key y devuelve
+// mosaicos "API KEY REQUIRED" que disparan tileload: con fallback nunca se
+// detectaba la falla. Un solo proveedor + error accionable a los 10s.
+const OSM_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 const OSM_OPTIONS = {
   maxZoom: 19,
   attribution: '© OpenStreetMap contributors',
@@ -100,14 +96,11 @@ export function TrackingMap({
 
     let cancelled = false;
     let tilesOk = false;
-    let tileErrors = 0;
-    let fallbackAdded = false;
     let failTimer: ReturnType<typeof setTimeout> | null = null;
 
     const initMap = async () => {
       try {
         L = await import('leaflet');
-        await import('leaflet/dist/leaflet.css' as string);
         if (cancelled || !mapRef.current) return;
 
         const map = L.map(mapRef.current, {
@@ -117,29 +110,12 @@ export function TrackingMap({
           attributionControl: false,
         });
 
-        const addTileLayer = (url: string, options: any) => {
-          const layer = L.tileLayer(url, options);
-          layer.on('tileload', () => {
-            tilesOk = true;
-          });
-          layer.on('tileerror', () => {
-            tileErrors += 1;
-            // Si el proveedor primario falla, cambiar a OSM una sola vez.
-            if (!fallbackAdded && tileErrors >= 3 && !tilesOk) {
-              fallbackAdded = true;
-              if (tileLayerRef.current) {
-                tileLayerRef.current.remove();
-              }
-              tileErrors = 0;
-              tileLayerRef.current = addTileLayer(OSM_URL, OSM_OPTIONS);
-            }
-          });
-          layer.addTo(map);
-          tileLayerRef.current = layer;
-          return layer;
-        };
-
-        addTileLayer(CARTO_URL, CARTO_OPTIONS);
+        const layer = L.tileLayer(OSM_URL, OSM_OPTIONS);
+        layer.on('tileload', () => {
+          tilesOk = true;
+        });
+        layer.addTo(map);
+        tileLayerRef.current = layer;
 
         // Sin ningún mosaico en 10s: mostrar error accionable en vez de
         // una pantalla azul muda (red bloqueada, DNS, proveedor caído…).
@@ -303,9 +279,7 @@ export function TrackingMap({
               </div>
             )}
           </div>
-          <p className="mt-1 text-[10px] text-surface-400 dark:text-surface-500">
-            © OpenStreetMap · © CARTO
-          </p>
+          <p className="mt-1 text-[10px] text-surface-400 dark:text-surface-500">© OpenStreetMap</p>
         </motion.div>
       )}
 

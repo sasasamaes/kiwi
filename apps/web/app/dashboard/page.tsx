@@ -87,9 +87,15 @@ export default function Dashboard() {
   });
 
   useEffect(() => {
-    if (!authLoading && !user) {
+    if (authLoading) return;
+    if (!user) {
       router.push('/login');
+      return;
     }
+    const role = (user as any)?.role;
+    // El dashboard es del comercio: admin a su panel, otros roles a login.
+    if (role === 'admin') router.replace('/admin');
+    else if (role && role !== 'merchant') router.replace('/login');
   }, [user, authLoading, router]);
 
   const fetchOrders = async () => {

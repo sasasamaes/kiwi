@@ -132,6 +132,51 @@ export const NICOYA_DELIVERY_ZONES: DeliveryZone[] = [
     referenceOnly: true,
   },
   {
+    id: 'brisas-del-cerro',
+    label: 'Brisas del cerro',
+    price: 1500,
+    latitude: null,
+    longitude: null,
+    geometry: null,
+    referenceOnly: true,
+  },
+  {
+    id: 'hospital-emergencias',
+    label: 'Hospital · Emergencias',
+    price: 1500,
+    latitude: null,
+    longitude: null,
+    geometry: null,
+    referenceOnly: true,
+  },
+  {
+    id: 'hospital-visitas',
+    label: 'Hospital · Visitas',
+    price: 1500,
+    latitude: null,
+    longitude: null,
+    geometry: null,
+    referenceOnly: true,
+  },
+  {
+    id: 'hospital-laboratorio',
+    label: 'Hospital · Laboratorio',
+    price: 1500,
+    latitude: null,
+    longitude: null,
+    geometry: null,
+    referenceOnly: true,
+  },
+  {
+    id: 'hospital-atras',
+    label: 'Hospital · Atrás',
+    price: 1500,
+    latitude: null,
+    longitude: null,
+    geometry: null,
+    referenceOnly: true,
+  },
+  {
     id: 'casitas',
     label: 'Casitas',
     price: 2000,
@@ -259,6 +304,80 @@ export function findDeliveryZone(ref: unknown): DeliveryZone | null {
   const key = ref.trim().toLowerCase();
   if (!key) return null;
   return byId.get(key) ?? byLabel.get(key) ?? null;
+}
+
+// ---------------------------------------------------------------------------
+// Detección best-effort de zona a partir de texto libre (espejo de
+// @kiwi/types: mismas reglas — cambia allá, cambia acá).
+// ---------------------------------------------------------------------------
+
+const normTokens = (s: string): string[] =>
+  s
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .split(' ')
+    .filter(Boolean);
+
+// Cada regla: TODOS los tokens deben aparecer. Orden = especificidad
+// ("Reserva Curime" antes que "Curime"; "Bosques adentro/afuera" antes que
+// nada). Ante ambigüedad ("Bosques" sin calificar) no adivina.
+const DETECTION_RULES: Array<{ tokens: string[]; zoneId: string }> = [
+  { tokens: ['reserva', 'curime'], zoneId: 'reserva-curime' },
+  { tokens: ['bosques', 'adentro'], zoneId: 'bosques-adentro' },
+  { tokens: ['bosques', 'afuera'], zoneId: 'bosques-afuera' },
+  { tokens: ['cruce'], zoneId: 'cruce-afuera' },
+  { tokens: ['aeropuerto'], zoneId: 'barrio-aeropuerto' },
+  { tokens: ['san', 'martin'], zoneId: 'san-martin' },
+  { tokens: ['angeles'], zoneId: 'los-angeles' },
+  { tokens: ['santa', 'lucia'], zoneId: 'santa-lucia' },
+  { tokens: ['granja'], zoneId: 'la-granja' },
+  { tokens: ['brisas', 'cerro'], zoneId: 'brisas-del-cerro' },
+  { tokens: ['hospital', 'emergencias'], zoneId: 'hospital-emergencias' },
+  { tokens: ['hospital', 'visitas'], zoneId: 'hospital-visitas' },
+  { tokens: ['hospital', 'laboratorio'], zoneId: 'hospital-laboratorio' },
+  { tokens: ['hospital', 'atras'], zoneId: 'hospital-atras' },
+  { tokens: ['emergencias'], zoneId: 'hospital-emergencias' },
+  { tokens: ['laboratorio'], zoneId: 'hospital-laboratorio' },
+  { tokens: ['visitas'], zoneId: 'hospital-visitas' },
+  { tokens: ['caimital'], zoneId: 'caimital' },
+  { tokens: ['caimito'], zoneId: 'caimito' },
+  { tokens: ['monte', 'galan'], zoneId: 'monte-galan' },
+  { tokens: ['galan'], zoneId: 'monte-galan' },
+  { tokens: ['moracia'], zoneId: 'moracia' },
+  { tokens: ['matabuey'], zoneId: 'matabuey' },
+  { tokens: ['casitas'], zoneId: 'casitas' },
+  { tokens: ['casita'], zoneId: 'casitas' },
+  { tokens: ['curime'], zoneId: 'curime' },
+  { tokens: ['llano'], zoneId: 'llano' },
+  { tokens: ['nambi'], zoneId: 'nambi' },
+  { tokens: ['mansion'], zoneId: 'mansion' },
+  { tokens: ['hojancha'], zoneId: 'hojancha' },
+  { tokens: ['carmen'], zoneId: 'carmen' },
+  { tokens: ['cananga'], zoneId: 'cananga' },
+  { tokens: ['virginia'], zoneId: 'virginia' },
+  { tokens: ['cementerio'], zoneId: 'cementerio' },
+  { tokens: ['centro'], zoneId: 'centro' },
+];
+
+/** Detecta zona a partir de texto libre (dirección, displayName, etc.). */
+export function detectDeliveryZoneFromText(
+  ...texts: Array<string | null | undefined>
+): DeliveryZone | null {
+  const tokens = new Set<string>();
+  for (const t of texts) {
+    if (!t) continue;
+    for (const tok of normTokens(t)) tokens.add(tok);
+  }
+  if (tokens.size === 0) return null;
+  for (const rule of DETECTION_RULES) {
+    if (rule.tokens.every((tok) => tokens.has(tok))) {
+      return byId.get(rule.zoneId) ?? null;
+    }
+  }
+  return null;
 }
 
 /** Distancia Haversine en km (WGS84). */

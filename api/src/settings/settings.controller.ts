@@ -33,7 +33,6 @@ export class SettingsController {
   async getAll() {
     return this.settingsService.getAll();
   }
-
   @Put('admin')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
@@ -41,5 +40,27 @@ export class SettingsController {
   @ApiOperation({ summary: 'Guardar ajustes (admin)' })
   async saveAll(@Body() body: any) {
     return this.settingsService.saveAll(body ?? {});
+  }
+
+  @Get('scenario-history')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Historial mensual de escenarios fijados (reporte Real vs Proyección)',
+  })
+  async listScenarioHistory() {
+    return this.settingsService.listScenarioSnapshots();
+  }
+
+  @Put('scenario-history')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Fijar (o re-fijar) el escenario proyectado de un mes YYYY-MM',
+  })
+  async upsertScenarioSnapshot(@Body() body: any) {
+    return this.settingsService.upsertScenarioSnapshot(body ?? {});
   }
 }

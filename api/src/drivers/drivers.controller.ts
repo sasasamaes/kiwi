@@ -87,7 +87,8 @@ export class DriversController {
   }
 
   @Get('available')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('merchant', 'admin')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get available drivers' })
   @ApiQuery({ name: 'lat', required: false })
@@ -99,7 +100,8 @@ export class DriversController {
   }
 
   @Get(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get driver by ID' })
   async getDriver(@Param('id') id: string) {

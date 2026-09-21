@@ -16,7 +16,10 @@ describe('EventsGateway payload restrictions', () => {
       {} as any,
       {
         order: { findUnique: jest.fn() },
-        driverProfile: { update: jest.fn().mockResolvedValue({}) },
+        driverProfile: {
+          update: jest.fn().mockResolvedValue({}),
+          findUnique: jest.fn(),
+        },
       } as any,
     );
     (gateway as any).server = { to: jest.fn().mockReturnValue({ emit: emitMock }) };
@@ -113,13 +116,41 @@ describe('EventsGateway payload restrictions', () => {
     it('ignores the client-supplied driverId and uses the token identity', async () => {
       connect('driver', 'driver-user-1');
       (gateway as any).prisma.order.findUnique.mockResolvedValue({
+        id: 'ord-1',
+        driverId: 'dp-1',
         merchant: { userId: 'merchant-user-1' },
       });
+      (gateway as any).prisma.driverProfile.findUnique.mockResolvedValue({ id: 'dp-1' });
       await gateway.handleOrderAccept(client, { orderId: 'ord-1', driverId: 'SPOOFED' });
       expect(emitMock).toHaveBeenCalledWith(
         'order:accepted',
         expect.objectContaining({ driverId: 'driver-user-1' }),
       );
+    });
+
+    it('no avisa al comercio si el pedido no está asignado (accept fantasma)', async () => {
+      connect('driver', 'driver-user-1');
+      (gateway as any).prisma.order.findUnique.mockResolvedValue({
+        id: 'ord-1',
+        driverId: null,
+        merchant: { userId: 'merchant-user-1' },
+      });
+      const res = await gateway.handleOrderAccept(client, { orderId: 'ord-1', driverId: 'x' });
+      expect(res).toEqual({ error: 'El pedido aún no fue aceptado' });
+      expect(emitMock).not.toHaveBeenCalled();
+    });
+
+    it('no avisa si emite otro driver distinto al asignado', async () => {
+      connect('driver', 'intruder');
+      (gateway as any).prisma.order.findUnique.mockResolvedValue({
+        id: 'ord-1',
+        driverId: 'dp-1',
+        merchant: { userId: 'merchant-user-1' },
+      });
+      (gateway as any).prisma.driverProfile.findUnique.mockResolvedValue({ id: 'dp-9' });
+      const res = await gateway.handleOrderAccept(client, { orderId: 'ord-1', driverId: 'x' });
+      expect(res).toEqual({ error: 'No sos el repartidor asignado' });
+      expect(emitMock).not.toHaveBeenCalled();
     });
 
     it('rejects malformed orderId', async () => {

@@ -25,7 +25,7 @@ export class NotificationsController {
     @Query('unreadOnly') unreadOnly?: string,
   ) {
     return this.notificationsService.getUserNotifications(user.sub, {
-      limit: limit ? parseInt(limit) : 50,
+      limit: limit ? Math.min(Math.max(parseInt(limit) || 50, 1), 100) : 50,
       unreadOnly: unreadOnly === 'true',
     });
   }

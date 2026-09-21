@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { AnimatedButton, TrackingMap, Skeleton, useSocket, api, Order } from '@kiwi/ui';
 import { ArrowLeft, Clock, Check, Bike, Package, Rocket, PartyPopper, X, Star } from 'lucide-react';
@@ -77,6 +77,10 @@ function StatusIcon({ status }: { status: string }) {
 
 export default function TrackingPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
+  // Vuelta desde OnvoPay (returnUrl/cancelUrl del intent).
+  const paidFlag = searchParams.get('paid') === '1';
+  const cancelledFlag = searchParams.get('cancelled') === '1';
   const orderId = (params.id as string) ?? '';
 
   const [order, setOrder] = useState<Order | null>(null);
@@ -95,6 +99,23 @@ export default function TrackingPage() {
     },
   });
 
+  const STATUS_LABELS: Record<string, string> = {
+    pending: 'Pedido recibido',
+    assigned: 'Repartidor asignado',
+    in_transit_to_pickup: 'En camino a recoger',
+    picked_up: 'Pedido recogido',
+    in_transit_to_delivery: 'En camino a entregar',
+    delivered: 'Entregado',
+    cancelled: 'Cancelado',
+  };
+
+  const etaForStatus = (status?: string | null): number | null => {
+    if (status === 'in_transit_to_delivery') return 15;
+    if (status === 'picked_up') return 25;
+    if (status === 'delivered') return 0;
+    return null;
+  };
+
   const fetchOrder = useCallback(
     async (silent = false) => {
       if (!orderId) {
@@ -110,6 +131,26 @@ export default function TrackingPage() {
           : await api.getPublicTracking(orderId);
         setOrder(data);
         setCurrentStatus(data.status as OrderStatus);
+        // Sin socket (invitados): historial y ETA salen de los timestamps
+        // REST en vez de quedar vacíos para siempre.
+        const seed: { status: string; timestamp: Date; message: string }[] = [];
+        const push = (status: string, ts: any) => {
+          if (!ts) return;
+          const t = new Date(ts);
+          if (isNaN(t.getTime())) return;
+          seed.push({ status, timestamp: t, message: STATUS_LABELS[status] ?? status });
+        };
+        push('pending', data.createdAt);
+        push('assigned', data.assignedAt);
+        push('in_transit_to_pickup', (data as any).inTransitToPickupAt);
+        push('picked_up', data.pickedUpAt);
+        push('in_transit_to_delivery', (data as any).inTransitToDeliveryAt);
+        push('delivered', data.deliveredAt);
+        if (seed.length > 0) {
+          seed.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+          setStatusHistory(seed);
+        }
+        setEta((prev) => prev ?? etaForStatus(data.status));
         setError(null);
       } catch {
         if (!silent) setError('No se pudo cargar el pedido');
@@ -140,7 +181,10 @@ export default function TrackingPage() {
 
   useEffect(() => {
     fetchOrder();
-  }, [fetchOrder]);
+    // La ubicación pública no necesita driverId: pedirla ya (si no, los
+    // invitados esperan hasta 15s al primer tick del polling).
+    fetchLocation();
+  }, [fetchOrder, fetchLocation]);
 
   // Invitados sin socket: polling honesto cada 15s en vez de "en vivo".
   useEffect(() => {
@@ -200,19 +244,20 @@ export default function TrackingPage() {
     truck: 'Camión',
   };
 
-  // API may include real coords; fall back to Nicoya center when absent.
-  const numOr = (v: unknown, fb: number) => {
-    const n = Number(v);
-    return Number.isFinite(n) ? n : fb;
+  // Solo coords REALES: null/undefined/'' (Number(null) === 0, ¡finito!)
+  // iban a parar al (0,0) del Golfo de Guinea — "el pedido en África".
+  // Sin GPS no se inventa pin: se muestra lo que sí se conoce.
+  const validPoint = (lat: unknown, lng: unknown): { lat: number; lng: number } | undefined => {
+    if (lat == null || lng == null || lat === '' || lng === '') return undefined;
+    const la = Number(lat);
+    const ln = Number(lng);
+    if (!Number.isFinite(la) || !Number.isFinite(ln)) return undefined;
+    if (la === 0 && ln === 0) return undefined;
+    if (la < -90 || la > 90 || ln < -180 || ln > 180) return undefined;
+    return { lat: la, lng: ln };
   };
-  const pickup = {
-    lat: numOr((order as any)?.pickupLat, 10.1483),
-    lng: numOr((order as any)?.pickupLng, -85.4527),
-  };
-  const delivery = {
-    lat: numOr((order as any)?.deliveryLat, 10.1583),
-    lng: numOr((order as any)?.deliveryLng, -85.4627),
-  };
+  const pickup = validPoint((order as any)?.pickupLat, (order as any)?.pickupLng);
+  const delivery = validPoint((order as any)?.deliveryLat, (order as any)?.deliveryLng);
 
   if (loading) {
     return (
@@ -271,6 +316,19 @@ export default function TrackingPage() {
       </motion.header>
 
       <main className="mx-auto max-w-lg px-4 py-6">
+        {(paidFlag || cancelledFlag) && (
+          <div
+            className={`mb-4 rounded-xl border px-4 py-3 text-sm ${
+              paidFlag
+                ? 'border-kiwi-200 bg-kiwi-50 text-kiwi-700 dark:border-kiwi-800 dark:bg-kiwi-900/20 dark:text-kiwi-300'
+                : 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300'
+            }`}
+          >
+            {paidFlag
+              ? 'Pago recibido, ¡gracias! Tu pedido sigue su curso.'
+              : 'El pago se canceló. Tu pedido sigue activo: coordinamos el cobro por WhatsApp.'}
+          </div>
+        )}
         <motion.div
           className="rounded-2xl overflow-hidden mb-6"
           initial={{ opacity: 0, scale: 0.95 }}
@@ -286,6 +344,11 @@ export default function TrackingPage() {
             showTraffic={true}
           />
         </motion.div>
+        {!delivery && (
+          <p className="mb-6 -mt-3 text-center text-xs text-surface-400">
+            Este pedido no trae GPS de entrega: la dirección escrita vale.
+          </p>
+        )}
 
         <motion.div
           className={`mb-4 px-3 py-1.5 rounded-full text-xs font-medium inline-flex items-center gap-1.5 ${

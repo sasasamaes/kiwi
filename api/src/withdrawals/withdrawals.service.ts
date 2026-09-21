@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { isKycRequired } from '../feature-flags/feature-flags';
@@ -206,7 +211,7 @@ export class WithdrawalsService {
     }
 
     if (withdrawal.driverId !== driverProfile.id) {
-      throw new BadRequestException('No tienes acceso a este retiro');
+      throw new ForbiddenException('No tienes acceso a este retiro');
     }
 
     return withdrawal;
@@ -230,7 +235,7 @@ export class WithdrawalsService {
     }
 
     if (withdrawal.driverId !== driverProfile.id) {
-      throw new BadRequestException('No tienes acceso a este retiro');
+      throw new ForbiddenException('No tienes acceso a este retiro');
     }
 
     if (withdrawal.status !== 'pending') {
@@ -265,21 +270,10 @@ export class WithdrawalsService {
   }
 
   async approveWithdrawal(id: string, adminUserId: string, transactionId?: string) {
-    const withdrawal = await this.prisma.withdrawal.findUnique({
-      where: { id },
-      include: { driver: true },
-    });
-
-    if (!withdrawal) {
-      throw new NotFoundException('Retiro no encontrado');
-    }
-
-    if (withdrawal.status !== 'pending') {
-      throw new BadRequestException('El retiro ya fue procesado');
-    }
-
-    const updated = await this.prisma.withdrawal.update({
-      where: { id },
+    // Atómico: solo un admin puede sacar el retiro de 'pending'. Doble clic
+    // o dos admins concurrentes → el perdedor ve count 0 y recibe error.
+    const claimed = await this.prisma.withdrawal.updateMany({
+      where: { id, status: 'pending' },
       data: {
         status: 'processing',
         processedAt: new Date(),
@@ -287,35 +281,41 @@ export class WithdrawalsService {
         transactionId,
       },
     });
+    if (claimed.count === 0) {
+      const current = await this.prisma.withdrawal.findUnique({ where: { id } });
+      if (!current) throw new NotFoundException('Retiro no encontrado');
+      throw new BadRequestException('El retiro ya fue procesado');
+    }
+    const withdrawal = await this.prisma.withdrawal.findUnique({
+      where: { id },
+      include: { driver: true },
+    });
 
     // Notify driver (push + inbox vía notifications service)
     await this.notificationsService
       .notifyWithdrawalStatus(withdrawal.driver.userId, 'processing', Number(withdrawal.amount))
       .catch(() => null);
 
-    return updated;
+    return withdrawal;
   }
 
   async completeWithdrawal(id: string, transactionId: string) {
-    const withdrawal = await this.prisma.withdrawal.findUnique({
-      where: { id },
-      include: { driver: true },
-    });
-
-    if (!withdrawal) {
-      throw new NotFoundException('Retiro no encontrado');
-    }
-
-    if (withdrawal.status !== 'processing') {
-      throw new BadRequestException('El retiro no está en proceso');
-    }
-
-    const updated = await this.prisma.withdrawal.update({
-      where: { id },
+    // Atómico: solo se puede completar desde 'processing'.
+    const claimed = await this.prisma.withdrawal.updateMany({
+      where: { id, status: 'processing' },
       data: {
         status: 'completed',
         transactionId,
       },
+    });
+    if (claimed.count === 0) {
+      const current = await this.prisma.withdrawal.findUnique({ where: { id } });
+      if (!current) throw new NotFoundException('Retiro no encontrado');
+      throw new BadRequestException('El retiro no está en proceso');
+    }
+    const withdrawal = await this.prisma.withdrawal.findUnique({
+      where: { id },
+      include: { driver: true },
     });
 
     // Notify driver (push + inbox vía notifications service)
@@ -323,25 +323,13 @@ export class WithdrawalsService {
       .notifyWithdrawalStatus(withdrawal.driver.userId, 'completed', Number(withdrawal.amount))
       .catch(() => null);
 
-    return updated;
+    return withdrawal;
   }
 
   async rejectWithdrawal(id: string, adminUserId: string, reason: string) {
-    const withdrawal = await this.prisma.withdrawal.findUnique({
-      where: { id },
-      include: { driver: true },
-    });
-
-    if (!withdrawal) {
-      throw new NotFoundException('Retiro no encontrado');
-    }
-
-    if (withdrawal.status !== 'pending') {
-      throw new BadRequestException('El retiro ya fue procesado');
-    }
-
-    const updated = await this.prisma.withdrawal.update({
-      where: { id },
+    // Atómico: solo se puede rechazar desde 'pending'.
+    const claimed = await this.prisma.withdrawal.updateMany({
+      where: { id, status: 'pending' },
       data: {
         status: 'rejected',
         rejectionReason: reason,
@@ -349,12 +337,21 @@ export class WithdrawalsService {
         processedBy: adminUserId,
       },
     });
+    if (claimed.count === 0) {
+      const current = await this.prisma.withdrawal.findUnique({ where: { id } });
+      if (!current) throw new NotFoundException('Retiro no encontrado');
+      throw new BadRequestException('El retiro ya fue procesado');
+    }
+    const withdrawal = await this.prisma.withdrawal.findUnique({
+      where: { id },
+      include: { driver: true },
+    });
 
     // Notify driver (push + inbox vía notifications service)
     await this.notificationsService
       .notifyWithdrawalStatus(withdrawal.driver.userId, 'rejected', Number(withdrawal.amount))
       .catch(() => null);
 
-    return updated;
+    return withdrawal;
   }
 }

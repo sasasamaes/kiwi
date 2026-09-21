@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards, Request, ForbiddenException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -58,7 +58,9 @@ export class AnalyticsController {
       return this.analyticsService.getMerchantAnalytics(userId, { period: AnalyticsPeriod.WEEK });
     } else if (role === 'driver') {
       return this.analyticsService.getDriverAnalytics(userId, { period: AnalyticsPeriod.WEEK });
+    } else if (role === 'admin') {
+      return this.analyticsService.getPlatformAnalytics({ period: AnalyticsPeriod.WEEK });
     }
-    return this.analyticsService.getPlatformAnalytics({ period: AnalyticsPeriod.WEEK });
+    throw new ForbiddenException('Rol no autorizado');
   }
 }

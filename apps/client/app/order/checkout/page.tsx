@@ -76,6 +76,8 @@ function CheckoutContent() {
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // El pedido puede existir sin cobro iniciado: avisar en vez de prometer link.
+  const [payError, setPayError] = useState<string | null>(null);
 
   useEffect(() => {
     // Parse cart from URL params
@@ -120,10 +122,11 @@ function CheckoutContent() {
   const zoneTrip = findDeliveryZone(deliveryZone)?.price ?? null;
   const deliveryFee = zoneTrip ?? (subtotal >= 5000 ? 0 : 500);
   const total = subtotal + deliveryFee;
+  const phoneDigits = phoneNumber.replace(/\D/g, '');
 
   const canPlaceOrder =
     customerName.trim().length > 0 &&
-    phoneNumber.trim().length >= 8 &&
+    phoneDigits.length >= 8 &&
     address.trim().length > 0 &&
     deliveryZone.trim().length > 0 &&
     cart.length > 0;
@@ -151,7 +154,7 @@ function CheckoutContent() {
         })),
         specialInstructions: notes,
         distanceKm: 2.5,
-        customerPhone: phoneNumber,
+        customerPhone: phoneDigits,
         customerName,
         paymentMethod,
       };
@@ -159,6 +162,9 @@ function CheckoutContent() {
       const order = await api.createOrder(orderData);
       setOrderId(order.id);
 
+      // Si el cobro no se puede iniciar, el pedido igual existe: se avisa
+      // en la pantalla de éxito en vez de prometer un link que no existe.
+      let paySetupOk = paymentMethod === 'cash';
       // Process payment based on method
       if (paymentMethod === 'sinpe' || paymentMethod === 'card') {
         try {
@@ -166,8 +172,8 @@ function CheckoutContent() {
             orderId: order.id,
             method: paymentMethod === 'sinpe' ? 'onvopay_sinpe' : 'onvopay_card',
             amount: total,
-            customerPhone: phoneNumber,
-            customerEmail: `${phoneNumber}@guest.checkout.invalid`,
+            customerPhone: phoneDigits,
+            customerEmail: `${phoneDigits || 'cliente'}@guest.checkout.invalid`,
           });
 
           if (paymentResult?.checkoutUrl) {
@@ -179,6 +185,7 @@ function CheckoutContent() {
           }
         } catch (paymentError) {
           console.warn('Payment processing failed, order created:', paymentError);
+          paySetupOk = false;
           // Order is still created, payment can be completed later
         }
       } else if (paymentMethod === 'crypto_usdc' || paymentMethod === 'crypto_usdt') {
@@ -190,11 +197,18 @@ function CheckoutContent() {
             amount: total,
             cryptoCoin: paymentMethod === 'crypto_usdc' ? 'USDC' : 'USDT',
           });
+          paySetupOk = true;
         } catch (paymentError) {
           console.warn('Crypto payment record failed, order created:', paymentError);
+          paySetupOk = false;
         }
       }
 
+      if (!paySetupOk) {
+        setPayError(
+          'Tu pedido se creó pero no pudimos iniciar el cobro. Te contactaremos para el pago.',
+        );
+      }
       // For cash (or after payment setup), order is placed successfully
       setOrderPlaced(true);
     } catch (err: any) {
@@ -243,8 +257,16 @@ function CheckoutContent() {
           <p className="text-surface-400 dark:text-surface-500 text-sm mb-8">
             Espera mientras un repartidor acepta tu pedido.
             {paymentMethod === 'cash' && ' Pagas al repartidor al recibir.'}
-            {paymentMethod === 'sinpe' && ' Recibirás un link de pago por SINPE.'}
+            {paymentMethod === 'sinpe' &&
+              (payError
+                ? ' No pudimos enviarte el cobro SINPE todavía.'
+                : ' Recibirás un link de pago por SINPE.')}
           </p>
+          {payError && (
+            <div className="mb-6 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+              <p className="text-sm text-amber-700 dark:text-amber-300">{payError}</p>
+            </div>
+          )}
 
           <div className="space-y-3">
             {orderId && (
@@ -424,10 +446,11 @@ function CheckoutContent() {
                 { id: 'sinpe', label: 'SINPE', desc: 'Transferencia' },
                 { id: 'card', label: 'Tarjeta', desc: 'Crédito/Débito' },
                 { id: 'crypto_usdc', label: 'USDC', desc: 'Cripto' },
+                { id: 'crypto_usdt', label: 'USDT', desc: 'Cripto' },
               ] as const
             )
               .filter((method) =>
-                method.id === 'crypto_usdc'
+                method.id === 'crypto_usdc' || method.id === 'crypto_usdt'
                   ? payAvailability.crypto
                   : (payAvailability as Record<string, boolean>)[method.id],
               )

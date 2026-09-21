@@ -47,9 +47,9 @@ describe('PaymentsService.listForAdmin', () => {
     );
   });
 
-  it('ignora filtros inválidos en vez de romper', async () => {
-    await service.listForAdmin({ status: 'injected', method: 'nope' });
-
-    expect(prisma.payment.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: {} }));
+  it('rechaza filtros inválidos en vez de mostrar totales sin filtrar', async () => {
+    await expect(
+      service.listForAdmin({ status: 'injected', method: 'nope' } as any),
+    ).rejects.toThrow('status inválido');
   });
 });

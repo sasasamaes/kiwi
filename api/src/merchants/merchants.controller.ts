@@ -60,7 +60,8 @@ export class MerchantsController {
   }
 
   @Get(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get merchant by ID' })
   async getMerchant(@Param('id') id: string) {

@@ -664,18 +664,24 @@ export default function MerchantAnalyticsPage() {
                   <span className="text-sm font-medium">Programados</span>
                 </motion.button>
               </Link>
-              <Link href="/merchants/me/qr">
-                <motion.button
-                  className="w-full p-4 rounded-xl bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors"
-                  whileHover={{ y: -2 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <span className="text-2xl block mb-2">
-                    <Smartphone className="h-6 w-6" />
-                  </span>
-                  <span className="text-sm font-medium">Mi QR</span>
-                </motion.button>
-              </Link>
+              {user?.merchantProfile?.id ? (
+                <Link href={`/merchants/${user.merchantProfile.id}/qr`}>
+                  <motion.button
+                    className="w-full p-4 rounded-xl bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors"
+                    whileHover={{ y: -2 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <span className="text-2xl block mb-2">
+                      <Smartphone className="h-6 w-6" />
+                    </span>
+                    <span className="text-sm font-medium">Mi QR</span>
+                  </motion.button>
+                </Link>
+              ) : (
+                <div className="w-full p-4 rounded-xl bg-surface-100 dark:bg-surface-800 text-surface-400 text-sm font-medium text-center">
+                  Mi QR
+                </div>
+              )}
               <Link href="/analytics/traffic">
                 <motion.button
                   className="w-full p-4 rounded-xl bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/50 transition-colors"

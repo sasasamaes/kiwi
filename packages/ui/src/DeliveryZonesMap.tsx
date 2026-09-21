@@ -1,5 +1,6 @@
 'use client';
 
+import 'leaflet/dist/leaflet.css';
 import { useEffect, useRef, useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { NICOYA_DELIVERY_ZONES } from '@kiwi/types';
@@ -11,7 +12,8 @@ interface DeliveryZonesMapProps {
   className?: string;
 }
 
-const CARTO_URL = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+// OpenStreetMap directo (sin key). CARTO ahora exige API key y sus
+// mosaicos de error disparan tileload: el fallback nunca se enteraba.
 const OSM_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 
 /** Color por tarifa para leer el mapa de un vistazo. */
@@ -54,9 +56,11 @@ export function DeliveryZonesMap({
     const init = async () => {
       try {
         L = await import('leaflet');
-        await import('leaflet/dist/leaflet.css' as string);
         if (cancelled || !mapRef.current) return;
 
+        // Vista inicial: casco de Nicoya. A propósito NO se hace fitBounds a
+        // las 25 zonas (Hojancha→Nambí abren el zoom a toda la península y el
+        // mapa queda ilegible); las lejanas se alcanzan con pan/zoom.
         const map = L.map(mapRef.current, {
           center: [10.14828, -85.45201],
           zoom: 12,
@@ -64,26 +68,14 @@ export function DeliveryZonesMap({
           attributionControl: false,
         });
 
-        const primary = L.tileLayer(CARTO_URL, {
-          maxZoom: 20,
-          subdomains: 'abcd',
-          attribution: '© OpenStreetMap contributors © CARTO',
+        const layer = L.tileLayer(OSM_URL, {
+          maxZoom: 19,
+          attribution: '© OpenStreetMap contributors',
         });
-        primary.on('tileload', () => {
+        layer.on('tileload', () => {
           tilesOk = true;
         });
-        primary.on('tileerror', () => {
-          try {
-            map.removeLayer(primary);
-            L.tileLayer(OSM_URL, {
-              maxZoom: 19,
-              attribution: '© OpenStreetMap contributors',
-            }).addTo(map);
-          } catch {
-            /* noop */
-          }
-        });
-        primary.addTo(map);
+        layer.addTo(map);
         L.control.zoom({ position: 'bottomright' }).addTo(map);
 
         failTimer = setTimeout(() => {
@@ -115,7 +107,6 @@ export function DeliveryZonesMap({
     markersRef.current.forEach((m) => m.remove());
     markersRef.current = [];
 
-    const bounds = L.latLngBounds([]);
     for (const z of NICOYA_DELIVERY_ZONES) {
       if (!Number.isFinite(z.latitude) || !Number.isFinite(z.longitude)) continue;
       const color = tierColor(z.price);
@@ -142,10 +133,14 @@ export function DeliveryZonesMap({
       );
       marker.on('click', () => onSelectRef.current?.(z.id));
       markersRef.current.push(marker);
-      bounds.extend([z.latitude, z.longitude]);
     }
-    if (bounds.isValid()) {
-      mapInstanceRef.current.fitBounds(bounds, { padding: [40, 40] });
+
+    // Si el comercio ya eligió zona en el select, llevar el mapa hasta ella.
+    if (selectedId) {
+      const sel = NICOYA_DELIVERY_ZONES.find((z) => z.id === selectedId);
+      if (sel && Number.isFinite(sel.latitude) && Number.isFinite(sel.longitude)) {
+        mapInstanceRef.current.setView([sel.latitude, sel.longitude], 13, { animate: true });
+      }
     }
   }, [ready, selectedId]);
 
@@ -197,7 +192,7 @@ export function DeliveryZonesMap({
         ))}
       </div>
       <p className="absolute bottom-2 left-2 rounded-lg bg-white/85 dark:bg-surface-900/85 px-2 py-0.5 text-[10px] text-surface-500 backdrop-blur">
-        Puntos de referencia, no límites · © OSM · © CARTO
+        Puntos de referencia, no límites · © OpenStreetMap
       </p>
     </div>
   );

@@ -42,19 +42,10 @@ export function OnvoPayCheckout({
           throw new Error('URL de pago inválida');
         }
       } else {
-        // For embedded checkout, you would use the OnvoPay SDK
-        // For now, we'll simulate the flow
-        console.log('CreditCard OnvoPay checkout:', { paymentIntentId, clientSecret });
-
-        // In production, you would:
-        // 1. Load OnvoPay.js SDK
-        // 2. Create card element
-        // 3. Confirm payment with clientSecret
-
-        // Simulate success for demo
-        setTimeout(() => {
-          onSuccess(paymentIntentId);
-        }, 2000);
+        // Sin checkoutUrl no hay a dónde redirigir: error visible y NUNCA
+        // éxito simulado (antes un setTimeout marcaba como pagado un pedido
+        // impago tras 2s).
+        throw new Error('No se pudo iniciar el pago. Intentá de nuevo o elegí otro método.');
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error al procesar el pago';
@@ -208,13 +199,14 @@ export function CryptoCheckout({
       {/* QR Code */}
       {qrCode && (
         <div className="flex justify-center mb-4">
-          <div className="p-4 bg-white rounded-xl shadow-soft">
-            {/* QR code would be rendered here using qrcode.react */}
-            <div className="w-48 h-48 bg-surface-100 dark:bg-surface-700 rounded-lg flex items-center justify-center">
-              <span className="text-4xl">
-                <Smartphone className="h-10 w-10" />
-              </span>
-            </div>
+          <div className="p-4 bg-white rounded-xl shadow-soft max-w-full">
+            {qrCode.startsWith('data:') || qrCode.startsWith('http') ? (
+              <img src={qrCode} alt="QR de pago" className="w-48 h-48 rounded-lg" />
+            ) : (
+              <p className="w-48 break-all rounded-lg bg-surface-100 dark:bg-surface-700 p-3 font-mono text-[11px] text-surface-700 dark:text-surface-200">
+                {qrCode}
+              </p>
+            )}
           </div>
         </div>
       )}
@@ -252,9 +244,20 @@ export function CryptoCheckout({
             Envía exactamente {amountInCrypto.toFixed(6)} {coin}
           </li>
           <li>A la dirección mostrada arriba</li>
-          <li>El pago se confirmará automáticamente</li>
+          <li>Volvé acá y avisanos que ya lo enviaste</li>
         </ol>
       </div>
+
+      <motion.button
+        className="mt-4 w-full py-3 rounded-xl bg-kiwi-500 text-white font-semibold"
+        onClick={onSuccess}
+        whileTap={{ scale: 0.98 }}
+      >
+        Ya envié el pago
+      </motion.button>
+      <p className="mt-2 text-center text-xs text-surface-400">
+        Lo verificamos y te avisamos cuando se confirme en la red.
+      </p>
 
       {/* Network Info */}
       <div className="mt-4 text-center">

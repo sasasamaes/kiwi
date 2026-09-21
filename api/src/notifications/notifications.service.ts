@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TOPIC_CATALOG, getTopic, topicsForRole } from './topics';
 
@@ -359,6 +359,9 @@ export class NotificationsService {
       },
       data: { read: true },
     });
+    if (updated.count === 0) {
+      throw new NotFoundException('Notificación no encontrada');
+    }
     return updated;
   }
 
@@ -392,10 +395,14 @@ export class NotificationsService {
     deliveryAddress: string;
     totalAmount: any;
     distanceKm: any;
+    driverPayout?: any;
   }) {
+    // Al driver se le muestra SU ganancia, no el total con productos.
+    const gain =
+      order.driverPayout != null ? Number(order.driverPayout) : Number(order.totalAmount);
     return this.publishToTopic('driver.orders.new', {
       title: '📦 Nuevo pedido disponible',
-      body: `₡${Number(order.totalAmount).toLocaleString()} · ${order.pickupAddress} → ${order.deliveryAddress}`,
+      body: `₡${gain.toLocaleString()} · ${order.pickupAddress} → ${order.deliveryAddress}`,
       data: { orderId: order.id, type: 'new_order' },
     });
   }
@@ -425,10 +432,12 @@ export class NotificationsService {
     });
     if (prefs.length === 0) return { skipped: 'preference_off' as const };
 
+    const gain =
+      order.driverPayout != null ? Number(order.driverPayout) : Number(order.totalAmount);
     if (this.fcmAdmin) {
       await this.sendPushToTokens(userId, {
         title: '📦 Nuevo pedido cerca de ti',
-        body: `₡${Number(order.totalAmount).toLocaleString()} · ${order.pickupAddress} → ${order.deliveryAddress}`,
+        body: `₡${gain.toLocaleString()} · ${order.pickupAddress} → ${order.deliveryAddress}`,
         data: { orderId: order.id, type: 'new_order' },
       });
     }
@@ -441,6 +450,15 @@ export class NotificationsService {
       title: '✅ Pedido aceptado',
       body: `${driverName} aceptó tu pedido #${orderId.slice(0, 8)}`,
       data: { orderId, type: 'order_accepted' },
+    });
+  }
+
+  /** El asignado rechazó → el comercio debe reasignar (push directo + inbox). */
+  async notifyOrderRejected(orderId: string, merchantUserId: string, driverName: string) {
+    return this.sendToUser(merchantUserId, {
+      title: '⚠️ Repartidor rechazó el pedido',
+      body: `${driverName} rechazó tu pedido #${orderId.slice(0, 8)}. Reasignalo a otro repartidor.`,
+      data: { orderId, type: 'order_rejected' },
     });
   }
 

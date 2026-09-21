@@ -42,6 +42,8 @@ export default function ScheduledOrdersPage() {
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/login');
+    } else if (user && (user as any).role && (user as any).role !== 'driver') {
+      router.push('/login');
     }
   }, [user, authLoading, router]);
 

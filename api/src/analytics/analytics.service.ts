@@ -2,6 +2,12 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AnalyticsPeriod, AnalyticsQueryDto } from './dto/analytics-query.dto';
 import { OrderStatus, PaymentStatus, UserStatus } from '@prisma/client';
+import {
+  startOfTodayCR,
+  startOfMonthCR,
+  startOfYearCR,
+  toCRDateKey,
+} from '../common/costa-rica-time';
 
 @Injectable()
 export class AnalyticsService {
@@ -122,7 +128,7 @@ export class AnalyticsService {
    */
   async getLivePulse() {
     const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayStart = startOfTodayCR(now);
 
     const [driversByStatus, usersByRole, pendingOrders, activeOrders, todayStats] =
       await Promise.all([
@@ -187,19 +193,19 @@ export class AnalyticsService {
     } else {
       switch (period) {
         case AnalyticsPeriod.TODAY:
-          start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          start = startOfTodayCR(now);
           break;
         case AnalyticsPeriod.WEEK:
           start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
           break;
         case AnalyticsPeriod.MONTH:
-          start = new Date(now.getFullYear(), now.getMonth(), 1);
+          start = startOfMonthCR(now, 0);
           break;
         case AnalyticsPeriod.QUARTER:
-          start = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+          start = startOfMonthCR(now, 2);
           break;
         case AnalyticsPeriod.YEAR:
-          start = new Date(now.getFullYear(), 0, 1);
+          start = startOfYearCR(now);
           break;
         default:
           start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -860,7 +866,7 @@ export class AnalyticsService {
     const dailyData: Record<string, number> = {};
 
     orders.forEach((order) => {
-      const date = new Date(order.createdAt).toISOString().split('T')[0];
+      const date = toCRDateKey(order.createdAt);
       if (!dailyData[date]) dailyData[date] = 0;
 
       if (type === 'orders') {
@@ -892,7 +898,7 @@ export class AnalyticsService {
     const dailyData: Record<string, number> = {};
 
     orders.forEach((order) => {
-      const date = new Date(order.createdAt).toISOString().split('T')[0];
+      const date = toCRDateKey(order.createdAt);
       if (!dailyData[date]) dailyData[date] = 0;
 
       if (type === 'orders') {
