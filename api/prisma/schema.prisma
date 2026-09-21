@@ -110,6 +110,23 @@ model PlatformSetting {
   @@map("platform_settings")
 }
 
+// Historial mensual de escenarios: proyección fijada por el admin al cierre
+// de cada mes, para comparar contra lo que realmente pasó después.
+model ScenarioSnapshot {
+  id                 String   @id @default(uuid())
+  month              String   @unique
+  ordersPerDay       Int      @map("orders_per_day")
+  expectedTrip       Float    @map("expected_trip")
+  commissionPct      Float    @map("commission_pct")
+  operations         Json
+  projectedCommission Float   @map("projected_commission")
+  projectedNet       Float    @map("projected_net")
+  note               String?
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  @@map("scenario_snapshots")
+}
+
 // Driver profiles
 model DriverProfile {
   id           String       @id @default(uuid())
