@@ -5,7 +5,7 @@ import { QRCodeSVG, QRCodeCanvas } from 'qrcode.react';
 import { motion } from 'framer-motion';
 import { safeNavigateToUrl } from './utils';
 
-const MENU_BASE_URL = process.env.NEXT_PUBLIC_MENU_URL || 'https://kiwi-client-tau.vercel.app/menu';
+const MENU_BASE_URL = process.env.NEXT_PUBLIC_MENU_URL || 'https://kiwicr.express/menu';
 
 function escapeHtml(value: string): string {
   return value

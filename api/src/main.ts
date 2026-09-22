@@ -144,6 +144,11 @@ async function bootstrap() {
       'https://kiwi-merchant.vercel.app',
       'https://kiwi-client-tau.vercel.app',
       'https://kiwi-driver.vercel.app',
+      // Dominio propio (transición: se mantienen los vercel.app arriba).
+      'https://kiwicr.express',
+      'https://negocios.kiwicr.express',
+      'https://repartidores.kiwicr.express',
+      'https://api.kiwicr.express',
       ...envOrigins,
     ],
     credentials: true,

@@ -3,13 +3,19 @@
 import { useState, useEffect } from 'react';
 import { Link2, Check, Share2 } from 'lucide-react';
 
-const CLIENT_BASE_URL = (
-  process.env.NEXT_PUBLIC_CLIENT_URL || 'https://kiwi-client-tau.vercel.app'
-).replace(/\/$/, '');
+const CLIENT_BASE_URL = (process.env.NEXT_PUBLIC_CLIENT_URL || 'https://kiwicr.express').replace(
+  /\/$/,
+  '',
+);
 
 /** Link público de seguimiento: el UUID del pedido es la credencial. */
 export function buildTrackingUrl(orderId: string): string {
   return `${CLIENT_BASE_URL}/tracking/${orderId}`;
+}
+
+/** Mensaje listo para pegar en WhatsApp al cliente. */
+export function buildTrackingMessage(orderId: string): string {
+  return `Seguí el estatus de tu pedido aquí:\n${buildTrackingUrl(orderId)}`;
 }
 
 export function ShareTrackingButton({
@@ -30,21 +36,23 @@ export function ShareTrackingButton({
 
   const share = async () => {
     const url = buildTrackingUrl(orderId);
+    const text = buildTrackingMessage(orderId);
     try {
       if (typeof navigator !== 'undefined' && navigator.share) {
-        await navigator.share({ title: 'Seguí tu pedido Kiwi', url });
+        await navigator.share({ title: 'Seguí tu pedido Kiwi', text, url });
         return;
       }
       throw new Error('no-native-share');
     } catch {
-      // Fallback (o cancelación del share nativo): portapapeles.
+      // Fallback (o cancelación del share nativo): portapapeles con el
+      // mensaje listo para WhatsApp, no solo el link pelado.
       try {
-        await navigator.clipboard.writeText(url);
+        await navigator.clipboard.writeText(text);
         setCopied(true);
         setTimeout(() => setCopied(false), 2500);
       } catch {
-        // Último recurso: prompt con el link seleccionable.
-        window.prompt('Copiá el link de seguimiento:', url);
+        // Último recurso: prompt con el mensaje seleccionable.
+        window.prompt('Copiá el mensaje para el cliente:', text);
       }
     }
   };
