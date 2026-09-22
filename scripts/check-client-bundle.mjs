@@ -50,6 +50,11 @@ const SKIP_PATTERNS = [
   /(^|[\\/])public[\\/]/, // service workers etc. — scanned at bundle level instead
   /\.d\.ts$/,
   /(^|[\\/])scripts[\\/]/,
+  // Next.js Middleware (apps/<app>/middleware.ts) runs on the edge/server and
+  // is never bundled into browser chunks — server-only env vars are safe here
+  // (e.g. VENTAS_ACCESS_KEY). Narrow on purpose: a file merely NAMED
+  // middleware elsewhere does not get the exemption.
+  /(^|[\\/])apps[\\/][^\\/]+[\\/]middleware\.ts$/,
 ];
 
 const failures = [];
