@@ -49,7 +49,13 @@ export default function ClientHome() {
   }, []);
 
   return (
-    <div className="min-h-[100dvh] bg-bg-light dark:bg-surface-950 pb-20">
+    <div className="relative min-h-[100dvh] bg-bg-light dark:bg-surface-950 pb-20 overflow-x-clip">
+      {/* Respiro nocturno: brillos sutiles solo en oscuro */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 hidden dark:block">
+        <div className="absolute -top-24 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-kiwi-500/10 blur-3xl" />
+        <div className="absolute top-1/3 -left-24 h-56 w-56 rounded-full bg-kiwi-400/[0.07] blur-3xl" />
+        <div className="absolute bottom-24 -right-24 h-56 w-56 rounded-full bg-gold-500/[0.06] blur-3xl" />
+      </div>
       {/* Header */}
       <motion.header
         className="pt-safe sticky top-0 z-50 glass-strong"
@@ -176,7 +182,7 @@ export default function ClientHome() {
 
         {/* How it Works */}
         <ScrollReveal
-          className="mt-8 rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-soft dark:shadow-dark"
+          className="mt-8 rounded-2xl border border-transparent bg-white dark:bg-surface-800 dark:border-white/[0.06] p-6 shadow-soft dark:shadow-dark"
           index={1}
         >
           <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100 mb-4 text-center">
@@ -190,11 +196,11 @@ export default function ClientHome() {
               { icon: Bike, title: 'Recibe en casa', desc: 'Tracking en tiempo real' },
             ].map((step, i) => (
               <div key={i} className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-kiwi-100 dark:bg-kiwi-900/30">
-                  <step.icon className="h-6 w-6 text-kiwi-600 dark:text-kiwi-400" />
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-kiwi-100 dark:bg-kiwi-400/10 dark:ring-1 dark:ring-kiwi-400/25">
+                  <step.icon className="h-6 w-6 text-kiwi-600 dark:text-kiwi-300" />
                 </div>
                 <div>
-                  <p className="font-medium text-surface-800 dark:text-surface-200">{step.title}</p>
+                  <p className="font-medium text-surface-800 dark:text-surface-100">{step.title}</p>
                   <p className="text-sm text-surface-500 dark:text-surface-400">{step.desc}</p>
                 </div>
               </div>

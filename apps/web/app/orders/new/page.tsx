@@ -15,6 +15,7 @@ import {
   ShareTrackingButton,
   DeliveryZoneSelect,
   DeliveryZonesMap,
+  safeNavigateToUrl,
 } from '@kiwi/ui';
 import {
   computeDriverCommission,
@@ -653,21 +654,38 @@ function NewOrderInner({
     }
   };
 
-  // Cobra el pedido ya creado (mismo switch que al crear, reutilizable para
-  // el botón "Reintentar pago"). Lanza si falla: quien llama decide.
-  const payForOrder = async (orderId: string, method: typeof paymentMethod): Promise<void> => {
-    if (method === 'sinpe') {
-      await api.createPayment({ orderId, method: 'onvopay_sinpe', amount: total });
-    } else if (method === 'card') {
-      await api.createPayment({ orderId, method: 'onvopay_card', amount: total });
-    } else if (method === 'crypto') {
+  // Cobra el pedido ya creado. Para tarjeta/SINPE redirige al Checkout de
+  // Onvo y devuelve redirected=true (la página se va; al volver, tracking
+  // verifica el pago). Si no hay URL, lanza para mostrar reintento.
+  const payForOrder = async (
+    orderId: string,
+    method: typeof paymentMethod,
+  ): Promise<{ redirected: boolean }> => {
+    if (method === 'sinpe' || method === 'card') {
+      const res = await api.createPayment({
+        orderId,
+        method: method === 'sinpe' ? 'onvopay_sinpe' : 'onvopay_card',
+        amount: total,
+      });
+      if (res?.checkoutUrl) {
+        if (!safeNavigateToUrl(res.checkoutUrl)) {
+          throw new Error('URL de pago inválida');
+        }
+        return { redirected: true };
+      }
+      throw new Error('Onvo no devolvió link de pago. Reintentá o elegí otro método.');
+    }
+    if (method === 'crypto') {
       await api.createPayment({ orderId, method: 'crypto', amount: total, cryptoCoin: 'USDC' });
-    } else if (method === 'credit') {
+      return { redirected: false };
+    }
+    if (method === 'credit') {
       // Solo el viaje (sin comisión): el backend lo valida y descuenta.
       await api.createPayment({ orderId, method: 'credit', amount: trip });
-    } else {
-      await api.createPayment({ orderId, method: 'cash', amount: total });
+      return { redirected: false };
     }
+    await api.createPayment({ orderId, method: 'cash', amount: total });
+    return { redirected: false };
   };
 
   const retryPayment = async () => {
@@ -779,7 +797,12 @@ function NewOrderInner({
       }
 
       try {
-        await payForOrder(result.id, paymentMethod);
+        const { redirected } = await payForOrder(result.id, paymentMethod);
+        if (redirected) {
+          // Vamos a Onvo: no mostrar éxito local, al volver tracking verifica.
+          setCreatedOrderId(result.id);
+          return;
+        }
         if (paymentMethod === 'credit') {
           setCreditBalance((b) => (b == null ? b : b - trip));
         }

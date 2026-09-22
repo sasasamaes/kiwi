@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useCallback } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import { QRCodeSVG, QRCodeCanvas } from 'qrcode.react';
 import { motion } from 'framer-motion';
 import { safeNavigateToUrl } from './utils';
@@ -322,43 +322,108 @@ export interface QRScannerProps {
 }
 
 export function QRScanner({ onScan, onError, isActive = true }: QRScannerProps) {
-  const startScanner = useCallback(async () => {
+  const scannerRef = useRef<any>(null);
+  const handledRef = useRef(false);
+  const onScanRef = useRef(onScan);
+  const onErrorRef = useRef(onError);
+  onScanRef.current = onScan;
+  onErrorRef.current = onError;
+
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [starting, setStarting] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+
+  const stopScanner = useCallback(async () => {
     try {
-      // Dynamic import for html5-qrcode (only runs on client)
-      const { Html5Qrcode } = await import('html5-qrcode');
-
-      const scanner = new Html5Qrcode('qr-reader');
-
-      await scanner.start(
-        { facingMode: 'environment' },
-        {
-          fps: 10,
-          qrbox: { width: 250, height: 250 },
-          aspectRatio: 1.0,
-        },
-        (decodedText) => {
-          // Parse the URL to extract merchant ID
-          const match = decodedText.match(/\/menu\/([a-zA-Z0-9-]+)/);
-          if (match && isAllowedMenuUrl(decodedText)) {
-            const merchantId = match[1];
-            onScan?.(merchantId, decodedText);
-            scanner.stop().catch(() => {});
-          } else if (isAllowedMenuUrl(decodedText)) {
-            // Solo navega a URLs de menú allow-listed (evita phishing por QR)
-            safeNavigateToUrl(decodedText);
-          } else {
-            onError?.('Código QR no válido para Kiwi');
-          }
-        },
-        () => {
-          // QR code not found in frame - this is normal, ignore
-        },
-      );
-    } catch (error) {
-      console.error('QR Scanner error:', error);
-      onError?.(error instanceof Error ? error.message : 'Error al iniciar escáner');
+      await scannerRef.current?.stop();
+    } catch {
+      // ya detenida
     }
-  }, [onScan, onError]);
+    try {
+      scannerRef.current?.clear();
+    } catch {
+      // nada que limpiar
+    }
+    scannerRef.current = null;
+  }, []);
+
+  useEffect(() => {
+    if (!isActive) return;
+    let cancelled = false;
+    handledRef.current = false;
+    setCameraError(null);
+    setStarting(true);
+
+    (async () => {
+      try {
+        if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
+          throw new Error('no-camera');
+        }
+        // Dynamic import for html5-qrcode (only runs on client)
+        const { Html5Qrcode } = await import('html5-qrcode');
+        if (cancelled) return;
+        if (scannerRef.current) {
+          setStarting(false);
+          return;
+        }
+
+        const scanner = new Html5Qrcode('qr-reader');
+        scannerRef.current = scanner;
+
+        await scanner.start(
+          { facingMode: 'environment' },
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+            aspectRatio: 1.0,
+          },
+          (decodedText) => {
+            if (handledRef.current) return;
+            // Parse the URL to extract merchant ID
+            const match = decodedText.match(/\/menu\/([a-zA-Z0-9-]+)/);
+            if (match && isAllowedMenuUrl(decodedText)) {
+              handledRef.current = true;
+              const merchantId = match[1];
+              onScanRef.current?.(merchantId, decodedText);
+              stopScanner().catch(() => {});
+            } else if (isAllowedMenuUrl(decodedText)) {
+              // Solo navega a URLs de menú allow-listed (evita phishing por QR)
+              handledRef.current = true;
+              safeNavigateToUrl(decodedText);
+              stopScanner().catch(() => {});
+            } else {
+              onErrorRef.current?.('Código QR no válido para Kiwi');
+            }
+          },
+          () => {
+            // QR code not found in frame - this is normal, ignore
+          },
+        );
+        if (!cancelled) setStarting(false);
+      } catch (error: any) {
+        if (cancelled) return;
+        setStarting(false);
+        const name = error?.name || '';
+        const msg =
+          error?.message === 'no-camera'
+            ? 'Este navegador no soporta cámara. Probá con Chrome o Safari.'
+            : name === 'NotAllowedError'
+              ? 'Dale permiso de cámara al navegador para escanear el QR.'
+              : name === 'NotFoundError'
+                ? 'No se encontró cámara en este dispositivo.'
+                : name === 'NotReadableError'
+                  ? 'La cámara está en uso por otra app. Cerrala e intentá de nuevo.'
+                  : 'No se pudo iniciar la cámara. Revisá el permiso e intentá de nuevo.';
+        setCameraError(msg);
+        onErrorRef.current?.(msg);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      stopScanner().catch(() => {});
+    };
+  }, [isActive, attempt, stopScanner]);
 
   if (!isActive) return null;
 
@@ -398,12 +463,30 @@ export function QRScanner({ onScan, onError, isActive = true }: QRScannerProps) 
         animate={{ opacity: 1 }}
         transition={{ delay: 0.5 }}
       >
-        <p className="text-sm font-medium text-surface-600 dark:text-surface-400">
-          Apunta la cámara al código QR del menú
-        </p>
-        <p className="text-xs text-surface-400 dark:text-surface-500 mt-1">
-          El menú se abrirá automáticamente
-        </p>
+        {starting ? (
+          <p className="text-sm font-medium text-surface-600 dark:text-surface-400">
+            Abriendo cámara…
+          </p>
+        ) : cameraError ? (
+          <div className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-3">
+            <p className="text-sm text-red-600 dark:text-red-400">{cameraError}</p>
+            <button
+              onClick={() => setAttempt((a) => a + 1)}
+              className="mt-2 rounded-xl bg-kiwi-500 px-4 py-2 text-sm font-semibold text-white"
+            >
+              Reintentar
+            </button>
+          </div>
+        ) : (
+          <>
+            <p className="text-sm font-medium text-surface-600 dark:text-surface-400">
+              Apunta la cámara al código QR del menú
+            </p>
+            <p className="text-xs text-surface-400 dark:text-surface-500 mt-1">
+              El menú se abrirá automáticamente
+            </p>
+          </>
+        )}
       </motion.div>
     </motion.div>
   );

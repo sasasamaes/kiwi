@@ -35,6 +35,26 @@ interface PaymentMethodToken {
   };
 }
 
+interface OnvoPayCheckoutSessionRequest {
+  /** Monto en COLONES (se convierte a céntimos según la doc). */
+  amount: number;
+  currency: string;
+  description: string;
+  orderId: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  redirectUrl: string;
+  cancelUrl: string;
+}
+
+interface OnvoPayCheckoutSessionResponse {
+  success: boolean;
+  /** URL de pago hospedado (campo `url` de la doc). */
+  checkoutUrl?: string;
+  sessionId?: string;
+  error?: string;
+}
+
 @Injectable()
 export class OnvoPayProvider {
   private readonly logger = new Logger(OnvoPayProvider.name);
@@ -114,6 +134,82 @@ export class OnvoPayProvider {
   }
 
   /**
+   * Crea una sesión de Checkout hospedado (one-time-link).
+   * Flujo oficial tarjeta/SINPE: https://docs.onvopay.com/checkout/overview
+   *   1. backend crea la sesión → responde `url`
+   *   2. frontend redirige al comprador a `url`
+   *   3. ONVO avisa por webhook (checkout-session.succeeded)
+   *   4. backend marca completado SOLO con el webhook
+   *
+   * Montos en unidad menor (céntimos CRC): ₡1.500 → 150000.
+   */
+  async createCheckoutSession(
+    request: OnvoPayCheckoutSessionRequest,
+  ): Promise<OnvoPayCheckoutSessionResponse> {
+    try {
+      this.logger.log(`Creating OnvoPay checkout session for order ${request.orderId}`);
+
+      if (!this.secretKey) {
+        this.logger.warn('OnvoPay secret key not configured, cannot create checkout session');
+        return { success: false, error: 'Pagos con tarjeta no configurados todavía' };
+      }
+
+      const unitAmount = Math.round(Number(request.amount) * 100);
+      if (!Number.isFinite(unitAmount) || unitAmount <= 0) {
+        throw new Error('Monto inválido para la sesión de Checkout');
+      }
+
+      const response = await fetch(`${this.baseUrl}/checkout/sessions/one-time-link`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.secretKey}`,
+        },
+        body: JSON.stringify({
+          lineItems: [
+            {
+              quantity: 1,
+              unitAmount,
+              currency: request.currency || 'CRC',
+              description: request.description,
+            },
+          ],
+          ...(request.customerEmail ? { customerEmail: request.customerEmail } : {}),
+          redirectUrl: request.redirectUrl,
+          cancelUrl: request.cancelUrl,
+          metadata: {
+            orderId: request.orderId,
+            customerPhone: request.customerPhone,
+          },
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        const msg = Array.isArray(data.message) ? data.message.join('. ') : data.message;
+        throw new Error(msg || 'Checkout session creation failed');
+      }
+
+      if (!data.url) {
+        throw new Error('ONVO no devolvió URL de pago');
+      }
+
+      return {
+        success: true,
+        checkoutUrl: data.url,
+        sessionId: data.id,
+      };
+    } catch (error) {
+      this.logger.error('OnvoPay checkout session creation failed:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Error al crear la sesión de pago',
+      };
+    }
+  }
+
+  /**
    * Confirm a payment intent with a payment method
    * @see https://docs.onvopay.com/en/api/confirmar-una-intencion-de-pago
    */
@@ -155,6 +251,42 @@ export class OnvoPayProvider {
         success: false,
         error: error.message,
       };
+    }
+  }
+
+  /**
+   * Lee una sesión de Checkout (one-time-link): estado + intent asociado.
+   * GET /v1/checkout/sessions/one-time-link/{id}
+   */
+  async getCheckoutSession(
+    sessionId: string,
+  ): Promise<{ status?: string; paymentStatus?: string; paymentIntentId?: string; details?: any }> {
+    try {
+      if (!this.secretKey) {
+        return { status: 'complete', paymentStatus: 'paid' };
+      }
+
+      const response = await fetch(`${this.baseUrl}/checkout/sessions/one-time-link/${sessionId}`, {
+        headers: {
+          Authorization: `Bearer ${this.secretKey}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to get checkout session');
+      }
+
+      return {
+        status: data.status,
+        paymentStatus: data.paymentStatus,
+        paymentIntentId: data.paymentIntentId,
+        details: data,
+      };
+    } catch (error) {
+      this.logger.error('Failed to get checkout session:', error);
+      return {};
     }
   }
 

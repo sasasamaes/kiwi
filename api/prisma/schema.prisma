@@ -370,6 +370,9 @@ model Payment {
   // OnvoPay
   onvoPaymentId   String? @map("onvo_payment_id")
   onvoCheckoutUrl String? @map("onvo_checkout_url")
+  // Checkout hospedado (one-time-link): la sesión es el objeto de cobro;
+  // el intent real llega después por webhook y se guarda en onvoPaymentId.
+  onvoSessionId String? @map("onvo_session_id")
 
   // Crypto
   cryptoCoin          String?  @map("crypto_coin")

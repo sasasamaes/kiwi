@@ -80,6 +80,13 @@ export class PaymentsController {
     return this.paymentsService.getPaymentStatusForUser(orderId, user);
   }
 
+  @Public()
+  @Get('public-status/:orderId')
+  @ApiOperation({ summary: 'Coarse paid status for the order link (guests)' })
+  async getPublicPaidStatus(@Param('orderId') orderId: string) {
+    return this.paymentsService.getPublicPaidStatus(orderId);
+  }
+
   @Get('admin/all')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')

@@ -623,6 +623,11 @@ class ApiClient {
     return this.request<any>(`/payments/status/${orderId}`);
   }
 
+  /** Solo si está pagado o no (para el link público, sin montos). */
+  async getPublicPaidStatus(orderId: string): Promise<{ paid: boolean }> {
+    return this.request<{ paid: boolean }>(`/payments/public-status/${orderId}`);
+  }
+
   async getPaymentMethods() {
     return this.request<any>('/payments/methods');
   }

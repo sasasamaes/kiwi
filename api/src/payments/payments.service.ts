@@ -119,13 +119,18 @@ export class PaymentsService {
         throw new BadRequestException('Método de pago no válido');
     }
 
-    // Save or update payment record
+    // Save or update payment record.
+    // Checkout hospedado: result.paymentId es la SESIÓN (no el intent); el
+    // intent real llega por webhook y se guarda entonces en onvoPaymentId.
+    const isCheckoutSession =
+      (method === 'onvopay_card' || method === 'onvopay_sinpe') && result.checkoutUrl != null;
     const paymentData = {
       amount,
       currency: (method === 'crypto' ? cryptoCoin : 'CRC') ?? 'CRC',
       method: method as PaymentMethod,
       status: (result.success ? PaymentStatus.pending : PaymentStatus.failed) as PaymentStatus,
-      onvoPaymentId: result.paymentId,
+      onvoPaymentId: isCheckoutSession ? undefined : result.paymentId,
+      onvoSessionId: isCheckoutSession ? result.paymentId : undefined,
       onvoCheckoutUrl: result.checkoutUrl,
       cryptoCoin: cryptoCoin,
       cryptoWalletAddress: result.walletAddress,
@@ -252,7 +257,7 @@ export class PaymentsService {
   ): Promise<PaymentResult> {
     const paymentType = method === 'onvopay_card' ? 'Tarjeta' : 'SINPE';
 
-    // returnUrl/cancelUrl: SIEMPRE https. Un FRONTEND_URL mal configurado
+    // redirectUrl/cancelUrl: SIEMPRE https. Un FRONTEND_URL mal configurado
     // (http://) devolvería al usuario a un contexto inseguro justo después
     // de pagar — su momento de mayor exposición.
     const frontendBase = (process.env.FRONTEND_URL ?? process.env.CLIENT_URL ?? '').replace(
@@ -260,43 +265,56 @@ export class PaymentsService {
       'https://',
     );
 
-    // Create payment intent
-    const intentResult = await this.onvopayProvider.createPaymentIntent({
+    // Flujo oficial tarjeta/SINPE (Checkout hospedado):
+    // sesión → redirect a `url` → webhook marca completado.
+    // https://docs.onvopay.com/checkout/overview
+    const sessionResult = await this.onvopayProvider.createCheckoutSession({
       amount,
       currency: 'CRC',
       description: `Pago Kiwi - Pedido #${orderId.slice(0, 8)} (${paymentType})`,
       orderId,
       customerEmail,
       customerPhone,
-      returnUrl: `${frontendBase}/tracking/${orderId}?paid=1`,
+      redirectUrl: `${frontendBase}/tracking/${orderId}?paid=1`,
       cancelUrl: `${frontendBase}/tracking/${orderId}?cancelled=1`,
     });
 
-    if (!intentResult.success) {
+    if (!sessionResult.success) {
       return {
         success: false,
-        error: intentResult.error,
+        error: sessionResult.error,
       };
     }
 
-    // If payment method ID is provided, confirm immediately
-    if (paymentMethodId && intentResult.paymentId) {
+    // paymentMethodId directo (integración 100% API) se mantiene para
+    // compatibilidad, pero el flujo normal es Checkout: sin método previo
+    // se devuelve la URL y el comprador paga en ONVO.
+    if (paymentMethodId) {
+      const intentResult = await this.onvopayProvider.createPaymentIntent({
+        amount,
+        currency: 'CRC',
+        description: `Pago Kiwi - Pedido #${orderId.slice(0, 8)} (${paymentType})`,
+        orderId,
+        customerEmail,
+        customerPhone,
+        returnUrl: `${frontendBase}/tracking/${orderId}?paid=1`,
+        cancelUrl: `${frontendBase}/tracking/${orderId}?cancelled=1`,
+      });
+      if (!intentResult.success) {
+        return { success: false, error: intentResult.error };
+      }
       const confirmResult = await this.onvopayProvider.confirmPaymentIntent(
-        intentResult.paymentId,
+        intentResult.paymentId as string,
         paymentMethodId,
       );
-
       if (!confirmResult.success) {
-        return {
-          success: false,
-          error: confirmResult.error,
-        };
+        return { success: false, error: confirmResult.error };
       }
-
+      // Confirmado directo: ya no hace falta redirect, y el intent queda
+      // guardado como tal (no como sesión).
       return {
         success: true,
         paymentId: intentResult.paymentId,
-        checkoutUrl: intentResult.checkoutUrl,
         clientSecret: intentResult.clientSecret,
       };
     }
@@ -304,9 +322,8 @@ export class PaymentsService {
     // Return checkout URL for client-side completion
     return {
       success: true,
-      paymentId: intentResult.paymentId,
-      checkoutUrl: intentResult.checkoutUrl,
-      clientSecret: intentResult.clientSecret,
+      paymentId: sessionResult.sessionId,
+      checkoutUrl: sessionResult.checkoutUrl,
     };
   }
 
@@ -473,6 +490,16 @@ export class PaymentsService {
     return this.getPaymentStatus(orderId);
   }
 
+  /**
+   * Estado grueso para el link público (invitados): solo si está pagado o
+   * no. Sin montos ni detalles — mismo modelo de confianza que el tracking.
+   * Reconcilia con ONVO antes de responder para no mentir con filas viejas.
+   */
+  async getPublicPaidStatus(orderId: string): Promise<{ paid: boolean }> {
+    const payment = await this.getPaymentStatus(orderId);
+    return { paid: payment?.status === PaymentStatus.completed };
+  }
+
   async getPaymentStatus(orderId: string) {
     const payment = await this.prisma.payment.findUnique({
       where: { orderId },
@@ -481,24 +508,52 @@ export class PaymentsService {
     if (!payment) {
       return null;
     }
-
     // Check with provider if needed
     if (payment.method === 'onvopay_card' || payment.method === 'onvopay_sinpe') {
-      if (payment.onvoPaymentId && payment.status === PaymentStatus.pending) {
-        const status = await this.onvopayProvider.getPaymentIntentStatus(payment.onvoPaymentId);
+      if (payment.status === PaymentStatus.pending) {
+        // Checkout hospedado: se consulta la SESIÓN (el intent aún no existe
+        // o vive solo en ONVO hasta el webhook).
+        const sessionId = (payment as any).onvoSessionId;
+        if (sessionId) {
+          const session = await this.onvopayProvider.getCheckoutSession(sessionId);
+          if (session.paymentIntentId && !payment.onvoPaymentId) {
+            await this.prisma.payment.update({
+              where: { orderId },
+              data: { onvoPaymentId: session.paymentIntentId },
+            });
+            payment.onvoPaymentId = session.paymentIntentId;
+          }
+          const paid =
+            session.paymentStatus === 'paid' ||
+            session.status === 'complete' ||
+            session.status === 'succeeded';
+          const dead =
+            session.status === 'expired' ||
+            session.status === 'canceled' ||
+            session.status === 'cancelled';
+          if (paid || dead) {
+            await this.prisma.payment.update({
+              where: { orderId },
+              data: { status: paid ? PaymentStatus.completed : PaymentStatus.failed },
+            });
+            payment.status = paid ? PaymentStatus.completed : PaymentStatus.failed;
+          }
+        } else if (payment.onvoPaymentId) {
+          const status = await this.onvopayProvider.getPaymentIntentStatus(payment.onvoPaymentId);
 
-        if (status.status === 'succeeded') {
-          await this.prisma.payment.update({
-            where: { orderId },
-            data: { status: PaymentStatus.completed },
-          });
-          payment.status = PaymentStatus.completed;
-        } else if (status.status === 'canceled') {
-          await this.prisma.payment.update({
-            where: { orderId },
-            data: { status: PaymentStatus.failed },
-          });
-          payment.status = PaymentStatus.failed;
+          if (status.status === 'succeeded') {
+            await this.prisma.payment.update({
+              where: { orderId },
+              data: { status: PaymentStatus.completed },
+            });
+            payment.status = PaymentStatus.completed;
+          } else if (status.status === 'canceled') {
+            await this.prisma.payment.update({
+              where: { orderId },
+              data: { status: PaymentStatus.failed },
+            });
+            payment.status = PaymentStatus.failed;
+          }
         }
       }
     }
@@ -563,6 +618,35 @@ export class PaymentsService {
         // (status != pending) while belonging to nobody — a lost order.
 
         this.logger.log(`Payment completed for order ${orderId}`);
+      }
+    } else if (type === 'checkout-session.succeeded') {
+      // Checkout hospedado: la sesión trae metadata.orderId y el intent real.
+      // Se guarda el intent para reembolsos/cancelaciones futuras.
+      const orderId = data?.metadata?.orderId;
+      const paymentIntentId = data?.paymentIntentId;
+      if (orderId) {
+        const res = await this.prisma.payment.updateMany({
+          where: { orderId },
+          data: {
+            status: PaymentStatus.completed,
+            ...(paymentIntentId ? { onvoPaymentId: paymentIntentId } : {}),
+          },
+        });
+        if (res.count === 0) {
+          this.logger.warn(`Checkout webhook for unknown order ${orderId} — ignoring`);
+          return { received: true, unknownOrder: true };
+        }
+        this.logger.log(`Checkout session completed for order ${orderId}`);
+      } else if (paymentIntentId) {
+        const res = await this.prisma.payment.updateMany({
+          where: { onvoPaymentId: paymentIntentId },
+          data: { status: PaymentStatus.completed },
+        });
+        if (res.count === 0) {
+          this.logger.warn('Checkout webhook without order match — ignoring');
+          return { received: true, unknownOrder: true };
+        }
+        this.logger.log(`Checkout session completed for intent ${paymentIntentId}`);
       }
     } else if (type === 'payment_intent.canceled') {
       const { metadata } = data ?? {};

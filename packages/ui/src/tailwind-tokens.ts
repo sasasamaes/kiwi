@@ -61,8 +61,8 @@ export const kiwiDesignTokens = {
           600: '#52525b',
           700: '#3f3f46',
           800: '#27272a',
-          900: '#18181b',
-          950: '#09090b',
+          900: '#101C33',
+          950: '#0A1428',
         },
 
         // ─── Gold Palette (ratings, promos) ───

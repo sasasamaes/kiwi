@@ -81,6 +81,26 @@ export default function TrackingPage() {
   // Vuelta desde OnvoPay (returnUrl/cancelUrl del intent).
   const paidFlag = searchParams.get('paid') === '1';
   const cancelledFlag = searchParams.get('cancelled') === '1';
+  // Verificación real contra el servidor (no se confía solo en el flag de la URL).
+  const [paidState, setPaidState] = useState<'unknown' | 'paid' | 'pending'>('unknown');
+
+  useEffect(() => {
+    if (!paidFlag) return;
+    const id = params.id as string;
+    if (!id) return;
+    let cancelled = false;
+    api
+      .getPublicPaidStatus(id)
+      .then((r) => {
+        if (!cancelled) setPaidState(r?.paid ? 'paid' : 'pending');
+      })
+      .catch(() => {
+        if (!cancelled) setPaidState('pending');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [paidFlag, params.id]);
   const orderId = (params.id as string) ?? '';
 
   const [order, setOrder] = useState<Order | null>(null);
@@ -319,13 +339,17 @@ export default function TrackingPage() {
         {(paidFlag || cancelledFlag) && (
           <div
             className={`mb-4 rounded-xl border px-4 py-3 text-sm ${
-              paidFlag
+              paidFlag && paidState === 'paid'
                 ? 'border-kiwi-200 bg-kiwi-50 text-kiwi-700 dark:border-kiwi-800 dark:bg-kiwi-900/20 dark:text-kiwi-300'
-                : 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300'
+                : paidFlag
+                  ? 'border-surface-200 bg-surface-50 text-surface-600 dark:border-surface-700 dark:bg-surface-900 dark:text-surface-300'
+                  : 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300'
             }`}
           >
             {paidFlag
-              ? 'Pago recibido, ¡gracias! Tu pedido sigue su curso.'
+              ? paidState === 'paid'
+                ? 'Pago confirmado, ¡gracias! Tu pedido sigue su curso.'
+                : 'Estamos confirmando tu pago con el banco… esta página se actualiza sola.'
               : 'El pago se canceló. Tu pedido sigue activo: coordinamos el cobro por WhatsApp.'}
           </div>
         )}

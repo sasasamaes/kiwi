@@ -12,8 +12,9 @@ import {
   Wallet,
   ChevronLeft,
   ChevronRight,
+  Navigation,
 } from 'lucide-react';
-import { api } from '@kiwi/ui';
+import { api, buildTrackingUrl } from '@kiwi/ui';
 
 interface AdminOrder {
   id: string;
@@ -84,6 +85,7 @@ export default function AdminOrders() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<AdminOrder | null>(null);
+  const [copiedTrack, setCopiedTrack] = useState(false);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const load = useCallback(async (status: string, q: string, p: number) => {
@@ -189,7 +191,10 @@ export default function AdminOrders() {
           {orders.map((o, i) => (
             <motion.button
               key={o.id}
-              onClick={() => setSelected(o)}
+              onClick={() => {
+                setSelected(o);
+                setCopiedTrack(false);
+              }}
               className="flex w-full items-center gap-3 rounded-2xl glass p-4 text-left"
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
@@ -314,6 +319,31 @@ export default function AdminOrders() {
                   <Bike className="h-4 w-4 shrink-0 text-surface-400" />
                   {selected.driver?.fullName ?? 'Sin repartidor asignado'}
                 </p>
+                <div className="flex items-center gap-2 rounded-xl bg-kiwi-50 dark:bg-kiwi-900/30 px-3 py-2">
+                  <Navigation className="h-4 w-4 shrink-0 text-kiwi-600" />
+                  <a
+                    href={buildTrackingUrl(selected.id)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="min-w-0 flex-1 truncate text-xs font-medium text-kiwi-700 dark:text-kiwi-300 hover:underline"
+                  >
+                    Seguimiento en vivo
+                  </a>
+                  <button
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(buildTrackingUrl(selected.id));
+                        setCopiedTrack(true);
+                        setTimeout(() => setCopiedTrack(false), 2000);
+                      } catch {
+                        window.prompt('Copiá el link:', buildTrackingUrl(selected.id));
+                      }
+                    }}
+                    className="shrink-0 rounded-lg px-2 py-1 text-xs font-semibold text-kiwi-700 dark:text-kiwi-300 hover:bg-kiwi-100 dark:hover:bg-kiwi-900/50"
+                  >
+                    {copiedTrack ? '¡Copiado!' : 'Copiar'}
+                  </button>
+                </div>
                 {Array.isArray(selected.items) && selected.items.length > 0 && (
                   <div className="rounded-xl bg-surface-50 dark:bg-surface-700/50 p-3">
                     {selected.items.map((it, j) => (
