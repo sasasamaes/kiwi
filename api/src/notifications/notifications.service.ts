@@ -26,28 +26,44 @@ export class NotificationsService {
   constructor(private prisma: PrismaService) {
     void this.initializeFCM();
   }
-
   private async initializeFCM() {
     try {
       // In production, set FIREBASE_SERVICE_ACCOUNT env var with the service account JSON
       const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT;
 
-      if (serviceAccount) {
-        const adminModule = await import('firebase-admin');
-        const admin = adminModule.default || adminModule;
-
-        if (!(admin as any).apps?.length) {
-          const serviceAccountJson = JSON.parse(serviceAccount);
-          (admin as any).initializeApp({
-            credential: (admin as any).credential?.cert(serviceAccountJson),
-          });
-        }
-
-        this.fcmAdmin = (admin as any).messaging();
-        this.logger.log('Firebase Cloud Messaging initialized successfully');
-      } else {
-        this.logger.warn('FIREBASE_SERVICE_ACCOUNT not set, using in-app notifications only');
+      if (!serviceAccount) {
+        this.logger.warn('FIREBASE_SERVICE_ACCOUNT ausente, using in-app notifications only');
+        return;
       }
+
+      let parsed: any;
+      try {
+        parsed = JSON.parse(serviceAccount);
+      } catch (e) {
+        this.logger.warn(
+          `FIREBASE_SERVICE_ACCOUNT inválido (no es JSON de una línea): ${String(e)}. using in-app notifications only`,
+        );
+        return;
+      }
+
+      if (!parsed?.project_id || !parsed?.private_key || !parsed?.client_email) {
+        this.logger.warn(
+          'FIREBASE_SERVICE_ACCOUNT incompleto (falta project_id/private_key/client_email), using in-app notifications only',
+        );
+        return;
+      }
+
+      const adminModule = await import('firebase-admin');
+      const admin = adminModule.default || adminModule;
+
+      if (!(admin as any).apps?.length) {
+        (admin as any).initializeApp({
+          credential: (admin as any).credential?.cert(parsed),
+        });
+      }
+
+      this.fcmAdmin = (admin as any).messaging();
+      this.logger.log('Firebase Cloud Messaging initialized successfully');
     } catch {
       this.logger.warn('FCM not configured, using in-app notifications only');
     }
