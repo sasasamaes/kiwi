@@ -263,7 +263,7 @@ export type { QRCodeGeneratorProps, QRScannerProps } from './QRCodeGenerator';
 // ============================================
 export { TrackingMap } from './TrackingMap';
 export type { TrackingMapProps } from './TrackingMap';
-export { ShareTrackingButton, buildTrackingUrl } from './ShareTracking';
+export { ShareTrackingButton, buildTrackingUrl, buildTrackingMessage } from './ShareTracking';
 
 // ============================================
 //   ADDRESS INPUT

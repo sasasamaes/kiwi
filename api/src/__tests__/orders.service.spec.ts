@@ -634,6 +634,7 @@ describe('OrdersService', () => {
 
       expect(dto.id).toBe('order-1');
       expect(dto.merchantName).toBe('Bowl & Café');
+      expect(dto.driverId).toBe('dp-1');
       expect(dto.driver.fullName).toBe('Juan');
       expect(dto.driver.photoUrl).toBe('https://cdn.test/juan.jpg');
       expect(dto.driver.vehiclePlate).toBe('NIC-1234');
@@ -814,6 +815,41 @@ describe('OrdersService', () => {
       prisma.order.findMany.mockResolvedValue([]);
       const res = await service.getDeliveredZoneMix();
       expect(res).toMatchObject({ delivered: 0, classified: 0, unclassified: 0, weights: {} });
+    });
+  });
+
+  describe('updateStatus suma el viaje al entregar', () => {
+    const baseOrder = {
+      id: 'order-1',
+      status: 'in_transit_to_delivery',
+      driverId: 'dp-1',
+      merchant: { userId: 'merchant-user-1' },
+      driver: { userId: 'user-d' },
+    };
+
+    beforeEach(() => {
+      prisma.driverProfile = { update: jest.fn().mockResolvedValue({}) };
+    });
+
+    it('delivered incrementa totalTrips una vez', async () => {
+      prisma.order.findUnique.mockResolvedValue(baseOrder);
+      prisma.order.update.mockResolvedValue({ ...baseOrder, status: 'delivered' });
+
+      await service.updateStatus('order-1', 'delivered', 'user-d');
+
+      expect(prisma.driverProfile.update).toHaveBeenCalledWith({
+        where: { id: 'dp-1' },
+        data: { totalTrips: { increment: 1 } },
+      });
+    });
+
+    it('otros estados no tocan el contador', async () => {
+      prisma.order.findUnique.mockResolvedValue({ ...baseOrder, status: 'in_transit_to_pickup' });
+      prisma.order.update.mockResolvedValue({ ...baseOrder, status: 'picked_up' });
+
+      await service.updateStatus('order-1', 'picked_up', 'user-d');
+
+      expect(prisma.driverProfile.update).not.toHaveBeenCalled();
     });
   });
 });

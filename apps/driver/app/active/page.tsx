@@ -23,7 +23,6 @@ import {
   Timer,
   Copy,
   ChevronDown,
-  Wallet,
   PartyPopper,
   Inbox,
   AlertTriangle,
@@ -599,34 +598,62 @@ export default function ActiveOrders() {
           </div>
         )}
 
-        {/* Selector cuando hay varios activos */}
+        {/* Cola de entregas: todos los activos en orden, se toca para cambiar */}
         {orders.length > 1 && (
-          <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
-            {orders.map((o) => {
-              const active = o.id === order.id;
-              return (
-                <motion.button
-                  key={o.id}
-                  onClick={() => {
-                    setSelectedId(o.id);
-                    setConfirmArmed(false);
-                    setRejectArmed(false);
-                  }}
-                  whileTap={{ scale: 0.95 }}
-                  className={`inline-flex min-h-[44px] shrink-0 items-center gap-2 whitespace-nowrap rounded-2xl px-4 py-2 text-sm font-medium transition-colors ${
-                    active
-                      ? 'bg-kiwi-500 text-white shadow-kiwi'
-                      : 'glass text-surface-600 dark:text-surface-400'
-                  }`}
-                >
-                  <Wallet className="h-4 w-4" />₡{netPayout(o).toLocaleString()}
-                  <span className={active ? 'text-white/80' : 'text-surface-400'}>
-                    {(STEP_META[o.status]?.label ?? o.status).split(' ')[0]}
-                  </span>
-                  {queuedTransitions[o.id] ? ' ⏳' : ''}
-                </motion.button>
-              );
-            })}
+          <div className="mb-4 overflow-hidden rounded-3xl glass">
+            <p className="px-4 pt-3 text-xs font-semibold uppercase tracking-wide text-surface-400">
+              Cola de entregas ({orders.length})
+            </p>
+            <div className="space-y-1 p-2">
+              {orders.map((o, idx) => {
+                const active = o.id === order.id;
+                return (
+                  <motion.button
+                    key={o.id}
+                    onClick={() => {
+                      setSelectedId(o.id);
+                      setConfirmArmed(false);
+                      setRejectArmed(false);
+                    }}
+                    whileTap={{ scale: 0.98 }}
+                    className={`flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition-colors ${
+                      active ? 'bg-kiwi-500 text-white shadow-kiwi' : ''
+                    }`}
+                  >
+                    <span
+                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                        active
+                          ? 'bg-white/20 text-white'
+                          : 'bg-surface-100 dark:bg-surface-700 text-surface-500'
+                      }`}
+                    >
+                      {idx + 1}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span
+                        className={`block truncate text-sm font-semibold ${
+                          active ? 'text-white' : 'text-surface-800 dark:text-surface-100'
+                        }`}
+                      >
+                        {(o as any).merchant?.businessName || 'Comercio'} → {o.deliveryAddress}
+                      </span>
+                      <span className={`text-xs ${active ? 'text-white/80' : 'text-surface-400'}`}>
+                        {STEP_META[o.status]?.label ?? o.status}
+                        {queuedTransitions[o.id] ? ' · ⏳ sincronizando' : ''}
+                        {active ? ' · VIENDO ESTE' : ''}
+                      </span>
+                    </span>
+                    <span
+                      className={`shrink-0 font-mono text-sm font-bold ${
+                        active ? 'text-white' : 'text-kiwi-600'
+                      }`}
+                    >
+                      ₡{netPayout(o).toLocaleString()}
+                    </span>
+                  </motion.button>
+                );
+              })}
+            </div>
           </div>
         )}
 

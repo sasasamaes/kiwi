@@ -95,6 +95,9 @@ export default function Profile() {
   const { user, loading: authLoading, logout } = useAuth();
   const [profile, setProfile] = useState<any>(null);
   const [earnings, setEarnings] = useState(0);
+  // Viajes del endpoint all-time: respalda al contador del perfil para
+  // entregas viejas (de antes del fix del incremento).
+  const [earnedTrips, setEarnedTrips] = useState(0);
   const [kycStatus, setKycStatus] = useState<KYCStatus>('pending');
   const [kycRequired, setKycRequired] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -122,6 +125,7 @@ export default function Profile() {
       try {
         const e = await api.getDriverEarnings('all');
         setEarnings(Number(e?.totalEarnings || 0));
+        setEarnedTrips(Number(e?.totalTrips || 0));
       } catch {
         // Ganancias opcionales
       }
@@ -174,7 +178,7 @@ export default function Profile() {
 
   const name = profile?.fullName || user?.driverProfile?.fullName || 'Repartidor';
   const rating = Number(profile?.rating ?? 5);
-  const trips = Number(profile?.totalTrips ?? 0);
+  const trips = Math.max(Number(profile?.totalTrips ?? 0), Number(earnedTrips ?? 0));
   const safeTrips = Number.isFinite(trips) && trips >= 0 ? Math.floor(trips) : 0;
   const level = String(profile?.level || 'bronce');
   const status = String(profile?.status || 'offline');

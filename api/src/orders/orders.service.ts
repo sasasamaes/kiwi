@@ -557,6 +557,9 @@ export class OrdersService {
       deliveryLat: order.deliveryLat != null ? Number(order.deliveryLat) : null,
       deliveryLng: order.deliveryLng != null ? Number(order.deliveryLng) : null,
       merchantName: (order as any).merchant?.businessName ?? null,
+      // UUID necesario para pedir la ubicación (con guarda por rol en el
+      // endpoint logueado). Sin esto, los logueados nunca veían el punto azul.
+      driverId: order.driverId ?? null,
       driver: order.driverId
         ? {
             fullName: (order as any).driver?.fullName ?? null,
@@ -1025,6 +1028,18 @@ export class OrdersService {
         driver: true,
       },
     });
+
+    // Contador de viajes del repartidor: solo al entregar (la transición
+    // validada impide doble conteo por API). Best-effort: jamás tumba la
+    // entrega si falla.
+    if (status === 'delivered' && updatedOrder.driverId) {
+      await this.prisma.driverProfile
+        .update({
+          where: { id: updatedOrder.driverId },
+          data: { totalTrips: { increment: 1 } },
+        })
+        .catch((e) => this.logger.error(`totalTrips increment failed: ${String(e)}`));
+    }
 
     // Emit real-time status change to both merchant and driver
     const statusLabels: Record<string, string> = {

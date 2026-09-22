@@ -364,6 +364,11 @@ export default function TrackingPage() {
           />
           {isConnected ? 'En vivo' : 'Se actualiza solo'}
         </motion.div>
+        {!driverLocation && (order as any)?.driverId && (
+          <p className="mb-4 -mt-1 text-center text-xs text-surface-400">
+            Conectando con la ubicación del repartidor… si tarda, puede tener el GPS apagado.
+          </p>
+        )}
 
         <motion.div
           className="rounded-2xl glass p-6 mb-6"

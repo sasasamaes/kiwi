@@ -164,10 +164,21 @@ export default function Home() {
     }
   }, []);
 
+  // Estados con trabajo pendiente: la cola del repartidor. Se filtra en
+  // cliente para no perder pedidos al aceptar otro (getMyOrders('assigned')
+  // escondía los que ya van en camino).
+  const ACTIVE_STATUSES = [
+    'assigned',
+    'in_transit_to_pickup',
+    'picked_up',
+    'in_transit_to_delivery',
+  ];
+
   const fetchActiveOrders = useCallback(async () => {
     try {
-      const data = await api.getMyOrders('assigned');
-      setActiveOrders(data);
+      const data = await api.getMyOrders();
+      const list = Array.isArray(data) ? data : [];
+      setActiveOrders(list.filter((o: any) => ACTIVE_STATUSES.includes(o.status)));
     } catch (error) {
       console.error('Failed to fetch active orders:', error);
     }
@@ -190,14 +201,19 @@ export default function Home() {
       try {
         const profile = await api.getDriverProfile();
         let earnings = 0;
+        let earnedTrips = 0;
         try {
           const e = await api.getDriverEarnings('all');
           earnings = Number(e?.totalEarnings || 0);
+          earnedTrips = Number(e?.totalTrips || 0);
         } catch {
           // Ganancias opcionales: el resto del dashboard igual carga
         }
         setStats({
-          trips: profile.totalTrips || 0,
+          trips: Math.max(
+            Number(profile.totalTrips || 0),
+            Number.isFinite(earnedTrips) ? earnedTrips : 0,
+          ),
           earnings,
           rating: Number(profile.rating) || 5.0,
         });
