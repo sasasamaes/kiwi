@@ -154,7 +154,7 @@ async function main() {
     `status=${newOrder.data?.status}, basePrice=${newOrder.data?.basePrice}`);
 
   ok('new order starts pending', newOrder.data?.status === 'pending');
-  ok('pricing computed by distance (1.5km → ₡1000)', Number(newOrder.data?.basePrice) === 1000, `basePrice=${newOrder.data?.basePrice}`);
+  ok('pricing Nicoya flat (1.5km dentro de zona → ₡2000)', Number(newOrder.data?.basePrice) === 2000, `basePrice=${newOrder.data?.basePrice}`);
 
   const myOrders = await req('GET', '/orders/my', { token: merchantToken });
   ok('order appears in merchant order list', myOrders.status === 200 && myOrders.data?.some?.((o) => o.id === orderId),
@@ -174,7 +174,7 @@ async function main() {
     `status=${accepted.data?.status}`);
 
   const doubleAccept = await req('POST', `/orders/${orderId}/accept`, { token: driverToken });
-  ok('double-accept rejected', doubleAccept.status === 400, `HTTP ${doubleAccept.status}`);
+  ok('double-accept same driver idempotent', doubleAccept.status === 201 && doubleAccept.data?.id === orderId, `HTTP ${doubleAccept.status}`);
 
   const asMerchant = await req('GET', `/orders/${orderId}`, { token: merchantToken });
   ok('merchant sees assigned driver', asMerchant.status === 200 && !!asMerchant.data?.driver, 
@@ -184,6 +184,10 @@ async function main() {
   const d2Login = await req('POST', '/auth/login', { body: { email: DRIVER2, password: PASSWORD } });
   const outsider = await req('GET', `/orders/${orderId}`, { token: d2Login.data?.accessToken ?? d2Login.data?.access_token });
   ok('other driver denied access to order', outsider.status === 403, `HTTP ${outsider.status}`);
+
+  // Access control: a different driver must not steal the order
+  const steal = await req('POST', `/orders/${orderId}/accept`, { token: d2Login.data?.accessToken ?? d2Login.data?.access_token });
+  ok('other driver accept rejected', steal.status === 400, `HTTP ${steal.status}`);
 
   // Status walk
   const walk = async (status) => {
