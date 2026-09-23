@@ -3,10 +3,9 @@
 import { useState, useEffect } from 'react';
 import { Link2, Check, Share2 } from 'lucide-react';
 
-const CLIENT_BASE_URL = (process.env.NEXT_PUBLIC_CLIENT_URL || 'https://kiwicr.express').replace(
-  /\/$/,
-  '',
-);
+const CLIENT_BASE_URL = (
+  process.env.NEXT_PUBLIC_CLIENT_URL || 'https://www.kiwicr.express'
+).replace(/\/$/, '');
 
 /** Link público de seguimiento: el UUID del pedido es la credencial. */
 export function buildTrackingUrl(orderId: string): string {

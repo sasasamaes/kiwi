@@ -22,6 +22,7 @@ import { PrismaService } from '../prisma/prisma.service';
       'https://kiwi-client-tau.vercel.app',
       'https://kiwi-driver.vercel.app',
       'https://kiwicr.express',
+      'https://www.kiwicr.express',
       'https://negocios.kiwicr.express',
       'https://repartidores.kiwicr.express',
       'https://api.kiwicr.express',

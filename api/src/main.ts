@@ -145,7 +145,9 @@ async function bootstrap() {
       'https://kiwi-client-tau.vercel.app',
       'https://kiwi-driver.vercel.app',
       // Dominio propio (transición: se mantienen los vercel.app arriba).
+      // www es el canónico (el apex no tiene cert válido ni DNS estable).
       'https://kiwicr.express',
+      'https://www.kiwicr.express',
       'https://negocios.kiwicr.express',
       'https://repartidores.kiwicr.express',
       'https://api.kiwicr.express',
