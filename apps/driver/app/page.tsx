@@ -464,12 +464,13 @@ export default function Home() {
             General → Actualización.
           </div>
         )}
-        {/* iPhone nuevo pero sin Notification/SW: no es versión, es contexto (WebView, Chrome iOS, SW bloqueado) */}
+        {/* iPhone nuevo pero perfil instalado sin APIs de push: reinstalar el ícono lo arregla */}
         {!pushNeedsInstall && pushUnsupported === 'ios-push-unavailable' && (
           <div className="mb-4 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 px-4 py-3 text-xs text-amber-800 dark:text-amber-300">
-            Tu iOS ya está actualizado, pero este navegador no permite alertas. Abrí Kiwi desde el
-            ícono instalado con Safari (no desde Chrome/WhatsApp) y permití notificaciones en
-            Ajustes → Notificaciones.
+            Tu iOS ({pushDebug?.iosVersion ?? '…'}) ya soporta alertas, pero esta instalación quedó
+            sin permisos del sistema. Borrá el ícono de Kiwi y agregalo de nuevo: en Safari tocá{' '}
+            <span className="font-semibold">Compartir → Agregar a inicio</span>, abrilo desde el
+            ícono nuevo y activá las alertas ahí. Igual te llegan los pedidos con la app abierta.
             {pushDebug && (
               <details className="mt-2">
                 <summary className="font-semibold">Diagnóstico</summary>
