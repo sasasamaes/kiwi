@@ -15,7 +15,48 @@ export type PushFailReason =
   | 'token-failed'
   | 'sync-failed';
 
-export type PushUnsupportedReason = 'ios-not-installed' | 'ios-old' | 'no-push' | null;
+export type PushUnsupportedReason =
+  'ios-not-installed' | 'ios-old' | 'ios-push-unavailable' | 'no-push' | null;
+
+/** Versión real de iOS parseada del userAgent. null = no iOS o no detectable. */
+export interface IosVersion {
+  major: number;
+  minor: number;
+}
+
+/** Diagnóstico crudo del device para debuggear falsos "no soportado". */
+export interface PushDebug {
+  hasNotification: boolean;
+  hasServiceWorker: boolean;
+  hasPushManager: boolean;
+  permission: string;
+  standaloneMatch: boolean;
+  navigatorStandalone: unknown;
+  iosVersion: string;
+  userAgent: string;
+}
+
+function parseIosVersion(ua: string): IosVersion | null {
+  // iPhone OS 16_4, iPhone OS 26_7, CPU OS 17_2, etc.
+  const m = ua.match(/OS (\d+)[_.](\d+)?/);
+  if (/iPhone|iPad|iPod/.test(ua) && m) {
+    return { major: Number(m[1]), minor: Number(m[2] ?? 0) };
+  }
+  return null;
+}
+
+function isIosDeviceUA(ua: string): boolean {
+  if (/iPhone|iPad|iPod/.test(ua)) return true;
+  // iPadOS en modo escritorio se reporta como Macintosh + touch.
+  if (
+    /Macintosh/.test(ua) &&
+    typeof navigator !== 'undefined' &&
+    (navigator as any).maxTouchPoints > 1
+  ) {
+    return true;
+  }
+  return false;
+}
 
 interface UsePushNotificationsOptions {
   enabled?: boolean;
@@ -48,40 +89,66 @@ export function usePushNotifications(options: UsePushNotificationsOptions = {}) 
   const [needsInstall, setNeedsInstall] = useState(false);
   const [isIos, setIsIos] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [iosVersion, setIosVersion] = useState<IosVersion | null>(null);
+  const [pushDebug, setPushDebug] = useState<PushDebug | null>(null);
 
   useEffect(() => {
-    // Soporte REAL de push: en iPhone 'Notification' existe en Safari pero el
-    // PushManager solo vive en la PWA instalada (Agregar a inicio). Sin ese
-    // chequeo el botón se muestra, falla siempre y confunde.
-    const ok =
-      typeof window !== 'undefined' &&
-      'Notification' in window &&
-      'serviceWorker' in navigator &&
-      'PushManager' in window;
+    const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+    const hasNotification = typeof window !== 'undefined' && 'Notification' in window;
+    const hasServiceWorker = typeof navigator !== 'undefined' && 'serviceWorker' in navigator;
+    // PushManager en window es el chequeo flaky en iOS: puede faltar aun con
+    // PWA instalada y push real funcionando (el subscribe vive en el SW
+    // registration). NO bloquear por esto: dejar intentar y que el error
+    // exacto salga de requestPermission (PUSH:no-push-manager).
+    const hasPushManager = typeof window !== 'undefined' && 'PushManager' in window;
+    const ok = hasNotification && hasServiceWorker;
     setIsSupported(ok);
-    if ('Notification' in window) {
+    if (hasNotification) {
       setPermission(Notification.permission);
     }
     // iOS no instalado: ni mostrar "Activar" (imposible) → guía de instalación.
-    const isIosDevice =
-      typeof navigator !== 'undefined' && /iPhone|iPad|iPod/.test(navigator.userAgent);
+    const isIosDevice = isIosDeviceUA(ua);
     const installed =
       typeof window !== 'undefined' &&
       (window.matchMedia?.('(display-mode: standalone)').matches ||
         (navigator as any)?.standalone === true);
+    const ver = isIosDevice ? parseIosVersion(ua) : null;
     setIsIos(isIosDevice);
     setIsInstalled(installed);
+    setIosVersion(ver);
     setNeedsInstall(isIosDevice && !installed);
+    const dbg: PushDebug = {
+      hasNotification,
+      hasServiceWorker,
+      hasPushManager,
+      permission: hasNotification ? Notification.permission : 'n/a',
+      standaloneMatch:
+        typeof window !== 'undefined'
+          ? !!window.matchMedia?.('(display-mode: standalone)').matches
+          : false,
+      navigatorStandalone: (navigator as any)?.standalone,
+      iosVersion: ver ? `${ver.major}.${ver.minor}` : 'n/a',
+      userAgent: ua,
+    };
+    setPushDebug(dbg);
+    console.log('[push-debug]', JSON.stringify(dbg));
   }, []);
 
+  const isOldIos =
+    !!iosVersion && (iosVersion.major < 16 || (iosVersion.major === 16 && iosVersion.minor < 4));
+
   // Razón por la que NO se puede (para mensaje exacto en UI).
-  const unsupportedReason: PushUnsupportedReason = isSupported
-    ? null
-    : isIos
-      ? isInstalled
-        ? 'ios-old'
-        : 'ios-not-installed'
-      : 'no-push';
+  // OJO: nunca inferir "viejo" por falta de PushManager — se chequea la
+  // versión real. Y un iOS viejo se detecta por versión, no por capabilities.
+  const unsupportedReason: PushUnsupportedReason = (() => {
+    if (isIos && isInstalled && isOldIos) return 'ios-old';
+    if (isSupported) return null;
+    if (!isIos) return 'no-push';
+    if (!isInstalled) return 'ios-not-installed';
+    // Instalado y versión nueva (o desconocida) pero sin Notification/SW:
+    // no mentir con "actualizá", es otro bloqueo.
+    return 'ios-push-unavailable';
+  })();
 
   // Request permission and register token. Devuelve el motivo exacto para
   // mostrar el paso que falló (permiso vs token vs servidor).
@@ -176,6 +243,10 @@ export function usePushNotifications(options: UsePushNotificationsOptions = {}) 
     needsInstall,
     /** Por qué no se puede (null = se puede intentar). */
     unsupportedReason,
+    isIos,
+    isInstalled,
+    iosVersion,
+    pushDebug,
     permission,
     token,
     requestPermission,

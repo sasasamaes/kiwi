@@ -78,6 +78,7 @@ export default function Home() {
     unsupportedReason: pushUnsupported,
     permission: pushPermission,
     requestPermission: requestPushPermission,
+    pushDebug,
   } = usePushNotifications({ enabled: false });
   const [pushBusy, setPushBusy] = useState(false);
   const [pushTesting, setPushTesting] = useState(false);
@@ -456,11 +457,27 @@ export default function Home() {
             </p>
           </div>
         )}
-        {/* iPhone instalado pero viejo: push requiere iOS 16.4+ */}
+        {/* iPhone instalado pero viejo de verdad: push requiere iOS 16.4+ */}
         {!pushNeedsInstall && pushUnsupported === 'ios-old' && (
           <div className="mb-4 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 px-4 py-3 text-xs text-amber-800 dark:text-amber-300">
             Tu iPhone necesita iOS 16.4 o más nuevo para las alertas. Actualizalo en Ajustes →
             General → Actualización.
+          </div>
+        )}
+        {/* iPhone nuevo pero sin Notification/SW: no es versión, es contexto (WebView, Chrome iOS, SW bloqueado) */}
+        {!pushNeedsInstall && pushUnsupported === 'ios-push-unavailable' && (
+          <div className="mb-4 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 px-4 py-3 text-xs text-amber-800 dark:text-amber-300">
+            Tu iOS ya está actualizado, pero este navegador no permite alertas. Abrí Kiwi desde el
+            ícono instalado con Safari (no desde Chrome/WhatsApp) y permití notificaciones en
+            Ajustes → Notificaciones.
+            {pushDebug && (
+              <details className="mt-2">
+                <summary className="font-semibold">Diagnóstico</summary>
+                <pre className="mt-1 whitespace-pre-wrap break-all">
+                  {JSON.stringify(pushDebug, null, 1)}
+                </pre>
+              </details>
+            )}
           </div>
         )}
         {/* Alertas push: solo si el navegador las soporta y aún no se decidió */}
