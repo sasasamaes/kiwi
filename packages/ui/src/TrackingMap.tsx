@@ -19,7 +19,6 @@ export interface TrackingMapProps {
   height?: number;
   className?: string;
   showRoute?: boolean;
-  showTraffic?: boolean;
 }
 
 function createSvgIcon(svgContent: string, color: string, size = 40): any {
@@ -80,7 +79,6 @@ export function TrackingMap({
   height = 300,
   className = '',
   showRoute = true,
-  showTraffic = true,
 }: TrackingMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);

@@ -63,8 +63,6 @@ const unitPriceFor = (base: number, picks: SelectedOption[]) =>
   Math.round((base + picks.reduce((s, p) => s + p.priceDelta, 0)) * 100) / 100;
 
 /** Email invitado sanitizado (solo dígitos: "8888 1234" rompía OnvoPay). */
-const guestEmailFor = (digits: string) => `${digits || 'cliente'}@guest.checkout.invalid`;
-
 interface SelectedOption {
   groupId: string;
   groupName: string;
@@ -386,19 +384,24 @@ export default function MenuPage() {
         paymentMethod,
       };
 
-      const order = await api.createOrder(orderData);
+      const order = api.getToken()
+        ? await api.createOrder(orderData)
+        : await api.createGuestOrder(orderData);
       setPendingOrderId(order.id);
 
       // Handle payment based on method
       if (paymentMethod === 'sinpe' || paymentMethod === 'card') {
         // Create payment with OnvoPay
-        const paymentResult = await api.createPayment({
+        const payPayload = {
           orderId: order.id,
-          method: paymentMethod === 'sinpe' ? 'onvopay_sinpe' : 'onvopay_card',
+          method: (paymentMethod === 'sinpe' ? 'onvopay_sinpe' : 'onvopay_card') as
+            'onvopay_sinpe' | 'onvopay_card',
           amount: totalWithDelivery,
           customerPhone: phoneDigits,
-          customerEmail: guestEmailFor(phoneDigits),
-        });
+        };
+        const paymentResult = api.getToken()
+          ? await api.createPayment(payPayload)
+          : await api.createGuestPayment(payPayload);
 
         if (
           paymentResult.checkoutUrl &&
@@ -412,12 +415,15 @@ export default function MenuPage() {
       } else if (paymentMethod === 'crypto_usdc' || paymentMethod === 'crypto_usdt') {
         // Create crypto payment
         const coin = paymentMethod === 'crypto_usdc' ? 'USDC' : 'USDT';
-        const paymentResult = await api.createPayment({
+        const cryptoPayload = {
           orderId: order.id,
-          method: 'crypto',
+          method: 'crypto' as const,
           amount: totalWithDelivery,
-          cryptoCoin: coin,
-        });
+          cryptoCoin: coin as 'USDC' | 'USDT',
+        };
+        const paymentResult = api.getToken()
+          ? await api.createPayment(cryptoPayload)
+          : await api.createGuestPayment(cryptoPayload);
 
         setPaymentIntent(paymentResult);
         setPaymentPending(true);
@@ -452,24 +458,30 @@ export default function MenuPage() {
     setCheckingOut(true);
     try {
       if (paymentMethod === 'sinpe' || paymentMethod === 'card') {
-        const paymentResult = await api.createPayment({
+        const retryPayload = {
           orderId: pendingOrderId,
-          method: paymentMethod === 'sinpe' ? 'onvopay_sinpe' : 'onvopay_card',
+          method: (paymentMethod === 'sinpe' ? 'onvopay_sinpe' : 'onvopay_card') as
+            'onvopay_sinpe' | 'onvopay_card',
           amount: totalWithDelivery,
           customerPhone: phoneDigits,
-          customerEmail: guestEmailFor(phoneDigits),
-        });
+        };
+        const paymentResult = api.getToken()
+          ? await api.createPayment(retryPayload)
+          : await api.createGuestPayment(retryPayload);
         if (paymentResult.checkoutUrl && safeNavigateToUrl(paymentResult.checkoutUrl)) return;
         setPaymentIntent(paymentResult);
         setPaymentPending(true);
       } else if (paymentMethod === 'crypto_usdc' || paymentMethod === 'crypto_usdt') {
         const coin = paymentMethod === 'crypto_usdc' ? 'USDC' : 'USDT';
-        const paymentResult = await api.createPayment({
+        const retryCrypto = {
           orderId: pendingOrderId,
-          method: 'crypto',
+          method: 'crypto' as const,
           amount: totalWithDelivery,
-          cryptoCoin: coin,
-        });
+          cryptoCoin: coin as 'USDC' | 'USDT',
+        };
+        const paymentResult = api.getToken()
+          ? await api.createPayment(retryCrypto)
+          : await api.createGuestPayment(retryCrypto);
         setPaymentIntent(paymentResult);
         setPaymentPending(true);
       } else {

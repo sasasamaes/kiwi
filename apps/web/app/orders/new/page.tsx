@@ -410,7 +410,7 @@ function NewOrderInner({
     setDeliveryLat(undefined);
     setDeliveryLng(undefined);
     if (deliveryDebounce.current) clearTimeout(deliveryDebounce.current);
-    deliveryDebounce.current = setTimeout(() => searchPlaces(value), 400);
+    deliveryDebounce.current = setTimeout(() => searchPlaces(value), 700);
   };
 
   const pickSuggestion = (s: GeoSuggestion) => {

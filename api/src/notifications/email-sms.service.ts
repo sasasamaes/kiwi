@@ -25,24 +25,15 @@ export class EmailSmsService {
 
   async sendEmail(payload: EmailPayload): Promise<boolean> {
     try {
-      // In production, integrate with:
-      // - SendGrid: @sendgrid/mail
-      // - Mailgun: mailgun.js
-      // - AWS SES: @aws-sdk/client-ses
-      // - Resend: resend
+      // Sin proveedor configurado: NO se envía nada. Retornar true aquí
+      // haría que el resto del sistema registre "notificado" sin que el
+      // correo exista. Cuando se integre SendGrid/SES/Resend, este método
+      // retorna true solo si el proveedor acepta el envío.
+      this.logger.warn(
+        `📧 Email NO enviado a ${payload.to} (${payload.subject}): sin proveedor configurado`,
+      );
 
-      this.logger.log(`📧 Email sent to ${payload.to}: ${payload.subject}`);
-
-      // TODO: Replace with real email provider
-      // await this.sendGrid.send({
-      //   to: payload.to,
-      //   from: 'noreply@kiwi.app',
-      //   subject: payload.subject,
-      //   html: payload.html,
-      //   text: payload.text,
-      // });
-
-      return true;
+      return false;
     } catch (error) {
       this.logger.error(`Failed to send email to ${payload.to}:`, error);
       return false;
@@ -55,21 +46,10 @@ export class EmailSmsService {
 
   async sendSMS(payload: SMSPayload): Promise<boolean> {
     try {
-      // In production, integrate with:
-      // - Twilio: twilio
-      // - MessageBird
-      // - Vonage: @vonage/server-sdk
+      // Sin proveedor configurado: NO se envía nada (ver sendEmail).
+      this.logger.warn(`📱 SMS NO enviado a ${payload.to}: sin proveedor configurado`);
 
-      this.logger.log(`📱 SMS sent to ${payload.to}: ${payload.message.substring(0, 50)}...`);
-
-      // TODO: Replace with real SMS provider
-      // await this.twilio.messages.create({
-      //   body: payload.message,
-      //   from: '+506XXXXXXXX',
-      //   to: payload.to,
-      // });
-
-      return true;
+      return false;
     } catch (error) {
       this.logger.error(`Failed to send SMS to ${payload.to}:`, error);
       return false;

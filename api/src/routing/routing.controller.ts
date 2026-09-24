@@ -1,4 +1,14 @@
-import { Controller, Post, Get, Put, Body, Query, Param, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Put,
+  Body,
+  Query,
+  Param,
+  UseGuards,
+  BadRequestException,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { RoutingService } from './routing.service';
 import { TrafficService } from './traffic.service';
@@ -7,7 +17,10 @@ import { TrafficHistoryService } from './traffic-history.service';
 import { RouteSuggestionsService } from './route-suggestions.service';
 import { TrafficPredictionsService } from './traffic-predictions.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { Public } from '../auth/decorators/public.decorator';
 
 @ApiTags('Routing')
 @Controller('routing')
@@ -112,6 +125,7 @@ export class RoutingController {
     return this.trafficService.getTrafficConditions(latNum, lngNum);
   }
 
+  @Public()
   @Get('traffic/eta')
   @ApiOperation({ summary: 'Get traffic-adjusted ETA' })
   async getTrafficAdjustedETA(
@@ -125,6 +139,7 @@ export class RoutingController {
     return this.trafficService.getTrafficAdjustedETA(baseDuration, latNum, lngNum);
   }
 
+  @Public()
   @Get('traffic/delivery-estimate')
   @ApiOperation({ summary: 'Get delivery estimate with traffic' })
   async getDeliveryEstimate(
@@ -134,13 +149,15 @@ export class RoutingController {
     @Query('deliveryLng') deliveryLng: string,
     @Query('distance') distance: string,
   ) {
-    return this.trafficService.getDeliveryEstimate(
-      parseFloat(pickupLat),
-      parseFloat(pickupLng),
-      parseFloat(deliveryLat),
-      parseFloat(deliveryLng),
-      parseFloat(distance),
+    const nums = [pickupLat, pickupLng, deliveryLat, deliveryLng, distance].map((v) =>
+      parseFloat(v),
     );
+    if (nums.some((n) => !Number.isFinite(n))) {
+      throw new BadRequestException(
+        'Coordenadas y distancia requeridas (pickupLat, pickupLng, deliveryLat, deliveryLng, distance)',
+      );
+    }
+    return this.trafficService.getDeliveryEstimate(nums[0], nums[1], nums[2], nums[3], nums[4]);
   }
 
   @Post('traffic/compare-routes')
@@ -190,6 +207,9 @@ export class RoutingController {
   }
 
   @Post('alerts')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Create manual traffic alert (admin)' })
   @ApiBody({
     schema: {
@@ -240,15 +260,15 @@ export class RoutingController {
 
   @Put('alerts/:alertId/dismiss')
   @ApiOperation({ summary: 'Dismiss an alert for driver' })
-  async dismissAlert(@Param('alertId') alertId: string, @Body() body: { driverId: string }) {
-    await this.trafficAlertsService.dismissAlert(body.driverId, alertId);
+  async dismissAlert(@Param('alertId') alertId: string, @CurrentUser() user: any) {
+    await this.trafficAlertsService.dismissAlertForUser(user.sub, alertId);
     return { success: true };
   }
 
   @Put('alerts/:alertId/read')
   @ApiOperation({ summary: 'Mark alert as read' })
-  async markAlertAsRead(@Param('alertId') alertId: string, @Body() body: { driverId: string }) {
-    await this.trafficAlertsService.markAlertAsRead(body.driverId, alertId);
+  async markAlertAsRead(@Param('alertId') alertId: string, @CurrentUser() user: any) {
+    await this.trafficAlertsService.markAlertAsReadForUser(user.sub, alertId);
     return { success: true };
   }
 
@@ -328,9 +348,15 @@ export class RoutingController {
   async getMerchantTrafficReport(
     @Param('merchantId') merchantId: string,
     @Query('period') period?: string,
+    @CurrentUser() user?: any,
   ) {
     const periodType = (period as 'day' | 'week' | 'month') || 'week';
-    return this.trafficHistoryService.getMerchantTrafficReport(merchantId, periodType);
+    return this.trafficHistoryService.getMerchantTrafficReportFor(
+      user?.sub,
+      user?.role,
+      merchantId,
+      periodType,
+    );
   }
 
   @Get('history/best-times')

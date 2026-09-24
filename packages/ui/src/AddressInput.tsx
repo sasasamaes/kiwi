@@ -121,10 +121,10 @@ export function AddressInput({
       clearTimeout(debounceRef.current);
     }
 
-    // Debounce search
+    // Debounce search (700ms: el backend espacia Nominatim a 1.1s por IP)
     debounceRef.current = setTimeout(() => {
       searchAddresses(newValue);
-    }, 300);
+    }, 700);
   };
 
   // Handle suggestion selection

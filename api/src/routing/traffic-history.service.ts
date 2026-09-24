@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TrafficService } from './traffic.service';
 
@@ -337,6 +337,26 @@ export class TrafficHistoryService {
       throw new NotFoundException('Perfil de comerciante no encontrado');
     }
     return this.getMerchantTrafficReport(merchant.id, period);
+  }
+
+  /**
+   * Reporte de un comercio con gate de ownership: el dueño (por token) o
+   * admin. Sin esto, cualquier logueado extraía pedidos/pagos agregados
+   * de otro comercio con su merchantId.
+   */
+  async getMerchantTrafficReportFor(
+    userId: string,
+    role: string | undefined,
+    merchantId: string,
+    period: 'day' | 'week' | 'month' = 'week',
+  ): Promise<MerchantTrafficReport> {
+    if (role !== 'admin') {
+      const merchant = await this.prisma.merchantProfile.findUnique({ where: { userId } });
+      if (!merchant || merchant.id !== merchantId) {
+        throw new ForbiddenException('Solo el comercio dueño puede ver este reporte');
+      }
+    }
+    return this.getMerchantTrafficReport(merchantId, period);
   }
 
   /**

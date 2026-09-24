@@ -153,8 +153,8 @@ export function usePushNotifications(options: UsePushNotificationsOptions = {}) 
       if (Notification.permission === 'granted') {
         const notification = new Notification(payload.notification?.title || 'Kiwi', {
           body: payload.notification?.body,
-          icon: '/kiwi-icon.png',
-          badge: '/kiwi-badge.png',
+          icon: '/icon.png',
+          badge: '/icon.png',
           data: payload.data,
         });
 

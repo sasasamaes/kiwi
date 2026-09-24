@@ -55,7 +55,23 @@ export class PaymentsController {
         paymentMethodId: dto.paymentMethodId,
       },
       user?.sub ?? user?.id,
+      user?.role,
     );
+  }
+
+  @Public()
+  @Post('guest')
+  @ApiOperation({ summary: 'Guest checkout payment (order link holders, no auth)' })
+  async createGuestPayment(@Body() dto: CreatePaymentDto) {
+    return this.paymentsService.createGuestPayment({
+      orderId: dto.orderId,
+      method: dto.method,
+      amount: dto.amount,
+      currency: dto.method === 'crypto' ? dto.cryptoCoin || 'USDC' : 'CRC',
+      customerEmail: dto.customerEmail,
+      customerPhone: dto.customerPhone,
+      cryptoCoin: dto.cryptoCoin,
+    });
   }
 
   @Post('confirm/:paymentIntentId')
@@ -122,7 +138,7 @@ export class PaymentsController {
     @Req() req: any,
     @Headers('x-onvo-signature') signature?: string,
   ) {
-    return this.paymentsService.handleWebhook(provider, req.body, signature);
+    return this.paymentsService.handleWebhook(provider, req.body, signature, req.rawBody);
   }
 
   @Get('crypto/quote')

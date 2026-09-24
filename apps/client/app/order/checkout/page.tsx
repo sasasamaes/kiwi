@@ -159,7 +159,13 @@ function CheckoutContent() {
         paymentMethod,
       };
 
-      const order = await api.createOrder(orderData);
+      const order = api.getToken()
+        ? await api.createOrder(orderData)
+        : await api.createGuestOrder({
+            ...orderData,
+            customerName: customerName.trim(),
+            customerPhone: phoneDigits,
+          });
       setOrderId(order.id);
 
       // Si el cobro no se puede iniciar, el pedido igual existe: se avisa
@@ -168,13 +174,16 @@ function CheckoutContent() {
       // Process payment based on method
       if (paymentMethod === 'sinpe' || paymentMethod === 'card') {
         try {
-          const paymentResult = await api.createPayment({
+          const payPayload = {
             orderId: order.id,
-            method: paymentMethod === 'sinpe' ? 'onvopay_sinpe' : 'onvopay_card',
+            method: (paymentMethod === 'sinpe' ? 'onvopay_sinpe' : 'onvopay_card') as
+              'onvopay_sinpe' | 'onvopay_card',
             amount: total,
             customerPhone: phoneDigits,
-            customerEmail: `${phoneDigits || 'cliente'}@guest.checkout.invalid`,
-          });
+          };
+          const paymentResult = api.getToken()
+            ? await api.createPayment(payPayload)
+            : await api.createGuestPayment(payPayload);
 
           if (paymentResult?.checkoutUrl) {
             // Redirect solo a checkout https allow-listed (validación en el helper)
@@ -191,12 +200,17 @@ function CheckoutContent() {
       } else if (paymentMethod === 'crypto_usdc' || paymentMethod === 'crypto_usdt') {
         // Create crypto payment record (server prices from the order total)
         try {
-          await api.createPayment({
+          const cryptoPayload = {
             orderId: order.id,
-            method: 'crypto',
+            method: 'crypto' as const,
             amount: total,
-            cryptoCoin: paymentMethod === 'crypto_usdc' ? 'USDC' : 'USDT',
-          });
+            cryptoCoin: (paymentMethod === 'crypto_usdc' ? 'USDC' : 'USDT') as 'USDC' | 'USDT',
+          };
+          if (api.getToken()) {
+            await api.createPayment(cryptoPayload);
+          } else {
+            await api.createGuestPayment(cryptoPayload);
+          }
           paySetupOk = true;
         } catch (paymentError) {
           console.warn('Crypto payment record failed, order created:', paymentError);

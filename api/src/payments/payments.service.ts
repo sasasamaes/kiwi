@@ -39,7 +39,11 @@ export class PaymentsService {
     private creditsService: CreditsService,
   ) {}
 
-  async createPayment(dto: CreatePaymentDTO, payerUserId?: string): Promise<PaymentResult> {
+  async createPayment(
+    dto: CreatePaymentDTO,
+    payerUserId?: string,
+    payerRole?: string,
+  ): Promise<PaymentResult> {
     const {
       orderId,
       method,
@@ -51,6 +55,14 @@ export class PaymentsService {
       paymentMethodId,
     } = dto;
 
+    // Solo el comercio dueño del pedido (o admin) puede iniciar/modificar
+    // su cobro. Sin esto, cualquier usuario logueado generaba checkouts y
+    // pisaba la fila payment de pedidos ajenos. Los invitados usan el
+    // flujo público createGuestPayment (mismo link, sin cuenta).
+    if (!payerUserId) {
+      throw new ForbiddenException('Iniciá sesión como comercio para iniciar el cobro');
+    }
+
     // Validate order exists
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
@@ -58,6 +70,16 @@ export class PaymentsService {
 
     if (!order) {
       throw new BadRequestException('Pedido no encontrado');
+    }
+
+    if (payerRole !== 'admin') {
+      const merchant = await this.prisma.merchantProfile.findUnique({
+        where: { userId: payerUserId },
+        select: { id: true },
+      });
+      if (!merchant || merchant.id !== order.merchantId) {
+        throw new ForbiddenException('Solo el comercio dueño puede gestionar este cobro');
+      }
     }
 
     // Server is the source of truth for money: the client amount is only
@@ -88,40 +110,141 @@ export class PaymentsService {
       throw new BadRequestException('El pedido ya tiene un pago completado');
     }
 
-    let result: PaymentResult;
-
     if (method === 'credit') {
       return this.createCreditPayment(orderId, order, payerUserId);
     }
 
+    const result = await this.runProviderPayment(orderId, method, amount, {
+      customerEmail,
+      customerPhone,
+      cryptoCoin,
+      paymentMethodId,
+    });
+    await this.savePaymentRecord(orderId, existingPayment, method, amount, cryptoCoin, result);
+
+    return result;
+  }
+
+  /**
+   * Cobro invitado (link público, sin cuenta): mismo checkout que el flujo
+   * logueado pero sin dueño que validar — el UUID del pedido es la
+   * credencial. Reglas: nunca crédito prepago, nunca sobre un pago
+   * completado, y si ya hay un checkout pendiente se devuelve la URL
+   * existente en vez de crear (y pisar) otro. El dinero solo se mueve en
+   * Onvo cuando el comprador completa el checkout; aquí solo se prepara.
+   */
+  async createGuestPayment(dto: CreatePaymentDTO): Promise<PaymentResult> {
+    const { orderId, method, customerEmail, customerPhone, cryptoCoin } = dto;
+
+    if (method === 'credit') {
+      throw new ForbiddenException('El crédito prepago requiere cuenta de comercio');
+    }
+    if (
+      method !== 'onvopay_card' &&
+      method !== 'onvopay_sinpe' &&
+      method !== 'crypto' &&
+      method !== 'cash'
+    ) {
+      throw new BadRequestException('Método de pago no válido');
+    }
+
+    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+    if (!order) {
+      throw new BadRequestException('Pedido no encontrado');
+    }
+    if (order.status === 'delivered' || order.status === 'cancelled') {
+      throw new BadRequestException('El pedido ya no admite pagos');
+    }
+
+    const serverAmount = Number(order.totalAmount);
+    if (!Number.isFinite(serverAmount) || serverAmount <= 0) {
+      throw new BadRequestException('Total del pedido inválido');
+    }
+
+    const existingPayment = await this.prisma.payment.findUnique({ where: { orderId } });
+    if (existingPayment && existingPayment.status === PaymentStatus.completed) {
+      throw new BadRequestException('El pedido ya tiene un pago completado');
+    }
+    if (
+      existingPayment &&
+      existingPayment.status === PaymentStatus.pending &&
+      (existingPayment as any).onvoCheckoutUrl
+    ) {
+      this.logger.log(`Guest payment reuses pending checkout for order ${orderId}`);
+      return {
+        success: true,
+        checkoutUrl: (existingPayment as any).onvoCheckoutUrl,
+        paymentId:
+          (existingPayment as any).onvoSessionId ??
+          (existingPayment as any).onvoPaymentId ??
+          undefined,
+      };
+    }
+
+    const result = await this.runProviderPayment(orderId, method, serverAmount, {
+      customerEmail,
+      customerPhone,
+      cryptoCoin,
+    });
+    await this.savePaymentRecord(
+      orderId,
+      existingPayment,
+      method,
+      serverAmount,
+      cryptoCoin,
+      result,
+    );
+    return result;
+  }
+
+  /**
+   * Ejecuta el proveedor (Onvo/crypto/cash) y arma el PaymentResult.
+   * El monto cobrado es siempre el total del servidor, nunca el del cliente.
+   */
+  private async runProviderPayment(
+    orderId: string,
+    method: string,
+    amount: number,
+    contact: {
+      customerEmail?: string;
+      customerPhone?: string;
+      cryptoCoin?: 'USDC' | 'USDT';
+      paymentMethodId?: string;
+    },
+  ): Promise<PaymentResult> {
     switch (method) {
       case 'onvopay_card':
       case 'onvopay_sinpe':
-        result = await this.createOnvoPayPayment(
+        return this.createOnvoPayPayment(
           orderId,
           amount,
           method,
-          customerEmail,
-          customerPhone,
-          paymentMethodId,
+          contact.customerEmail,
+          contact.customerPhone,
+          contact.paymentMethodId,
         );
-        break;
-
       case 'crypto':
-        result = await this.createCryptoPayment(orderId, amount, cryptoCoin || 'USDC');
-        break;
-
+        return this.createCryptoPayment(orderId, amount, contact.cryptoCoin || 'USDC');
       case 'cash':
-        result = await this.createCashPayment(orderId, amount);
-        break;
-
+        return this.createCashPayment(orderId, amount);
       default:
         throw new BadRequestException('Método de pago no válido');
     }
+  }
 
-    // Save or update payment record.
-    // Checkout hospedado: result.paymentId es la SESIÓN (no el intent); el
-    // intent real llega por webhook y se guarda entonces en onvoPaymentId.
+  /**
+   * Persiste (crea o actualiza) la fila payment de la orden.
+   * Checkout hospedado: result.paymentId es la SESIÓN (no el intent); el
+   * intent real llega por webhook y se guarda entonces en onvoPaymentId.
+   */
+  private async savePaymentRecord(
+    orderId: string,
+    existingPayment: any,
+    method: string,
+    amount: number,
+    cryptoCoin: 'USDC' | 'USDT' | undefined,
+    result: PaymentResult,
+  ): Promise<void> {
     const isCheckoutSession =
       (method === 'onvopay_card' || method === 'onvopay_sinpe') && result.checkoutUrl != null;
     const paymentData = {
@@ -151,8 +274,6 @@ export class PaymentsService {
         },
       });
     }
-
-    return result;
   }
 
   /**
@@ -259,11 +380,13 @@ export class PaymentsService {
 
     // redirectUrl/cancelUrl: SIEMPRE https. Un FRONTEND_URL mal configurado
     // (http://) devolvería al usuario a un contexto inseguro justo después
-    // de pagar — su momento de mayor exposición.
-    const frontendBase = (process.env.FRONTEND_URL ?? process.env.CLIENT_URL ?? '').replace(
-      /^http:\/\//i,
-      'https://',
-    );
+    // de pagar — su momento de mayor exposición. Sin env, canónico www
+    // (jamás relativo: Onvo rechaza o pierde el retorno post-pago).
+    const frontendBase = (
+      process.env.FRONTEND_URL ??
+      process.env.CLIENT_URL ??
+      'https://www.kiwicr.express'
+    ).replace(/^http:\/\//i, 'https://');
 
     // Flujo oficial tarjeta/SINPE (Checkout hospedado):
     // sesión → redirect a `url` → webhook marca completado.
@@ -442,8 +565,13 @@ export class PaymentsService {
   ) {
     if (user?.role === 'admin') return;
 
+    // El flujo oficial guarda la SESIÓN (onvoSessionId) y el intent real
+    // llega después por webhook; el directo guarda el intent. Buscar por
+    // ambos o los 5 endpoints 403ean pagos por checkout.
     const payment = await this.prisma.payment.findFirst({
-      where: { onvoPaymentId: paymentIntentId },
+      where: {
+        OR: [{ onvoPaymentId: paymentIntentId }, { onvoSessionId: paymentIntentId }],
+      },
       include: {
         order: {
           include: {
@@ -573,12 +701,12 @@ export class PaymentsService {
     return payment;
   }
 
-  async handleWebhook(provider: string, payload: any, signature?: string) {
+  async handleWebhook(provider: string, payload: any, signature?: string, rawBody?: string) {
     this.logger.log(`Received ${provider} webhook`);
 
     switch (provider) {
       case 'onvopay':
-        return this.handleOnvoPayWebhook(payload, signature);
+        return this.handleOnvoPayWebhook(payload, signature, rawBody);
       case 'stellar':
         return this.handleStellarWebhook(payload);
       default:
@@ -586,12 +714,13 @@ export class PaymentsService {
     }
   }
 
-  private async handleOnvoPayWebhook(payload: any, signature?: string) {
-    // Verify webhook signature - reject when missing or invalid
-    if (
-      !signature ||
-      !this.onvopayProvider.verifyWebhookSignature(JSON.stringify(payload), signature)
-    ) {
+  private async handleOnvoPayWebhook(payload: any, signature?: string, rawBody?: string) {
+    // Verify webhook signature - reject when missing or invalid.
+    // Onvo firma los bytes crudos: usar rawBody cuando el controller lo
+    // capturó; el re-stringify solo como fallback (dev/tests).
+    const signedPayload =
+      typeof rawBody === 'string' && rawBody.length > 0 ? rawBody : JSON.stringify(payload);
+    if (!signature || !this.onvopayProvider.verifyWebhookSignature(signedPayload, signature)) {
       this.logger.error('Invalid or missing OnvoPay webhook signature');
       return { received: false, error: 'Invalid signature' };
     }

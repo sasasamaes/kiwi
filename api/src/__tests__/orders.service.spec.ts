@@ -364,6 +364,33 @@ describe('OrdersService', () => {
       const result = await service.getAvailableOrders();
       expect(result).toHaveLength(2);
     });
+
+    it('oculta el contacto del comprador en la vitrina y ordena por cercanía', async () => {
+      prisma.order.findMany.mockResolvedValue([
+        {
+          id: 'lejos',
+          status: 'pending',
+          customerName: 'Ana',
+          customerPhone: '88888888',
+          merchant: { latitude: 11.0, longitude: -86.0 },
+        },
+        {
+          id: 'cerca',
+          status: 'pending',
+          customerName: 'Luis',
+          customerPhone: '87777777',
+          merchant: { latitude: 10.15, longitude: -85.45 },
+        },
+      ]);
+
+      const result: any[] = await service.getAvailableOrders(10.1483, -85.4527);
+
+      expect(result.map((o) => o.id)).toEqual(['cerca', 'lejos']);
+      for (const o of result) {
+        expect(o.customerName).toBeUndefined();
+        expect(o.customerPhone).toBeUndefined();
+      }
+    });
   });
 
   describe('flete pricing (comisión 15% del driver)', () => {
@@ -850,6 +877,97 @@ describe('OrdersService', () => {
       await service.updateStatus('order-1', 'picked_up', 'user-d');
 
       expect(prisma.driverProfile.update).not.toHaveBeenCalled();
+    });
+
+    it('el comercio no puede pilotear el ciclo hasta entregado', async () => {
+      prisma.order.findUnique.mockResolvedValue({
+        ...baseOrder,
+        status: 'in_transit_to_delivery',
+      });
+
+      await expect(
+        service.updateStatus('order-1', 'delivered', 'merchant-user-1', 'merchant'),
+      ).rejects.toThrow('no puede cambiar');
+      expect(prisma.order.update).not.toHaveBeenCalled();
+    });
+
+    it('el repartidor no cancela a mitad de ruta', async () => {
+      prisma.order.findUnique.mockResolvedValue({ ...baseOrder, status: 'in_transit_to_pickup' });
+
+      await expect(
+        service.updateStatus('order-1', 'cancelled', 'user-d', 'driver'),
+      ).rejects.toThrow('no puede cambiar');
+      expect(prisma.order.update).not.toHaveBeenCalled();
+    });
+
+    it('el comercio sí cancela un pedido asignado', async () => {
+      prisma.order.findUnique.mockResolvedValue({ ...baseOrder, status: 'assigned' });
+      prisma.order.update.mockResolvedValue({ ...baseOrder, status: 'cancelled' });
+
+      await service.updateStatus('order-1', 'cancelled', 'merchant-user-1', 'merchant');
+
+      expect(prisma.order.update).toHaveBeenCalled();
+    });
+  });
+
+  describe('createGuestOrder', () => {
+    const profile = {
+      id: 'merchant-1',
+      userId: 'user-1',
+      businessName: 'Bowl & Café',
+      address: 'Nicoya Centro',
+      latitude: 10.1483,
+      longitude: -85.4527,
+    };
+
+    it('exige teléfono de contacto', async () => {
+      prisma.merchantProfile.findUnique.mockResolvedValue(profile);
+
+      await expect(
+        service.createGuestOrder('merchant-1', {
+          deliveryAddress: 'Barrio Los Ángeles',
+          items: [],
+        }),
+      ).rejects.toThrow('customerPhone');
+    });
+
+    it('comercio inexistente → 404', async () => {
+      prisma.merchantProfile.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.createGuestOrder('nope', {
+          deliveryAddress: 'Barrio Los Ángeles',
+          customerPhone: '88888888',
+          items: [],
+        }),
+      ).rejects.toThrow('Comercio no encontrado');
+    });
+
+    it('crea con precios del servidor y contacto persistido', async () => {
+      prisma.merchantProfile.findUnique.mockResolvedValue(profile);
+      prisma.menuItem.findMany.mockResolvedValue([
+        { id: 'item-1', name: 'Bowl Tropikal', price: 4500, merchantId: 'merchant-1' },
+      ]);
+      prisma.order.create.mockImplementation(async ({ data }: any) => ({
+        id: 'order-1',
+        status: 'pending',
+        ...data,
+      }));
+
+      const order: any = await service.createGuestOrder('merchant-1', {
+        deliveryAddress: 'Barrio Los Ángeles',
+        customerPhone: '8888-8888',
+        customerName: 'María',
+        items: [{ menuItemId: 'item-1', quantity: 2, price: 1 }],
+      });
+
+      // Precio del cliente ($1) ignorado: 2 × ₡4500 del menú.
+      expect(order.productsTotal).toBe(9000);
+      expect(order.customerPhone).toBe('8888-8888');
+      expect(order.customerName).toBe('María');
+      // Pickup por defecto: el del comercio.
+      expect(order.pickupAddress).toBe('Nicoya Centro');
+      expect(order.merchantId).toBe('merchant-1');
     });
   });
 });

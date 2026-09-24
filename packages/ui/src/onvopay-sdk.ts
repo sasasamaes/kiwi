@@ -351,11 +351,11 @@ export function getOnvoPay(): OnvoPay {
   if (!onvoPayInstance) {
     const publishableKey = process.env.NEXT_PUBLIC_ONVO_PUBLISHABLE_KEY;
     if (!publishableKey) {
-      console.warn('NEXT_PUBLIC_ONVO_PUBLISHABLE_KEY not set. Payment functionality may not work.');
-      return new OnvoPay({
-        publishableKey: 'pk_test_placeholder',
-        baseUrl: 'https://api.onvopay.com/v1',
-      });
+      // Sin key no hay SDK real: error explícito en vez de una instancia
+      // con placeholder que falla críptico del lado de Onvo.
+      throw new Error(
+        'NEXT_PUBLIC_ONVO_PUBLISHABLE_KEY no está configurada. El pago con tarjeta no está disponible.',
+      );
     }
     onvoPayInstance = new OnvoPay({
       publishableKey,

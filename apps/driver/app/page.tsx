@@ -80,6 +80,8 @@ export default function Home() {
     requestPermission: requestPushPermission,
   } = usePushNotifications({ enabled: false });
   const [pushBusy, setPushBusy] = useState(false);
+  const [pushTesting, setPushTesting] = useState(false);
+  const [pushTest, setPushTest] = useState<string | null>(null);
 
   const tabs = [
     { id: 'all' as const, label: 'Todos', icon: ClipboardList },
@@ -495,6 +497,51 @@ export default function Home() {
           <div className="mb-4 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 px-4 py-3 text-xs text-amber-800 dark:text-amber-300">
             Las alertas están bloqueadas en tu navegador: activalas en los ajustes del sitio para
             recibir pedidos con la app cerrada.
+          </div>
+        )}
+        {/* Push activado: botón de prueba con diagnóstico real del servidor */}
+        {!pushNeedsInstall && pushSupported && pushPermission === 'granted' && (
+          <div className="mb-4 rounded-2xl glass p-4">
+            <p className="text-sm font-semibold text-surface-800 dark:text-surface-100">
+              Alertas activadas en este celu
+            </p>
+            {pushTest ? (
+              <p className="mt-1 text-xs text-surface-500 dark:text-surface-400">{pushTest}</p>
+            ) : (
+              <p className="mt-0.5 text-xs text-surface-500 dark:text-surface-400">
+                ¿No te llegan? Probá ahora y te decimos dónde se corta.
+              </p>
+            )}
+            <TapButton
+              variant="secondary"
+              className="mt-3 h-10 w-full rounded-xl text-sm"
+              disabled={pushTesting}
+              onClick={async () => {
+                setPushTesting(true);
+                setPushTest(null);
+                try {
+                  const r = await api.sendTestPush();
+                  if (!r.fcmConfigured) {
+                    setPushTest('El servidor no tiene push configurado. Avisanos por WhatsApp.');
+                  } else if (r.tokens === 0) {
+                    setPushTest('Este celu no registró token: desactivá y reactivá las alertas.');
+                  } else {
+                    const bad = r.results.filter((x) => !x.ok);
+                    setPushTest(
+                      bad.length === 0
+                        ? `Te enviamos una prueba a ${r.tokens} dispositivo(s). Revisá las notificaciones.`
+                        : `Falló el envío (${bad[0]?.error ?? 'error'}). Reinstalá la app y reactivá.`,
+                    );
+                  }
+                } catch {
+                  setPushTest('No se pudo probar. Revisá tu conexión.');
+                } finally {
+                  setPushTesting(false);
+                }
+              }}
+            >
+              {pushTesting ? 'Probando…' : 'Probar alerta'}
+            </TapButton>
           </div>
         )}
         {/* Status Toggle */}

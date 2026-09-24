@@ -317,4 +317,19 @@ html.transitioning *::after {
   .no-print {
     display: none !important;
   }
+
+  /* Documentos imprimibles (/ventas/*): 1 página limpia. */
+  @page {
+    margin: 14mm;
+  }
+
+  body {
+    background: #fff !important;
+  }
+
+  /* Colores de marca y bordes tal cual (print-color-adjust) */
+  .print\:shadow-none,
+  .print\:rounded-none {
+    box-shadow: none !important;
+  }
 }

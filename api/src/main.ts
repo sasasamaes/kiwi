@@ -104,7 +104,18 @@ async function bootstrap() {
     set: (k: string, v: unknown) => void;
     use: (...handlers: any[]) => void;
   };
-  expressApp.use(express.json({ limit: '256kb' }));
+  expressApp.use(
+    express.json({
+      limit: '256kb',
+      // El HMAC del webhook (Onvo firma los bytes crudos) debe calcularse
+      // sobre el body original: re-serializar el JSON parseado cambia
+      // whitespace y rompe firmas válidas. Se guarda el crudo para el
+      // controller del webhook.
+      verify: (req: any, _res, buf) => {
+        req.rawBody = buf?.toString('utf8');
+      },
+    }),
+  );
   expressApp.use(express.urlencoded({ extended: true, limit: '256kb' }));
 
   // Render terminates TLS/routes via one proxy hop: trust X-Forwarded-For so

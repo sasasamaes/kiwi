@@ -21,6 +21,13 @@ export class OrdersController {
     return this.ordersService.create(user.sub, createOrderDto);
   }
 
+  @Public()
+  @Post('guest')
+  @ApiOperation({ summary: 'Create a guest order from the public menu link (no auth)' })
+  async createGuest(@Body() createOrderDto: any) {
+    return this.ordersService.createGuestOrder(createOrderDto?.merchantId, createOrderDto);
+  }
+
   @Get('my')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()

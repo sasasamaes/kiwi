@@ -92,6 +92,21 @@ describe('PaymentsService — row-level payment access', () => {
       ).resolves.toBeUndefined();
       expect(prisma.payment.findFirst).not.toHaveBeenCalled();
     });
+
+    it('encuentra pagos del flujo checkout por session id', async () => {
+      prisma.payment.findFirst.mockResolvedValue(paymentRow);
+
+      await expect(
+        service.assertIntentAccess('clcs-session-1', { sub: 'u-merch', role: 'merchant' }),
+      ).resolves.toBeUndefined();
+      expect(prisma.payment.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            OR: [{ onvoPaymentId: 'clcs-session-1' }, { onvoSessionId: 'clcs-session-1' }],
+          },
+        }),
+      );
+    });
   });
 
   describe('getPaymentStatusForUser', () => {

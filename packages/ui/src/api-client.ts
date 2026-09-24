@@ -324,6 +324,14 @@ class ApiClient {
     });
   }
 
+  /** Pedido invitado desde el link público del menú (sin cuenta). */
+  async createGuestOrder(data: any) {
+    return this.request<any>('/orders/guest', {
+      method: 'POST',
+      body: data,
+    });
+  }
+
   async getMyOrders(status?: string) {
     const params = status ? `?status=${status}` : '';
     return this.request<any>(`/orders/my${params}`);
@@ -530,6 +538,17 @@ class ApiClient {
     });
   }
 
+  /** Push de prueba a mis propios dispositivos (diagnóstico). */
+  async sendTestPush() {
+    return this.request<{
+      fcmConfigured: boolean;
+      tokens: number;
+      results: Array<{ token: string; ok: boolean; error?: string }>;
+    }>('/notifications/test-push', {
+      method: 'POST',
+    });
+  }
+
   /** Catálogo de topics con las preferencias efectivas del usuario. */
   async getNotificationTopics() {
     return this.request<
@@ -614,6 +633,21 @@ class ApiClient {
     cryptoCoin?: 'USDC' | 'USDT';
   }) {
     return this.request<any>('/payments/create', {
+      method: 'POST',
+      body: data,
+    });
+  }
+
+  /** Cobro invitado desde el link público (sin cuenta, sin crédito). */
+  async createGuestPayment(data: {
+    orderId: string;
+    method: 'onvopay_card' | 'onvopay_sinpe' | 'crypto' | 'cash';
+    amount: number;
+    customerEmail?: string;
+    customerPhone?: string;
+    cryptoCoin?: 'USDC' | 'USDT';
+  }) {
+    return this.request<any>('/payments/guest', {
       method: 'POST',
       body: data,
     });

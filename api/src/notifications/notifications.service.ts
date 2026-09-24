@@ -311,9 +311,7 @@ export class NotificationsService {
             data: notification.data ?? {},
             webpush: {
               fcmOptions: {
-                link: notification.data?.orderId
-                  ? `/order/${notification.data.orderId}/tracking`
-                  : '/',
+                link: notification.data?.orderId ? `/tracking/${notification.data.orderId}` : '/',
               },
             },
           });
@@ -478,16 +476,41 @@ export class NotificationsService {
     });
   }
 
-  async notifyOrderStatusUpdate(orderId: string, userId: string, status: string) {
-    const statusMessages: Record<string, { title: string; body: string }> = {
+  async notifyOrderStatusUpdate(
+    orderId: string,
+    userId: string,
+    status: string,
+    perspective: 'merchant' | 'driver' = 'merchant',
+  ) {
+    const merchantMessages: Record<string, { title: string; body: string }> = {
       assigned: { title: '🛵 Pedido asignado', body: 'Un repartidor va por tu pedido' },
+      in_transit_to_pickup: {
+        title: '🛵 Repartidor en camino',
+        body: 'El repartidor va en camino a recoger tu pedido',
+      },
       picked_up: { title: '📦 Pedido recogido', body: 'El repartidor recogió tu pedido' },
       in_transit_to_delivery: { title: '🛣️ En camino', body: 'Tu pedido va en camino' },
       delivered: { title: '🎉 Pedido entregado', body: 'Tu pedido fue entregado exitosamente' },
       cancelled: { title: '❌ Pedido cancelado', body: 'El pedido fue cancelado' },
     };
 
-    const message = statusMessages[status] || { title: 'Actualización', body: `Estado: ${status}` };
+    const driverMessages: Record<string, { title: string; body: string }> = {
+      assigned: { title: '🛵 Pedido asignado', body: 'Te asignaron un pedido. Ve a recogerlo.' },
+      in_transit_to_pickup: {
+        title: '🛵 En camino al comercio',
+        body: 'Vas en camino a recoger el pedido',
+      },
+      picked_up: {
+        title: '📦 Pedido recogido',
+        body: 'Recogiste el pedido. Llévalo a su destino.',
+      },
+      in_transit_to_delivery: { title: '🛣️ En camino', body: 'Vas en camino a entregar el pedido' },
+      delivered: { title: '🎉 Pedido entregado', body: 'Entregaste el pedido exitosamente' },
+      cancelled: { title: '❌ Pedido cancelado', body: 'El pedido fue cancelado' },
+    };
+
+    const messages = perspective === 'driver' ? driverMessages : merchantMessages;
+    const message = messages[status] || { title: 'Actualización', body: `Estado: ${status}` };
 
     return this.sendToUser(userId, {
       ...message,
@@ -561,5 +584,49 @@ export class NotificationsService {
       where: { userId, token },
     });
     return { success: true };
+  }
+
+  /**
+   * Autodiagnóstico de push para el propio usuario (botón "Probar" de la
+   * app). Devuelve DÓNDE se corta la cadena: sin tokens registrados, FCM
+   * sin configurar en el servidor, o el error exacto de FCM por token.
+   * Sin esto, cada fallo es silencioso y el "no me llega nada" es
+   * indebuggable en producción.
+   */
+  async sendTestPush(
+    userId: string,
+  ): Promise<{
+    fcmConfigured: boolean;
+    tokens: number;
+    results: Array<{ token: string; ok: boolean; error?: string }>;
+  }> {
+    const results: Array<{ token: string; ok: boolean; error?: string }> = [];
+    const tokens = await this.prisma.deviceToken.findMany({
+      where: { userId },
+      select: { token: true, platform: true, lastUsedAt: true },
+    });
+
+    if (!this.fcmAdmin) {
+      return { fcmConfigured: false, tokens: tokens.length, results };
+    }
+
+    for (const { token, platform } of tokens) {
+      const short = `…${token.slice(-8)} (${platform})`;
+      try {
+        await this.fcmAdmin.send({
+          token,
+          notification: {
+            title: '🥝 Prueba de alertas',
+            body: 'Si lees esto, las alertas funcionan en este dispositivo.',
+          },
+          data: { type: 'test' },
+        });
+        results.push({ token: short, ok: true });
+      } catch (error: any) {
+        const code = error?.errorInfo?.code ?? error?.code ?? String(error);
+        results.push({ token: short, ok: false, error: code });
+      }
+    }
+    return { fcmConfigured: true, tokens: tokens.length, results };
   }
 }

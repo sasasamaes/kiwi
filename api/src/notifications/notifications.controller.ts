@@ -82,6 +82,14 @@ export class NotificationsController {
     return this.notificationsService.registerDeviceToken(user.sub, body.token, body.platform);
   }
 
+  @Post('test-push')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Send a test push to my own devices (diagnostics)' })
+  async sendTestPush(@CurrentUser() user: any) {
+    return this.notificationsService.sendTestPush(user.sub);
+  }
+
   // ============================================
   // 📡 TOPICS
   // ============================================

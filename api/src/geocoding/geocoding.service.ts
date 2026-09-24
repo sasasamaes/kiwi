@@ -45,11 +45,49 @@ export interface ReverseGeocodingResult {
 export class GeocodingService {
   private readonly logger = new Logger(GeocodingService.name);
   private readonly baseUrl = 'https://nominatim.openstreetmap.org';
-  private readonly userAgent = 'KiwiDeliveryApp/1.0 (https://kiwi-api-fe54.onrender.com)';
+  private readonly userAgent = 'KiwiDeliveryApp/1.0 (https://kiwicr.express)';
 
   // Cache for geocoding results (in production, use Redis)
   private cache = new Map<string, { data: any; timestamp: number }>();
   private readonly cacheTTL = 24 * 60 * 60 * 1000; // 24 hours
+
+  // Nominatim exige máx 1 req/s y banea IPs que lo saturan (429). Todo lo
+  // que sale hacia allá pasa por nominatimFetch: espacía 1.1s, fusiona
+  // llamadas idénticas en vuelo y en 429/503 entra en cooldown de 60s
+  // devolviendo vacío en vez de seguir golpeando.
+  private lastNominatimAt = 0;
+  private cooldownUntil = 0;
+  private readonly nominatimGapMs = 1100;
+  private readonly nominatimCooldownMs = 60_000;
+  private inflight = new Map<string, Promise<Response>>();
+
+  private async nominatimFetch(url: string): Promise<Response | null> {
+    if (Date.now() < this.cooldownUntil) return null;
+
+    const running = this.inflight.get(url);
+    if (running) return running;
+
+    const wait = this.nominatimGapMs - (Date.now() - this.lastNominatimAt);
+    const p = (async () => {
+      if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+      this.lastNominatimAt = Date.now();
+      const res = await fetch(url, {
+        headers: { 'User-Agent': this.userAgent, Accept: 'application/json' },
+      });
+      if (res.status === 429 || res.status === 503) {
+        this.cooldownUntil = Date.now() + this.nominatimCooldownMs;
+        this.logger.warn(`Nominatim limitado (${res.status}): pausa de 60s`);
+        return null;
+      }
+      return res;
+    })();
+    this.inflight.set(url, p);
+    try {
+      return await p;
+    } finally {
+      if (this.inflight.get(url) === p) this.inflight.delete(url);
+    }
+  }
 
   /**
    * Search for addresses by text query
@@ -82,12 +120,11 @@ export class GeocodingService {
         bounded: '0',
       });
 
-      const response = await fetch(`${this.baseUrl}/search?${params.toString()}`, {
-        headers: {
-          'User-Agent': this.userAgent,
-          Accept: 'application/json',
-        },
-      });
+      const response = await this.nominatimFetch(`${this.baseUrl}/search?${params.toString()}`);
+
+      if (!response) {
+        return [];
+      }
 
       if (!response.ok) {
         throw new Error(`Nominatim API error: ${response.status}`);
@@ -168,12 +205,11 @@ export class GeocodingService {
         extratags: '1',
       });
 
-      const response = await fetch(`${this.baseUrl}/reverse?${params.toString()}`, {
-        headers: {
-          'User-Agent': this.userAgent,
-          Accept: 'application/json',
-        },
-      });
+      const response = await this.nominatimFetch(`${this.baseUrl}/reverse?${params.toString()}`);
+
+      if (!response) {
+        return null;
+      }
 
       if (!response.ok) {
         throw new Error(`Nominatim reverse geocoding error: ${response.status}`);

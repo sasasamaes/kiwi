@@ -24,6 +24,7 @@ describe('OnvoPay Checkout hospedado (one-time-link)', () => {
         upsert: jest.fn(),
         updateMany: jest.fn(),
       },
+      merchantProfile: { findUnique: jest.fn().mockResolvedValue({ id: 'merchant-1' }) },
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -102,13 +103,16 @@ describe('OnvoPay Checkout hospedado (one-time-link)', () => {
     prisma.payment.findUnique.mockResolvedValue(null);
     prisma.payment.create.mockResolvedValue({ id: 'pay-1' });
 
-    const res = await service.createPayment({
-      orderId: 'order-1',
-      method: 'onvopay_card',
-      amount: 1500,
-      customerEmail: 'a@x.com',
-      customerPhone: '88888888',
-    });
+    const res = await service.createPayment(
+      {
+        orderId: 'order-1',
+        method: 'onvopay_card',
+        amount: 1500,
+        customerEmail: 'a@x.com',
+        customerPhone: '88888888',
+      },
+      'user-dueno',
+    );
 
     expect(res.success).toBe(true);
     expect(res.checkoutUrl).toBe('https://checkout.onvopay.com/pay/clcs1');
@@ -185,5 +189,63 @@ describe('OnvoPay Checkout hospedado (one-time-link)', () => {
         data: expect.objectContaining({ status: 'completed' }),
       }),
     );
+  });
+
+  it('un tercero no inicia el cobro de un pedido ajeno', async () => {
+    prisma.merchantProfile.findUnique.mockResolvedValue({ id: 'otro-comercio' });
+    await expect(
+      service.createPayment(
+        { orderId: 'order-1', method: 'onvopay_card', amount: 1500 } as any,
+        'user-raro',
+      ),
+    ).rejects.toThrow('Solo el comercio dueño');
+  });
+
+  it('sin pagador no hay cobro', async () => {
+    await expect(
+      service.createPayment({ orderId: 'order-1', method: 'onvopay_card', amount: 1500 } as any),
+    ).rejects.toThrow('Iniciá sesión');
+  });
+
+  it('guest: reusa el checkout pendiente en vez de pisarlo', async () => {
+    prisma.order.findUnique.mockResolvedValue({ ...order, status: 'pending' });
+    prisma.payment.findUnique.mockResolvedValue({
+      id: 'pay-1',
+      status: 'pending',
+      onvoCheckoutUrl: 'https://checkout.onvopay.com/pay/clcs1',
+      onvoSessionId: 'clcs1',
+      onvoPaymentId: null,
+    });
+
+    const res = await service.createGuestPayment({
+      orderId: 'order-1',
+      method: 'onvopay_card',
+    } as any);
+
+    expect(res).toMatchObject({
+      success: true,
+      checkoutUrl: 'https://checkout.onvopay.com/pay/clcs1',
+    });
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('guest: nunca sobre pago completado ni con crédito', async () => {
+    prisma.order.findUnique.mockResolvedValue({ ...order, status: 'pending' });
+    prisma.payment.findUnique.mockResolvedValue({ id: 'pay-1', status: 'completed' });
+    await expect(
+      service.createGuestPayment({ orderId: 'order-1', method: 'onvopay_card' } as any),
+    ).rejects.toThrow('completado');
+
+    await expect(
+      service.createGuestPayment({ orderId: 'order-1', method: 'credit' } as any),
+    ).rejects.toThrow('cuenta de comercio');
+  });
+
+  it('guest: pedido entregado ya no admite pagos', async () => {
+    prisma.order.findUnique.mockResolvedValue({ ...order, status: 'delivered' });
+    prisma.payment.findUnique.mockResolvedValue(null);
+    await expect(
+      service.createGuestPayment({ orderId: 'order-1', method: 'cash' } as any),
+    ).rejects.toThrow('ya no admite pagos');
   });
 });

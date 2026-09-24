@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, type ElementType } from 'react';
 import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   Package,
   Coins,
@@ -19,8 +19,9 @@ import {
   AlertTriangle,
   BadgeCheck,
   Star,
+  X,
 } from 'lucide-react';
-import { api, StatCard, StaggerContainer, StaggerItem } from '@kiwi/ui';
+import { api, StaggerContainer, StaggerItem } from '@kiwi/ui';
 
 interface PlatformAnalytics {
   period: string;
@@ -78,6 +79,60 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState('week');
+  // % vigente de comisión al repartidor (el backend guarda la tasa por pedido).
+  const [commissionPct, setCommissionPct] = useState(15);
+
+  // Alerta de ritmo: viajes/día del mes real vs meta del escenario
+  // (misma clave de localStorage que usa el reporte Real vs Proyección).
+  const [rhythm, setRhythm] = useState<{
+    trips: number;
+    days: number;
+    realPerDay: number;
+    realCommissionPerDay: number;
+    meta: number;
+    ratioPct: number;
+    projectedTrips: number;
+    projectedCommission: number;
+  } | null>(null);
+  const [rhythmDismissed, setRhythmDismissed] = useState(false);
+
+  const loadRhythm = useCallback(async () => {
+    try {
+      const saved = Number(window.localStorage.getItem('kiwi.reportes.pedidosDia'));
+      const meta = Number.isFinite(saved) && saved > 0 ? saved : 20;
+      const a = await api.getMonthlyActuals(1);
+      const row = a.monthly?.[a.monthly.length - 1];
+      if (!row) return;
+      const now = new Date();
+      const [y, m] = row.month.split('-').map(Number);
+      const days =
+        y === now.getFullYear() && m === now.getMonth() + 1
+          ? Math.max(1, now.getDate())
+          : new Date(y, m, 0).getDate();
+      const realPerDay = row.trips / days;
+      if (realPerDay >= meta) {
+        setRhythm(null); // en meta o por encima: sin alerta
+        return;
+      }
+      const realCommissionPerDay = row.commission / days;
+      setRhythm({
+        trips: row.trips,
+        days,
+        realPerDay,
+        realCommissionPerDay,
+        meta,
+        ratioPct: meta > 0 ? (realPerDay / meta) * 100 : 0,
+        projectedTrips: realPerDay * 30,
+        projectedCommission: realCommissionPerDay * 30,
+      });
+    } catch {
+      // La alerta es best-effort: si falla el API no rompe el dashboard.
+    }
+  }, []);
+
+  useEffect(() => {
+    loadRhythm();
+  }, [loadRhythm]);
 
   const fetchLive = useCallback(async () => {
     try {
@@ -85,6 +140,10 @@ export default function AdminDashboard() {
     } catch (err) {
       console.error('Failed to fetch live pulse:', err);
     }
+    api
+      .getDriverCommissionPct()
+      .then((p) => setCommissionPct(p))
+      .catch(() => undefined);
   }, []);
 
   useEffect(() => {
@@ -110,6 +169,15 @@ export default function AdminDashboard() {
   useEffect(() => {
     fetchAnalytics(selectedPeriod);
   }, [selectedPeriod, fetchAnalytics]);
+
+  // Cálculo de la alerta (variables simples: react-compiler lint).
+  const rhythmAlert = rhythm
+    ? {
+        pctToMeta: rhythm.meta > 0 ? (rhythm.meta / rhythm.realPerDay) * 100 : null,
+        missingPerDay: rhythm.meta - rhythm.realPerDay,
+        possible: rhythm.realCommissionPerDay * rhythm.meta * 30,
+      }
+    : null;
 
   const formatCurrency = (amount: number) => {
     if (amount >= 1000000) {
@@ -216,6 +284,44 @@ export default function AdminDashboard() {
         </div>
       </div>
 
+      {/* Alerta de ritmo vs meta del escenario */}
+      {rhythmAlert && !rhythmDismissed && (
+        <motion.div
+          className="flex flex-wrap items-center gap-3 rounded-2xl border border-amber-300 bg-amber-50 px-5 py-4 dark:border-amber-500/40 dark:bg-amber-900/20"
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <AlertTriangle className="h-5 w-5 shrink-0 text-amber-500" />
+          <p className="min-w-0 flex-1 text-sm text-amber-800 dark:text-amber-200">
+            Vas a <b>{rhythm!.realPerDay.toFixed(1)} viajes/día</b> · la meta del escenario es{' '}
+            <b>{rhythm!.meta}/día</b> ({rhythm!.ratioPct.toFixed(0)}%). A este ritmo el mes cierra
+            con ~{Math.round(rhythm!.projectedTrips)} viajes y{' '}
+            <b>₡{Math.round(rhythm!.projectedCommission).toLocaleString('es-CR')}</b> de comisión.
+            Te faltan <b>{rhythmAlert.missingPerDay.toFixed(1)} viajes/día</b>
+            {rhythmAlert.pctToMeta != null && <> (subir {rhythmAlert.pctToMeta.toFixed(0)}%)</>}
+            {rhythmAlert.possible > rhythm!.projectedCommission && (
+              <> para alcanzar ₡{Math.round(rhythmAlert.possible).toLocaleString('es-CR')}/mes</>
+            )}
+            .
+          </p>
+          <div className="flex shrink-0 items-center gap-2">
+            <Link
+              href="/admin/reportes"
+              className="rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-600"
+            >
+              Ver reporte
+            </Link>
+            <button
+              onClick={() => setRhythmDismissed(true)}
+              className="rounded-lg p-1.5 text-amber-500 hover:bg-amber-100 dark:hover:bg-amber-900/40"
+              aria-label="Descartar alerta"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </motion.div>
+      )}
+
       {/* Period Selector */}
       <motion.div
         className="flex gap-2 rounded-xl bg-surface-100 dark:bg-surface-800 p-1 overflow-x-auto"
@@ -223,7 +329,7 @@ export default function AdminDashboard() {
         animate={{ opacity: 1, y: 0 }}
       >
         {PERIODS.map((period) => {
-          const PeriodIcon = period.icon as any;
+          const PeriodIcon = period.icon as ElementType;
           return (
             <motion.button
               key={period.id}
@@ -391,13 +497,18 @@ export default function AdminDashboard() {
             <div className="flex items-center justify-between mb-2">
               <Coins className="h-6 w-6 text-kiwi-600 dark:text-kiwi-400" />
               <span className="text-xs font-medium text-kiwi-600 dark:text-kiwi-400">
-                10% crédito · 15% otros
+                {commissionPct}% del viaje · la paga el repartidor
               </span>
             </div>
             <p className="text-2xl font-bold text-kiwi-700 dark:text-kiwi-300">
               {formatCurrency(analytics?.overview?.platformFee || 0)}
             </p>
-            <p className="text-sm text-kiwi-600 dark:text-kiwi-400">Comisión Plataforma</p>
+            <p className="text-sm text-kiwi-600 dark:text-kiwi-400">Ganancias Kiwi</p>
+            {(live?.today?.platformFee ?? 0) > 0 && (
+              <p className="mt-1 text-xs text-kiwi-600/80 dark:text-kiwi-400/80">
+                Hoy: {formatCurrency(live?.today?.platformFee || 0)}
+              </p>
+            )}
           </motion.div>
         </StaggerItem>
 
@@ -630,10 +741,10 @@ export default function AdminDashboard() {
                   </div>
                   <div>
                     <p className="font-medium text-surface-800 dark:text-surface-200">
-                      Comisión Plataforma
+                      Ganancias Kiwi
                     </p>
                     <p className="text-sm text-surface-500 dark:text-surface-400">
-                      10% con crédito · 15% otros medios
+                      {commissionPct}% del viaje · la paga el repartidor
                     </p>
                   </div>
                 </div>

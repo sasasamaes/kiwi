@@ -87,10 +87,16 @@ export class AuthService {
   async register(registerDto: RegisterDto) {
     const { email, password, phone, fullName, role, businessName, vehicleType } = registerDto;
 
+    // El email es case-insensitive (Postgres unique sí distingue): se
+    // normaliza al guardar para que Local@x.com y local@x.com no creen
+    // dos cuentas ni burlen el throttle de login.
+    const emailNorm = email.trim().toLowerCase();
+    const phoneNorm = phone?.trim() || undefined;
+
     // Check if user exists
     const orConditions: Array<{ email?: string; phone?: string }> = [];
-    if (email) orConditions.push({ email });
-    if (phone) orConditions.push({ phone });
+    if (emailNorm) orConditions.push({ email: emailNorm });
+    if (phoneNorm) orConditions.push({ phone: phoneNorm });
 
     const existingUser = orConditions.length
       ? await this.prisma.user.findFirst({
@@ -108,8 +114,8 @@ export class AuthService {
     // Create user with profile
     const user = await this.prisma.user.create({
       data: {
-        email,
-        phone,
+        email: emailNorm,
+        phone: phoneNorm,
         passwordHash,
         role: role as any,
         status: 'active',
@@ -159,9 +165,10 @@ export class AuthService {
     // Per-account brute-force throttle (IP throttle is separate, in middleware).
     this.assertNotLocked(emailKey);
 
-    // Find user
+    // Find user (por la forma normalizada: el unique de Postgres
+    // distingue mayúsculas y el registro ya guarda minúsculas).
     const user = await this.prisma.user.findUnique({
-      where: { email },
+      where: { email: emailKey },
       include: {
         merchantProfile: true,
         driverProfile: true,

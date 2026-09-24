@@ -100,8 +100,24 @@ export class RateLimiterMiddleware implements NestMiddleware {
       message: 'Demasiados pedidos. Espera un momento.',
     },
 
+    // Guest order creation (link público, sin auth): mismo techo que el
+    // flujo logueado. El UUID del comercio no es secreto; el freno al
+    // spam es este límite + validación estricta en el servicio.
+    'POST:/api/orders/guest': {
+      windowMs: 60 * 1000,
+      maxRequests: 10,
+      message: 'Demasiados pedidos. Espera un momento.',
+    },
+
     // Payment endpoints - strict limits
     'POST:/api/payments/create': {
+      windowMs: 60 * 1000,
+      maxRequests: 5,
+      message: 'Demasiados intentos de pago. Espera un momento.',
+    },
+
+    // Guest payment (checkout invitado): mismo techo estricto.
+    'POST:/api/payments/guest': {
       windowMs: 60 * 1000,
       maxRequests: 5,
       message: 'Demasiados intentos de pago. Espera un momento.',

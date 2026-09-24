@@ -86,10 +86,15 @@ export class OnvoPayProvider {
     try {
       this.logger.log(`Creating OnvoPay payment intent for order ${request.orderId}`);
 
-      // In development, use mock if no API key configured
+      // Sin key no hay a quién cobrar: fallar cerrado. Un intent "exitoso"
+      // de mentira marcaba pagos como cobrados sin mover dinero.
       if (!this.secretKey) {
-        this.logger.warn('OnvoPay secret key not configured, using mock response');
-        return this.mockCreatePaymentIntent(request);
+        this.logger.error('OnvoPay secret key not configured, refusing to create payment intent');
+        return {
+          success: false,
+          paymentId: '',
+          error: 'Pagos con tarjeta no configurados todavía',
+        };
       }
 
       const response = await fetch(`${this.baseUrl}/payment-intents`, {
@@ -221,7 +226,7 @@ export class OnvoPayProvider {
       this.logger.log(`Confirming OnvoPay payment intent ${paymentIntentId}`);
 
       if (!this.secretKey) {
-        return { success: true, status: 'succeeded' };
+        return { success: false, error: 'Pagos con tarjeta no configurados todavía' };
       }
 
       const response = await fetch(`${this.baseUrl}/payment-intents/${paymentIntentId}/confirm`, {
@@ -262,8 +267,11 @@ export class OnvoPayProvider {
     sessionId: string,
   ): Promise<{ status?: string; paymentStatus?: string; paymentIntentId?: string; details?: any }> {
     try {
+      // Sin key no se puede consultar nada: estado desconocido (el pago
+      // queda pendiente, jamás se marca pagado por esta vía).
       if (!this.secretKey) {
-        return { status: 'complete', paymentStatus: 'paid' };
+        this.logger.error('OnvoPay secret key not configured, checkout status unknown');
+        return {};
       }
 
       const response = await fetch(`${this.baseUrl}/checkout/sessions/one-time-link/${sessionId}`, {
@@ -298,8 +306,14 @@ export class OnvoPayProvider {
     paymentIntentId: string,
   ): Promise<{ status: string; details?: any }> {
     try {
+      // Sin key no hay estado real: 'unknown' deja el pago pendiente.
+      // Jamás 'succeeded' (eso completaba cobros que nunca existieron).
       if (!this.secretKey) {
-        return this.mockGetPaymentStatus(paymentIntentId);
+        this.logger.error('OnvoPay secret key not configured, intent status unknown');
+        return {
+          status: 'unknown',
+          details: { error: 'Pagos con tarjeta no configurados todavía' },
+        };
       }
 
       const response = await fetch(`${this.baseUrl}/payment-intents/${paymentIntentId}`, {
@@ -325,7 +339,7 @@ export class OnvoPayProvider {
   ): Promise<{ success: boolean; error?: string }> {
     try {
       if (!this.secretKey) {
-        return { success: true };
+        return { success: false, error: 'Pagos con tarjeta no configurados todavía' };
       }
 
       const response = await fetch(`${this.baseUrl}/payment-intents/${paymentIntentId}/cancel`, {
@@ -353,7 +367,7 @@ export class OnvoPayProvider {
   ): Promise<{ success: boolean; error?: string }> {
     try {
       if (!this.secretKey) {
-        return { success: true };
+        return { success: false, error: 'Pagos con tarjeta no configurados todavía' };
       }
 
       const response = await fetch(`${this.baseUrl}/payment-intents/${paymentIntentId}/capture`, {
@@ -594,28 +608,5 @@ export class OnvoPayProvider {
       this.logger.error('Failed to create setup intent:', error);
       return { setupIntentId: '', clientSecret: '', error: error.message };
     }
-  }
-
-  // Mock methods for development
-  private mockCreatePaymentIntent(request: OnvoPayPaymentRequest): OnvoPayPaymentResponse {
-    const paymentId = `pi_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    return {
-      success: true,
-      paymentId,
-      checkoutUrl: `https://checkout.onvopay.com/pay/${paymentId}`,
-      clientSecret: `pi_${paymentId}_secret_${Math.random().toString(36).substr(2, 16)}`,
-    };
-  }
-
-  private mockGetPaymentStatus(paymentIntentId: string): { status: string; details: any } {
-    return {
-      status: 'succeeded',
-      details: {
-        id: paymentIntentId,
-        amount: 5000,
-        currency: 'CRC',
-        status: 'succeeded',
-      },
-    };
   }
 }

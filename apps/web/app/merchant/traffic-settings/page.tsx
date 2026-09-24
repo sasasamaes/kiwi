@@ -126,7 +126,7 @@ export default function MerchantTrafficSettings() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Link
-                href="/settings"
+                href="/dashboard"
                 className="p-2 hover:bg-surface-100 dark:hover:bg-surface-700 rounded-xl transition-colors"
               >
                 <svg

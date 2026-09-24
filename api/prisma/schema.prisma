@@ -297,6 +297,11 @@ model Order {
   // Instructions
   specialInstructions String? @map("special_instructions")
 
+  // Contacto del comprador (pedidos de link público/invitado). El tracking
+  // público NO lo expone; solo el comercio dueño y el driver asignado.
+  customerName  String? @map("customer_name")
+  customerPhone String? @map("customer_phone")
+
   // Timestamps
   createdAt   DateTime  @default(now()) @map("created_at")
   assignedAt  DateTime? @map("assigned_at")

@@ -10,18 +10,19 @@ import { CreateRatingDto } from './dto/create-rating.dto';
 
 @ApiTags('Ratings')
 @Controller('ratings')
-@UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class RatingsController {
   constructor(private readonly ratingsService: RatingsService) {}
 
   @Post()
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Rate the driver of a delivered order (merchant only)' })
   async create(@CurrentUser() user: any, @Body() dto: CreateRatingDto) {
     return this.ratingsService.create(user.sub, dto);
   }
 
   @Get('order/:orderId')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get the rating of an order (if any) and whether the caller can rate' })
   async findByOrder(@Param('orderId') orderId: string, @CurrentUser() user: any) {
     return this.ratingsService.findByOrder(orderId, user.sub);
@@ -42,7 +43,7 @@ export class RatingsController {
   }
 
   @Get()
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @ApiOperation({ summary: 'List ratings with comments (admin only)' })
   async listForAdmin(

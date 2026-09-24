@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -76,6 +76,20 @@ function StatusIcon({ status }: { status: string }) {
 }
 
 export default function TrackingPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-[100dvh] bg-bg-light dark:bg-surface-950 flex items-center justify-center">
+          <p className="text-surface-500 animate-pulse">Cargando seguimiento…</p>
+        </div>
+      }
+    >
+      <TrackingContent />
+    </Suspense>
+  );
+}
+
+function TrackingContent() {
   const params = useParams();
   const searchParams = useSearchParams();
   // Vuelta desde OnvoPay (returnUrl/cancelUrl del intent).
@@ -109,6 +123,8 @@ export default function TrackingPage() {
   const [error, setError] = useState<string | null>(null);
   const [driverLocation, setDriverLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [eta, setEta] = useState<number | null>(null);
+  // Nivel de tráfico real del servidor (delivery-estimate). Null = sin dato.
+  const [trafficLevel, setTrafficLevel] = useState<string | null>(null);
   const [statusHistory, setStatusHistory] = useState<
     { status: string; timestamp: Date; message: string }[]
   >([]);
@@ -135,6 +151,32 @@ export default function TrackingPage() {
     if (status === 'delivered') return 0;
     return null;
   };
+
+  // ETA del servidor (tráfico real). Solo con las 4 coords + distancia
+  // válidas; si el pedido ya se entregó, ETA 0 sin llamar.
+  const refreshEta = useCallback(async (o: any) => {
+    const status = o?.status as string | undefined;
+    if (status === 'delivered' || status === 'cancelled') {
+      setEta(0);
+      return;
+    }
+    const pLat = Number(o?.pickupLat);
+    const pLng = Number(o?.pickupLng);
+    const dLat = Number(o?.deliveryLat);
+    const dLng = Number(o?.deliveryLng);
+    const dist = Number(o?.distanceKm);
+    if (
+      ![pLat, pLng, dLat, dLng, dist].every((n) => Number.isFinite(n)) ||
+      (pLat === 0 && pLng === 0) ||
+      (dLat === 0 && dLng === 0)
+    ) {
+      return;
+    }
+    const est = await api.getDeliveryEstimate(pLat, pLng, dLat, dLng, dist);
+    const mins = Number(est?.estimatedMinutes);
+    if (Number.isFinite(mins) && mins >= 0) setEta(Math.round(mins));
+    if (typeof est?.trafficLevel === 'string') setTrafficLevel(est.trafficLevel);
+  }, []);
 
   const fetchOrder = useCallback(
     async (silent = false) => {
@@ -171,6 +213,9 @@ export default function TrackingPage() {
           setStatusHistory(seed);
         }
         setEta((prev) => prev ?? etaForStatus(data.status));
+        // ETA real con tráfico cuando hay coordenadas de ambos extremos.
+        // Si falla (sin GPS, API dormido), queda la heurística de arriba.
+        refreshEta(data).catch(() => undefined);
         setError(null);
       } catch {
         if (!silent) setError('No se pudo cargar el pedido');
@@ -178,7 +223,7 @@ export default function TrackingPage() {
         if (!silent) setLoading(false);
       }
     },
-    [orderId],
+    [orderId, refreshEta],
   );
 
   const driverId = (order as any)?.driverId ?? (order as any)?.driver?.id;
@@ -228,13 +273,12 @@ export default function TrackingPage() {
           { status: data.status, timestamp: new Date(), message: data.message },
           ...prev,
         ]);
-        if (data.status === 'in_transit_to_delivery') setEta(15);
-        else if (data.status === 'picked_up') setEta(25);
-        else if (data.status === 'delivered') setEta(0);
+        if (data.status === 'delivered') setEta(0);
+        else refreshEta({ ...(order as any), status: data.status }).catch(() => undefined);
       }
     });
     return cleanup;
-  }, [on, orderId]);
+  }, [on, orderId, order, refreshEta]);
 
   useEffect(() => {
     const cleanup = on('driver:location', (data: any) => {
@@ -365,7 +409,6 @@ export default function TrackingPage() {
             driverLocation={driverLocation || undefined}
             height={300}
             showRoute={true}
-            showTraffic={true}
           />
         </motion.div>
         {!delivery && (
@@ -434,6 +477,11 @@ export default function TrackingPage() {
               <span className="text-lg font-bold text-kiwi-600 dark:text-kiwi-400 font-mono">
                 {eta} min
               </span>
+              {trafficLevel && (
+                <span className="ml-1 rounded-full bg-surface-100 dark:bg-surface-700 px-2 py-0.5 text-xs font-medium text-surface-500 dark:text-surface-400">
+                  Tráfico: {trafficLevel}
+                </span>
+              )}
             </motion.div>
           )}
         </motion.div>

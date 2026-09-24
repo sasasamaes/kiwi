@@ -1,19 +1,20 @@
-// Firebase Cloud Messaging Service Worker
-// This file handles background push notifications
+// Firebase Cloud Messaging Service Worker — app CLIENTE (comprador).
+// Las rutas son del comprador: tracking y pedidos, jamás /dashboard ni
+// /order/:id pelado (esas son de driver/merchant y dan 404 acá).
 
 // Import Firebase scripts
 importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js');
 
-// Firebase configuration
-// Replace with your actual Firebase config
+// Firebase configuration — inyectada en build por scripts/gen-firebase-sw.js
+// desde NEXT_PUBLIC_FIREBASE_* (config pública por diseño: viaja en el bundle).
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  "apiKey": "MISSING",
+  "authDomain": "MISSING",
+  "projectId": "MISSING",
+  "storageBucket": "MISSING",
+  "messagingSenderId": "MISSING",
+  "appId": "MISSING"
 };
 
 // Initialize Firebase
@@ -29,8 +30,8 @@ messaging.onBackgroundMessage((payload) => {
   const notificationTitle = payload.notification?.title || '🥝 Kiwi';
   const notificationOptions = {
     body: payload.notification?.body || 'Tienes una nueva notificación',
-    icon: '/kiwi-icon.png',
-    badge: '/kiwi-badge.png',
+    icon: '/icon.png',
+    badge: '/icon.png',
     image: payload.notification?.image,
     data: payload.data,
     vibrate: [200, 100, 200],
@@ -52,18 +53,9 @@ function getActionsForType(type) {
         { action: 'dismiss', title: 'Cerrar' },
       ];
     case 'order_accepted':
-      return [
-        { action: 'track', title: '📍 Rastrear' },
-        { action: 'dismiss', title: 'Cerrar' },
-      ];
     case 'order_status':
       return [
-        { action: 'track', title: '📍 Ver Detalles' },
-        { action: 'dismiss', title: 'Cerrar' },
-      ];
-    case 'payment_received':
-      return [
-        { action: 'view', title: '💰 Ver Pago' },
+        { action: 'track', title: '📍 Rastrear' },
         { action: 'dismiss', title: 'Cerrar' },
       ];
     case 'new_rating':
@@ -95,21 +87,16 @@ self.addEventListener('notificationclick', (event) => {
     return;
   }
 
-  // Determine URL to open
-  let url = '/';
+  // Determine URL to open (rutas del CLIENTE: existen en esta app).
+  let url = '/orders';
   if (data?.orderId) {
-    if (data.type === 'new_order' || data.type === 'order_accepted') {
-      // Driver app - go to order
-      url = `/order/${data.orderId}`;
-    } else if (data.type === 'order_status') {
-      // Client app - go to tracking
-      url = `/order/${data.orderId}/tracking`;
-    } else if (data.type === 'payment_received') {
-      // Merchant app - go to earnings
-      url = `/dashboard`;
+    if (data.type === 'order_accepted' || data.type === 'order_status') {
+      url = `/tracking/${data.orderId}`;
+    } else {
+      url = `/orders`;
     }
   } else if (action === 'view') {
-    url = '/';
+    url = '/orders';
   }
 
   // Open or focus window
@@ -145,8 +132,8 @@ self.addEventListener('push', (event) => {
     const notificationTitle = payload.notification?.title || '🥝 Kiwi';
     const notificationOptions = {
       body: payload.notification?.body || 'Tienes una nueva notificación',
-      icon: '/kiwi-icon.png',
-      badge: '/kiwi-badge.png',
+      icon: '/icon.png',
+      badge: '/icon.png',
       data: payload.data,
       vibrate: [200, 100, 200],
     };

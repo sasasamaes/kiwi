@@ -29,8 +29,8 @@ messaging.onBackgroundMessage((payload) => {
   const notificationTitle = payload.notification?.title || '🥝 Kiwi';
   const notificationOptions = {
     body: payload.notification?.body || 'Tienes una nueva notificación',
-    icon: '/kiwi-icon.png',
-    badge: '/kiwi-badge.png',
+    icon: '/icon.png',
+    badge: '/icon.png',
     image: payload.notification?.image,
     data: payload.data,
     vibrate: [200, 100, 200],
@@ -142,8 +142,8 @@ self.addEventListener('push', (event) => {
     const notificationTitle = payload.notification?.title || '🥝 Kiwi';
     const notificationOptions = {
       body: payload.notification?.body || 'Tienes una nueva notificación',
-      icon: '/kiwi-icon.png',
-      badge: '/kiwi-badge.png',
+      icon: '/icon.png',
+      badge: '/icon.png',
       data: payload.data,
       vibrate: [200, 100, 200],
     };

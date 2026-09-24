@@ -10,11 +10,35 @@ import { EventsGateway } from '../events/events.gateway';
 import { DriversService } from '../drivers/drivers.service';
 import { GeocodingService } from '../geocoding/geocoding.service';
 import { NotificationsService } from '../notifications/notifications.service';
-import { ProximityService } from './proximity.service';
+import { ProximityService, haversineKm } from './proximity.service';
 import { SettingsService } from '../settings/settings.service';
 import { findDeliveryZone, findNearestZone, detectDeliveryZoneFromText } from './delivery-zones';
 import { parseScheduledCR } from '../common/costa-rica-time';
 import { isKycRequired } from '../feature-flags/feature-flags';
+
+/**
+ * Lo que un repartidor puede ver del comercio en respuestas de pedidos.
+ * `merchant: true` filtraba la fila completa incluyendo creditBalance
+ * (saldo prepago interno) a toda la flota. Lista explícita y cerrada.
+ */
+const MERCHANT_PUBLIC_SELECT = {
+  id: true,
+  businessName: true,
+  address: true,
+  latitude: true,
+  longitude: true,
+  logoUrl: true,
+} as const;
+
+/** Lo que se expone del repartidor en respuestas de pedidos. */
+const DRIVER_PUBLIC_SELECT = {
+  id: true,
+  fullName: true,
+  photoUrl: true,
+  vehicleType: true,
+  vehiclePlate: true,
+  rating: true,
+} as const;
 
 @Injectable()
 export class OrdersService {
@@ -29,6 +53,39 @@ export class OrdersService {
     private notificationsService: NotificationsService,
     private settingsService: SettingsService,
   ) {}
+
+  /**
+   * Pedido invitado (link público del menú, sin cuenta): mismo pipeline con
+   * precios del servidor que el flujo logueado, atribuido al comercio del
+   * link. El id del perfil es público (viaja en la URL del menú); la
+   * protección es validación estricta + rate limit, igual que el tracking.
+   * El teléfono es obligatorio: sin contacto el comercio no puede resolver
+   * entregas. El pickup sale del comercio cuando el cliente no lo manda.
+   */
+  async createGuestOrder(merchantProfileId: string, data: any) {
+    const merchantProfile = await this.prisma.merchantProfile.findUnique({
+      where: { id: merchantProfileId },
+    });
+    if (!merchantProfile) {
+      throw new NotFoundException('Comercio no encontrado');
+    }
+
+    const phone = String(data?.customerPhone ?? '').trim();
+    if (!/^(\+506)?\s?\d{4}-?\d{4}$/.test(phone)) {
+      throw new BadRequestException('customerPhone es requerido (formato 8888-8888)');
+    }
+    if (Array.isArray(data?.items) && data.items.length > 50) {
+      throw new BadRequestException('Demasiados items en el pedido (máx 50)');
+    }
+
+    return this.create(merchantProfile.userId, {
+      ...data,
+      pickupAddress: data?.pickupAddress || merchantProfile.address,
+      pickupLat: data?.pickupLat ?? merchantProfile.latitude,
+      pickupLng: data?.pickupLng ?? merchantProfile.longitude,
+      customerPhone: phone,
+    });
+  }
 
   async create(merchantId: string, data: any) {
     // Look up the merchant profile
@@ -101,6 +158,18 @@ export class OrdersService {
     }
     if (data.specialInstructions != null && String(data.specialInstructions).length > 2000) {
       throw new BadRequestException('specialInstructions muy largas (máx 2000)');
+    }
+    // Contacto del comprador (flujo invitado): se valida y persiste para
+    // que el comercio pueda contactar al cliente. Longitudes acotadas.
+    if (data.customerName != null && String(data.customerName).length > 120) {
+      throw new BadRequestException('customerName muy largo (máx 120)');
+    }
+    if (
+      data.customerPhone != null &&
+      data.customerPhone !== '' &&
+      !/^(\+506)?\s?\d{4}-?\d{4}$/.test(String(data.customerPhone).trim())
+    ) {
+      throw new BadRequestException('customerPhone inválido (formato 8888-8888)');
     }
     if (
       data.scheduledTime != null &&
@@ -316,6 +385,9 @@ export class OrdersService {
         declaredValue: data.declaredValue ?? null,
         weightKg: weightKg != null ? weightKg : null,
         specialInstructions: data.specialInstructions,
+        customerName: data.customerName != null ? String(data.customerName).trim() || null : null,
+        customerPhone:
+          data.customerPhone != null ? String(data.customerPhone).trim() || null : null,
         // Atómico: los items se crean en la misma escritura. Antes era un
         // createMany best-effort que podía dejar el pedido cobrado sin items
         // (el driver no veía qué llevar).
@@ -983,7 +1055,7 @@ export class OrdersService {
     return this.prisma.order.findMany({
       where,
       include: {
-        merchant: true,
+        merchant: { select: MERCHANT_PUBLIC_SELECT },
         items: true,
       },
       orderBy: { createdAt: 'desc' },
@@ -1008,6 +1080,14 @@ export class OrdersService {
 
     // Validate status transition
     this.validateStatusTransition(order.status, status);
+    // Cada actor solo mueve sus propios estados: el comercio no puede
+    // pilotear el ciclo hasta entregado, ni el driver cancelar a mitad
+    // de ruta (eso es abandono/rechazo por su propio endpoint).
+    this.validateStatusActor(order.status, status, {
+      isMerchantOwner,
+      isAssignedDriver,
+      role,
+    });
 
     // Update status with timestamp
     const updateData: any = { status };
@@ -1024,8 +1104,8 @@ export class OrdersService {
       where: { id: orderId },
       data: updateData,
       include: {
-        merchant: true,
-        driver: true,
+        merchant: { select: MERCHANT_PUBLIC_SELECT },
+        driver: { select: DRIVER_PUBLIC_SELECT },
       },
     });
 
@@ -1041,8 +1121,12 @@ export class OrdersService {
         .catch((e) => this.logger.error(`totalTrips increment failed: ${String(e)}`));
     }
 
-    // Emit real-time status change to both merchant and driver
-    const statusLabels: Record<string, string> = {
+    // Emit real-time status change to both merchant and driver.
+    // Cada rol recibe SU copia: el comercio lee "tu pedido", el repartidor
+    // lee su acción ("recogiste", "entregaste"). Un mensaje único con la
+    // perspectiva del comercio en el inbox del driver se lee como una
+    // notificación ajena.
+    const merchantLabels: Record<string, string> = {
       assigned: 'Tu pedido fue asignado a un repartidor',
       in_transit_to_pickup: 'El repartidor va en camino a recoger',
       picked_up: 'El repartidor recogió tu pedido',
@@ -1050,27 +1134,40 @@ export class OrdersService {
       delivered: '✅ Tu pedido fue entregado',
       cancelled: 'El pedido fue cancelado',
     };
+    const driverLabels: Record<string, string> = {
+      assigned: 'Te asignaron un pedido. Ve a recogerlo',
+      in_transit_to_pickup: 'Vas en camino a recoger el pedido',
+      picked_up: 'Recogiste el pedido. Llévalo a su destino',
+      in_transit_to_delivery: 'Vas en camino a entregar el pedido',
+      delivered: '✅ Entregaste el pedido',
+      cancelled: 'El pedido fue cancelado',
+    };
 
-    const notification = {
+    const baseNotification = {
       orderId: updatedOrder.id,
       status,
-      message: statusLabels[status] || 'Estado actualizado',
       timestamp: new Date(),
     };
 
     // Create in-app notifications + push 1:1 (copy por estado vive en el
     // servicio de notificaciones).
     if (order.merchant?.userId) {
-      this.eventsGateway.sendToUser(order.merchant.userId, 'order:statusChanged', notification);
+      this.eventsGateway.sendToUser(order.merchant.userId, 'order:statusChanged', {
+        ...baseNotification,
+        message: merchantLabels[status] || 'Estado actualizado',
+      });
       await this.notificationsService
-        .notifyOrderStatusUpdate(orderId, order.merchant.userId, status)
+        .notifyOrderStatusUpdate(orderId, order.merchant.userId, status, 'merchant')
         .catch(() => null);
     }
 
     if (order.driver?.userId && status !== 'assigned') {
-      this.eventsGateway.sendToUser(order.driver.userId, 'order:statusChanged', notification);
+      this.eventsGateway.sendToUser(order.driver.userId, 'order:statusChanged', {
+        ...baseNotification,
+        message: driverLabels[status] || 'Estado actualizado',
+      });
       await this.notificationsService
-        .notifyOrderStatusUpdate(orderId, order.driver.userId, status)
+        .notifyOrderStatusUpdate(orderId, order.driver.userId, status, 'driver')
         .catch(() => null);
     }
 
@@ -1172,17 +1269,34 @@ export class OrdersService {
   }
 
   async getAvailableOrders(latitude?: number, longitude?: number) {
-    return this.prisma.order.findMany({
+    const orders = await this.prisma.order.findMany({
       where: {
         status: 'pending',
         driverId: null,
       },
       include: {
-        merchant: true,
+        merchant: { select: MERCHANT_PUBLIC_SELECT },
       },
       orderBy: { createdAt: 'desc' },
       take: 100,
     });
+    // Con ubicación del driver: primero lo cercano (haversine al pickup;
+    // sin coords del comercio van al final, no se esconden). Sin ubicación:
+    // lo más reciente, como antes.
+    const lat = Number(latitude);
+    const lng = Number(longitude);
+    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+      const distOf = (o: any): number => {
+        const mLat = Number(o?.merchant?.latitude);
+        const mLng = Number(o?.merchant?.longitude);
+        if (!Number.isFinite(mLat) || !Number.isFinite(mLng)) return Number.POSITIVE_INFINITY;
+        return haversineKm(lat, lng, mLat, mLng);
+      };
+      orders.sort((a: any, b: any) => distOf(a) - distOf(b));
+    }
+    // El contacto del comprador solo lo ve el repartidor ASIGNADO (o el
+    // comercio): en la vitrina de disponibles se oculta a la flota.
+    return orders.map(({ customerName, customerPhone, ...rest }: any) => rest);
   }
 
   async submitProposal(orderId: string, driverUserId: string, data: any) {
@@ -1596,6 +1710,35 @@ export class OrdersService {
 
     if (!validTransitions[current]?.includes(next)) {
       throw new BadRequestException(`No se puede cambiar de ${current} a ${next}`);
+    }
+  }
+
+  private validateStatusActor(
+    current: string,
+    next: string,
+    actor: { isMerchantOwner: boolean; isAssignedDriver: boolean; role?: string },
+  ) {
+    if (actor.role === 'admin') return;
+    const key = `${current}→${next}`;
+    // El comercio solo cancela antes de que el pedido esté en ruta.
+    const merchantAllowed = new Set([
+      'pending→cancelled',
+      'driver_proposals→cancelled',
+      'assigned→cancelled',
+    ]);
+    // El repartidor avanza su ciclo y solo abandona antes de recoger.
+    const driverAllowed = new Set([
+      'assigned→in_transit_to_pickup',
+      'assigned→cancelled',
+      'in_transit_to_pickup→picked_up',
+      'picked_up→in_transit_to_delivery',
+      'in_transit_to_delivery→delivered',
+    ]);
+    const ok =
+      (actor.isMerchantOwner && merchantAllowed.has(key)) ||
+      (actor.isAssignedDriver && driverAllowed.has(key));
+    if (!ok) {
+      throw new ForbiddenException(`Tu rol no puede cambiar de ${current} a ${next}`);
     }
   }
 

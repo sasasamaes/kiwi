@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TrafficService } from './traffic.service';
 import { DriverStatus } from '@prisma/client';
@@ -279,6 +279,29 @@ export class TrafficAlertsService {
         read: true,
       },
     });
+  }
+
+  /**
+   * Variantes ligadas a identidad: el driverId sale del token, nunca del
+   * body. Aceptar el body tal cual permitía borrar/marcar alertas de otro
+   * repartidor (IDOR de escritura).
+   */
+  async dismissAlertForUser(userId: string, alertId: string): Promise<void> {
+    const driver = await this.requireDriverProfile(userId);
+    await this.dismissAlert(driver.id, alertId);
+  }
+
+  async markAlertAsReadForUser(userId: string, alertId: string): Promise<void> {
+    const driver = await this.requireDriverProfile(userId);
+    await this.markAlertAsRead(driver.id, alertId);
+  }
+
+  private async requireDriverProfile(userId: string) {
+    const driver = await this.prisma.driverProfile.findUnique({ where: { userId } });
+    if (!driver) {
+      throw new ForbiddenException('Solo repartidores pueden gestionar alertas');
+    }
+    return driver;
   }
 
   /**
