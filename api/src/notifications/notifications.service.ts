@@ -64,8 +64,12 @@ export class NotificationsService {
 
       this.fcmAdmin = (admin as any).messaging();
       this.logger.log('Firebase Cloud Messaging initialized successfully');
-    } catch {
-      this.logger.warn('FCM not configured, using in-app notifications only');
+    } catch (e) {
+      // El motivo exacto (cert inválido, duplicate app, import) es lo único
+      // que distingue "var mal pegada" de "bug de init": no tragarlo.
+      this.logger.warn(
+        `FCM not configured (${String(e)?.slice(0, 300)}), using in-app notifications only`,
+      );
     }
   }
 
@@ -593,9 +597,7 @@ export class NotificationsService {
    * Sin esto, cada fallo es silencioso y el "no me llega nada" es
    * indebuggable en producción.
    */
-  async sendTestPush(
-    userId: string,
-  ): Promise<{
+  async sendTestPush(userId: string): Promise<{
     fcmConfigured: boolean;
     tokens: number;
     results: Array<{ token: string; ok: boolean; error?: string }>;
