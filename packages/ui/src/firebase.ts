@@ -90,13 +90,19 @@ export async function requestNotificationPermission(): Promise<string> {
       console.error('[FCM] getToken failed:', detail);
       throw new Error(`PUSH:token-failed|${detail.slice(0, 200)}`);
     }
-    if (!token) throw new Error('PUSH:token-failed');
+    // getToken puede resolver vacío en iOS sin tirar error: distinguirlo
+    // del throw con el estado del SW para el diagnóstico.
+    if (!token) {
+      throw new Error(`PUSH:token-failed|token-vacio sw=${registration ? 'ok' : 'sin-registro'}`);
+    }
 
     return token;
   } catch (error) {
     // Códigos propios (unsupported, denied, ...) pasan tal cual para que la
     // UI explique el paso exacto que falló; lo desconocido se agrupa.
-    if (error instanceof Error && !error.message.includes(' ')) throw error;
+    // OJO: matchear por prefijo PUSH:, no por "sin espacios" — el detalle
+    // técnico real (ej. error de FCM) trae espacios y antes se tragaba.
+    if (error instanceof Error && error.message.startsWith('PUSH:')) throw error;
     console.error('Failed to get notification permission:', error);
     throw new Error('PUSH:token-failed');
   }
