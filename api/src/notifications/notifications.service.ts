@@ -1,4 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { getMessaging } from 'firebase-admin/messaging';
 import { PrismaService } from '../prisma/prisma.service';
 import { TOPIC_CATALOG, getTopic, topicsForRole } from './topics';
 
@@ -53,16 +55,16 @@ export class NotificationsService {
         return;
       }
 
-      const adminModule = await import('firebase-admin');
-      const admin = adminModule.default || adminModule;
-
-      if (!(admin as any).apps?.length) {
-        (admin as any).initializeApp({
-          credential: (admin as any).credential?.cert(parsed),
+      // API modular v12+ (no namespace `admin`): el estilo viejo
+      // `admin.credential.cert` no existe en v14 y el init fallaba con
+      // "credential must be an object which implements Credential".
+      if (!getApps().length) {
+        initializeApp({
+          credential: cert(parsed),
         });
       }
 
-      this.fcmAdmin = (admin as any).messaging();
+      this.fcmAdmin = getMessaging();
       this.logger.log('Firebase Cloud Messaging initialized successfully');
     } catch (e) {
       // El motivo exacto (cert inválido, duplicate app, import) es lo único
