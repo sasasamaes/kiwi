@@ -100,6 +100,25 @@ export { kiwiPremiumTheme } from './theme-kiwi';
 // ============================================
 export { AuthForm } from './AuthForm';
 export type { AuthFormProps, AuthFormData } from './AuthForm';
+export { ConsentCheckbox, ConsentLink } from './ConsentCheckbox';
+export type { ConsentCheckboxProps } from './ConsentCheckbox';
+export { FileDropZone } from './FileDropZone';
+export type { FileDropZoneProps } from './FileDropZone';
+export { business } from './business';
+export type { BusinessInfo } from './business';
+export { SkipToContent } from './SkipToContent';
+
+// ============================================
+//   LEGAL DOCS (privacidad + términos, contenido compartido)
+// ============================================
+export { LegalDocView } from './LegalDocView';
+export type { LegalDocViewProps } from './LegalDocView';
+export { privacyPolicy, termsOfService, cookiePolicy, refundPolicy } from './legal';
+export type { LegalDoc, LegalSection, LegalDocKind } from './legal';
+export { CookieConsentBanner } from './CookieConsentBanner';
+export type { CookieConsentBannerProps } from './CookieConsentBanner';
+export { cookieConsent } from './cookie-consent';
+export type { CookieConsentValue } from './cookie-consent';
 
 // ============================================
 //   KYC COMPONENTS

@@ -13,6 +13,7 @@
  * captureMessage, setSentryUser y el namespace `Sentry` (proxy delegado).
  */
 import type { SeverityLevel } from '@sentry/react';
+import { cookieConsent } from './cookie-consent';
 
 type SentryModule = typeof import('@sentry/react');
 
@@ -55,9 +56,12 @@ export async function initSentry(): Promise<void> {
     // Performance monitoring
     tracesSampleRate: environment === 'production' ? 0.2 : 1.0,
 
-    // Session replay for debugging
-    replaysSessionSampleRate: environment === 'production' ? 0.1 : 0,
-    replaysOnErrorSampleRate: 1.0,
+    // Session replay: SOLO con consentimiento de analítica (grabar la sesión
+    // sin preguntar sería telemetría intrusiva). La captura de errores sí
+    // corre siempre: es diagnóstico técnico y beforeSend la anonimiza.
+    replaysSessionSampleRate:
+      environment === 'production' && cookieConsent.allowsAnalytics() ? 0.1 : 0,
+    replaysOnErrorSampleRate: cookieConsent.allowsAnalytics() ? 1.0 : 0,
 
     // Before send hook to sanitize sensitive data
     beforeSend(event) {
@@ -145,10 +149,13 @@ export async function captureMessage(
  * Set user context for error tracking
  *
  * Usage:
- *   setSentryUser({ id: 'user-123', email: 'luis@kiwi.app' });
+ *   setSentryUser({ id: 'user-123' }); // solo ID interno — nunca email
  */
 export async function setSentryUser(user: { id: string; email?: string; name?: string }) {
   if (!sentryReady) return;
+  // Sin consentimiento de analítica, los errores se reportan anónimos:
+  // la política de cookies lo promete y hay que cumplirlo.
+  if (!cookieConsent.allowsAnalytics()) return;
   const S = await getSentry();
   if (!S) return;
 

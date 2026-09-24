@@ -63,7 +63,7 @@ export default function MerchantKYCPage() {
       <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Info Banner */}
         <motion.div
-          className="mb-8 rounded-2xl bg-gradient-to-r from-kiwi-500 to-kiwi-600 p-6 text-white"
+          className="mb-8 rounded-2xl bg-gradient-to-r from-kiwi-700 to-kiwi-800 p-6 text-white"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
@@ -178,7 +178,7 @@ export default function MerchantKYCPage() {
         >
           <p className="text-sm text-surface-400">
             ¿Necesitas ayuda?{' '}
-            <a href="https://wa.me/50688888888" className="text-kiwi-600 hover:underline">
+            <a href="https://wa.me/50688888888" className="text-kiwi-700 hover:underline">
               Contáctanos por WhatsApp
             </a>
           </p>

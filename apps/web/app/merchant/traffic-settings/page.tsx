@@ -159,7 +159,7 @@ export default function MerchantTrafficSettings() {
               className={`px-4 py-2 rounded-xl font-medium transition-colors ${
                 saving
                   ? 'bg-surface-200 dark:bg-surface-700 text-surface-500'
-                  : 'bg-kiwi-500 hover:bg-kiwi-600 text-white'
+                  : 'bg-kiwi-700 hover:bg-kiwi-800 text-white'
               }`}
               whileTap={{ scale: 0.95 }}
             >
@@ -173,7 +173,7 @@ export default function MerchantTrafficSettings() {
       <AnimatePresence>
         {showSuccess && (
           <motion.div
-            className="fixed top-20 right-4 z-50 bg-kiwi-500 text-white px-4 py-3 rounded-xl shadow-lg"
+            className="fixed top-20 right-4 z-50 bg-kiwi-700 text-white px-4 py-3 rounded-xl shadow-lg"
             initial={{ opacity: 0, x: 100 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 100 }}
@@ -202,7 +202,7 @@ export default function MerchantTrafficSettings() {
                 <label className="text-sm font-medium text-surface-700 dark:text-surface-300">
                   Radio máximo
                 </label>
-                <span className="text-sm font-bold text-kiwi-600 dark:text-kiwi-400">
+                <span className="text-sm font-bold text-kiwi-700 dark:text-kiwi-400">
                   {settings.deliveryRadius} km
                 </span>
               </div>
@@ -226,7 +226,7 @@ export default function MerchantTrafficSettings() {
                 <label className="text-sm font-medium text-surface-700 dark:text-surface-300">
                   Tiempo máximo de entrega
                 </label>
-                <span className="text-sm font-bold text-kiwi-600 dark:text-kiwi-400">
+                <span className="text-sm font-bold text-kiwi-700 dark:text-kiwi-400">
                   {settings.maxDeliveryTime} min
                 </span>
               </div>
@@ -380,7 +380,7 @@ export default function MerchantTrafficSettings() {
                       <label className="text-sm font-medium text-surface-700 dark:text-surface-300">
                         Multiplicador de precio en horas pico
                       </label>
-                      <span className="text-sm font-bold text-kiwi-600 dark:text-kiwi-400">
+                      <span className="text-sm font-bold text-kiwi-700 dark:text-kiwi-400">
                         x{settings.peakHoursMultiplier}
                       </span>
                     </div>
@@ -453,7 +453,7 @@ export default function MerchantTrafficSettings() {
                 <label className="text-sm font-medium text-surface-700 dark:text-surface-300">
                   Envío gratis desde
                 </label>
-                <span className="text-sm font-bold text-kiwi-600 dark:text-kiwi-400">
+                <span className="text-sm font-bold text-kiwi-700 dark:text-kiwi-400">
                   ₡{settings.freeDeliveryThreshold.toLocaleString()}
                 </span>
               </div>
@@ -477,7 +477,7 @@ export default function MerchantTrafficSettings() {
                 <label className="text-sm font-medium text-surface-700 dark:text-surface-300">
                   Pedido mínimo
                 </label>
-                <span className="text-sm font-bold text-kiwi-600 dark:text-kiwi-400">
+                <span className="text-sm font-bold text-kiwi-700 dark:text-kiwi-400">
                   ₡{settings.minimumOrder.toLocaleString()}
                 </span>
               </div>
@@ -654,7 +654,7 @@ export default function MerchantTrafficSettings() {
             className={`w-full py-4 rounded-2xl font-semibold text-lg shadow-lg ${
               saving
                 ? 'bg-surface-200 dark:bg-surface-700 text-surface-500'
-                : 'bg-kiwi-500 hover:bg-kiwi-600 text-white shadow-kiwi-lg'
+                : 'bg-kiwi-700 hover:bg-kiwi-800 text-white shadow-kiwi-lg'
             }`}
             whileTap={{ scale: 0.98 }}
           >

@@ -124,7 +124,7 @@ export function NotificationList({ onNotificationClick }: NotificationListProps)
         <motion.button
           className={`inline-flex min-h-[44px] items-center px-4 py-2 rounded-full text-sm font-medium transition-colors ${
             filter === 'all'
-              ? 'bg-kiwi-500 text-white'
+              ? 'bg-kiwi-700 text-white'
               : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400'
           }`}
           onClick={() => setFilter('all')}
@@ -135,7 +135,7 @@ export function NotificationList({ onNotificationClick }: NotificationListProps)
         <motion.button
           className={`inline-flex min-h-[44px] items-center px-4 py-2 rounded-full text-sm font-medium transition-colors ${
             filter === 'unread'
-              ? 'bg-kiwi-500 text-white'
+              ? 'bg-kiwi-700 text-white'
               : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400'
           }`}
           onClick={() => setFilter('unread')}
@@ -145,7 +145,7 @@ export function NotificationList({ onNotificationClick }: NotificationListProps)
         </motion.button>
         {notifications.some((n) => !n.read) && (
           <motion.button
-            className="ml-auto inline-flex min-h-[44px] items-center px-1 text-sm text-kiwi-600 dark:text-kiwi-400 font-medium"
+            className="ml-auto inline-flex min-h-[44px] items-center px-1 text-sm text-kiwi-700 dark:text-kiwi-400 font-medium"
             onClick={markAllAsRead}
             whileTap={{ scale: 0.95 }}
           >
@@ -177,7 +177,7 @@ export function NotificationList({ onNotificationClick }: NotificationListProps)
                 className={`relative rounded-xl p-4 cursor-pointer transition-all ${
                   notification.read
                     ? 'bg-white dark:bg-surface-800'
-                    : 'bg-kiwi-50 dark:bg-kiwi-900/20 border-l-4 border-kiwi-500'
+                    : 'bg-kiwi-50 dark:bg-kiwi-900/20 border-l-4 border-kiwi-600'
                 } shadow-soft dark:shadow-dark`}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -220,7 +220,7 @@ export function NotificationList({ onNotificationClick }: NotificationListProps)
 
                 {/* Delete button — visible siempre (en touch no existe hover) */}
                 <motion.button
-                  className="absolute right-1 top-1 flex h-11 w-11 items-center justify-center rounded-full text-surface-300 hover:text-surface-500 dark:text-surface-500 dark:hover:text-surface-300 md:opacity-0 md:group-hover:opacity-100"
+                  className="absolute right-1 top-1 flex h-11 w-11 items-center justify-center rounded-full text-surface-500 hover:text-surface-600 dark:text-surface-400 dark:hover:text-surface-300 md:opacity-0 md:group-hover:opacity-100"
                   onClick={(e) => {
                     e.stopPropagation();
                     deleteNotification(notification.id);

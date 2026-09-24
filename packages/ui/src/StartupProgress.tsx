@@ -123,7 +123,7 @@ export function StartupProgress({
         <div className="flex justify-between text-sm">
           <div className="flex items-center gap-4">
             {progress.completed > 0 && (
-              <span className="flex items-center gap-1 text-kiwi-600 dark:text-kiwi-400">
+              <span className="flex items-center gap-1 text-kiwi-700 dark:text-kiwi-400">
                 <Check className="h-4 w-4" />
                 <span>{progress.completed}</span>
               </span>
@@ -305,7 +305,7 @@ export function StartupSplash({
 
   return (
     <motion.div
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-kiwi-500 to-kiwi-600 ${className}`}
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-kiwi-700 to-kiwi-800 ${className}`}
       initial={{ opacity: 1 }}
       animate={{ opacity: isComplete ? 0 : 1 }}
       transition={{ duration: 0.5 }}

@@ -316,7 +316,7 @@ export default function EarningsPage() {
             className="rounded-xl bg-kiwi-50 dark:bg-kiwi-900/30 p-4 shadow-soft dark:shadow-dark border border-kiwi-200 dark:border-kiwi-800"
             whileHover={{ y: -2 }}
           >
-            <p className="text-sm text-kiwi-600 dark:text-kiwi-400">Por Hora</p>
+            <p className="text-sm text-kiwi-700 dark:text-kiwi-400">Por Hora</p>
             <p className="mt-1 text-2xl font-bold text-kiwi-700 dark:text-kiwi-300">
               {formatCurrency(earnings?.earningsPerHour || 0)}
             </p>
@@ -352,7 +352,7 @@ export default function EarningsPage() {
                       style={{ minHeight: day.amount > 0 ? '8px' : '0px' }}
                     />
                   </div>
-                  <p className="mt-2 text-[10px] text-surface-400 dark:text-surface-500">
+                  <p className="mt-2 text-[10px] text-surface-500 dark:text-surface-400">
                     {formatDate(day.date)}
                   </p>
                   <p className="text-[10px] font-medium text-surface-600 dark:text-surface-300">
@@ -386,7 +386,7 @@ export default function EarningsPage() {
                   transition={{ delay: 0.5 + index * 0.05 }}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-kiwi-100 dark:bg-kiwi-900/50 text-kiwi-600 dark:text-kiwi-400">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-kiwi-100 dark:bg-kiwi-900/50 text-kiwi-700 dark:text-kiwi-400">
                       <span className="text-lg">
                         {(() => {
                           const OrderIcon = (ORDER_TYPE_ICONS[transaction.orderType] ||
@@ -403,12 +403,12 @@ export default function EarningsPage() {
                       <p className="text-sm font-medium text-surface-800 dark:text-surface-100">
                         {transaction.deliveryAddress}
                       </p>
-                      <p className="text-xs text-surface-400 dark:text-surface-500">
+                      <p className="text-xs text-surface-500 dark:text-surface-400">
                         {formatDate(transaction.date)} • {formatTime(transaction.date)}
                       </p>
                     </div>
                   </div>
-                  <span className="text-sm font-semibold text-kiwi-600 dark:text-kiwi-400">
+                  <span className="text-sm font-semibold text-kiwi-700 dark:text-kiwi-400">
                     +{formatCurrency(transaction.amount)}
                   </span>
                 </motion.div>
@@ -440,7 +440,7 @@ export default function EarningsPage() {
               Retirar Ganancias
             </motion.button>
           </Link>
-          <p className="text-center text-xs text-surface-400 dark:text-surface-500 mt-2">
+          <p className="text-center text-xs text-surface-500 dark:text-surface-400 mt-2">
             Retiros disponibles de lunes a viernes
           </p>
         </motion.div>

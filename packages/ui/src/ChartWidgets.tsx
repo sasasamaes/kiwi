@@ -38,7 +38,7 @@ export function StatCard({ title, value, change, icon, color = '#22c55e' }: Stat
             >
               <span>{change >= 0 ? '↑' : '↓'}</span>
               <span>{Math.abs(change)}%</span>
-              <span className="text-surface-400 dark:text-surface-500">vs semana anterior</span>
+              <span className="text-surface-500 dark:text-surface-400">vs semana anterior</span>
             </div>
           )}
         </div>
@@ -75,7 +75,7 @@ export function PeriodSelector({ selected, onSelect }: PeriodSelectorProps) {
           key={period.id}
           className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
             selected === period.id
-              ? 'bg-kiwi-500 text-white shadow-md'
+              ? 'bg-kiwi-700 text-white shadow-md'
               : 'text-surface-600 dark:text-surface-400 hover:bg-surface-200 dark:hover:bg-surface-700'
           }`}
           onClick={() => onSelect(period.id)}

@@ -273,7 +273,7 @@ export default function KYCPage() {
               onClick={() => setActiveFilter(tab.id)}
               className={`flex-shrink-0 px-4 py-2.5 rounded-full text-sm font-medium transition-all ${
                 activeFilter === tab.id
-                  ? 'bg-kiwi-500 text-white shadow-kiwi'
+                  ? 'bg-kiwi-700 text-white shadow-kiwi'
                   : 'bg-white dark:bg-surface-800 text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700'
               }`}
               whileTap={{ scale: 0.95 }}
@@ -317,7 +317,7 @@ export default function KYCPage() {
                     <div
                       className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-semibold ${
                         kyc.user.role === 'driver'
-                          ? 'bg-kiwi-100 dark:bg-kiwi-900/30 text-kiwi-600 dark:text-kiwi-400'
+                          ? 'bg-kiwi-100 dark:bg-kiwi-900/30 text-kiwi-700 dark:text-kiwi-400'
                           : 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
                       }`}
                     >
@@ -373,7 +373,7 @@ export default function KYCPage() {
                       Rechazar
                     </button>
                     <button
-                      className="flex-1 py-2 text-sm font-medium bg-kiwi-500 text-white rounded-lg hover:bg-kiwi-600 transition-colors"
+                      className="flex-1 py-2 text-sm font-medium bg-kiwi-700 text-white rounded-lg hover:bg-kiwi-800 transition-colors"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleApprove(kyc.id);
@@ -427,7 +427,7 @@ export default function KYCPage() {
                     <div
                       className={`w-14 h-14 rounded-full flex items-center justify-center text-xl font-semibold ${
                         selectedKYC.user.role === 'driver'
-                          ? 'bg-kiwi-100 dark:bg-kiwi-900/30 text-kiwi-600 dark:text-kiwi-400'
+                          ? 'bg-kiwi-100 dark:bg-kiwi-900/30 text-kiwi-700 dark:text-kiwi-400'
                           : 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
                       }`}
                     >
@@ -445,7 +445,8 @@ export default function KYCPage() {
                   </div>
                   <button
                     onClick={() => setSelectedKYC(null)}
-                    className="p-2 hover:bg-surface-100 dark:hover:bg-surface-700 rounded-lg transition-colors"
+                    aria-label="Cerrar detalle de verificación"
+                    className="p-2 min-h-[44px] min-w-[44px] hover:bg-surface-100 dark:hover:bg-surface-700 rounded-lg transition-colors"
                   >
                     ✕
                   </button>
@@ -636,7 +637,7 @@ export default function KYCPage() {
                       Rechazar
                     </button>
                     <button
-                      className="flex-1 py-3 px-4 text-sm font-medium bg-kiwi-500 text-white rounded-xl hover:bg-kiwi-600 transition-colors"
+                      className="flex-1 py-3 px-4 text-sm font-medium bg-kiwi-700 text-white rounded-xl hover:bg-kiwi-800 transition-colors"
                       onClick={() => handleApprove(selectedKYC.id)}
                       disabled={actionLoading}
                     >
@@ -678,7 +679,7 @@ export default function KYCPage() {
                   value={rejectReason}
                   onChange={(e) => setRejectReason(e.target.value)}
                   placeholder="Ej: Documento ilegible, selfie no coincide, etc."
-                  className="w-full px-4 py-3 rounded-xl bg-surface-50 dark:bg-surface-700 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-red-500 transition-all resize-none h-24"
+                  className="w-full px-4 py-3 rounded-xl bg-surface-50 dark:bg-surface-700 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-red-500 transition-all resize-none h-24"
                 />
                 <div className="flex gap-3 mt-4">
                   <button

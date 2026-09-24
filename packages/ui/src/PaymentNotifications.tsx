@@ -68,7 +68,7 @@ function NotificationItem({
   return (
     <motion.div
       className={`border-l-4 rounded-r-xl p-3 ${getPriorityColor(notification.priority)} ${
-        !notification.read ? 'ring-2 ring-kiwi-500/20' : ''
+        !notification.read ? 'ring-2 ring-kiwi-600/20' : ''
       }`}
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
@@ -202,7 +202,7 @@ export function PaymentNotifications({
               Bell Notificaciones
             </h2>
             {unreadCount > 0 && (
-              <span className="px-2 py-0.5 rounded-full bg-kiwi-500 text-white text-xs font-medium">
+              <span className="px-2 py-0.5 rounded-full bg-kiwi-700 text-white text-xs font-medium">
                 {unreadCount}
               </span>
             )}

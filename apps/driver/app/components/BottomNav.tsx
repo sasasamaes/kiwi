@@ -42,8 +42,8 @@ export function BottomNav() {
               <motion.span
                 className={`flex flex-col items-center gap-1 ${
                   active
-                    ? 'text-kiwi-600 dark:text-kiwi-400'
-                    : 'text-surface-400 dark:text-surface-500'
+                    ? 'text-kiwi-700 dark:text-kiwi-400'
+                    : 'text-surface-500 dark:text-surface-400'
                 }`}
                 whileTap={{ scale: 0.9 }}
               >

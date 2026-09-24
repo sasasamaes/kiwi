@@ -60,7 +60,7 @@ export function KiwiSplash({ title = 'Kiwi', className = '' }: KiwiSplashProps) 
     >
       <KiwiLoader size={72} label="" />
       <motion.span
-        className="font-display text-2xl font-bold text-kiwi-600 dark:text-kiwi-400"
+        className="font-display text-2xl font-bold text-kiwi-700 dark:text-kiwi-400"
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.15 }}

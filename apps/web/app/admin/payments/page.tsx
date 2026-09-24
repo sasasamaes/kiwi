@@ -194,7 +194,7 @@ export default function PaymentsPage() {
               }}
               className={`whitespace-nowrap px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
                 statusFilter === tab.id
-                  ? 'bg-kiwi-500 text-white'
+                  ? 'bg-kiwi-700 text-white'
                   : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400'
               }`}
             >
@@ -324,7 +324,7 @@ export default function PaymentsPage() {
           <button
             onClick={() => setPage((p) => Math.min(pages - 1, p + 1))}
             disabled={page >= pages - 1}
-            className="font-semibold text-kiwi-600 disabled:opacity-40"
+            className="font-semibold text-kiwi-700 disabled:opacity-40"
           >
             Cargar más
           </button>

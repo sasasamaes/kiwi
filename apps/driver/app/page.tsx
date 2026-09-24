@@ -19,6 +19,7 @@ import {
   usePushNotifications,
   playNotificationSound,
   api,
+  events,
   Order,
   staggerContainer,
   KiwiLoader,
@@ -306,6 +307,7 @@ export default function Home() {
     setPageError(null);
     try {
       const accepted: any = await api.acceptOrder(orderId);
+      events.drivers.acceptedOrder(orderId);
       // Remove from available orders
       setAvailableOrders((prev) => prev.filter((o) => o.id !== orderId));
       // Add to active orders
@@ -668,7 +670,7 @@ export default function Home() {
             >
               <motion.div
                 className={`flex h-12 w-12 items-center justify-center rounded-full shadow-md ${
-                  isOnline ? 'bg-kiwi-500 text-white' : 'bg-surface-300 text-surface-500'
+                  isOnline ? 'bg-kiwi-700 text-white' : 'bg-surface-300 text-surface-500'
                 }`}
                 animate={{ x: isOnline ? 40 : 0 }}
                 transition={{ type: 'spring', stiffness: 500, damping: 30 }}
@@ -706,7 +708,7 @@ export default function Home() {
                       key={tab.id}
                       className={`flex-1 rounded-xl py-2 px-3 text-xs font-medium transition-colors ${
                         activeTab === tab.id
-                          ? 'bg-white text-kiwi-600'
+                          ? 'bg-white text-kiwi-700'
                           : 'bg-white/20 text-white/80 hover:bg-white/30'
                       }`}
                       onClick={() => setActiveTab(tab.id)}
@@ -742,7 +744,7 @@ export default function Home() {
         <StaggerContainer className="mb-6 grid grid-cols-2 gap-3">
           <StaggerItem>
             <motion.div className="rounded-xl glass p-4 text-center tactile" whileHover={{ y: -2 }}>
-              <AnimatedCounter value={stats.trips} className="text-2xl font-bold text-kiwi-600" />
+              <AnimatedCounter value={stats.trips} className="text-2xl font-bold text-kiwi-700" />
               <p className="text-xs text-surface-500 dark:text-surface-400">Viajes</p>
             </motion.div>
           </StaggerItem>
@@ -761,7 +763,7 @@ export default function Home() {
           </StaggerItem>
           <StaggerItem>
             <motion.div className="rounded-xl glass p-4 text-center tactile" whileHover={{ y: -2 }}>
-              <span className="text-2xl font-bold text-kiwi-600">
+              <span className="text-2xl font-bold text-kiwi-700">
                 ₡{Math.round(stats.earnings).toLocaleString()}
               </span>
               <p className="text-xs text-surface-500 dark:text-surface-400">Ganado</p>
@@ -801,7 +803,7 @@ export default function Home() {
                       <div className="mb-3 flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <motion.span
-                            className="rounded-full bg-kiwi-500 px-3 py-1 text-xs font-medium text-white flex items-center gap-1"
+                            className="rounded-full bg-kiwi-700 px-3 py-1 text-xs font-medium text-white flex items-center gap-1"
                             animate={{ scale: [1, 1.05, 1] }}
                             transition={{ duration: 2, repeat: Infinity }}
                           >
@@ -818,7 +820,7 @@ export default function Home() {
 
                       <div className="mb-4 space-y-2">
                         <div className="flex items-start gap-3">
-                          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-kiwi-100 text-kiwi-600">
+                          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-kiwi-100 text-kiwi-700">
                             <MapPin className="h-3 w-3" />
                           </div>
                           <div>
@@ -942,7 +944,7 @@ export default function Home() {
 
                     <div className="mb-4 space-y-2">
                       <div className="flex items-start gap-3">
-                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-kiwi-100 text-kiwi-600">
+                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-kiwi-100 text-kiwi-700">
                           <MapPin className="h-3 w-3" />
                         </div>
                         <div>
@@ -1029,7 +1031,7 @@ export default function Home() {
                 <span className="text-surface-600 dark:text-surface-400">
                   Nivel {driverLevel ? (levelLabel[driverLevel] ?? driverLevel) : 'Bronce'}
                 </span>
-                <span className="text-kiwi-600 font-medium">{stats.trips} viajes en total</span>
+                <span className="text-kiwi-700 font-medium">{stats.trips} viajes en total</span>
               </div>
             </div>
             <div className="flex items-center justify-between text-sm">
@@ -1107,7 +1109,7 @@ export default function Home() {
                         <span className="text-surface-500 dark:text-surface-400">
                           {hasPayout ? 'Ganancia' : 'Total del pedido'}
                         </span>
-                        <span className="text-2xl font-bold text-kiwi-600 dark:text-kiwi-400 font-mono">
+                        <span className="text-2xl font-bold text-kiwi-700 dark:text-kiwi-400 font-mono">
                           {hasPayout
                             ? `₡${Number(newOrderAlert.driverPayout).toLocaleString()}`
                             : `₡${Number(newOrderAlert.totalAmount || 0).toLocaleString()}`}

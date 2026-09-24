@@ -2,6 +2,7 @@ import {
   Injectable,
   UnauthorizedException,
   ConflictException,
+  BadRequestException,
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
@@ -106,6 +107,13 @@ export class AuthService {
 
     if (existingUser) {
       throw new ConflictException('El correo o teléfono ya está registrado');
+    }
+
+    // Minimización: el nombre personal es requerido solo para repartidores
+    // (nombre público ante comercios/clientes). El comercio se identifica con
+    // su nombre de negocio.
+    if (role === 'driver' && !fullName?.trim()) {
+      throw new BadRequestException('El nombre completo es requerido para repartidores');
     }
 
     // Hash password

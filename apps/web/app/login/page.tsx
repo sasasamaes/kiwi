@@ -75,7 +75,7 @@ export default function LoginPage() {
       </motion.header>
 
       {/* Main Content */}
-      <main className="relative z-10 flex-1 flex items-center justify-center p-4">
+      <main id="main-content" className="relative z-10 flex-1 flex items-center justify-center p-4">
         <AuthForm
           type="login"
           role="merchant"
@@ -95,11 +95,11 @@ export default function LoginPage() {
       >
         <p className="text-xs text-surface-400">
           Al iniciar sesión, aceptas nuestros{' '}
-          <a href="#" className="text-kiwi-600 hover:underline">
+          <a href="/terms" className="text-kiwi-700 hover:underline">
             Términos
           </a>{' '}
           y{' '}
-          <a href="#" className="text-kiwi-600 hover:underline">
+          <a href="/privacy" className="text-kiwi-700 hover:underline">
             Privacidad
           </a>
         </p>

@@ -132,7 +132,7 @@ function StatCard({
   };
 
   const changeColors = {
-    positive: 'text-kiwi-600 bg-kiwi-50',
+    positive: 'text-kiwi-700 bg-kiwi-50',
     negative: 'text-red-600 bg-red-50',
     neutral: 'text-surface-500 bg-surface-50',
   };

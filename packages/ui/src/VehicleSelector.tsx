@@ -1,5 +1,6 @@
 'use client';
 
+import { useRef } from 'react';
 import { motion } from 'framer-motion';
 import { cn } from './utils';
 import { Bike, Truck, Car, Package, Weight } from 'lucide-react';
@@ -28,8 +29,8 @@ export const vehicles: Vehicle[] = [
   },
   {
     type: 'motorized_bike',
-    name: 'Bici Bota',
-    icon: 'Bici Bota',
+    name: 'Bici Moto',
+    icon: 'Bici Moto',
     description: 'Económica y práctica',
     capacity: 'Paquetes pequeños',
     maxWeight: 'Hasta 5 kg',
@@ -71,22 +72,50 @@ interface VehicleSelectorProps {
 }
 
 export function VehicleSelector({ selected, onSelect, showDetails = true }: VehicleSelectorProps) {
+  // Roving tabindex (WAI-ARIA radio group): un solo tab stop — el radio
+  // marcado (o el primero si no hay selección). ↑↓/←→ mueven el foco Y
+  // seleccionan, Espacio/Enter confirman (selección con teclado y mouse).
+  const radioRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  const handleKeyDown = (index: number) => (e: React.KeyboardEvent) => {
+    let next: number | null = null;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowRight') next = (index + 1) % vehicles.length;
+    else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft')
+      next = (index - 1 + vehicles.length) % vehicles.length;
+    if (next !== null) {
+      e.preventDefault();
+      onSelect(vehicles[next].type);
+      radioRefs.current[next]?.focus();
+    }
+  };
+
   return (
-    <div className="space-y-3">
-      {vehicles.map((vehicle) => (
+    <div role="radiogroup" aria-label="Tipo de vehículo" className="space-y-3">
+      {vehicles.map((vehicle, i) => (
         <motion.button
           key={vehicle.type}
+          ref={(el) => {
+            radioRefs.current[i] = el;
+          }}
+          type="button"
           onClick={() => onSelect(vehicle.type)}
+          onKeyDown={handleKeyDown(i)}
+          role="radio"
+          aria-checked={selected === vehicle.type}
+          aria-label={`${vehicle.name}: ${vehicle.description}`}
+          tabIndex={selected === vehicle.type || (selected === null && i === 0) ? 0 : -1}
           className={cn(
             'w-full flex items-center gap-4 rounded-2xl p-4 text-left transition-all',
+            'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-kiwi-600',
             selected === vehicle.type
-              ? 'border-2 border-kiwi-500 bg-kiwi-50 shadow-kiwi'
+              ? 'border-2 border-kiwi-600 bg-kiwi-50 shadow-kiwi'
               : 'border border-surface-200 bg-white hover:border-surface-300 hover:shadow-soft',
           )}
           whileTap={{ scale: 0.98 }}
         >
           {/* Icon */}
           <motion.div
+            aria-hidden
             className={cn(
               'flex h-14 w-14 items-center justify-center rounded-xl text-2xl',
               selected === vehicle.type ? 'bg-kiwi-100' : 'bg-surface-100',
@@ -118,12 +147,12 @@ export function VehicleSelector({ selected, onSelect, showDetails = true }: Vehi
             <p className="text-sm text-surface-500">{vehicle.description}</p>
 
             {showDetails && (
-              <div className="mt-2 flex gap-3 text-xs text-surface-400">
+              <div className="mt-2 flex gap-3 text-xs text-surface-500 dark:text-surface-400">
                 <span className="flex items-center gap-1">
-                  <Package className="h-3 w-3" /> {vehicle.capacity}
+                  <Package className="h-3 w-3" aria-hidden /> {vehicle.capacity}
                 </span>
                 <span className="flex items-center gap-1">
-                  <Weight className="h-3 w-3" /> {vehicle.maxWeight}
+                  <Weight className="h-3 w-3" aria-hidden /> {vehicle.maxWeight}
                 </span>
               </div>
             )}
@@ -131,8 +160,8 @@ export function VehicleSelector({ selected, onSelect, showDetails = true }: Vehi
 
           {/* Price */}
           <div className="text-right">
-            <p className="text-sm font-semibold text-kiwi-600">₡{vehicle.basePrice}</p>
-            <p className="text-xs text-surface-400">/km</p>
+            <p className="text-sm font-semibold text-kiwi-700">₡{vehicle.basePrice}</p>
+            <p className="text-xs text-surface-500 dark:text-surface-400">/km</p>
           </div>
         </motion.button>
       ))}
@@ -162,7 +191,7 @@ export function VehicleBadge({ type, size = 'md' }: VehicleBadgeProps) {
         sizes[size],
       )}
     >
-      <span>
+      <span aria-hidden>
         {vehicle?.type === 'motorcycle' ||
         vehicle?.type === 'motorized_bike' ||
         vehicle?.type === 'bicycle' ? (

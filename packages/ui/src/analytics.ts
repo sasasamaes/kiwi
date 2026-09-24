@@ -7,17 +7,25 @@
  * Falls back gracefully when PostHog is not available.
  */
 
+import { cookieConsent } from './cookie-consent';
+
 const POSTHOG_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY || '';
 const POSTHOG_HOST = process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://app.posthog.com';
 
 // PostHog wrapper (lazy loaded)
 let posthog: any = null;
+let posthogInitStarted = false;
 
 async function getPostHog() {
+  // Gate de consentimiento: sin 'all' explícito, PostHog nunca se inicializa
+  // y ningún evento sale del dispositivo.
+  if (!cookieConsent.allowsAnalytics()) return null;
   if (posthog) return posthog;
+  if (posthogInitStarted) return posthog; // init en curso
   if (typeof window === 'undefined') return null;
   if (!POSTHOG_KEY) return null;
 
+  posthogInitStarted = true;
   try {
     const posthogModule = await import('posthog-js');
     posthog = posthogModule.default;
@@ -44,10 +52,21 @@ async function getPostHog() {
 // 📊 EVENT TRACKING
 // ============================================
 
+let consentListenerBound = false;
+
 export const analytics = {
   // Initialize analytics (call on app mount)
   async init() {
     await getPostHog();
+
+    // Si el usuario acepta cookies después de cargar, inicializar PostHog
+    // en ese momento (el gate anterior habría devuelto null).
+    if (typeof window !== 'undefined' && !consentListenerBound) {
+      consentListenerBound = true;
+      window.addEventListener('kiwi:cookie-consent', () => {
+        if (cookieConsent.allowsAnalytics()) void getPostHog();
+      });
+    }
   },
 
   // Identify user
@@ -82,6 +101,7 @@ export const analytics = {
     ph.capture('$pageview', {
       $current_url: window.location.href,
       page_name: name,
+      app: 'kiwi',
       ...properties,
     });
   },
@@ -150,6 +170,7 @@ export const events = {
   drivers: {
     wentOnline: (driverId: string) => analytics.track('driver_online', { driverId }),
     wentOffline: (driverId: string) => analytics.track('driver_offline', { driverId }),
+    acceptedOrder: (orderId: string) => analytics.track('driver_order_accepted', { orderId }),
     locationUpdated: (driverId: string) => analytics.track('driver_location_updated', { driverId }),
     scheduleUpdated: (driverId: string) => analytics.track('driver_schedule_updated', { driverId }),
   },

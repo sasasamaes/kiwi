@@ -405,7 +405,7 @@ export default function MerchantTrafficAnalytics() {
                       key={t.hour}
                       className="flex items-center gap-4 p-4 rounded-xl bg-kiwi-50 dark:bg-kiwi-900/30 border border-kiwi-200 dark:border-kiwi-800"
                     >
-                      <p className="text-2xl font-bold text-kiwi-600 w-16 text-center">
+                      <p className="text-2xl font-bold text-kiwi-700 w-16 text-center">
                         {t.hour}:00
                       </p>
                       <p className="text-sm flex-1">{t.samples} observaciones favorables</p>

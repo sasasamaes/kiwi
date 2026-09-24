@@ -80,7 +80,7 @@ export default function MerchantQRPage() {
           <p className="text-surface-500 dark:text-surface-400">Comercio no encontrado</p>
           <Link
             href="/dashboard"
-            className="mt-4 inline-flex min-h-[44px] items-center text-kiwi-600 hover:text-kiwi-700"
+            className="mt-4 inline-flex min-h-[44px] items-center text-kiwi-700 hover:text-kiwi-800"
           >
             ← Volver al dashboard
           </Link>
@@ -192,7 +192,7 @@ export default function MerchantQRPage() {
               const StepIcon = item.icon as any;
               return (
                 <div key={item.step} className="flex items-start gap-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-kiwi-500 text-white text-sm font-bold flex-shrink-0">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-kiwi-700 text-white text-sm font-bold flex-shrink-0">
                     {item.step}
                   </div>
                   <div>

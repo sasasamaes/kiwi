@@ -253,14 +253,14 @@ export function AddressInput({
           onKeyDown={handleKeyDown}
           onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
           placeholder={placeholder}
-          className="w-full px-4 py-3 pl-10 pr-20 rounded-xl bg-surface-50 dark:bg-surface-700 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-kiwi-500 transition-all"
+          className="w-full px-4 py-3 pl-10 pr-20 rounded-xl bg-surface-50 dark:bg-surface-700 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-kiwi-600 transition-all"
         />
 
         {/* Search icon */}
         <div className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-400">
           {loading ? (
             <motion.div
-              className="w-5 h-5 border-2 border-kiwi-500 border-t-transparent rounded-full"
+              className="w-5 h-5 border-2 border-kiwi-600 border-t-transparent rounded-full"
               animate={{ rotate: 360 }}
               transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
             />
@@ -274,7 +274,7 @@ export function AddressInput({
           type="button"
           onClick={handleGetCurrentLocation}
           disabled={gettingLocation}
-          className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-lg bg-kiwi-100 dark:bg-kiwi-900/50 text-kiwi-600 dark:text-kiwi-400 text-sm font-medium hover:bg-kiwi-200 dark:hover:bg-kiwi-900/70 transition-colors disabled:opacity-50"
+          className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-lg bg-kiwi-100 dark:bg-kiwi-900/50 text-kiwi-700 dark:text-kiwi-400 text-sm font-medium hover:bg-kiwi-200 dark:hover:bg-kiwi-900/70 transition-colors disabled:opacity-50"
         >
           {gettingLocation ? (
             <motion.span
@@ -325,7 +325,7 @@ export function AddressInput({
                       {suggestion.displayName}
                     </p>
                   </div>
-                  <span className="text-xs text-surface-400 dark:text-surface-500 whitespace-nowrap">
+                  <span className="text-xs text-surface-500 dark:text-surface-400 whitespace-nowrap">
                     MapPin {suggestion.lat.toFixed(4)}, {suggestion.lng.toFixed(4)}
                   </span>
                 </motion.button>
@@ -354,7 +354,7 @@ export function AddressInput({
             <p className="text-sm text-surface-500 dark:text-surface-400">
               No se encontraron direcciones para "{query}"
             </p>
-            <p className="text-xs text-surface-400 dark:text-surface-500 mt-1">
+            <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">
               Intenta con otro término o usa tu ubicación actual
             </p>
           </div>

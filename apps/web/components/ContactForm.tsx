@@ -13,7 +13,7 @@ const SUBJECTS = [
 ] as const;
 
 const inputClass =
-  'w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-3 text-sm text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-kiwi-500 transition-all';
+  'w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-3 text-sm text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-kiwi-600 transition-all';
 
 type Status = 'idle' | 'sending' | 'sent' | 'error';
 
@@ -73,7 +73,7 @@ export function ContactForm() {
         animate={{ opacity: 1, scale: 1 }}
         className="rounded-2xl border border-kiwi-200 dark:border-kiwi-800 bg-kiwi-50 dark:bg-kiwi-900/30 p-8 text-center"
       >
-        <CheckCircle2 className="h-12 w-12 text-kiwi-600 dark:text-kiwi-400 mx-auto mb-4" />
+        <CheckCircle2 className="h-12 w-12 text-kiwi-700 dark:text-kiwi-400 mx-auto mb-4" />
         <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-2">
           ¡Mensaje enviado!
         </h3>
@@ -166,7 +166,7 @@ export function ContactForm() {
         </div>
       </div>
 
-      <p className="text-xs text-surface-400 dark:text-surface-500 -mt-1">
+      <p className="text-xs text-surface-500 dark:text-surface-400 -mt-1">
         Deja al menos un email o teléfono para poder responderte.
       </p>
 
@@ -199,7 +199,7 @@ export function ContactForm() {
       <button
         type="submit"
         disabled={!valid || status === 'sending'}
-        className="w-full rounded-xl bg-kiwi-500 py-3 text-sm font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors hover:bg-kiwi-600"
+        className="w-full rounded-xl bg-kiwi-700 py-3 text-sm font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors hover:bg-kiwi-800"
       >
         {status === 'sending' ? (
           <>

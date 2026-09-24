@@ -50,7 +50,7 @@ export function ErrorState({
             type="button"
             onClick={onRetry}
             whileTap={{ scale: 0.97 }}
-            className="flex items-center gap-2 rounded-xl bg-kiwi-500 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-kiwi-600"
+            className="flex items-center gap-2 rounded-xl bg-kiwi-700 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-kiwi-800"
           >
             <RefreshCw className="h-4 w-4" /> Reintentar
           </motion.button>
@@ -124,7 +124,7 @@ export function NotFoundState({
       <p className="max-w-sm text-sm text-surface-500 dark:text-surface-400">{detail}</p>
       <Link
         href={homeHref}
-        className="mt-2 flex items-center gap-2 rounded-xl bg-kiwi-500 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-kiwi-600"
+        className="mt-2 flex items-center gap-2 rounded-xl bg-kiwi-700 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-kiwi-800"
       >
         <HomeIcon className="h-4 w-4" /> {homeLabel}
       </Link>

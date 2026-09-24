@@ -62,7 +62,7 @@ const STATUS_LABEL: Record<string, string> = {
 
 const VEHICLE_LABEL: Record<string, string> = {
   motorcycle: 'Moto',
-  motorized_bike: 'Bici Bota',
+  motorized_bike: 'Bici Moto',
   bicycle: 'Bici',
   car: 'Carro',
   truck: 'Camión',
@@ -231,7 +231,7 @@ export default function Profile() {
             transition={{ duration: 4, repeat: Infinity }}
           />
           <motion.div
-            className="relative mb-4 inline-flex h-24 w-24 items-center justify-center rounded-full bg-white text-4xl font-bold text-kiwi-600 shadow-lg"
+            className="relative mb-4 inline-flex h-24 w-24 items-center justify-center rounded-full bg-white text-4xl font-bold text-kiwi-700 shadow-lg"
             whileHover={{ scale: 1.05 }}
           >
             {initials(name)}
@@ -334,7 +334,7 @@ export default function Profile() {
           <StaggerItem>
             <div className="rounded-xl bg-white dark:bg-surface-800 p-4 shadow-soft text-center">
               <Coins className="text-2xl h-6 w-6 mx-auto" />
-              <p className="mt-2 text-xl font-bold text-kiwi-600">
+              <p className="mt-2 text-xl font-bold text-kiwi-700">
                 ₡{Math.round(earnings).toLocaleString()}
               </p>
               <p className="text-xs text-surface-500">Ganancias totales</p>
@@ -458,7 +458,8 @@ export default function Profile() {
                 </h3>
                 <button
                   onClick={() => setShowVehicleModal(false)}
-                  className="text-surface-400 hover:text-surface-600"
+                  aria-label="Cerrar selector de vehículo"
+                  className="text-surface-500 hover:text-surface-700 dark:text-surface-400 dark:hover:text-surface-200"
                 >
                   ✕
                 </button>
@@ -475,7 +476,7 @@ export default function Profile() {
                   value={plate}
                   onChange={(e) => setPlate(e.target.value.toUpperCase())}
                   placeholder="Ej: ABC123"
-                  className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:border-kiwi-500 focus:ring-2 focus:ring-kiwi-500/20"
+                  className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20"
                 />
               </div>
 

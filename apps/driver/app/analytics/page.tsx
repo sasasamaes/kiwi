@@ -106,7 +106,7 @@ export default function DriverAnalyticsPage() {
   };
 
   const getGrowthColor = (growth: number) => {
-    if (growth > 0) return 'text-kiwi-600 dark:text-kiwi-400';
+    if (growth > 0) return 'text-kiwi-700 dark:text-kiwi-400';
     if (growth < 0) return 'text-red-600 dark:text-red-400';
     return 'text-surface-500 dark:text-surface-400';
   };
@@ -311,7 +311,7 @@ export default function DriverAnalyticsPage() {
               <p className="text-2xl font-bold text-kiwi-700 dark:text-kiwi-300">
                 {analytics?.overview?.averageRating || 0}
               </p>
-              <p className="text-sm text-kiwi-600 dark:text-kiwi-400">Calificación</p>
+              <p className="text-sm text-kiwi-700 dark:text-kiwi-400">Calificación</p>
             </motion.div>
           </StaggerItem>
         </StaggerContainer>
@@ -344,7 +344,7 @@ export default function DriverAnalyticsPage() {
                     style={{ minHeight: day.value > 0 ? '8px' : '0px' }}
                   />
                 </div>
-                <p className="mt-2 text-[10px] text-surface-400 dark:text-surface-500">
+                <p className="mt-2 text-[10px] text-surface-500 dark:text-surface-400">
                   {new Date(day.date).toLocaleDateString('es-CR', { weekday: 'short' })}
                 </p>
                 <p className="text-[10px] font-medium text-surface-600 dark:text-surface-300">
@@ -383,7 +383,7 @@ export default function DriverAnalyticsPage() {
                     style={{ minHeight: day.value > 0 ? '8px' : '0px' }}
                   />
                 </div>
-                <p className="mt-2 text-[10px] text-surface-400 dark:text-surface-500">
+                <p className="mt-2 text-[10px] text-surface-500 dark:text-surface-400">
                   {new Date(day.date).toLocaleDateString('es-CR', { weekday: 'short' })}
                 </p>
                 <p className="text-[10px] font-medium text-surface-600 dark:text-surface-300">
@@ -464,7 +464,7 @@ export default function DriverAnalyticsPage() {
             </div>
             <div className="p-3 rounded-xl bg-surface-50 dark:bg-surface-700/50">
               <p className="text-sm text-surface-500 dark:text-surface-400">Día más activo</p>
-              <p className="text-lg font-bold text-kiwi-600 dark:text-kiwi-400">
+              <p className="text-lg font-bold text-kiwi-700 dark:text-kiwi-400">
                 {analytics?.schedule?.mostActiveDay || '—'}
               </p>
             </div>
@@ -521,7 +521,7 @@ export default function DriverAnalyticsPage() {
 
         {/* Tips Section */}
         <motion.div
-          className="rounded-2xl bg-gradient-to-r from-kiwi-500 to-emerald-600 p-6 text-white"
+          className="rounded-2xl bg-gradient-to-r from-kiwi-700 to-emerald-700 p-6 text-white"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.7 }}

@@ -67,7 +67,7 @@ export default function RegisterPage() {
       </motion.header>
 
       {/* Main Content */}
-      <main className="relative z-10 flex-1 flex items-center justify-center p-4">
+      <main id="main-content" className="relative z-10 flex-1 flex items-center justify-center p-4">
         <AuthForm
           type="register"
           role="merchant"
@@ -87,11 +87,11 @@ export default function RegisterPage() {
       >
         <p className="text-xs text-surface-400">
           Al registrarte, aceptas nuestros{' '}
-          <a href="#" className="text-kiwi-600 hover:underline">
+          <a href="/terms" className="text-kiwi-700 hover:underline">
             Términos
           </a>{' '}
           y{' '}
-          <a href="#" className="text-kiwi-600 hover:underline">
+          <a href="/privacy" className="text-kiwi-700 hover:underline">
             Privacidad
           </a>
         </p>

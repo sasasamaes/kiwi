@@ -131,7 +131,7 @@ export function PaymentSelector({
             className={cn(
               'w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all',
               selected === option.id
-                ? 'border-kiwi-500 bg-kiwi-50 dark:bg-kiwi-900/30'
+                ? 'border-kiwi-600 bg-kiwi-50 dark:bg-kiwi-900/30'
                 : 'border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 hover:border-surface-300 dark:hover:border-surface-600',
             )}
             onClick={() => onSelect(option.id)}
@@ -305,7 +305,7 @@ export function CryptoQR({ address, amount, coin }: CryptoQRProps) {
 
       <div className="mb-4">
         <p className="text-sm text-surface-500 dark:text-surface-400 mb-1">Enviar exactamente</p>
-        <p className="text-2xl font-bold text-kiwi-600 dark:text-kiwi-400">
+        <p className="text-2xl font-bold text-kiwi-700 dark:text-kiwi-400">
           {amount.toFixed(6)} {coin}
         </p>
       </div>

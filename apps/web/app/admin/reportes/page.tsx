@@ -333,7 +333,7 @@ export default function ReportesPage() {
         <p className="mb-4 text-sm text-surface-500">{error ?? 'Sin datos'}</p>
         <button
           onClick={() => load(months)}
-          className="rounded-xl bg-kiwi-500 px-5 py-2.5 text-sm font-semibold text-white"
+          className="rounded-xl bg-kiwi-700 px-5 py-2.5 text-sm font-semibold text-white"
         >
           Reintentar
         </button>
@@ -431,7 +431,7 @@ export default function ReportesPage() {
               min={1}
               value={ordersPerDay}
               onChange={(e) => setOrdersPerDay(Math.max(1, Number(e.target.value) || 1))}
-              className="w-36 rounded-xl border border-surface-200 bg-white px-4 py-2.5 text-surface-800 focus:outline-none focus:ring-2 focus:ring-kiwi-500 dark:border-surface-700 dark:bg-surface-900 dark:text-surface-100"
+              className="w-36 rounded-xl border border-surface-200 bg-white px-4 py-2.5 text-surface-800 focus:outline-none focus:ring-2 focus:ring-kiwi-600 dark:border-surface-700 dark:bg-surface-900 dark:text-surface-100"
             />
             {last30 && (
               <button
@@ -456,7 +456,7 @@ export default function ReportesPage() {
                 onClick={() => setMonths(n)}
                 className={`rounded-lg px-4 py-1.5 text-sm font-medium ${
                   months === n
-                    ? 'bg-kiwi-500 text-white'
+                    ? 'bg-kiwi-700 text-white'
                     : 'text-surface-500 hover:text-surface-700 dark:hover:text-surface-300'
                 }`}
               >
@@ -468,13 +468,13 @@ export default function ReportesPage() {
         <div className="ml-auto flex flex-col items-end gap-2">
           <p className="max-w-xs text-xs text-surface-400">
             Viaje esperado {fmt(expectedTrip)} × {commissionPct}% ={' '}
-            <span className="font-semibold text-kiwi-600">{fmt(proj.perOrder)}</span> por pedido
+            <span className="font-semibold text-kiwi-700">{fmt(proj.perOrder)}</span> por pedido
           </p>
           <button
             onClick={pinCurrentScenario}
             disabled={pinning || loading}
             title="Guarda el escenario actual como la proyección de este mes, contra la que se comparará lo real al cerrar"
-            className="flex items-center gap-1.5 rounded-xl bg-kiwi-500 px-4 py-2 text-xs font-semibold text-white hover:bg-kiwi-600 disabled:opacity-40"
+            className="flex items-center gap-1.5 rounded-xl bg-kiwi-700 px-4 py-2 text-xs font-semibold text-white hover:bg-kiwi-800 disabled:opacity-40"
           >
             <Pin className="h-3.5 w-3.5" />
             {pinning ? 'Fijando…' : 'Fijar escenario de este mes'}
@@ -497,7 +497,7 @@ export default function ReportesPage() {
           </p>
           <p className="mt-1.5 border-t border-surface-100 pt-1.5 text-xs dark:border-surface-700">
             Neta real:{' '}
-            <b className={curNet >= 0 ? 'text-kiwi-600' : 'text-red-500 dark:text-red-400'}>
+            <b className={curNet >= 0 ? 'text-kiwi-700' : 'text-red-500 dark:text-red-400'}>
               {fmt(curNet)}
             </b>
             {curMarginPct != null && (
@@ -514,7 +514,7 @@ export default function ReportesPage() {
           <p className="text-xs text-surface-400">Neta proyectada del mes</p>
           <p
             className={`mt-1 text-2xl font-bold ${
-              proj.netMonthly >= 0 ? 'text-kiwi-600' : 'text-red-500 dark:text-red-400'
+              proj.netMonthly >= 0 ? 'text-kiwi-700' : 'text-red-500 dark:text-red-400'
             }`}
           >
             {fmt(proj.netMonthly)}
@@ -534,7 +534,7 @@ export default function ReportesPage() {
             <>
               <p
                 className={`mt-1 flex items-center gap-1.5 text-2xl font-bold ${
-                  dev.deltaCommission >= 0 ? 'text-kiwi-600' : 'text-red-500 dark:text-red-400'
+                  dev.deltaCommission >= 0 ? 'text-kiwi-700' : 'text-red-500 dark:text-red-400'
                 }`}
               >
                 {dev.deltaCommission >= 0 ? (
@@ -581,7 +581,7 @@ export default function ReportesPage() {
         /viaje · pasarela {costs.gatewayPct}% sobre {costs.digitalPct}% digital del GMV —{' '}
         <button
           onClick={() => setCostsEditable((v) => !v)}
-          className="font-medium text-kiwi-600 hover:underline"
+          className="font-medium text-kiwi-700 hover:underline"
         >
           editar
         </button>
@@ -659,7 +659,7 @@ export default function ReportesPage() {
             <button
               onClick={saveCosts}
               disabled={savingCosts || !costsDirty}
-              className="flex items-center gap-1.5 rounded-xl bg-kiwi-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
+              className="flex items-center gap-1.5 rounded-xl bg-kiwi-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
             >
               <Save className="h-4 w-4" /> {savingCosts ? 'Guardando…' : 'Guardar costos'}
             </button>
@@ -713,7 +713,7 @@ export default function ReportesPage() {
             <span className="text-surface-400">
               — línea punteada: neta proyectada ({fmt(proj.netMonthly)}/mes)
             </span>{' '}
-            <span className="text-kiwi-600">◆ escenario fijado</span>
+            <span className="text-kiwi-700">◆ escenario fijado</span>
           </p>
           <MonthBars
             rows={actuals.map((r) => ({
@@ -785,7 +785,7 @@ export default function ReportesPage() {
                     <td
                       className={`px-4 py-2.5 text-right font-semibold ${
                         net >= 0
-                          ? 'text-kiwi-600 dark:text-kiwi-400'
+                          ? 'text-kiwi-700 dark:text-kiwi-400'
                           : 'text-red-500 dark:text-red-400'
                       }`}
                     >
@@ -796,7 +796,7 @@ export default function ReportesPage() {
                         t == null
                           ? 'text-surface-400'
                           : t.delta >= 0
-                            ? 'text-kiwi-600 dark:text-kiwi-400'
+                            ? 'text-kiwi-700 dark:text-kiwi-400'
                             : 'text-red-500 dark:text-red-400'
                       }`}
                       title={
@@ -830,13 +830,13 @@ export default function ReportesPage() {
                         ? `${(r.avgCommissionRate * 100).toFixed(1)}%`
                         : '—'}
                     </td>
-                    <td className="px-4 py-2.5 text-right text-kiwi-600">{fmt(proj.netMonthly)}</td>
+                    <td className="px-4 py-2.5 text-right text-kiwi-700">{fmt(proj.netMonthly)}</td>
                     <td
                       className={`px-4 py-2.5 text-right font-medium ${
                         zero
                           ? 'text-surface-400'
                           : delta >= 0
-                            ? 'text-kiwi-600'
+                            ? 'text-kiwi-700'
                             : 'text-red-500 dark:text-red-400'
                       }`}
                     >
@@ -911,7 +911,7 @@ export default function ReportesPage() {
                           realNet == null
                             ? 'text-surface-400'
                             : realNet >= 0
-                              ? 'text-kiwi-600 dark:text-kiwi-400'
+                              ? 'text-kiwi-700 dark:text-kiwi-400'
                               : 'text-red-500 dark:text-red-400'
                         }`}
                       >
@@ -922,7 +922,7 @@ export default function ReportesPage() {
                           d == null
                             ? 'text-surface-400'
                             : d >= 0
-                              ? 'text-kiwi-600 dark:text-kiwi-400'
+                              ? 'text-kiwi-700 dark:text-kiwi-400'
                               : 'text-red-500 dark:text-red-400'
                         }`}
                       >
@@ -984,13 +984,13 @@ export default function ReportesPage() {
                   <td className="px-4 py-2.5 text-right text-surface-600 dark:text-surface-300">
                     {z.realTrips}
                   </td>
-                  <td className="px-4 py-2.5 text-right text-kiwi-600">{z.projectedTrips}</td>
+                  <td className="px-4 py-2.5 text-right text-kiwi-700">{z.projectedTrips}</td>
                   <td
                     className={`px-4 py-2.5 text-right font-medium ${
                       z.realTrips === 0
                         ? 'text-surface-400'
                         : z.delta >= 0
-                          ? 'text-kiwi-600'
+                          ? 'text-kiwi-700'
                           : 'text-red-500 dark:text-red-400'
                     }`}
                   >

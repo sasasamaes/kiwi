@@ -121,7 +121,7 @@ export function OfflineAnalyticsDashboard({
               <CreditCard className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-kiwi-600 dark:text-kiwi-400">
+              <p className="text-2xl font-bold text-kiwi-700 dark:text-kiwi-400">
                 {stats.offlinePayments}
               </p>
               <p className="text-xs text-surface-500 dark:text-surface-400">Pagos offline</p>

@@ -120,7 +120,7 @@ export default function SettingsPage() {
         <button
           onClick={handleSave}
           disabled={saving || loading}
-          className="px-6 py-2 text-sm font-medium bg-kiwi-500 text-white rounded-lg hover:bg-kiwi-600 transition-colors disabled:opacity-50"
+          className="px-6 py-2 text-sm font-medium bg-kiwi-700 text-white rounded-lg hover:bg-kiwi-800 transition-colors disabled:opacity-50"
         >
           {saving ? 'Guardando…' : saveState === 'ok' ? 'Guardado' : 'Guardar Cambios'}
         </button>
@@ -162,7 +162,7 @@ export default function SettingsPage() {
               onClick={() => setActiveTab(tab.id as any)}
               className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
                 activeTab === tab.id
-                  ? 'bg-kiwi-50 dark:bg-kiwi-900/30 text-kiwi-600 dark:text-kiwi-400'
+                  ? 'bg-kiwi-50 dark:bg-kiwi-900/30 text-kiwi-700 dark:text-kiwi-400'
                   : 'text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800'
               }`}
             >
@@ -198,7 +198,7 @@ export default function SettingsPage() {
                     platform: { ...settings.platform, name: e.target.value },
                   })
                 }
-                className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-500"
+                className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
               />
             </div>
 
@@ -215,7 +215,7 @@ export default function SettingsPage() {
                     platform: { ...settings.platform, commission: Number(e.target.value) },
                   })
                 }
-                className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-500"
+                className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
               />
               <p className="mt-1 text-xs text-surface-400">
                 Rige para pedidos nuevos (cada pedido guarda su tasa). El comercio no paga comisión.
@@ -235,7 +235,7 @@ export default function SettingsPage() {
                     platform: { ...settings.platform, minimumOrder: Number(e.target.value) },
                   })
                 }
-                className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-500"
+                className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
               />
             </div>
 
@@ -255,7 +255,7 @@ export default function SettingsPage() {
                     },
                   })
                 }
-                className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-500"
+                className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
               />
             </div>
 
@@ -275,7 +275,7 @@ export default function SettingsPage() {
                     },
                   })
                 }
-                className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-500"
+                className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
               />
             </div>
           </div>
@@ -315,7 +315,7 @@ export default function SettingsPage() {
                     },
                   })
                 }
-                className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-500"
+                className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
               />
               <p className="mt-1 text-xs text-surface-400">
                 Hosting, infraestructura, equipo base.
@@ -339,7 +339,7 @@ export default function SettingsPage() {
                     },
                   })
                 }
-                className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-500"
+                className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
               />
               <p className="mt-1 text-xs text-surface-400">
                 Chats, llamadas e incidencias por pedido entregado.
@@ -365,7 +365,7 @@ export default function SettingsPage() {
                     },
                   })
                 }
-                className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-500"
+                className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
               />
               <p className="mt-1 text-xs text-surface-400">
                 Comisión de tarjeta/SINPE web del banco o procesador.
@@ -390,7 +390,7 @@ export default function SettingsPage() {
                     },
                   })
                 }
-                className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-500"
+                className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
               />
               <p className="mt-1 text-xs text-surface-400">
                 El fee solo aplica a la parte digital del GMV — el efectivo no pasa por la pasarela.
@@ -479,7 +479,7 @@ export default function SettingsPage() {
                       payments: { ...settings.payments, cryptoWallet: e.target.value },
                     })
                   }
-                  className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 font-mono focus:outline-none focus:ring-2 focus:ring-kiwi-500"
+                  className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 font-mono focus:outline-none focus:ring-2 focus:ring-kiwi-600"
                 />
               </div>
 
@@ -495,7 +495,7 @@ export default function SettingsPage() {
                       payments: { ...settings.payments, payoutSchedule: e.target.value },
                     })
                   }
-                  className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-500"
+                  className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
                 >
                   <option value="daily">Diario</option>
                   <option value="weekly">Semanal</option>
@@ -517,7 +517,7 @@ export default function SettingsPage() {
                       payments: { ...settings.payments, minimumPayout: Number(e.target.value) },
                     })
                   }
-                  className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-500"
+                  className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
                 />
               </div>
             </div>
@@ -714,7 +714,7 @@ export default function SettingsPage() {
                     security: { ...settings.security, sessionTimeout: Number(e.target.value) },
                   })
                 }
-                className="w-full max-w-xs px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-500"
+                className="w-full max-w-xs px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
               />
             </div>
           </div>

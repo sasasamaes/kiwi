@@ -169,7 +169,7 @@ export default function ClientHome() {
               de arriba — dos targets idénticos juntos confunden. */}
           <div className="rounded-2xl glass p-6 text-center">
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-kiwi-100 dark:bg-kiwi-900/30 mx-auto mb-3">
-              <Camera className="h-8 w-8 text-kiwi-600 dark:text-kiwi-400" />
+              <Camera className="h-8 w-8 text-kiwi-700 dark:text-kiwi-400" />
             </div>
             <p className="font-medium text-surface-800 dark:text-surface-200">
               Muy pronto por aquí
@@ -197,7 +197,7 @@ export default function ClientHome() {
             ].map((step, i) => (
               <div key={i} className="flex items-center gap-4">
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-kiwi-100 dark:bg-kiwi-400/10 dark:ring-1 dark:ring-kiwi-400/25">
-                  <step.icon className="h-6 w-6 text-kiwi-600 dark:text-kiwi-300" />
+                  <step.icon className="h-6 w-6 text-kiwi-700 dark:text-kiwi-300" />
                 </div>
                 <div>
                   <p className="font-medium text-surface-800 dark:text-surface-100">{step.title}</p>

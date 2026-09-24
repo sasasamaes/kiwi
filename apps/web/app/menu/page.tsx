@@ -386,7 +386,7 @@ export default function MenuManagementPage() {
                   value={newCategoryName}
                   onChange={(e) => setNewCategoryName(e.target.value)}
                   placeholder="Nueva categoría..."
-                  className="flex-1 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-2 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:border-kiwi-500 focus:ring-2 focus:ring-kiwi-500/20 transition-all"
+                  className="flex-1 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-2 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20 transition-all"
                   onKeyPress={(e) => e.key === 'Enter' && addCategory()}
                 />
                 <AnimatedButton
@@ -534,7 +534,7 @@ export default function MenuManagementPage() {
                 key={cat}
                 className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all ${
                   selectedCategory === cat
-                    ? 'bg-kiwi-500 text-white shadow-kiwi'
+                    ? 'bg-kiwi-700 text-white shadow-kiwi'
                     : 'bg-white dark:bg-surface-800 text-surface-600 dark:text-surface-400 shadow-soft dark:shadow-dark'
                 }`}
                 onClick={() => setSelectedCategory(cat)}
@@ -592,7 +592,7 @@ export default function MenuManagementPage() {
               {user?.merchantProfile?.id && (
                 <Link
                   href={`/merchants/${user.merchantProfile.id}/qr`}
-                  className="text-sm font-medium text-kiwi-600 hover:text-kiwi-700"
+                  className="text-sm font-medium text-kiwi-700 hover:text-kiwi-800"
                 >
                   <Smartphone className="h-4 w-4 inline" /> Ver mi QR →
                 </Link>
@@ -643,7 +643,7 @@ export default function MenuManagementPage() {
                   }`}
                 >
                   <div className="flex items-center gap-4">
-                    <div className="text-surface-400 dark:text-surface-500">⋮⋮</div>
+                    <div className="text-surface-500 dark:text-surface-400">⋮⋮</div>
                     <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-surface-100 dark:bg-surface-700 text-2xl flex-shrink-0">
                       {isHttpUrl(item.image) ? (
                         // NOTE: <img> intencional — avatares dinámicos de Cloudinary, next/image no aporta aquí
@@ -669,7 +669,7 @@ export default function MenuManagementPage() {
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-kiwi-600 dark:text-kiwi-400 font-medium">
+                      <p className="text-sm text-kiwi-700 dark:text-kiwi-400 font-medium">
                         ₡{item.price.toLocaleString()}
                       </p>
                     </div>
@@ -684,7 +684,7 @@ export default function MenuManagementPage() {
                   <motion.div
                     className={`rounded-2xl glass p-4 transition-all ${
                       !item.isAvailable ? 'opacity-60' : ''
-                    } ${selectedItems.has(item.id) ? 'ring-2 ring-kiwi-500' : ''}`}
+                    } ${selectedItems.has(item.id) ? 'ring-2 ring-kiwi-600' : ''}`}
                     whileHover={{ y: -2 }}
                   >
                     <div className="flex gap-4">
@@ -693,8 +693,8 @@ export default function MenuManagementPage() {
                         <motion.button
                           className={`h-6 w-6 rounded-lg border-2 flex items-center justify-center transition-colors ${
                             selectedItems.has(item.id)
-                              ? 'bg-kiwi-500 border-kiwi-500'
-                              : 'border-surface-300 dark:border-surface-600 hover:border-kiwi-500'
+                              ? 'bg-kiwi-500 border-kiwi-600'
+                              : 'border-surface-300 dark:border-surface-600 hover:border-kiwi-600'
                           }`}
                           onClick={() => toggleItemSelection(item.id)}
                           whileTap={{ scale: 0.9 }}
@@ -784,13 +784,13 @@ export default function MenuManagementPage() {
                               </p>
                             )}
                           </div>
-                          <p className="text-lg font-bold text-kiwi-600 dark:text-kiwi-400">
+                          <p className="text-lg font-bold text-kiwi-700 dark:text-kiwi-400">
                             ₡{item.price.toLocaleString()}
                           </p>
                         </div>
 
                         <div className="flex items-center justify-between mt-3">
-                          <span className="text-xs text-surface-400 dark:text-surface-500">
+                          <span className="text-xs text-surface-500 dark:text-surface-400">
                             {item.category}
                           </span>
 
@@ -910,7 +910,7 @@ export default function MenuManagementPage() {
             </h3>
             <div className="grid grid-cols-4 gap-4">
               <div className="text-center">
-                <p className="text-2xl font-bold text-kiwi-600">{stats.total}</p>
+                <p className="text-2xl font-bold text-kiwi-700">{stats.total}</p>
                 <p className="text-xs text-surface-500 dark:text-surface-400">Productos</p>
               </div>
               <div className="text-center">

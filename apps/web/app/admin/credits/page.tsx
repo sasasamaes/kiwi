@@ -172,7 +172,7 @@ export default function AdminCredits() {
               </div>
               <div className="text-right">
                 <p
-                  className={`font-mono text-lg font-bold ${Number(m.balance) < 2000 ? 'text-red-600' : 'text-kiwi-600'}`}
+                  className={`font-mono text-lg font-bold ${Number(m.balance) < 2000 ? 'text-red-600' : 'text-kiwi-700'}`}
                 >
                   ₡{Number(m.balance).toLocaleString()}
                 </p>
@@ -207,7 +207,7 @@ export default function AdminCredits() {
               <div className="mb-4 flex items-center justify-between">
                 <div>
                   <h3 className="font-display text-lg font-bold">{selected.businessName}</h3>
-                  <p className="font-mono text-2xl font-bold text-kiwi-600">
+                  <p className="font-mono text-2xl font-bold text-kiwi-700">
                     ₡{Number(selected.balance).toLocaleString()}
                   </p>
                 </div>
@@ -224,7 +224,7 @@ export default function AdminCredits() {
                     onClick={() => setAmount(String(p))}
                     className={`rounded-xl py-2.5 text-sm font-bold ${
                       Number(amount) === p
-                        ? 'bg-kiwi-500 text-white'
+                        ? 'bg-kiwi-700 text-white'
                         : 'bg-surface-100 dark:bg-surface-700 text-surface-600'
                     }`}
                   >
@@ -244,7 +244,7 @@ export default function AdminCredits() {
                 <button
                   onClick={recharge}
                   disabled={saving}
-                  className="flex items-center gap-1 rounded-xl bg-kiwi-500 px-5 text-sm font-bold text-white disabled:opacity-50"
+                  className="flex items-center gap-1 rounded-xl bg-kiwi-700 px-5 text-sm font-bold text-white disabled:opacity-50"
                 >
                   <Plus className="h-4 w-4" /> {saving ? '…' : 'Recargar'}
                 </button>
@@ -255,7 +255,7 @@ export default function AdminCredits() {
                 placeholder="Motivo (opcional)"
                 className="mb-2 w-full rounded-xl border border-surface-200 dark:border-surface-700 px-4 py-2.5 text-sm"
               />
-              {notice && <p className="mb-2 text-sm text-kiwi-600">{notice}</p>}
+              {notice && <p className="mb-2 text-sm text-kiwi-700">{notice}</p>}
 
               <p className="mb-2 mt-4 flex items-center gap-1 text-sm font-semibold">
                 <History className="h-4 w-4" /> Movimientos
@@ -282,7 +282,7 @@ export default function AdminCredits() {
                         </p>
                       </div>
                       <span
-                        className={`font-mono font-bold ${Number(h.amount) >= 0 ? 'text-kiwi-600' : 'text-surface-600'}`}
+                        className={`font-mono font-bold ${Number(h.amount) >= 0 ? 'text-kiwi-700' : 'text-surface-600'}`}
                       >
                         {Number(h.amount) >= 0 ? '+' : ''}₡{Number(h.amount).toLocaleString()}
                       </span>

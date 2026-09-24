@@ -88,7 +88,7 @@ export function OfflinePaymentForm({
         animate={{ opacity: 1, scale: 1 }}
       >
         {/* Success Header */}
-        <div className="p-6 bg-kiwi-500 text-white text-center">
+        <div className="p-6 bg-kiwi-700 text-white text-center">
           <motion.div
             className="text-5xl mb-3"
             initial={{ scale: 0 }}
@@ -174,7 +174,7 @@ export function OfflinePaymentForm({
                 setPaymentComplete(false);
                 setReceipt(null);
               }}
-              className="w-full py-3 rounded-xl bg-kiwi-500 text-white font-medium"
+              className="w-full py-3 rounded-xl bg-kiwi-700 text-white font-medium"
             >
               Nuevo Pago
             </button>
@@ -227,7 +227,7 @@ export function OfflinePaymentForm({
           </div>
           <div className="flex justify-between pt-2 border-t border-surface-200 dark:border-surface-700">
             <span className="font-semibold text-surface-800 dark:text-surface-200">Total</span>
-            <span className="font-bold text-xl text-kiwi-600 dark:text-kiwi-400">
+            <span className="font-bold text-xl text-kiwi-700 dark:text-kiwi-400">
               ₡{total.toLocaleString()}
             </span>
           </div>
@@ -251,7 +251,7 @@ export function OfflinePaymentForm({
               onClick={() => setSelectedMethod(method.id as any)}
               className={`w-full p-4 rounded-xl text-left transition-colors ${
                 selectedMethod === method.id
-                  ? 'bg-kiwi-50 dark:bg-kiwi-900/30 border-2 border-kiwi-500'
+                  ? 'bg-kiwi-50 dark:bg-kiwi-900/30 border-2 border-kiwi-600'
                   : 'bg-surface-50 dark:bg-surface-900 border-2 border-transparent hover:border-surface-200 dark:hover:border-surface-700'
               }`}
               whileTap={{ scale: 0.98 }}
@@ -283,7 +283,7 @@ export function OfflinePaymentForm({
           className={`w-full py-4 rounded-xl font-semibold text-lg ${
             isProcessing
               ? 'bg-surface-200 dark:bg-surface-700 text-surface-500'
-              : 'bg-kiwi-500 hover:bg-kiwi-600 text-white'
+              : 'bg-kiwi-700 hover:bg-kiwi-800 text-white'
           }`}
           whileTap={{ scale: 0.98 }}
         >
@@ -320,7 +320,7 @@ export function PaymentReceipt({ payment, className = '' }: { payment: any; clas
 
   return (
     <div className={`glass rounded-2xl overflow-hidden ${className}`}>
-      <div className="p-4 bg-kiwi-500 text-white text-center">
+      <div className="p-4 bg-kiwi-700 text-white text-center">
         <p className="font-bold text-lg"> KIWI</p>
         <p className="text-xs opacity-90">Tu app de delivery</p>
       </div>
@@ -359,7 +359,7 @@ export function PaymentReceipt({ payment, className = '' }: { payment: any; clas
           </div>
           <div className="flex justify-between font-bold text-lg pt-2 border-t border-surface-200 dark:border-surface-700">
             <span>Total</span>
-            <span className="text-kiwi-600 dark:text-kiwi-400">
+            <span className="text-kiwi-700 dark:text-kiwi-400">
               ₡{receipt.total.toLocaleString()}
             </span>
           </div>

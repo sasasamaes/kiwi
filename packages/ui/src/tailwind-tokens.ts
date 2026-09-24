@@ -14,15 +14,21 @@ export const kiwiDesignTokens = {
     extend: {
       colors: {
         // ─── Primary Accent ───
+        // Reglas de uso por contraste (WCAG AA):
+        //  - Texto blanco encima: solo kiwi-700/800/900 (4.8–5.9:1) y el
+        //    gradiente kiwi (700→800).
+        //  - Texto kiwi sobre blanco/light: solo kiwi-700 (4.81:1) o más.
+        //    kiwi-600 (3.3) reservado a texto ≥18.66px bold / iconos grandes.
+        //  - kiwi-500: acentos, bordes, fondos sin texto — nunca texto encima.
         kiwi: {
           50: '#f0fdf4',
           100: '#dcfce7',
           200: '#bbf7d0',
           300: '#86efac',
           400: '#4ade80',
-          500: '#22c55e', // Kiwi Leaf — brand signature
+          500: '#22c55e', // Kiwi Leaf — brand signature (decorativo)
           600: '#16a34a',
-          700: '#15803d',
+          700: '#15803d', // mínimo AA para texto pequeño sobre claro
           800: '#166534',
           900: '#14532d',
           DEFAULT: '#22c55e',
@@ -51,6 +57,10 @@ export const kiwiDesignTokens = {
         },
 
         // ─── Surface Colors (light mode) ───
+        // En LIGHT el texto mínimo AA es surface-500 (4.63:1 sobre 50/white);
+        // surface-400 (2.46) solo para decoración/icons grandes, nunca texto
+        // informativo. En DARK los roles se invierten: texto mínimo AA sobre
+        // 900/950 es surface-400 (6.6–7.2:1); 500+ (≤3.8) solo decorativo.
         surface: {
           50: '#fafafa',
           100: '#f4f4f5',
@@ -88,8 +98,11 @@ export const kiwiDesignTokens = {
       },
 
       backgroundImage: {
-        'kiwi-gradient': 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
-        'kiwi-gradient-dark': 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+        // CTAs con texto blanco: el gradiente vive en el rango 700→800 porque
+        // white/kiwi-600 solo llega a 3.3:1 (falla AA para texto <18pt) y
+        // white/kiwi-700 = 4.81:1 ✓. kiwi-500 queda para acentos sin texto.
+        'kiwi-gradient': 'linear-gradient(135deg, #15803d 0%, #166534 100%)',
+        'kiwi-gradient-dark': 'linear-gradient(135deg, #166534 0%, #14532d 100%)',
         'surface-gradient': 'linear-gradient(180deg, #fafafa 0%, #f4f4f5 100%)',
         'surface-gradient-dark': 'linear-gradient(180deg, #0b1326 0%, #0f172a 100%)',
       },

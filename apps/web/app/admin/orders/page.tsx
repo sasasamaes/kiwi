@@ -142,7 +142,7 @@ export default function AdminOrders() {
               }}
               className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors ${
                 filter === f.id
-                  ? 'bg-kiwi-500 text-white'
+                  ? 'bg-kiwi-700 text-white'
                   : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400'
               }`}
             >
@@ -229,7 +229,7 @@ export default function AdminOrders() {
                 <p className="font-bold text-surface-800 dark:text-surface-100">
                   ₡{Number(o.totalAmount).toLocaleString()}
                 </p>
-                <p className="text-xs text-kiwi-600">
+                <p className="text-xs text-kiwi-700">
                   ₡{Number(o.commission).toLocaleString()} com.
                 </p>
               </div>
@@ -320,7 +320,7 @@ export default function AdminOrders() {
                   {selected.driver?.fullName ?? 'Sin repartidor asignado'}
                 </p>
                 <div className="flex items-center gap-2 rounded-xl bg-kiwi-50 dark:bg-kiwi-900/30 px-3 py-2">
-                  <Navigation className="h-4 w-4 shrink-0 text-kiwi-600" />
+                  <Navigation className="h-4 w-4 shrink-0 text-kiwi-700" />
                   <a
                     href={buildTrackingUrl(selected.id)}
                     target="_blank"
@@ -367,7 +367,7 @@ export default function AdminOrders() {
                         ? ` (${Math.round(Number(selected.commissionRate) * 100)}%)`
                         : ''}
                     </span>
-                    <span className="font-mono text-kiwi-600">
+                    <span className="font-mono text-kiwi-700">
                       ₡{Number(selected.commission).toLocaleString()}
                     </span>
                   </div>

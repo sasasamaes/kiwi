@@ -98,7 +98,7 @@ function Landing() {
             Kiwi
           </motion.h1>
           <motion.p
-            className="mb-3 text-xl font-medium text-kiwi-600"
+            className="mb-3 text-xl font-medium text-kiwi-700"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
@@ -141,10 +141,12 @@ function Landing() {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.7 }}
           >
+            {/* Prueba social — solo claims verdaderos y verificables (no inventar
+                adopción: es publicidad engañosa según la Ley 7472, art. 31). */}
             {[
-              { icon: Check, text: '100+ comercios' },
-              { icon: Star, text: '4.9 calificación' },
-              { icon: Car, text: '50+ repartidores' },
+              { icon: Check, text: 'Gratis para clientes' },
+              { icon: Star, text: 'Califica a tu repartidor' },
+              { icon: Car, text: 'Delivery con repartidores locales' },
             ].map((item, i) => {
               const ProofIcon = item.icon as any;
               return (
@@ -187,7 +189,7 @@ function Landing() {
                 whileHover={{ y: -8, boxShadow: '0 20px 40px -12px rgba(34, 197, 94, 0.2)' }}
               >
                 <motion.div
-                  className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-kiwi-100 text-kiwi-600"
+                  className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-kiwi-100 text-kiwi-700"
                   whileHover={{ rotate: 10, scale: 1.1 }}
                   transition={{ type: 'spring', stiffness: 260, damping: 20 }}
                 >
@@ -359,13 +361,13 @@ function Landing() {
                 ¿Listo para empezar?
               </h2>
               <p className="mb-8 text-lg text-white/80">
-                Únete a los comercios de Nicoya que ya usan Kiwi
+                Registra tu comercio y vende con entregas en Nicoya
               </p>
               <Link href="/dashboard">
                 <AnimatedButton
                   variant="secondary"
                   size="lg"
-                  className="bg-white text-kiwi-600 hover:bg-white/90"
+                  className="bg-white text-kiwi-700 hover:bg-white/90"
                 >
                   Comprar Ahora →
                 </AnimatedButton>
@@ -393,11 +395,18 @@ function Landing() {
               Términos
             </motion.a>
             <motion.a
-              href="#"
+              href="/privacy"
               className="text-surface-400 hover:text-kiwi-500 transition-colors"
               whileHover={{ y: -2 }}
             >
               Privacidad
+            </motion.a>
+            <motion.a
+              href="/cookies"
+              className="text-surface-400 hover:text-kiwi-500 transition-colors"
+              whileHover={{ y: -2 }}
+            >
+              Cookies
             </motion.a>
           </div>
         </div>

@@ -1,7 +1,14 @@
 import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono, Inter } from 'next/font/google';
 import './globals.css';
-import { ThemeProvider, ThemeScript, AuthProvider, NotificationProvider } from '@kiwi/ui';
+import {
+  ThemeProvider,
+  ThemeScript,
+  AuthProvider,
+  NotificationProvider,
+  CookieConsentBanner,
+  SkipToContent,
+} from '@kiwi/ui';
 import { OfflineBanner } from './offline-banner';
 
 const geist = Geist({
@@ -58,8 +65,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ThemeProvider>
           <AuthProvider>
             <NotificationProvider>
+              <SkipToContent />
               {children}
               <OfflineBanner />
+              <CookieConsentBanner />
             </NotificationProvider>
           </AuthProvider>
         </ThemeProvider>

@@ -111,7 +111,7 @@ export function AdminSyncDashboard({
               🟢
             </div>
             <div>
-              <p className="text-2xl font-bold text-kiwi-600 dark:text-kiwi-400">
+              <p className="text-2xl font-bold text-kiwi-700 dark:text-kiwi-400">
                 {stats.activeDevices}
               </p>
               <p className="text-xs text-surface-500 dark:text-surface-400">Activos</p>
@@ -251,7 +251,7 @@ export function AdminSyncDashboard({
                   onClick={() => setFilter(f)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                     filter === f
-                      ? 'bg-kiwi-500 text-white'
+                      ? 'bg-kiwi-700 text-white'
                       : 'bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400'
                   }`}
                 >

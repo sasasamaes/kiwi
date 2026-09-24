@@ -45,7 +45,7 @@ function SyncItem({ item, onCancel }: SyncItemProps) {
       case 'syncing':
         return 'text-blue-600 dark:text-blue-400';
       case 'completed':
-        return 'text-kiwi-600 dark:text-kiwi-400';
+        return 'text-kiwi-700 dark:text-kiwi-400';
       case 'failed':
         return 'text-red-600 dark:text-red-400';
       case 'paused':
@@ -423,7 +423,7 @@ export function SyncStatusPage({ className = '' }: { className?: string }) {
           <h2 className="text-lg font-semibold text-surface-800 dark:text-surface-100">
             Progreso General
           </h2>
-          <span className="text-2xl font-bold text-kiwi-600 dark:text-kiwi-400">
+          <span className="text-2xl font-bold text-kiwi-700 dark:text-kiwi-400">
             {formattedProgress}
           </span>
         </div>
@@ -455,7 +455,7 @@ export function SyncStatusPage({ className = '' }: { className?: string }) {
             <p className="text-xs text-blue-700 dark:text-blue-400">Activos</p>
           </div>
           <div className="text-center p-3 rounded-xl bg-kiwi-50 dark:bg-kiwi-900/30">
-            <p className="text-2xl font-bold text-kiwi-600 dark:text-kiwi-400">{completedCount}</p>
+            <p className="text-2xl font-bold text-kiwi-700 dark:text-kiwi-400">{completedCount}</p>
             <p className="text-xs text-kiwi-700 dark:text-kiwi-400">Completados</p>
           </div>
           <div className="text-center p-3 rounded-xl bg-red-50 dark:bg-red-900/30">

@@ -157,7 +157,7 @@ function ConflictCard({ conflict, onResolve, onDismiss }: ConflictCardProps) {
                       Auto-merge disponible
                     </p>
                   </div>
-                  <p className="text-sm text-kiwi-600 dark:text-kiwi-400">
+                  <p className="text-sm text-kiwi-700 dark:text-kiwi-400">
                     Los cambios no se superponen y pueden combinarse automáticamente.
                   </p>
                 </div>
@@ -197,7 +197,7 @@ function ConflictCard({ conflict, onResolve, onDismiss }: ConflictCardProps) {
               {conflict.autoMergeResult && (
                 <motion.button
                   onClick={() => onResolve(conflict.id, 'merge')}
-                  className="w-full py-2 rounded-xl bg-kiwi-500 text-white font-medium flex items-center justify-center gap-2"
+                  className="w-full py-2 rounded-xl bg-kiwi-700 text-white font-medium flex items-center justify-center gap-2"
                   whileTap={{ scale: 0.95 }}
                 >
                   <Sparkles className="h-4 w-4" /> Auto-combinar
@@ -301,7 +301,7 @@ export function ConflictResolver({
             <p className="text-xs text-orange-700 dark:text-orange-400">Pendientes</p>
           </div>
           <div className="p-3 rounded-xl bg-kiwi-50 dark:bg-kiwi-900/30 text-center">
-            <p className="text-xl font-bold text-kiwi-600 dark:text-kiwi-400">{stats.resolved}</p>
+            <p className="text-xl font-bold text-kiwi-700 dark:text-kiwi-400">{stats.resolved}</p>
             <p className="text-xs text-kiwi-700 dark:text-kiwi-400">Resueltos</p>
           </div>
           <div className="p-3 rounded-xl bg-surface-50 dark:bg-surface-900 text-center">

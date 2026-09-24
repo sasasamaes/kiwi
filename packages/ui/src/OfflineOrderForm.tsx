@@ -214,7 +214,7 @@ export function OfflineOrderForm({
                       <p className="font-medium text-surface-800 dark:text-surface-200">
                         {item.name}
                       </p>
-                      <p className="text-sm text-kiwi-600 dark:text-kiwi-400">
+                      <p className="text-sm text-kiwi-700 dark:text-kiwi-400">
                         ₡{item.price.toLocaleString()}
                       </p>
                     </div>
@@ -238,7 +238,7 @@ export function OfflineOrderForm({
                       )}
                       <button
                         onClick={() => addItem(item)}
-                        className="w-8 h-8 rounded-full bg-kiwi-500 text-white"
+                        className="w-8 h-8 rounded-full bg-kiwi-700 text-white"
                       >
                         +
                       </button>
@@ -367,7 +367,7 @@ export function OfflineOrderForm({
                     onClick={() => setPaymentMethod(method.id as any)}
                     className={`w-full p-4 rounded-xl text-left transition-colors ${
                       paymentMethod === method.id
-                        ? 'bg-kiwi-50 dark:bg-kiwi-900/30 border-2 border-kiwi-500'
+                        ? 'bg-kiwi-50 dark:bg-kiwi-900/30 border-2 border-kiwi-600'
                         : 'bg-surface-50 dark:bg-surface-900 border-2 border-transparent hover:border-surface-200 dark:hover:border-surface-700'
                     }`}
                   >
@@ -411,7 +411,7 @@ export function OfflineOrderForm({
                     <span className="font-semibold text-surface-800 dark:text-surface-200">
                       Total
                     </span>
-                    <span className="font-bold text-lg text-kiwi-600 dark:text-kiwi-400">
+                    <span className="font-bold text-lg text-kiwi-700 dark:text-kiwi-400">
                       ₡{total.toLocaleString()}
                     </span>
                   </div>
@@ -504,7 +504,7 @@ export function OfflineOrderForm({
                     <span className="font-semibold text-surface-800 dark:text-surface-200">
                       Total
                     </span>
-                    <span className="font-bold text-xl text-kiwi-600 dark:text-kiwi-400">
+                    <span className="font-bold text-xl text-kiwi-700 dark:text-kiwi-400">
                       ₡{total.toLocaleString()}
                     </span>
                   </div>
@@ -540,7 +540,7 @@ export function OfflineOrderForm({
               className={`flex-1 py-3 rounded-xl font-medium ${
                 isSubmitting || items.length === 0
                   ? 'bg-surface-200 dark:bg-surface-700 text-surface-500'
-                  : 'bg-kiwi-500 hover:bg-kiwi-600 text-white'
+                  : 'bg-kiwi-700 hover:bg-kiwi-800 text-white'
               }`}
               whileTap={{ scale: 0.98 }}
             >
@@ -571,7 +571,7 @@ export function OfflineOrderForm({
                 (step === 'items' && items.length === 0) ||
                 (step === 'details' && (!customerName || !customerPhone || !deliveryAddress))
               }
-              className="flex-1 py-3 rounded-xl bg-kiwi-500 hover:bg-kiwi-600 text-white font-medium disabled:bg-surface-200 dark:disabled:bg-surface-700 disabled:text-surface-500"
+              className="flex-1 py-3 rounded-xl bg-kiwi-700 hover:bg-kiwi-800 text-white font-medium disabled:bg-surface-200 dark:disabled:bg-surface-700 disabled:text-surface-500"
             >
               Siguiente →
             </button>

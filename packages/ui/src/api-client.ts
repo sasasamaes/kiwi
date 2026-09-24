@@ -96,7 +96,10 @@ class ApiClient {
     email: string;
     password: string;
     phone?: string;
-    fullName: string;
+    /** Requerido solo para drivers (nombre público); el backend lo valida por rol. */
+    fullName?: string;
+    /** Consentimiento explícito marcado en el formulario de registro. */
+    acceptedTerms?: boolean;
     role: 'merchant' | 'driver';
     businessName?: string;
     vehicleType?: string;

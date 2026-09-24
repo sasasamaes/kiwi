@@ -290,14 +290,17 @@ export function MenuItemForm({
               ) : (
                 formData.image
               )}
-              <label className="absolute bottom-1 right-1 h-6 w-6 rounded-full bg-kiwi-500 text-white text-xs flex items-center justify-center cursor-pointer hover:bg-kiwi-600 transition-colors">
-                📷
+              <label className="absolute bottom-1 right-1 h-8 w-8 rounded-full bg-kiwi-700 text-white text-xs flex items-center justify-center cursor-pointer hover:bg-kiwi-800 transition-colors group">
                 <input
                   type="file"
                   accept="image/*"
-                  className="hidden"
                   onChange={handleImageUpload}
+                  aria-label="Cambiar foto del producto"
+                  className="absolute inset-0 h-full w-full cursor-pointer rounded-full opacity-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-kiwi-600"
                 />
+                <span aria-hidden className="pointer-events-none">
+                  📷
+                </span>
               </label>
             </motion.div>
 
@@ -309,7 +312,7 @@ export function MenuItemForm({
                     type="button"
                     className={`h-10 w-10 rounded-xl text-xl transition-all ${
                       formData.image === emoji
-                        ? 'bg-kiwi-100 dark:bg-kiwi-900/50 ring-2 ring-kiwi-500'
+                        ? 'bg-kiwi-100 dark:bg-kiwi-900/50 ring-2 ring-kiwi-600'
                         : 'bg-surface-100 dark:bg-surface-700 hover:bg-surface-200 dark:hover:bg-surface-600'
                     }`}
                     onClick={() => {
@@ -323,11 +326,11 @@ export function MenuItemForm({
                   </motion.button>
                 ))}
               </div>
-              <p className="text-xs text-surface-400 dark:text-surface-500 mt-2">
+              <p className="text-xs text-surface-500 dark:text-surface-400 mt-2">
                 O sube una foto del producto (JPG/PNG/WEBP/GIF, máx 5 MB)
               </p>
               {uploading && (
-                <p className="mt-1 flex items-center gap-1.5 text-xs text-kiwi-600 dark:text-kiwi-400">
+                <p className="mt-1 flex items-center gap-1.5 text-xs text-kiwi-700 dark:text-kiwi-400">
                   <Loader2 className="h-3.5 w-3.5 animate-spin" /> Subiendo imagen…
                 </p>
               )}
@@ -355,10 +358,10 @@ export function MenuItemForm({
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             placeholder="Ej: Bowl Tropikal"
-            className={`w-full rounded-xl border bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:ring-2 focus:ring-kiwi-500/20 transition-all ${
+            className={`w-full rounded-xl border bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:ring-2 focus:ring-kiwi-600/20 transition-all ${
               errors.name
                 ? 'border-red-500 focus:border-red-500'
-                : 'border-surface-200 dark:border-surface-700 focus:border-kiwi-500'
+                : 'border-surface-200 dark:border-surface-700 focus:border-kiwi-600'
             }`}
           />
           {errors.name && <p className="mt-1 text-sm text-red-500">{errors.name}</p>}
@@ -374,7 +377,7 @@ export function MenuItemForm({
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             placeholder="Ej: Arroz, pollo, aguacate, mango, leche de coco"
             rows={3}
-            className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:border-kiwi-500 focus:ring-2 focus:ring-kiwi-500/20 transition-all resize-none"
+            className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20 transition-all resize-none"
           />
         </div>
 
@@ -395,10 +398,10 @@ export function MenuItemForm({
                 onChange={(e) => setFormData({ ...formData, price: parseInt(e.target.value) || 0 })}
                 placeholder="0"
                 min="0"
-                className={`w-full rounded-xl border bg-white dark:bg-surface-900 pl-8 pr-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:ring-2 focus:ring-kiwi-500/20 transition-all ${
+                className={`w-full rounded-xl border bg-white dark:bg-surface-900 pl-8 pr-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:ring-2 focus:ring-kiwi-600/20 transition-all ${
                   errors.price
                     ? 'border-red-500 focus:border-red-500'
-                    : 'border-surface-200 dark:border-surface-700 focus:border-kiwi-500'
+                    : 'border-surface-200 dark:border-surface-700 focus:border-kiwi-600'
                 }`}
               />
             </div>
@@ -413,10 +416,10 @@ export function MenuItemForm({
             <select
               value={formData.category}
               onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              className={`w-full rounded-xl border bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 focus:ring-2 focus:ring-kiwi-500/20 transition-all ${
+              className={`w-full rounded-xl border bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 focus:ring-2 focus:ring-kiwi-600/20 transition-all ${
                 errors.category
                   ? 'border-red-500 focus:border-red-500'
-                  : 'border-surface-200 dark:border-surface-700 focus:border-kiwi-500'
+                  : 'border-surface-200 dark:border-surface-700 focus:border-kiwi-600'
               }`}
             >
               {categories.map((cat) => (
@@ -501,7 +504,7 @@ export function MenuItemForm({
                 type="button"
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                   formData.price === price
-                    ? 'bg-kiwi-100 dark:bg-kiwi-900/50 text-kiwi-700 dark:text-kiwi-400 ring-2 ring-kiwi-500'
+                    ? 'bg-kiwi-100 dark:bg-kiwi-900/50 text-kiwi-700 dark:text-kiwi-400 ring-2 ring-kiwi-600'
                     : 'bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400 hover:bg-surface-200 dark:hover:bg-surface-600'
                 }`}
                 onClick={() => setFormData({ ...formData, price })}
@@ -530,7 +533,7 @@ export function MenuItemForm({
                   ],
                 }))
               }
-              className="text-xs font-medium text-kiwi-600 dark:text-kiwi-400 hover:underline"
+              className="text-xs font-medium text-kiwi-700 dark:text-kiwi-400 hover:underline"
             >
               + Grupo manual
             </button>
@@ -669,7 +672,7 @@ export function MenuItemForm({
                     onClick={() => updateGroup(gi, { required: !g.required })}
                     className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
                       g.required
-                        ? 'bg-kiwi-500 text-white'
+                        ? 'bg-kiwi-700 text-white'
                         : 'bg-surface-200 dark:bg-surface-700 text-surface-500 dark:text-surface-300'
                     }`}
                   >
@@ -680,7 +683,7 @@ export function MenuItemForm({
                     onClick={() => updateGroup(gi, { multiple: !g.multiple })}
                     className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
                       g.multiple
-                        ? 'bg-kiwi-500 text-white'
+                        ? 'bg-kiwi-700 text-white'
                         : 'bg-surface-200 dark:bg-surface-700 text-surface-500 dark:text-surface-300'
                     }`}
                   >
@@ -742,7 +745,7 @@ export function MenuItemForm({
                           <span
                             className={`pr-2.5 text-xs font-medium ${
                               o.priceDelta > 0
-                                ? 'text-kiwi-600'
+                                ? 'text-kiwi-700'
                                 : o.priceDelta < 0
                                   ? 'text-red-500'
                                   : 'text-surface-400'
@@ -777,7 +780,7 @@ export function MenuItemForm({
                         options: [...g.options, { name: '', priceDelta: 0, isAvailable: true }],
                       })
                     }
-                    className="text-xs font-medium text-kiwi-600 dark:text-kiwi-400 hover:underline"
+                    className="text-xs font-medium text-kiwi-700 dark:text-kiwi-400 hover:underline"
                   >
                     + opción
                   </button>

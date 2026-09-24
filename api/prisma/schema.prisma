@@ -168,7 +168,7 @@ model DriverProfile {
 
 enum VehicleType {
   motorcycle // Moto
-  motorized_bike // Bici bota
+  motorized_bike // Bici moto
   bicycle // Bici
   car // Carro
   truck // Camión

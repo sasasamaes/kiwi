@@ -149,7 +149,7 @@ export function OrderSearch({
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Buscar por ID, dirección, comercio..."
-          className="w-full pl-12 pr-4 py-3 bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-700 rounded-xl text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-kiwi-500 focus:border-transparent transition-all"
+          className="w-full pl-12 pr-4 py-3 bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-700 rounded-xl text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-kiwi-600 focus:border-transparent transition-all"
         />
         {search && (
           <button
@@ -172,7 +172,7 @@ export function OrderSearch({
           </span>
           Filtros
           {activeFilterCount > 0 && (
-            <span className="px-2 py-0.5 bg-kiwi-500 text-white text-xs rounded-full">
+            <span className="px-2 py-0.5 bg-kiwi-700 text-white text-xs rounded-full">
               {activeFilterCount}
             </span>
           )}
@@ -207,7 +207,7 @@ export function OrderSearch({
                       onClick={() => setStatusFilter(option.value)}
                       className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                         statusFilter === option.value
-                          ? `${option.color} ring-2 ring-offset-1 ring-kiwi-500`
+                          ? `${option.color} ring-2 ring-offset-1 ring-kiwi-600`
                           : 'bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400 hover:bg-surface-200 dark:hover:bg-surface-600'
                       }`}
                     >
@@ -225,7 +225,7 @@ export function OrderSearch({
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="w-full px-3 py-2 bg-surface-100 dark:bg-surface-700 border border-surface-200 dark:border-surface-600 rounded-lg text-sm text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-500"
+                  className="w-full px-3 py-2 bg-surface-100 dark:bg-surface-700 border border-surface-200 dark:border-surface-600 rounded-lg text-sm text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
                 >
                   {SORT_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -245,14 +245,14 @@ export function OrderSearch({
                     type="date"
                     value={dateRange.start}
                     onChange={(e) => setDateRange((prev) => ({ ...prev, start: e.target.value }))}
-                    className="flex-1 px-3 py-2 bg-surface-100 dark:bg-surface-700 border border-surface-200 dark:border-surface-600 rounded-lg text-sm text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-500"
+                    className="flex-1 px-3 py-2 bg-surface-100 dark:bg-surface-700 border border-surface-200 dark:border-surface-600 rounded-lg text-sm text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
                   />
                   <span className="flex items-center text-surface-400">-</span>
                   <input
                     type="date"
                     value={dateRange.end}
                     onChange={(e) => setDateRange((prev) => ({ ...prev, end: e.target.value }))}
-                    className="flex-1 px-3 py-2 bg-surface-100 dark:bg-surface-700 border border-surface-200 dark:border-surface-600 rounded-lg text-sm text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-500"
+                    className="flex-1 px-3 py-2 bg-surface-100 dark:bg-surface-700 border border-surface-200 dark:border-surface-600 rounded-lg text-sm text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
                   />
                 </div>
               </div>
@@ -265,7 +265,7 @@ export function OrderSearch({
                     setDateRange({ start: '', end: '' });
                     setSearch('');
                   }}
-                  className="text-sm text-kiwi-600 dark:text-kiwi-400 hover:underline"
+                  className="text-sm text-kiwi-700 dark:text-kiwi-400 hover:underline"
                 >
                   Limpiar filtros
                 </button>

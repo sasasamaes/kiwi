@@ -297,7 +297,7 @@ function DailyForecastTab({ lat, lng }: { lat: number; lng: number }) {
             key={day.date}
             className={`flex-shrink-0 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
               selectedDay === index
-                ? 'bg-kiwi-500 text-white'
+                ? 'bg-kiwi-700 text-white'
                 : 'bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400'
             }`}
             onClick={() => setSelectedDay(index)}
@@ -548,7 +548,7 @@ function InsightsTab({ lat, lng }: { lat: number; lng: number }) {
             <p className="text-xs font-medium text-surface-500 dark:text-surface-400">
               {t('traffic.accuracy')}
             </p>
-            <p className="text-sm font-semibold text-kiwi-600 dark:text-kiwi-400">82%</p>
+            <p className="text-sm font-semibold text-kiwi-700 dark:text-kiwi-400">82%</p>
           </div>
         </div>
       </div>

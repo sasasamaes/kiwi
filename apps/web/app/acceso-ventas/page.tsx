@@ -36,16 +36,16 @@ export default function AccesoVentasPage() {
             name="key"
             required
             placeholder="Clave de acceso"
-            className="w-full px-3 py-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 text-surface-800 dark:text-surface-100 text-sm focus:outline-none focus:ring-2 focus:ring-kiwi-500/50"
+            className="w-full px-3 py-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 text-surface-800 dark:text-surface-100 text-sm focus:outline-none focus:ring-2 focus:ring-kiwi-600/50"
           />
           <button
             type="submit"
-            className="w-full px-4 py-2 rounded-xl bg-kiwi-600 hover:bg-kiwi-700 text-white text-sm font-medium transition-colors"
+            className="w-full px-4 py-2 rounded-xl bg-kiwi-700 hover:bg-kiwi-800 text-white text-sm font-medium transition-colors"
           >
             Entrar
           </button>
         </form>
-        <Link href="/" className="block text-sm text-kiwi-600 dark:text-kiwi-400 hover:underline">
+        <Link href="/" className="block text-sm text-kiwi-700 dark:text-kiwi-400 hover:underline">
           ← Volver a Kiwi
         </Link>
       </div>

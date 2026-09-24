@@ -340,7 +340,7 @@ export function DriverMap({
           <AlertTriangle className="mx-auto mb-2 h-10 w-10 text-surface-400" />
           <p className="mb-3 text-sm text-surface-500">{mapError}</p>
           <button
-            className="rounded-xl bg-kiwi-500 px-4 py-2 text-sm font-semibold text-white"
+            className="rounded-xl bg-kiwi-700 px-4 py-2 text-sm font-semibold text-white"
             onClick={() => {
               setMapError(null);
               setRetryKey((k) => k + 1);
@@ -418,7 +418,15 @@ export function DriverMap({
       </button>
 
       <p className="absolute bottom-3 left-3 rounded-lg bg-white/80 dark:bg-surface-900/80 px-2 py-0.5 text-[10px] text-surface-400 backdrop-blur">
-        © OpenStreetMap
+        {/* Atribución con enlace: requisito de la ODbL al usar tiles OSM. */}
+        <a
+          href="https://www.openstreetmap.org/copyright"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline decoration-dotted hover:text-surface-600 dark:hover:text-surface-300"
+        >
+          © OpenStreetMap contributors
+        </a>
       </p>
     </div>
   );

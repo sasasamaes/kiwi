@@ -27,6 +27,7 @@ import {
   TapButton,
   Skeleton,
   api,
+  events,
   MenuItem,
   MerchantPublicProfile,
   useSocket,
@@ -186,6 +187,7 @@ export default function MenuPage() {
       setMerchant(merchantData);
       setMenuItems(menuData.items);
       setCategories(menuData.categories);
+      events.menu.viewed(merchantId);
     } catch (err) {
       console.error('Failed to fetch menu:', err);
       setError(err instanceof Error ? err.message : 'No se pudo cargar el menú');
@@ -214,6 +216,7 @@ export default function MenuPage() {
   const addLine = useCallback((item: MenuItem, selected: SelectedOption[]) => {
     const lineId = lineIdFor(item.id, selected);
     const unitPrice = unitPriceFor(Number(item.price), selected);
+    events.menu.itemAdded(item.id, item.name, unitPrice);
     setCart((prev) => {
       const existing = prev.find((c) => c.lineId === lineId);
       if (existing) {
@@ -538,8 +541,10 @@ export default function MenuPage() {
             initial={{ scale: 0, rotate: -180 }}
             animate={{ scale: 1, rotate: 0 }}
             transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}
+            role="img"
+            aria-label="Pedido confirmado"
           >
-            <PartyPopper className="h-16 w-16 inline" />
+            <PartyPopper className="h-16 w-16 inline" aria-hidden />
           </motion.div>
           <h1 className="text-2xl font-display font-bold text-surface-800 dark:text-surface-100 mb-2">
             ¡Pedido Creado!
@@ -564,7 +569,7 @@ export default function MenuPage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-surface-500 dark:text-surface-400">Total</span>
-                <span className="font-bold text-kiwi-600 dark:text-kiwi-400">
+                <span className="font-bold text-kiwi-700 dark:text-kiwi-400">
                   ₡{placedTotal.toLocaleString()}
                 </span>
               </div>
@@ -681,7 +686,7 @@ export default function MenuPage() {
             <X className="h-12 w-12 inline" />
           </span>
           <p className="text-surface-500 dark:text-surface-400">Comercio no encontrado</p>
-          <Link href="/" className="mt-4 inline-block text-kiwi-600 hover:text-kiwi-700">
+          <Link href="/" className="mt-4 inline-block text-kiwi-700 hover:text-kiwi-800">
             ← Volver al inicio
           </Link>
         </div>
@@ -766,7 +771,7 @@ export default function MenuPage() {
               key={cat}
               className={`inline-flex min-h-[44px] flex-shrink-0 items-center rounded-full px-4 py-2 text-sm font-medium transition-all ${
                 selectedCategory === cat
-                  ? 'bg-kiwi-500 text-white shadow-kiwi'
+                  ? 'bg-kiwi-700 text-white shadow-kiwi'
                   : `bg-white dark:bg-surface-800 text-surface-600 dark:text-surface-400 shadow-soft dark:shadow-dark ${hoverChip}`
               }`}
               onClick={() => setSelectedCategory(cat)}
@@ -839,7 +844,7 @@ export default function MenuPage() {
                           </div>
                         </div>
                         <div className="flex items-center justify-between mt-3">
-                          <p className="text-lg font-bold text-kiwi-600 dark:text-kiwi-400">
+                          <p className="text-lg font-bold text-kiwi-700 dark:text-kiwi-400">
                             ₡{item.price.toLocaleString()}
                           </p>
                           <div className="flex items-center gap-2">
@@ -865,7 +870,7 @@ export default function MenuPage() {
                               haptic
                               success
                               onSuccess={() => setCartBounceKey((k) => k + 1)}
-                              className="flex h-10 w-10 items-center justify-center rounded-full bg-kiwi-500 text-white shadow-kiwi"
+                              className="flex h-10 w-10 items-center justify-center rounded-full bg-kiwi-700 text-white shadow-kiwi"
                               onClick={() => addToCart(item)}
                               disabled={!merchant.isOpen}
                             >
@@ -906,7 +911,8 @@ export default function MenuPage() {
                 </h3>
                 <button
                   onClick={() => setPicking(null)}
-                  className={`text-surface-400 px-2 ${hoverGhost}`}
+                  aria-label="Cerrar opciones del producto"
+                  className={`text-surface-500 hover:text-surface-700 dark:text-surface-400 dark:hover:text-surface-200 px-2 ${hoverGhost}`}
                 >
                   ✕
                 </button>
@@ -934,9 +940,9 @@ export default function MenuPage() {
                           onClick={() => togglePick(g.id, o.id, g.multiple)}
                           className={`inline-flex min-h-[44px] items-center rounded-full px-3.5 py-2 text-sm font-medium transition-colors ${
                             soldOut
-                              ? 'bg-surface-100 dark:bg-surface-800 text-surface-400 dark:text-surface-500 line-through opacity-60'
+                              ? 'bg-surface-100 dark:bg-surface-800 text-surface-500 dark:text-surface-400 line-through opacity-60'
                               : active
-                                ? 'bg-kiwi-500 text-white'
+                                ? 'bg-kiwi-700 text-white'
                                 : 'bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-300'
                           }`}
                         >
@@ -1108,8 +1114,8 @@ export default function MenuPage() {
                           </span>
                           <button
                             onClick={() => removeFromCart(item.lineId)}
-                            className="text-surface-300 hover:text-red-500 text-sm px-1"
-                            aria-label="Quitar"
+                            className="text-surface-500 hover:text-red-500 text-sm px-1"
+                            aria-label={`Quitar ${item.name} del pedido`}
                           >
                             ✕
                           </button>
@@ -1155,7 +1161,7 @@ export default function MenuPage() {
                       value={deliveryInfo.name}
                       onChange={(e) => setDeliveryInfo({ ...deliveryInfo, name: e.target.value })}
                       placeholder="Tu nombre"
-                      className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:border-kiwi-500 focus:ring-2 focus:ring-kiwi-500/20 transition-all"
+                      className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20 transition-all"
                     />
                   </div>
                   <div>
@@ -1167,7 +1173,7 @@ export default function MenuPage() {
                       value={deliveryInfo.phone}
                       onChange={(e) => setDeliveryInfo({ ...deliveryInfo, phone: e.target.value })}
                       placeholder="8888-1234"
-                      className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:border-kiwi-500 focus:ring-2 focus:ring-kiwi-500/20 transition-all"
+                      className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20 transition-all"
                     />
                   </div>
                 </div>
@@ -1184,7 +1190,7 @@ export default function MenuPage() {
                     }
                     placeholder="Ej: Tocar el timbre, dejar en recepción, sin cebolla..."
                     rows={2}
-                    className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:border-kiwi-500 focus:ring-2 focus:ring-kiwi-500/20 transition-all resize-none"
+                    className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20 transition-all resize-none"
                   />
                 </div>
 
@@ -1223,7 +1229,7 @@ export default function MenuPage() {
                             type="button"
                             className={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all ${
                               paymentMethod === method.id
-                                ? 'bg-kiwi-100 dark:bg-kiwi-900/50 ring-2 ring-kiwi-500 shadow-kiwi'
+                                ? 'bg-kiwi-100 dark:bg-kiwi-900/50 ring-2 ring-kiwi-600 shadow-kiwi'
                                 : 'bg-surface-100 dark:bg-surface-700 hover:bg-surface-200 dark:hover:bg-surface-600'
                             }`}
                             onClick={() => setPaymentMethod(method.id)}
@@ -1245,12 +1251,12 @@ export default function MenuPage() {
                             >
                               {method.label}
                             </span>
-                            <span className="text-xs text-surface-400 dark:text-surface-500">
+                            <span className="text-xs text-surface-500 dark:text-surface-400">
                               {method.desc}
                             </span>
                             {paymentMethod === method.id && (
                               <motion.div
-                                className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-kiwi-500 text-white text-xs flex items-center justify-center"
+                                className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-kiwi-700 text-white text-xs flex items-center justify-center"
                                 initial={{ scale: 0 }}
                                 animate={{ scale: 1 }}
                                 transition={{ type: 'spring', stiffness: 500 }}
@@ -1310,7 +1316,7 @@ export default function MenuPage() {
                               >
                                 {method.label}
                               </span>
-                              <span className="text-xs text-surface-400 dark:text-surface-500 block">
+                              <span className="text-xs text-surface-500 dark:text-surface-400 block">
                                 {method.desc}
                               </span>
                             </div>
@@ -1334,9 +1340,9 @@ export default function MenuPage() {
                           setDeliveryInfo({ ...deliveryInfo, phone: e.target.value })
                         }
                         placeholder="Número SINPE (8888-1234)"
-                        className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:border-kiwi-500 focus:ring-2 focus:ring-kiwi-500/20 transition-all"
+                        className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20 transition-all"
                       />
-                      <p className="text-xs text-surface-400 dark:text-surface-500 mt-1">
+                      <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">
                         Se enviará un cobro SINPE a este número
                       </p>
                     </motion.div>
@@ -1385,7 +1391,7 @@ export default function MenuPage() {
                       <span
                         className={
                           deliveryFee === 0
-                            ? 'text-kiwi-600 dark:text-kiwi-400 font-medium'
+                            ? 'text-kiwi-700 dark:text-kiwi-400 font-medium'
                             : 'text-surface-800 dark:text-surface-200'
                         }
                       >
@@ -1403,7 +1409,7 @@ export default function MenuPage() {
                         <span className="font-semibold text-surface-800 dark:text-surface-200">
                           Total
                         </span>
-                        <span className="text-xl font-bold text-kiwi-600 dark:text-kiwi-400">
+                        <span className="text-xl font-bold text-kiwi-700 dark:text-kiwi-400">
                           ₡{totalWithDelivery.toLocaleString()}
                         </span>
                       </div>

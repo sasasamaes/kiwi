@@ -1,0 +1,24 @@
+/**
+ * Datos oficiales del negocio Kiwi — única fuente de verdad.
+ * Cambian aquí y se propagan a landing, documentos legales y contacto.
+ * (No duplicar estos valores en otros archivos: importar desde '@kiwi/ui'.)
+ */
+export const business = {
+  name: 'Kiwi',
+  /** Figura legal. Persona física: completar el nombre del titular aquí
+   *  si se desea publicarlo en los documentos legales. */
+  legalEntity:
+    'operado por su titular como persona física (sin cédula jurídica), con domicilio en Nicoya, Guanacaste, Costa Rica',
+  email: 'contacto@kiwicr.express',
+  phone: '+506 8722-7217',
+  /** Número sin espacios para enlaces tel:/wa.me. */
+  phoneDial: '+50687227217',
+  whatsapp: 'https://wa.me/50687227217',
+  instagram: {
+    handle: '@kiwi_cr_express',
+    url: 'https://www.instagram.com/kiwi_cr_express/',
+  },
+  location: 'Nicoya, Guanacaste, Costa Rica',
+} as const;
+
+export type BusinessInfo = typeof business;

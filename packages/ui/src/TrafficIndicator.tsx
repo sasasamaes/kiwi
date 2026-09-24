@@ -249,7 +249,7 @@ export function DeliveryEstimate({
       {/* Total ETA */}
       <div className="text-center mb-4">
         <motion.p
-          className="text-4xl font-bold text-kiwi-600 dark:text-kiwi-400"
+          className="text-4xl font-bold text-kiwi-700 dark:text-kiwi-400"
           initial={{ scale: 0.8 }}
           animate={{ scale: 1 }}
           transition={{ type: 'spring', stiffness: 200 }}
@@ -308,7 +308,7 @@ export function DeliveryEstimate({
             transition={{ duration: 1, ease: 'easeOut' }}
           />
         </div>
-        <div className="flex justify-between mt-1 text-xs text-surface-400 dark:text-surface-500">
+        <div className="flex justify-between mt-1 text-xs text-surface-500 dark:text-surface-400">
           <span>{t('traffic.trafficFree')}</span>
           <span>{t('traffic.trafficHeavy')}</span>
         </div>
@@ -389,7 +389,7 @@ export function TrafficMapOverlay({ className = '' }: TrafficMapOverlayProps) {
           Map {t('traffic.heatmap')}
         </h4>
         <motion.button
-          className="text-xs text-kiwi-600 hover:text-kiwi-700 dark:text-kiwi-400"
+          className="text-xs text-kiwi-700 hover:text-kiwi-800 dark:text-kiwi-400"
           onClick={fetchTrafficData}
           whileTap={{ scale: 0.95 }}
         >

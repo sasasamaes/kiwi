@@ -42,7 +42,7 @@ export default function NotificationsPage() {
           <motion.button
             className={`flex-1 py-3.5 rounded-xl text-sm font-medium transition-colors ${
               activeTab === 'notifications'
-                ? 'bg-kiwi-500 text-white shadow-kiwi'
+                ? 'bg-kiwi-700 text-white shadow-kiwi'
                 : 'bg-white dark:bg-surface-800 text-surface-600 dark:text-surface-400 shadow-soft dark:shadow-dark'
             }`}
             onClick={() => setActiveTab('notifications')}
@@ -53,7 +53,7 @@ export default function NotificationsPage() {
           <motion.button
             className={`flex-1 py-3.5 rounded-xl text-sm font-medium transition-colors ${
               activeTab === 'preferences'
-                ? 'bg-kiwi-500 text-white shadow-kiwi'
+                ? 'bg-kiwi-700 text-white shadow-kiwi'
                 : 'bg-white dark:bg-surface-800 text-surface-600 dark:text-surface-400 shadow-soft dark:shadow-dark'
             }`}
             onClick={() => setActiveTab('preferences')}

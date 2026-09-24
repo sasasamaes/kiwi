@@ -70,8 +70,10 @@ export function DataExport({ className = '', onComplete }: DataExportProps) {
             </p>
           </div>
           <motion.button
+            type="button"
             onClick={refreshStats}
-            className="p-2 rounded-xl bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400"
+            aria-label="Actualizar estadísticas"
+            className="p-2 rounded-xl bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-kiwi-600"
             whileTap={{ scale: 0.9 }}
           >
             <RefreshCw className="h-5 w-5" />
@@ -121,9 +123,10 @@ export function DataExport({ className = '', onComplete }: DataExportProps) {
         </h3>
         <div className="space-y-2 mb-4">
           <motion.button
+            type="button"
             onClick={() => handleExport('json', 'all')}
             disabled={isLoading}
-            className="w-full p-3 rounded-xl bg-surface-50 dark:bg-surface-900 text-left hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors"
+            className="w-full p-3 rounded-xl bg-surface-50 dark:bg-surface-900 text-left hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-kiwi-600"
             whileTap={{ scale: 0.98 }}
           >
             <div className="flex items-center gap-3">
@@ -141,9 +144,10 @@ export function DataExport({ className = '', onComplete }: DataExportProps) {
 
           <div className="grid grid-cols-3 gap-2">
             <motion.button
+              type="button"
               onClick={() => handleExport('json', 'orders')}
               disabled={isLoading}
-              className="p-3 rounded-xl bg-surface-50 dark:bg-surface-900 text-center hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors"
+              className="p-3 rounded-xl bg-surface-50 dark:bg-surface-900 text-center hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-kiwi-600"
               whileTap={{ scale: 0.98 }}
             >
               <ClipboardList className="text-xl h-5 w-5" />
@@ -153,9 +157,10 @@ export function DataExport({ className = '', onComplete }: DataExportProps) {
             </motion.button>
 
             <motion.button
+              type="button"
               onClick={() => handleExport('json', 'payments')}
               disabled={isLoading}
-              className="p-3 rounded-xl bg-surface-50 dark:bg-surface-900 text-center hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors"
+              className="p-3 rounded-xl bg-surface-50 dark:bg-surface-900 text-center hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-kiwi-600"
               whileTap={{ scale: 0.98 }}
             >
               <CreditCard className="text-xl h-5 w-5" />
@@ -165,9 +170,10 @@ export function DataExport({ className = '', onComplete }: DataExportProps) {
             </motion.button>
 
             <motion.button
+              type="button"
               onClick={() => handleExport('json', 'routes')}
               disabled={isLoading}
-              className="p-3 rounded-xl bg-surface-50 dark:bg-surface-900 text-center hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors"
+              className="p-3 rounded-xl bg-surface-50 dark:bg-surface-900 text-center hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-kiwi-600"
               whileTap={{ scale: 0.98 }}
             >
               <Map className="text-xl h-5 w-5" />
@@ -183,9 +189,10 @@ export function DataExport({ className = '', onComplete }: DataExportProps) {
           Exportar como CSV
         </h3>
         <motion.button
+          type="button"
           onClick={() => handleExport('csv', 'all')}
           disabled={isLoading}
-          className="w-full p-3 rounded-xl bg-surface-50 dark:bg-surface-900 text-left hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors mb-4"
+          className="w-full p-3 rounded-xl bg-surface-50 dark:bg-surface-900 text-left hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors mb-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-kiwi-600"
           whileTap={{ scale: 0.98 }}
         >
           <div className="flex items-center gap-3">
@@ -204,16 +211,17 @@ export function DataExport({ className = '', onComplete }: DataExportProps) {
           Importar datos
         </h3>
         <motion.button
+          type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={isLoading}
-          className="w-full p-3 rounded-xl bg-kiwi-50 dark:bg-kiwi-900/30 border border-kiwi-200 dark:border-kiwi-800 text-left hover:bg-kiwi-100 dark:hover:bg-kiwi-900/50 transition-colors"
+          className="w-full p-3 rounded-xl bg-kiwi-50 dark:bg-kiwi-900/30 border border-kiwi-200 dark:border-kiwi-800 text-left hover:bg-kiwi-100 dark:hover:bg-kiwi-900/50 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-kiwi-600"
           whileTap={{ scale: 0.98 }}
         >
           <div className="flex items-center gap-3">
             <Download className="text-2xl h-6 w-6" />
             <div>
               <p className="font-medium text-kiwi-700 dark:text-kiwi-400">Importar respaldo</p>
-              <p className="text-xs text-kiwi-600 dark:text-kiwi-400">
+              <p className="text-xs text-kiwi-700 dark:text-kiwi-400">
                 Restaurar desde archivo JSON
               </p>
             </div>
@@ -225,6 +233,7 @@ export function DataExport({ className = '', onComplete }: DataExportProps) {
           type="file"
           accept=".json"
           onChange={handleImport}
+          aria-label="Seleccionar archivo de respaldo para importar"
           className="hidden"
         />
 

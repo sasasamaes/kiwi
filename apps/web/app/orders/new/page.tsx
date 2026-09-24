@@ -872,7 +872,7 @@ function NewOrderInner({
               <button
                 onClick={retryPayment}
                 disabled={loading}
-                className="mt-3 w-full rounded-xl bg-kiwi-500 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+                className="mt-3 w-full rounded-xl bg-kiwi-700 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
               >
                 {loading ? 'Procesando…' : 'Reintentar pago'}
               </button>
@@ -885,7 +885,7 @@ function NewOrderInner({
             </div>
             <div className="flex justify-between mt-2">
               <span className="text-surface-500">Total</span>
-              <span className="font-bold text-kiwi-600">₡{total.toLocaleString()}</span>
+              <span className="font-bold text-kiwi-700">₡{total.toLocaleString()}</span>
             </div>
           </div>
           <div className="space-y-3">
@@ -968,7 +968,7 @@ function NewOrderInner({
                 <div
                   className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-medium ${
                     step >= s.num
-                      ? 'bg-kiwi-500 text-white'
+                      ? 'bg-kiwi-700 text-white'
                       : 'bg-surface-200 dark:bg-surface-700 text-surface-500'
                   }`}
                 >
@@ -1013,7 +1013,7 @@ function NewOrderInner({
                       }}
                       className={`rounded-xl p-3 text-left transition-all ${
                         kind === k.id
-                          ? 'border-2 border-kiwi-500 bg-kiwi-50 dark:bg-kiwi-900/30'
+                          ? 'border-2 border-kiwi-600 bg-kiwi-50 dark:bg-kiwi-900/30'
                           : 'border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800'
                       }`}
                     >
@@ -1031,7 +1031,7 @@ function NewOrderInner({
                   </span>
                   <button
                     onClick={() => setShowKindSelector(true)}
-                    className="text-xs font-medium text-kiwi-600 dark:text-kiwi-400 underline"
+                    className="text-xs font-medium text-kiwi-700 dark:text-kiwi-400 underline"
                   >
                     Cambiar
                   </button>
@@ -1043,7 +1043,7 @@ function NewOrderInner({
                     value={menuQuery}
                     onChange={(e) => setMenuQuery(e.target.value)}
                     placeholder="Buscar en el menú…"
-                    className="mb-2 w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm focus:border-kiwi-500 focus:ring-2 focus:ring-kiwi-500/20"
+                    className="mb-2 w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20"
                   />
                   <div className="mb-3 grid grid-cols-2 gap-2 max-h-64 overflow-y-auto">
                     {menuFiltered.map((m) => {
@@ -1055,7 +1055,7 @@ function NewOrderInner({
                           className="rounded-xl bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-700 p-3"
                         >
                           <p className="text-sm font-medium truncate">{m.name}</p>
-                          <p className="text-xs text-kiwi-600">
+                          <p className="text-xs text-kiwi-700">
                             ₡{Number(m.price).toLocaleString()}
                           </p>
                           <div className="mt-2 flex items-center gap-2">
@@ -1092,7 +1092,7 @@ function NewOrderInner({
                                   ];
                                 })
                               }
-                              className="h-7 flex-1 rounded-lg bg-kiwi-500 text-white text-sm font-medium"
+                              className="h-7 flex-1 rounded-lg bg-kiwi-700 text-white text-sm font-medium"
                             >
                               + Agregar
                             </button>
@@ -1171,7 +1171,7 @@ function NewOrderInner({
                         onClick={() => setPackageSize(packageSize === s ? '' : s)}
                         className={`rounded-xl p-2.5 text-center font-medium text-sm ${
                           packageSize === s
-                            ? 'border-2 border-kiwi-500 bg-kiwi-50 dark:bg-kiwi-900/30'
+                            ? 'border-2 border-kiwi-600 bg-kiwi-50 dark:bg-kiwi-900/30'
                             : 'border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800'
                         }`}
                       >
@@ -1226,7 +1226,7 @@ function NewOrderInner({
                 <div>
                   <button
                     onClick={() => setShowZonesMap((v) => !v)}
-                    className="text-xs font-medium text-kiwi-600 dark:text-kiwi-400 underline underline-offset-2"
+                    className="text-xs font-medium text-kiwi-700 dark:text-kiwi-400 underline underline-offset-2"
                   >
                     {showZonesMap ? 'Ocultar mapa de zonas' : 'Ver zonas y precios en mapa'}
                   </button>
@@ -1270,7 +1270,7 @@ function NewOrderInner({
                     />
                     <button
                       onClick={applyMapLink}
-                      className="min-h-[44px] rounded-lg bg-kiwi-500 px-3 text-sm font-semibold text-white"
+                      className="min-h-[44px] rounded-lg bg-kiwi-700 px-3 text-sm font-semibold text-white"
                     >
                       Usar
                     </button>
@@ -1307,7 +1307,7 @@ function NewOrderInner({
                 onClick={() => setSelectedDriverId(null)}
                 className={`mb-3 w-full text-left rounded-xl p-4 transition-all ${
                   selectedDriverId === null
-                    ? 'border-2 border-kiwi-500 bg-kiwi-50 dark:bg-kiwi-900/30'
+                    ? 'border-2 border-kiwi-600 bg-kiwi-50 dark:bg-kiwi-900/30'
                     : 'border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800'
                 }`}
               >
@@ -1405,7 +1405,7 @@ function NewOrderInner({
                     Envío
                     {zoneLabel ? ` (${zoneLabel})` : routeKm != null ? ` (~${routeKm} km)` : ''}
                   </span>
-                  <span className="text-kiwi-600 font-medium">₡{trip.toLocaleString()}</span>
+                  <span className="text-kiwi-700 font-medium">₡{trip.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-surface-500">Repartidor recibe</span>
@@ -1415,7 +1415,7 @@ function NewOrderInner({
                 </div>
                 <div className="flex justify-between text-lg font-bold pt-2 border-t border-surface-100 dark:border-surface-700">
                   <span>Total</span>
-                  <span className="text-kiwi-600">₡{total.toLocaleString()}</span>
+                  <span className="text-kiwi-700">₡{total.toLocaleString()}</span>
                 </div>
               </div>
 
@@ -1485,7 +1485,7 @@ function NewOrderInner({
                       onClick={() => setPaymentMethod(m.id)}
                       className={`rounded-xl p-3 text-sm font-medium ${
                         paymentMethod === m.id
-                          ? 'border-2 border-kiwi-500 bg-kiwi-50 dark:bg-kiwi-900/30'
+                          ? 'border-2 border-kiwi-600 bg-kiwi-50 dark:bg-kiwi-900/30'
                           : 'border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800'
                       }`}
                     >
@@ -1583,7 +1583,7 @@ function DriverRow({
   const selectable = driver.status === 'available';
   const vehicleLabels: Record<string, string> = {
     motorcycle: 'Moto',
-    motorized_bike: 'Bici con motor',
+    motorized_bike: 'Bici Moto',
     bicycle: 'Bicicleta',
     car: 'Carro',
     truck: 'Camión',
@@ -1594,7 +1594,7 @@ function DriverRow({
         !selectable
           ? 'border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 opacity-60 cursor-not-allowed'
           : selected
-            ? 'border-2 border-kiwi-500 bg-kiwi-50 dark:bg-kiwi-900/30 cursor-pointer'
+            ? 'border-2 border-kiwi-600 bg-kiwi-50 dark:bg-kiwi-900/30 cursor-pointer'
             : 'border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 cursor-pointer'
       }`}
       onClick={selectable ? onSelect : undefined}

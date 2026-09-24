@@ -78,7 +78,7 @@ export function OnvoPayCheckout({
       <div className="rounded-xl bg-surface-50 dark:bg-surface-900 p-4 mb-6">
         <div className="flex justify-between items-center">
           <span className="text-surface-600 dark:text-surface-400">Total a pagar</span>
-          <span className="text-2xl font-bold text-kiwi-600 dark:text-kiwi-400">
+          <span className="text-2xl font-bold text-kiwi-700 dark:text-kiwi-400">
             ₡{amount.toLocaleString()}
           </span>
         </div>
@@ -117,7 +117,9 @@ export function OnvoPayCheckout({
             Procesando...
           </span>
         ) : (
-          'CreditCard Pagar Ahora'
+          <span className="inline-flex items-center gap-2">
+            <CreditCard className="h-5 w-5" /> Pagar Ahora
+          </span>
         )}
       </motion.button>
 
@@ -132,8 +134,8 @@ export function OnvoPayCheckout({
 
       {/* Security Note */}
       <div className="mt-4 text-center">
-        <p className="text-xs text-surface-400 dark:text-surface-500">
-          Lock Pago seguro y encriptado por OnvoPay
+        <p className="text-xs text-surface-500 dark:text-surface-400">
+          🔒 Pago seguro y encriptado por OnvoPay
         </p>
       </div>
     </motion.div>
@@ -187,10 +189,10 @@ export function CryptoCheckout({
       <div className="rounded-xl bg-surface-50 dark:bg-surface-900 p-4 mb-4">
         <div className="text-center">
           <p className="text-sm text-surface-500 dark:text-surface-400 mb-1">Monto a enviar</p>
-          <p className="text-2xl font-bold text-kiwi-600 dark:text-kiwi-400">
+          <p className="text-2xl font-bold text-kiwi-700 dark:text-kiwi-400">
             {amountInCrypto.toFixed(6)} {coin}
           </p>
-          <p className="text-sm text-surface-400 dark:text-surface-500 mt-1">
+          <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">
             ≈ ₡{amount.toLocaleString()} CRC
           </p>
         </div>
@@ -249,7 +251,7 @@ export function CryptoCheckout({
       </div>
 
       <motion.button
-        className="mt-4 w-full py-3 rounded-xl bg-kiwi-500 text-white font-semibold"
+        className="mt-4 w-full py-3 rounded-xl bg-kiwi-700 text-white font-semibold"
         onClick={onSuccess}
         whileTap={{ scale: 0.98 }}
       >
@@ -261,7 +263,7 @@ export function CryptoCheckout({
 
       {/* Network Info */}
       <div className="mt-4 text-center">
-        <p className="text-xs text-surface-400 dark:text-surface-500">
+        <p className="text-xs text-surface-500 dark:text-surface-400">
           🔗 Red: Stellar{' '}
           {process.env.NEXT_PUBLIC_STELLAR_NETWORK === 'testnet' ? 'Testnet' : 'Mainnet'}
         </p>

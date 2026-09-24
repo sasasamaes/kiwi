@@ -280,7 +280,7 @@ function Section({
           {n}
         </span>
         <h2 className="text-xl sm:text-2xl font-bold text-surface-800 dark:text-surface-100 flex items-center gap-2">
-          <Icon className="h-5 w-5 text-kiwi-600 dark:text-kiwi-400" />
+          <Icon className="h-5 w-5 text-kiwi-700 dark:text-kiwi-400" />
           {title}
         </h2>
       </div>
@@ -302,12 +302,12 @@ function Playbook() {
                 Confidencial — Fuerza de Ventas
               </span>
             </div>
-            <Link href="/" className="text-sm text-kiwi-600 dark:text-kiwi-400 hover:underline">
+            <Link href="/" className="text-sm text-kiwi-700 dark:text-kiwi-400 hover:underline">
               ← Kiwi
             </Link>
           </div>
           <h1 className="text-3xl sm:text-4xl font-bold text-surface-900 dark:text-white">
-            Plan de Ventas <span className="text-kiwi-600 dark:text-kiwi-400">KIWI</span>
+            Plan de Ventas <span className="text-kiwi-700 dark:text-kiwi-400">KIWI</span>
           </h1>
           <p className="text-base sm:text-lg">
             Estrategia, guía operativa, guiones y manejo de objeciones. Este documento es la
@@ -337,7 +337,7 @@ function Playbook() {
                 key={i.title}
                 className="rounded-2xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 p-4 space-y-3"
               >
-                <i.icon className="h-6 w-6 text-kiwi-600 dark:text-kiwi-400" />
+                <i.icon className="h-6 w-6 text-kiwi-700 dark:text-kiwi-400" />
                 <h3 className="font-semibold text-surface-800 dark:text-surface-100">{i.title}</h3>
                 <ul className="text-sm space-y-1.5 list-disc list-inside">
                   {i.traits.map((t) => (
@@ -373,7 +373,7 @@ function Playbook() {
                 key={v.title}
                 className="rounded-2xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 p-4"
               >
-                <v.icon className="h-5 w-5 text-kiwi-600 dark:text-kiwi-400 mb-2" />
+                <v.icon className="h-5 w-5 text-kiwi-700 dark:text-kiwi-400 mb-2" />
                 <p className="font-semibold text-surface-800 dark:text-surface-100">{v.title}</p>
                 <p className="text-sm">{v.text}</p>
               </div>
@@ -388,13 +388,13 @@ function Playbook() {
                 key={v.title}
                 className="rounded-2xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 p-4"
               >
-                <v.icon className="h-5 w-5 text-kiwi-600 dark:text-kiwi-400 mb-2" />
+                <v.icon className="h-5 w-5 text-kiwi-700 dark:text-kiwi-400 mb-2" />
                 <p className="font-semibold text-surface-800 dark:text-surface-100">{v.title}</p>
                 <p className="text-sm">{v.text}</p>
               </div>
             ))}
           </div>
-          <blockquote className="mt-6 rounded-2xl border-l-4 border-kiwi-500 bg-kiwi-50 dark:bg-kiwi-900/20 p-4 text-sm italic text-kiwi-900 dark:text-kiwi-100">
+          <blockquote className="mt-6 rounded-2xl border-l-4 border-kiwi-600 bg-kiwi-50 dark:bg-kiwi-900/20 p-4 text-sm italic text-kiwi-900 dark:text-kiwi-100">
             “Kiwi le vende por app a su soda: sus clientes piden solo, la entrega sale con tarifa
             fija por zona, y usted recibe el 100% de su comida — hoy sin mensualidad ni comisión.
             Solo queremos que vender sea fácil y que la entrega no sea su problema.”
@@ -409,7 +409,7 @@ function Playbook() {
                 key={c.title}
                 className="rounded-2xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 p-4"
               >
-                <c.icon className="h-5 w-5 text-kiwi-600 dark:text-kiwi-400 mb-2" />
+                <c.icon className="h-5 w-5 text-kiwi-700 dark:text-kiwi-400 mb-2" />
                 <h3 className="font-semibold text-surface-800 dark:text-surface-100 mb-2">
                   {c.title}
                 </h3>
@@ -436,7 +436,7 @@ function Playbook() {
                 </span>
                 <div>
                   <p className="font-semibold text-surface-800 dark:text-surface-100 flex items-center gap-2">
-                    <p.icon className="h-4 w-4 text-kiwi-600 dark:text-kiwi-400" />
+                    <p.icon className="h-4 w-4 text-kiwi-700 dark:text-kiwi-400" />
                     {p.title}
                   </p>
                   <p className="text-sm">{p.text}</p>
@@ -499,7 +499,7 @@ function Playbook() {
                 >
                   <summary className="cursor-pointer font-medium text-surface-800 dark:text-surface-100 marker:content-none flex items-center justify-between gap-2">
                     {o.q}
-                    <span className="text-kiwi-600 group-open:rotate-180 transition-transform">
+                    <span className="text-kiwi-700 group-open:rotate-180 transition-transform">
                       ▾
                     </span>
                   </summary>
@@ -601,7 +601,7 @@ function Playbook() {
         <Section n={8} id="material" title="Material de Apoyo" icon={FileText}>
           <ul className="space-y-2 text-sm">
             <li className="flex items-start gap-2">
-              <Calculator className="h-4 w-4 mt-0.5 text-kiwi-600 dark:text-kiwi-400 shrink-0" />
+              <Calculator className="h-4 w-4 mt-0.5 text-kiwi-700 dark:text-kiwi-400 shrink-0" />
               <span>
                 <Link
                   href="/admin/simulador"
@@ -614,20 +614,20 @@ function Playbook() {
               </span>
             </li>
             <li className="flex items-start gap-2">
-              <MapPin className="h-4 w-4 mt-0.5 text-kiwi-600 dark:text-kiwi-400 shrink-0" />
+              <MapPin className="h-4 w-4 mt-0.5 text-kiwi-700 dark:text-kiwi-400 shrink-0" />
               <span>
                 <strong>Catálogo de zonas</strong> con precios públicos (₡1.000–₡7.000): la tarifa
                 que ve el cliente nunca se negocia zona por zona.
               </span>
             </li>
             <li className="flex items-start gap-2">
-              <Info className="h-4 w-4 mt-0.5 text-kiwi-600 dark:text-kiwi-400 shrink-0" />
+              <Info className="h-4 w-4 mt-0.5 text-kiwi-700 dark:text-kiwi-400 shrink-0" />
               <span>
                 <strong>Link de tracking público</strong>: demostrarlo en cada visita (es el "wow").
               </span>
             </li>
             <li className="flex items-start gap-2">
-              <FileText className="h-4 w-4 mt-0.5 text-kiwi-600 dark:text-kiwi-400 shrink-0" />
+              <FileText className="h-4 w-4 mt-0.5 text-kiwi-700 dark:text-kiwi-400 shrink-0" />
               <span>
                 <Link
                   href="/ventas/acuerdo-comercio"

@@ -11,7 +11,10 @@ import {
   StaggerContainer,
   StaggerItem,
   DeliveryZoneSelect,
+  ConsentCheckbox,
+  ConsentLink,
   api,
+  events,
   safeNavigateToUrl,
 } from '@kiwi/ui';
 import { findDeliveryZone } from '@kiwi/types';
@@ -72,6 +75,10 @@ function CheckoutContent() {
   const [address, setAddress] = useState('');
   const [deliveryZone, setDeliveryZone] = useState('');
   const [notes, setNotes] = useState('');
+  // Consentimiento explícito para tratar los datos del pedido (nombre, teléfono
+  // y dirección se comparten con comercio y repartidor). Obligatorio para ordenar.
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [consentError, setConsentError] = useState(false);
   const [loading, setLoading] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
@@ -129,7 +136,8 @@ function CheckoutContent() {
     phoneDigits.length >= 8 &&
     address.trim().length > 0 &&
     deliveryZone.trim().length > 0 &&
-    cart.length > 0;
+    cart.length > 0 &&
+    acceptedTerms;
 
   const placeOrder = useCallback(async () => {
     if (!canPlaceOrder) return;
@@ -167,6 +175,7 @@ function CheckoutContent() {
             customerPhone: phoneDigits,
           });
       setOrderId(order.id);
+      events.orders.created(order.id, merchantId, total);
 
       // Si el cobro no se puede iniciar, el pedido igual existe: se avisa
       // en la pantalla de éxito en vez de prometer un link que no existe.
@@ -184,6 +193,7 @@ function CheckoutContent() {
           const paymentResult = api.getToken()
             ? await api.createPayment(payPayload)
             : await api.createGuestPayment(payPayload);
+          events.payments.initiated(order.id, payPayload.method, total);
 
           if (paymentResult?.checkoutUrl) {
             // Redirect solo a checkout https allow-listed (validación en el helper)
@@ -195,6 +205,11 @@ function CheckoutContent() {
         } catch (paymentError) {
           console.warn('Payment processing failed, order created:', paymentError);
           paySetupOk = false;
+          events.payments.failed(
+            order.id,
+            paymentMethod,
+            paymentError instanceof Error ? paymentError.message : 'unknown',
+          );
           // Order is still created, payment can be completed later
         }
       } else if (paymentMethod === 'crypto_usdc' || paymentMethod === 'crypto_usdt') {
@@ -259,8 +274,10 @@ function CheckoutContent() {
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}
+            role="img"
+            aria-label="Pedido confirmado"
           >
-            Success
+            ✅
           </motion.div>
           <h1 className="text-2xl font-display font-bold text-surface-800 dark:text-surface-100 mb-2">
             ¡Pedido creado!
@@ -268,7 +285,7 @@ function CheckoutContent() {
           <p className="text-surface-500 dark:text-surface-400 mb-2">
             Tu pedido #{orderId?.slice(-8).toUpperCase()} fue enviado al comercio.
           </p>
-          <p className="text-surface-400 dark:text-surface-500 text-sm mb-8">
+          <p className="text-surface-500 dark:text-surface-400 text-sm mb-8">
             Espera mientras un repartidor acepta tu pedido.
             {paymentMethod === 'cash' && ' Pagas al repartidor al recibir.'}
             {paymentMethod === 'sinpe' &&
@@ -379,7 +396,7 @@ function CheckoutContent() {
             </div>
             <div className="flex justify-between font-bold text-lg mt-2">
               <span className="text-surface-800 dark:text-surface-100">Total</span>
-              <span className="text-kiwi-600">₡{total.toLocaleString()}</span>
+              <span className="text-kiwi-700">₡{total.toLocaleString()}</span>
             </div>
           </div>
         </motion.div>
@@ -397,33 +414,49 @@ function CheckoutContent() {
 
           <div className="space-y-3">
             <div>
-              <label className="block text-sm text-surface-500 mb-1">Tu nombre *</label>
+              <label htmlFor="checkout-name" className="block text-sm text-surface-500 mb-1">
+                Tu nombre *
+              </label>
               <input
+                id="checkout-name"
                 type="text"
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
                 placeholder="Nombre completo"
-                className="w-full px-3 py-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-500"
+                autoComplete="name"
+                required
+                className="w-full px-3 py-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
               />
             </div>
             <div>
-              <label className="block text-sm text-surface-500 mb-1">Teléfono *</label>
+              <label htmlFor="checkout-phone" className="block text-sm text-surface-500 mb-1">
+                Teléfono *
+              </label>
               <input
+                id="checkout-phone"
                 type="tel"
                 value={phoneNumber}
                 onChange={(e) => setPhoneNumber(e.target.value)}
                 placeholder="8888-1234"
-                className="w-full px-3 py-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-500"
+                autoComplete="tel"
+                inputMode="tel"
+                required
+                className="w-full px-3 py-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
               />
             </div>
             <div>
-              <label className="block text-sm text-surface-500 mb-1">Dirección de entrega *</label>
+              <label htmlFor="checkout-address" className="block text-sm text-surface-500 mb-1">
+                Dirección de entrega *
+              </label>
               <input
+                id="checkout-address"
                 type="text"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
                 placeholder="Barrio, calle, referencia..."
-                className="w-full px-3 py-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-500"
+                autoComplete="street-address"
+                required
+                className="w-full px-3 py-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
               />
             </div>
             <DeliveryZoneSelect value={deliveryZone} onChange={setDeliveryZone} />
@@ -436,7 +469,7 @@ function CheckoutContent() {
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Sin cebolla, portón azul, etc."
                 rows={2}
-                className="w-full px-3 py-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-500 resize-none"
+                className="w-full px-3 py-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600 resize-none"
               />
             </div>
           </div>
@@ -474,7 +507,7 @@ function CheckoutContent() {
                   onClick={() => setPaymentMethod(method.id)}
                   className={`p-3 rounded-xl border-2 text-left transition-all ${
                     paymentMethod === method.id
-                      ? 'border-kiwi-500 bg-kiwi-50 dark:bg-kiwi-900/20'
+                      ? 'border-kiwi-600 bg-kiwi-50 dark:bg-kiwi-900/20'
                       : 'border-surface-200 dark:border-surface-700 hover:border-surface-300'
                   }`}
                 >
@@ -487,9 +520,29 @@ function CheckoutContent() {
           </div>
         </motion.div>
 
+        {/* Consentimiento (Ley 8968): sin pre-marcar, obligatorio para ordenar. */}
+        <ConsentCheckbox
+          checked={acceptedTerms}
+          onChange={(checked) => {
+            setAcceptedTerms(checked);
+            if (checked) setConsentError(false);
+          }}
+          error={consentError && !acceptedTerms}
+          className="mb-4"
+        >
+          Acepto los <ConsentLink href="/terms">términos</ConsentLink>, la{' '}
+          <ConsentLink href="/privacy">política de privacidad</ConsentLink> y la{' '}
+          <ConsentLink href="/refunds">política de reembolsos</ConsentLink>. Autorizo a Kiwi a usar
+          mi nombre, teléfono y dirección para tomar y entregar este pedido, compartiéndolos con el
+          comercio y el repartidor asignado.
+        </ConsentCheckbox>
+
         {/* Error */}
         {error && (
-          <div className="mb-4 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+          <div
+            role="alert"
+            className="mb-4 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
+          >
             <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
           </div>
         )}
@@ -503,11 +556,17 @@ function CheckoutContent() {
           {' '}
           <TapButton
             haptic
-            onClick={placeOrder}
+            onClick={() => {
+              if (!acceptedTerms) {
+                setConsentError(true);
+                return;
+              }
+              placeOrder();
+            }}
             disabled={!canPlaceOrder || loading}
             className={`w-full h-14 rounded-2xl font-bold text-lg text-white shadow-lg ${
               canPlaceOrder && !loading
-                ? 'bg-gradient-to-r from-kiwi-500 to-kiwi-600 hover:from-kiwi-600 hover:to-kiwi-700'
+                ? 'bg-gradient-to-r from-kiwi-700 to-kiwi-800 hover:from-kiwi-600 hover:to-kiwi-700'
                 : 'bg-surface-300 dark:bg-surface-700 cursor-not-allowed'
             }`}
           >
@@ -536,6 +595,17 @@ function CheckoutContent() {
               </span>
             )}
             {paymentMethod === 'crypto_usdc' && '💎 Paga con USDC en la red Stellar'}
+          </p>
+          <p className="text-center text-xs text-surface-400 mt-2">
+            Al ordenar aceptás nuestros{' '}
+            <Link href="/terms" className="text-kiwi-700 hover:underline">
+              términos
+            </Link>{' '}
+            y nuestra{' '}
+            <Link href="/privacy" className="text-kiwi-700 hover:underline">
+              política de privacidad
+            </Link>
+            : usamos tu nombre, teléfono y dirección solo para entregar tu pedido.
           </p>
         </motion.div>
       </div>

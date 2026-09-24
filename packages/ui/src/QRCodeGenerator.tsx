@@ -63,6 +63,7 @@ export function QRCodeGenerator({
 }: QRCodeGeneratorProps) {
   const qrRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
+  const [copied, setCopied] = useState(false);
 
   const menuUrl = `${MENU_BASE_URL}/${merchantId}`;
 
@@ -122,6 +123,7 @@ export function QRCodeGenerator({
     const qrDataUrl = canvas.toDataURL('image/png');
 
     const safeBusinessName = businessName ? escapeHtml(businessName) : '';
+    const printTitle = `Código QR del menú de ${safeBusinessName || 'Kiwi'}`;
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
@@ -173,11 +175,11 @@ export function QRCodeGenerator({
         </head>
         <body>
           <div class="qr-container">
-            <img src="${qrDataUrl}" width="${size}" height="${size}" />
+            <img src="${qrDataUrl}" width="${size}" height="${size}" alt="${escapeHtml(printTitle)}" />
             ${safeBusinessName ? `<div class="business-name">${safeBusinessName}</div>` : ''}
             <div class="subtitle">Escanea para ver el menú</div>
-            <div class="instruction">Smartphone Abre la cámara y apunta al código</div>
-            <div class="brand"> Kiwi Delivery - Nicoya</div>
+            <div class="instruction">📱 Abre la cámara y apunta al código</div>
+            <div class="brand">🥝 Kiwi Delivery - Nicoya</div>
           </div>
         </body>
       </html>
@@ -191,8 +193,10 @@ export function QRCodeGenerator({
 
   const handleCopyLink = useCallback(() => {
     navigator.clipboard.writeText(menuUrl).then(() => {
-      // Could show a toast here
-      console.log('ClipboardList Menu link copied to clipboard');
+      // Podría haber toast; por ahora el feedback es suficiente para el
+      // comercio y evitamos logs de consola en producción.
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     });
   }, [menuUrl]);
 
@@ -232,11 +236,14 @@ export function QRCodeGenerator({
           includeMargin={false}
           bgColor="#ffffff"
           fgColor="#1f2937"
+          // Alt accesible: los lectores anuncian qué es el código y a dónde
+          // lleva, en vez de un SVG mudo.
+          title={`Código QR del menú de ${businessName || 'Kiwi'}`}
         />
 
         {/* Kiwi branding in corner */}
         {branded && (
-          <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-kiwi-500 px-3 py-1 text-xs font-bold text-white shadow-md">
+          <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-kiwi-700 px-3 py-1 text-xs font-bold text-white shadow-md">
             Kiwi
           </div>
         )}
@@ -266,12 +273,12 @@ export function QRCodeGenerator({
           transition={{ delay: 0.3 }}
         >
           <motion.button
-            className="flex items-center gap-2 rounded-xl bg-kiwi-500 px-5 py-2.5 text-sm font-semibold text-white shadow-kiwi hover:bg-kiwi-600 transition-colors"
+            className="flex items-center gap-2 rounded-xl bg-kiwi-700 px-5 py-2.5 text-sm font-semibold text-white shadow-kiwi hover:bg-kiwi-800 transition-colors"
             onClick={handleDownload}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
-            Download Descargar PNG
+            ⬇ Descargar PNG
           </motion.button>
 
           <motion.button
@@ -280,7 +287,7 @@ export function QRCodeGenerator({
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
-            Printer Imprimir
+            🖨 Imprimir
           </motion.button>
 
           <motion.button
@@ -288,15 +295,16 @@ export function QRCodeGenerator({
             onClick={handleCopyLink}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
+            aria-live="polite"
           >
-            ClipboardList Copiar enlace
+            {copied ? '✓ Copiado' : '🔗 Copiar enlace'}
           </motion.button>
         </motion.div>
       )}
 
       {/* Menu URL */}
       <motion.p
-        className="mt-4 text-xs text-surface-400 dark:text-surface-500 break-all text-center max-w-xs"
+        className="mt-4 text-xs text-surface-500 dark:text-surface-400 break-all text-center max-w-xs"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.4 }}
@@ -472,7 +480,7 @@ export function QRScanner({ onScan, onError, isActive = true }: QRScannerProps) 
             <p className="text-sm text-red-600 dark:text-red-400">{cameraError}</p>
             <button
               onClick={() => setAttempt((a) => a + 1)}
-              className="mt-2 rounded-xl bg-kiwi-500 px-4 py-2 text-sm font-semibold text-white"
+              className="mt-2 rounded-xl bg-kiwi-700 px-4 py-2 text-sm font-semibold text-white"
             >
               Reintentar
             </button>
@@ -482,7 +490,7 @@ export function QRScanner({ onScan, onError, isActive = true }: QRScannerProps) 
             <p className="text-sm font-medium text-surface-600 dark:text-surface-400">
               Apunta la cámara al código QR del menú
             </p>
-            <p className="text-xs text-surface-400 dark:text-surface-500 mt-1">
+            <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">
               El menú se abrirá automáticamente
             </p>
           </>

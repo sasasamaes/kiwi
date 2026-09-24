@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { api, User } from './api-client';
 import { socketClient } from './socket-client';
+import { analytics } from './analytics';
 
 interface AuthContextType {
   user: User | null;
@@ -43,17 +44,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     const result = await api.login(email, password);
     setUser(result.user);
+    // Analítica (solo corre si hay consentimiento: gate en analytics.ts).
+    // Se asocia por ID interno; jamás email/teléfono (minimización).
+    void analytics.init();
+    void analytics.identify(result.user.id, { role: result.user.role });
     return result.user as User;
   };
 
   const register = async (data: any) => {
     const result = await api.register(data);
     setUser(result.user);
+    void analytics.init();
+    void analytics.identify(result.user.id, { role: result.user.role });
   };
 
   const logout = () => {
     api.logout();
     socketClient.disconnect();
+    // Resetear la identidad de tracking: los eventos posteriores no deben
+    // atribuirse al usuario que cerró sesión.
+    void analytics.reset();
     setUser(null);
   };
 

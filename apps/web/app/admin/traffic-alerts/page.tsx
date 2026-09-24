@@ -338,7 +338,7 @@ export default function AdminTrafficAlertsPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Buscar alertas..."
-              className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:border-kiwi-500 focus:ring-2 focus:ring-kiwi-500/20 transition-all"
+              className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20 transition-all"
             />
           </div>
 
@@ -347,7 +347,7 @@ export default function AdminTrafficAlertsPage() {
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
-              className="rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-3 text-surface-800 dark:text-surface-100 focus:border-kiwi-500 focus:ring-2 focus:ring-kiwi-500/20 transition-all"
+              className="rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-3 text-surface-800 dark:text-surface-100 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20 transition-all"
             >
               <option value="all">Todos los tipos</option>
               {ALERT_TYPES.map((type) => (
@@ -361,7 +361,7 @@ export default function AdminTrafficAlertsPage() {
             <select
               value={filterSeverity}
               onChange={(e) => setFilterSeverity(e.target.value)}
-              className="rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-3 text-surface-800 dark:text-surface-100 focus:border-kiwi-500 focus:ring-2 focus:ring-kiwi-500/20 transition-all"
+              className="rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-3 text-surface-800 dark:text-surface-100 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20 transition-all"
             >
               <option value="all">Todas las severidades</option>
               {SEVERITY_LEVELS.map((level) => (
@@ -451,7 +451,7 @@ export default function AdminTrafficAlertsPage() {
                               <p className="text-sm text-surface-500 dark:text-surface-400 mb-2">
                                 {alert.message}
                               </p>
-                              <div className="flex items-center gap-4 text-xs text-surface-400 dark:text-surface-500">
+                              <div className="flex items-center gap-4 text-xs text-surface-500 dark:text-surface-400">
                                 <span>
                                   <MapPin className="h-4 w-4 inline" /> {alert.location.address}
                                 </span>
@@ -543,7 +543,8 @@ export default function AdminTrafficAlertsPage() {
                   </h2>
                   <motion.button
                     onClick={() => setShowCreateModal(false)}
-                    className="text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
+                    aria-label="Cerrar formulario de alerta"
+                    className="text-surface-500 hover:text-surface-700 dark:text-surface-400 dark:hover:text-surface-200"
                     whileTap={{ scale: 0.9 }}
                   >
                     ✕
@@ -567,7 +568,7 @@ export default function AdminTrafficAlertsPage() {
                           type="button"
                           className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-all ${
                             formData.type === type.id
-                              ? 'ring-2 ring-kiwi-500 bg-kiwi-50 dark:bg-kiwi-900/30'
+                              ? 'ring-2 ring-kiwi-600 bg-kiwi-50 dark:bg-kiwi-900/30'
                               : 'bg-surface-50 dark:bg-surface-900 hover:bg-surface-100 dark:hover:bg-surface-800'
                           }`}
                           onClick={() =>
@@ -633,7 +634,7 @@ export default function AdminTrafficAlertsPage() {
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                     placeholder="Ej: Tráfico pesado en Centro"
-                    className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:border-kiwi-500 focus:ring-2 focus:ring-kiwi-500/20 transition-all"
+                    className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20 transition-all"
                   />
                 </div>
 
@@ -647,7 +648,7 @@ export default function AdminTrafficAlertsPage() {
                     onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                     placeholder="Descripción detallada de la alerta..."
                     rows={3}
-                    className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:border-kiwi-500 focus:ring-2 focus:ring-kiwi-500/20 transition-all resize-none"
+                    className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20 transition-all resize-none"
                   />
                 </div>
 
@@ -667,7 +668,7 @@ export default function AdminTrafficAlertsPage() {
                         lng: location?.lng || -85.4527,
                       });
                     }}
-                    className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 focus:border-kiwi-500 focus:ring-2 focus:ring-kiwi-500/20 transition-all"
+                    className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20 transition-all"
                   >
                     {NICOYA_LOCATIONS.map((loc) => (
                       <option key={loc.name} value={loc.name}>
@@ -692,7 +693,7 @@ export default function AdminTrafficAlertsPage() {
                       min="0.1"
                       max="10"
                       step="0.1"
-                      className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 focus:border-kiwi-500 focus:ring-2 focus:ring-kiwi-500/20 transition-all"
+                      className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20 transition-all"
                     />
                   </div>
                   <div>
@@ -711,7 +712,7 @@ export default function AdminTrafficAlertsPage() {
                       min="5"
                       max="1440"
                       step="5"
-                      className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 focus:border-kiwi-500 focus:ring-2 focus:ring-kiwi-500/20 transition-all"
+                      className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20 transition-all"
                     />
                   </div>
                 </div>
@@ -729,7 +730,7 @@ export default function AdminTrafficAlertsPage() {
                         setFormData({ ...formData, alternativeDescription: e.target.value })
                       }
                       placeholder="Ej: Usar la periferia norte"
-                      className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:border-kiwi-500 focus:ring-2 focus:ring-kiwi-500/20 transition-all"
+                      className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20 transition-all"
                     />
                     <div>
                       <label className="mb-1 block text-xs text-surface-500 dark:text-surface-400">
@@ -746,7 +747,7 @@ export default function AdminTrafficAlertsPage() {
                         }
                         min="0"
                         max="60"
-                        className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 focus:border-kiwi-500 focus:ring-2 focus:ring-kiwi-500/20 transition-all"
+                        className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20 transition-all"
                       />
                     </div>
                   </div>
@@ -805,7 +806,8 @@ export default function AdminTrafficAlertsPage() {
                 </h3>
                 <motion.button
                   onClick={() => setSelectedAlert(null)}
-                  className="text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
+                  aria-label="Cerrar detalles de alerta"
+                  className="text-surface-500 hover:text-surface-700 dark:text-surface-400 dark:hover:text-surface-200"
                   whileTap={{ scale: 0.9 }}
                 >
                   ✕

@@ -224,7 +224,7 @@ export default function OrderHistoryPage() {
                 onClick={() => setActiveFilter(tab.id)}
                 className={`flex-shrink-0 px-4 py-2.5 rounded-full text-sm font-medium transition-all ${
                   activeFilter === tab.id
-                    ? 'bg-kiwi-500 text-white shadow-kiwi'
+                    ? 'bg-kiwi-700 text-white shadow-kiwi'
                     : 'bg-white dark:bg-surface-800 text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700'
                 }`}
                 whileTap={{ scale: 0.95 }}
@@ -342,7 +342,7 @@ export default function OrderHistoryPage() {
                               <Clock className="h-4 w-4 inline" /> {formatTime(order.createdAt)}
                             </span>
                           </div>
-                          <span className="text-lg font-bold text-kiwi-600 dark:text-kiwi-400">
+                          <span className="text-lg font-bold text-kiwi-700 dark:text-kiwi-400">
                             {formatCurrency(order.totalAmount)}
                           </span>
                         </div>
@@ -350,7 +350,7 @@ export default function OrderHistoryPage() {
                         {/* Order Items Preview */}
                         {order.items && order.items.length > 0 && (
                           <div className="mt-3 pt-3 border-t border-surface-100 dark:border-surface-700">
-                            <p className="text-xs text-surface-400 dark:text-surface-500 mb-1">
+                            <p className="text-xs text-surface-500 dark:text-surface-400 mb-1">
                               {order.items.length} producto{order.items.length > 1 ? 's' : ''}
                             </p>
                             <p className="text-sm text-surface-600 dark:text-surface-400 truncate">

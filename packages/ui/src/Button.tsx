@@ -40,9 +40,9 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     // Variants with modern effects
     const variants = {
       primary: cn(
-        'bg-kiwi-500 text-white',
-        'hover:bg-kiwi-600 hover:shadow-kiwi',
-        'focus-visible:ring-kiwi-500',
+        'bg-kiwi-700 text-white',
+        'hover:bg-kiwi-700 hover:shadow-kiwi',
+        'focus-visible:ring-kiwi-600',
         'shadow-soft-md',
         'rounded-xl',
       ),
@@ -69,13 +69,13 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         'glass-strong text-surface-700',
         'border border-white/30',
         'hover:bg-white/90 hover:shadow-soft-lg',
-        'focus-visible:ring-kiwi-500',
+        'focus-visible:ring-kiwi-600',
         'rounded-xl',
       ),
       gradient: cn(
         'bg-kiwi-gradient text-white',
         'hover:shadow-kiwi-lg',
-        'focus-visible:ring-kiwi-500',
+        'focus-visible:ring-kiwi-600',
         'rounded-xl',
       ),
     };

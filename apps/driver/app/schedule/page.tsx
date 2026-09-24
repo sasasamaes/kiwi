@@ -298,7 +298,7 @@ export default function Schedule() {
                   onClick={() => setSelectedDay(index)}
                   className={`relative flex flex-col items-center rounded-xl px-4 py-3 min-w-[65px] transition-all ${
                     selectedDay === index
-                      ? 'bg-kiwi-500 text-white shadow-kiwi scale-105'
+                      ? 'bg-kiwi-700 text-white shadow-kiwi scale-105'
                       : 'bg-white dark:bg-surface-800 text-surface-600 dark:text-surface-400 shadow-soft dark:shadow-dark'
                   }`}
                   whileTap={{ scale: 0.95 }}
@@ -336,7 +336,7 @@ export default function Schedule() {
             </p>
           </div>
           <motion.button
-            className="text-sm text-kiwi-600 dark:text-kiwi-400 font-medium flex items-center gap-1"
+            className="text-sm text-kiwi-700 dark:text-kiwi-400 font-medium flex items-center gap-1"
             onClick={() => setShowCopyModal(true)}
             whileTap={{ scale: 0.95 }}
           >
@@ -411,7 +411,7 @@ export default function Schedule() {
                   onClick={() => toggleHour(hour)}
                   className={`relative rounded-xl py-4 text-center transition-all ${
                     isSelected
-                      ? 'bg-kiwi-500 text-white shadow-kiwi'
+                      ? 'bg-kiwi-700 text-white shadow-kiwi'
                       : 'bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400 hover:bg-surface-200 dark:hover:bg-surface-600'
                   }`}
                   whileTap={{ scale: 0.95 }}

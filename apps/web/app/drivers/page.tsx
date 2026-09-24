@@ -371,7 +371,7 @@ export default function DriversPage() {
           animate={{ opacity: 1, y: 0 }}
         >
           <div className="rounded-xl bg-white dark:bg-surface-800 p-4 text-center shadow-soft">
-            <p className="text-2xl font-bold text-kiwi-600">{loading ? '—' : availableCount}</p>
+            <p className="text-2xl font-bold text-kiwi-700">{loading ? '—' : availableCount}</p>
             <p className="text-xs text-surface-500">Disponibles</p>
           </div>
           <div className="rounded-xl bg-white dark:bg-surface-800 p-4 text-center shadow-soft">
@@ -402,7 +402,7 @@ export default function DriversPage() {
               onClick={() => setTab(t.id)}
               className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
                 tab === t.id
-                  ? 'bg-kiwi-500 text-white'
+                  ? 'bg-kiwi-700 text-white'
                   : 'bg-white dark:bg-surface-800 text-surface-600 dark:text-surface-400 hover:bg-surface-100'
               }`}
             >
@@ -428,7 +428,7 @@ export default function DriversPage() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Buscar por nombre…"
-                  className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 pl-9 pr-4 py-2.5 text-sm text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:border-kiwi-500 focus:ring-2 focus:ring-kiwi-500/20"
+                  className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 pl-9 pr-4 py-2.5 text-sm text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20"
                 />
               </div>
               <div className="flex rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 overflow-hidden">
@@ -436,7 +436,7 @@ export default function DriversPage() {
                   onClick={() => setStatusFilter('all')}
                   className={`px-3 py-2 text-sm font-medium transition-colors ${
                     statusFilter === 'all'
-                      ? 'bg-kiwi-500 text-white'
+                      ? 'bg-kiwi-700 text-white'
                       : 'text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-700'
                   }`}
                 >
@@ -446,7 +446,7 @@ export default function DriversPage() {
                   onClick={() => setStatusFilter('available')}
                   className={`px-3 py-2 text-sm font-medium transition-colors ${
                     statusFilter === 'available'
-                      ? 'bg-kiwi-500 text-white'
+                      ? 'bg-kiwi-700 text-white'
                       : 'text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-700'
                   }`}
                 >
@@ -480,7 +480,7 @@ export default function DriversPage() {
                     <FilterPill
                       active={filter === 'motorized_bike'}
                       onClick={() => setFilter('motorized_bike')}
-                      label="Bici Bota"
+                      label="Bici Moto"
                     />
                     <FilterPill
                       active={filter === 'bicycle'}
@@ -588,7 +588,7 @@ export default function DriversPage() {
                                 </AnimatedButton>
                               ) : (
                                 <span
-                                  className="inline-block rounded-lg bg-surface-100 dark:bg-surface-700 px-3 py-1.5 text-xs font-medium text-surface-400 dark:text-surface-500 cursor-not-allowed"
+                                  className="inline-block rounded-lg bg-surface-100 dark:bg-surface-700 px-3 py-1.5 text-xs font-medium text-surface-500 dark:text-surface-400 cursor-not-allowed"
                                   title="Se puede asignar cuando el repartidor esté conectado (Disponible)"
                                 >
                                   No disponible
@@ -671,7 +671,7 @@ function FilterPill({
     <motion.button
       className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
         active
-          ? 'bg-kiwi-500 text-white'
+          ? 'bg-kiwi-700 text-white'
           : 'bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-300 hover:bg-surface-200'
       }`}
       onClick={onClick}
@@ -698,7 +698,7 @@ function ContestPanel({
     <div className="space-y-4">
       <div className="rounded-2xl bg-kiwi-50 dark:bg-kiwi-900/20 border border-kiwi-200 dark:border-kiwi-800 p-4">
         <div className="flex items-center gap-2">
-          <Trophy className="h-5 w-5 text-kiwi-600" />
+          <Trophy className="h-5 w-5 text-kiwi-700" />
           <p className="text-sm font-medium text-kiwi-800 dark:text-kiwi-200">
             Estos pedidos están abiertos: el primer repartidor que los acepta se los lleva.
           </p>
@@ -811,7 +811,7 @@ function AssignModal({
                   onClick={() => setOrderId(o.id)}
                   className={`w-full text-left rounded-xl p-3 border transition-all ${
                     orderId === o.id
-                      ? 'border-kiwi-500 bg-kiwi-50 dark:bg-kiwi-900/20'
+                      ? 'border-kiwi-600 bg-kiwi-50 dark:bg-kiwi-900/20'
                       : 'border-surface-200 dark:border-surface-700'
                   }`}
                 >
@@ -909,7 +909,7 @@ function ChatDrawer({
                 <div
                   className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${
                     m.mine
-                      ? 'bg-kiwi-500 text-white'
+                      ? 'bg-kiwi-700 text-white'
                       : 'bg-surface-100 dark:bg-surface-700 text-surface-800 dark:text-surface-200'
                   }`}
                 >
@@ -931,7 +931,7 @@ function ChatDrawer({
               onKeyDown={(e) => e.key === 'Enter' && onSend()}
               placeholder="Escribe un mensaje…"
               maxLength={1000}
-              className="flex-1 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-2 text-sm text-surface-800 dark:text-surface-100 focus:border-kiwi-500 focus:ring-2 focus:ring-kiwi-500/20"
+              className="flex-1 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-2 text-sm text-surface-800 dark:text-surface-100 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20"
             />
             <AnimatedButton
               variant="primary"

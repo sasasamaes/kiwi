@@ -84,15 +84,15 @@ export default function DriverLoginPage() {
         <p className="flex flex-wrap items-center justify-center gap-x-1 gap-y-2 text-xs text-surface-400">
           Al iniciar sesión, aceptas nuestros{' '}
           <a
-            href="#"
-            className="inline-flex min-h-[44px] items-center px-1 text-kiwi-600 hover:underline"
+            href="/terms"
+            className="inline-flex min-h-[44px] items-center px-1 text-kiwi-700 hover:underline"
           >
             Términos
           </a>{' '}
           y{' '}
           <a
-            href="#"
-            className="inline-flex min-h-[44px] items-center px-1 text-kiwi-600 hover:underline"
+            href="/privacy"
+            className="inline-flex min-h-[44px] items-center px-1 text-kiwi-700 hover:underline"
           >
             Privacidad
           </a>

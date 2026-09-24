@@ -190,7 +190,7 @@ export function RouteOptimizer({
           animate={{ opacity: 1, y: 0 }}
         >
           <div className="p-3 rounded-xl bg-kiwi-50 dark:bg-kiwi-900/30">
-            <p className="text-xs text-kiwi-600 dark:text-kiwi-400">Distancia Total</p>
+            <p className="text-xs text-kiwi-700 dark:text-kiwi-400">Distancia Total</p>
             <p className="text-lg font-bold text-kiwi-700 dark:text-kiwi-300">
               {formatDistance(route.totalDistance)}
             </p>
@@ -261,11 +261,11 @@ export function RouteOptimizer({
                   </div>
 
                   <div className="flex items-center gap-4 mt-1">
-                    <span className="text-xs text-surface-400 dark:text-surface-500">
+                    <span className="text-xs text-surface-500 dark:text-surface-400">
                       ⏱️ {formatArrivalTime(stop.estimatedArrival)}
                     </span>
                     {route.legs[index] && (
-                      <span className="text-xs text-surface-400 dark:text-surface-500">
+                      <span className="text-xs text-surface-500 dark:text-surface-400">
                         {formatDistance(route.legs[index].distance)} •{' '}
                         {formatDuration(route.legs[index].duration)}
                       </span>
@@ -275,7 +275,7 @@ export function RouteOptimizer({
 
                 <button
                   onClick={() => onNavigateToStop?.(stop)}
-                  className="flex-shrink-0 p-2 rounded-lg bg-kiwi-100 dark:bg-kiwi-900/50 text-kiwi-600 dark:text-kiwi-400 hover:bg-kiwi-200 dark:hover:bg-kiwi-900/70 transition-colors"
+                  className="flex-shrink-0 p-2 rounded-lg bg-kiwi-100 dark:bg-kiwi-900/50 text-kiwi-700 dark:text-kiwi-400 hover:bg-kiwi-200 dark:hover:bg-kiwi-900/70 transition-colors"
                 >
                   🧭
                 </button>

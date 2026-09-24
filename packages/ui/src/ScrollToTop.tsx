@@ -66,7 +66,7 @@ export function ScrollToTop({
             marginBottom: 'env(safe-area-inset-bottom, 0px)',
             marginRight: 'env(safe-area-inset-right, 0px)',
           }}
-          className={`fixed bottom-20 right-4 z-40 flex h-11 w-11 items-center justify-center rounded-full bg-kiwi-500 text-white shadow-kiwi-lg hover:bg-kiwi-600 focus:outline-none focus:ring-2 focus:ring-kiwi-400 md:bottom-6 ${className}`}
+          className={`fixed bottom-20 right-4 z-40 flex h-11 w-11 items-center justify-center rounded-full bg-kiwi-700 text-white shadow-kiwi-lg hover:bg-kiwi-800 focus:outline-none focus:ring-2 focus:ring-kiwi-400 md:bottom-6 ${className}`}
         >
           <ArrowUp className="h-5 w-5" />
         </motion.button>

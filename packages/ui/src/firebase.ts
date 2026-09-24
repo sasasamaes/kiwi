@@ -17,20 +17,35 @@ const firebaseConfig = {
 // Initialize Firebase (only in browser)
 let messaging: any = null;
 
+/** true si la config pública NEXT_PUBLIC_FIREBASE_* está completa. */
+export function hasFirebaseConfig(): boolean {
+  return Boolean(
+    firebaseConfig.apiKey &&
+    firebaseConfig.projectId &&
+    firebaseConfig.messagingSenderId &&
+    firebaseConfig.appId,
+  );
+}
+
 export async function initializeFirebase() {
   if (typeof window === 'undefined') return null;
+  // Sin config no hay push: fallar callado y rápido (sin ruido de consola en
+  // cada arranque; requestNotificationPermission ya reporta PUSH:missing-config).
+  if (!hasFirebaseConfig()) return null;
 
   try {
     // Dynamic import to avoid SSR issues
-    const { initializeApp } = await import('firebase/app');
-    const { getMessaging, getToken } = await import('firebase/messaging');
+    const { initializeApp, getApps } = await import('firebase/app');
+    const { getMessaging } = await import('firebase/messaging');
 
-    const app = initializeApp(firebaseConfig);
+    // initializeApp con el mismo nombre dos veces lanza app/duplicate-app:
+    // reusar la instancia existente.
+    const app = getApps().length > 0 ? getApps()[0] : initializeApp(firebaseConfig);
     messaging = getMessaging(app);
 
     return { app, messaging };
   } catch (error) {
-    console.error('Failed to initialize Firebase:', error);
+    console.warn('Firebase no disponible:', error instanceof Error ? error.message : error);
     return null;
   }
 }
@@ -104,7 +119,11 @@ export async function requestNotificationPermission(): Promise<string> {
     // técnico real (ej. error de FCM) trae espacios y antes se tragaba.
     if (error instanceof Error && error.message.startsWith('PUSH:')) throw error;
     console.error('Failed to get notification permission:', error);
-    throw new Error('PUSH:token-failed');
+    // Este wrap genérico era el agujero negro: cualquier error fuera del
+    // esquema PUSH: (import dinámico, requestPermission nativo, etc.)
+    // llegaba a la UI sin detalle. Ahora lleva el mensaje real.
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new Error(`PUSH:token-failed|externo:${detail.slice(0, 200)}`);
   }
 }
 

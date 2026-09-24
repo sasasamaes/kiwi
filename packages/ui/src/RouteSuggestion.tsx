@@ -279,7 +279,7 @@ function RouteCard({ route, isSelected, onSelect, className = '' }: RouteCardPro
     <motion.div
       className={`rounded-xl p-4 cursor-pointer transition-all ${
         isSelected
-          ? 'bg-kiwi-50 dark:bg-kiwi-900/30 ring-2 ring-kiwi-500'
+          ? 'bg-kiwi-50 dark:bg-kiwi-900/30 ring-2 ring-kiwi-600'
           : 'bg-surface-50 dark:bg-surface-900 hover:bg-surface-100 dark:hover:bg-surface-800'
       } ${className}`}
       onClick={onSelect}
@@ -364,7 +364,7 @@ function RouteCard({ route, isSelected, onSelect, className = '' }: RouteCardPro
         {/* Selection Indicator */}
         {isSelected && (
           <motion.div
-            className="flex h-6 w-6 items-center justify-center rounded-full bg-kiwi-500 text-white"
+            className="flex h-6 w-6 items-center justify-center rounded-full bg-kiwi-700 text-white"
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ type: 'spring', stiffness: 500 }}
@@ -508,7 +508,7 @@ export function RouteComparisonCard({
             key={route.id}
             className={`flex items-center gap-3 p-3 rounded-xl ${
               route.id === comparison.recommendedRouteId
-                ? 'bg-kiwi-50 dark:bg-kiwi-900/30 ring-1 ring-kiwi-500'
+                ? 'bg-kiwi-50 dark:bg-kiwi-900/30 ring-1 ring-kiwi-600'
                 : 'bg-surface-50 dark:bg-surface-900'
             }`}
           >

@@ -118,7 +118,7 @@ export default function SimuladorPage() {
         <p className="mb-4 text-sm text-surface-500">{error ?? 'Sin datos'}</p>
         <button
           onClick={load}
-          className="rounded-xl bg-kiwi-500 px-5 py-2.5 text-sm font-semibold text-white"
+          className="rounded-xl bg-kiwi-700 px-5 py-2.5 text-sm font-semibold text-white"
         >
           Reintentar
         </button>
@@ -165,7 +165,7 @@ export default function SimuladorPage() {
                 min={0}
                 value={ordersPerDay}
                 onChange={(e) => setOrdersPerDay(Math.max(0, Number(e.target.value) || 0))}
-                className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-2.5 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-500"
+                className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-2.5 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
               />
             </div>
             <div className="rounded-2xl bg-white dark:bg-surface-800 p-5 shadow-soft">
@@ -179,12 +179,12 @@ export default function SimuladorPage() {
                   max={100}
                   value={commissionPct}
                   onChange={(e) => setCommissionPct(Number(e.target.value) || 0)}
-                  className="flex-1 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-2.5 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-500"
+                  className="flex-1 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-2.5 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
                 />
                 <button
                   onClick={applyCommission}
                   disabled={applying || !dirty}
-                  className="rounded-xl bg-kiwi-500 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-40"
+                  className="rounded-xl bg-kiwi-700 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-40"
                   title="Guardar como tasa vigente (rige para pedidos nuevos)"
                 >
                   {applying ? '…' : 'Aplicar'}
@@ -256,7 +256,7 @@ export default function SimuladorPage() {
                         <td className="px-4 py-2.5 text-right text-surface-600 dark:text-surface-300">
                           {fmt(price)}
                         </td>
-                        <td className="px-4 py-2.5 text-right font-semibold text-kiwi-600">
+                        <td className="px-4 py-2.5 text-right font-semibold text-kiwi-700">
                           {fmt(zoneDaily * price * rate)}
                         </td>
                       </tr>

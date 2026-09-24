@@ -10,7 +10,7 @@ import { cn } from './utils';
  * Mantener aquí evita que las variantes se diverjan entre componentes.
  */
 export const buttonVariantClasses = {
-  primary: 'bg-kiwi-500 text-white hover:bg-kiwi-600 shadow-kiwi',
+  primary: 'bg-kiwi-700 text-white hover:bg-kiwi-800 shadow-kiwi',
   secondary: 'bg-surface-100 text-surface-700 hover:bg-surface-200 border border-surface-200',
   ghost: 'text-surface-600 hover:bg-surface-100',
   danger: 'bg-red-500 text-white hover:bg-red-600',
@@ -49,7 +49,7 @@ export function AnimatedButton({
     <motion.button
       className={cn(
         'inline-flex items-center justify-center font-medium transition-colors',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-500 focus-visible:ring-offset-2',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-600 focus-visible:ring-offset-2',
         'disabled:pointer-events-none disabled:opacity-50',
         variants[variant],
         sizes[size],

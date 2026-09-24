@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from './utils';
 import { KiwiMark } from './KiwiMark';
+import { ConsentCheckbox, ConsentLink } from './ConsentCheckbox';
 import { Bike, Car, Truck, Smartphone, MessageCircle, Eye, EyeOff, Loader } from 'lucide-react';
 
 export interface AuthFormProps {
@@ -22,6 +23,8 @@ export interface AuthFormData {
   phone?: string;
   businessName?: string;
   vehicleType?: string;
+  /** Consentimiento explícito (solo registro; obligatorio para enviar). */
+  acceptedTerms?: boolean;
 }
 
 export function AuthForm({
@@ -41,10 +44,16 @@ export function AuthForm({
     vehicleType: 'motorcycle',
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [consentError, setConsentError] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    if (type === 'register' && !acceptedTerms) {
+      setConsentError(true);
+      return;
+    }
+    onSubmit({ ...formData, acceptedTerms });
   };
 
   const updateField = (field: keyof AuthFormData, value: string) => {
@@ -94,23 +103,30 @@ export function AuthForm({
         transition={{ delay: 0.3 }}
       >
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Full Name (Register only) */}
+          {/* Full Name (solo repartidor): es el nombre público que ven comercios
+              y clientes. Al comercio no se le pide: el backend no lo usa y la
+              plataforma opera con el nombre del negocio (minimización de datos). */}
           <AnimatePresence>
-            {type === 'register' && (
+            {type === 'register' && role === 'driver' && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
               >
-                <label className="block text-sm font-medium text-surface-700 mb-2">
+                <label
+                  htmlFor="auth-fullname"
+                  className="block text-sm font-medium text-surface-700 mb-2"
+                >
                   Nombre completo
                 </label>
                 <motion.input
+                  id="auth-fullname"
                   type="text"
                   value={formData.fullName}
                   onChange={(e) => updateField('fullName', e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-white/50 border border-surface-200 text-surface-800 placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-kiwi-500 focus:border-transparent transition-all"
+                  className="w-full px-4 py-3 rounded-xl bg-white/50 border border-surface-200 text-surface-800 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-kiwi-600 focus:border-transparent transition-all"
                   placeholder="Tu nombre"
+                  autoComplete="name"
                   whileFocus={{ scale: 1.02 }}
                   required
                 />
@@ -126,15 +142,20 @@ export function AuthForm({
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
               >
-                <label className="block text-sm font-medium text-surface-700 mb-2">
+                <label
+                  htmlFor="auth-business"
+                  className="block text-sm font-medium text-surface-700 mb-2"
+                >
                   Nombre del negocio
                 </label>
                 <motion.input
+                  id="auth-business"
                   type="text"
                   value={formData.businessName}
                   onChange={(e) => updateField('businessName', e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-white/50 border border-surface-200 text-surface-800 placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-kiwi-500 focus:border-transparent transition-all"
+                  className="w-full px-4 py-3 rounded-xl bg-white/50 border border-surface-200 text-surface-800 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-kiwi-600 focus:border-transparent transition-all"
                   placeholder="Restaurante El Sabor"
+                  autoComplete="organization"
                   whileFocus={{ scale: 1.02 }}
                   required
                 />
@@ -150,13 +171,20 @@ export function AuthForm({
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
               >
-                <label className="block text-sm font-medium text-surface-700 mb-2">
+                <label
+                  id="auth-vehicle-label"
+                  className="block text-sm font-medium text-surface-700 mb-2"
+                >
                   Tipo de vehículo
                 </label>
-                <div className="grid grid-cols-5 gap-2">
+                <div
+                  className="grid grid-cols-5 gap-2"
+                  role="radiogroup"
+                  aria-labelledby="auth-vehicle-label"
+                >
                   {[
                     { type: 'motorcycle', icon: 'motorcycle', label: 'Moto' },
-                    { type: 'motorized_bike', icon: 'bike', label: 'Bici Bota' },
+                    { type: 'motorized_bike', icon: 'bike', label: 'Bici Moto' },
                     { type: 'bicycle', icon: 'bike', label: 'Bici' },
                     { type: 'car', icon: 'car', label: 'Carro' },
                     { type: 'truck', icon: 'truck', label: 'Camion' },
@@ -164,10 +192,13 @@ export function AuthForm({
                     <motion.button
                       key={v.type}
                       type="button"
+                      role="radio"
+                      aria-checked={formData.vehicleType === v.type}
+                      aria-label={v.label}
                       className={cn(
                         'flex flex-col items-center p-2 rounded-xl transition-all',
                         formData.vehicleType === v.type
-                          ? 'bg-kiwi-100 border-2 border-kiwi-500'
+                          ? 'bg-kiwi-100 border-2 border-kiwi-600'
                           : 'bg-surface-50 border border-surface-200 hover:border-surface-300',
                       )}
                       onClick={() => updateField('vehicleType', v.type)}
@@ -195,13 +226,21 @@ export function AuthForm({
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
               >
-                <label className="block text-sm font-medium text-surface-700 mb-2">Teléfono</label>
+                <label
+                  htmlFor="auth-phone"
+                  className="block text-sm font-medium text-surface-700 mb-2"
+                >
+                  Teléfono
+                </label>
                 <motion.input
+                  id="auth-phone"
                   type="tel"
                   value={formData.phone}
                   onChange={(e) => updateField('phone', e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-white/50 border border-surface-200 text-surface-800 placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-kiwi-500 focus:border-transparent transition-all"
+                  className="w-full px-4 py-3 rounded-xl bg-white/50 border border-surface-200 text-surface-800 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-kiwi-600 focus:border-transparent transition-all"
                   placeholder="8888-8888"
+                  autoComplete="tel"
+                  inputMode="tel"
                   whileFocus={{ scale: 1.02 }}
                   required
                 />
@@ -211,15 +250,19 @@ export function AuthForm({
 
           {/* Email */}
           <div>
-            <label className="block text-sm font-medium text-surface-700 mb-2">
+            <label htmlFor="auth-email" className="block text-sm font-medium text-surface-700 mb-2">
               Correo electrónico
             </label>
             <motion.input
+              id="auth-email"
               type="email"
               value={formData.email}
               onChange={(e) => updateField('email', e.target.value)}
-              className="w-full px-4 py-3 rounded-xl bg-white/50 border border-surface-200 text-surface-800 placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-kiwi-500 focus:border-transparent transition-all"
+              className="w-full px-4 py-3 rounded-xl bg-white/50 border border-surface-200 text-surface-800 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-kiwi-600 focus:border-transparent transition-all"
               placeholder="tu@email.com"
+              autoComplete={type === 'login' ? 'email' : 'email'}
+              inputMode="email"
+              aria-required="true"
               whileFocus={{ scale: 1.02 }}
               required
             />
@@ -227,18 +270,30 @@ export function AuthForm({
 
           {/* Password */}
           <div>
-            <label className="block text-sm font-medium text-surface-700 mb-2">Contraseña</label>
+            <label
+              htmlFor="auth-password"
+              className="block text-sm font-medium text-surface-700 mb-2"
+            >
+              Contraseña
+            </label>
             <div className="relative">
               <motion.input
+                id="auth-password"
                 type={showPassword ? 'text' : 'password'}
                 value={formData.password}
                 onChange={(e) => updateField('password', e.target.value)}
-                className="w-full px-4 py-3 rounded-xl bg-white/50 border border-surface-200 text-surface-800 placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-kiwi-500 focus:border-transparent transition-all pr-12"
+                className="w-full px-4 py-3 rounded-xl bg-white/50 border border-surface-200 text-surface-800 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-kiwi-600 focus:border-transparent transition-all pr-12"
                 placeholder="••••••••"
+                autoComplete={type === 'login' ? 'current-password' : 'new-password'}
+                aria-required="true"
+                aria-describedby="auth-password-hint"
                 whileFocus={{ scale: 1.02 }}
                 required
                 minLength={6}
               />
+              <span id="auth-password-hint" className="sr-only">
+                Mínimo 6 caracteres
+              </span>
               <motion.button
                 type="button"
                 className="absolute right-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center text-surface-400 hover:text-surface-600"
@@ -251,10 +306,32 @@ export function AuthForm({
             </div>
           </div>
 
+          {/* Consentimiento (registro): Ley 8968 exige consentimiento informado
+              explícito para tratar datos personales. Casilla sin pre-marcar. */}
+          {type === 'register' && (
+            <ConsentCheckbox
+              checked={acceptedTerms}
+              onChange={(checked) => {
+                setAcceptedTerms(checked);
+                if (checked) setConsentError(false);
+              }}
+              error={consentError}
+            >
+              Acepto los <ConsentLink href="/terms">términos de uso</ConsentLink> y la{' '}
+              <ConsentLink href="/privacy">política de privacidad</ConsentLink>. Autorizo a Kiwi a
+              tratar mis datos para gestionar mi cuenta
+              {role === 'driver'
+                ? ', incluyendo la verificación de identidad (KYC) con mis documentos'
+                : ''}{' '}
+              y las notificaciones de pedidos por la app.
+            </ConsentCheckbox>
+          )}
+
           {/* Error Message */}
           <AnimatePresence>
             {error && (
               <motion.div
+                role="alert"
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
@@ -305,7 +382,7 @@ export function AuthForm({
             >
               <button
                 type="button"
-                className="inline-flex min-h-[44px] items-center px-1 text-sm text-kiwi-600 hover:text-kiwi-700 font-medium"
+                className="inline-flex min-h-[44px] items-center px-1 text-sm text-kiwi-700 hover:text-kiwi-800 font-medium"
               >
                 ¿Olvidaste tu contraseña?
               </button>
@@ -324,7 +401,7 @@ export function AuthForm({
             {type === 'login' ? '¿No tienes cuenta?' : '¿Ya tienes cuenta?'}
             <button
               onClick={onToggle}
-              className="ml-2 inline-flex min-h-[44px] items-center px-1 font-semibold text-kiwi-600 hover:text-kiwi-700"
+              className="ml-2 inline-flex min-h-[44px] items-center px-1 font-semibold text-kiwi-700 hover:text-kiwi-800"
             >
               {type === 'login' ? 'Regístrate' : 'Inicia sesión'}
             </button>

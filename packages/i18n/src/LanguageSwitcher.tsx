@@ -59,7 +59,7 @@ export function LanguageSwitcher() {
                   key={key}
                   className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${
                     locale === key
-                      ? 'bg-kiwi-50 dark:bg-kiwi-900/30 text-kiwi-600 dark:text-kiwi-400'
+                      ? 'bg-kiwi-50 dark:bg-kiwi-900/30 text-kiwi-700 dark:text-kiwi-400'
                       : 'text-surface-700 dark:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-700'
                   }`}
                   onClick={() => handleSelect(key as Locale)}
@@ -68,7 +68,7 @@ export function LanguageSwitcher() {
                   <span className="text-xl">{config.flag}</span>
                   <div>
                     <p className="font-medium">{config.label}</p>
-                    <p className="text-xs text-surface-400 dark:text-surface-500">
+                    <p className="text-xs text-surface-500 dark:text-surface-400">
                       {key.toUpperCase()}
                     </p>
                   </div>

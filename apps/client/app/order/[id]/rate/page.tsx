@@ -120,7 +120,7 @@ export default function RateOrderPage() {
         <p className="text-surface-600 dark:text-surface-400 mb-4">
           {error || 'Pedido no encontrado'}
         </p>
-        <Link href="/orders" className="text-kiwi-600 dark:text-kiwi-400 font-medium underline">
+        <Link href="/orders" className="text-kiwi-700 dark:text-kiwi-400 font-medium underline">
           Volver a mis pedidos
         </Link>
       </div>
@@ -267,7 +267,7 @@ export default function RateOrderPage() {
                     onClick={() => setOnTime(opt.value)}
                     className={`flex-1 rounded-xl border p-3 text-sm font-medium transition-colors ${
                       onTime === opt.value
-                        ? 'border-kiwi-500 bg-kiwi-50 dark:bg-kiwi-900/30 text-kiwi-700 dark:text-kiwi-300'
+                        ? 'border-kiwi-600 bg-kiwi-50 dark:bg-kiwi-900/30 text-kiwi-700 dark:text-kiwi-300'
                         : 'border-surface-200 dark:border-surface-700 text-surface-600 dark:text-surface-400'
                     }`}
                   >
@@ -291,7 +291,7 @@ export default function RateOrderPage() {
                     onClick={() => setCareful(opt.value)}
                     className={`flex-1 rounded-xl border p-3 text-sm font-medium transition-colors ${
                       careful === opt.value
-                        ? 'border-kiwi-500 bg-kiwi-50 dark:bg-kiwi-900/30 text-kiwi-700 dark:text-kiwi-300'
+                        ? 'border-kiwi-600 bg-kiwi-50 dark:bg-kiwi-900/30 text-kiwi-700 dark:text-kiwi-300'
                         : 'border-surface-200 dark:border-surface-700 text-surface-600 dark:text-surface-400'
                     }`}
                   >
@@ -311,7 +311,7 @@ export default function RateOrderPage() {
                 maxLength={500}
                 rows={3}
                 placeholder="Cuéntanos algo sobre la entrega…"
-                className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 p-3 text-sm text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-500"
+                className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 p-3 text-sm text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
               />
               <p className="mt-1 text-right text-xs text-surface-400">{comment.length}/500</p>
             </div>

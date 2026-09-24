@@ -122,7 +122,7 @@ export default function MerchantAnalyticsPage() {
   };
 
   const getGrowthColor = (growth: number) => {
-    if (growth > 0) return 'text-kiwi-600 dark:text-kiwi-400';
+    if (growth > 0) return 'text-kiwi-700 dark:text-kiwi-400';
     if (growth < 0) return 'text-red-600 dark:text-red-400';
     return 'text-surface-500 dark:text-surface-400';
   };
@@ -315,7 +315,7 @@ export default function MerchantAnalyticsPage() {
                   <span className="text-2xl">
                     <Check className="h-6 w-6" />
                   </span>
-                  <span className="text-xs font-medium text-kiwi-600 dark:text-kiwi-400">
+                  <span className="text-xs font-medium text-kiwi-700 dark:text-kiwi-400">
                     {analytics?.overview?.completionRate || 0}%
                   </span>
                 </div>
@@ -350,14 +350,14 @@ export default function MerchantAnalyticsPage() {
                   <span className="text-2xl">
                     <Star className="h-6 w-6" />
                   </span>
-                  <span className="text-xs font-medium text-kiwi-600 dark:text-kiwi-400">
+                  <span className="text-xs font-medium text-kiwi-700 dark:text-kiwi-400">
                     Rating
                   </span>
                 </div>
                 <p className="text-2xl font-bold text-kiwi-700 dark:text-kiwi-300">
                   {analytics?.overview?.customerSatisfaction || 0}
                 </p>
-                <p className="text-sm text-kiwi-600 dark:text-kiwi-400">Satisfacción</p>
+                <p className="text-sm text-kiwi-700 dark:text-kiwi-400">Satisfacción</p>
               </motion.div>
             </StaggerItem>
           </StaggerContainer>
@@ -392,7 +392,7 @@ export default function MerchantAnalyticsPage() {
                         style={{ minHeight: day.value > 0 ? '8px' : '0px' }}
                       />
                     </div>
-                    <p className="mt-2 text-[10px] text-surface-400 dark:text-surface-500">
+                    <p className="mt-2 text-[10px] text-surface-500 dark:text-surface-400">
                       {new Date(day.date).toLocaleDateString('es-CR', { weekday: 'short' })}
                     </p>
                     <p className="text-[10px] font-medium text-surface-600 dark:text-surface-300">
@@ -491,7 +491,7 @@ export default function MerchantAnalyticsPage() {
                         </p>
                       </div>
                     </div>
-                    <span className="font-semibold text-kiwi-600 dark:text-kiwi-400">
+                    <span className="font-semibold text-kiwi-700 dark:text-kiwi-400">
                       {formatCurrency(item.revenue)}
                     </span>
                   </motion.div>
@@ -534,7 +534,7 @@ export default function MerchantAnalyticsPage() {
                           style={{ minHeight: hour.orders > 0 ? '4px' : '0px' }}
                         />
                       </div>
-                      <p className="mt-1 text-[8px] text-surface-400 dark:text-surface-500">
+                      <p className="mt-1 text-[8px] text-surface-500 dark:text-surface-400">
                         {hour.hour}
                       </p>
                     </motion.div>
@@ -567,7 +567,7 @@ export default function MerchantAnalyticsPage() {
                 <p className="text-sm text-surface-500 dark:text-surface-400">Pedidos</p>
               </div>
               <div className="text-center p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50">
-                <p className="text-3xl font-bold text-kiwi-600 dark:text-kiwi-400">
+                <p className="text-3xl font-bold text-kiwi-700 dark:text-kiwi-400">
                   {analytics?.customerStats?.totalReviews || 0}
                 </p>
                 <p className="text-sm text-surface-500 dark:text-surface-400">Reseñas</p>
@@ -630,7 +630,7 @@ export default function MerchantAnalyticsPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Link href="/dashboard">
                 <motion.button
-                  className="w-full p-4 rounded-xl bg-kiwi-50 dark:bg-kiwi-900/30 text-kiwi-600 dark:text-kiwi-400 hover:bg-kiwi-100 dark:hover:bg-kiwi-900/50 transition-colors"
+                  className="w-full p-4 rounded-xl bg-kiwi-50 dark:bg-kiwi-900/30 text-kiwi-700 dark:text-kiwi-400 hover:bg-kiwi-100 dark:hover:bg-kiwi-900/50 transition-colors"
                   whileHover={{ y: -2 }}
                   whileTap={{ scale: 0.95 }}
                 >

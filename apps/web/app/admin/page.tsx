@@ -191,7 +191,7 @@ export default function AdminDashboard() {
   };
 
   const getGrowthColor = (growth: number) => {
-    if (growth > 0) return 'text-kiwi-600 dark:text-kiwi-400';
+    if (growth > 0) return 'text-kiwi-700 dark:text-kiwi-400';
     if (growth < 0) return 'text-red-600 dark:text-red-400';
     return 'text-surface-500 dark:text-surface-400';
   };
@@ -375,11 +375,11 @@ export default function AdminDashboard() {
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div className="rounded-xl bg-kiwi-50 dark:bg-kiwi-900/30 border border-kiwi-200 dark:border-kiwi-800 p-4 text-center">
-            <Bike className="h-6 w-6 mx-auto text-kiwi-600 dark:text-kiwi-400" />
+            <Bike className="h-6 w-6 mx-auto text-kiwi-700 dark:text-kiwi-400" />
             <p className="mt-1 text-2xl font-bold text-kiwi-700 dark:text-kiwi-300">
               {live?.drivers.online ?? '—'}
             </p>
-            <p className="text-xs text-kiwi-600 dark:text-kiwi-400">
+            <p className="text-xs text-kiwi-700 dark:text-kiwi-400">
               Drivers en línea{live ? ` (${live.drivers.offline} en pausa)` : ''}
             </p>
           </div>
@@ -400,7 +400,7 @@ export default function AdminDashboard() {
             <p className="text-xs text-surface-500">Comercios activos</p>
           </div>
           <div className="rounded-xl bg-surface-50 dark:bg-surface-700/50 p-4 text-center">
-            <Coins className="h-6 w-6 mx-auto text-kiwi-600" />
+            <Coins className="h-6 w-6 mx-auto text-kiwi-700" />
             <p className="mt-1 text-2xl font-bold text-surface-800 dark:text-surface-100">
               {live ? `₡${Number(live.today.revenue).toLocaleString()}` : '—'}
             </p>
@@ -438,7 +438,7 @@ export default function AdminDashboard() {
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-kiwi-400 opacity-75" />
                 <span className="relative inline-flex h-3 w-3 rounded-full bg-kiwi-500" />
               </span>
-              <span className="text-xs font-medium text-kiwi-600 dark:text-kiwi-400">
+              <span className="text-xs font-medium text-kiwi-700 dark:text-kiwi-400">
                 {analytics?.overview?.activeUsers || 0} activos
               </span>
             </div>
@@ -495,17 +495,17 @@ export default function AdminDashboard() {
             whileHover={{ y: -2 }}
           >
             <div className="flex items-center justify-between mb-2">
-              <Coins className="h-6 w-6 text-kiwi-600 dark:text-kiwi-400" />
-              <span className="text-xs font-medium text-kiwi-600 dark:text-kiwi-400">
+              <Coins className="h-6 w-6 text-kiwi-700 dark:text-kiwi-400" />
+              <span className="text-xs font-medium text-kiwi-700 dark:text-kiwi-400">
                 {commissionPct}% del viaje · la paga el repartidor
               </span>
             </div>
             <p className="text-2xl font-bold text-kiwi-700 dark:text-kiwi-300">
               {formatCurrency(analytics?.overview?.platformFee || 0)}
             </p>
-            <p className="text-sm text-kiwi-600 dark:text-kiwi-400">Ganancias Kiwi</p>
+            <p className="text-sm text-kiwi-700 dark:text-kiwi-400">Ganancias Kiwi</p>
             {(live?.today?.platformFee ?? 0) > 0 && (
-              <p className="mt-1 text-xs text-kiwi-600/80 dark:text-kiwi-400/80">
+              <p className="mt-1 text-xs text-kiwi-700/80 dark:text-kiwi-400/80">
                 Hoy: {formatCurrency(live?.today?.platformFee || 0)}
               </p>
             )}
@@ -641,7 +641,7 @@ export default function AdminDashboard() {
                 <span className="text-sm font-medium text-surface-600 dark:text-surface-400">
                   Tasa de Finalización
                 </span>
-                <span className="text-lg font-bold text-kiwi-600 dark:text-kiwi-400">
+                <span className="text-lg font-bold text-kiwi-700 dark:text-kiwi-400">
                   {analytics?.orders?.total
                     ? Math.round(
                         ((analytics?.orders?.completed || 0) / analytics?.orders?.total) * 100,
@@ -737,7 +737,7 @@ export default function AdminDashboard() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-kiwi-100 dark:bg-kiwi-900/50">
-                    <Coins className="h-5 w-5 text-kiwi-600" />
+                    <Coins className="h-5 w-5 text-kiwi-700" />
                   </div>
                   <div>
                     <p className="font-medium text-surface-800 dark:text-surface-200">
@@ -748,7 +748,7 @@ export default function AdminDashboard() {
                     </p>
                   </div>
                 </div>
-                <span className="text-lg font-bold text-kiwi-600 dark:text-kiwi-400">
+                <span className="text-lg font-bold text-kiwi-700 dark:text-kiwi-400">
                   {formatCurrency(analytics?.revenue?.platformFee || 0)}
                 </span>
               </div>
@@ -770,12 +770,12 @@ export default function AdminDashboard() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Link href="/admin/users">
             <motion.button
-              className="w-full p-4 rounded-xl bg-kiwi-50 dark:bg-kiwi-900/30 text-kiwi-600 dark:text-kiwi-400 hover:bg-kiwi-100 dark:hover:bg-kiwi-900/50 transition-colors"
+              className="w-full p-4 rounded-xl bg-kiwi-50 dark:bg-kiwi-900/30 text-kiwi-700 dark:text-kiwi-400 hover:bg-kiwi-100 dark:hover:bg-kiwi-900/50 transition-colors"
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.95 }}
             >
               <span className="mb-2 flex justify-center">
-                <Users className="h-7 w-7 text-kiwi-600 dark:text-kiwi-400" />
+                <Users className="h-7 w-7 text-kiwi-700 dark:text-kiwi-400" />
               </span>
               <span className="text-sm font-medium">Gestionar Usuarios</span>
             </motion.button>
@@ -855,7 +855,7 @@ export default function AdminDashboard() {
             <p className="text-sm text-surface-500 dark:text-surface-400">Cancelaciones</p>
           </div>
           <div className="text-center p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50">
-            <p className="text-3xl font-bold text-kiwi-600 dark:text-kiwi-400">
+            <p className="text-3xl font-bold text-kiwi-700 dark:text-kiwi-400">
               {formatCurrency(analytics?.revenue?.averagePerOrder || 0)}
             </p>
             <p className="text-sm text-surface-500 dark:text-surface-400">Promedio por Pedido</p>

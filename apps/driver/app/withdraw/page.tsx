@@ -308,7 +308,7 @@ export default function WithdrawPage() {
         {!showForm && (
           <motion.button
             onClick={() => setShowForm(true)}
-            className="w-full mb-6 rounded-2xl bg-white dark:bg-surface-800 py-4 text-lg font-semibold text-kiwi-600 dark:text-kiwi-400 shadow-soft dark:shadow-dark border-2 border-kiwi-200 dark:border-kiwi-800"
+            className="w-full mb-6 rounded-2xl bg-white dark:bg-surface-800 py-4 text-lg font-semibold text-kiwi-700 dark:text-kiwi-400 shadow-soft dark:shadow-dark border-2 border-kiwi-200 dark:border-kiwi-800"
             whileHover={{ scale: 1.02, borderColor: '#22c55e' }}
             whileTap={{ scale: 0.98 }}
           >
@@ -331,7 +331,8 @@ export default function WithdrawPage() {
                 </h3>
                 <button
                   onClick={() => setShowForm(false)}
-                  className="text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
+                  aria-label="Cerrar formulario de retiro"
+                  className="text-surface-500 hover:text-surface-700 dark:text-surface-400 dark:hover:text-surface-200"
                 >
                   ✕
                 </button>
@@ -352,7 +353,7 @@ export default function WithdrawPage() {
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
                       placeholder="0"
-                      className="w-full pl-8 pr-4 py-3 rounded-xl bg-surface-50 dark:bg-surface-700 text-surface-800 dark:text-surface-100 text-2xl font-bold placeholder-surface-300 focus:outline-none focus:ring-2 focus:ring-kiwi-500 transition-all"
+                      className="w-full pl-8 pr-4 py-3 rounded-xl bg-surface-50 dark:bg-surface-700 text-surface-800 dark:text-surface-100 text-2xl font-bold placeholder-surface-300 focus:outline-none focus:ring-2 focus:ring-kiwi-600 transition-all"
                     />
                   </div>
                   {/* Quick Amount Buttons */}
@@ -364,7 +365,7 @@ export default function WithdrawPage() {
                         onClick={() => setAmount(qAmount.toString())}
                         className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${
                           parseInt(amount) === qAmount
-                            ? 'bg-kiwi-500 text-white'
+                            ? 'bg-kiwi-700 text-white'
                             : 'bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400 hover:bg-surface-200 dark:hover:bg-surface-600'
                         }`}
                       >
@@ -385,7 +386,7 @@ export default function WithdrawPage() {
                       onClick={() => setPaymentMethod('sinpe')}
                       className={`p-4 rounded-xl border-2 transition-all ${
                         paymentMethod === 'sinpe'
-                          ? 'border-kiwi-500 bg-kiwi-50 dark:bg-kiwi-900/30'
+                          ? 'border-kiwi-600 bg-kiwi-50 dark:bg-kiwi-900/30'
                           : 'border-surface-200 dark:border-surface-700 hover:border-surface-300 dark:hover:border-surface-600'
                       }`}
                     >
@@ -399,7 +400,7 @@ export default function WithdrawPage() {
                       onClick={() => setPaymentMethod('bank_transfer')}
                       className={`p-4 rounded-xl border-2 transition-all ${
                         paymentMethod === 'bank_transfer'
-                          ? 'border-kiwi-500 bg-kiwi-50 dark:bg-kiwi-900/30'
+                          ? 'border-kiwi-600 bg-kiwi-50 dark:bg-kiwi-900/30'
                           : 'border-surface-200 dark:border-surface-700 hover:border-surface-300 dark:hover:border-surface-600'
                       }`}
                     >
@@ -427,7 +428,7 @@ export default function WithdrawPage() {
                         value={sinpePhone}
                         onChange={(e) => setSinpePhone(e.target.value)}
                         placeholder="8888-1234"
-                        className="w-full px-4 py-3 rounded-xl bg-surface-50 dark:bg-surface-700 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-kiwi-500 transition-all"
+                        className="w-full px-4 py-3 rounded-xl bg-surface-50 dark:bg-surface-700 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-kiwi-600 transition-all"
                       />
                     </div>
                     <div>
@@ -439,7 +440,7 @@ export default function WithdrawPage() {
                         value={sinpeName}
                         onChange={(e) => setSinpeName(e.target.value)}
                         placeholder="Tu nombre"
-                        className="w-full px-4 py-3 rounded-xl bg-surface-50 dark:bg-surface-700 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-kiwi-500 transition-all"
+                        className="w-full px-4 py-3 rounded-xl bg-surface-50 dark:bg-surface-700 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-kiwi-600 transition-all"
                       />
                     </div>
                   </motion.div>
@@ -459,7 +460,7 @@ export default function WithdrawPage() {
                       <select
                         value={bankName}
                         onChange={(e) => setBankName(e.target.value)}
-                        className="w-full px-4 py-3 rounded-xl bg-surface-50 dark:bg-surface-700 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-500 transition-all"
+                        className="w-full px-4 py-3 rounded-xl bg-surface-50 dark:bg-surface-700 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600 transition-all"
                       >
                         <option value="">Seleccionar banco</option>
                         <option value="BAC">BAC</option>
@@ -479,7 +480,7 @@ export default function WithdrawPage() {
                         value={accountNumber}
                         onChange={(e) => setAccountNumber(e.target.value)}
                         placeholder="0000-0000-0000"
-                        className="w-full px-4 py-3 rounded-xl bg-surface-50 dark:bg-surface-700 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-kiwi-500 transition-all"
+                        className="w-full px-4 py-3 rounded-xl bg-surface-50 dark:bg-surface-700 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-kiwi-600 transition-all"
                       />
                     </div>
                     <div>
@@ -491,7 +492,7 @@ export default function WithdrawPage() {
                         value={accountHolder}
                         onChange={(e) => setAccountHolder(e.target.value)}
                         placeholder="Nombre completo"
-                        className="w-full px-4 py-3 rounded-xl bg-surface-50 dark:bg-surface-700 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-kiwi-500 transition-all"
+                        className="w-full px-4 py-3 rounded-xl bg-surface-50 dark:bg-surface-700 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-kiwi-600 transition-all"
                       />
                     </div>
                   </motion.div>
@@ -510,7 +511,7 @@ export default function WithdrawPage() {
                     : `Retirar ${amount ? formatCurrency(parseInt(amount.replace(/[^0-9]/g, ''))) : ''}`}
                 </motion.button>
 
-                <p className="text-xs text-center text-surface-400 dark:text-surface-500">
+                <p className="text-xs text-center text-surface-500 dark:text-surface-400">
                   Mínimo ₡1,000 • Los retiros se procesan de lunes a viernes
                 </p>
               </form>
@@ -562,7 +563,7 @@ export default function WithdrawPage() {
                         <p className="font-medium text-surface-800 dark:text-surface-100">
                           {formatCurrency(withdrawal.amount)}
                         </p>
-                        <p className="text-xs text-surface-400 dark:text-surface-500">
+                        <p className="text-xs text-surface-500 dark:text-surface-400">
                           {withdrawal.paymentMethod === 'sinpe' ? 'SINPE' : 'Transferencia'} •{' '}
                           {formatDate(withdrawal.createdAt)}
                         </p>
@@ -577,6 +578,7 @@ export default function WithdrawPage() {
                       {withdrawal.status === 'pending' && (
                         <button
                           onClick={() => handleCancel(withdrawal.id)}
+                          aria-label={`Cancelar retiro de ${formatCurrency(withdrawal.amount)}`}
                           className="text-red-500 hover:text-red-600 text-xs"
                         >
                           ✕

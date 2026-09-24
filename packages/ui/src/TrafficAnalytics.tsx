@@ -344,7 +344,7 @@ function PatternsTab({ patterns }: { patterns: TrafficPattern[] }) {
             {Array.from({ length: 24 }, (_, i) => (
               <div
                 key={i}
-                className="flex-1 text-center text-[10px] text-surface-400 dark:text-surface-500"
+                className="flex-1 text-center text-[10px] text-surface-500 dark:text-surface-400"
               >
                 {i}
               </div>

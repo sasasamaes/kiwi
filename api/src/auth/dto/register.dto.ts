@@ -26,9 +26,14 @@ export class RegisterDto {
   })
   phone?: string;
 
-  @ApiProperty({ example: 'Juan Carlos' })
+  // Minimización (Ley 8968): el nombre personal solo lo necesita el
+  // repartidor (es su nombre público ante comercios/clientes). El comercio
+  // opera con businessName; no se le pide ni se guarda un nombre personal.
+  @ApiPropertyOptional({ example: 'Juan Carlos', description: 'Solo para repartidores' })
+  @EmptyToUndefined()
+  @IsOptional()
   @IsString()
-  fullName: string;
+  fullName?: string;
 
   @ApiProperty({ enum: ['merchant', 'driver'] })
   @IsEnum(['merchant', 'driver'], {

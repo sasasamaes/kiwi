@@ -47,7 +47,7 @@ export const hoverGhost =
  * pero con ring parafeedback de "apuntando".
  */
 export const hoverChip =
-  'transition-[background-color,box-shadow] duration-150 [@media(hover:hover)]:hover:ring-2 [@media(hover:hover)]:hover:ring-kiwi-500/30';
+  'transition-[background-color,box-shadow] duration-150 [@media(hover:hover)]:hover:ring-2 [@media(hover:hover)]:hover:ring-kiwi-600/30';
 
 /** Cursor + disabled coherentes. */
 export const cursorClickable = 'cursor-pointer';

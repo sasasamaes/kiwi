@@ -154,7 +154,7 @@ export function DeliveryZonesMap({
           <AlertTriangle className="mx-auto mb-2 h-8 w-8 text-surface-400" />
           <p className="mb-3 text-sm text-surface-500">{mapError}</p>
           <button
-            className="rounded-xl bg-kiwi-500 px-4 py-2 text-sm font-semibold text-white"
+            className="rounded-xl bg-kiwi-700 px-4 py-2 text-sm font-semibold text-white"
             onClick={() => {
               setMapError(null);
               setRetryKey((k) => k + 1);
@@ -192,7 +192,16 @@ export function DeliveryZonesMap({
         ))}
       </div>
       <p className="absolute bottom-2 left-2 rounded-lg bg-white/85 dark:bg-surface-900/85 px-2 py-0.5 text-[10px] text-surface-500 backdrop-blur">
-        Puntos de referencia, no límites · © OpenStreetMap
+        Puntos de referencia, no límites ·{' '}
+        {/* Atribución con enlace: requisito de la ODbL al usar tiles OSM. */}
+        <a
+          href="https://www.openstreetmap.org/copyright"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline decoration-dotted hover:text-kiwi-700 dark:hover:text-kiwi-400"
+        >
+          © OpenStreetMap contributors
+        </a>
       </p>
     </div>
   );

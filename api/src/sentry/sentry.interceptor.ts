@@ -18,12 +18,12 @@ export class SentryInterceptor implements NestInterceptor {
     const handler = context.getHandler().name;
     const controller = context.getClass().name;
 
-    // Set user context for Sentry
+    // Set user context for Sentry — minimización (Ley 8968): solo el ID.
+    // Email y nombre no salen a terceros; con el ID basta para correlacionar
+    // un error con un usuario desde nuestra propia base de datos.
     if (request.user) {
       Sentry.setUser({
         id: request.user.sub || request.user.id,
-        email: request.user.email,
-        username: request.user.fullName,
       });
     }
 
@@ -77,7 +77,6 @@ export class SentryInterceptor implements NestInterceptor {
           if (request.user) {
             scope.setUser({
               id: request.user.sub || request.user.id,
-              email: request.user.email,
             });
           }
 
@@ -94,15 +93,41 @@ export class SentryInterceptor implements NestInterceptor {
   private sanitizeBody(body: any): any {
     if (!body) return body;
 
-    const sanitized = { ...body };
-    const sensitiveFields = ['password', 'passwordHash', 'token', 'accessToken', 'secret'];
+    // Sanitización recursiva: los DTOs de Kiwi incluyen PII de clientes
+    // (customerPhone, customerName, deliveryAddress) y credenciales. A un
+    // tercero solo debe salir lo estrictamente diagnóstico.
+    const sensitiveFields = new Set([
+      'password',
+      'passwordHash',
+      'token',
+      'accessToken',
+      'refreshToken',
+      'secret',
+      // PII de clientes y cuentas
+      'customerPhone',
+      'customerName',
+      'phone',
+      'email',
+      'deliveryAddress',
+      'address',
+      'fullName',
+      'idNumber',
+      'licenseNumber',
+      'taxId',
+    ]);
 
-    for (const field of sensitiveFields) {
-      if (sanitized[field]) {
-        sanitized[field] = '[REDACTED]';
+    const redact = (value: any, depth = 0): any => {
+      if (depth > 6 || value === null || typeof value !== 'object') {
+        return typeof value === 'string' && value.length > 500 ? '[TRUNCATED]' : value;
       }
-    }
+      if (Array.isArray(value)) return value.slice(0, 20).map((v) => redact(v, depth + 1));
+      const out: Record<string, unknown> = {};
+      for (const [key, val] of Object.entries(value)) {
+        out[key] = sensitiveFields.has(key) ? '[REDACTED]' : redact(val, depth + 1);
+      }
+      return out;
+    };
 
-    return sanitized;
+    return redact(body);
   }
 }

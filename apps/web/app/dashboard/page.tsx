@@ -215,7 +215,7 @@ export default function Dashboard() {
               >
                 <div className="flex items-center gap-4">
                   <motion.div
-                    className="flex h-14 w-14 items-center justify-center rounded-2xl bg-kiwi-100 dark:bg-kiwi-900/50 text-kiwi-600 dark:text-kiwi-400 transition-colors group-hover:bg-kiwi-500 group-hover:text-white"
+                    className="flex h-14 w-14 items-center justify-center rounded-2xl bg-kiwi-100 dark:bg-kiwi-900/50 text-kiwi-700 dark:text-kiwi-400 transition-colors group-hover:bg-kiwi-700 group-hover:text-white"
                     whileHover={{ rotate: 90 }}
                     transition={{ type: 'spring', stiffness: 260, damping: 20 }}
                   >
@@ -411,7 +411,7 @@ export default function Dashboard() {
             </div>
             <Link
               href="/orders/new"
-              className="rounded-xl bg-kiwi-500 px-4 py-2 text-center text-sm font-semibold text-white hover:bg-kiwi-600"
+              className="rounded-xl bg-kiwi-700 px-4 py-2 text-center text-sm font-semibold text-white hover:bg-kiwi-800"
             >
               Pedir con crédito
             </Link>
@@ -427,7 +427,7 @@ export default function Dashboard() {
               </h3>
               <Link
                 href="/orders"
-                className="text-sm font-medium text-kiwi-600 hover:text-kiwi-700"
+                className="text-sm font-medium text-kiwi-700 hover:text-kiwi-800"
               >
                 Ver todos →
               </Link>
@@ -484,7 +484,7 @@ export default function Dashboard() {
                       >
                         <div className="flex items-center gap-4">
                           <motion.div
-                            className="flex h-12 w-12 items-center justify-center rounded-xl bg-kiwi-100 text-kiwi-600 transition-colors group-hover:bg-kiwi-500 group-hover:text-white"
+                            className="flex h-12 w-12 items-center justify-center rounded-xl bg-kiwi-100 text-kiwi-700 transition-colors group-hover:bg-kiwi-700 group-hover:text-white"
                             whileHover={{ rotate: 10 }}
                           >
                             <span className="text-lg font-bold">#{order.id.slice(-4)}</span>

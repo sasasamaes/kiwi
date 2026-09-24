@@ -122,7 +122,7 @@ Opera la plataforma: aprueba KYC, gestiona usuarios, pagos, retiros, alertas de 
 | ID    | Requisito                                                                                                                     |
 | ----- | ----------------------------------------------------------------------------------------------------------------------------- |
 | DR-01 | Registro con KYC completo: cédula (frente/reverso), selfie, licencia, registro vehicular y seguro                             |
-| DR-02 | Perfil con **tipo de vehículo** (moto, bici bota, bici, carro, camión), placa y nivel (bronce → plata → oro → diamante → VIP) |
+| DR-02 | Perfil con **tipo de vehículo** (moto, bici moto, bici, carro, camión), placa y nivel (bronce → plata → oro → diamante → VIP) |
 | DR-03 | Horarios semanales (`DriverSchedule`) y modo **online/offline/ocupado**                                                       |
 | DR-04 | Feed de pedidos con: origen, destino, distancia, **ganancia en ₡**; aceptar o rechazar                                        |
 | DR-05 | Propuestas para pedidos **programados** (`DriverProposal`) con hora estimada de llegada                                       |

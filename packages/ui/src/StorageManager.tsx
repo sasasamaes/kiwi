@@ -305,19 +305,19 @@ export function StorageManager({ className = '', showDetails = false }: StorageM
                 </h4>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-kiwi-600 dark:text-kiwi-400">Datos comprimidos</span>
+                    <span className="text-kiwi-700 dark:text-kiwi-400">Datos comprimidos</span>
                     <span className="font-medium text-kiwi-800 dark:text-kiwi-300">
                       {compression.formatBytes(compression.getStats().totalSaved)}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-kiwi-600 dark:text-kiwi-400">Ahorro promedio</span>
+                    <span className="text-kiwi-700 dark:text-kiwi-400">Ahorro promedio</span>
                     <span className="font-medium text-kiwi-800 dark:text-kiwi-300">
                       {Math.round((1 - compression.getStats().averageRatio) * 100)}%
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-kiwi-600 dark:text-kiwi-400">Operaciones</span>
+                    <span className="text-kiwi-700 dark:text-kiwi-400">Operaciones</span>
                     <span className="font-medium text-kiwi-800 dark:text-kiwi-300">
                       {compression.getStats().compressionCount}
                     </span>

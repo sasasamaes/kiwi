@@ -165,7 +165,7 @@ export default function UsersPage() {
                   onClick={() => setFilter(tab.value as any)}
                   className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
                     filter === tab.value
-                      ? 'bg-kiwi-500 text-white'
+                      ? 'bg-kiwi-700 text-white'
                       : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400 hover:bg-surface-200 dark:hover:bg-surface-700'
                   }`}
                 >
@@ -178,7 +178,7 @@ export default function UsersPage() {
               placeholder="Buscar por email o teléfono..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="flex-1 px-4 py-2 text-sm rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-500"
+              className="flex-1 px-4 py-2 text-sm rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
             />
           </div>
 
@@ -236,7 +236,7 @@ export default function UsersPage() {
                         >
                           <td className="py-4 px-6">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-full bg-kiwi-100 dark:bg-kiwi-900/30 flex items-center justify-center text-kiwi-600 dark:text-kiwi-400 font-semibold">
+                              <div className="w-10 h-10 rounded-full bg-kiwi-100 dark:bg-kiwi-900/30 flex items-center justify-center text-kiwi-700 dark:text-kiwi-400 font-semibold">
                                 {displayName(u).charAt(0).toUpperCase()}
                               </div>
                               <div>
@@ -288,7 +288,7 @@ export default function UsersPage() {
                             <div className="flex items-center justify-end gap-2">
                               <button
                                 onClick={() => setSelectedUser(u)}
-                                className="px-3 py-1.5 text-xs font-medium text-surface-500 hover:text-kiwi-600 hover:bg-kiwi-50 dark:hover:bg-kiwi-900/30 rounded-lg transition-colors"
+                                className="px-3 py-1.5 text-xs font-medium text-surface-500 hover:text-kiwi-700 hover:bg-kiwi-50 dark:hover:bg-kiwi-900/30 rounded-lg transition-colors"
                               >
                                 Ver
                               </button>
@@ -298,7 +298,7 @@ export default function UsersPage() {
                                 className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors disabled:opacity-50 ${
                                   u.status === 'active'
                                     ? 'text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30'
-                                    : 'text-kiwi-600 hover:bg-kiwi-50 dark:hover:bg-kiwi-900/30'
+                                    : 'text-kiwi-700 hover:bg-kiwi-50 dark:hover:bg-kiwi-900/30'
                                 }`}
                               >
                                 {u.status === 'active' ? 'Desactivar' : 'Activar'}
@@ -349,7 +349,7 @@ export default function UsersPage() {
 
                 <div className="space-y-4">
                   <div className="flex items-center gap-4 mb-6">
-                    <div className="w-16 h-16 rounded-full bg-kiwi-100 dark:bg-kiwi-900/30 flex items-center justify-center text-2xl text-kiwi-600 dark:text-kiwi-400 font-bold">
+                    <div className="w-16 h-16 rounded-full bg-kiwi-100 dark:bg-kiwi-900/30 flex items-center justify-center text-2xl text-kiwi-700 dark:text-kiwi-400 font-bold">
                       {displayName(selectedUser).charAt(0).toUpperCase()}
                     </div>
                     <div>
@@ -393,7 +393,7 @@ export default function UsersPage() {
                     <div className="p-4 rounded-xl bg-kiwi-50 dark:bg-kiwi-900/30">
                       <div className="flex justify-between items-center">
                         <span className="text-surface-600 dark:text-surface-400">Rating</span>
-                        <span className="font-semibold text-kiwi-600 dark:text-kiwi-400">
+                        <span className="font-semibold text-kiwi-700 dark:text-kiwi-400">
                           <Star className="h-4 w-4 inline" />{' '}
                           {Number(selectedUser.driverProfile?.rating ?? 5).toFixed(1)}
                         </span>
@@ -416,7 +416,7 @@ export default function UsersPage() {
                       className={`flex-1 py-2 px-4 text-sm font-medium rounded-lg transition-colors disabled:opacity-50 ${
                         selectedUser.status === 'active'
                           ? 'bg-red-50 dark:bg-red-900/30 text-red-600 hover:bg-red-100'
-                          : 'bg-kiwi-500 text-white hover:bg-kiwi-600'
+                          : 'bg-kiwi-700 text-white hover:bg-kiwi-800'
                       }`}
                     >
                       {selectedUser.status === 'active' ? 'Desactivar cuenta' : 'Activar cuenta'}

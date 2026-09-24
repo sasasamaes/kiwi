@@ -96,7 +96,7 @@ export default function AdminRatings() {
           <p className="mt-1 text-xs text-surface-500">En esta vista</p>
         </div>
         <div className="rounded-2xl glass p-4 text-center">
-          <p className="text-3xl font-bold text-kiwi-600">
+          <p className="text-3xl font-bold text-kiwi-700">
             {items.filter((i) => (i.rating ?? 0) >= 4).length}
           </p>
           <p className="mt-1 text-xs text-surface-500">De 4+ estrellas</p>
@@ -117,7 +117,7 @@ export default function AdminRatings() {
             onClick={() => setFilter(f.id)}
             className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
               filter === f.id
-                ? 'bg-kiwi-500 text-white'
+                ? 'bg-kiwi-700 text-white'
                 : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400'
             }`}
           >

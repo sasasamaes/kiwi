@@ -47,7 +47,7 @@ export default function OnePagerDriverPage() {
       <div className="max-w-[820px] mx-auto px-4 print:px-0">
         <div className="bg-white text-surface-800 rounded-2xl shadow-sm print:shadow-none print:rounded-none p-6 sm:p-10 print:p-0">
           {/* Encabezado con banda de marca */}
-          <div className="rounded-xl bg-gradient-to-r from-kiwi-500 to-kiwi-700 text-white px-6 py-5 mb-6 print:rounded-lg">
+          <div className="rounded-xl bg-gradient-to-r from-kiwi-700 to-kiwi-800 text-white px-6 py-5 mb-6 print:rounded-lg">
             <h1 className="text-2xl font-bold">🥝 Repartí con Kiwi</h1>
             <p className="text-sm text-white/90 mt-1">
               Viajes todos los días en Nicoya · Payout claro por zona · Retiro semanal
@@ -61,7 +61,7 @@ export default function OnePagerDriverPage() {
               { k: '7–10', v: 'viajes por hora pico en el centro de Nicoya' },
               { k: '~₡255.000', v: 'al mes con 7 viajes al día (estimado)' },
             ].map((s) => (
-              <div key={s.k} className="rounded-xl border-2 border-kiwi-500 p-3">
+              <div key={s.k} className="rounded-xl border-2 border-kiwi-600 p-3">
                 <p className="text-xl font-bold text-kiwi-700">{s.k}</p>
                 <p className="text-[11px] text-surface-500 mt-0.5 leading-tight">{s.v}</p>
               </div>

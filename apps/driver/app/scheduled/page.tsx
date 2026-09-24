@@ -202,7 +202,7 @@ export default function ScheduledOrdersPage() {
                 <StaggerItem key={order.id}>
                   <motion.div
                     className={`rounded-2xl glass p-4 ${
-                      hasSubmitted ? 'ring-2 ring-kiwi-500' : ''
+                      hasSubmitted ? 'ring-2 ring-kiwi-600' : ''
                     }`}
                     whileHover={{ y: -2 }}
                   >
@@ -223,7 +223,7 @@ export default function ScheduledOrdersPage() {
                               {order.pickupAddress} → {order.deliveryAddress}
                             </p>
                           </div>
-                          <span className="text-lg font-bold text-kiwi-600 dark:text-kiwi-400">
+                          <span className="text-lg font-bold text-kiwi-700 dark:text-kiwi-400">
                             ₡{Number(order.totalAmount).toLocaleString()}
                           </span>
                         </div>
@@ -253,7 +253,7 @@ export default function ScheduledOrdersPage() {
                         {/* Action Button */}
                         <div className="mt-3">
                           {hasSubmitted ? (
-                            <div className="flex items-center gap-2 text-kiwi-600 dark:text-kiwi-400">
+                            <div className="flex items-center gap-2 text-kiwi-700 dark:text-kiwi-400">
                               <Check className="text-lg h-5 w-5" />
                               <span className="text-sm font-medium">Propuesta enviada</span>
                             </div>
@@ -315,7 +315,8 @@ export default function ScheduledOrdersPage() {
                       setShowProposalForm(false);
                       setSelectedOrder(null);
                     }}
-                    className="text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
+                    className="text-surface-500 hover:text-surface-700 dark:text-surface-400 dark:hover:text-surface-200"
+                    aria-label="Cerrar propuesta de pedido"
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                   >
@@ -368,7 +369,7 @@ export default function ScheduledOrdersPage() {
                       <span className="text-surface-500 dark:text-surface-400">
                         <Coins className="h-4 w-4 inline" /> Pago:
                       </span>
-                      <span className="font-bold text-kiwi-600 dark:text-kiwi-400">
+                      <span className="font-bold text-kiwi-700 dark:text-kiwi-400">
                         ₡
                         {Number(
                           selectedOrder.driverPayout || selectedOrder.totalAmount,
@@ -390,7 +391,7 @@ export default function ScheduledOrdersPage() {
                       setProposalData({ ...proposalData, estimatedArrival: e.target.value })
                     }
                     placeholder="Ej: En 15 minutos, A las 3:00 PM, En una hora"
-                    className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:border-kiwi-500 focus:ring-2 focus:ring-kiwi-500/20 transition-all"
+                    className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20 transition-all"
                   />
                   <div className="flex flex-wrap gap-2 mt-2">
                     {['En 10 min', 'En 15 min', 'En 30 min', 'En 1 hora'].map((time) => (
@@ -399,7 +400,7 @@ export default function ScheduledOrdersPage() {
                         type="button"
                         className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
                           proposalData.estimatedArrival === time
-                            ? 'bg-kiwi-500 text-white'
+                            ? 'bg-kiwi-700 text-white'
                             : 'bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400 hover:bg-surface-200'
                         }`}
                         onClick={() => setProposalData({ ...proposalData, estimatedArrival: time })}
@@ -421,7 +422,7 @@ export default function ScheduledOrdersPage() {
                     onChange={(e) => setProposalData({ ...proposalData, message: e.target.value })}
                     placeholder="Ej: Conozco bien la zona, llego rápido. Tengo moto nueva."
                     rows={3}
-                    className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:border-kiwi-500 focus:ring-2 focus:ring-kiwi-500/20 transition-all resize-none"
+                    className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20 transition-all resize-none"
                   />
                 </div>
 

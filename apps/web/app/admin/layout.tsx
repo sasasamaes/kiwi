@@ -48,7 +48,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   if (loading || !user) {
     return (
       <div className="min-h-[100dvh] flex items-center justify-center bg-bg-light dark:bg-surface-950">
-        <div className="h-10 w-10 animate-spin rounded-full border-2 border-kiwi-500 border-t-transparent" />
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-kiwi-600 border-t-transparent" />
       </div>
     );
   }
@@ -110,7 +110,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     href={item.href}
                     className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
                       isActive(item.href, item.exact)
-                        ? 'bg-kiwi-50 dark:bg-kiwi-900/30 text-kiwi-600 dark:text-kiwi-400 font-medium'
+                        ? 'bg-kiwi-50 dark:bg-kiwi-900/30 text-kiwi-700 dark:text-kiwi-400 font-medium'
                         : 'text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800'
                     }`}
                   >

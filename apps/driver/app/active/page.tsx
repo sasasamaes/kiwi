@@ -578,6 +578,7 @@ export default function ActiveOrders() {
               <p className="text-xs font-medium text-amber-800 dark:text-amber-300">{notice}</p>
               <button
                 onClick={() => setNotice(null)}
+                aria-label="Descartar aviso"
                 className="text-amber-600 dark:text-amber-400"
               >
                 ✕
@@ -617,7 +618,7 @@ export default function ActiveOrders() {
                     }}
                     whileTap={{ scale: 0.98 }}
                     className={`flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition-colors ${
-                      active ? 'bg-kiwi-500 text-white shadow-kiwi' : ''
+                      active ? 'bg-kiwi-700 text-white shadow-kiwi' : ''
                     }`}
                   >
                     <span
@@ -645,7 +646,7 @@ export default function ActiveOrders() {
                     </span>
                     <span
                       className={`shrink-0 font-mono text-sm font-bold ${
-                        active ? 'text-white' : 'text-kiwi-600'
+                        active ? 'text-white' : 'text-kiwi-700'
                       }`}
                     >
                       ₡{netPayout(o).toLocaleString()}
@@ -711,9 +712,9 @@ export default function ActiveOrders() {
                       <motion.div
                         className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${
                           done
-                            ? 'bg-white text-kiwi-600'
+                            ? 'bg-white text-kiwi-700'
                             : current
-                              ? 'bg-white text-kiwi-600 ring-4 ring-white/30'
+                              ? 'bg-white text-kiwi-700 ring-4 ring-white/30'
                               : 'bg-white/20 text-white/70'
                         }`}
                         animate={current ? { scale: [1, 1.12, 1] } : {}}
@@ -759,8 +760,8 @@ export default function ActiveOrders() {
               <motion.div
                 className={`flex h-10 w-10 items-center justify-center rounded-2xl ${
                   stepIndex >= 2
-                    ? 'bg-kiwi-100 text-kiwi-600'
-                    : 'bg-kiwi-500 text-white shadow-kiwi'
+                    ? 'bg-kiwi-100 text-kiwi-700'
+                    : 'bg-kiwi-700 text-white shadow-kiwi'
                 }`}
                 animate={stepIndex < 2 ? { scale: [1, 1.06, 1] } : {}}
                 transition={{ duration: 2, repeat: Infinity }}
@@ -770,7 +771,7 @@ export default function ActiveOrders() {
               <div className="my-1 w-0.5 flex-1 rounded bg-surface-200 dark:bg-surface-700" />
             </div>
             <div className="flex-1 pb-5">
-              <p className="text-xs font-semibold uppercase tracking-wide text-kiwi-600">
+              <p className="text-xs font-semibold uppercase tracking-wide text-kiwi-700">
                 {stepIndex >= 2 ? 'Recogido en' : 'Ir a recoger a'}
               </p>
               <p className="text-base font-semibold text-surface-800 dark:text-surface-100">
@@ -846,7 +847,7 @@ export default function ActiveOrders() {
                 className="mt-1 flex items-center gap-1 text-xs text-surface-400"
               >
                 {copied === 'delivery' ? (
-                  <span className="flex items-center gap-1 text-kiwi-600">
+                  <span className="flex items-center gap-1 text-kiwi-700">
                     <Check className="h-3 w-3" /> Copiada
                   </span>
                 ) : (
@@ -1013,7 +1014,7 @@ export default function ActiveOrders() {
           >
             <div className="pl-2">
               <p className="text-[11px] text-surface-400">Ganancia</p>
-              <p className="font-mono text-lg font-bold text-kiwi-600">
+              <p className="font-mono text-lg font-bold text-kiwi-700">
                 ₡{driverPayout.toLocaleString()}
               </p>
               <p className="text-[10px] text-surface-400">neta (−{feePct}% Kiwi)</p>
@@ -1079,7 +1080,7 @@ export default function ActiveOrders() {
               <p className="mt-1 text-sm text-surface-500">Ganaste</p>
               <AnimatedCounter
                 value={celebration.payout}
-                className="font-mono text-4xl font-bold text-kiwi-600"
+                className="font-mono text-4xl font-bold text-kiwi-700"
               />
               <div className="mt-6 space-y-2">
                 <TapButton

@@ -110,7 +110,7 @@ body {
 /* Input styles */
 .input-kiwi {
   @apply w-full px-4 py-3 rounded-xl bg-white border border-surface-200 
-         text-surface-800 placeholder-surface-400
+         text-surface-800 placeholder-surface-500
          focus:outline-none focus:ring-2 focus:ring-kiwi-500 focus:border-transparent
          transition-all duration-200;
 }

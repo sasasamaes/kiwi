@@ -51,7 +51,7 @@ function RouteCard({
     <motion.div
       className={`p-4 rounded-xl border-2 transition-colors ${
         isSelected
-          ? 'border-kiwi-500 bg-kiwi-50 dark:bg-kiwi-900/30'
+          ? 'border-kiwi-600 bg-kiwi-50 dark:bg-kiwi-900/30'
           : 'border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 hover:border-surface-300 dark:hover:border-surface-600'
       }`}
       onClick={onSelect}
@@ -137,7 +137,7 @@ function NavigationPanel({
       transition={{ type: 'spring', damping: 25, stiffness: 200 }}
     >
       {/* Header */}
-      <div className="p-4 bg-kiwi-500 text-white">
+      <div className="p-4 bg-kiwi-700 text-white">
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-lg font-display font-bold">Navegando</h2>
           <motion.button
@@ -236,7 +236,7 @@ function NavigationPanel({
               const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
               window.open(url, '_blank', 'noopener,noreferrer');
             }}
-            className="flex-1 py-3 rounded-xl bg-kiwi-500 text-white font-medium"
+            className="flex-1 py-3 rounded-xl bg-kiwi-700 text-white font-medium"
           >
             Map Abrir en Maps
           </button>
@@ -466,7 +466,7 @@ export function OfflineNavigation({
           className={`w-full py-3 rounded-xl font-medium ${
             !start || !end || isLoading
               ? 'bg-surface-200 dark:bg-surface-700 text-surface-500'
-              : 'bg-kiwi-500 hover:bg-kiwi-600 text-white'
+              : 'bg-kiwi-700 hover:bg-kiwi-800 text-white'
           }`}
           whileTap={{ scale: 0.98 }}
         >
@@ -500,7 +500,7 @@ export function OfflineNavigation({
           <div className="mt-3 flex gap-2">
             <motion.button
               onClick={handleStartNavigation}
-              className="flex-1 py-3 rounded-xl bg-kiwi-500 text-white font-medium"
+              className="flex-1 py-3 rounded-xl bg-kiwi-700 text-white font-medium"
               whileTap={{ scale: 0.98 }}
             >
               🧭 Iniciar Navegación
@@ -627,7 +627,7 @@ export function NavigationButton({
           </div>
           <button
             onClick={() => startNavigation(route)}
-            className="w-full py-2 rounded-xl bg-kiwi-500 text-white text-sm font-medium"
+            className="w-full py-2 rounded-xl bg-kiwi-700 text-white text-sm font-medium"
           >
             🧭 Iniciar
           </button>

@@ -302,7 +302,7 @@ function TrackingContent() {
   const driver = (order as any)?.driver ?? null;
   const vehicleLabels: Record<string, string> = {
     motorcycle: 'Moto',
-    motorized_bike: 'Bici con motor',
+    motorized_bike: 'Bici Moto',
     bicycle: 'Bicicleta',
     car: 'Carro',
     truck: 'Camión',
@@ -444,7 +444,7 @@ function TrackingContent() {
           transition={{ delay: 0.2 }}
         >
           <div className="flex items-center gap-4 mb-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-kiwi-100 dark:bg-kiwi-900/30 text-kiwi-600">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-kiwi-100 dark:bg-kiwi-900/30 text-kiwi-700">
               <StatusIcon status={currentStatus} />
             </div>
             <div>
@@ -474,7 +474,7 @@ function TrackingContent() {
               <span className="text-sm text-surface-500 dark:text-surface-400">
                 Tiempo estimado:
               </span>
-              <span className="text-lg font-bold text-kiwi-600 dark:text-kiwi-400 font-mono">
+              <span className="text-lg font-bold text-kiwi-700 dark:text-kiwi-400 font-mono">
                 {eta} min
               </span>
               {trafficLevel && (
@@ -505,7 +505,7 @@ function TrackingContent() {
                   className="h-14 w-14 rounded-full object-cover bg-surface-100 dark:bg-surface-700"
                 />
               ) : (
-                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-kiwi-100 dark:bg-kiwi-900/30 text-xl font-bold text-kiwi-600 dark:text-kiwi-400">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-kiwi-100 dark:bg-kiwi-900/30 text-xl font-bold text-kiwi-700 dark:text-kiwi-400">
                   {(driver.fullName ?? '?').charAt(0).toUpperCase()}
                 </div>
               )}

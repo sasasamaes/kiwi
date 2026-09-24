@@ -119,7 +119,7 @@ export function SyncStatus({ className = '', showDetails = false }: SyncStatusPr
                   <p className="text-xs text-blue-700 dark:text-blue-400">Sincronizando</p>
                 </div>
                 <div className="p-3 rounded-xl bg-kiwi-50 dark:bg-kiwi-900/30 text-center">
-                  <p className="text-2xl font-bold text-kiwi-600 dark:text-kiwi-400">
+                  <p className="text-2xl font-bold text-kiwi-700 dark:text-kiwi-400">
                     {stats.completed}
                   </p>
                   <p className="text-xs text-kiwi-700 dark:text-kiwi-400">Completados</p>
@@ -201,7 +201,7 @@ export function SyncStatus({ className = '', showDetails = false }: SyncStatusPr
 
                 {stats.pending > 0 && isOnline && (
                   <motion.button
-                    className="w-full py-3 rounded-xl bg-kiwi-500 hover:bg-kiwi-600 text-white font-medium"
+                    className="w-full py-3 rounded-xl bg-kiwi-700 hover:bg-kiwi-800 text-white font-medium"
                     onClick={() => {
                       processQueue();
                       setShowPanel(false);

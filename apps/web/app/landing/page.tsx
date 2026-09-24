@@ -12,9 +12,15 @@ import {
   Coins,
   PartyPopper,
   MapPin,
-  Star,
 } from 'lucide-react';
-import { AnimatedButton, StaggerContainer, StaggerItem, KiwiMark, ThemeToggle } from '@kiwi/ui';
+import {
+  AnimatedButton,
+  StaggerContainer,
+  StaggerItem,
+  KiwiMark,
+  ThemeToggle,
+  business,
+} from '@kiwi/ui';
 import { ContactForm } from '../../components/ContactForm';
 
 const FEATURES = [
@@ -41,12 +47,13 @@ const FEATURES = [
   {
     icon: Lock,
     title: 'Seguro y verificado',
-    description: 'Todos los usuarios pasan verificación KYC. Tu seguridad es nuestra prioridad.',
+    description: 'Comercios y repartidores pasan verificación de identidad (KYC) antes de operar.',
   },
   {
     icon: '📶',
     title: 'Funciona offline',
-    description: 'Áreas con mala conexión no son problema. La app funciona sin internet.',
+    description:
+      'Los repartidores operan con mala señal: sus acciones se guardan y sincronizan al reconectar.',
   },
 ];
 
@@ -72,16 +79,18 @@ const STEPS = [
   {
     step: '4',
     title: 'Recibe',
-    description: 'Sigue tu pedido y recíbelo en minutos',
+    description: 'Sigue tu pedido en el mapa hasta la entrega',
     icon: PartyPopper,
   },
 ];
 
+// Categorías de negocio (no listar comercios como "clientes": las reseñas y
+// testimonios falsos son publicidad engañosa según la Ley 7472, art. 31).
 const MERCHANTS = [
-  { name: 'Bowl & Café', type: 'Bowls y Café' },
-  { name: 'Punto Ácido', type: 'Restaurante' },
-  { name: 'Los Efes Cevichería', type: 'Cevichería' },
-  { name: 'Twentis', type: 'Restaurante' },
+  { name: 'Restaurantes y sodas', type: 'Menús completos con QR' },
+  { name: 'Cafés y heladerías', type: 'Bebidas y antojos' },
+  { name: 'Cevicherías y mariscos', type: 'Pedido fresco al día' },
+  { name: 'Tiendas y pymes', type: 'Entregas locales' },
 ];
 
 export default function LandingPage() {
@@ -105,19 +114,19 @@ export default function LandingPage() {
             <div className="hidden md:flex items-center gap-6">
               <a
                 href="#features"
-                className="text-sm text-surface-600 dark:text-surface-400 hover:text-kiwi-600 dark:hover:text-kiwi-400"
+                className="text-sm text-surface-600 dark:text-surface-400 hover:text-kiwi-700 dark:hover:text-kiwi-400"
               >
                 Características
               </a>
               <a
                 href="#how-it-works"
-                className="text-sm text-surface-600 dark:text-surface-400 hover:text-kiwi-600 dark:hover:text-kiwi-400"
+                className="text-sm text-surface-600 dark:text-surface-400 hover:text-kiwi-700 dark:hover:text-kiwi-400"
               >
                 Cómo funciona
               </a>
               <a
                 href="#merchants"
-                className="text-sm text-surface-600 dark:text-surface-400 hover:text-kiwi-600 dark:hover:text-kiwi-400"
+                className="text-sm text-surface-600 dark:text-surface-400 hover:text-kiwi-700 dark:hover:text-kiwi-400"
               >
                 Comercios
               </a>
@@ -157,7 +166,7 @@ export default function LandingPage() {
               transition={{ delay: 0.15, duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
             >
               Delivery{' '}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-kiwi-500 to-kiwi-600">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-kiwi-700 to-kiwi-800">
                 inteligente
               </span>{' '}
               en Nicoya
@@ -181,7 +190,7 @@ export default function LandingPage() {
             >
               <a href="#download">
                 <AnimatedButton size="lg" className="text-lg px-8">
-                  Descargar Kiwi
+                  Empezar ahora
                 </AnimatedButton>
               </a>
               <a href="#how-it-works">
@@ -203,15 +212,16 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Stats */}
+      {/* Stats — solo cifras reales y verificables (no inventar adopción:
+          es publicidad engañosa según la Ley 7472, art. 31). */}
       <section className="py-12 border-b border-surface-200 dark:border-surface-800">
         <div className="mx-auto max-w-6xl px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             {[
-              { value: '50+', label: 'Comercios', icon: null },
-              { value: '200+', label: 'Repartidores', icon: null },
-              { value: '1000+', label: 'Pedidos', icon: null },
-              { value: '4.9', label: 'Calificación', icon: Star },
+              { value: 'Gratis', label: 'Para clientes', icon: null },
+              { value: '₡300+', label: 'Gana por viaje', icon: null },
+              { value: 'QR', label: 'Pide sin instalar nada', icon: null },
+              { value: 'Nicoya', label: 'Guanacaste, Costa Rica', icon: null },
             ].map((stat, i) => {
               const StatIcon = stat.icon as any;
               return (
@@ -221,7 +231,7 @@ export default function LandingPage() {
                   whileInView={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.1 }}
                 >
-                  <div className="text-3xl md:text-4xl font-bold text-kiwi-600 dark:text-kiwi-400">
+                  <div className="text-3xl md:text-4xl font-bold text-kiwi-700 dark:text-kiwi-400">
                     {stat.value}
                     {StatIcon ? <StatIcon className="h-7 w-7 inline" /> : null}
                   </div>
@@ -317,7 +327,7 @@ export default function LandingPage() {
                       </span>
                     )}
                   </div>
-                  <div className="text-sm font-bold text-kiwi-600 dark:text-kiwi-400 mb-2">
+                  <div className="text-sm font-bold text-kiwi-700 dark:text-kiwi-400 mb-2">
                     Paso {step.step}
                   </div>
                   <h3 className="text-lg font-semibold text-surface-800 dark:text-surface-100 mb-2">
@@ -342,10 +352,10 @@ export default function LandingPage() {
             whileInView={{ opacity: 1, y: 0 }}
           >
             <h2 className="text-3xl md:text-4xl font-display font-bold text-surface-800 dark:text-surface-100 mb-4">
-              Comercios en Kiwi
+              Hecho para negocios locales
             </h2>
             <p className="text-surface-600 dark:text-surface-400">
-              Negocios locales de Nicoya que ya usan Kiwi
+              Vende en Kiwi con tu menú en QR — registro gratuito para comercios
             </p>
           </motion.div>
 
@@ -373,44 +383,35 @@ export default function LandingPage() {
       </section>
 
       {/* Download CTA */}
-      <section id="download" className="py-20 bg-gradient-to-br from-kiwi-500 to-kiwi-600">
+      <section id="download" className="py-20 bg-gradient-to-br from-kiwi-700 to-kiwi-800">
         <div className="mx-auto max-w-4xl px-4 text-center">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}>
             <span className="text-6xl mb-6 block">
               <Smartphone className="h-16 w-16" />
             </span>
             <h2 className="text-3xl md:text-4xl font-display font-bold text-white mb-4">
-              Descarga Kiwi ahora
+              Abre Kiwi en tu teléfono
             </h2>
             <p className="text-kiwi-100 text-lg mb-8 max-w-2xl mx-auto">
-              Disponible gratis en iOS y Android. Únete a la revolución del delivery en Nicoya.
+              Kiwi funciona desde el navegador de tu teléfono, sin instalación. Las apps nativas
+              llegarán más adelante.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <a
-                href="https://apps.apple.com/app/kiwi-delivery/idYOUR_APP_ID"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-3 px-6 py-3 bg-black text-white rounded-xl hover:bg-surface-800 transition-colors"
-              >
-                <span className="text-2xl">🍎</span>
-                <div className="text-left">
-                  <div className="text-xs">Descargar en</div>
-                  <div className="text-sm font-semibold">App Store</div>
-                </div>
-              </a>
-              <a
-                href="https://play.google.com/store/apps/details?id=app.kiwi.delivery"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-3 px-6 py-3 bg-black text-white rounded-xl hover:bg-surface-800 transition-colors"
-              >
-                <span className="text-2xl">🤖</span>
-                <div className="text-left">
-                  <div className="text-xs">Disponible en</div>
-                  <div className="text-sm font-semibold">Google Play</div>
-                </div>
-              </a>
+              <Link href="/register">
+                <AnimatedButton variant="secondary" size="lg" className="text-lg px-8">
+                  Registrar mi comercio
+                </AnimatedButton>
+              </Link>
+              <Link href="/register">
+                <AnimatedButton
+                  variant="glass"
+                  size="lg"
+                  className="text-lg px-8 bg-black/40 text-white border border-white/30"
+                >
+                  Repartir con Kiwi
+                </AnimatedButton>
+              </Link>
             </div>
           </motion.div>
         </div>
@@ -455,6 +456,24 @@ export default function LandingPage() {
               <p className="text-sm text-surface-500 dark:text-surface-400">
                 Delivery inteligente en Nicoya, Costa Rica.
               </p>
+              <div className="mt-3 flex flex-wrap gap-3 text-sm">
+                <a
+                  href={business.instagram.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-kiwi-700 dark:hover:text-kiwi-400"
+                >
+                  Instagram {business.instagram.handle}
+                </a>
+                <a
+                  href={business.whatsapp}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-kiwi-700 dark:hover:text-kiwi-400"
+                >
+                  WhatsApp {business.phone}
+                </a>
+              </div>
             </div>
             <div>
               <h4 className="font-semibold text-surface-800 dark:text-surface-100 mb-3">
@@ -462,17 +481,17 @@ export default function LandingPage() {
               </h4>
               <ul className="space-y-2 text-sm text-surface-500 dark:text-surface-400">
                 <li>
-                  <a href="#features" className="hover:text-kiwi-600">
+                  <a href="#features" className="hover:text-kiwi-700">
                     Características
                   </a>
                 </li>
                 <li>
-                  <a href="#how-it-works" className="hover:text-kiwi-600">
+                  <a href="#how-it-works" className="hover:text-kiwi-700">
                     Cómo funciona
                   </a>
                 </li>
                 <li>
-                  <a href="#merchants" className="hover:text-kiwi-600">
+                  <a href="#merchants" className="hover:text-kiwi-700">
                     Comercios
                   </a>
                 </li>
@@ -482,13 +501,23 @@ export default function LandingPage() {
               <h4 className="font-semibold text-surface-800 dark:text-surface-100 mb-3">Legal</h4>
               <ul className="space-y-2 text-sm text-surface-500 dark:text-surface-400">
                 <li>
-                  <a href="/privacy" className="hover:text-kiwi-600">
+                  <a href="/privacy" className="hover:text-kiwi-700">
                     Privacidad
                   </a>
                 </li>
                 <li>
-                  <a href="/terms" className="hover:text-kiwi-600">
+                  <a href="/terms" className="hover:text-kiwi-700">
                     Términos
+                  </a>
+                </li>
+                <li>
+                  <a href="/cookies" className="hover:text-kiwi-700">
+                    Cookies
+                  </a>
+                </li>
+                <li>
+                  <a href="/refunds" className="hover:text-kiwi-700">
+                    Reembolsos
                   </a>
                 </li>
               </ul>
@@ -498,15 +527,22 @@ export default function LandingPage() {
                 Contacto
               </h4>
               <ul className="space-y-2 text-sm text-surface-500 dark:text-surface-400">
-                <li>📧 soporte@kiwi.app</li>
+                <li>📧 {business.email}</li>
                 <li>
-                  <Smartphone className="h-4 w-4 inline" /> +506 8888-5678
+                  <a
+                    href={business.whatsapp}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-kiwi-700"
+                  >
+                    WhatsApp {business.phone}
+                  </a>
                 </li>
                 <li>
-                  <MapPin className="h-4 w-4 inline" /> Nicoya, Guanacaste
+                  <MapPin className="h-4 w-4 inline" /> {business.location}
                 </li>
                 <li>
-                  <a href="#contact" className="hover:text-kiwi-600">
+                  <a href="#contact" className="hover:text-kiwi-700">
                     Formulario de contacto →
                   </a>
                 </li>
@@ -514,7 +550,9 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="mt-8 pt-8 border-t border-surface-200 dark:border-surface-800 text-center text-sm text-surface-400">
-            © 2024 Kiwi. Todos los derechos reservados. Hecho con 💚 en Nicoya.
+            © 2026 Kiwi —{' '}
+            {business.legalEntity.charAt(0).toUpperCase() + business.legalEntity.slice(1)}. Todos
+            los derechos reservados. Hecho con 💚 en Nicoya.
           </div>
         </div>
       </footer>

@@ -138,7 +138,7 @@ export function NotificationPreferences() {
       <button
         onClick={resync}
         disabled={syncing}
-        className="flex items-center gap-2 text-sm text-surface-500 dark:text-surface-400 hover:text-kiwi-600 dark:hover:text-kiwi-400 transition-colors disabled:opacity-50"
+        className="flex items-center gap-2 text-sm text-surface-500 dark:text-surface-400 hover:text-kiwi-700 dark:hover:text-kiwi-400 transition-colors disabled:opacity-50"
       >
         <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
         Re-sincronizar dispositivos

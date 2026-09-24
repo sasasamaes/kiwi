@@ -217,7 +217,7 @@ export default function OrdersPage() {
             </div>
             <Link
               href="/drivers"
-              className="shrink-0 rounded-xl bg-kiwi-500 px-4 py-2 text-sm font-semibold text-white"
+              className="shrink-0 rounded-xl bg-kiwi-700 px-4 py-2 text-sm font-semibold text-white"
             >
               Reasignar
             </Link>
@@ -239,7 +239,7 @@ export default function OrdersPage() {
               onClick={() => setTab(t.id)}
               className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors ${
                 tab === t.id
-                  ? 'bg-kiwi-500 text-white'
+                  ? 'bg-kiwi-700 text-white'
                   : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400'
               }`}
             >
@@ -267,7 +267,7 @@ export default function OrdersPage() {
             </p>
             <Link
               href="/orders/new"
-              className="mt-4 inline-block rounded-xl bg-kiwi-500 px-5 py-2.5 text-sm font-bold text-white"
+              className="mt-4 inline-block rounded-xl bg-kiwi-700 px-5 py-2.5 text-sm font-bold text-white"
             >
               Crear envío
             </Link>
@@ -331,7 +331,7 @@ export default function OrdersPage() {
                                   <span
                                     className={`flex h-6 w-6 items-center justify-center rounded-full ${
                                       s.done
-                                        ? 'bg-kiwi-500 text-white'
+                                        ? 'bg-kiwi-700 text-white'
                                         : 'bg-surface-200 dark:bg-surface-700 text-surface-400'
                                     }`}
                                   >
@@ -373,7 +373,7 @@ export default function OrdersPage() {
                               {driverPhone && (
                                 <a
                                   href={`tel:${driverPhone}`}
-                                  className="flex items-center gap-1 rounded-lg bg-kiwi-500 px-3 py-1.5 text-xs font-bold text-white"
+                                  className="flex items-center gap-1 rounded-lg bg-kiwi-700 px-3 py-1.5 text-xs font-bold text-white"
                                 >
                                   <Phone className="h-3.5 w-3.5" /> Llamar
                                 </a>

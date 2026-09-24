@@ -219,7 +219,7 @@ export function TrackingMap({
           <AlertTriangle className="h-10 w-10 text-surface-400 mx-auto mb-2" />
           <p className="text-sm text-surface-500 dark:text-surface-400 mb-3">{error}</p>
           <button
-            className="rounded-xl bg-kiwi-500 px-4 py-2 text-sm font-semibold text-white"
+            className="rounded-xl bg-kiwi-700 px-4 py-2 text-sm font-semibold text-white"
             onClick={() => {
               setError(null);
               setIsLoaded(false);
@@ -235,7 +235,16 @@ export function TrackingMap({
 
   return (
     <div className={`relative rounded-2xl overflow-hidden ${className}`}>
-      <div ref={mapRef} style={{ height }} className="w-full" />
+      {/* El mapa Leaflet es canvas interactivo no accesible: role + descripción
+          avisando qué muestra, y la info equivalente vive en la leyenda de
+          abajo y en el texto del tracking (estados, tiempos, direcciones). */}
+      <div
+        ref={mapRef}
+        style={{ height }}
+        className="w-full"
+        role="application"
+        aria-label="Mapa de seguimiento del pedido: ubicación del negocio, del cliente y del repartidor en tiempo real"
+      />
 
       {!isLoaded && (
         <motion.div
@@ -245,7 +254,7 @@ export function TrackingMap({
         >
           <div className="text-center">
             <motion.div
-              className="w-8 h-8 border-4 border-kiwi-500 border-t-transparent rounded-full mx-auto mb-2"
+              className="w-8 h-8 border-4 border-kiwi-600 border-t-transparent rounded-full mx-auto mb-2"
               animate={{ rotate: 360 }}
               transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
             />
@@ -277,7 +286,17 @@ export function TrackingMap({
               </div>
             )}
           </div>
-          <p className="mt-1 text-[10px] text-surface-400 dark:text-surface-500">© OpenStreetMap</p>
+          <p className="mt-1 text-[10px] text-surface-500 dark:text-surface-400">
+            {/* Atribución con enlace: requisito de la ODbL al usar tiles OSM. */}
+            <a
+              href="https://www.openstreetmap.org/copyright"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline decoration-dotted hover:text-kiwi-700 dark:hover:text-kiwi-400"
+            >
+              © OpenStreetMap contributors
+            </a>
+          </p>
         </motion.div>
       )}
 
@@ -288,8 +307,11 @@ export function TrackingMap({
             mapInstanceRef.current.setZoom(mapInstanceRef.current.getZoom() + 1);
           }
         }}
+        aria-label="Acercar mapa"
       >
-        <span className="text-lg">+</span>
+        <span className="text-lg" aria-hidden>
+          +
+        </span>
       </button>
     </div>
   );

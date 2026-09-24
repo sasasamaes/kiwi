@@ -802,7 +802,9 @@ export class PaymentsService {
       return { received: true, ignored: true };
     }
 
-    // Verify transaction on Stellar
+    // Endpoint PÚBLICO sin firma HMAC: cualquiera podría POSTear
+    // "orderId + tx inventado". La verificación on-chain es la única
+    // autenticación — nunca confiar en el payload para marcar pagado.
     const verified = await this.stellarProvider.verifyPayment(orderId);
 
     if (verified.verified) {
@@ -819,6 +821,10 @@ export class PaymentsService {
       }
 
       this.logger.log(`Crypto payment verified for order ${orderId}`);
+    } else {
+      this.logger.warn(
+        `Stellar webhook on-chain verification FAILED for order ${orderId} — not marking paid`,
+      );
     }
 
     return { received: true };

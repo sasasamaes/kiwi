@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Car, Shield } from 'lucide-react';
-import { KYCVerification, KYCStatusBadge, useAuth, api } from '@kiwi/ui';
+import { KYCVerification, KYCStatusBadge, useAuth, api, events } from '@kiwi/ui';
 
 export default function DriverKYCPage() {
   const router = useRouter();
@@ -44,6 +44,7 @@ export default function DriverKYCPage() {
         taxId: data.taxId,
       });
       setKycStatus(res?.status ?? 'documents_submitted');
+      events.kyc.documentsSubmitted('driver');
     } catch (error: any) {
       console.error('KYC error:', error);
       setSubmitError(error?.message || 'No se pudo enviar. Intentá de nuevo.');
@@ -78,7 +79,7 @@ export default function DriverKYCPage() {
       <main className="mx-auto max-w-lg px-4 py-8">
         {/* Info Banner */}
         <motion.div
-          className="mb-8 rounded-2xl bg-gradient-to-r from-kiwi-500 to-kiwi-600 p-6 text-white"
+          className="mb-8 rounded-2xl bg-gradient-to-r from-kiwi-700 to-kiwi-800 p-6 text-white"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
@@ -201,7 +202,7 @@ export default function DriverKYCPage() {
         >
           <p className="text-sm text-surface-400">
             ¿Necesitas ayuda?{' '}
-            <a href="https://wa.me/50688888888" className="text-kiwi-600 hover:underline">
+            <a href="https://wa.me/50688888888" className="text-kiwi-700 hover:underline">
               Contáctanos por WhatsApp
             </a>
           </p>

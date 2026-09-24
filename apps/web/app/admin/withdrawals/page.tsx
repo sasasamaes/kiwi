@@ -290,7 +290,7 @@ export default function AdminWithdrawalsPage() {
               onClick={() => setActiveFilter(tab.id)}
               className={`flex-shrink-0 px-4 py-2.5 rounded-full text-sm font-medium transition-all ${
                 activeFilter === tab.id
-                  ? 'bg-kiwi-500 text-white shadow-kiwi'
+                  ? 'bg-kiwi-700 text-white shadow-kiwi'
                   : 'bg-white dark:bg-surface-800 text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700'
               }`}
               whileTap={{ scale: 0.95 }}
@@ -369,7 +369,7 @@ export default function AdminWithdrawalsPage() {
                       )}
                     </span>
                   </div>
-                  <span className="text-lg font-bold text-kiwi-600 dark:text-kiwi-400">
+                  <span className="text-lg font-bold text-kiwi-700 dark:text-kiwi-400">
                     {formatCurrency(withdrawal.amount)}
                   </span>
                 </div>
@@ -388,7 +388,7 @@ export default function AdminWithdrawalsPage() {
                       <X className="h-4 w-4 inline" /> Rechazar
                     </button>
                     <button
-                      className="flex-1 py-2 text-sm font-medium bg-kiwi-500 text-white rounded-lg hover:bg-kiwi-600 transition-colors"
+                      className="flex-1 py-2 text-sm font-medium bg-kiwi-700 text-white rounded-lg hover:bg-kiwi-800 transition-colors"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleApprove(withdrawal.id);
@@ -440,7 +440,7 @@ export default function AdminWithdrawalsPage() {
               <div className="p-6 space-y-4">
                 {/* Amount */}
                 <div className="text-center py-4">
-                  <p className="text-4xl font-bold text-kiwi-600 dark:text-kiwi-400">
+                  <p className="text-4xl font-bold text-kiwi-700 dark:text-kiwi-400">
                     {formatCurrency(selectedWithdrawal.amount)}
                   </p>
                   <span
@@ -463,7 +463,7 @@ export default function AdminWithdrawalsPage() {
                 <div className="p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50">
                   <p className="text-sm text-surface-500 dark:text-surface-400 mb-2">Repartidor</p>
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-kiwi-100 dark:bg-kiwi-900/50 text-kiwi-600 dark:text-kiwi-400 font-bold">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-kiwi-100 dark:bg-kiwi-900/50 text-kiwi-700 dark:text-kiwi-400 font-bold">
                       {selectedWithdrawal.driver.fullName.charAt(0)}
                     </div>
                     <div>
@@ -585,7 +585,7 @@ export default function AdminWithdrawalsPage() {
                         value={transactionId}
                         onChange={(e) => setTransactionId(e.target.value)}
                         placeholder="Ej: SINPE-123456 o BAC-789012"
-                        className="w-full px-4 py-3 rounded-xl bg-surface-50 dark:bg-surface-700 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-kiwi-500 transition-all"
+                        className="w-full px-4 py-3 rounded-xl bg-surface-50 dark:bg-surface-700 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-kiwi-600 transition-all"
                       />
                     </div>
                     <div className="flex gap-3">
@@ -597,7 +597,7 @@ export default function AdminWithdrawalsPage() {
                         <X className="h-4 w-4 inline" /> Rechazar
                       </button>
                       <button
-                        className="flex-1 py-3 px-4 text-sm font-medium bg-kiwi-500 text-white rounded-xl hover:bg-kiwi-600 transition-colors"
+                        className="flex-1 py-3 px-4 text-sm font-medium bg-kiwi-700 text-white rounded-xl hover:bg-kiwi-800 transition-colors"
                         onClick={() => handleApprove(selectedWithdrawal.id)}
                         disabled={actionLoading}
                       >
@@ -646,7 +646,7 @@ export default function AdminWithdrawalsPage() {
                   value={rejectReason}
                   onChange={(e) => setRejectReason(e.target.value)}
                   placeholder="Ej: Datos incorrectos, cuenta no válida, etc."
-                  className="w-full px-4 py-3 rounded-xl bg-surface-50 dark:bg-surface-700 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-red-500 transition-all resize-none h-24"
+                  className="w-full px-4 py-3 rounded-xl bg-surface-50 dark:bg-surface-700 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-red-500 transition-all resize-none h-24"
                 />
                 <div className="flex gap-3 mt-4">
                   <button

@@ -68,14 +68,14 @@ const STATUS_CONFIG: Record<
   in_transit: {
     label: 'En camino',
     icon: 'map',
-    color: 'text-kiwi-600',
+    color: 'text-kiwi-700',
     bgColor: 'bg-kiwi-100',
     description: 'Casi llegando',
   },
   delivered: {
     label: 'Entregado',
     icon: 'party',
-    color: 'text-kiwi-600',
+    color: 'text-kiwi-700',
     bgColor: 'bg-kiwi-100',
     description: 'Pedido entregado',
   },
@@ -193,7 +193,11 @@ export function OfflineOrderTracker({
               <WifiOff className="text-orange-500 h-5 w-5" />
             )}
             {order.syncStatus === 'failed' && (
-              <button onClick={handleSync} className="text-red-500 hover:text-red-600">
+              <button
+                onClick={handleSync}
+                aria-label="Reintentar sincronización del pedido"
+                className="text-red-500 hover:text-red-600"
+              >
                 <RefreshCw className="h-5 w-5" />
               </button>
             )}
@@ -247,7 +251,7 @@ export function OfflineOrderTracker({
           </div>
           <div className="flex justify-between pt-2 mt-2 border-t border-surface-200 dark:border-surface-700">
             <span className="font-semibold text-surface-800 dark:text-surface-200">Total</span>
-            <span className="font-bold text-kiwi-600 dark:text-kiwi-400">
+            <span className="font-bold text-kiwi-700 dark:text-kiwi-400">
               ₡{order.total.toLocaleString()}
             </span>
           </div>
@@ -298,7 +302,7 @@ export function OfflineOrderTracker({
           {order.status === 'draft' && (
             <button
               onClick={() => handleStatusUpdate('pending')}
-              className="flex-1 py-2 rounded-xl bg-kiwi-500 text-white font-medium"
+              className="flex-1 py-2 rounded-xl bg-kiwi-700 text-white font-medium"
             >
               Enviar Pedido
             </button>
@@ -343,7 +347,7 @@ export function OfflineOrderTracker({
           {order.status === 'picked_up' && (
             <button
               onClick={() => handleStatusUpdate('in_transit')}
-              className="flex-1 py-2 rounded-xl bg-kiwi-500 text-white font-medium"
+              className="flex-1 py-2 rounded-xl bg-kiwi-700 text-white font-medium"
             >
               Map En Camino
             </button>
@@ -352,7 +356,7 @@ export function OfflineOrderTracker({
           {order.status === 'in_transit' && (
             <button
               onClick={() => handleStatusUpdate('delivered')}
-              className="flex-1 py-2 rounded-xl bg-kiwi-500 text-white font-medium"
+              className="flex-1 py-2 rounded-xl bg-kiwi-700 text-white font-medium"
             >
               Entregado
             </button>

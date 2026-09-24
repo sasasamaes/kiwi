@@ -237,7 +237,7 @@ export default function ScheduledOrdersPage() {
                             {order.pickupAddress} → {order.deliveryAddress}
                           </p>
                         </div>
-                        <span className="text-lg font-bold text-kiwi-600 dark:text-kiwi-400">
+                        <span className="text-lg font-bold text-kiwi-700 dark:text-kiwi-400">
                           ₡{Number(order.totalAmount).toLocaleString()}
                         </span>
                       </div>
@@ -356,7 +356,7 @@ export default function ScheduledOrdersPage() {
                       <span className="text-surface-500 dark:text-surface-400">
                         <Coins className="h-4 w-4 inline" /> Total:
                       </span>
-                      <span className="font-bold text-kiwi-600 dark:text-kiwi-400">
+                      <span className="font-bold text-kiwi-700 dark:text-kiwi-400">
                         ₡{Number(selectedOrder.totalAmount).toLocaleString()}
                       </span>
                     </div>
@@ -394,7 +394,7 @@ export default function ScheduledOrdersPage() {
                     <p className="text-surface-500 dark:text-surface-400">
                       Esperando propuestas de repartidores...
                     </p>
-                    <p className="text-xs text-surface-400 dark:text-surface-500 mt-1">
+                    <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">
                       Los repartidores verán tu pedido y enviarán propuestas
                     </p>
                   </div>
@@ -440,7 +440,7 @@ export default function ScheduledOrdersPage() {
 
                               {/* Estimated Arrival */}
                               <div className="mt-2 flex items-center gap-2">
-                                <span className="text-sm font-medium text-kiwi-600 dark:text-kiwi-400">
+                                <span className="text-sm font-medium text-kiwi-700 dark:text-kiwi-400">
                                   <Clock className="h-4 w-4 inline" /> Llega en:{' '}
                                   {proposal.estimatedArrival || 'No especificado'}
                                 </span>
@@ -455,7 +455,7 @@ export default function ScheduledOrdersPage() {
 
                               {/* Accept Button */}
                               <motion.button
-                                className="mt-3 w-full rounded-xl bg-kiwi-500 py-2.5 text-sm font-semibold text-white shadow-kiwi hover:bg-kiwi-600 transition-colors"
+                                className="mt-3 w-full rounded-xl bg-kiwi-700 py-2.5 text-sm font-semibold text-white shadow-kiwi hover:bg-kiwi-800 transition-colors"
                                 onClick={() => handleAcceptProposal(proposal.id)}
                                 disabled={acceptingProposal === proposal.id}
                                 whileTap={{ scale: 0.98 }}
