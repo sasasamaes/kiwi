@@ -455,6 +455,14 @@ export default function Home() {
               <span className="font-semibold">Compartir → Agregar a inicio</span>, abrí Kiwi desde
               el ícono nuevo y activá las alertas ahí.
             </p>
+            {pushDebug && (
+              <details className="mt-2 text-xs text-surface-500 dark:text-surface-400">
+                <summary className="font-semibold">Diagnóstico</summary>
+                <pre className="mt-1 whitespace-pre-wrap break-all">
+                  {JSON.stringify(pushDebug, null, 1)}
+                </pre>
+              </details>
+            )}
           </div>
         )}
         {/* iPhone instalado pero viejo de verdad: push requiere iOS 16.4+ */}
