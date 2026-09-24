@@ -84,10 +84,11 @@ function failReason(err: unknown): PushFailReason {
 function failDetail(err: unknown): string | undefined {
   if (err instanceof Error && err.message.startsWith('PUSH:')) {
     const parts = err.message.slice(5).split('|');
-    if (parts.length > 1) return parts.slice(1).join('|').slice(0, 300);
+    // Sin recorte agresivo: el motivo real de FCM viene al final del mensaje.
+    if (parts.length > 1) return parts.slice(1).join('|').slice(0, 600);
     return undefined;
   }
-  if (err instanceof Error && err.message) return err.message.slice(0, 300);
+  if (err instanceof Error && err.message) return err.message.slice(0, 600);
   return undefined;
 }
 

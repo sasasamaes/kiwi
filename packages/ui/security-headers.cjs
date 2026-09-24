@@ -43,8 +43,11 @@ function buildSecurityHeaders({ allowGeolocation = false, apiOrigin } = {}) {
     // next/font inyecta CSS con estilos; React emite atributos style inline.
     "style-src 'self' 'unsafe-inline'",
     // Páginas estáticas/client-side: no hay infraestructura de nonces.
-    // No se permite ningún host de scripts externo.
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+    // gstatic es obligatorio: /firebase-messaging-sw.js hace importScripts()
+    // desde https://www.gstatic.com y el SW se sirve con ESTA misma CSP
+    // (source /:path*). Sin esto el registro del SW falla y FCM reporta
+    // "We are unable to register the default service worker".
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com",
     // Mapas Leaflet: mosaicos OSM + CARTO (respaldo). Sin esto el mapa queda
     // en azul si alguna vez se aplica esta política en vez de la de vercel.json.
     "img-src 'self' data: blob: https://res.cloudinary.com https://*.tile.openstreetmap.org https://tile.openstreetmap.org https://*.basemaps.cartocdn.com",

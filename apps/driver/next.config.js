@@ -77,6 +77,15 @@ const nextConfig = {
           { key: 'Service-Worker-Allowed', value: '/' },
         ],
       },
+      {
+        // FCM background SW: mismo tratamiento que /sw.js (sin caché) +
+        // scope explícito para no desalojar al SW de la PWA (scope '/').
+        source: '/firebase-messaging-sw.js',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=0, must-revalidate' },
+          { key: 'Service-Worker-Allowed', value: '/' },
+        ],
+      },
     ];
   },
 };

@@ -82,13 +82,23 @@ export async function requestNotificationPermission(): Promise<string> {
     // Service worker explícito: sin esto getToken falla cuando el navegador
     // todavía no registró /firebase-messaging-sw.js (el push en background
     // con la app cerrada depende de ese archivo).
+    // Scope angosto = el mismo que usa FCM por defecto: coexiste con el SW
+    // de la PWA (/sw.js, scope '/') en vez de desalojarlo.
+    const FCM_SW_SCOPE = '/firebase-cloud-messaging-push-scope';
     let registration: ServiceWorkerRegistration | undefined;
+    let swErrorDetail: string | undefined;
     try {
       if ('serviceWorker' in navigator) {
-        registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+        registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+          scope: FCM_SW_SCOPE,
+        });
       }
     } catch (swError) {
-      console.warn('SW registration failed, trying getToken anyway:', swError);
+      // NO seguir a ciegas: si el registro explícito falla (CSP, 404, MIME),
+      // getToken intentará su registro por defecto y fallará igual pero con
+      // un mensaje que esconde la causa original. Se guarda y se anexa abajo.
+      swErrorDetail = swError instanceof Error ? swError.message : String(swError);
+      console.warn('SW registration failed:', swErrorDetail);
     }
 
     const { getToken } = await import('firebase/messaging');
@@ -101,9 +111,12 @@ export async function requestNotificationPermission(): Promise<string> {
     } catch (e) {
       // El error real de FCM (sender mismatch, SW con MISSING, red) se perdía
       // y la UI mostraba un genérico. Se propaga tras '|' para diagnóstico.
+      // Sin recortar agresivo: el motivo real viene AL FINAL del mensaje
+      // ("with script ('...'): <causa>") y el slice(0,200) lo decapitaba.
       const detail = e instanceof Error ? e.message : String(e);
-      console.error('[FCM] getToken failed:', detail);
-      throw new Error(`PUSH:token-failed|${detail.slice(0, 200)}`);
+      const withSw = swErrorDetail ? `${detail} [sw:${swErrorDetail}]` : detail;
+      console.error('[FCM] getToken failed:', withSw);
+      throw new Error(`PUSH:token-failed|${withSw.slice(0, 600)}`);
     }
     // getToken puede resolver vacío en iOS sin tirar error: distinguirlo
     // del throw con el estado del SW para el diagnóstico.
@@ -121,9 +134,10 @@ export async function requestNotificationPermission(): Promise<string> {
     console.error('Failed to get notification permission:', error);
     // Este wrap genérico era el agujero negro: cualquier error fuera del
     // esquema PUSH: (import dinámico, requestPermission nativo, etc.)
-    // llegaba a la UI sin detalle. Ahora lleva el mensaje real.
+    // llegaba a la UI sin detalle. Ahora lleva el mensaje real (sin recorte
+    // agresivo: la causa viene al final del mensaje de FCM).
     const detail = error instanceof Error ? error.message : String(error);
-    throw new Error(`PUSH:token-failed|externo:${detail.slice(0, 200)}`);
+    throw new Error(`PUSH:token-failed|externo:${detail.slice(0, 500)}`);
   }
 }
 

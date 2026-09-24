@@ -53,6 +53,8 @@ function pushErrorMessage(reason?: string): string {
       return 'Falta configuración del servidor para alertas. Avisanos por WhatsApp.';
     case 'sync-failed':
       return 'Se activó en el celu pero no llegó al servidor. Revisá tu conexión y reintentá.';
+    case 'token-failed':
+      return 'No se pudo registrar este celu para alertas. Revisá tu conexión y reintentá.';
     default:
       return 'No se pudo completar la activación. Reintentá con buena conexión.';
   }
