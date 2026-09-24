@@ -65,7 +65,7 @@ interface UsePushNotificationsOptions {
 
 function failReason(err: unknown): PushFailReason {
   if (err instanceof Error && err.message.startsWith('PUSH:')) {
-    const code = err.message.slice(5) as PushFailReason;
+    const code = err.message.slice(5).split('|')[0] as PushFailReason;
     if (
       code === 'denied' ||
       code === 'unsupported' ||
@@ -78,6 +78,17 @@ function failReason(err: unknown): PushFailReason {
     }
   }
   return 'token-failed';
+}
+
+/** Detalle técnico tras '|' (ej. error real de FCM) para diagnóstico en UI. */
+function failDetail(err: unknown): string | undefined {
+  if (err instanceof Error && err.message.startsWith('PUSH:')) {
+    const parts = err.message.slice(5).split('|');
+    if (parts.length > 1) return parts.slice(1).join('|').slice(0, 300);
+    return undefined;
+  }
+  if (err instanceof Error && err.message) return err.message.slice(0, 300);
+  return undefined;
 }
 
 export function usePushNotifications(options: UsePushNotificationsOptions = {}) {
@@ -151,10 +162,12 @@ export function usePushNotifications(options: UsePushNotificationsOptions = {}) 
   })();
 
   // Request permission and register token. Devuelve el motivo exacto para
-  // mostrar el paso que falló (permiso vs token vs servidor).
+  // mostrar el paso que falló (permiso vs token vs servidor) más detalle
+  // técnico cuando existe (error real de FCM tras getToken).
   const requestPermission = useCallback(async (): Promise<{
     ok: boolean;
     reason?: PushFailReason;
+    detail?: string;
   }> => {
     if (!isSupported) {
       console.log('Notifications not supported');
@@ -187,7 +200,7 @@ export function usePushNotifications(options: UsePushNotificationsOptions = {}) 
       return { ok: true };
     } catch (error) {
       console.error('Failed to request notification permission:', error);
-      return { ok: false, reason: failReason(error) };
+      return { ok: false, reason: failReason(error), detail: failDetail(error) };
     }
   }, [isSupported, isAuthenticated, user]);
 

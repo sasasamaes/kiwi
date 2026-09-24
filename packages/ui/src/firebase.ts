@@ -83,8 +83,12 @@ export async function requestNotificationPermission(): Promise<string> {
         vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
         ...(registration ? { serviceWorkerRegistration: registration } : {}),
       });
-    } catch {
-      throw new Error('PUSH:token-failed');
+    } catch (e) {
+      // El error real de FCM (sender mismatch, SW con MISSING, red) se perdía
+      // y la UI mostraba un genérico. Se propaga tras '|' para diagnóstico.
+      const detail = e instanceof Error ? e.message : String(e);
+      console.error('[FCM] getToken failed:', detail);
+      throw new Error(`PUSH:token-failed|${detail.slice(0, 200)}`);
     }
     if (!token) throw new Error('PUSH:token-failed');
 

@@ -83,6 +83,8 @@ export default function Home() {
   const [pushBusy, setPushBusy] = useState(false);
   const [pushTesting, setPushTesting] = useState(false);
   const [pushTest, setPushTest] = useState<string | null>(null);
+  const [pushDetail, setPushDetail] = useState<string | null>(null);
+  const [pushTokenMissing, setPushTokenMissing] = useState(false);
 
   const tabs = [
     { id: 'all' as const, label: 'Todos', icon: ClipboardList },
@@ -442,6 +444,12 @@ export default function Home() {
         {pageError && (
           <div className="mb-4 rounded-xl bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 px-4 py-3 text-sm text-red-600 dark:text-red-400">
             {pageError}
+            {pushDetail && (
+              <details className="mt-2 text-xs">
+                <summary className="font-semibold">Diagnóstico</summary>
+                <pre className="mt-1 whitespace-pre-wrap break-all">{pushDetail}</pre>
+              </details>
+            )}
           </div>
         )}
         {/* iPhone sin instalar: el push es imposible en Safari → guía */}
@@ -455,6 +463,12 @@ export default function Home() {
               <span className="font-semibold">Compartir → Agregar a inicio</span>, abrí Kiwi desde
               el ícono nuevo y activá las alertas ahí.
             </p>
+            {pushDebug && !pushDebug.hasNotification && !pushDebug.hasServiceWorker && (
+              <p className="mt-2 font-semibold">
+                ¿Ves «Modo hermético activado» en Safari? Ese modo le bloquea las alertas. Excluí a
+                Kiwi: Ajustes → Privacidad y seguridad → Modo hermético → Configurar navegación web.
+              </p>
+            )}
             {pushDebug && (
               <details className="mt-2 text-xs text-surface-500 dark:text-surface-400">
                 <summary className="font-semibold">Diagnóstico</summary>
@@ -472,13 +486,13 @@ export default function Home() {
             General → Actualización.
           </div>
         )}
-        {/* iPhone nuevo pero perfil instalado sin APIs de push: reinstalar el ícono lo arregla */}
+        {/* iPhone nuevo pero sin APIs de push en el celu: típico Modo hermético (reinstalar no ayuda) */}
         {!pushNeedsInstall && pushUnsupported === 'ios-push-unavailable' && (
           <div className="mb-4 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 px-4 py-3 text-xs text-amber-800 dark:text-amber-300">
-            Tu iOS ({pushDebug?.iosVersion ?? '…'}) ya soporta alertas, pero esta instalación quedó
-            sin permisos del sistema. Borrá el ícono de Kiwi y agregalo de nuevo: en Safari tocá{' '}
-            <span className="font-semibold">Compartir → Agregar a inicio</span>, abrilo desde el
-            ícono nuevo y activá las alertas ahí. Igual te llegan los pedidos con la app abierta.
+            Tu iOS ({pushDebug?.iosVersion ?? '…'}) ya soporta alertas, pero el celu las tiene
+            bloqueadas. Si ves «Modo hermético activado» en Safari, excluí a Kiwi: Ajustes →
+            Privacidad y seguridad → Modo hermético → Configurar navegación web. Igual te llegan los
+            pedidos con la app abierta.
             {pushDebug && (
               <details className="mt-2">
                 <summary className="font-semibold">Diagnóstico</summary>
@@ -505,10 +519,14 @@ export default function Home() {
               disabled={pushBusy}
               onClick={async () => {
                 setPushBusy(true);
+                setPushDetail(null);
                 try {
                   const res = await requestPushPermission();
                   if (!res.ok) {
                     setPageError(pushErrorMessage(res.reason));
+                    setPushDetail(res.detail ?? null);
+                  } else {
+                    setPushTokenMissing(false);
                   }
                 } finally {
                   setPushBusy(false);
@@ -548,10 +566,13 @@ export default function Home() {
                 try {
                   const r = await api.sendTestPush();
                   if (!r.fcmConfigured) {
+                    setPushTokenMissing(false);
                     setPushTest('El servidor no tiene push configurado. Avisanos por WhatsApp.');
                   } else if (r.tokens === 0) {
-                    setPushTest('Este celu no registró token: desactivá y reactivá las alertas.');
+                    setPushTokenMissing(true);
+                    setPushTest('Este celu no registró token: tocá Reactivar abajo.');
                   } else {
+                    setPushTokenMissing(false);
                     const bad = r.results.filter((x) => !x.ok);
                     setPushTest(
                       bad.length === 0
@@ -568,6 +589,33 @@ export default function Home() {
             >
               {pushTesting ? 'Probando…' : 'Probar alerta'}
             </TapButton>
+            {pushTokenMissing && (
+              <TapButton
+                variant="gradient"
+                haptic
+                className="mt-2 h-11 w-full rounded-xl text-sm"
+                disabled={pushBusy}
+                onClick={async () => {
+                  setPushBusy(true);
+                  setPushDetail(null);
+                  setPageError(null);
+                  try {
+                    const res = await requestPushPermission();
+                    if (res.ok) {
+                      setPushTokenMissing(false);
+                      setPushTest('Token registrado. Tocá Probar alerta de nuevo.');
+                    } else {
+                      setPageError(pushErrorMessage(res.reason));
+                      setPushDetail(res.detail ?? null);
+                    }
+                  } finally {
+                    setPushBusy(false);
+                  }
+                }}
+              >
+                {pushBusy ? 'Reactivando…' : 'Reactivar alertas'}
+              </TapButton>
+            )}
           </div>
         )}
         {/* Status Toggle */}
