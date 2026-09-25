@@ -27,15 +27,17 @@ const messaging = firebase.messaging();
 messaging.onBackgroundMessage((payload) => {
   console.log('[SW] Background message received:', payload);
 
-  const notificationTitle = payload.notification?.title || '🥝 Kiwi';
+  // Data-only: ver driver template (sin bloque notification no hay doble banner).
+  const notificationTitle =
+    payload.notification?.title || payload.data?.title || '🥝 Kiwi';
   // Colapso: mismo tag reemplaza en vez de apilar (ver driver template).
   const orderId = payload.data?.orderId;
   const type = payload.data?.type || 'general';
   const notificationOptions = {
-    body: payload.notification?.body || 'Tienes una nueva notificación',
+    body: payload.notification?.body || payload.data?.body || 'Tienes una nueva notificación',
     icon: '/icon.png',
     badge: '/icon.png',
-    image: payload.notification?.image,
+    image: payload.notification?.image || payload.data?.image,
     data: payload.data,
     vibrate: [200, 100, 200],
     tag: orderId || `kiwi-${type}`,

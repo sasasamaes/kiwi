@@ -286,14 +286,19 @@ export function usePushNotifications(options: UsePushNotificationsOptions = {}) 
       // Banner del sistema solo con la pestaña oculta: con la app visible el
       // popup del socket ya avisa (sin esto cada pedido alerta 2-3 veces:
       // popup + banner + push del SW). tag = colapsa reintentos del pedido.
+      // Data-only: título/cuerpo llegan en data (sin bloque notification).
       if (Notification.permission === 'granted' && document.hidden) {
-        const notification = new Notification(payload.notification?.title || 'Kiwi', {
-          body: payload.notification?.body,
-          icon: '/icon.png',
-          badge: '/icon.png',
-          data: payload.data,
-          tag: payload.data?.orderId ?? 'kiwi-notification',
-        });
+        const orderId = payload.data?.orderId;
+        const notification = new Notification(
+          payload.notification?.title || payload.data?.title || 'Kiwi',
+          {
+            body: payload.notification?.body || payload.data?.body,
+            icon: '/icon.png',
+            badge: '/icon.png',
+            data: payload.data,
+            tag: orderId || `kiwi-${payload.data?.type || 'general'}`,
+          },
+        );
 
         notification.onclick = () => {
           window.focus();

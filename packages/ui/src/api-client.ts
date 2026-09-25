@@ -546,6 +546,7 @@ class ApiClient {
     return this.request<{
       fcmConfigured: boolean;
       tokens: number;
+      sent: number;
       results: Array<{ token: string; ok: boolean; error?: string }>;
     }>('/notifications/test-push', {
       method: 'POST',

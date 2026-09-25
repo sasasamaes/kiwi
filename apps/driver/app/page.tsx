@@ -595,7 +595,7 @@ export default function Home() {
                     const bad = r.results.filter((x) => !x.ok);
                     setPushTest(
                       bad.length === 0
-                        ? 'Te enviamos una prueba a este celu. Revisá las notificaciones.'
+                        ? `Prueba enviada ${r.sent ?? 1} vez a este celu. Si ves 2 banners, el duplicado está en el celu.`
                         : `Falló el envío (${bad[0]?.error ?? 'error'}). Reinstalá la app y reactivá.`,
                     );
                   }

@@ -49,7 +49,7 @@ export default function Dashboard() {
         ...prev,
         {
           type: 'info',
-          message: payload.notification?.body || 'Nueva notificación',
+          message: payload.notification?.body || payload.data?.body || 'Nueva notificación',
           time: new Date(),
         },
       ]);

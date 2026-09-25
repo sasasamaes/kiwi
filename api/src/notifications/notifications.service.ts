@@ -194,12 +194,7 @@ export class NotificationsService {
       try {
         const resp = await this.fcmAdmin.send({
           topic: topicName,
-          notification: {
-            title: notification.title,
-            body: notification.body,
-            imageUrl: notification.imageUrl,
-          },
-          data: notification.data ?? {},
+          data: this.toDataPayload(notification),
         });
         delivered = 1; // FCM confirma aceptación del mensaje al topic
         this.logger.log(`Published to ${topicName}: ${resp}`);
@@ -299,6 +294,24 @@ export class NotificationsService {
     );
   }
 
+  /**
+   * Payload data-only: título/cuerpo viajan en `data` y el SW los muestra
+   * con showNotification. NO se manda bloque `notification`: con bloque, el
+   * SDK de FCM muestra su propio banner ADEMÁS del nuestro (1 envío = 2
+   * banners en el celu). Todos los valores de data deben ser strings.
+   */
+  private toDataPayload(notification: PushNotification): Record<string, string> {
+    const data: Record<string, string> = {
+      title: notification.title,
+      body: notification.body,
+    };
+    if (notification.imageUrl) data.image = notification.imageUrl;
+    for (const [k, v] of Object.entries(notification.data ?? {})) {
+      data[k] = typeof v === 'string' ? v : String(v ?? '');
+    }
+    return data;
+  }
+
   /** Push real 1:1 a todos los tokens registrados del usuario. */
   private async sendPushToTokens(userId: string, notification: PushNotification) {
     if (!this.fcmAdmin) return;
@@ -313,17 +326,13 @@ export class NotificationsService {
       const unique = [...new Set(tokens.map((t) => t.token))];
       if (unique.length === 0) return;
 
+      const data = this.toDataPayload(notification);
       const expired: string[] = [];
       for (const token of unique) {
         try {
           await this.fcmAdmin.send({
             token,
-            notification: {
-              title: notification.title,
-              body: notification.body,
-              imageUrl: notification.imageUrl,
-            },
-            data: notification.data ?? {},
+            data,
             webpush: {
               fcmOptions: {
                 link: notification.data?.orderId ? `/tracking/${notification.data.orderId}` : '/',
@@ -668,6 +677,7 @@ export class NotificationsService {
   async sendTestPush(userId: string): Promise<{
     fcmConfigured: boolean;
     tokens: number;
+    sent: number;
     results: Array<{ token: string; ok: boolean; error?: string }>;
   }> {
     const results: Array<{ token: string; ok: boolean; error?: string }> = [];
@@ -678,7 +688,7 @@ export class NotificationsService {
     });
 
     if (!this.fcmAdmin) {
-      return { fcmConfigured: false, tokens: tokens.length, results };
+      return { fcmConfigured: false, tokens: tokens.length, sent: 0, results };
     }
 
     // Solo al token más reciente: el botón Probar está EN este celu y el
@@ -687,17 +697,19 @@ export class NotificationsService {
     // mismo iPhone). Los pushes reales sí van a todos los tokens.
     const latest = tokens.slice(0, 1);
     const expired: string[] = [];
+    // Data-only + conteo de envíos en la respuesta: el diagnóstico muestra
+    // "1 envío" y si igual llegan 2, el duplicado es 100% del celu.
+    const testPayload = {
+      title: '🥝 Prueba de alertas',
+      body: 'Si lees esto, las alertas funcionan en este dispositivo.',
+      data: { type: 'test', testId: `${Date.now()}` },
+    };
+    let sent = 0;
     for (const { token, platform } of latest) {
       const short = `…${token.slice(-8)} (${platform})`;
       try {
-        await this.fcmAdmin.send({
-          token,
-          notification: {
-            title: '🥝 Prueba de alertas',
-            body: 'Si lees esto, las alertas funcionan en este dispositivo.',
-          },
-          data: { type: 'test' },
-        });
+        await this.fcmAdmin.send({ token, data: this.toDataPayload(testPayload) });
+        sent++;
         results.push({ token: short, ok: true });
       } catch (error: any) {
         const code = error?.errorInfo?.code ?? error?.code ?? String(error);
@@ -715,6 +727,6 @@ export class NotificationsService {
       await this.prisma.deviceToken.deleteMany({ where: { token: { in: expired } } });
       this.logger.log(`Removed ${expired.length} expired device tokens (test push)`);
     }
-    return { fcmConfigured: true, tokens: tokens.length, results };
+    return { fcmConfigured: true, tokens: tokens.length, sent, results };
   }
 }
