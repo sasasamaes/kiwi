@@ -90,6 +90,22 @@ export class NotificationsController {
     return this.notificationsService.sendTestPush(user.sub);
   }
 
+  @Get('device-tokens')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List my push registrations (masked, diagnostics)' })
+  async listMyTokens(@CurrentUser() user: any) {
+    return this.notificationsService.listMyTokens(user.sub);
+  }
+
+  @Post('device-tokens/prune')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Keep newest registration per platform, delete the rest' })
+  async pruneMyTokens(@CurrentUser() user: any) {
+    return this.notificationsService.pruneMyTokens(user.sub);
+  }
+
   // ============================================
   // 📡 TOPICS
   // ============================================

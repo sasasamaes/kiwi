@@ -5,6 +5,9 @@ import type { Response } from 'express';
 import { HealthService, DriftReport, SocketTransportReport } from './health.service';
 import { PrismaService } from '../prisma/prisma.service';
 
+// Arranque del proceso: con RENDER_GIT_COMMIT identifica el deploy vivo.
+const startedAt = new Date();
+
 @ApiTags('Health')
 @Controller('health')
 export class HealthController {
@@ -25,10 +28,18 @@ export class HealthController {
   })
   async getHealth(@Res({ passthrough: true }) res: Response) {
     const socket = await this.healthService.getSocketTransportReport();
+    // Versión del código vivo: permite confirmar desde el celu qué deploy
+    // está corriendo (Render inyecta RENDER_GIT_COMMIT al buildear).
+    const version = {
+      commit: (process.env.RENDER_GIT_COMMIT ?? 'local').slice(0, 7),
+      startedAt: startedAt.toISOString(),
+    };
     if (socket.status === 'error') {
-      return res.status(503).json({ status: 'error', socket, timestamp: new Date().toISOString() });
+      return res
+        .status(503)
+        .json({ status: 'error', socket, version, timestamp: new Date().toISOString() });
     }
-    return { status: 'ok', socket, timestamp: new Date().toISOString() };
+    return { status: 'ok', socket, version, timestamp: new Date().toISOString() };
   }
 
   /**

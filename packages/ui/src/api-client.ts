@@ -552,6 +552,21 @@ class ApiClient {
     });
   }
 
+  /** Mis registros push (enmascarados) para diagnosticar duplicados. */
+  async getDeviceTokens() {
+    return this.request<
+      Array<{ short: string; platform: string; lastUsedAt: string; createdAt: string }>
+    >('/notifications/device-tokens');
+  }
+
+  /** Conserva el registro más nuevo por plataforma, borra el resto. */
+  async pruneDeviceTokens() {
+    return this.request<{ removed: number; remaining: number }>(
+      '/notifications/device-tokens/prune',
+      { method: 'POST' },
+    );
+  }
+
   /** Catálogo de topics con las preferencias efectivas del usuario. */
   async getNotificationTopics() {
     return this.request<

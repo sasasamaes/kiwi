@@ -88,6 +88,23 @@ export default function Home() {
   const [pushTest, setPushTest] = useState<string | null>(null);
   const [pushDetail, setPushDetail] = useState<string | null>(null);
   const [pushTokenMissing, setPushTokenMissing] = useState(false);
+  const [deviceTokens, setDeviceTokens] = useState<
+    Array<{ short: string; platform: string; lastUsedAt: string; createdAt: string }>
+  >([]);
+  const [pruningTokens, setPruningTokens] = useState(false);
+
+  const refreshDeviceTokens = useCallback(async () => {
+    try {
+      setDeviceTokens(await api.getDeviceTokens());
+    } catch {
+      // best-effort: el diagnóstico no bloquea nada
+    }
+  }, []);
+
+  // Al tener permiso, traer los registros para detectar duplicados.
+  useEffect(() => {
+    if (user && pushPermission === 'granted') void refreshDeviceTokens();
+  }, [user, pushPermission, refreshDeviceTokens]);
 
   const tabs = [
     { id: 'all' as const, label: 'Todos', icon: ClipboardList },
@@ -574,6 +591,7 @@ export default function Home() {
                     setPushTest('Este celu no registró token: tocá Reactivar abajo.');
                   } else {
                     setPushTokenMissing(false);
+                    void refreshDeviceTokens();
                     const bad = r.results.filter((x) => !x.ok);
                     setPushTest(
                       bad.length === 0
@@ -590,6 +608,39 @@ export default function Home() {
             >
               {pushTesting ? 'Probando…' : 'Probar alerta'}
             </TapButton>
+            {/* Registros duplicados: si hay más de 1, cada push llega N veces */}
+            {deviceTokens.length > 1 && (
+              <div className="mt-3 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 px-3 py-2">
+                <p className="text-xs text-amber-800 dark:text-amber-300">
+                  Tenés {deviceTokens.length} registros (
+                  {deviceTokens.map((t) => t.platform).join(', ')}): cada alerta te llega{' '}
+                  {deviceTokens.length} veces.
+                </p>
+                <TapButton
+                  variant="secondary"
+                  className="mt-2 h-9 w-full rounded-xl text-xs"
+                  disabled={pruningTokens}
+                  onClick={async () => {
+                    setPruningTokens(true);
+                    try {
+                      const r = await api.pruneDeviceTokens();
+                      setPushTest(
+                        r.removed > 0
+                          ? `Borramos ${r.removed} registro(s) viejo(s). Probá de nuevo.`
+                          : 'Ya hay un solo registro. Probá de nuevo.',
+                      );
+                      await refreshDeviceTokens();
+                    } catch {
+                      setPushTest('No se pudo limpiar. Revisá tu conexión.');
+                    } finally {
+                      setPruningTokens(false);
+                    }
+                  }}
+                >
+                  {pruningTokens ? 'Limpiando…' : 'Limpiar duplicados'}
+                </TapButton>
+              </div>
+            )}
             {pushTokenMissing && (
               <TapButton
                 variant="gradient"
@@ -605,6 +656,7 @@ export default function Home() {
                     if (res.ok) {
                       setPushTokenMissing(false);
                       setPushTest('Token registrado. Tocá Probar alerta de nuevo.');
+                      void refreshDeviceTokens();
                     } else {
                       setPageError(pushErrorMessage(res.reason));
                       setPushDetail(res.detail ?? null);

@@ -616,6 +616,49 @@ export class NotificationsService {
   }
 
   /**
+   * Diagnóstico: registros push de MI usuario (token enmascarado).
+   * Permite ver desde la app cuántas instalaciones vivas hay — si hay 2+,
+   * cada push real llega N veces al mismo celu.
+   */
+  async listMyTokens(userId: string) {
+    const tokens = await this.prisma.deviceToken.findMany({
+      where: { userId },
+      orderBy: { lastUsedAt: 'desc' },
+      select: { platform: true, lastUsedAt: true, createdAt: true, token: true },
+    });
+    return tokens.map((t) => ({
+      short: `…${t.token.slice(-8)}`,
+      platform: t.platform,
+      lastUsedAt: t.lastUsedAt,
+      createdAt: t.createdAt,
+    }));
+  }
+
+  /**
+   * Limpieza manual: conserva el registro más reciente por plataforma y
+   * borra el resto. Es lo mismo que hace el registro automático, pero a
+   * demanda (botón "Limpiar duplicados").
+   */
+  async pruneMyTokens(userId: string) {
+    const tokens = await this.prisma.deviceToken.findMany({
+      where: { userId },
+      orderBy: { lastUsedAt: 'desc' },
+      select: { token: true, platform: true },
+    });
+    const seen = new Set<string>();
+    const stale: string[] = [];
+    for (const t of tokens) {
+      if (seen.has(t.platform)) stale.push(t.token);
+      else seen.add(t.platform);
+    }
+    if (stale.length > 0) {
+      await this.prisma.deviceToken.deleteMany({ where: { token: { in: stale } } });
+      this.logger.log(`Manual prune: removed ${stale.length} tokens for user ${userId}`);
+    }
+    return { removed: stale.length, remaining: tokens.length - stale.length };
+  }
+
+  /**
    * Autodiagnóstico de push para el propio usuario (botón "Probar" de la
    * app). Devuelve DÓNDE se corta la cadena: sin tokens registrados, FCM
    * sin configurar en el servidor, o el error exacto de FCM por token.
