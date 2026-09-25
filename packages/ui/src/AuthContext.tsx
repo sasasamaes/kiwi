@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState, ReactNode } from 'react';
 import { api, User } from './api-client';
 import { socketClient } from './socket-client';
 import { analytics } from './analytics';
@@ -73,21 +73,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        loading,
-        login,
-        register,
-        logout,
-        updateUser,
-        isAuthenticated: !!user,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
+  // Memo: sin esto cada render del provider re-renderiza todas las
+  // páginas que usan useAuth (todas) aunque user/loading no cambien.
+  const value = useMemo(
+    () => ({
+      user,
+      loading,
+      login,
+      register,
+      logout,
+      updateUser,
+      isAuthenticated: !!user,
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [user, loading],
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

@@ -230,6 +230,7 @@ model KYCVerification {
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([status, createdAt])
   @@map("kyc_verifications")
 }
 
@@ -321,6 +322,10 @@ model Order {
   @@index([driverId, status])
   @@index([driverId, createdAt])
   @@index([status, createdAt])
+  @@index([merchantId, status, createdAt])
+  @@index([driverId, status, createdAt])
+  @@index([driverId, status, deliveredAt])
+  @@index([status, deliveredAt])
   @@map("orders")
 }
 
@@ -354,6 +359,8 @@ model DriverProposal {
   order  Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
   driver DriverProfile @relation(fields: [driverId], references: [id], onDelete: Cascade)
 
+  @@index([orderId, driverId])
+  @@index([orderId, status])
   @@map("driver_proposals")
 }
 
@@ -394,6 +401,11 @@ model Payment {
   // Relations
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
+  @@index([status, createdAt])
+  @@index([method, status, createdAt])
+  @@index([onvoPaymentId])
+  @@index([onvoSessionId])
+  @@index([cryptoWalletAddress, status])
   @@map("payments")
 }
 
@@ -430,6 +442,9 @@ model Rating {
   driver   DriverProfile   @relation(fields: [driverId], references: [id])
   merchant MerchantProfile @relation(fields: [merchantId], references: [id])
 
+  @@index([orderId])
+  @@index([driverId, createdAt])
+  @@index([merchantId, createdAt])
   @@map("ratings")
 }
 
@@ -507,6 +522,8 @@ model Withdrawal {
   // Relations
   driver DriverProfile @relation(fields: [driverId], references: [id])
 
+  @@index([driverId, status, createdAt])
+  @@index([status, createdAt])
   @@map("withdrawals")
 }
 
@@ -596,6 +613,8 @@ model OrderItem {
   order    Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
   menuItem MenuItem? @relation(fields: [menuItemId], references: [id])
 
+  @@index([orderId])
+  @@index([menuItemId])
   @@map("order_items")
 }
 
@@ -614,6 +633,7 @@ model Notification {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, read, createdAt])
+  @@index([userId, type, createdAt])
   @@map("notifications")
 }
 
@@ -678,6 +698,7 @@ model TrafficAlert {
   alternativeTimeSaved   Int?      @map("alternative_time_saved")
   createdAt              DateTime  @default(now()) @map("created_at")
 
+  @@index([expiresAt])
   @@map("traffic_alerts")
 }
 
@@ -691,6 +712,8 @@ model TrafficAlertNotification {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@unique([driverId, alertId])
+  @@index([driverId, dismissed])
+  @@index([alertId])
   @@map("traffic_alert_notifications")
 }
 
@@ -705,5 +728,6 @@ model ContactMessage {
   status    String   @default("new") // new | read | resolved
   createdAt DateTime @default(now()) @map("created_at")
 
+  @@index([status, createdAt])
   @@map("contact_messages")
 }

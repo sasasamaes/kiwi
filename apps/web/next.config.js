@@ -4,7 +4,7 @@ const { buildSecurityHeaders } = require('../../packages/ui/security-headers.cjs
 const nextConfig = {
   transpilePackages: ['@kiwi/ui', '@kiwi/types'],
   experimental: {
-    optimizePackageImports: ['lucide-react'],
+    optimizePackageImports: ['lucide-react', 'framer-motion'],
   },
   eslint: {
     // Lint runs separately (npm run lint); pre-existing violations were blocking deploys

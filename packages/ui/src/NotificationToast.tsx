@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, createContext, useContext, ReactNode } from 'react';
+import { useState, useMemo, useCallback, createContext, useContext, ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { playNotificationSound, type NotificationSoundKind } from './notification-sound';
 import { buildNotificationKey, shouldNotify } from './notification-dedupe';
@@ -75,10 +75,13 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     setNotifications([]);
   }, []);
 
+  const value = useMemo(
+    () => ({ notifications, addNotification, removeNotification, clearNotifications }),
+    [notifications, addNotification, removeNotification, clearNotifications],
+  );
+
   return (
-    <NotificationContext.Provider
-      value={{ notifications, addNotification, removeNotification, clearNotifications }}
-    >
+    <NotificationContext.Provider value={value}>
       {children}
       <NotificationToast />
     </NotificationContext.Provider>

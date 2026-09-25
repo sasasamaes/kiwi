@@ -97,16 +97,20 @@ describe('SettingsService', () => {
     prisma.platformSetting.findMany.mockResolvedValue([]);
     await expect(service.getDriverCommissionPct()).resolves.toBe(15);
 
+    // La caché de 45s es por diseño en prod; en test se limpia entre lecturas.
+    service.clearCache();
     prisma.platformSetting.findMany.mockResolvedValue([
       { key: 'platform', value: { commission: 20 } },
     ]);
     await expect(service.getDriverCommissionPct()).resolves.toBe(20);
 
+    service.clearCache();
     prisma.platformSetting.findMany.mockResolvedValue([
       { key: 'platform', value: { commission: 999 } },
     ]);
     await expect(service.getDriverCommissionPct()).resolves.toBe(100);
 
+    service.clearCache();
     prisma.platformSetting.findMany.mockResolvedValue([
       { key: 'platform', value: { commission: 'no-numérico' } },
     ]);

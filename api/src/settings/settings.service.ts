@@ -94,8 +94,34 @@ const KNOWN_KEYS = ['platform', 'payments', 'notifications', 'security', 'operat
 export class SettingsService {
   constructor(private prisma: PrismaService) {}
 
+  // Caché en memoria: getAll se llama en cada POST /orders y checkout.
+  // TTL 45s + single-flight; se invalida en saveAll. La tasa queda
+  // guardada por pedido, así que un stale de 45s es seguro.
+  private cached: { at: number; value: PlatformSettings } | null = null;
+  private inflight: Promise<PlatformSettings> | null = null;
+  private static readonly TTL_MS = 45_000;
+
   /** Todo el objeto fusionado sobre los defaults (lo que ve el admin). */
   async getAll(): Promise<PlatformSettings> {
+    const now = Date.now();
+    if (this.cached && now - this.cached.at < SettingsService.TTL_MS) {
+      return this.cached.value;
+    }
+    if (this.inflight) return this.inflight;
+    this.inflight = this.loadAll().then((value) => {
+      this.cached = { at: Date.now(), value };
+      this.inflight = null;
+      return value;
+    });
+    try {
+      return await this.inflight;
+    } catch (e) {
+      this.inflight = null;
+      throw e;
+    }
+  }
+
+  private async loadAll(): Promise<PlatformSettings> {
     const rows = await this.prisma.platformSetting.findMany();
     const stored: Record<string, any> = {};
     for (const r of rows) stored[r.key] = r.value;
@@ -155,8 +181,15 @@ export class SettingsService {
         }),
       ),
     );
+    this.cached = { at: Date.now(), value: next };
     return next;
   }
+  /** Limpia la caché en memoria (tests y casos donde se escribió por fuera). */
+  clearCache(): void {
+    this.cached = null;
+    this.inflight = null;
+  }
+
   /** Métodos habilitados (público: lo usan los checkouts para ocultar). */
   async getPaymentAvailability() {
     const all = await this.getAll();

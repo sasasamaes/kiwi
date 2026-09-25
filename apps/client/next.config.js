@@ -6,7 +6,7 @@ const nextConfig = {
   transpilePackages: ['@kiwi/ui', '@kiwi/types'],
   experimental: {
     // Igual que driver/web: evita 300KB+ de iconos no usados en el bundle.
-    optimizePackageImports: ['lucide-react'],
+    optimizePackageImports: ['lucide-react', 'framer-motion'],
   },
   eslint: {
     // Lint runs separately (npm run lint); pre-existing violations were blocking deploys

@@ -207,16 +207,13 @@ export default function Home() {
   useEffect(() => {
     const fetchDriverData = async () => {
       try {
-        const profile = await api.getDriverProfile();
-        let earnings = 0;
-        let earnedTrips = 0;
-        try {
-          const e = await api.getDriverEarnings('all');
-          earnings = Number(e?.totalEarnings || 0);
-          earnedTrips = Number(e?.totalTrips || 0);
-        } catch {
-          // Ganancias opcionales: el resto del dashboard igual carga
-        }
+        // Paralelo: perfil + ganancias no dependen entre sí (antes 2 RTT en serie).
+        const [profile, earningsRes] = await Promise.all([
+          api.getDriverProfile(),
+          api.getDriverEarnings('all').catch(() => null),
+        ]);
+        const earnings = Number(earningsRes?.totalEarnings || 0);
+        const earnedTrips = Number(earningsRes?.totalTrips || 0);
         setStats({
           trips: Math.max(
             Number(profile.totalTrips || 0),
@@ -228,13 +225,13 @@ export default function Home() {
         setIsOnline(profile.status === 'available');
         // Offline = fuera de la lista: no se piden ni se muestran disponibles.
         // El backend además solo targetea a disponibles por socket/push.
-        if (profile.status === 'available') {
-          await fetchAvailableOrders();
-        } else {
-          setAvailableOrders([]);
-          setNewOrderAlert(null);
-        }
-        await fetchActiveOrders();
+        // Disponibles + activos en paralelo (antes 2 RTT en serie).
+        await Promise.all([
+          profile.status === 'available'
+            ? fetchAvailableOrders()
+            : (setAvailableOrders([]), setNewOrderAlert(null)),
+          fetchActiveOrders(),
+        ]);
       } catch (error) {
         console.error('Failed to fetch driver data:', error);
       } finally {

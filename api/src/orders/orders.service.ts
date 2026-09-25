@@ -1150,15 +1150,16 @@ export class OrdersService {
     };
 
     // Create in-app notifications + push 1:1 (copy por estado vive en el
-    // servicio de notificaciones).
+    // servicio de notificaciones). Fire-and-forget: el estado ya está
+    // persistido; esperar a FCM infla el p99 del PUT sin beneficio.
     if (order.merchant?.userId) {
       this.eventsGateway.sendToUser(order.merchant.userId, 'order:statusChanged', {
         ...baseNotification,
         message: merchantLabels[status] || 'Estado actualizado',
       });
-      await this.notificationsService
+      void this.notificationsService
         .notifyOrderStatusUpdate(orderId, order.merchant.userId, status, 'merchant')
-        .catch(() => null);
+        .catch(() => undefined);
     }
 
     if (order.driver?.userId && status !== 'assigned') {
@@ -1166,9 +1167,9 @@ export class OrdersService {
         ...baseNotification,
         message: driverLabels[status] || 'Estado actualizado',
       });
-      await this.notificationsService
+      void this.notificationsService
         .notifyOrderStatusUpdate(orderId, order.driver.userId, status, 'driver')
-        .catch(() => null);
+        .catch(() => undefined);
     }
 
     return updatedOrder;
@@ -1543,7 +1544,7 @@ export class OrdersService {
 
     if (!updatedOrder) throw new NotFoundException('Pedido no encontrado');
 
-    // Notify merchant
+    // Notify merchant (push fire-and-forget: el socket ya avisa en vivo).
     if (updatedOrder.merchant?.userId) {
       this.eventsGateway.sendToUser(updatedOrder.merchant.userId, 'order:accepted', {
         orderId: updatedOrder.id,
@@ -1553,9 +1554,9 @@ export class OrdersService {
         message: `${driverProfile.fullName} aceptó tu pedido`,
       });
 
-      await this.notificationsService
+      void this.notificationsService
         .notifyOrderAccepted(updatedOrder.id, updatedOrder.merchant.userId, driverProfile.fullName)
-        .catch(() => null);
+        .catch(() => undefined);
     }
 
     // Notify driver confirmation
@@ -1609,9 +1610,9 @@ export class OrdersService {
         driverName: driverProfile.fullName,
         message: `${driverProfile.fullName} rechazó tu pedido`,
       });
-      await this.notificationsService
+      void this.notificationsService
         .notifyOrderRejected(order.id, order.merchant.userId, driverProfile.fullName)
-        .catch(() => null);
+        .catch(() => undefined);
     }
 
     return order;
