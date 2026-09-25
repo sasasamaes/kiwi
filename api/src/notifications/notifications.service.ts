@@ -588,21 +588,16 @@ export class NotificationsService {
       create: { userId, token, platform },
     });
 
-    // Poda: cada reinstall/reactivación genera un token NUEVO y el viejo
-    // sigue válido → el mismo celu recibe el mismo pedido N veces
-    // (el triple de la captura). Se conservan los 3 más recientes por
-    // usuario; el resto son instalaciones muertas.
+    // Poda: cada reinstall/reactivación (Safari vs PWA instalada, SW con
+    // scope viejo vs nuevo) genera un token NUEVO y el viejo sigue válido →
+    // el mismo celu recibe el mismo push N veces. Se conserva solo el más
+    // reciente por usuario+plataforma: un repartidor opera con 1 celu activo.
+    // Corre en cada apertura de app (el front re-registra al montar), así que
+    // los duplicados existentes mueren solos sin que el usuario toque nada.
     try {
-      const all = await this.prisma.deviceToken.findMany({
-        where: { userId },
-        orderBy: { lastUsedAt: 'desc' },
-        select: { token: true },
+      await this.prisma.deviceToken.deleteMany({
+        where: { userId, platform, token: { not: token } },
       });
-      if (all.length > 3) {
-        const stale = all.slice(3).map((t) => t.token);
-        await this.prisma.deviceToken.deleteMany({ where: { token: { in: stale } } });
-        this.logger.log(`Pruned ${stale.length} stale device tokens for user ${userId}`);
-      }
     } catch {
       // best-effort: nunca bloquea el registro
     }
