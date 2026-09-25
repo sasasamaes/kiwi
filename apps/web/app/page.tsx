@@ -58,7 +58,7 @@ function Landing() {
           <Link href="/" className="flex items-center gap-2" aria-label="Kiwi inicio">
             <KiwiLogo size={28} />
             <span className="font-display text-lg font-bold tracking-tight">
-              Kiwi <span className="font-medium text-surface-400">Negocios</span>
+              <span className="font-medium text-surface-400">Negocios</span>
             </span>
           </Link>
           <nav className="hidden items-center gap-8 text-sm font-medium text-surface-500 md:flex dark:text-surface-400">
