@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { FxRateProvider } from './fx-rate.provider';
 
 interface CryptoPaymentRequest {
   amount: number;
@@ -66,7 +67,10 @@ export class StellarProvider {
   private readonly horizonUrl: string;
   private readonly receivingWallet: string | undefined;
 
-  constructor(private configService: ConfigService) {
+  constructor(
+    private configService: ConfigService,
+    private readonly fxRates: FxRateProvider,
+  ) {
     this.network = this.configService.get<string>('STELLAR_NETWORK', 'testnet');
     this.horizonUrl =
       this.network === 'testnet'
@@ -470,18 +474,12 @@ export class StellarProvider {
     };
   }
 
+  /**
+   * Tipo de cambio real vía FxRateProvider (Hacienda CR → er-api → stale →
+   * constante). Delega: la lógica de fuentes/cache/fallback vive allí.
+   */
   async getExchangeRate(from: string, to: string): Promise<number> {
-    // In production, call a price oracle or exchange API
-    // For CRC to USD, approximate rate: 1 USD = 510 CRC
-    const rates: Record<string, number> = {
-      CRC_USD: 1 / 510,
-      USD_CRC: 510,
-      USD_USDC: 1,
-      USD_USDT: 1,
-    };
-
-    const key = `${from}_${to}`;
-    return rates[key] || 1;
+    return this.fxRates.getRate(from, to);
   }
 
   async getStellarAccountInfo(address: string): Promise<any> {

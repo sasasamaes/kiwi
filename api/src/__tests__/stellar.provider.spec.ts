@@ -1,4 +1,5 @@
 import { StellarProvider } from '../payments/providers/stellar.provider';
+import { FxRateProvider } from '../payments/providers/fx-rate.provider';
 
 /**
  * Tests de verificación on-chain contra Horizon mockeado (fetch global).
@@ -46,7 +47,10 @@ describe('StellarProvider — verificación on-chain (Horizon)', () => {
   });
 
   const makeProvider = (env: Record<string, string> = {}) =>
-    new StellarProvider(config({ STELLAR_NETWORK: 'mainnet', ...env }));
+    new StellarProvider(
+      config({ STELLAR_NETWORK: 'mainnet', ...env }),
+      { getRate: jest.fn().mockResolvedValue(510) } as any, // FxRateProvider stub
+    );
 
   describe('fail-closed', () => {
     it('sin STELLAR_RECEIVING_WALLET no verifica (verified:false, not_configured)', async () => {
