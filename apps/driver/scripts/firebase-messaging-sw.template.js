@@ -27,6 +27,12 @@ messaging.onBackgroundMessage((payload) => {
   console.log('[SW] Background message received:', payload);
 
   const notificationTitle = payload.notification?.title || '🥝 Kiwi';
+  // Colapso: mismo tag reemplaza en vez de apilar. Los pedidos usan su
+  // orderId (cada pedido avisa) y re-alertan; lo demás (test, sistema)
+  // comparte tag por tipo y NO re-alerta: sin esto 1 push por token
+  // (3 tokens = 3 envíos) se ve como 3 banners iguales.
+  const orderId = payload.data?.orderId;
+  const type = payload.data?.type || 'general';
   const notificationOptions = {
     body: payload.notification?.body || 'Tienes una nueva notificación',
     icon: '/icon.png',
@@ -34,8 +40,8 @@ messaging.onBackgroundMessage((payload) => {
     image: payload.notification?.image,
     data: payload.data,
     vibrate: [200, 100, 200],
-    tag: payload.data?.orderId || 'kiwi-notification',
-    renotify: true,
+    tag: orderId || `kiwi-${type}`,
+    renotify: !!orderId,
     actions: getActionsForType(payload.data?.type),
   };
 

@@ -226,20 +226,26 @@ export class NotificationsService {
       });
 
       if (prefs.length > 0) {
-        const rows = await Promise.allSettled(
-          prefs.map((p) =>
-            this.prisma.notification.create({
-              data: {
+        // Bulk: 1 escritura en vez de N round-trips (N+1 en el fan-out).
+        const CHUNK = 200;
+        for (let i = 0; i < prefs.length; i += CHUNK) {
+          const batch = prefs.slice(i, i + CHUNK);
+          try {
+            const res = await this.prisma.notification.createMany({
+              data: batch.map((p) => ({
                 userId: p.userId,
                 title: notification.title,
                 body: notification.body,
                 type: `topic:${topicName}`,
                 data: notification.data ?? {},
-              },
-            }),
-          ),
-        );
-        inbox = rows.filter((r) => r.status === 'fulfilled').length;
+              })),
+              skipDuplicates: true,
+            });
+            inbox += res.count;
+          } catch (error) {
+            this.logger.warn(`publishToTopic inbox batch failed: ${String(error)}`);
+          }
+        }
       }
     }
 
@@ -582,6 +588,25 @@ export class NotificationsService {
       create: { userId, token, platform },
     });
 
+    // Poda: cada reinstall/reactivación genera un token NUEVO y el viejo
+    // sigue válido → el mismo celu recibe el mismo pedido N veces
+    // (el triple de la captura). Se conservan los 3 más recientes por
+    // usuario; el resto son instalaciones muertas.
+    try {
+      const all = await this.prisma.deviceToken.findMany({
+        where: { userId },
+        orderBy: { lastUsedAt: 'desc' },
+        select: { token: true },
+      });
+      if (all.length > 3) {
+        const stale = all.slice(3).map((t) => t.token);
+        await this.prisma.deviceToken.deleteMany({ where: { token: { in: stale } } });
+        this.logger.log(`Pruned ${stale.length} stale device tokens for user ${userId}`);
+      }
+    } catch {
+      // best-effort: nunca bloquea el registro
+    }
+
     // Asegura preferencias por defecto y suscripción FCM para este token.
     await this.syncTopicSubscriptions(userId);
 
@@ -617,6 +642,7 @@ export class NotificationsService {
       return { fcmConfigured: false, tokens: tokens.length, results };
     }
 
+    const expired: string[] = [];
     for (const { token, platform } of tokens) {
       const short = `…${token.slice(-8)} (${platform})`;
       try {
@@ -632,7 +658,18 @@ export class NotificationsService {
       } catch (error: any) {
         const code = error?.errorInfo?.code ?? error?.code ?? String(error);
         results.push({ token: short, ok: false, error: code });
+        if (
+          code.includes('unregistered') ||
+          code.includes('invalid-registration-token') ||
+          code.includes('registration-token-not-registered')
+        ) {
+          expired.push(token);
+        }
       }
+    }
+    if (expired.length > 0) {
+      await this.prisma.deviceToken.deleteMany({ where: { token: { in: expired } } });
+      this.logger.log(`Removed ${expired.length} expired device tokens (test push)`);
     }
     return { fcmConfigured: true, tokens: tokens.length, results };
   }

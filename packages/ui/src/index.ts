@@ -194,7 +194,11 @@ export { NotificationPreferences } from './NotificationPreferences';
 export { NotificationList } from './NotificationList';
 export { usePushNotifications } from './usePushNotifications';
 export type { PushFailReason, PushUnsupportedReason } from './usePushNotifications';
-export { requestNotificationPermission, initializeFirebase } from './firebase';
+export {
+  requestNotificationPermission,
+  initializeFirebase,
+  cleanupLegacyMessagingSW,
+} from './firebase';
 export {
   playNotificationSound,
   isSoundEnabled,

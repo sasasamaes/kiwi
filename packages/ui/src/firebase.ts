@@ -124,25 +124,8 @@ export async function requestNotificationPermission(): Promise<string> {
       throw new Error(`PUSH:token-failed|token-vacio sw=${registration ? 'ok' : 'sin-registro'}`);
     }
 
-    // Limpieza del SW viejo (scope '/'): el registro anterior desalojaba al
-    // de la PWA y, si quedó instalado, cada push suena 2 veces (viejo + nuevo
-    // + el banner de foreground). No tocar /sw.js ni el registro nuevo.
-    try {
-      if ('serviceWorker' in navigator) {
-        const regs = await navigator.serviceWorker.getRegistrations();
-        await Promise.all(
-          regs
-            .filter(
-              (r) =>
-                (r.active?.scriptURL ?? '').includes('firebase-messaging-sw') &&
-                new URL(r.scope).pathname !== FCM_SW_SCOPE,
-            )
-            .map((r) => r.unregister().catch(() => undefined)),
-        );
-      }
-    } catch {
-      // best-effort: no bloquea la activación
-    }
+    // Limpieza del SW viejo (scope '/'): ver cleanupLegacyMessagingSW.
+    await cleanupLegacyMessagingSW(FCM_SW_SCOPE);
 
     return token;
   } catch (error) {
@@ -158,6 +141,33 @@ export async function requestNotificationPermission(): Promise<string> {
     // agresivo: la causa viene al final del mensaje de FCM).
     const detail = error instanceof Error ? error.message : String(error);
     throw new Error(`PUSH:token-failed|externo:${detail.slice(0, 500)}`);
+  }
+}
+
+/**
+ * Desregistra SWs legacy de firebase-messaging con scope '/' (anteriores al
+ * scope angosto). Si quedan instalados, cada push lo muestra el SW viejo +
+ * el nuevo (+ banner foreground) = 2-3 banners iguales. Corre en cada
+ * arranque, no solo al activar alertas: los usuarios ya afectados nunca
+ * volverían a tocar "Activar".
+ */
+export async function cleanupLegacyMessagingSW(
+  keepScope = '/firebase-cloud-messaging-push-scope',
+): Promise<void> {
+  try {
+    if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
+    const regs = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(
+      regs
+        .filter(
+          (r) =>
+            (r.active?.scriptURL ?? '').includes('firebase-messaging-sw') &&
+            new URL(r.scope).pathname !== keepScope,
+        )
+        .map((r) => r.unregister().catch(() => undefined)),
+    );
+  } catch {
+    // best-effort
   }
 }
 

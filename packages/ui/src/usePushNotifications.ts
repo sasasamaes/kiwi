@@ -1,7 +1,11 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { requestNotificationPermission, onMessageListener } from './firebase';
+import {
+  requestNotificationPermission,
+  onMessageListener,
+  cleanupLegacyMessagingSW,
+} from './firebase';
 import { api } from './api-client';
 import { useAuth } from './AuthContext';
 import { playNotificationSound } from './notification-sound';
@@ -106,6 +110,9 @@ export function usePushNotifications(options: UsePushNotificationsOptions = {}) 
   const [pushDebug, setPushDebug] = useState<PushDebug | null>(null);
 
   useEffect(() => {
+    // SW legacy con scope '/' duplica cada push en este celu aunque el
+    // servidor mande uno solo. Corre siempre, haya o no permiso.
+    void cleanupLegacyMessagingSW();
     const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
     const hasNotification = typeof window !== 'undefined' && 'Notification' in window;
     const hasServiceWorker = typeof navigator !== 'undefined' && 'serviceWorker' in navigator;
