@@ -35,6 +35,7 @@ import {
   DeliveryZoneSelect,
   OnvoPayCheckout,
   CryptoCheckout,
+  CryptoRateNote,
   safeNavigateToUrl,
   isEmojiImage,
   isHttpUrl,
@@ -1323,6 +1324,14 @@ export default function MenuPage() {
                           </motion.button>
                         );
                       })}
+                      {(paymentMethod === 'crypto_usdc' || paymentMethod === 'crypto_usdt') && (
+                        <div className="col-span-2">
+                          <CryptoRateNote
+                            amountCRC={totalWithDelivery}
+                            coin={paymentMethod === 'crypto_usdc' ? 'USDC' : 'USDT'}
+                          />
+                        </div>
+                      )}
                     </div>
                   )}
 

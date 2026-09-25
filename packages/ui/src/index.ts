@@ -148,6 +148,7 @@ export type { Vehicle, VehicleType } from './VehicleSelector';
 //   PAYMENT COMPONENTS
 // ============================================
 export { PaymentSelector, CryptoQR } from './PaymentSelector';
+export { CryptoRateNote } from './CryptoRateNote';
 export type { PaymentMethod } from './PaymentSelector';
 
 // ============================================

@@ -16,6 +16,7 @@ import {
   api,
   events,
   safeNavigateToUrl,
+  CryptoRateNote,
 } from '@kiwi/ui';
 import { findDeliveryZone } from '@kiwi/types';
 
@@ -594,7 +595,15 @@ function CheckoutContent() {
                 <CreditCard className="h-3 w-3 inline" /> Serás redirigido al pago seguro
               </span>
             )}
-            {paymentMethod === 'crypto_usdc' && '💎 Paga con USDC en la red Stellar'}
+            {paymentMethod === 'crypto_usdc' && (
+              <>
+                <span>💎 Paga con USDC en la red Stellar</span>
+                <CryptoRateNote amountCRC={total} coin="USDC" className="mt-2" />
+              </>
+            )}
+            {paymentMethod === 'crypto_usdt' && (
+              <CryptoRateNote amountCRC={total} coin="USDT" className="mt-2" />
+            )}
           </p>
           <p className="text-center text-xs text-surface-400 mt-2">
             Al ordenar aceptás nuestros{' '}
