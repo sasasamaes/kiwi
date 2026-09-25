@@ -687,13 +687,30 @@ export class PaymentsService {
     }
 
     if (payment.method === 'crypto' && payment.status === PaymentStatus.pending) {
-      // Check Stellar transaction
-      const verified = await this.stellarProvider.verifyPayment(payment.id);
+      // Verificación on-chain real: escanea los pagos entrantes a la wallet
+      // receptora y exige asset, monto y tx confirmada. Fail-closed: cualquier
+      // error deja el pago pending para reintentar en la próxima consulta.
+      // Dedup anti doble-gasto: se excluyen las txs que ya acreditaron otro
+      // pedido completado de la misma wallet receptora.
+      const usedHashes = await this.prisma.payment.findMany({
+        where: {
+          cryptoWalletAddress: (payment as any).cryptoWalletAddress ?? undefined,
+          status: PaymentStatus.completed,
+          cryptoTxHash: { not: null },
+          NOT: { orderId },
+        },
+        select: { cryptoTxHash: true },
+      });
+      const verified = await this.stellarProvider.verifyOrderPayment({
+        orderId,
+        expectedAmount: Number(payment.cryptoAmount ?? 0),
+        expectedAsset: (payment.cryptoCoin as 'USDC' | 'USDT') ?? 'USDC',
+        expectedWallet: (payment as any).cryptoWalletAddress ?? null,
+        since: payment.createdAt,
+        excludeTxHashes: usedHashes.map((p) => p.cryptoTxHash as string),
+      });
       if (verified.verified) {
-        await this.prisma.payment.update({
-          where: { orderId },
-          data: { status: PaymentStatus.completed },
-        });
+        await this.markCryptoCompleted(orderId, verified.txHash);
         payment.status = PaymentStatus.completed;
       }
     }
@@ -805,32 +822,90 @@ export class PaymentsService {
     // Endpoint PÚBLICO sin firma HMAC: cualquiera podría POSTear
     // "orderId + tx inventado". La verificación on-chain es la única
     // autenticación — nunca confiar en el payload para marcar pagado.
-    const verified = await this.stellarProvider.verifyPayment(orderId);
+    // El hash aporta quien llama: se usa solo como puntero a la tx, que se
+    // descarga y valida contra la wallet receptora, asset y monto esperados.
+    const payment = await this.prisma.payment.findUnique({
+      where: { orderId },
+      select: {
+        status: true,
+        cryptoAmount: true,
+        cryptoCoin: true,
+        cryptoTxHash: true,
+      },
+    });
+    if (!payment) {
+      this.logger.warn(`Stellar webhook for unknown order ${orderId} — ignoring`);
+      return { received: true, unknownOrder: true };
+    }
+    if (payment.status === PaymentStatus.completed) {
+      this.logger.log(`Stellar webhook for already-completed order ${orderId} — ignoring`);
+      return { received: true, alreadyCompleted: true };
+    }
+
+    // Dedup entre pedidos: si la tx ya acreditó OTRO pedido (mismo hash, distinto
+    // orderId), este webhook es fraude o un retry cruzado — no acreditar dos veces.
+    const reused = await this.prisma.payment.findFirst({
+      where: { cryptoTxHash: transactionHash, NOT: { orderId } },
+      select: { orderId: true },
+    });
+    if (reused) {
+      this.logger.error(
+        `Stellar webhook REUSE: tx ${transactionHash} already credited order ${reused.orderId} — rejecting for ${orderId}`,
+      );
+      return { received: true, rejected: 'tx_already_used' };
+    }
+
+    const verified = await this.stellarProvider.verifyTransactionForOrder({
+      txHash: transactionHash,
+      orderId,
+      expectedAmount: Number(payment.cryptoAmount ?? 0),
+      expectedAsset: (payment.cryptoCoin as 'USDC' | 'USDT') ?? 'USDC',
+    });
 
     if (verified.verified) {
-      const res = await this.prisma.payment.updateMany({
-        where: { orderId },
-        data: {
-          status: PaymentStatus.completed,
-          cryptoTxHash: transactionHash,
-        },
-      });
-      if (res.count === 0) {
+      const done = await this.markCryptoCompleted(orderId, transactionHash);
+      if (!done) {
         this.logger.warn(`Stellar webhook for unknown order ${orderId} — ignoring`);
         return { received: true, unknownOrder: true };
       }
-
-      this.logger.log(`Crypto payment verified for order ${orderId}`);
+      this.logger.log(`Crypto payment verified for order ${orderId} (tx ${transactionHash})`);
     } else {
       this.logger.warn(
-        `Stellar webhook on-chain verification FAILED for order ${orderId} — not marking paid`,
+        `Stellar webhook on-chain verification FAILED for order ${orderId} (${verified.reason ?? 'unknown'}) — not marking paid`,
       );
     }
 
     return { received: true };
   }
 
+  /**
+   * Marca un pago crypto completado guardando el tx hash, con guarda anti-
+   * carrera: updateMany condicionado a status != completed. Dos carreras
+   * (webhook + polling simultáneos) no re-acreditan ni pisan el hash ya
+   * guardado. Devuelve true si esta llamada fue la que completó el pago.
+   */
+  private async markCryptoCompleted(orderId: string, txHash?: string): Promise<boolean> {
+    try {
+      const res = await this.prisma.payment.updateMany({
+        where: { orderId, NOT: { status: PaymentStatus.completed } },
+        data: {
+          status: PaymentStatus.completed,
+          ...(txHash ? { cryptoTxHash: txHash } : {}),
+        },
+      });
+      return res.count > 0;
+    } catch (e: any) {
+      // Índice único en crypto_tx_hash: otra orden ganó la carrera por esta tx
+      // (webhook + polling simultáneos). No es un error del sistema.
+      if (e?.code === 'P2002') return false;
+      throw e;
+    }
+  }
+
   async getPaymentMethods() {
+    // Crypto solo se ofrece con wallet receptora configurada (o mock de dev):
+    // sin eso, el QR apuntaría a una dirección que no es nuestra.
+    const cryptoAvailable = this.stellarProvider.isConfigured();
     return [
       {
         id: 'onvopay_sinpe',
@@ -854,7 +929,7 @@ export class PaymentsService {
         icon: '💵',
         description: 'Stablecoin USD (Stellar)',
         type: 'crypto',
-        available: true,
+        available: cryptoAvailable,
       },
       {
         id: 'crypto_usdt',
@@ -862,7 +937,7 @@ export class PaymentsService {
         icon: '💲',
         description: 'Tether USD (Stellar)',
         type: 'crypto',
-        available: true,
+        available: cryptoAvailable,
       },
       {
         id: 'cash',

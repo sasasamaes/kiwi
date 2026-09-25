@@ -383,7 +383,7 @@ model Payment {
   cryptoCoin          String?  @map("crypto_coin")
   cryptoNetwork       String?  @map("crypto_network")
   cryptoWalletAddress String?  @map("crypto_wallet_address")
-  cryptoTxHash        String?  @map("crypto_tx_hash")
+  cryptoTxHash        String?  @unique @map("crypto_tx_hash")
   cryptoAmount        Decimal? @map("crypto_amount") @db.Decimal(10, 6)
   exchangeRate        Decimal? @map("exchange_rate") @db.Decimal(10, 4)
 
