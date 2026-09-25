@@ -39,6 +39,8 @@ export interface PushDebug {
   navigatorStandalone: unknown;
   iosVersion: string;
   userAgent: string;
+  /** SWs instalados en ESTE contexto (script + scope): el viejo duplicado se ve acá. */
+  swRegistrations: Array<{ script: string; scope: string }>;
 }
 
 function parseIosVersion(ua: string): IosVersion | null {
@@ -109,10 +111,30 @@ export function usePushNotifications(options: UsePushNotificationsOptions = {}) 
   const [iosVersion, setIosVersion] = useState<IosVersion | null>(null);
   const [pushDebug, setPushDebug] = useState<PushDebug | null>(null);
 
+  const refreshSwList = useCallback(async () => {
+    try {
+      if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
+      const regs = await navigator.serviceWorker.getRegistrations();
+      const list = regs.map((r) => ({
+        script: (r.active?.scriptURL ?? r.installing?.scriptURL ?? '?').split('/').pop() ?? '?',
+        scope: (() => {
+          try {
+            return new URL(r.scope).pathname;
+          } catch {
+            return r.scope;
+          }
+        })(),
+      }));
+      setPushDebug((prev) => (prev ? { ...prev, swRegistrations: list } : prev));
+    } catch {
+      // best-effort
+    }
+  }, []);
+
   useEffect(() => {
     // SW legacy con scope '/' duplica cada push en este celu aunque el
     // servidor mande uno solo. Corre siempre, haya o no permiso.
-    void cleanupLegacyMessagingSW();
+    void cleanupLegacyMessagingSW().then(() => void refreshSwList());
     const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
     const hasNotification = typeof window !== 'undefined' && 'Notification' in window;
     const hasServiceWorker = typeof navigator !== 'undefined' && 'serviceWorker' in navigator;
@@ -149,6 +171,7 @@ export function usePushNotifications(options: UsePushNotificationsOptions = {}) 
       navigatorStandalone: (navigator as any)?.standalone,
       iosVersion: ver ? `${ver.major}.${ver.minor}` : 'n/a',
       userAgent: ua,
+      swRegistrations: [],
     };
     setPushDebug(dbg);
     console.log('[push-debug]', JSON.stringify(dbg));
