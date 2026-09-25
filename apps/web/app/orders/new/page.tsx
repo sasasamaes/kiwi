@@ -192,7 +192,6 @@ function NewOrderInner({
 }) {
   const router = useRouter();
   const { user } = useAuth();
-  const { createOrder, isConnected } = useSocket();
 
   const [step, setStep] = useState<Step>(1);
   const [loading, setLoading] = useState(false);
@@ -818,16 +817,9 @@ function NewOrderInner({
 
       setCreatedOrderId(result.id);
       setOrderCreated(true);
-      if (isConnected) {
-        createOrder({
-          orderId: result.id,
-          pickupAddress,
-          deliveryAddress,
-          deliveryZone,
-          totalAmount: total,
-          distanceKm: routeKm ?? undefined,
-        });
-      }
+      // Sin emit socket: el backend ya alerta a drivers cercanos vía
+      // alertNearbyDrivers (socket 1:1 + push). El emit duplicaba el
+      // evento order:new y el repartidor lo recibía 2 veces.
     } catch (error: any) {
       console.error('Failed to create order:', error);
       setFormError(error?.message || 'Error al crear el pedido. Intenta de nuevo.');

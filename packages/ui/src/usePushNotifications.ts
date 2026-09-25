@@ -5,6 +5,7 @@ import { requestNotificationPermission, onMessageListener } from './firebase';
 import { api } from './api-client';
 import { useAuth } from './AuthContext';
 import { playNotificationSound } from './notification-sound';
+import { buildNotificationKey, shouldNotify } from './notification-dedupe';
 
 export type PushFailReason =
   | 'denied'
@@ -234,6 +235,15 @@ export function usePushNotifications(options: UsePushNotificationsOptions = {}) 
 
     const unsubscribePromise = onMessageListener((payload) => {
       console.log('Foreground notification:', payload);
+
+      // Dedupe: el mismo evento suele llegar por socket + push a la vez.
+      // Sin esto cada acción suena/muestra 2-3 veces.
+      const key = buildNotificationKey({
+        type: payload?.data?.type,
+        orderId: payload?.data?.orderId,
+        status: payload?.data?.status,
+      });
+      if (!shouldNotify(key)) return;
 
       // Suena aunque la app esté abierta (push en foreground no hace ruido solo)
       playNotificationSound('default');

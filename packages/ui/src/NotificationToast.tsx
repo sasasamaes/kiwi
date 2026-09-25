@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, createContext, useContext, ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { playNotificationSound, type NotificationSoundKind } from './notification-sound';
+import { buildNotificationKey, shouldNotify } from './notification-dedupe';
 
 interface Notification {
   id: string;
@@ -34,6 +35,14 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
   const addNotification = useCallback((notification: Omit<Notification, 'id' | 'timestamp'>) => {
+    const key = buildNotificationKey({
+      type: notification.type,
+      orderId: notification.data?.orderId,
+      id: notification.data?.id,
+      status: notification.data?.status,
+    });
+    if (!shouldNotify(key)) return;
+
     const newNotification: Notification = {
       ...notification,
       id: Math.random().toString(36).substring(7),
