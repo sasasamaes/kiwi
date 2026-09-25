@@ -230,7 +230,7 @@ model KYCVerification {
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([status, createdAt])
+  @@index([status, createdAt], map: "kyc_verifications_status_created_idx")
   @@map("kyc_verifications")
 }
 
@@ -322,10 +322,10 @@ model Order {
   @@index([driverId, status])
   @@index([driverId, createdAt])
   @@index([status, createdAt])
-  @@index([merchantId, status, createdAt])
-  @@index([driverId, status, createdAt])
-  @@index([driverId, status, deliveredAt])
-  @@index([status, deliveredAt])
+  @@index([merchantId, status, createdAt], map: "orders_merchant_status_created_idx")
+  @@index([driverId, status, createdAt], map: "orders_driver_status_created_idx")
+  @@index([driverId, status, deliveredAt], map: "orders_driver_status_delivered_idx")
+  @@index([status, deliveredAt], map: "orders_status_delivered_idx")
   @@map("orders")
 }
 
@@ -359,8 +359,8 @@ model DriverProposal {
   order  Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
   driver DriverProfile @relation(fields: [driverId], references: [id], onDelete: Cascade)
 
-  @@index([orderId, driverId])
-  @@index([orderId, status])
+  @@index([orderId, driverId], map: "driver_proposals_order_driver_idx")
+  @@index([orderId, status], map: "driver_proposals_order_status_idx")
   @@map("driver_proposals")
 }
 
@@ -401,11 +401,11 @@ model Payment {
   // Relations
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
-  @@index([status, createdAt])
-  @@index([method, status, createdAt])
-  @@index([onvoPaymentId])
-  @@index([onvoSessionId])
-  @@index([cryptoWalletAddress, status])
+  @@index([status, createdAt], map: "payments_status_created_idx")
+  @@index([method, status, createdAt], map: "payments_method_status_created_idx")
+  @@index([onvoPaymentId], map: "payments_onvo_payment_id_idx")
+  @@index([onvoSessionId], map: "payments_onvo_session_id_idx")
+  @@index([cryptoWalletAddress, status], map: "payments_wallet_status_idx")
   @@map("payments")
 }
 
@@ -442,9 +442,9 @@ model Rating {
   driver   DriverProfile   @relation(fields: [driverId], references: [id])
   merchant MerchantProfile @relation(fields: [merchantId], references: [id])
 
-  @@index([orderId])
-  @@index([driverId, createdAt])
-  @@index([merchantId, createdAt])
+  @@index([orderId], map: "ratings_order_idx")
+  @@index([driverId, createdAt], map: "ratings_driver_created_idx")
+  @@index([merchantId, createdAt], map: "ratings_merchant_created_idx")
   @@map("ratings")
 }
 
@@ -522,8 +522,8 @@ model Withdrawal {
   // Relations
   driver DriverProfile @relation(fields: [driverId], references: [id])
 
-  @@index([driverId, status, createdAt])
-  @@index([status, createdAt])
+  @@index([driverId, status, createdAt], map: "withdrawals_driver_status_created_idx")
+  @@index([status, createdAt], map: "withdrawals_status_created_idx")
   @@map("withdrawals")
 }
 
@@ -613,8 +613,8 @@ model OrderItem {
   order    Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
   menuItem MenuItem? @relation(fields: [menuItemId], references: [id])
 
-  @@index([orderId])
-  @@index([menuItemId])
+  @@index([orderId], map: "order_items_order_idx")
+  @@index([menuItemId], map: "order_items_menu_item_idx")
   @@map("order_items")
 }
 
@@ -633,7 +633,7 @@ model Notification {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, read, createdAt])
-  @@index([userId, type, createdAt])
+  @@index([userId, type, createdAt], map: "notifications_user_type_created_idx")
   @@map("notifications")
 }
 
@@ -698,7 +698,7 @@ model TrafficAlert {
   alternativeTimeSaved   Int?      @map("alternative_time_saved")
   createdAt              DateTime  @default(now()) @map("created_at")
 
-  @@index([expiresAt])
+  @@index([expiresAt], map: "traffic_alerts_expires_idx")
   @@map("traffic_alerts")
 }
 
@@ -712,8 +712,8 @@ model TrafficAlertNotification {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@unique([driverId, alertId])
-  @@index([driverId, dismissed])
-  @@index([alertId])
+  @@index([driverId, dismissed], map: "traffic_alert_notif_driver_dismissed_idx")
+  @@index([alertId], map: "traffic_alert_notif_alert_idx")
   @@map("traffic_alert_notifications")
 }
 
@@ -728,6 +728,6 @@ model ContactMessage {
   status    String   @default("new") // new | read | resolved
   createdAt DateTime @default(now()) @map("created_at")
 
-  @@index([status, createdAt])
+  @@index([status, createdAt], map: "contact_messages_status_created_idx")
   @@map("contact_messages")
 }
