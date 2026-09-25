@@ -83,7 +83,6 @@ export default function LoginPage() {
           onToggle={() => router.push('/register')}
           loading={formLoading}
           error={error || undefined}
-          showSocialLogins={false}
         />
       </main>
 

@@ -75,7 +75,6 @@ export default function RegisterPage() {
           onToggle={() => router.push('/login')}
           loading={loading}
           error={error || undefined}
-          showSocialLogins={false}
         />
       </main>
 

@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from './utils';
 import { KiwiMark } from './KiwiMark';
 import { ConsentCheckbox, ConsentLink } from './ConsentCheckbox';
-import { Bike, Car, Truck, Smartphone, MessageCircle, Eye, EyeOff, Loader } from 'lucide-react';
+import { Bike, Car, Truck, Eye, EyeOff, Loader } from 'lucide-react';
 
 export interface AuthFormProps {
   type: 'login' | 'register';
@@ -14,8 +14,6 @@ export interface AuthFormProps {
   onToggle?: () => void;
   loading?: boolean;
   error?: string;
-  /** Oculta el bloque "O continúa con" (SINPE/WhatsApp son decorativos). Default true. */
-  showSocialLogins?: boolean;
 }
 
 export interface AuthFormData {
@@ -36,7 +34,6 @@ export function AuthForm({
   onToggle,
   loading = false,
   error,
-  showSocialLogins = true,
 }: AuthFormProps) {
   const [formData, setFormData] = useState<AuthFormData>({
     email: '',
@@ -411,46 +408,6 @@ export function AuthForm({
           </p>
         </motion.div>
       </motion.div>
-
-      {/* Social Login */}
-      {showSocialLogins && (
-        <motion.div
-          className="mt-6"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7 }}
-        >
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-surface-200"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-bg-light text-surface-400">O continúa con</span>
-            </div>
-          </div>
-
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            <motion.button
-              type="button"
-              className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-white border border-surface-200 text-surface-700 font-medium hover:bg-surface-50 transition-colors"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <Smartphone className="h-5 w-5" />
-              SINPE
-            </motion.button>
-            <motion.button
-              type="button"
-              className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-white border border-surface-200 text-surface-700 font-medium hover:bg-surface-50 transition-colors"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <MessageCircle className="h-5 w-5" />
-              WhatsApp
-            </motion.button>
-          </div>
-        </motion.div>
-      )}
     </motion.div>
   );
 }
