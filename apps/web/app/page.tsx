@@ -143,9 +143,9 @@ function Landing() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
           >
-            Recibí pedidos a domicilio{' '}
+            Recibí pedidos express de tu propio menú{' '}
             <span className="bg-gradient-to-r from-kiwi-600 to-kiwi-400 bg-clip-text text-transparent">
-              sin contratar repartidores
+              y vendé más sin contratar repartidores
             </span>
           </motion.h1>
           <motion.p
@@ -154,8 +154,9 @@ function Landing() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
           >
-            Kiwi conecta tu comercio con repartidores locales verificados. Tus clientes piden por QR
-            o web, vos los ves llegar a tu panel y un repartidor los entrega.
+            Unimos tu comercio con repartidores verificados y a tus clientes con tu menú: QR en la
+            mesa, pedido o encomienda en segundos y entrega a domicilio. Vos lo ves todo llegar a tu
+            panel.
           </motion.p>
 
           <motion.div
@@ -237,11 +238,13 @@ function Landing() {
                 >
                   <QrCode className="h-7 w-7" />
                 </motion.div>
-                <h3 className="mb-2 text-xl font-display font-semibold">Pedidos desde tu QR</h3>
+                <h3 className="mb-2 text-xl font-display font-semibold">
+                  Tu restaurante con QR y menú
+                </h3>
                 <p className="max-w-md text-pretty text-surface-500 dark:text-surface-400">
-                  Poné tu código QR en la mesa o en redes. El cliente escanea, arma su pedido y paga
-                  como prefiera: SINPE, tarjeta o efectivo. El pedido cae directo en tu panel, sin
-                  llamadas ni mensajes perdidos.
+                  Tu local tiene su QR con tu menú: el cliente escanea, pide express en segundos y
+                  paga como prefiera: SINPE, tarjeta o efectivo. El pedido cae directo en tu panel,
+                  sin llamadas ni mensajes perdidos.
                 </p>
               </motion.div>
             </StaggerItem>
@@ -285,9 +288,9 @@ function Landing() {
                     Tu negocio en un panel
                   </h3>
                   <p className="max-w-3xl text-pretty text-surface-500 dark:text-surface-400">
-                    Pedidos, estados de entrega, historial y calificaciones en un solo lugar.
-                    Programá pedidos para la hora que quieras y seguí cada entrega en el mapa en
-                    tiempo real.
+                    Pedidos de tu menú y encomiendas, estados de entrega, historial y calificaciones
+                    en un solo lugar. Programá envíos para la hora que quieras y seguí cada entrega
+                    en el mapa en tiempo real.
                   </p>
                 </div>
               </motion.div>
@@ -383,10 +386,11 @@ function Landing() {
 
             <div className="relative">
               <h2 className="mb-4 text-balance text-3xl font-display font-bold text-white lg:text-4xl">
-                Vendé a domicilio desde hoy
+                Activá tu QR y vendé más
               </h2>
               <p className="mx-auto mb-8 max-w-xl text-pretty text-lg text-white/80">
-                Creá tu cuenta gratis, cargá tu menú y recibí tu primer pedido con entrega incluida.
+                Creá tu cuenta gratis, publicá tu menú y recibí pedidos y encomiendas express con
+                entrega incluida.
               </p>
               <Link href="/register">
                 <AnimatedButton
