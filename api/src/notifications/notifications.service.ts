@@ -635,6 +635,7 @@ export class NotificationsService {
     const results: Array<{ token: string; ok: boolean; error?: string }> = [];
     const tokens = await this.prisma.deviceToken.findMany({
       where: { userId },
+      orderBy: { lastUsedAt: 'desc' },
       select: { token: true, platform: true, lastUsedAt: true },
     });
 
@@ -642,8 +643,13 @@ export class NotificationsService {
       return { fcmConfigured: false, tokens: tokens.length, results };
     }
 
+    // Solo al token más reciente: el botón Probar está EN este celu y el
+    // usuario espera 1 banner acá, no 1 por cada instalación vieja que
+    // siga registrada (Safari + PWA instalada = 2 tokens válidos en el
+    // mismo iPhone). Los pushes reales sí van a todos los tokens.
+    const latest = tokens.slice(0, 1);
     const expired: string[] = [];
-    for (const { token, platform } of tokens) {
+    for (const { token, platform } of latest) {
       const short = `…${token.slice(-8)} (${platform})`;
       try {
         await this.fcmAdmin.send({
