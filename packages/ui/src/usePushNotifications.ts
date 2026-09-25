@@ -230,13 +230,16 @@ export function usePushNotifications(options: UsePushNotificationsOptions = {}) 
         onNotification(payload);
       }
 
-      // Show browser notification if permitted
-      if (Notification.permission === 'granted') {
+      // Banner del sistema solo con la pestaña oculta: con la app visible el
+      // popup del socket ya avisa (sin esto cada pedido alerta 2-3 veces:
+      // popup + banner + push del SW). tag = colapsa reintentos del pedido.
+      if (Notification.permission === 'granted' && document.hidden) {
         const notification = new Notification(payload.notification?.title || 'Kiwi', {
           body: payload.notification?.body,
           icon: '/icon.png',
           badge: '/icon.png',
           data: payload.data,
+          tag: payload.data?.orderId ?? 'kiwi-notification',
         });
 
         notification.onclick = () => {

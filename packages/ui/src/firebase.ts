@@ -124,6 +124,26 @@ export async function requestNotificationPermission(): Promise<string> {
       throw new Error(`PUSH:token-failed|token-vacio sw=${registration ? 'ok' : 'sin-registro'}`);
     }
 
+    // Limpieza del SW viejo (scope '/'): el registro anterior desalojaba al
+    // de la PWA y, si quedó instalado, cada push suena 2 veces (viejo + nuevo
+    // + el banner de foreground). No tocar /sw.js ni el registro nuevo.
+    try {
+      if ('serviceWorker' in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(
+          regs
+            .filter(
+              (r) =>
+                (r.active?.scriptURL ?? '').includes('firebase-messaging-sw') &&
+                new URL(r.scope).pathname !== FCM_SW_SCOPE,
+            )
+            .map((r) => r.unregister().catch(() => undefined)),
+        );
+      }
+    } catch {
+      // best-effort: no bloquea la activación
+    }
+
     return token;
   } catch (error) {
     // Códigos propios (unsupported, denied, ...) pasan tal cual para que la

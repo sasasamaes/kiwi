@@ -131,29 +131,5 @@ self.addEventListener('notificationclose', (event) => {
   console.log('[SW] Notification closed:', event);
 });
 
-// Handle push events (for Web Push API fallback)
-self.addEventListener('push', (event) => {
-  console.log('[SW] Push received:', event);
-
-  if (!event.data) return;
-
-  try {
-    const payload = event.data.json();
-    const notificationTitle = payload.notification?.title || '🥝 Kiwi';
-    const notificationOptions = {
-      body: payload.notification?.body || 'Tienes una nueva notificación',
-      icon: '/icon.png',
-      badge: '/icon.png',
-      data: payload.data,
-      vibrate: [200, 100, 200],
-    };
-
-    event.waitUntil(
-      self.registration.showNotification(notificationTitle, notificationOptions)
-    );
-  } catch (error) {
-    console.error('[SW] Error parsing push data:', error);
-  }
-});
 
 console.log('[SW] Firebase Cloud Messaging service worker loaded');
