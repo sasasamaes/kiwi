@@ -192,6 +192,19 @@ export function usePushNotifications(options: UsePushNotificationsOptions = {}) 
 
         try {
           await api.registerDeviceToken(fcmToken, platform);
+          // Rotación de token: cada reactivación o cambio de scope genera un
+          // token NUEVO y el viejo queda en la BD → el backend manda el mismo
+          // pedido a todos (banners duplicados). Se borra el anterior de ESTE
+          // celu (guardado en localStorage); otros dispositivos no se tocan.
+          try {
+            const prev = localStorage.getItem('kiwi-fcm-token');
+            if (prev && prev !== fcmToken) {
+              await api.removeDeviceToken(prev).catch(() => undefined);
+            }
+            localStorage.setItem('kiwi-fcm-token', fcmToken);
+          } catch {
+            // localStorage privado/bloqueado: no bloquea la activación
+          }
         } catch (syncErr) {
           console.error('Token ok pero no se registró en el servidor:', syncErr);
           return { ok: false, reason: 'sync-failed' };

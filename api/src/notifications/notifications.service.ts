@@ -302,10 +302,13 @@ export class NotificationsService {
         where: { userId },
         select: { token: true },
       });
-      if (tokens.length === 0) return;
+      // Defensa: filas repetidas del mismo token (reintentos de registro)
+      // mandarían el mismo pedido N veces al mismo celu.
+      const unique = [...new Set(tokens.map((t) => t.token))];
+      if (unique.length === 0) return;
 
       const expired: string[] = [];
-      for (const { token } of tokens) {
+      for (const token of unique) {
         try {
           await this.fcmAdmin.send({
             token,
