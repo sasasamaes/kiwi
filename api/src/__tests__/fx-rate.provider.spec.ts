@@ -142,4 +142,102 @@ describe('FxRateProvider — tipo de cambio real con fallback', () => {
     const fx = newProvider();
     await expect(fx.getRate('CRC', 'CRC')).resolves.toBe(1);
   });
+
+  describe('healthCheck (admin)', () => {
+    const bothSourcesUp = () => {
+      fetchMock.mockImplementation(async (url: any) => {
+        const u = String(url);
+        if (u.includes('hacienda.go.cr')) return haciendaOk('512.5');
+        if (u.includes('open.er-api.com')) return erApiOk('515');
+        throw new Error('unexpected ' + u);
+      });
+    };
+
+    it('ambas fuentes vivas → ok:true con tasa y latencia por fuente', async () => {
+      bothSourcesUp();
+      const fx = newProvider();
+      const health = await fx.healthCheck();
+
+      expect(health.sources).toHaveLength(2);
+      const [hacienda, erApi] = health.sources;
+      expect(hacienda).toMatchObject({ name: 'hacienda', ok: true, rate: 512.5 });
+      expect(erApi).toMatchObject({ name: 'er-api', ok: true, rate: 515 });
+      expect(hacienda.latencyMs).toBeGreaterThanOrEqual(0);
+      expect(health.cache).toBeNull(); // instancia fresca, nadie pidió tasa aún
+      expect(health.sanityBand).toMatchObject({ min: 400, max: 700 });
+    });
+
+    it('Hacienda caída y er-api viva → estados independientes con error textual', async () => {
+      fetchMock.mockImplementation(async (url: any) => {
+        const u = String(url);
+        if (u.includes('hacienda.go.cr')) return fail(503);
+        if (u.includes('open.er-api.com')) return erApiOk('515');
+        throw new Error('unexpected ' + u);
+      });
+      const fx = newProvider();
+      const health = await fx.healthCheck();
+
+      const [hacienda, erApi] = health.sources;
+      expect(hacienda.ok).toBe(false);
+      expect(hacienda.error).toContain('503');
+      expect(hacienda.rate).toBeNull();
+      expect(erApi.ok).toBe(true);
+      expect(erApi.rate).toBe(515);
+    });
+
+    it('los probes NO mutan estado: caché, fuente servida y contadores intactos', async () => {
+      bothSourcesUp();
+      delete process.env.FX_CACHE_TTL_MS;
+      process.env.FX_CACHE_TTL_MS = '3600000';
+      const fx = new FxRateProvider();
+
+      await fx.healthCheck(); // probe inicial
+      const healthBefore = await fx.healthCheck();
+      expect(healthBefore.lastSourceServed).toBeNull();
+      expect(healthBefore.cache).toBeNull();
+
+      await fx.getRate('USD', 'CRC'); // esto SÍ escribe caché y contadores
+
+      const healthAfter = await fx.healthCheck();
+      expect(healthAfter.cache).toMatchObject({ usdCrc: 512.5, source: 'hacienda' });
+      expect(healthAfter.cache.isStale).toBe(false);
+      expect(healthAfter.lastSourceServed).toBe('hacienda');
+      expect(healthAfter.sources[0].stats).toMatchObject({ ok: 1, fail: 0 });
+      // fetches: 2 probes + 2 probes + 1 getRate + 2 probes del health final = 7
+      expect(fetchMock).toHaveBeenCalledTimes(7);
+    });
+
+    it('cache stale reportado como stale con edad en minutos', async () => {
+      bothSourcesUp();
+      delete process.env.FX_CACHE_TTL_MS;
+      process.env.FX_CACHE_TTL_MS = '1'; // TTL casi cero → stale inmediato
+      const fx = new FxRateProvider();
+      await fx.getRate('USD', 'CRC');
+      await new Promise((r) => setTimeout(r, 5)); // envejece la entrada
+
+      const health = await fx.healthCheck();
+      expect(health.cache.isStale).toBe(true);
+      expect(health.cache.ageMinutes).toBeGreaterThanOrEqual(0);
+    });
+  });
+
+  it('getRateInfo expone tasa, fuente y momento (transparencia checkout)', async () => {
+    expectHaciendaThenErApi();
+    // Instancia con caché real (TTL 1h fijado ANTES de construir: el TTL se lee
+    // en el constructor a propósito).
+    delete process.env.FX_CACHE_TTL_MS;
+    process.env.FX_CACHE_TTL_MS = '3600000';
+    const fx = new FxRateProvider();
+    const info = await fx.getRateInfo();
+    expect(info.usdCrc).toBe(512.5);
+    expect(info.source).toBe('hacienda');
+    expect(new Date(info.fetchedAt).getTime()).toBeGreaterThan(0);
+
+    // Con fuentes caídas y caché vivo, la tasa servida conserva su fuente original.
+    fetchMock.mockResolvedValue(fail(503));
+    const info2 = await fx.getRateInfo();
+    expect(info2.usdCrc).toBe(512.5);
+    expect(info2.source).toBe('hacienda');
+    expect(fetchMock).toHaveBeenCalledTimes(1); // sirvió del caché, sin re-fetch
+  });
 });

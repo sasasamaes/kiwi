@@ -482,6 +482,16 @@ export class StellarProvider {
     return this.fxRates.getRate(from, to);
   }
 
+  /** Tasa + fuente + momento, para transparencia en el checkout crypto. */
+  async getExchangeRateInfo(): Promise<{ usdCrc: number; source: string; fetchedAt: string }> {
+    return this.fxRates.getRateInfo();
+  }
+
+  /** Salud de las fuentes FX (admin): probes aislados + estado del caché. */
+  async getFxHealth() {
+    return this.fxRates.healthCheck();
+  }
+
   async getStellarAccountInfo(address: string): Promise<any> {
     try {
       const response = await this.horizonGet(`${this.horizonUrl}/accounts/${address}`);

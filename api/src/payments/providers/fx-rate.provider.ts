@@ -22,7 +22,43 @@ export class FxRateProvider {
   private readonly logger = new Logger(FxRateProvider.name);
 
   /** Última tasa buena por par, para servir stale si todas las fuentes fallan. */
-  private readonly cache = new Map<string, { rate: number; fetchedAt: number }>();
+  private readonly cache = new Map<string, { rate: number; fetchedAt: number; source: string }>();
+
+  /** Fuente de la última tasa obtenida (transparencia para el cliente). */
+  private lastSource: string | null = null;
+
+  /** Contadores por fuente (diagnóstico: ok/fallos, último error). */
+  private readonly health = new Map<
+    string,
+    {
+      ok: number;
+      fail: number;
+      lastOkAt: number | null;
+      lastErrorAt: number | null;
+      lastError: string | null;
+    }
+  >();
+
+  private recordSource(name: string, ok: boolean, error?: string) {
+    const h =
+      this.health.get(name) ??
+      ({ ok: 0, fail: 0, lastOkAt: null, lastErrorAt: null, lastError: null } as {
+        ok: number;
+        fail: number;
+        lastOkAt: number | null;
+        lastErrorAt: number | null;
+        lastError: string | null;
+      });
+    if (ok) {
+      h.ok += 1;
+      h.lastOkAt = Date.now();
+    } else {
+      h.fail += 1;
+      h.lastErrorAt = Date.now();
+      h.lastError = error ?? 'error';
+    }
+    this.health.set(name, h);
+  }
 
   /** Single-flight: una sola petición por par aunque N pedidos concurran. */
   private readonly inflight = new Map<string, Promise<number>>();
@@ -78,12 +114,89 @@ export class FxRateProvider {
 
     const promise = this.fetchUsdCrc()
       .then((rate) => {
-        this.cache.set('USD_CRC', { rate, fetchedAt: Date.now() });
+        this.cache.set('USD_CRC', {
+          rate,
+          fetchedAt: Date.now(),
+          source: this.lastSource ?? 'unknown',
+        });
         return rate;
       })
       .finally(() => this.inflight.delete('USD_CRC'));
     this.inflight.set('USD_CRC', promise);
     return promise;
+  }
+
+  /**
+   * Tasa + metadatos (fuente y momento) para transparencia en el checkout:
+   * el cliente puede ver con qué tasa se estimó su conversión.
+   */
+  async getRateInfo(): Promise<{ usdCrc: number; source: string; fetchedAt: string }> {
+    const usdCrc = await this.getUsdCrc();
+    const cached = this.cache.get('USD_CRC');
+    return {
+      usdCrc,
+      source: this.lastSource ?? 'unknown',
+      fetchedAt: new Date(cached?.fetchedAt ?? Date.now()).toISOString(),
+    };
+  }
+
+  /**
+   * Salud de las fuentes FX (admin): prueba PASIVA aparte, ambas fuentes en
+   * paralelo (los probes NO escriben caché ni contadores), y estado del caché
+   * canónico — tasa, fuente que la alimentó, edad y si está stale.
+   */
+  async healthCheck() {
+    const [hacienda, erApi] = await Promise.all([
+      this.probeSource('hacienda'),
+      this.probeSource('er-api'),
+    ]);
+    const cached = this.cache.get('USD_CRC');
+
+    return {
+      checkedAt: new Date().toISOString(),
+      sources: [
+        { ...hacienda, stats: this.health.get('hacienda') ?? null },
+        { ...erApi, stats: this.health.get('er-api') ?? null },
+      ],
+      cache: cached
+        ? {
+            usdCrc: cached.rate,
+            source: cached.source,
+            fetchedAt: new Date(cached.fetchedAt).toISOString(),
+            ageMinutes: Math.round((Date.now() - cached.fetchedAt) / 60000),
+            isStale: Date.now() - cached.fetchedAt >= this.ttlMs,
+          }
+        : null,
+      lastSourceServed: this.lastSource,
+      sanityBand: {
+        min: FxRateProvider.USD_CRC_MIN,
+        max: FxRateProvider.USD_CRC_MAX,
+        emergency: FxRateProvider.EMERGENCY_USD_CRC,
+      },
+    };
+  }
+
+  /** Probe aislado de una fuente: latencia + tasa o error. Sin efectos. */
+  private async probeSource(name: 'hacienda' | 'er-api'): Promise<{
+    name: string;
+    ok: boolean;
+    rate: number | null;
+    latencyMs: number;
+    error: string | null;
+  }> {
+    const started = Date.now();
+    try {
+      const rate = name === 'hacienda' ? await this.fromHacienda() : await this.fromErApi();
+      return { name, ok: true, rate, latencyMs: Date.now() - started, error: null };
+    } catch (e: any) {
+      return {
+        name,
+        ok: false,
+        rate: null,
+        latencyMs: Date.now() - started,
+        error: String(e?.message ?? e),
+      };
+    }
   }
 
   /**
@@ -93,27 +206,35 @@ export class FxRateProvider {
   private async fetchUsdCrc(): Promise<number> {
     try {
       const rate = await this.fromHacienda();
+      this.lastSource = 'hacienda';
+      this.recordSource('hacienda', true);
       this.logger.log(`FX USD_CRC (Hacienda CR): ${rate}`);
       return rate;
     } catch (e: any) {
+      this.recordSource('hacienda', false, String(e?.message ?? e));
       this.logger.warn(`Hacienda CR falló (${e?.message ?? e}) — probando er-api`);
     }
 
     try {
       const rate = await this.fromErApi();
+      this.lastSource = 'er-api';
+      this.recordSource('er-api', true);
       this.logger.log(`FX USD_CRC (er-api): ${rate}`);
       return rate;
     } catch (e: any) {
+      this.recordSource('er-api', false, String(e?.message ?? e));
       this.logger.warn(`er-api falló (${e?.message ?? e}) — usando respaldo`);
     }
 
     const cached = this.cache.get('USD_CRC');
     if (cached) {
+      this.lastSource = 'stale-cache';
       const ageH = Math.round((Date.now() - cached.fetchedAt) / 3600000);
       this.logger.warn(`FX stale: usando caché de hace ~${ageH}h para USD_CRC (${cached.rate})`);
       return cached.rate;
     }
 
+    this.lastSource = 'emergency-constant';
     this.logger.error(
       `FX sin fuentes vivas ni caché — usando constante de emergencia (${FxRateProvider.EMERGENCY_USD_CRC})`,
     );

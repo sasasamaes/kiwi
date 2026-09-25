@@ -42,6 +42,7 @@ describe('PaymentsService — pagos crypto (dedup y webhook)', () => {
         findUnique: jest.fn(),
         findFirst: jest.fn(),
         findMany: jest.fn().mockResolvedValue([]),
+        count: jest.fn().mockResolvedValue(0),
         create: jest.fn(),
         update: jest.fn(),
         updateMany: jest.fn().mockResolvedValue({ count: 1 }),
@@ -208,6 +209,104 @@ describe('PaymentsService — pagos crypto (dedup y webhook)', () => {
 
       const res = await callWebhook();
       expect(res.received).toBe(true);
+    });
+  });
+
+  describe('listPendingCryptoAdmin', () => {
+    it('lista solo crypto no completado con order y montos normalizados', async () => {
+      prisma.payment.count.mockResolvedValue(1);
+      prisma.payment.findMany.mockResolvedValue([
+        {
+          orderId: ORDER,
+          cryptoCoin: 'USDT',
+          cryptoAmount: '12.5',
+          cryptoWalletAddress: 'GWALLET',
+          cryptoTxHash: null,
+          status: PaymentStatus.pending,
+          createdAt: new Date('2026-09-25T12:00:00Z'),
+          order: {
+            id: ORDER,
+            status: 'pending',
+            totalAmount: '9500',
+            merchant: { businessName: 'Soda La Puerta' },
+          },
+        },
+      ]);
+
+      const res = await (service as any).listPendingCryptoAdmin({ take: 10 });
+
+      expect(prisma.payment.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ method: 'crypto' }),
+        }),
+      );
+      expect(res.total).toBe(1);
+      expect(res.items[0]).toMatchObject({
+        orderId: ORDER,
+        coin: 'USDT',
+        expectedAmount: 12.5,
+        order: { businessName: 'Soda La Puerta', totalAmount: 9500 },
+      });
+    });
+  });
+
+  describe('adminReverifyCrypto', () => {
+    it('pago inexistente → 400', async () => {
+      prisma.payment.findUnique.mockResolvedValue(null);
+      await expect((service as any).adminReverifyCrypto(ORDER)).rejects.toThrow('no encontrado');
+    });
+
+    it('método no crypto → 400', async () => {
+      prisma.payment.findUnique.mockResolvedValue({ method: 'cash', status: 'pending' });
+      await expect((service as any).adminReverifyCrypto(ORDER)).rejects.toThrow('crypto');
+    });
+
+    it('ya completado → respuesta inmediata sin re-verificar', async () => {
+      prisma.payment.findUnique.mockResolvedValue({
+        method: 'crypto',
+        status: PaymentStatus.completed,
+      });
+
+      const res = await (service as any).adminReverifyCrypto(ORDER);
+
+      expect(res).toMatchObject({ rechecked: true, alreadyCompleted: true, completed: true });
+      expect(stellar.verifyOrderPayment).not.toHaveBeenCalled();
+    });
+
+    it('delega en getPaymentStatus (verificación on-chain real) y reporta resultado', async () => {
+      prisma.payment.findUnique.mockResolvedValue({
+        method: 'crypto',
+        status: PaymentStatus.pending,
+      });
+      // getPaymentStatus re-consulta la fila + on-chain via provider:
+      prisma.payment.findUnique.mockResolvedValueOnce({
+        method: 'crypto',
+        status: PaymentStatus.pending,
+      });
+      prisma.payment.findUnique.mockResolvedValueOnce(pendingCryptoPayment());
+      prisma.payment.findMany.mockResolvedValue([]);
+      stellar.verifyOrderPayment.mockResolvedValue({ verified: true, txHash: TX });
+
+      const res = await (service as any).adminReverifyCrypto(ORDER);
+
+      expect(stellar.verifyOrderPayment).toHaveBeenCalled();
+      expect(res).toMatchObject({ rechecked: true, completed: true, txHash: TX });
+    });
+
+    it('sin evidencia → completed:false con razón, sin lanzar', async () => {
+      prisma.payment.findUnique
+        .mockResolvedValueOnce({ method: 'crypto', status: PaymentStatus.pending })
+        .mockResolvedValueOnce(pendingCryptoPayment());
+      prisma.payment.findMany.mockResolvedValue([]);
+      stellar.verifyOrderPayment.mockResolvedValue({
+        verified: false,
+        reason: 'no_matching_payment',
+      });
+
+      const res = await (service as any).adminReverifyCrypto(ORDER);
+
+      expect(res.completed).toBe(false);
+      expect(res.reason).toBe('no_matching_payment');
     });
   });
 });

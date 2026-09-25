@@ -16,6 +16,7 @@ import {
   Wallet,
   LogOut,
   Calculator,
+  Link2,
 } from 'lucide-react';
 import { ThemeToggle, useAuth, KiwiLogo } from '@kiwi/ui';
 
@@ -27,6 +28,7 @@ const menuItems = [
   { href: '/admin/ratings', icon: Star, label: 'Comentarios' },
   { href: '/admin/kyc', icon: BadgeCheck, label: 'Verificaciones KYC' },
   { href: '/admin/payments', icon: Coins, label: 'Pagos' },
+  { href: '/admin/payments/crypto', icon: Link2, label: 'Cripto pendientes' },
   { href: '/admin/simulador', icon: Calculator, label: 'Simulador' },
   { href: '/admin/reportes', icon: BarChart3, label: 'Real vs Proyección' },
   { href: '/admin/settings', icon: Settings, label: 'Configuración' },

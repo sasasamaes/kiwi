@@ -686,7 +686,10 @@ export class PaymentsService {
       }
     }
 
-    if (payment.method === 'crypto' && payment.status === PaymentStatus.pending) {
+    if (
+      payment.method === 'crypto' &&
+      (payment.status === PaymentStatus.pending || payment.status === PaymentStatus.processing)
+    ) {
       // Verificación on-chain real: escanea los pagos entrantes a la wallet
       // receptora y exige asset, monto y tx confirmada. Fail-closed: cualquier
       // error deja el pago pending para reintentar en la próxima consulta.
@@ -712,10 +715,101 @@ export class PaymentsService {
       if (verified.verified) {
         await this.markCryptoCompleted(orderId, verified.txHash);
         payment.status = PaymentStatus.completed;
+        if (verified.txHash) (payment as any).cryptoTxHash = verified.txHash;
       }
     }
 
     return payment;
+  }
+
+  /**
+   * Pagos crypto no completados (admin): filas con wallet, monto esperado y
+   * coin, para la vista de reconciliación. SIN verificación on-chain en el
+   * listado (no golpea Horizon en masa); la evidencia se pide fila a fila
+   * con adminReverifyCrypto.
+   */
+  async listPendingCryptoAdmin(opts: { take?: number; skip?: number }) {
+    const take = Math.min(Math.max(Number(opts.take ?? 30), 1), 100);
+    const skip = Math.max(Number(opts.skip ?? 0), 0);
+    const where = {
+      method: 'crypto' as PaymentMethod,
+      status: { in: [PaymentStatus.pending, PaymentStatus.processing] as PaymentStatus[] },
+    };
+
+    const [total, items] = await Promise.all([
+      this.prisma.payment.count({ where }),
+      this.prisma.payment.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        take,
+        skip,
+        include: {
+          order: {
+            select: {
+              id: true,
+              status: true,
+              totalAmount: true,
+              merchant: { select: { businessName: true } },
+            },
+          },
+        },
+      }),
+    ]);
+
+    return {
+      total,
+      items: items.map((p: any) => ({
+        orderId: p.orderId,
+        coin: p.cryptoCoin ?? 'USDC',
+        expectedAmount: p.cryptoAmount != null ? Number(p.cryptoAmount) : null,
+        walletAddress: p.cryptoWalletAddress ?? null,
+        cryptoTxHash: p.cryptoTxHash ?? null,
+        status: p.status,
+        createdAt: p.createdAt,
+        order: p.order
+          ? {
+              id: p.order.id,
+              status: p.order.status,
+              totalAmount: Number(p.order.totalAmount),
+              businessName: p.order.merchant?.businessName ?? null,
+            }
+          : null,
+      })),
+    };
+  }
+
+  /**
+   * Re-verificación on-chain manual (admin): fuerza el chequeo contra Horizon
+   * y completa el pago SOLO si aparece evidencia on-chain (mismo criterio
+   * fail-closed que el polling automático).
+   */
+  async adminReverifyCrypto(orderId: string) {
+    const payment = await this.prisma.payment.findUnique({
+      where: { orderId },
+      select: { method: true, status: true },
+    });
+    if (!payment) {
+      throw new BadRequestException('Pago no encontrado');
+    }
+    if (payment.method !== 'crypto') {
+      throw new BadRequestException('El pago no es de método crypto');
+    }
+    if (payment.status === PaymentStatus.completed) {
+      return { rechecked: true, alreadyCompleted: true, completed: true, reason: null };
+    }
+
+    // getPaymentStatus ejecuta la verificación on-chain y persiste el cambio
+    // si hay evidencia (incluye dedup de txs usadas).
+    const result = await this.getPaymentStatus(orderId);
+    const completed = result?.status === PaymentStatus.completed;
+    return {
+      rechecked: true,
+      alreadyCompleted: false,
+      completed,
+      reason: completed ? null : 'no_matching_payment',
+      txHash: (result as any)?.cryptoTxHash ?? null,
+      status: result?.status ?? null,
+    };
   }
 
   async handleWebhook(provider: string, payload: any, signature?: string, rawBody?: string) {

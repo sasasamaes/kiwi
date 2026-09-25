@@ -122,6 +122,47 @@ export class PaymentsController {
     });
   }
 
+  @Get('admin/crypto/pending')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List pending crypto payments for reconciliation (admin only)' })
+  async listPendingCryptoAdmin(@Query('take') take?: string, @Query('skip') skip?: string) {
+    return this.paymentsService.listPendingCryptoAdmin({
+      take: take != null ? Number(take) : undefined,
+      skip: skip != null ? Number(skip) : undefined,
+    });
+  }
+
+  @Post('admin/crypto/reverify')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Force on-chain re-verification for a crypto payment (admin only)' })
+  async adminReverifyCrypto(@Body() body: { orderId: string }) {
+    if (!body?.orderId || typeof body.orderId !== 'string') {
+      throw new BadRequestException('orderId requerido');
+    }
+    return this.paymentsService.adminReverifyCrypto(body.orderId);
+  }
+
+  @Get('admin/fx/health')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'FX sources health + last cached rate (admin only)' })
+  async getFxHealth() {
+    return this.stellarProvider.getFxHealth();
+  }
+
+  @Public()
+  @Get('crypto/rate')
+  @ApiOperation({ summary: 'Current CRC/USD rate from the backend FX oracle (transparency)' })
+  async getCryptoRate() {
+    return this.stellarProvider.getExchangeRateInfo();
+  }
+
   @Public()
   @Get('methods')
   @ApiOperation({ summary: 'Get available payment methods' })

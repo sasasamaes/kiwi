@@ -903,6 +903,33 @@ class ApiClient {
     return this.request<any>(`/payments/admin/all${s ? `?${s}` : ''}`);
   }
 
+  /** Pagos crypto pendientes para reconciliación (admin). */
+  async listPendingCryptoAdmin(params?: { take?: number; skip?: number }) {
+    const q = new URLSearchParams();
+    if (params?.take != null) q.append('take', String(params.take));
+    if (params?.skip != null) q.append('skip', String(params.skip));
+    const s = q.toString();
+    return this.request<any>(`/payments/admin/crypto/pending${s ? `?${s}` : ''}`);
+  }
+
+  /** Fuerza re-verificación on-chain de un pago crypto (admin). */
+  async reverifyCryptoPayment(orderId: string) {
+    return this.request<any>('/payments/admin/crypto/reverify', {
+      method: 'POST',
+      body: { orderId },
+    });
+  } /** Tasa CRC/USD vigente del oracle del backend (público, sin auth). */
+  async getCryptoRate() {
+    return this.request<{ usdCrc: number; source: string; fetchedAt: string }>(
+      '/payments/crypto/rate',
+    );
+  }
+
+  /** Salud de las fuentes FX y última tasa cacheada (admin). */
+  async getFxHealth() {
+    return this.request<any>('/payments/admin/fx/health');
+  }
+
   async getLivePulse() {
     return this.request<any>('/analytics/live');
   }
