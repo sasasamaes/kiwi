@@ -502,9 +502,9 @@ export default function ActiveOrders() {
   const order = orders.find((o) => o.id === selectedId) ?? orders[0];
   const stepIndex = Math.max(0, FLOW_ORDER.indexOf(order.status as (typeof FLOW_ORDER)[number]));
   const meta = STEP_META[order.status] ?? { label: order.status, hint: '' };
-  // Nav visible solo antes de iniciar el viaje: en plena entrega la pantalla
-  // dueña de la atención es la navegación, no el menú.
-  const showBottomNav = order.status === 'assigned';
+  // La barra de acción fija es dueña del borde inferior en todos los pasos:
+  // el BottomNav se oculta en esta pantalla para que no tape el botón
+  // (antes se traslapaban en "assigned" y el botón quedaba cortado).
   const flow = NEXT_STATUS[order.status];
   const driverPayout = netPayout(order);
   // % real del pedido (el admin la puede cambiar; el backend la guarda).
@@ -1106,7 +1106,7 @@ export default function ActiveOrders() {
         )}
       </AnimatePresence>
 
-      {showBottomNav && <BottomNav />}
+      {/* Sin BottomNav: la barra de acción fija ocupa el borde inferior. */}
     </main>
   );
 }

@@ -182,10 +182,18 @@ export default function DriversPage() {
     const off1 = on('order:accepted', () => loadAll());
     const off2 = on('order:statusChanged', () => loadAll());
     const off3 = on('driver:statusChanged', () => loadAll());
+    // El primero que lo toma lo saca del concurso para todos (ganador por
+    // Aceptar o asignación directa desde otro dispositivo).
+    const off4 = on('order:taken', () => loadAll());
+    const off5 = on('order:driverAssigned', () => loadAll());
+    const off6 = on('order:rejected', () => loadAll());
     return () => {
       off1();
       off2();
       off3();
+      off4();
+      off5();
+      off6();
     };
   }, [on, loadAll]);
 

@@ -11,6 +11,7 @@ interface UseSocketOptions {
   onNewOrder?: (data: any) => void;
   onOrderAccepted?: (data: any) => void;
   onOrderStatusChanged?: (data: any) => void;
+  onOrderTaken?: (data: any) => void;
   onDriverLocation?: (data: any) => void;
   onDriverStatusChanged?: (data: any) => void;
 }
@@ -69,6 +70,10 @@ export function useSocket(options: UseSocketOptions = {}) {
       );
     }
 
+    if (optionsRef.current.onOrderTaken) {
+      cleanupFunctions.push(socketClient.on('order:taken', optionsRef.current.onOrderTaken));
+    }
+
     if (optionsRef.current.onDriverLocation) {
       cleanupFunctions.push(
         socketClient.on('driver:location', optionsRef.current.onDriverLocation),
@@ -125,6 +130,7 @@ export function useSocket(options: UseSocketOptions = {}) {
     onNewOrder: optionsRef.current.onNewOrder,
     onOrderAccepted: optionsRef.current.onOrderAccepted,
     onOrderStatusChanged: optionsRef.current.onOrderStatusChanged,
+    onOrderTaken: optionsRef.current.onOrderTaken,
     on: socketClient.on.bind(socketClient),
     off: socketClient.off.bind(socketClient),
     emit: socketClient.emit.bind(socketClient),

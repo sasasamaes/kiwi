@@ -119,18 +119,29 @@ export default function Home() {
   const isOnlineRef = useRef(isOnline);
   isOnlineRef.current = isOnline;
 
+  // Espejos para leer visibilidad dentro de callbacks de socket sin
+  // cierres viejos (availableOrders/newOrderAlert del primer render).
+  const availableRef = useRef<Order[]>([]);
+  availableRef.current = availableOrders;
+  const alertRef = useRef<any>(null);
+  alertRef.current = newOrderAlert;
+
   // Saca un pedido de Disponibles + popup cuando deja de estar vigente.
   const removeFromAvailable = useCallback((data: any) => {
     const goneId = data?.id ?? data?.orderId;
     const st = data?.status;
-    if (!goneId) return;
+    if (!goneId) return false;
     // Sin estado o con estado no-pending: ya no se puede aceptar.
-    if (st !== undefined && (st === 'pending' || st === 'driver_proposals')) return;
+    if (st !== undefined && (st === 'pending' || st === 'driver_proposals')) return false;
+    const wasVisible =
+      availableRef.current.some((o) => o.id === goneId) ||
+      (alertRef.current && (alertRef.current.id ?? alertRef.current.orderId) === goneId);
     setAvailableOrders((prev) => prev.filter((o) => o.id !== goneId));
     setNewOrderAlert((prev) => {
       const prevId = prev?.id ?? prev?.orderId;
       return prevId === goneId ? null : prev;
     });
+    return wasVisible;
   }, []);
 
   // Real-time socket connection
@@ -169,6 +180,20 @@ export default function Home() {
     onOrderAccepted: (data) => {
       // Otro driver aceptó: el pedido ya no está disponible para mí.
       removeFromAvailable(data);
+    },
+    onOrderTaken: (data) => {
+      // El primero que lo acepta lo toma: sale de Disponibles en vivo y se
+      // dice QUIÉN lo agarró (no un genérico "ya no disponible").
+      const wasVisible = removeFromAvailable({ ...data, status: data?.status ?? 'assigned' });
+      if (wasVisible) {
+        const winner = data?.driverName;
+        playNotificationSound('order_update');
+        addNotification({
+          type: 'order_status',
+          title: 'Pedido tomado',
+          body: winner ? `${winner} ya tomó este pedido` : 'Otro repartidor ya tomó este pedido',
+        });
+      }
     },
   });
 

@@ -754,44 +754,87 @@ function NewOrderInner({
     }
     setLoading(true);
     try {
-      const result = await api.createOrder({
-        pickupAddress: pickupAddress || profileAddress || 'Nicoya Centro',
-        deliveryAddress,
-        deliveryZone,
-        payWithCredit: paymentMethod === 'credit',
-        deliveryLat,
-        deliveryLng,
-        orderType: isScheduled ? 'scheduled' : 'immediate',
-        scheduledDate: scheduledDate || undefined,
-        scheduledTime: scheduledTime || undefined,
-        specialInstructions: [`Cliente: ${deliveryName} (${deliveryPhone})`, notes]
-          .filter(Boolean)
-          .join(' · '),
-        distanceKm: routeKm ?? undefined,
-        kind,
-        items:
-          kind === 'food'
-            ? items.map((item) => ({
-                menuItemId: item.menuItemId,
-                name: item.name,
-                price: item.price,
-                quantity: item.quantity,
-                notes: item.notes || undefined,
-              }))
-            : [],
-        packageDescription: kind === 'freight' ? packageDescription : undefined,
-        packageSize: kind === 'freight' && packageSize !== '' ? packageSize : undefined,
-        weightKg: kind === 'freight' && weightKg > 0 ? weightKg : undefined,
-      });
-
-      if (selectedDriverId) {
-        // Asignar es best-effort: si el driver se desconectó, el pedido
-        // igual se crea y se paga (queda en concurso), sin duplicados.
-        try {
-          await api.assignDriver(result.id, selectedDriverId);
-        } catch (assignErr) {
-          console.warn('Assign failed, order continues in contest:', assignErr);
-          setOrderNotice('No se pudo asignar al repartidor elegido: quedó en concurso.');
+      // Asignación directa en la creación: el backend crea el pedido YA
+      // asignado y avisa SOLO al elegido. Sin esto, el pedido nacía en
+      // concurso (alertando a toda la flota) y recién después se asignaba.
+      let result: any = null;
+      try {
+        result = await api.createOrder({
+          pickupAddress: pickupAddress || profileAddress || 'Nicoya Centro',
+          deliveryAddress,
+          deliveryZone,
+          payWithCredit: paymentMethod === 'credit',
+          deliveryLat,
+          deliveryLng,
+          orderType: isScheduled ? 'scheduled' : 'immediate',
+          scheduledDate: scheduledDate || undefined,
+          scheduledTime: scheduledTime || undefined,
+          customerName: deliveryName.trim() || undefined,
+          customerPhone: deliveryPhone.trim() || undefined,
+          specialInstructions: [`Cliente: ${deliveryName} (${deliveryPhone})`, notes]
+            .filter(Boolean)
+            .join(' · '),
+          distanceKm: routeKm ?? undefined,
+          kind,
+          items:
+            kind === 'food'
+              ? items.map((item) => ({
+                  menuItemId: item.menuItemId,
+                  name: item.name,
+                  price: item.price,
+                  quantity: item.quantity,
+                  notes: item.notes || undefined,
+                }))
+              : [],
+          packageDescription: kind === 'freight' ? packageDescription : undefined,
+          packageSize: kind === 'freight' && packageSize !== '' ? packageSize : undefined,
+          weightKg: kind === 'freight' && weightKg > 0 ? weightKg : undefined,
+          ...(selectedDriverId ? { driverId: selectedDriverId } : {}),
+        });
+      } catch (createErr: any) {
+        // El elegido se desconectó entre la lista y el crear: reintentar SIN
+        // driver (queda en concurso) en vez de perder todo el formulario.
+        const msg = String(createErr?.message ?? '');
+        if (
+          selectedDriverId &&
+          /no está disponible|verificado|Repartidor no encontrado/i.test(msg)
+        ) {
+          console.warn('Direct driver unavailable, retrying as contest:', createErr);
+          setOrderNotice(`No se pudo asignar al repartidor elegido (${msg}): quedó en concurso.`);
+          setSelectedDriverId(null);
+          result = await api.createOrder({
+            pickupAddress: pickupAddress || profileAddress || 'Nicoya Centro',
+            deliveryAddress,
+            deliveryZone,
+            payWithCredit: paymentMethod === 'credit',
+            deliveryLat,
+            deliveryLng,
+            orderType: isScheduled ? 'scheduled' : 'immediate',
+            scheduledDate: scheduledDate || undefined,
+            scheduledTime: scheduledTime || undefined,
+            customerName: deliveryName.trim() || undefined,
+            customerPhone: deliveryPhone.trim() || undefined,
+            specialInstructions: [`Cliente: ${deliveryName} (${deliveryPhone})`, notes]
+              .filter(Boolean)
+              .join(' · '),
+            distanceKm: routeKm ?? undefined,
+            kind,
+            items:
+              kind === 'food'
+                ? items.map((item) => ({
+                    menuItemId: item.menuItemId,
+                    name: item.name,
+                    price: item.price,
+                    quantity: item.quantity,
+                    notes: item.notes || undefined,
+                  }))
+                : [],
+            packageDescription: kind === 'freight' ? packageDescription : undefined,
+            packageSize: kind === 'freight' && packageSize !== '' ? packageSize : undefined,
+            weightKg: kind === 'freight' && weightKg > 0 ? weightKg : undefined,
+          });
+        } else {
+          throw createErr;
         }
       }
 
@@ -1304,8 +1347,15 @@ function NewOrderInner({
                 }`}
               >
                 <p className="font-medium">⏳ En concurso {selectedDriverId === null && '✓'}</p>
-                <p className="text-xs text-surface-500">El primero que lo acepte se lo lleva</p>
+                <p className="text-xs text-surface-500">
+                  Se avisa a todos los disponibles · el primero que lo acepte se lo lleva
+                </p>
               </button>
+              {selectedDriverId !== null && (
+                <p className="mb-3 rounded-xl bg-kiwi-50 dark:bg-kiwi-900/20 border border-kiwi-200 dark:border-kiwi-800 px-3 py-2 text-xs text-kiwi-800 dark:text-kiwi-200">
+                  Solo se avisará al repartidor elegido. Nadie más recibirá este pedido.
+                </p>
+              )}
               <h3 className="mb-2 text-sm font-semibold text-surface-600 dark:text-surface-400">
                 ⭐ Favoritos
               </h3>
@@ -1329,19 +1379,24 @@ function NewOrderInner({
                   <h3 className="pt-2 text-sm font-semibold text-surface-600 dark:text-surface-400">
                     📍 Disponibles ahora
                   </h3>
-                  {availableDrivers.filter((d) => d.status === 'available').length === 0 && (
+                  {availableDrivers.filter(
+                    (d) => d.status === 'available' && !favoriteDrivers.some((f) => f.id === d.id),
+                  ).length === 0 && (
                     <p className="text-xs text-surface-400">
                       Nadie disponible ahora. Quedará en concurso.
                     </p>
                   )}
                   {availableDrivers
-                    .filter((d) => d.status === 'available')
+                    .filter(
+                      (d) =>
+                        d.status === 'available' && !favoriteDrivers.some((f) => f.id === d.id),
+                    )
                     .map((d) => (
                       <DriverRow
                         key={d.id}
                         driver={d}
                         selected={selectedDriverId === d.id}
-                        isFav={favoriteDrivers.some((f) => f.id === d.id)}
+                        isFav={false}
                         onSelect={() =>
                           setSelectedDriverId(selectedDriverId === d.id ? null : d.id)
                         }

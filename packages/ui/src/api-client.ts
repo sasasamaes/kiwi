@@ -1487,6 +1487,8 @@ export interface Order {
   declaredValue?: number | string | null;
   weightKg?: number | string | null;
   specialInstructions?: string;
+  customerName?: string | null;
+  customerPhone?: string | null;
   createdAt: string;
   merchant?: { businessName?: string | null } | null;
   items?: Array<{

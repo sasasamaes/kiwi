@@ -26,6 +26,9 @@ interface SocketEvents {
   'order:new': (data: any) => void;
   'order:accepted': (data: any) => void;
   'order:statusChanged': (data: any) => void;
+  'order:taken': (data: any) => void;
+  'order:assigned': (data: any) => void;
+  'order:confirmed': (data: any) => void;
 
   // Driver events
   'driver:location': (data: any) => void;

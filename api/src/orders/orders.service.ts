@@ -78,8 +78,10 @@ export class OrdersService {
       throw new BadRequestException('Demasiados items en el pedido (máx 50)');
     }
 
+    // Invitados siempre a concurso: un link público no puede elegir driver.
+    const { driverId: _ignored, ...guestData } = data ?? {};
     return this.create(merchantProfile.userId, {
-      ...data,
+      ...guestData,
       pickupAddress: data?.pickupAddress || merchantProfile.address,
       pickupLat: data?.pickupLat ?? merchantProfile.latitude,
       pickupLng: data?.pickupLng ?? merchantProfile.longitude,
@@ -358,10 +360,42 @@ export class OrdersService {
       throw new BadRequestException('packageSize inválido');
     }
 
+    // Asignación directa (el comercio eligió a 1 repartidor): se valida
+    // ANTES de crear para no publicar un concurso que después se pisa.
+    // Si hay driverId válido → el pedido nace asignado y NO se alerta al
+    // resto de la flota. Sin driverId → concurso normal (alertNearbyDrivers).
+    const requestedDriverId =
+      typeof data?.driverId === 'string' && data.driverId.trim() !== ''
+        ? data.driverId.trim()
+        : null;
+    let directDriver: any = null;
+    if (requestedDriverId) {
+      directDriver = await this.prisma.driverProfile.findUnique({
+        where: { id: requestedDriverId },
+      });
+      if (!directDriver) {
+        throw new NotFoundException('Repartidor no encontrado');
+      }
+      if (directDriver.status !== 'available') {
+        throw new BadRequestException(
+          `${directDriver.fullName} no está disponible ahora (estado: ${directDriver.status}). Podrás asignárselo cuando se conecte.`,
+        );
+      }
+      if (isKycRequired() && directDriver.kycStatus !== 'approved') {
+        throw new BadRequestException(
+          `${directDriver.fullName} aún no está verificado (KYC ${directDriver.kycStatus}).`,
+        );
+      }
+    }
+
     const order = await this.prisma.order.create({
       data: {
         merchantId: merchantProfile.id,
-        status: orderType === 'scheduled' ? 'driver_proposals' : 'pending',
+        status: directDriver
+          ? 'assigned'
+          : orderType === 'scheduled'
+            ? 'driver_proposals'
+            : 'pending',
         orderType,
         scheduledDate,
         scheduledTime: data.scheduledTime,
@@ -388,6 +422,7 @@ export class OrdersService {
         customerName: data.customerName != null ? String(data.customerName).trim() || null : null,
         customerPhone:
           data.customerPhone != null ? String(data.customerPhone).trim() || null : null,
+        ...(directDriver ? { driverId: directDriver.id, assignedAt: new Date() } : {}),
         // Atómico: los items se crean en la misma escritura. Antes era un
         // createMany best-effort que podía dejar el pedido cobrado sin items
         // (el driver no veía qué llevar).
@@ -411,8 +446,45 @@ export class OrdersService {
       },
     });
 
-    // Alerta de pedido nuevo a los drivers con probabilidad real de tomarlo:
-    // targeting por proximidad al punto de recojo (socket 1:1 + push 1:1).
+    // Asignación directa: avisar SOLO al elegido (socket 1:1 + push 1:1).
+    // Nada de broadcast: el resto de la flota no debe enterarse.
+    if (directDriver) {
+      const directPayload = {
+        id: order.id,
+        orderId: order.id,
+        pickupAddress: order.pickupAddress,
+        deliveryAddress: order.deliveryAddress,
+        deliveryZone: (order as any).deliveryZone ?? deliveryZone,
+        totalAmount: Number(order.totalAmount),
+        driverPayout: order.driverPayout != null ? Number(order.driverPayout) : null,
+        distanceKm: Number(order.distanceKm),
+        merchantName: merchantProfile.businessName,
+        createdAt: order.createdAt,
+        message: 'Te asignaron un pedido',
+      };
+      this.eventsGateway.sendToUser(directDriver.userId, 'order:assigned', directPayload);
+      void this.notificationsService
+        .notifyOrderStatusUpdate(order.id, directDriver.userId, 'assigned', 'driver', {
+          shortId: order.id.slice(0, 8).toUpperCase(),
+          merchantName: merchantProfile.businessName,
+          driverName: directDriver.fullName,
+          pickupAddress: order.pickupAddress,
+          deliveryAddress: order.deliveryAddress,
+          payout: order.driverPayout != null ? Number(order.driverPayout) : undefined,
+          totalAmount: Number(order.totalAmount),
+          customerName: (order as any).customerName ?? undefined,
+        })
+        .catch(() => undefined);
+      this.eventsGateway.sendToUser(merchantProfile.userId, 'order:driverAssigned', {
+        orderId: order.id,
+        driverName: directDriver.fullName,
+        message: `${directDriver.fullName} fue asignado a tu pedido`,
+      });
+      return order;
+    }
+
+    // Concurso: alerta a los drivers con probabilidad real de tomarlo
+    // (targeting por proximidad al punto de recojo, socket 1:1 + push 1:1).
     // Forma canónica: los drivers tratan cada item como Order (id + payout).
     // Sin `id`, Aceptar llamaría a /orders/undefined/accept y fallaría siempre.
     if (order.status === 'pending') {
@@ -1125,22 +1197,43 @@ export class OrdersService {
     // Cada rol recibe SU copia: el comercio lee "tu pedido", el repartidor
     // lee su acción ("recogiste", "entregaste"). Un mensaje único con la
     // perspectiva del comercio en el inbox del driver se lee como una
-    // notificación ajena.
+    // notificación ajena. Cada paso lleva #pedido y nombres para que los
+    // mensajes no sean todos iguales.
+    const shortId = orderId.slice(0, 8).toUpperCase();
+    const merchantName =
+      (updatedOrder as any).merchant?.businessName ?? order.merchant?.businessName ?? 'el comercio';
+    const driverName =
+      (updatedOrder as any).driver?.fullName ?? order.driver?.fullName ?? 'El repartidor';
+    const statusContext = {
+      shortId,
+      merchantName,
+      driverName,
+      pickupAddress: (updatedOrder as any).pickupAddress ?? order.pickupAddress,
+      deliveryAddress: (updatedOrder as any).deliveryAddress ?? order.deliveryAddress,
+      payout:
+        (updatedOrder as any).driverPayout != null
+          ? Number((updatedOrder as any).driverPayout)
+          : order.driverPayout != null
+            ? Number(order.driverPayout)
+            : undefined,
+      totalAmount: Number((updatedOrder as any).totalAmount ?? order.totalAmount),
+      customerName: (updatedOrder as any).customerName ?? order.customerName ?? undefined,
+    };
     const merchantLabels: Record<string, string> = {
-      assigned: 'Tu pedido fue asignado a un repartidor',
-      in_transit_to_pickup: 'El repartidor va en camino a recoger',
-      picked_up: 'El repartidor recogió tu pedido',
-      in_transit_to_delivery: 'Tu pedido va en camino',
-      delivered: '✅ Tu pedido fue entregado',
-      cancelled: 'El pedido fue cancelado',
+      assigned: `#${shortId}: ${driverName} fue asignado a tu pedido`,
+      in_transit_to_pickup: `#${shortId}: ${driverName} va en camino a recoger`,
+      picked_up: `#${shortId}: ${driverName} recogió tu pedido`,
+      in_transit_to_delivery: `#${shortId}: tu pedido va en camino a ${statusContext.deliveryAddress || 'su destino'}`,
+      delivered: `#${shortId}: ✅ tu pedido fue entregado`,
+      cancelled: `#${shortId}: el pedido fue cancelado`,
     };
     const driverLabels: Record<string, string> = {
-      assigned: 'Te asignaron un pedido. Ve a recogerlo',
-      in_transit_to_pickup: 'Vas en camino a recoger el pedido',
-      picked_up: 'Recogiste el pedido. Llévalo a su destino',
-      in_transit_to_delivery: 'Vas en camino a entregar el pedido',
-      delivered: '✅ Entregaste el pedido',
-      cancelled: 'El pedido fue cancelado',
+      assigned: `#${shortId}: te asignaron el pedido de ${merchantName}. Ve a recogerlo`,
+      in_transit_to_pickup: `#${shortId}: vas en camino a recoger en ${statusContext.pickupAddress || merchantName}`,
+      picked_up: `#${shortId}: recogiste el pedido. Llevalo a ${statusContext.deliveryAddress || 'su destino'}`,
+      in_transit_to_delivery: `#${shortId}: vas en camino a entregar en ${statusContext.deliveryAddress || 'su destino'}`,
+      delivered: `#${shortId}: ✅ entregaste el pedido`,
+      cancelled: `#${shortId}: el pedido fue cancelado`,
     };
 
     const baseNotification = {
@@ -1158,7 +1251,7 @@ export class OrdersService {
         message: merchantLabels[status] || 'Estado actualizado',
       });
       void this.notificationsService
-        .notifyOrderStatusUpdate(orderId, order.merchant.userId, status, 'merchant')
+        .notifyOrderStatusUpdate(orderId, order.merchant.userId, status, 'merchant', statusContext)
         .catch(() => undefined);
     }
 
@@ -1168,7 +1261,7 @@ export class OrdersService {
         message: driverLabels[status] || 'Estado actualizado',
       });
       void this.notificationsService
-        .notifyOrderStatusUpdate(orderId, order.driver.userId, status, 'driver')
+        .notifyOrderStatusUpdate(orderId, order.driver.userId, status, 'driver', statusContext)
         .catch(() => undefined);
     }
 
@@ -1231,9 +1324,16 @@ export class OrdersService {
     });
 
     if (claimed.count === 0) {
-      const existing = await this.prisma.order.findUnique({ where: { id: orderId } });
+      const existing: any = await this.prisma.order.findUnique({
+        where: { id: orderId },
+        include: { driver: { select: { fullName: true } } },
+      });
       if (!existing) throw new NotFoundException('Pedido no encontrado');
-      throw new BadRequestException('El pedido no está disponible');
+      if (existing.driverId) {
+        const winner = existing.driver?.fullName ?? 'Otro repartidor';
+        throw new BadRequestException(`${winner} ya tomó este pedido`);
+      }
+      throw new BadRequestException(`El pedido ya no está disponible (estado: ${existing.status})`);
     }
 
     const updatedOrder = await this.prisma.order.findUnique({
@@ -1265,6 +1365,17 @@ export class OrdersService {
         message: `${driverProfile.fullName} fue asignado a tu pedido`,
       });
     }
+
+    // Sacar el pedido de los Disponibles del resto: el primero que lo toma
+    // lo saca del concurso para todos (los perdedores lo ven desaparecer en
+    // vivo sin tener que reintentar Aceptar).
+    this.eventsGateway.sendToRole('driver', 'order:taken', {
+      id: updatedOrder.id,
+      orderId: updatedOrder.id,
+      status: 'assigned',
+      driverName: driverProfile.fullName,
+      message: `${driverProfile.fullName} ya tomó este pedido`,
+    });
 
     return updatedOrder;
   }
@@ -1463,7 +1574,10 @@ export class OrdersService {
   }
 
   async acceptOrderAsDriver(orderId: string, driverUserId: string) {
-    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+    const order: any = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { driver: { select: { fullName: true } } },
+    });
     if (!order) throw new NotFoundException('Pedido no encontrado');
 
     const driverProfile = await this.prisma.driverProfile.findUnique({
@@ -1490,7 +1604,10 @@ export class OrdersService {
     }
 
     if ((order as any).driverId) {
-      throw new BadRequestException('El pedido ya fue tomado por otro repartidor');
+      const winner = (order as any).driver?.fullName;
+      throw new BadRequestException(
+        winner ? `${winner} ya tomó este pedido` : 'El pedido ya fue tomado por otro repartidor',
+      );
     }
 
     if ((order as any).status === 'driver_proposals' || (order as any).orderType === 'scheduled') {
@@ -1516,7 +1633,10 @@ export class OrdersService {
     });
 
     if (claimed.count === 0) {
-      const existing: any = await this.prisma.order.findUnique({ where: { id: orderId } });
+      const existing: any = await this.prisma.order.findUnique({
+        where: { id: orderId },
+        include: { driver: { select: { fullName: true } } },
+      });
       if (!existing) throw new NotFoundException('Pedido no encontrado');
       // Carrerita perdida contra vos mismo (doble tap): devolverlo, no error.
       if (existing.driverId === driverProfile.id) {
@@ -1526,7 +1646,10 @@ export class OrdersService {
         });
       }
       if (existing.driverId) {
-        throw new BadRequestException('El pedido ya fue tomado por otro repartidor');
+        const winner = existing.driver?.fullName;
+        throw new BadRequestException(
+          winner ? `${winner} ya tomó este pedido` : 'El pedido ya fue tomado por otro repartidor',
+        );
       }
       if (existing.status === 'driver_proposals' || existing.orderType === 'scheduled') {
         throw new BadRequestException(
@@ -1563,6 +1686,16 @@ export class OrdersService {
     this.eventsGateway.sendToUser(driverUserId, 'order:confirmed', {
       orderId: updatedOrder.id,
       message: 'Aceptaste el pedido. Ve a recogerlo.',
+    });
+
+    // El primero que lo acepta lo toma: avisar al resto de la flota para que
+    // lo saque de Disponibles en vivo (sin esperar refetch ni reintento).
+    this.eventsGateway.sendToRole('driver', 'order:taken', {
+      id: updatedOrder.id,
+      orderId: updatedOrder.id,
+      status: 'assigned',
+      driverName: driverProfile.fullName,
+      message: `${driverProfile.fullName} ya tomó este pedido`,
     });
 
     return updatedOrder;
@@ -1613,6 +1746,24 @@ export class OrdersService {
       void this.notificationsService
         .notifyOrderRejected(order.id, order.merchant.userId, driverProfile.fullName)
         .catch(() => undefined);
+    }
+
+    // Volvió a concurso: re-alertar a la flota (proximidad + fail-open a
+    // broadcast). Sin esto el pedido quedaba en pending invisible.
+    if (order) {
+      void this.alertNearbyDrivers(order as any, {
+        id: order.id,
+        orderId: order.id,
+        pickupAddress: (order as any).pickupAddress,
+        deliveryAddress: (order as any).deliveryAddress,
+        deliveryZone: (order as any).deliveryZone ?? null,
+        totalAmount: Number((order as any).totalAmount),
+        driverPayout:
+          (order as any).driverPayout != null ? Number((order as any).driverPayout) : null,
+        distanceKm: Number((order as any).distanceKm),
+        merchantName: (order as any).merchant?.businessName,
+        createdAt: (order as any).createdAt,
+      });
     }
 
     return order;

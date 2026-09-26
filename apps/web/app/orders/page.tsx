@@ -77,6 +77,26 @@ function timelineOf(o: any) {
   ];
 }
 
+/**
+ * Nombre del cliente: campo estructurado (pedidos nuevos) o parseado de
+ * `specialInstructions` ("Cliente: Nombre (teléfono) · notas") para el
+ * historial viejo que se creó sin customerName.
+ */
+function getClientInfo(o: any): { name: string | null; phone: string | null } {
+  const rawName = typeof o?.customerName === 'string' ? o.customerName.trim() : '';
+  const rawPhone = typeof o?.customerPhone === 'string' ? o.customerPhone.trim() : '';
+  if (rawName) return { name: rawName, phone: rawPhone || null };
+  const instructions = typeof o?.specialInstructions === 'string' ? o.specialInstructions : '';
+  const m = instructions.match(/Cliente:\s*([^(()·]+?)\s*(?:\(([^)]+)\))?\s*(?:·|$)/i);
+  if (m) {
+    const name = (m[1] ?? '').trim();
+    const phone = (m[2] ?? '').trim();
+    if (name) return { name, phone: phone || rawPhone || null };
+  }
+  if (rawPhone) return { name: null, phone: rawPhone };
+  return { name: null, phone: null };
+}
+
 export default function OrdersPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
@@ -167,8 +187,11 @@ export default function OrdersPage() {
     if (tab === 'delivered' && o.status !== 'delivered') return false;
     if (tab === 'cancelled' && o.status !== 'cancelled') return false;
     if (!q) return true;
+    const client = getClientInfo(o);
     return (
       o.id.toLowerCase().includes(q) ||
+      (client.name ?? '').toLowerCase().includes(q) ||
+      (client.phone ?? '').toLowerCase().includes(q) ||
       (o.deliveryAddress ?? '').toLowerCase().includes(q) ||
       (o.driver?.fullName ?? '').toLowerCase().includes(q)
     );
@@ -254,7 +277,7 @@ export default function OrdersPage() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por dirección o repartidor…"
+            placeholder="Buscar por cliente, dirección o repartidor…"
             className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 pl-10 pr-4 py-2.5 text-sm"
           />
         </div>
@@ -278,6 +301,8 @@ export default function OrdersPage() {
           {filtered.map((order: any, i) => {
             const open = expanded === order.id;
             const driverPhone = order.driver?.user?.phone;
+            const client = getClientInfo(order);
+            const clientName = client.name ?? 'Cliente sin nombre';
             return (
               <ScrollReveal key={order.id} index={Math.min(i, 6)} as="li">
                 <motion.div
@@ -290,17 +315,12 @@ export default function OrdersPage() {
                 >
                   <button
                     onClick={() => setExpanded(open ? null : order.id)}
+                    aria-expanded={open}
+                    aria-label={`Ver detalle del pedido de ${clientName}`}
                     className="flex w-full items-center justify-between gap-3 p-4 text-left"
                   >
                     <div className="min-w-0">
-                      <p className="truncate font-medium">
-                        {order.pickupAddress} → {order.deliveryAddress}
-                      </p>
-                      <p className="mt-0.5 text-sm text-surface-400">
-                        #{order.id.slice(-4).toUpperCase()} · ₡
-                        {Number(order.totalAmount).toLocaleString()}
-                        {order.driver?.fullName ? ` · ${order.driver.fullName}` : ''}
-                      </p>
+                      <p className="truncate font-medium">{clientName}</p>
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
                       <span
@@ -323,6 +343,27 @@ export default function OrdersPage() {
                         className="overflow-hidden"
                       >
                         <div className="space-y-4 border-t border-surface-100 dark:border-surface-800 p-4">
+                          {/* Cliente */}
+                          <div className="flex items-center justify-between rounded-xl bg-surface-50 dark:bg-surface-800 p-3">
+                            <div className="min-w-0">
+                              <p className="text-xs text-surface-400">Cliente</p>
+                              <p className="truncate text-sm font-semibold">{clientName}</p>
+                              {client.phone && (
+                                <p className="text-xs text-surface-500">{client.phone}</p>
+                              )}
+                            </div>
+                            {client.phone && (
+                              <a
+                                href={`tel:${client.phone}`}
+                                className="flex shrink-0 items-center gap-1 rounded-lg bg-kiwi-700 px-3 py-1.5 text-xs font-bold text-white"
+                              >
+                                <Phone className="h-3.5 w-3.5" /> Llamar
+                              </a>
+                            )}
+                          </div>
+                          <p className="font-mono text-xs text-surface-400">
+                            Pedido #{order.id.slice(-4).toUpperCase()}
+                          </p>
                           {/* Timeline */}
                           <ol className="space-y-0">
                             {timelineOf(order).map((s, j) => (

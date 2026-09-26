@@ -505,36 +505,108 @@ export class NotificationsService {
     userId: string,
     status: string,
     perspective: 'merchant' | 'driver' = 'merchant',
+    context: {
+      shortId?: string;
+      merchantName?: string;
+      driverName?: string;
+      pickupAddress?: string;
+      deliveryAddress?: string;
+      payout?: number;
+      totalAmount?: number;
+      customerName?: string;
+    } = {},
   ) {
+    const shortId = context.shortId ?? orderId.slice(0, 8).toUpperCase();
+    const tag = `#${shortId}`;
+    const merchant = context.merchantName || 'el comercio';
+    const driver = context.driverName || 'El repartidor';
+    const pickup = context.pickupAddress || '';
+    const delivery = context.deliveryAddress || '';
+    const route = pickup && delivery ? `${pickup} → ${delivery}` : pickup || delivery;
+    const payout =
+      context.payout != null && Number.isFinite(Number(context.payout))
+        ? `₡${Number(context.payout).toLocaleString()}`
+        : null;
+    const customer = context.customerName ? ` · Cliente: ${context.customerName}` : '';
+
+    // Cada estado tiene título y cuerpo propios con datos del pedido, para
+    // que no lleguen 5 notificaciones idénticas en el ciclo.
     const merchantMessages: Record<string, { title: string; body: string }> = {
-      assigned: { title: '🛵 Pedido asignado', body: 'Un repartidor va por tu pedido' },
-      in_transit_to_pickup: {
-        title: '🛵 Repartidor en camino',
-        body: 'El repartidor va en camino a recoger tu pedido',
+      assigned: {
+        title: `🛵 ${driver} va por tu pedido`,
+        body: route
+          ? `Pedido ${tag} · ${route}. Te avisamos al recoger.`
+          : `Pedido ${tag} asignado.`,
       },
-      picked_up: { title: '📦 Pedido recogido', body: 'El repartidor recogió tu pedido' },
-      in_transit_to_delivery: { title: '🛣️ En camino', body: 'Tu pedido va en camino' },
-      delivered: { title: '🎉 Pedido entregado', body: 'Tu pedido fue entregado exitosamente' },
-      cancelled: { title: '❌ Pedido cancelado', body: 'El pedido fue cancelado' },
+      in_transit_to_pickup: {
+        title: `🛵 ${driver} va al comercio`,
+        body:
+          pickup || merchant
+            ? `Pedido ${tag} · Va en camino a recoger en ${pickup || merchant}.`
+            : `Pedido ${tag} · Va en camino a recoger.`,
+      },
+      picked_up: {
+        title: `📦 Pedido ${tag} recogido`,
+        body: delivery
+          ? `${driver} lo recogió y va hacia ${delivery}.`
+          : `${driver} recogió tu pedido.`,
+      },
+      in_transit_to_delivery: {
+        title: `🛣️ Pedido ${tag} en camino`,
+        body: delivery
+          ? `${driver} lo lleva a ${delivery}${customer}.`
+          : `${driver} va en camino a entregar.`,
+      },
+      delivered: {
+        title: `🎉 Pedido ${tag} entregado`,
+        body:
+          delivery || driver
+            ? `${driver} lo entregó en ${delivery || 'su destino'}.`
+            : 'Tu pedido fue entregado exitosamente.',
+      },
+      cancelled: {
+        title: `❌ Pedido ${tag} cancelado`,
+        body: route ? `El pedido ${route} fue cancelado.` : 'El pedido fue cancelado.',
+      },
     };
 
     const driverMessages: Record<string, { title: string; body: string }> = {
-      assigned: { title: '🛵 Pedido asignado', body: 'Te asignaron un pedido. Ve a recogerlo.' },
+      assigned: {
+        title: `🛵 Pedido ${tag} asignado`,
+        body:
+          route || payout
+            ? `${merchant}: ${route}${payout ? ` · Ganás ${payout}` : ''}. Ve a recogerlo.`
+            : 'Te asignaron un pedido. Ve a recogerlo.',
+      },
       in_transit_to_pickup: {
-        title: '🛵 En camino al comercio',
-        body: 'Vas en camino a recoger el pedido',
+        title: `🛵 Vas a ${merchant} (${tag})`,
+        body: pickup ? `Recogé en ${pickup}.` : 'Vas en camino a recoger el pedido.',
       },
       picked_up: {
-        title: '📦 Pedido recogido',
-        body: 'Recogiste el pedido. Llévalo a su destino.',
+        title: `📦 Recogiste ${tag}`,
+        body: delivery
+          ? `Llevalo a ${delivery}${customer}.`
+          : 'Recogiste el pedido. Llévalo a su destino.',
       },
-      in_transit_to_delivery: { title: '🛣️ En camino', body: 'Vas en camino a entregar el pedido' },
-      delivered: { title: '🎉 Pedido entregado', body: 'Entregaste el pedido exitosamente' },
-      cancelled: { title: '❌ Pedido cancelado', body: 'El pedido fue cancelado' },
+      in_transit_to_delivery: {
+        title: `🛣️ Entregando ${tag}`,
+        body: delivery ? `Destino: ${delivery}${customer}.` : 'Vas en camino a entregar el pedido.',
+      },
+      delivered: {
+        title: `🎉 Entregaste ${tag}`,
+        body: payout ? `Ganaste ${payout} · ${merchant}.` : 'Entregaste el pedido exitosamente.',
+      },
+      cancelled: {
+        title: `❌ Pedido ${tag} cancelado`,
+        body: route ? `El pedido ${route} fue cancelado.` : 'El pedido fue cancelado.',
+      },
     };
 
     const messages = perspective === 'driver' ? driverMessages : merchantMessages;
-    const message = messages[status] || { title: 'Actualización', body: `Estado: ${status}` };
+    const message = messages[status] || {
+      title: 'Actualización',
+      body: `Pedido ${tag}: ${status}`,
+    };
 
     return this.sendToUser(userId, {
       ...message,
