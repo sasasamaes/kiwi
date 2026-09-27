@@ -1,3 +1,4 @@
+// Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { createRoot, type Root } from 'react-dom/client';

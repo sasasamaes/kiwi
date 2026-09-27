@@ -1,3 +1,4 @@
+// Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 import { KiwiLoader, StatCardSkeleton } from '@kiwi/ui';
 
 /** Carga del dashboard: kiwi + skeletons de stat-cards (evita el salto al llegar la página real). */

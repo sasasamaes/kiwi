@@ -2,9 +2,9 @@
   "name": "@kiwi/api",
   "version": "1.0.0",
   "description": "Kiwi Delivery API - NestJS Backend",
-  "author": "Kiwi Team",
+  "author": "Francisco Javier Campos Diaz",
   "private": true,
-  "license": "MIT",
+  "license": "UNLICENSED",
   "scripts": {
     "build": "prisma generate && nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",

@@ -1,3 +1,4 @@
+// Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 /**
  * Hora de Costa Rica (UTC-6 todo el año, sin horario de verano).
  *

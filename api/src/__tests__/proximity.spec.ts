@@ -1,3 +1,4 @@
+// Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
 import { OrdersService } from '../orders/orders.service';

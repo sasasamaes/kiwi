@@ -136,6 +136,9 @@ Ver [CONTRIBUTING.md](./CONTRIBUTING.md) — setup local, puertos, cuentas demo 
 
 ---
 
-## 📄 License
+## 📄 Licencia
 
-MIT © 2026 Kiwi 🥝
+Copyright © 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
+
+Software propietario: queda prohibida su copia, uso, modificación o distribución
+sin autorización previa y por escrito del titular. Ver [LICENSE](./LICENSE).

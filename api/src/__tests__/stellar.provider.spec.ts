@@ -1,3 +1,4 @@
+// Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 import { StellarProvider } from '../payments/providers/stellar.provider';
 import { FxRateProvider } from '../payments/providers/fx-rate.provider';
 

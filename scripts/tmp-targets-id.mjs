@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 /** THROWAWAY — identifica los elementos pequeños por texto/clase. */
 import { spawn } from 'node:child_process';
 import { setTimeout as sleep } from 'node:timers/promises';

@@ -1,3 +1,4 @@
+// Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 import { Injectable, Logger, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { OnvoPayProvider } from './providers/onvopay.provider';
@@ -841,6 +842,12 @@ export class PaymentsService {
     // Handle different event types
     if (type === 'payment_intent.succeeded') {
       const { metadata } = data ?? {};
+      // Recarga de crédito con tarjeta: acredita saldo, no pedido.
+      if (metadata?.topupId) {
+        const done = await this.creditsService.completeTopup(metadata.topupId, data?.id);
+        this.logger.log(`Credit topup webhook for ${metadata.topupId} (completed=${done})`);
+        return { received: true, topup: metadata.topupId, completed: done };
+      }
       const orderId = metadata?.orderId;
 
       if (orderId) {
@@ -862,8 +869,15 @@ export class PaymentsService {
     } else if (type === 'checkout-session.succeeded') {
       // Checkout hospedado: la sesión trae metadata.orderId y el intent real.
       // Se guarda el intent para reembolsos/cancelaciones futuras.
-      const orderId = data?.metadata?.orderId;
+      // Recarga de crédito: metadata.topupId acredita saldo en vez de pedido.
+      const topupId = data?.metadata?.topupId;
       const paymentIntentId = data?.paymentIntentId;
+      if (topupId) {
+        const done = await this.creditsService.completeTopup(topupId, paymentIntentId);
+        this.logger.log(`Credit topup checkout completed for ${topupId} (completed=${done})`);
+        return { received: true, topup: topupId, completed: done };
+      }
+      const orderId = data?.metadata?.orderId;
       if (orderId) {
         const res = await this.prisma.payment.updateMany({
           where: { orderId },
@@ -878,6 +892,13 @@ export class PaymentsService {
         }
         this.logger.log(`Checkout session completed for order ${orderId}`);
       } else if (paymentIntentId) {
+        // Sin orderId en metadata: puede ser una recarga cuyo intent se
+        // guardó al reconciliar — probar topup antes de descartar.
+        const topupDone = await this.creditsService.completeTopupByIntent(paymentIntentId);
+        if (topupDone) {
+          this.logger.log(`Credit topup checkout completed by intent ${paymentIntentId}`);
+          return { received: true, topupCompleted: true };
+        }
         const res = await this.prisma.payment.updateMany({
           where: { onvoPaymentId: paymentIntentId },
           data: { status: PaymentStatus.completed },

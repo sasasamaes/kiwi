@@ -1,3 +1,4 @@
+// Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 /**
  * Vocabulario de hover — una sola fuente para CÓMO se siente "encima" en
  * toda la plataforma. Componer con Tailwind: son strings listas para

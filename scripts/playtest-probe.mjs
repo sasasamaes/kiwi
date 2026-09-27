@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 /**
  * THROWAWAY playtest probe — deleted after the session.
  * Boots the real API + both Next dev servers in THIS process tree

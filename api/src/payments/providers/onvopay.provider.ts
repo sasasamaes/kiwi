@@ -1,3 +1,4 @@
+// Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'node:crypto';
@@ -40,11 +41,14 @@ interface OnvoPayCheckoutSessionRequest {
   amount: number;
   currency: string;
   description: string;
-  orderId: string;
+  /** Pedidos: el cobro vive atado a la orden. Recargas: se usa metadata. */
+  orderId?: string;
   customerEmail?: string;
   customerPhone?: string;
   redirectUrl: string;
   cancelUrl: string;
+  /** Metadata extra (ej. { topupId }) para matchear el webhook. */
+  metadata?: Record<string, string>;
 }
 
 interface OnvoPayCheckoutSessionResponse {
@@ -152,7 +156,9 @@ export class OnvoPayProvider {
     request: OnvoPayCheckoutSessionRequest,
   ): Promise<OnvoPayCheckoutSessionResponse> {
     try {
-      this.logger.log(`Creating OnvoPay checkout session for order ${request.orderId}`);
+      this.logger.log(
+        `Creating OnvoPay checkout session for ${request.orderId ? `order ${request.orderId}` : 'credit topup'}`,
+      );
 
       if (!this.secretKey) {
         this.logger.warn('OnvoPay secret key not configured, cannot create checkout session');
@@ -183,8 +189,9 @@ export class OnvoPayProvider {
           redirectUrl: request.redirectUrl,
           cancelUrl: request.cancelUrl,
           metadata: {
-            orderId: request.orderId,
-            customerPhone: request.customerPhone,
+            ...(request.orderId ? { orderId: request.orderId } : {}),
+            ...(request.customerPhone ? { customerPhone: request.customerPhone } : {}),
+            ...request.metadata,
           },
         }),
       });

@@ -1,3 +1,4 @@
+// Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 import Link from 'next/link';
 import type { LegalDoc, LegalDocKind } from './legal';
 import { privacyPolicy, termsOfService, cookiePolicy, refundPolicy } from './legal';

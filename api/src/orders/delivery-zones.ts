@@ -1,3 +1,4 @@
+// Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 /**
  * Catálogo oficial de zonas de entrega — Nicoya (fuente de verdad del precio).
  * Espejo de `@kiwi/types/deliveryZones`: el backend no importa el workspace

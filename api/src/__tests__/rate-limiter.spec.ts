@@ -1,3 +1,4 @@
+// Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 import { RateLimiterMiddleware } from '../security/rate-limiter.middleware';
 import { HttpException } from '@nestjs/common';
 

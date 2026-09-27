@@ -1,3 +1,4 @@
+// Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 /**
  * THROWAWAY: rasteriza el SVG del kiwi a todos los tamaños de marca.
  * Correr: node scripts/tmp-generate-icons.mjs   (se borra al terminar)

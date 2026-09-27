@@ -1,3 +1,4 @@
+// Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Lock } from 'lucide-react';

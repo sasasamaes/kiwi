@@ -1,3 +1,4 @@
+// Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 import { Controller, Get, Post, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -35,6 +36,22 @@ export class CreditsController {
       take != null ? Number(take) : undefined,
       skip != null ? Number(skip) : undefined,
     );
+  }
+
+  @Post('topup')
+  @UseGuards(RolesGuard)
+  @Roles('merchant')
+  @ApiOperation({ summary: 'Recargar mi crédito con tarjeta (Onvo Checkout)' })
+  async topup(@CurrentUser() user: any, @Body('amount') amount: number) {
+    return this.creditsService.createTopup(user.sub, Number(amount));
+  }
+
+  @Get('topup/:id')
+  @UseGuards(RolesGuard)
+  @Roles('merchant')
+  @ApiOperation({ summary: 'Estado de mi recarga con tarjeta' })
+  async topupStatus(@CurrentUser() user: any, @Param('id') id: string) {
+    return this.creditsService.getTopup(user.sub, id);
   }
 
   @Get('admin/merchants')

@@ -1,3 +1,4 @@
+// Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 import { HttpsEnforcerMiddleware } from '../security/https-enforcer.middleware';
 
 describe('HttpsEnforcerMiddleware', () => {

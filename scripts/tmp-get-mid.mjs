@@ -1,3 +1,4 @@
+// Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 import { createRequire } from 'node:module';
 const require = createRequire('/Users/josecampos/Documents/CerebroFran/delivery-app/api/package.json');
 const { PrismaClient } = require('@prisma/client');

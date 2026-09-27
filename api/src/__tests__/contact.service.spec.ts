@@ -1,3 +1,4 @@
+// Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 import { Test } from '@nestjs/testing';
 import { BadRequestException, ValidationPipe } from '@nestjs/common';
 import { ContactService } from '../contact/contact.service';

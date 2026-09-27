@@ -1,3 +1,4 @@
+// Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 import { IsInt, IsOptional, IsString, Max, Min, MaxLength, IsBoolean } from 'class-validator';
 
 /**

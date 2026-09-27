@@ -1,3 +1,4 @@
+// Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 /**
  * Contenido legal de Kiwi — fuente única compartida por las 4 superficies
  * (web comercio, driver, client QR y mobile) vía `LegalDocView`.

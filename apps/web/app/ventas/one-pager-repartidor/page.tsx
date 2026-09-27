@@ -1,3 +1,4 @@
+// Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 import { PrintButton } from '../print-button';
 import { WhatsAppShareButton } from '../whatsapp-share-button';
 

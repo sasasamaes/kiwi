@@ -1,3 +1,4 @@
+// Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 'use client';
 
 import { Suspense, useState, useEffect, useRef, useCallback } from 'react';
@@ -727,7 +728,7 @@ function NewOrderInner({
         if (Number.isFinite(fresh)) setCreditBalance(fresh);
         if (Number.isFinite(fresh) && fresh < trip) {
           setFormError(
-            `Saldo insuficiente (₡${fresh.toLocaleString()}): este envío cuesta ₡${trip.toLocaleString()}. Llamá a Kiwi para recargar tu crédito.`,
+            `Saldo insuficiente (₡${fresh.toLocaleString()}): este envío cuesta ₡${trip.toLocaleString()}. Recargá con tarjeta en Mi crédito o llamá a Kiwi.`,
           );
           return;
         }
@@ -736,7 +737,7 @@ function NewOrderInner({
       }
       if (creditBalance != null && creditBalance < trip) {
         setFormError(
-          `Saldo insuficiente (₡${creditBalance.toLocaleString()}): este envío cuesta ₡${trip.toLocaleString()}. Llamá a Kiwi para recargar tu crédito.`,
+          `Saldo insuficiente (₡${creditBalance.toLocaleString()}): este envío cuesta ₡${trip.toLocaleString()}. Recargá con tarjeta en Mi crédito o llamá a Kiwi.`,
         );
         return;
       }
@@ -854,7 +855,7 @@ function NewOrderInner({
         setPaymentFailed(true);
         setPayError(
           paymentError?.message ||
-            'No se pudo procesar el pago. Si pagás con crédito y no alcanza, llamá a Kiwi para recargar.',
+            'No se pudo procesar el pago. Si pagás con crédito y no alcanza, recargá con tarjeta en Mi crédito o llamá a Kiwi.',
         );
       }
 

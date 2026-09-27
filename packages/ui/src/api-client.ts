@@ -1,3 +1,4 @@
+// Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 /**
  * 🥝 Kiwi API Client
  *
@@ -748,6 +749,27 @@ class ApiClient {
 
   async getCreditHistory(take = 30, skip = 0) {
     return this.request<any>(`/credits/history?take=${take}&skip=${skip}`);
+  }
+
+  /** Recarga de crédito con tarjeta: crea el cobro y devuelve el checkout. */
+  async createCreditTopup(amount: number) {
+    return this.request<{ topupId: string; amount: number; checkoutUrl: string; status: string }>(
+      '/credits/topup',
+      { method: 'POST', body: { amount } },
+    );
+  }
+
+  /** Estado de mi recarga con tarjeta (reconcilia contra Onvo si está pendiente). */
+  async getCreditTopup(id: string) {
+    return this.request<{
+      id: string;
+      amount: number;
+      currency: string;
+      status: string;
+      checkoutUrl: string | null;
+      balance: number;
+      completedAt: string | null;
+    }>(`/credits/topup/${id}`);
   }
 
   async getCreditMerchants() {

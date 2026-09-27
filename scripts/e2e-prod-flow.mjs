@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 /**
  * End-to-end flow test against the production API.
  *

@@ -1,3 +1,4 @@
+// Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -409,12 +410,20 @@ export default function Dashboard() {
                   : 'Cubre tus envíos (solo el viaje). Se recarga por semana con Kiwi.'}
               </p>
             </div>
-            <Link
-              href="/orders/new"
-              className="rounded-xl bg-kiwi-700 px-4 py-2 text-center text-sm font-semibold text-white hover:bg-kiwi-800"
-            >
-              Pedir con crédito
-            </Link>
+            <div className="flex gap-2">
+              <Link
+                href="/credits"
+                className="rounded-xl bg-kiwi-700 px-4 py-2 text-center text-sm font-semibold text-white hover:bg-kiwi-800"
+              >
+                Recargar con tarjeta
+              </Link>
+              <Link
+                href="/orders/new"
+                className="rounded-xl border border-kiwi-700 px-4 py-2 text-center text-sm font-semibold text-kiwi-700 hover:bg-kiwi-50 dark:hover:bg-kiwi-900/20"
+              >
+                Pedir con crédito
+              </Link>
+            </div>
           </motion.div>
         )}
 

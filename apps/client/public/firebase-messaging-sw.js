@@ -1,3 +1,4 @@
+// Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 // Firebase Cloud Messaging Service Worker — app CLIENTE (comprador).
 // Las rutas son del comprador: tracking y pedidos, jamás /dashboard ni
 // /order/:id pelado (esas son de driver/merchant y dan 404 acá).

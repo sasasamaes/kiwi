@@ -1,3 +1,4 @@
+// Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 import { Test } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import {

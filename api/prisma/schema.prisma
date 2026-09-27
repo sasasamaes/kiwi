@@ -1,3 +1,4 @@
+// Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
@@ -73,6 +74,7 @@ model MerchantProfile {
   favoriteDrivers FavoriteDriver[]
   ratings         Rating[]
   creditLedger    CreditTransaction[]
+  creditTopups    CreditTopup[]
 
   @@map("merchant_profiles")
 }
@@ -98,6 +100,33 @@ enum CreditTransactionKind {
   recharge
   spend
   refund
+}
+
+// Recarga de crédito con tarjeta (autogestión del comercio vía Onvo
+// Checkout): nace pendiente y recién acredita cuando el webhook o el
+// polling confirman el cobro. El gate anti doble-acreditación es el
+// updateMany condicionado en completeTopup.
+model CreditTopup {
+  id         String        @id @default(uuid())
+  merchantId String        @map("merchant_id")
+  amount     Decimal       @db.Decimal(10, 2)
+  currency   String        @default("CRC")
+  status     PaymentStatus @default(pending)
+
+  onvoSessionId   String? @map("onvo_session_id")
+  onvoPaymentId   String? @map("onvo_payment_id")
+  onvoCheckoutUrl String? @map("onvo_checkout_url")
+
+  createdBy   String?   @map("created_by") // userId del comercio que la inició
+  createdAt   DateTime  @default(now()) @map("created_at")
+  completedAt DateTime? @map("completed_at")
+
+  merchant MerchantProfile @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  @@index([merchantId, createdAt])
+  @@index([onvoSessionId], map: "credit_topups_onvo_session_id_idx")
+  @@index([onvoPaymentId], map: "credit_topups_onvo_payment_id_idx")
+  @@map("credit_topups")
 }
 
 // Ajustes de plataforma (admin). Clave-valor: lo que ves en /admin/settings

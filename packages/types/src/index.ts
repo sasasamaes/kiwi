@@ -1,3 +1,4 @@
+// Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 // User types
 export type UserRole = 'merchant' | 'driver' | 'admin';
 export type UserStatus = 'active' | 'inactive' | 'pending';

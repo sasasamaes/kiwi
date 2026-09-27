@@ -1,3 +1,4 @@
+// Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 import { Injectable, Logger } from '@nestjs/common';
 import { TrafficService } from './traffic.service';
 import { RoutingService } from './routing.service';

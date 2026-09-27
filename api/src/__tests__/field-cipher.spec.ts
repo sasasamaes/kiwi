@@ -1,3 +1,4 @@
+// Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 import { FieldCipher } from '../security/field-cipher';
 
 describe('FieldCipher (AES-256-GCM at rest)', () => {

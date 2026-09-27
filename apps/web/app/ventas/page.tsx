@@ -1,3 +1,4 @@
+// Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 /**
  * Playbook de ventas KIWI (interno) — server component (el contenido no
  * viaja como props serializadas y la clave nunca llega al cliente).

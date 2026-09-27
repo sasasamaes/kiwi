@@ -1,3 +1,4 @@
+// Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 import { Test, TestingModule } from '@nestjs/testing';
 import { HealthController } from '../health/health.controller';
 import { HealthService, SocketTransportReport } from '../health/health.service';

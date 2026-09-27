@@ -1,4 +1,5 @@
 #!/bin/bash
+# Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 
 # 🥝 Kiwi Web Apps - Vercel Deployment
 

@@ -1,5 +1,17 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+// Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+  Logger,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { OnvoPayProvider } from '../payments/providers/onvopay.provider';
+
+/** Recarga con tarjeta: paquetes desde ₡10.000 (misma política que admin). */
+export const MIN_CARD_TOPUP = 10_000;
+export const MAX_CARD_TOPUP = 1_000_000;
 
 /**
  * Crédito prepago de comercios: el admin recarga, el comercio lo gasta en
@@ -7,10 +19,18 @@ import { PrismaService } from '../prisma/prisma.service';
  * el repartidor desde su payout).
  * Los productos los cobra el comercio aparte — nunca salen del crédito.
  * Todo movimiento queda en el libro mayor (credit_transactions).
+ * El comercio además puede autorecargarse con tarjeta (Onvo Checkout):
+ * la fila credit_topups nace pendiente y solo acredita al confirmarse
+ * el cobro (webhook o polling).
  */
 @Injectable()
 export class CreditsService {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(CreditsService.name);
+
+  constructor(
+    private prisma: PrismaService,
+    private onvoPay: OnvoPayProvider,
+  ) {}
 
   private async merchantOf(userId: string) {
     const merchant = await this.prisma.merchantProfile.findUnique({ where: { userId } });
@@ -88,7 +108,7 @@ export class CreditsService {
         });
         if (charged.count === 0) {
           throw new BadRequestException(
-            'Saldo insuficiente. Llamá a Kiwi para recargar tu crédito.',
+            'Saldo insuficiente. Recargá con tarjeta en Mi crédito o llamá a Kiwi.',
           );
         }
         const entry = await tx.creditTransaction.create({
@@ -128,6 +148,166 @@ export class CreditsService {
       }),
     ]);
     return { merchantId, balance: Number(updated.creditBalance), refunded: value };
+  }
+
+  /**
+   * Autorecarga del comercio con tarjeta: crea la recarga pendiente y una
+   * sesión de Onvo Checkout. El saldo se acredita SOLO cuando el cobro se
+   * confirma (webhook `checkout-session.succeeded` o polling de estado).
+   */
+  async createTopup(userId: string, amount: number) {
+    const value = Math.round(Number(amount));
+    if (!Number.isFinite(value) || value < MIN_CARD_TOPUP || value > MAX_CARD_TOPUP) {
+      throw new BadRequestException(
+        `Monto inválido: la recarga mínima con tarjeta es ₡${MIN_CARD_TOPUP.toLocaleString()}`,
+      );
+    }
+    const merchant = await this.merchantOf(userId);
+    const topup = await this.prisma.creditTopup.create({
+      data: {
+        merchantId: merchant.id,
+        amount: value,
+        currency: 'CRC',
+        status: 'pending',
+        createdBy: userId,
+      },
+    });
+
+    // Retorno al panel del comercio (jamás relativo: Onvo lo exige).
+    const merchantBase = (process.env.MERCHANT_URL ?? 'https://kiwi-merchant.vercel.app').replace(
+      /^http:\/\//i,
+      'https://',
+    );
+
+    const session = await this.onvoPay.createCheckoutSession({
+      amount: value,
+      currency: 'CRC',
+      description: `Recarga de crédito Kiwi — ${merchant.businessName} (₡${value.toLocaleString()})`,
+      redirectUrl: `${merchantBase}/credits?topup=${topup.id}&paid=1`,
+      cancelUrl: `${merchantBase}/credits?topup=${topup.id}&cancelled=1`,
+      metadata: { topupId: topup.id },
+    });
+    if (!session.success || !session.checkoutUrl) {
+      await this.prisma.creditTopup
+        .update({ where: { id: topup.id }, data: { status: 'failed' } })
+        .catch(() => null);
+      throw new BadRequestException(session.error || 'No se pudo iniciar el pago con tarjeta');
+    }
+
+    const updated = await this.prisma.creditTopup.update({
+      where: { id: topup.id },
+      data: { onvoSessionId: session.sessionId, onvoCheckoutUrl: session.checkoutUrl },
+    });
+    return {
+      topupId: updated.id,
+      amount: value,
+      checkoutUrl: session.checkoutUrl,
+      status: updated.status,
+    };
+  }
+
+  /**
+   * Estado de una recarga (solo la dueña). Si sigue pendiente y tiene
+   * sesión de Onvo, reconcilia contra Onvo antes de responder para no
+   * mentir con filas viejas — igual que los pagos de pedidos.
+   */
+  async getTopup(userId: string, topupId: string) {
+    const merchant = await this.merchantOf(userId);
+    const topup = await this.prisma.creditTopup.findUnique({ where: { id: topupId } });
+    if (!topup || topup.merchantId !== merchant.id) {
+      throw new ForbiddenException('No tienes acceso a esta recarga');
+    }
+    if (topup.status === 'pending' && (topup as any).onvoSessionId) {
+      await this.reconcileTopup(topup).catch((e) =>
+        this.logger.warn(`Topup reconcile failed for ${topupId}: ${String(e)}`),
+      );
+      const fresh = await this.prisma.creditTopup.findUnique({ where: { id: topupId } });
+      const balance = await this.merchantOf(userId);
+      return this.shapeTopup(fresh ?? topup, Number(balance.creditBalance));
+    }
+    return this.shapeTopup(topup, Number(merchant.creditBalance));
+  }
+
+  /**
+   * Acredita una recarga cobrada. Gate anti doble-acreditación: el
+   * updateMany condicionado deja pasar a UNA sola carrera (webhook +
+   * polling simultáneos). Devuelve true si esta llamada acreditó.
+   */
+  async completeTopup(topupId: string, paymentIntentId?: string): Promise<boolean> {
+    const topup = await this.prisma.creditTopup.findUnique({ where: { id: topupId } });
+    if (!topup) {
+      this.logger.warn(`completeTopup for unknown topup ${topupId} — ignoring`);
+      return false;
+    }
+    if ((topup as any).status === 'completed') return false;
+
+    const claimed = await this.prisma.creditTopup.updateMany({
+      where: { id: topupId, NOT: { status: 'completed' } },
+      data: {
+        status: 'completed',
+        completedAt: new Date(),
+        ...(paymentIntentId ? { onvoPaymentId: paymentIntentId } : {}),
+      },
+    });
+    if (claimed.count === 0) return false;
+
+    const amount = Math.round(Number((topup as any).amount));
+    await this.recharge(
+      (topup as any).merchantId,
+      amount,
+      (topup as any).createdBy ?? undefined,
+      'Recarga con tarjeta (Onvo)',
+    );
+    this.logger.log(`Credit topup ${topupId} completed: +${amount}`);
+    return true;
+  }
+
+  /** Completa por intent de Onvo (fallback cuando el webhook no trae topupId). */
+  async completeTopupByIntent(paymentIntentId: string): Promise<boolean> {
+    if (!paymentIntentId) return false;
+    const topup = await this.prisma.creditTopup.findFirst({
+      where: { onvoPaymentId: paymentIntentId },
+    });
+    if (!topup) return false;
+    return this.completeTopup((topup as any).id, paymentIntentId);
+  }
+
+  /** Reconcilia una recarga pendiente contra Onvo (polling tras el retorno). */
+  private async reconcileTopup(topup: any): Promise<void> {
+    const session = await this.onvoPay.getCheckoutSession(topup.onvoSessionId);
+    if (session.paymentIntentId && !topup.onvoPaymentId) {
+      await this.prisma.creditTopup
+        .update({ where: { id: topup.id }, data: { onvoPaymentId: session.paymentIntentId } })
+        .catch(() => null);
+      topup.onvoPaymentId = session.paymentIntentId;
+    }
+    const paid =
+      session.paymentStatus === 'paid' ||
+      session.status === 'complete' ||
+      session.status === 'succeeded';
+    const dead =
+      session.status === 'expired' ||
+      session.status === 'canceled' ||
+      session.status === 'cancelled';
+    if (paid) {
+      await this.completeTopup(topup.id, session.paymentIntentId);
+    } else if (dead) {
+      await this.prisma.creditTopup
+        .updateMany({ where: { id: topup.id, status: 'pending' }, data: { status: 'failed' } })
+        .catch(() => null);
+    }
+  }
+
+  private shapeTopup(topup: any, balance: number) {
+    return {
+      id: topup.id,
+      amount: Number(topup.amount),
+      currency: topup.currency ?? 'CRC',
+      status: topup.status,
+      checkoutUrl: topup.onvoCheckoutUrl ?? null,
+      balance,
+      completedAt: topup.completedAt ?? null,
+    };
   }
 
   /** Admin: comercios con saldo + última recarga (para la cobranza semanal). */

@@ -1,3 +1,4 @@
+// Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 // Mock the problematic ESM modules before anything else
 jest.mock('@nestjs/websockets', () => ({}), { virtual: true });
 jest.mock('socket.io', () => ({ Server: jest.fn() }), { virtual: true });

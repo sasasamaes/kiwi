@@ -1,3 +1,4 @@
+// Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 /**
  * Datos oficiales del negocio Kiwi — única fuente de verdad.
  * Cambian aquí y se propagan a landing, documentos legales y contacto.

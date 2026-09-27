@@ -1,3 +1,4 @@
+// Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 import { Module } from '@nestjs/common';
 import { KYCService } from './kyc.service';
 import { KYCController } from './kyc.controller';

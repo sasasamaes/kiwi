@@ -1,3 +1,4 @@
+// Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 /**
  * Catálogo oficial de zonas de entrega — Nicoya.
  * El servidor es la fuente de verdad del precio (orders.service lo revalida);

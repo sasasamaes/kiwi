@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 /**
  * THROWAWAY probe — deleted after the task.
  * Boots API + the three built apps, visits representative pages at 360px and

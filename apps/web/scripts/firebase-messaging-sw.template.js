@@ -1,3 +1,4 @@
+// Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 // Firebase Cloud Messaging Service Worker — app WEB (comercio).
 // Las rutas son del panel comercio: pedidos y dashboard.
 
