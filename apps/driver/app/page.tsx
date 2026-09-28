@@ -85,27 +85,7 @@ export default function Home() {
     pushDebug,
   } = usePushNotifications({ enabled: false });
   const [pushBusy, setPushBusy] = useState(false);
-  const [pushTesting, setPushTesting] = useState(false);
-  const [pushTest, setPushTest] = useState<string | null>(null);
   const [pushDetail, setPushDetail] = useState<string | null>(null);
-  const [pushTokenMissing, setPushTokenMissing] = useState(false);
-  const [deviceTokens, setDeviceTokens] = useState<
-    Array<{ short: string; platform: string; lastUsedAt: string; createdAt: string }>
-  >([]);
-  const [pruningTokens, setPruningTokens] = useState(false);
-
-  const refreshDeviceTokens = useCallback(async () => {
-    try {
-      setDeviceTokens(await api.getDeviceTokens());
-    } catch {
-      // best-effort: el diagnóstico no bloquea nada
-    }
-  }, []);
-
-  // Al tener permiso, traer los registros para detectar duplicados.
-  useEffect(() => {
-    if (user && pushPermission === 'granted') void refreshDeviceTokens();
-  }, [user, pushPermission, refreshDeviceTokens]);
 
   const tabs = [
     { id: 'all' as const, label: 'Todos', icon: ClipboardList },
@@ -484,7 +464,7 @@ export default function Home() {
       </motion.header>
 
       {/* Main Content */}
-      <main className="flex-1 mx-auto w-full max-w-lg px-4 py-6">
+      <main className="flex-1 mx-auto w-full max-w-lg px-4 pt-6 pb-28">
         {pageError && (
           <div className="mb-4 rounded-xl bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 px-4 py-3 text-sm text-red-600 dark:text-red-400">
             {pageError}
@@ -569,8 +549,6 @@ export default function Home() {
                   if (!res.ok) {
                     setPageError(pushErrorMessage(res.reason));
                     setPushDetail(res.detail ?? null);
-                  } else {
-                    setPushTokenMissing(false);
                   }
                 } finally {
                   setPushBusy(false);
@@ -585,121 +563,6 @@ export default function Home() {
           <div className="mb-4 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 px-4 py-3 text-xs text-amber-800 dark:text-amber-300">
             Las alertas están bloqueadas en tu navegador: activalas en los ajustes del sitio para
             recibir pedidos con la app cerrada.
-          </div>
-        )}
-        {/* Push activado: botón de prueba con diagnóstico real del servidor */}
-        {!pushNeedsInstall && pushSupported && pushPermission === 'granted' && (
-          <div className="mb-4 rounded-2xl glass p-4">
-            <p className="text-sm font-semibold text-surface-800 dark:text-surface-100">
-              Alertas activadas en este celu
-            </p>
-            {pushTest ? (
-              <p className="mt-1 text-xs text-surface-500 dark:text-surface-400">{pushTest}</p>
-            ) : (
-              <p className="mt-0.5 text-xs text-surface-500 dark:text-surface-400">
-                ¿No te llegan? Probá ahora y te decimos dónde se corta.
-              </p>
-            )}
-            <TapButton
-              variant="secondary"
-              className="mt-3 h-10 w-full rounded-xl text-sm"
-              disabled={pushTesting}
-              onClick={async () => {
-                setPushTesting(true);
-                setPushTest(null);
-                try {
-                  const r = await api.sendTestPush();
-                  if (!r.fcmConfigured) {
-                    setPushTokenMissing(false);
-                    setPushTest('El servidor no tiene push configurado. Avisanos por WhatsApp.');
-                  } else if (r.tokens === 0) {
-                    setPushTokenMissing(true);
-                    setPushTest('Este celu no registró token: tocá Reactivar abajo.');
-                  } else {
-                    setPushTokenMissing(false);
-                    void refreshDeviceTokens();
-                    const bad = r.results.filter((x) => !x.ok);
-                    setPushTest(
-                      bad.length === 0
-                        ? `Prueba enviada ${r.sent ?? 1} vez a este celu. Si ves 2 banners, el duplicado está en el celu.`
-                        : `Falló el envío (${bad[0]?.error ?? 'error'}). Reinstalá la app y reactivá.`,
-                    );
-                  }
-                } catch {
-                  setPushTest('No se pudo probar. Revisá tu conexión.');
-                } finally {
-                  setPushTesting(false);
-                }
-              }}
-            >
-              {pushTesting ? 'Probando…' : 'Probar alerta'}
-            </TapButton>
-            {pushDebug?.swRegistrations && pushDebug.swRegistrations.length > 0 && (
-              <p className="mt-2 text-[11px] text-surface-400">
-                SW: {pushDebug.swRegistrations.map((s) => `${s.script}@${s.scope}`).join(' · ')}
-              </p>
-            )}
-            {/* Registros duplicados: si hay más de 1, cada push llega N veces */}
-            {deviceTokens.length > 1 && (
-              <div className="mt-3 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 px-3 py-2">
-                <p className="text-xs text-amber-800 dark:text-amber-300">
-                  Tenés {deviceTokens.length} registros (
-                  {deviceTokens.map((t) => t.platform).join(', ')}): cada alerta te llega{' '}
-                  {deviceTokens.length} veces.
-                </p>
-                <TapButton
-                  variant="secondary"
-                  className="mt-2 h-9 w-full rounded-xl text-xs"
-                  disabled={pruningTokens}
-                  onClick={async () => {
-                    setPruningTokens(true);
-                    try {
-                      const r = await api.pruneDeviceTokens();
-                      setPushTest(
-                        r.removed > 0
-                          ? `Borramos ${r.removed} registro(s) viejo(s). Probá de nuevo.`
-                          : 'Ya hay un solo registro. Probá de nuevo.',
-                      );
-                      await refreshDeviceTokens();
-                    } catch {
-                      setPushTest('No se pudo limpiar. Revisá tu conexión.');
-                    } finally {
-                      setPruningTokens(false);
-                    }
-                  }}
-                >
-                  {pruningTokens ? 'Limpiando…' : 'Limpiar duplicados'}
-                </TapButton>
-              </div>
-            )}
-            {pushTokenMissing && (
-              <TapButton
-                variant="gradient"
-                haptic
-                className="mt-2 h-11 w-full rounded-xl text-sm"
-                disabled={pushBusy}
-                onClick={async () => {
-                  setPushBusy(true);
-                  setPushDetail(null);
-                  setPageError(null);
-                  try {
-                    const res = await requestPushPermission();
-                    if (res.ok) {
-                      setPushTokenMissing(false);
-                      setPushTest('Token registrado. Tocá Probar alerta de nuevo.');
-                      void refreshDeviceTokens();
-                    } else {
-                      setPageError(pushErrorMessage(res.reason));
-                      setPushDetail(res.detail ?? null);
-                    }
-                  } finally {
-                    setPushBusy(false);
-                  }
-                }}
-              >
-                {pushBusy ? 'Reactivando…' : 'Reactivar alertas'}
-              </TapButton>
-            )}
           </div>
         )}
         {/* Status Toggle */}

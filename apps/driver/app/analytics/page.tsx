@@ -178,7 +178,7 @@ export default function DriverAnalyticsPage() {
   }
 
   return (
-    <main className="min-h-[100dvh] bg-bg-light dark:bg-surface-950 pb-24">
+    <main className="min-h-[100dvh] bg-bg-light dark:bg-surface-950 pb-28">
       {/* Header */}
       <motion.header
         className="pt-safe sticky top-0 z-40 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl"

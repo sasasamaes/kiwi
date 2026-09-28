@@ -212,7 +212,7 @@ export default function EarningsPage() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 mx-auto w-full max-w-lg px-4 py-6">
+      <main className="flex-1 mx-auto w-full max-w-lg px-4 pt-6 pb-28">
         {/* Total Earnings Card */}
         <motion.div
           className="mb-6 rounded-3xl bg-kiwi-gradient p-6 text-white shadow-kiwi-lg overflow-hidden relative"

@@ -25,7 +25,7 @@ export function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="pb-safe sticky bottom-0 z-40 border-t border-surface-200/50 dark:border-surface-700/50 bg-white/80 dark:bg-surface-900/80 backdrop-blur-xl">
+    <nav className="pb-safe fixed inset-x-0 bottom-0 z-40 border-t border-surface-200/50 dark:border-surface-700/50 bg-white/80 dark:bg-surface-900/80 backdrop-blur-xl">
       <div className="mx-auto flex max-w-lg items-center justify-around py-2">
         {ITEMS.map((item) => {
           const active = item.exact

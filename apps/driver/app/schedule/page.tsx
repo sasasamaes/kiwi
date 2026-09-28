@@ -241,7 +241,7 @@ export default function Schedule() {
         </div>
       </motion.header>
 
-      <main className="flex-1 mx-auto w-full max-w-lg px-4 py-6">
+      <main className="flex-1 mx-auto w-full max-w-lg px-4 pt-6 pb-28">
         {/* Weekly Summary */}
         <motion.div
           className="mb-6 rounded-2xl bg-kiwi-gradient p-5 text-white shadow-kiwi overflow-hidden relative"

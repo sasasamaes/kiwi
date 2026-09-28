@@ -15,6 +15,7 @@ import {
   Car,
   Eye,
   EyeOff,
+  FlaskConical,
   Medal,
   Trophy,
   Crown,
@@ -213,7 +214,7 @@ export default function Profile() {
         </div>
       </motion.header>
 
-      <main className="flex-1 mx-auto w-full max-w-lg px-4 py-6">
+      <main className="flex-1 mx-auto w-full max-w-lg px-4 pt-6 pb-28">
         {error && (
           <div className="mb-4 rounded-xl bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 px-4 py-3 text-sm text-red-600 dark:text-red-400">
             {error}
@@ -424,6 +425,15 @@ export default function Profile() {
         <div className="mt-2 mb-6">
           <SoundToggle />
         </div>
+        <Link
+          href="/testing"
+          className="mb-6 flex items-center justify-between rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft"
+        >
+          <span className="flex items-center gap-2 text-sm font-medium text-surface-500 dark:text-surface-400">
+            <FlaskConical className="h-4 w-4" /> Pruebas
+          </span>
+          <span className="text-surface-300">→</span>
+        </Link>
         <div className="mt-6">
           <AnimatedButton
             variant="ghost"
