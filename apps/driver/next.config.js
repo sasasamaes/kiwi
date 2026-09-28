@@ -57,6 +57,19 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ['lucide-react', 'framer-motion'],
   },
+  async redirects() {
+    return [
+      {
+        // Dominio canónico de repartidores: el host vercel.app redirige al propio.
+        // Solo el host exacto de producción (los previews siguen vivos).
+        // 307 temporal: pasar a permanent cuando el DNS esté estable.
+        source: '/:path*',
+        has: [{ type: 'host', value: 'kiwi-driver.vercel.app' }],
+        destination: 'https://repartidores.kiwicr.express/:path*',
+        permanent: false,
+      },
+    ];
+  },
   async headers() {
     return [
       {

@@ -2,13 +2,13 @@
 
 ## 🏗️ Arquitectura de Producción
 
-| Servicio                  | Plataforma        | URL                                |
-| ------------------------- | ----------------- | ---------------------------------- |
-| 🗄️ API (NestJS)           | Render            | https://kiwi-api-fe54.onrender.com |
-| 🍃 Dashboard Comerciantes | Vercel            | https://kiwi-merchant.vercel.app   |
-| 📱 Menú QR Clientes       | Vercel            | https://kiwi-client-tau.vercel.app |
-| 🛵 App Repartidores       | Vercel            | https://kiwi-driver.vercel.app     |
-| 🗃️ Base de datos          | Render PostgreSQL | (interno, vía `DATABASE_URL`)      |
+| Servicio                  | Plataforma        | URL                                 |
+| ------------------------- | ----------------- | ----------------------------------- |
+| 🗄️ API (NestJS)           | Render            | https://kiwi-api-fe54.onrender.com  |
+| 🍃 Dashboard Comerciantes | Vercel            | https://negocios.kiwicr.express     |
+| 📱 Menú QR Clientes       | Vercel            | https://www.kiwicr.express          |
+| 🛵 App Repartidores       | Vercel            | https://repartidores.kiwicr.express |
+| 🗃️ Base de datos          | Render PostgreSQL | (interno, vía `DATABASE_URL`)       |
 
 ---
 
@@ -91,7 +91,10 @@ Cada app define sus headers en su propio `vercel.json` (CSP con allowlist por ap
 curl -s https://kiwi-api-fe54.onrender.com/api/payments/methods -o /dev/null -w "%{http_code}\n"
 
 # Headers de seguridad aplicados
-curl -sI https://kiwi-merchant.vercel.app | grep -i strict-transport
+curl -sI https://negocios.kiwicr.express | grep -i strict-transport
+
+# Redirect del dominio vercel.app al propio (307 + preserva la ruta)
+curl -sI https://kiwi-merchant.vercel.app | grep -i location
 
 # Drift de esquema: detecta si el Prisma Client desplegado espera columnas
 # que la BD de producción aún no tiene (causa clásica de 500 en rutas de datos

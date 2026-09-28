@@ -174,7 +174,7 @@ export class CreditsService {
     });
 
     // Retorno al panel del comercio (jamás relativo: Onvo lo exige).
-    const merchantBase = (process.env.MERCHANT_URL ?? 'https://kiwi-merchant.vercel.app').replace(
+    const merchantBase = (process.env.MERCHANT_URL ?? 'https://negocios.kiwicr.express').replace(
       /^http:\/\//i,
       'https://',
     );

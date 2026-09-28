@@ -13,6 +13,19 @@ const nextConfig = {
     // Lint runs separately (npm run lint); pre-existing violations were blocking deploys
     ignoreDuringBuilds: true,
   },
+  async redirects() {
+    return [
+      {
+        // Dominio canónico del menú QR: el host vercel.app redirige al propio.
+        // Solo el host exacto de producción (los previews siguen vivos).
+        // 307 temporal: pasar a permanent cuando el DNS esté estable.
+        source: '/:path*',
+        has: [{ type: 'host', value: 'kiwi-client-tau.vercel.app' }],
+        destination: 'https://www.kiwicr.express/:path*',
+        permanent: false,
+      },
+    ];
+  },
   async headers() {
     return [
       {
