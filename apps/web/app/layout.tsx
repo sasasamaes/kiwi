@@ -10,6 +10,7 @@ import {
   SentryProvider,
   ScrollToTop,
   CookieConsentBanner,
+  ServiceWorkerUpdater,
   SkipToContent,
 } from '@kiwi/ui';
 import { OfflineBanner } from './offline-banner';
@@ -60,6 +61,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <ScrollToTop />
                 <OfflineBanner />
                 <CookieConsentBanner />
+                <ServiceWorkerUpdater />
               </AuthProvider>
             </ThemeProvider>
           </LanguageProvider>

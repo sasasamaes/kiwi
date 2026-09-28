@@ -27,16 +27,26 @@ const messaging = firebase.messaging();
 messaging.onBackgroundMessage((payload) => {
   console.log('[SW] Background message received:', payload);
 
-  const notificationTitle = payload.notification?.title || '🥝 Kiwi';
+  // Data-only: el servidor NO manda bloque notification (ese bloque hace
+  // que el SDK muestre su propio banner ADEMÁS de este = 1 envío, 2 banners).
+  // Título/cuerpo llegan en data.
+  const notificationTitle =
+    payload.notification?.title || payload.data?.title || '🥝 Kiwi';
+  // Colapso: mismo tag reemplaza en vez de apilar. Los pedidos usan su
+  // orderId (cada pedido avisa) y re-alertan; lo demás (test, sistema)
+  // comparte tag por tipo y NO re-alerta: sin esto 1 push por token
+  // (3 tokens = 3 envíos) se ve como 3 banners iguales.
+  const orderId = payload.data?.orderId;
+  const type = payload.data?.type || 'general';
   const notificationOptions = {
-    body: payload.notification?.body || 'Tienes una nueva notificación',
+    body: payload.notification?.body || payload.data?.body || 'Tienes una nueva notificación',
     icon: '/icon.png',
     badge: '/icon.png',
-    image: payload.notification?.image,
+    image: payload.notification?.image || payload.data?.image,
     data: payload.data,
     vibrate: [200, 100, 200],
-    tag: payload.data?.orderId || 'kiwi-notification',
-    renotify: true,
+    tag: orderId || `kiwi-${type}`,
+    renotify: !!orderId,
     actions: getActionsForType(payload.data?.type),
   };
 

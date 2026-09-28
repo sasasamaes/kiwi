@@ -208,6 +208,7 @@ export {
 } from './notification-sound';
 export type { NotificationSoundKind } from './notification-sound';
 export { SoundToggle } from './SoundToggle';
+export { ServiceWorkerUpdater } from './ServiceWorkerUpdater';
 export { buildNotificationKey, shouldNotify } from './notification-dedupe';
 
 // ============================================

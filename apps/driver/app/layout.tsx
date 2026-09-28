@@ -8,6 +8,7 @@ import {
   AuthProvider,
   NotificationProvider,
   CookieConsentBanner,
+  ServiceWorkerUpdater,
   SkipToContent,
 } from '@kiwi/ui';
 import { OfflineBanner } from './offline-banner';
@@ -70,6 +71,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               {children}
               <OfflineBanner />
               <CookieConsentBanner />
+              <ServiceWorkerUpdater />
             </NotificationProvider>
           </AuthProvider>
         </ThemeProvider>

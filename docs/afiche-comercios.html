@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<!-- Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados. -->
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kiwi para Comercios — Vende por app sin pagar comisión</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #e8e8e8; color: #1c1917; display: flex; justify-content: center; padding: 24px; }
+  .sheet { background: #fff; width: 800px; max-width: 100%; border-radius: 12px; overflow: hidden; box-shadow: 0 8px 30px rgba(0,0,0,.15); }
+  .hero { background: linear-gradient(135deg, #15803d 0%, #166534 60%, #14532d 100%); color: #fff; padding: 44px 48px 36px; position: relative; overflow: hidden; }
+  .hero::after { content: '🥝'; position: absolute; right: 24px; top: 8px; font-size: 120px; opacity: .18; }
+  .kicker { display: inline-block; background: #fbbf24; color: #451a03; font-weight: 800; font-size: 13px; letter-spacing: 1px; text-transform: uppercase; padding: 6px 14px; border-radius: 999px; margin-bottom: 14px; }
+  .hero h1 { font-size: 40px; line-height: 1.1; margin-bottom: 10px; }
+  .hero p.sub { font-size: 18px; opacity: .92; }
+  .body { padding: 32px 48px 40px; }
+  h2 { font-size: 20px; color: #15803d; margin: 26px 0 12px; display: flex; align-items: center; gap: 8px; }
+  h2:first-child { margin-top: 0; }
+  .steps { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .step { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 14px; text-align: center; }
+  .step .n { font-size: 26px; font-weight: 800; color: #15803d; }
+  .step p { font-size: 13.5px; margin-top: 4px; }
+  .price-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .price-card { border-radius: 12px; padding: 16px; }
+  .free { background: #f0fdf4; border: 2px solid #15803d; }
+  .paid { background: #fffbeb; border: 2px solid #f59e0b; }
+  .price-card .big { font-size: 30px; font-weight: 800; }
+  .free .big { color: #15803d; }
+  .paid .big { color: #b45309; }
+  .price-card p { font-size: 13.5px; margin-top: 4px; color: #44403c; }
+  .example { background: #1c1917; color: #fafaf9; border-radius: 12px; padding: 20px 22px; margin-top: 14px; }
+  .example h3 { color: #fbbf24; font-size: 15px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+  .example table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  .example td { padding: 5px 0; }
+  .example td:last-child { text-align: right; font-family: monospace; }
+  .example tr.total td { border-top: 1px solid #57534e; padding-top: 10px; font-weight: 800; font-size: 17px; color: #4ade80; }
+  ul.clean { list-style: none; font-size: 15px; }
+  ul.clean li { padding: 6px 0 6px 30px; position: relative; }
+  ul.clean li::before { content: '✓'; position: absolute; left: 4px; color: #15803d; font-weight: 800; }
+  .kiwi-box { background: #fef3c7; border-left: 6px solid #f59e0b; border-radius: 0 12px 12px 0; padding: 14px 18px; font-size: 14.5px; margin-top: 6px; }
+  .cta { margin-top: 26px; background: linear-gradient(135deg, #15803d, #166534); border-radius: 12px; color: #fff; text-align: center; padding: 22px; }
+  .cta p { font-size: 17px; }
+  .cta .contact { font-size: 15px; opacity: .9; margin-top: 6px; }
+  .foot { text-align: center; font-size: 11px; color: #a8a29e; padding: 14px; }
+  @media print {
+    /* @page sin margen: Chrome/Edge no imprimen URL ni numeración */
+    @page { size: A4; margin: 0; }
+    body { background: #fff; padding: 0; }
+    .sheet { box-shadow: none; border-radius: 0; width: 100%; padding: 9mm 0; }
+    .hero { padding: 30px 40px 26px; }
+    .hero h1 { font-size: 34px; }
+    .body { padding: 22px 40px 26px; }
+  }
+</style>
+</head>
+<body>
+<div class="sheet">
+  <div class="hero">
+    <span class="kicker">Para sodas, restaurantes y comercios</span>
+    <h1>Vendé por app.<br>Sin pagar comisión.</h1>
+    <p class="sub">Tu menú en Kiwi · pedidos que no se pierden · entrega con repartidor</p>
+  </div>
+  <div class="body">
+    <h2>🚀 ¿Cómo funciona?</h2>
+    <div class="steps">
+      <div class="step"><div class="n">1</div><p>Cargamos tu menú con fotos y te damos un QR para tu mostrador</p></div>
+      <div class="step"><div class="n">2</div><p>Tus clientes piden solos desde el celu, sin llamarte ni escribirte</p></div>
+      <div class="step"><div class="n">3</div><p>Un repartidor recoge y entrega. Vos solo preparás la comida</p></div>
+    </div>
+
+    <h2>💰 ¿Cuánto te cuesta?</h2>
+    <div class="price-grid">
+      <div class="price-card free">
+        <div class="big">₡0</div>
+        <p><strong>Mensualidad: ₡0.<br>Comisión sobre tu comida: 0%.</strong><br>Te quedás con el 100% de tus productos, siempre.</p>
+      </div>
+      <div class="price-card paid">
+        <div class="big">Solo el viaje</div>
+        <p>El cliente paga los productos + el envío (tarifa fija por zona: ₡1.000–₡7.000). El viaje lo cubrís con tu <strong>crédito prepago</strong>: recargas desde ₡10.000 con tarjeta, cuando quieras.</p>
+      </div>
+    </div>
+
+    <div class="example">
+      <h3>Ejemplo real</h3>
+      <table>
+        <tr><td>Cliente pide: 2 casados + fresco</td><td>₡5.000</td></tr>
+        <tr><td>Envío a su barrio</td><td>₡1.500</td></tr>
+        <tr><td>Cliente paga en total</td><td>₡6.500</td></tr>
+        <tr class="total"><td>Vos recibís (100% de tu comida)</td><td>₡5.000</td></tr>
+      </table>
+    </div>
+
+    <h2>🥝 ¿De qué gana Kiwi?</h2>
+    <div class="kiwi-box">
+      Kiwi gana el <strong>15% del viaje</strong> — y no sale de tu bolsillo: lo paga el
+      repartidor desde su ganancia. Nosotros ganamos por mover el pedido,
+      <strong>nunca por tu comida</strong>. Si algún día el modelo cambia, se avisa con 30 días.
+    </div>
+
+    <h2>✅ ¿Qué incluye?</h2>
+    <ul class="clean">
+      <li>Menú digital con QR para tu local</li>
+      <li>Pedidos programados y seguimiento en vivo</li>
+      <li>Calificaciones de tus clientes</li>
+      <li>Capacitación de 30 minutos a tu personal</li>
+      <li>Sin permanencia ni letra pequeña</li>
+    </ul>
+
+    <div class="cta">
+      <p><strong>¿Empezamos con una prueba gratis de 2 semanas?</strong></p>
+      <p class="contact">negocios.kiwicr.express · contacto@kiwicr.express</p>
+    </div>
+  </div>
+  <div class="foot">© 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.</div>
+</div>
+</body>
+</html>

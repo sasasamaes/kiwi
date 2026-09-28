@@ -8,6 +8,7 @@ import {
   NotificationProvider,
   AuthProvider,
   CookieConsentBanner,
+  ServiceWorkerUpdater,
   SkipToContent,
 } from '@kiwi/ui';
 
@@ -48,6 +49,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <SkipToContent />
               {children}
               <CookieConsentBanner />
+              <ServiceWorkerUpdater />
             </NotificationProvider>
           </AuthProvider>
         </ThemeProvider>

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<!-- Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados. -->
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kiwi para Repartidores — Manejá, entregá, ganá</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #e8e8e8; color: #1c1917; display: flex; justify-content: center; padding: 24px; }
+  .sheet { background: #fff; width: 800px; max-width: 100%; border-radius: 12px; overflow: hidden; box-shadow: 0 8px 30px rgba(0,0,0,.15); }
+  .hero { background: linear-gradient(135deg, #b45309 0%, #92400e 60%, #78350f 100%); color: #fff; padding: 44px 48px 36px; position: relative; overflow: hidden; }
+  .hero::after { content: '🛵'; position: absolute; right: 24px; top: 8px; font-size: 110px; opacity: .2; }
+  .kicker { display: inline-block; background: #4ade80; color: #052e16; font-weight: 800; font-size: 13px; letter-spacing: 1px; text-transform: uppercase; padding: 6px 14px; border-radius: 999px; margin-bottom: 14px; }
+  .hero h1 { font-size: 40px; line-height: 1.1; margin-bottom: 10px; }
+  .hero p.sub { font-size: 18px; opacity: .92; }
+  .body { padding: 32px 48px 40px; }
+  h2 { font-size: 20px; color: #b45309; margin: 26px 0 12px; display: flex; align-items: center; gap: 8px; }
+  h2:first-child { margin-top: 0; }
+  .steps { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .step { background: #fffbeb; border: 1px solid #fcd34d; border-radius: 12px; padding: 14px; text-align: center; }
+  .step .n { font-size: 26px; font-weight: 800; color: #b45309; }
+  .step p { font-size: 13.5px; margin-top: 4px; }
+  .gain-hero { background: linear-gradient(135deg, #15803d, #166534); border-radius: 12px; color: #fff; text-align: center; padding: 20px; margin-top: 4px; }
+  .gain-hero .formula { font-size: 26px; font-weight: 800; }
+  .gain-hero .formula span { color: #fbbf24; }
+  .gain-hero p { font-size: 14px; opacity: .9; margin-top: 6px; }
+  table.pay { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 15px; }
+  table.pay th { background: #1c1917; color: #fafaf9; padding: 10px; text-align: left; font-size: 13px; text-transform: uppercase; letter-spacing: .5px; }
+  table.pay th:last-child, table.pay td:last-child { text-align: right; }
+  table.pay td { padding: 10px; border-bottom: 1px solid #e7e5e4; }
+  table.pay td:last-child { font-family: monospace; font-weight: 800; color: #15803d; }
+  table.pay tr.hl td { background: #f0fdf4; font-weight: 700; }
+  .month { background: #1c1917; color: #fafaf9; border-radius: 12px; padding: 18px 22px; margin-top: 12px; text-align: center; }
+  .month .n { font-size: 30px; font-weight: 800; color: #4ade80; font-family: monospace; }
+  .month p { font-size: 14px; color: #d6d3d1; margin-top: 4px; }
+  ul.clean { list-style: none; font-size: 15px; }
+  ul.clean li { padding: 6px 0 6px 30px; position: relative; }
+  ul.clean li::before { content: '✓'; position: absolute; left: 4px; color: #15803d; font-weight: 800; }
+  .kiwi-box { background: #fef3c7; border-left: 6px solid #f59e0b; border-radius: 0 12px 12px 0; padding: 14px 18px; font-size: 14.5px; margin-top: 6px; }
+  .cta { margin-top: 26px; background: linear-gradient(135deg, #b45309, #92400e); border-radius: 12px; color: #fff; text-align: center; padding: 22px; }
+  .cta p { font-size: 17px; }
+  .cta .contact { font-size: 15px; opacity: .9; margin-top: 6px; }
+  .foot { text-align: center; font-size: 11px; color: #a8a29e; padding: 14px; }
+  @media print {
+    /* @page sin margen: Chrome/Edge no imprimen URL ni numeración */
+    @page { size: A4; margin: 0; }
+    body { background: #fff; padding: 0; }
+    .sheet { box-shadow: none; border-radius: 0; width: 100%; padding: 9mm 0; }
+    .hero { padding: 30px 40px 26px; }
+    .hero h1 { font-size: 34px; }
+    .body { padding: 22px 40px 26px; }
+  }
+</style>
+</head>
+<body>
+<div class="sheet">
+  <div class="hero">
+    <span class="kicker">Para repartidores con moto</span>
+    <h1>Manejá, entregá,<br>ganá todos los días.</h1>
+    <p class="sub">Sin andar buscando viajes: la app te los manda al celu</p>
+  </div>
+  <div class="body">
+    <h2>🚀 ¿Cómo funciona?</h2>
+    <div class="steps">
+      <div class="step"><div class="n">1</div><p>Te conectás y te llegan pedidos cerca tuyo con la ganancia a la vista</p></div>
+      <div class="step"><div class="n">2</div><p>Aceptás, recogés en el comercio y seguís la ruta en la app</p></div>
+      <div class="step"><div class="n">3</div><p>Entregás, el cliente te califica y tu ganancia queda registrada</p></div>
+    </div>
+
+    <h2>💰 ¿Cuánto ganás por viaje?</h2>
+    <div class="gain-hero">
+      <div class="formula">Tu ganancia = viaje <span>− 15%</span></div>
+      <p>Ves el monto exacto ANTES de aceptar. Sin sorpresas.</p>
+    </div>
+    <table class="pay">
+      <tr><th>Viaje</th><th>Comisión Kiwi (15%)</th><th>Vos ganás</th></tr>
+      <tr><td>₡1.000</td><td>₡150</td><td>₡850</td></tr>
+      <tr class="hl"><td>₡1.500</td><td>₡225</td><td>₡1.275</td></tr>
+      <tr><td>₡2.000</td><td>₡300</td><td>₡1.700</td></tr>
+      <tr><td>₡3.500</td><td>₡525</td><td>₡2.975</td></tr>
+    </table>
+    <div class="month">
+      <div class="n">≈ ₡255.000 / mes</div>
+      <p>Con 7 viajes diarios de ₡1.500. Retiros semanales, de lunes a viernes.</p>
+    </div>
+
+    <h2>🥝 ¿De qué gana Kiwi?</h2>
+    <div class="kiwi-box">
+      Solo del <strong>15% de cada viaje</strong>. El comercio no paga comisión y el cliente
+      paga el envío completo: tu ganancia sale del viaje, es transparente y queda
+      guardada por pedido. Si la tasa cambia algún día, se avisa antes.
+    </div>
+
+    <h2>✅ ¿Qué te damos?</h2>
+    <ul class="clean">
+      <li>Pedidos todos los días, sin buscar clientes</li>
+      <li>Mapa, navegación y detección de zona en la app</li>
+      <li>Pedidos programados: proponés y elegís los mejores</li>
+      <li>Historial de ganancias y calificaciones</li>
+      <li>Soporte por WhatsApp cuando lo necesités</li>
+    </ul>
+
+    <div class="cta">
+      <p><strong>¿Tenés moto y ganas de manejar? Empezá esta semana.</strong></p>
+      <p class="contact">repartidores.kiwicr.express · contacto@kiwicr.express</p>
+    </div>
+  </div>
+  <div class="foot">© 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.</div>
+</div>
+</body>
+</html>
