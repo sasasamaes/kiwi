@@ -74,6 +74,9 @@ const NEXT_STATUS: Record<string, { next: string; label: string; final?: boolean
   in_transit_to_delivery: { next: 'delivered', label: 'Entregué el pedido', final: true },
 };
 
+// Terminales: nunca se muestran en la lista de activos.
+const TERMINAL_STATUSES = ['delivered', 'cancelled'];
+
 function openMaps(lat?: number | string | null, lng?: number | string | null, address?: string) {
   const coords =
     lat != null && lng != null && Number.isFinite(Number(lat)) && Number.isFinite(Number(lng))
@@ -168,6 +171,9 @@ export default function ActiveOrders() {
   useEffect(() => {
     queuedTransitionsRef.current = queuedTransitions;
   }, [queuedTransitions]);
+  // La primera carga fallida usa la pantalla de error; las siguientes deben
+  // avisar en vez de dejar la lista vieja en silencio.
+  const loadedOnceRef = useRef(false);
 
   useEffect(() => {
     const t = setInterval(() => setTick((n) => n + 1), 30000);
@@ -192,6 +198,11 @@ export default function ActiveOrders() {
     } catch (err) {
       console.error('Failed to fetch active orders:', err);
       setError(err instanceof Error ? err.message : 'No se pudieron cargar los pedidos activos');
+      // Si ya había lista en pantalla, el error era invisible y la lista
+      // quedaba vieja ("no se cierran"): avisar con reintento.
+      if (loadedOnceRef.current) {
+        setNotice('No se pudo actualizar la lista. Revisá tu conexión y tocá Refrescar.');
+      }
       // Fallback offline: sirve la última lista activa conocida
       try {
         const cached = await offlineCache.get<Order[]>(ORDERS_CACHE_KEY);
@@ -206,6 +217,7 @@ export default function ActiveOrders() {
         console.error('Failed to read cached orders:', cacheErr);
       }
     } finally {
+      loadedOnceRef.current = true;
       setLoading(false);
       setRefreshing(false);
     }
@@ -263,9 +275,16 @@ export default function ActiveOrders() {
     };
   }, [user]);
 
-  // Aplica la transición localmente (UI optimista) y marca el pedido como encolado
+  // Aplica la transición localmente (UI optimista) y marca el pedido como encolado.
+  // Los estados terminales se quitan de la lista al momento (igual que hace el
+  // servidor): un entregado que sigue visible "abierto" es el reporte típico.
+  // Si el sync falla después, el refetch restaura la verdad del servidor.
   const applyOptimistic = (orderId: string, nextStatus: string) => {
-    setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: nextStatus } : o)));
+    if (TERMINAL_STATUSES.includes(nextStatus)) {
+      setOrders((prev) => prev.filter((o) => o.id !== orderId));
+    } else {
+      setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: nextStatus } : o)));
+    }
     setQueuedTransitions((prev) => ({ ...prev, [orderId]: nextStatus }));
   };
 
@@ -307,8 +326,12 @@ export default function ActiveOrders() {
     }
     setConfirmArmed(false);
 
-    // ¿Ya hay una transición encolada para este pedido? No duplicar.
-    if (queuedTransitionsRef.current[order.id]) return;
+    // ¿Ya hay una transición encolada para este pedido? No duplicar (pero
+    // avisar: el tap silencioso que no hace nada parece "no cierra").
+    if (queuedTransitionsRef.current[order.id]) {
+      setNotice('Ya se está enviando el cambio de estado. Esperá unos segundos.');
+      return;
+    }
 
     setUpdating(true);
     try {
@@ -319,6 +342,25 @@ export default function ActiveOrders() {
       await fetchActiveOrders();
     } catch (err) {
       console.error('Status update failed, queuing for background sync:', err);
+      // ¿El servidor SÍ avanzó y se perdió la respuesta? Reconciliar antes de
+      // encolar un duplicado que el backend rechazaría con 400 ("No se puede
+      // cambiar"), envenenando la cola y revirtiendo la UI al estado viejo.
+      try {
+        const server = await api.getOrderById(order.id);
+        const rank = (s: string) => FLOW_ORDER.indexOf(s as (typeof FLOW_ORDER)[number]);
+        const serverDone =
+          server != null &&
+          (TERMINAL_STATUSES.includes(server.status) || rank(server.status) >= rank(flow.next));
+        if (serverDone) {
+          if (server.status === 'delivered') {
+            setCelebration({ payout: netPayout({ ...order, status: flow.next }) });
+          }
+          await fetchActiveOrders();
+          return;
+        }
+      } catch {
+        // Sin red: seguir a la cola persistente.
+      }
       // UI optimista + cola persistente (IndexedDB). backgroundSync replaya
       // con reintentos/backoff al volver la conexión (o en su poll de 5s).
       applyOptimistic(order.id, flow.next);
@@ -384,7 +426,12 @@ export default function ActiveOrders() {
           });
           // Revertir al estado real del servidor
           fetchActiveOrders();
-          setNotice('Un cambio de estado no se pudo sincronizar después de varios intentos.');
+          // "No se puede cambiar" = el servidor ya se movió (respuesta
+          // perdida o doble tap): convergió, no es un error real.
+          const errMsg = String((payload as any)?.error ?? '');
+          if (!/No se puede cambiar/i.test(errMsg)) {
+            setNotice('Un cambio de estado no se pudo sincronizar después de varios intentos.');
+          }
         }
       }
     };
