@@ -719,6 +719,14 @@ function NewOrderInner({
       setFormError('Elegí el barrio de entrega para calcular el envío');
       return;
     }
+    // Las coords pueden venir de un link/GPS erróneo: el precio de zona lo
+    // enmascara en pantalla y el backend recién lo rechaza al crear.
+    if (routeKm != null && routeKm > 300) {
+      setFormError(
+        `La ubicación de entrega quedó a ${routeKm} km (máx 300 km). Revisá la dirección o volvé a fijar el punto en el mapa.`,
+      );
+      return;
+    }
     // Saldo fresco (el del mount puede estar viejo si hubo otra pestaña):
     // el backend revalida atómicamente de todos modos.
     if (paymentMethod === 'credit') {
@@ -1544,8 +1552,8 @@ function NewOrderInner({
               {paymentMethod === 'credit' && (
                 <p className="mb-2 text-xs text-surface-500 dark:text-surface-400">
                   Se descuenta solo el viaje (₡{trip.toLocaleString()}) de tu crédito. Vos no pagás
-                  comisión: el {commissionPct}% lo paga el repartidor. Si no alcanza, llamá a Kiwi
-                  para recargar.
+                  comisión: el {commissionPct}% lo paga el repartidor. Si no alcanza, recargá con
+                  tarjeta en Mi crédito o llamá a Kiwi.
                 </p>
               )}
             </motion.div>
