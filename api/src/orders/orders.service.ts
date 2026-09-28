@@ -56,6 +56,18 @@ export class OrdersService {
   ) {}
 
   /**
+   * Normaliza teléfonos ticos aceptando pegados de WhatsApp: "+506 6380 5455",
+   * "50663805455", "6380 5455", "6380-5455" → "6380-5455". Devuelve null si
+   * no son 8 dígitos (con o sin código país 506).
+   */
+  static normalizeCRPhone(raw: unknown): string | null {
+    const digits = String(raw ?? '').replace(/[^\d]/g, '');
+    const local = digits.length === 11 && digits.startsWith('506') ? digits.slice(3) : digits;
+    if (!/^\d{8}$/.test(local)) return null;
+    return `${local.slice(0, 4)}-${local.slice(4)}`;
+  }
+
+  /**
    * Pedido invitado (link público del menú, sin cuenta): mismo pipeline con
    * precios del servidor que el flujo logueado, atribuido al comercio del
    * link. El id del perfil es público (viaja en la URL del menú); la
@@ -71,8 +83,8 @@ export class OrdersService {
       throw new NotFoundException('Comercio no encontrado');
     }
 
-    const phone = String(data?.customerPhone ?? '').trim();
-    if (!/^(\+506)?\s?\d{4}-?\d{4}$/.test(phone)) {
+    const phone = OrdersService.normalizeCRPhone(data?.customerPhone ?? '');
+    if (!phone) {
       throw new BadRequestException('customerPhone es requerido (formato 8888-8888)');
     }
     if (Array.isArray(data?.items) && data.items.length > 50) {
@@ -167,12 +179,14 @@ export class OrdersService {
     if (data.customerName != null && String(data.customerName).length > 120) {
       throw new BadRequestException('customerName muy largo (máx 120)');
     }
-    if (
-      data.customerPhone != null &&
-      data.customerPhone !== '' &&
-      !/^(\+506)?\s?\d{4}-?\d{4}$/.test(String(data.customerPhone).trim())
-    ) {
-      throw new BadRequestException('customerPhone inválido (formato 8888-8888)');
+    // Acepta pegados de WhatsApp ("+506 6380 5455", "50663805455",
+    // "6380 5455") y los guarda canónicos "XXXX-XXXX".
+    if (data.customerPhone != null && String(data.customerPhone).trim() !== '') {
+      const normalized = OrdersService.normalizeCRPhone(data.customerPhone);
+      if (!normalized) {
+        throw new BadRequestException('customerPhone inválido (formato 8888-8888)');
+      }
+      data.customerPhone = normalized;
     }
     if (
       data.scheduledTime != null &&

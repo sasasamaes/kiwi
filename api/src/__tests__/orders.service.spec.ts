@@ -970,5 +970,35 @@ describe('OrdersService', () => {
       expect(order.pickupAddress).toBe('Nicoya Centro');
       expect(order.merchantId).toBe('merchant-1');
     });
+
+    it('acepta pegados de WhatsApp (+506 con espacios) y los normaliza', async () => {
+      prisma.merchantProfile.findUnique.mockResolvedValue(profile);
+      prisma.menuItem.findMany.mockResolvedValue([]);
+      prisma.order.create.mockImplementation(async ({ data }: any) => ({
+        id: 'order-1',
+        status: 'pending',
+        ...data,
+      }));
+
+      const order: any = await service.createGuestOrder('merchant-1', {
+        deliveryAddress: 'Barrio Los Ángeles',
+        customerPhone: '+506 6380 5455',
+        items: [],
+      });
+
+      expect(order.customerPhone).toBe('6380-5455');
+    });
+
+    it('rechaza teléfonos que no son 8 dígitos', async () => {
+      prisma.merchantProfile.findUnique.mockResolvedValue(profile);
+
+      await expect(
+        service.createGuestOrder('merchant-1', {
+          deliveryAddress: 'Barrio Los Ángeles',
+          customerPhone: '+1 555 123 4567',
+          items: [],
+        }),
+      ).rejects.toThrow('customerPhone');
+    });
   });
 });

@@ -1254,7 +1254,7 @@ function NewOrderInner({
                   <input
                     value={deliveryPhone}
                     onChange={(e) => setDeliveryPhone(e.target.value)}
-                    placeholder="Teléfono"
+                    placeholder="Teléfono o WhatsApp"
                     type="tel"
                     className="rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm"
                   />
