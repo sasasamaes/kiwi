@@ -487,6 +487,45 @@ function TrackingContent() {
           )}
         </motion.div>
 
+        {((order as any).pickupProofPhotoUrl || (order as any).deliveryProofPhotoUrl) && (
+          <motion.div
+            className="rounded-2xl glass p-4 mb-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.28 }}
+          >
+            <h3 className="font-semibold text-surface-800 dark:text-surface-100 mb-3">
+              Evidencia del pedido
+            </h3>
+            <div className="space-y-3">
+              {(order as any).pickupProofPhotoUrl && (
+                <div>
+                  <p className="mb-1 text-xs text-surface-500 dark:text-surface-400">
+                    Así lo entregó el comercio
+                  </p>
+                  <img
+                    src={(order as any).pickupProofPhotoUrl}
+                    alt="Foto del comercio al entregar"
+                    className="rounded-xl w-full object-cover"
+                  />
+                </div>
+              )}
+              {(order as any).deliveryProofPhotoUrl && (
+                <div>
+                  <p className="mb-1 text-xs text-surface-500 dark:text-surface-400">
+                    Así se entregó a destino
+                  </p>
+                  <img
+                    src={(order as any).deliveryProofPhotoUrl}
+                    alt="Foto de la entrega al cliente"
+                    className="rounded-xl w-full object-cover"
+                  />
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+
         {driver && currentStatus !== 'pending' && currentStatus !== 'cancelled' && (
           <motion.div
             className="rounded-2xl glass p-4 mb-6"

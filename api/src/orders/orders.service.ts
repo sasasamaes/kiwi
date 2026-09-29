@@ -744,6 +744,11 @@ export class OrdersService {
       assignedAt: order.assignedAt,
       pickedUpAt: order.pickedUpAt,
       deliveredAt: order.deliveredAt,
+      // Evidencia fotográfica 1+1: prueba ante reclamos, visible con el link.
+      pickupProofPhotoUrl: (order as any).pickupProofPhotoUrl ?? null,
+      pickupProofAt: (order as any).pickupProofAt ?? null,
+      deliveryProofPhotoUrl: (order as any).deliveryProofPhotoUrl ?? null,
+      deliveryProofAt: (order as any).deliveryProofAt ?? null,
     };
   }
 

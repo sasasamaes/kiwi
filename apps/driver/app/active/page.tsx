@@ -152,6 +152,8 @@ export default function ActiveOrders() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [updating, setUpdating] = useState(false);
+  // Subida de evidencia delivery: foto de la entrega al cliente.
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   // Offline: pedidos vistos desde caché, acciones esperando sync
   const [fromCache, setFromCache] = useState(false);
   const [online, setOnline] = useState(true);
@@ -318,6 +320,18 @@ export default function ActiveOrders() {
     const flow = NEXT_STATUS[order.status];
     if (!flow || updating) return;
 
+    // Evidencia 1+1 obligatoria: sin foto no se avanza (el backend también
+    // lo bloquea con 400, esto evita el tap inútil y explica el porqué).
+    if (flow.next === 'picked_up' && !(order as any).pickupProofPhotoUrl) {
+      setNotice('El comercio debe subir la foto del pedido antes de que lo recojas.');
+      return;
+    }
+    if (flow.next === 'delivered' && !(order as any).deliveryProofPhotoUrl) {
+      // La foto la toma el driver en este paso:
+      setNotice('Tomá la foto de la entrega antes de cerrar el pedido.');
+      return;
+    }
+
     // Paso final con doble confirmación: un toque accidental no debe cerrar el pedido
     if (flow.final && !confirmArmed) {
       setConfirmArmed(true);
@@ -379,6 +393,22 @@ export default function ActiveOrders() {
     } finally {
       setUpdating(false);
       setOnline(navigator.onLine);
+    }
+  };
+
+  // Evidencia delivery: el repartidor fotografía la entrega al cliente.
+  // Después de subir se refresca la orden para que el avance se desbloquee.
+  const uploadDeliveryPhoto = async (target: Order, file: File) => {
+    if (uploadingPhoto) return;
+    setUploadingPhoto(true);
+    try {
+      await api.uploadOrderProofPhoto(target.id, 'delivery', file);
+      setNotice('Foto de entrega registrada. Ya podés cerrar el pedido.');
+      await fetchActiveOrders();
+    } catch (err) {
+      setNotice(err instanceof Error ? err.message : 'No se pudo subir la foto.');
+    } finally {
+      setUploadingPhoto(false);
     }
   };
 
@@ -1033,6 +1063,70 @@ export default function ActiveOrders() {
             <p className="text-sm text-surface-700 dark:text-surface-200">{notes}</p>
           </div>
         )}
+
+        {/* Evidencia 1+1: foto del comercio al recoger, foto tuya al entregar */}
+        <div className="mb-4 rounded-2xl glass p-4">
+          <p className="mb-2 text-sm font-semibold text-surface-800 dark:text-surface-100">
+            📷 Evidencia del pedido
+          </p>
+          {(order as any).pickupProofPhotoUrl ? (
+            <div className="mb-3">
+              <p className="text-xs font-medium text-kiwi-700 dark:text-kiwi-300">
+                ✓ Foto del comercio al entregar
+              </p>
+              <img
+                src={(order as any).pickupProofPhotoUrl}
+                alt="Foto del comercio al entregar"
+                className="mt-1.5 rounded-xl w-full object-cover"
+              />
+            </div>
+          ) : (
+            <p className="mb-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
+              El comercio todavía no subió la foto del pedido. No vas a poder marcarlo como recogido
+              hasta que lo haga.
+            </p>
+          )}
+          {(order.status === 'picked_up' ||
+            order.status === 'in_transit_to_delivery' ||
+            order.status === 'delivered') && (
+            <div>
+              {(order as any).deliveryProofPhotoUrl ? (
+                <div>
+                  <p className="text-xs font-medium text-kiwi-700 dark:text-kiwi-300">
+                    ✓ Foto de tu entrega registrada
+                  </p>
+                  <img
+                    src={(order as any).deliveryProofPhotoUrl}
+                    alt="Foto de la entrega al cliente"
+                    className="mt-1.5 rounded-xl w-full object-cover"
+                  />
+                </div>
+              ) : (
+                <div>
+                  <label className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-kiwi-700 px-4 py-3 text-sm font-bold text-white">
+                    {uploadingPhoto ? 'Subiendo…' : '📷 Tomar foto de la entrega'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      className="hidden"
+                      disabled={uploadingPhoto}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        e.target.value = '';
+                        if (!file) return;
+                        void uploadDeliveryPhoto(order, file);
+                      }}
+                    />
+                  </label>
+                  <p className="mt-1.5 text-xs text-amber-600 dark:text-amber-400">
+                    Sin esta foto no podés cerrar el pedido.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* Rechazar: solo asignado sin recoger. Vuelve a concurso y avisa
             al comercio para que reasigne. Doble toque para confirmar. */}

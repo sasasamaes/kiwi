@@ -111,6 +111,8 @@ export default function OrdersPage() {
   const [flashId, setFlashId] = useState<string | null>(null);
   // Aviso de rechazo: el asignado devolvió el pedido, hay que reasignar.
   const [rejected, setRejected] = useState<{ orderId: string; driverName?: string } | null>(null);
+  // Subida de evidencia: orderId que está subiendo su foto pickup.
+  const [uploadingId, setUploadingId] = useState<string | null>(null);
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchOrders = useCallback(async (silent = false) => {
@@ -165,6 +167,20 @@ export default function OrdersPage() {
     ];
     return () => offs.forEach((off) => off());
   }, [onSocket, scheduleRefresh]);
+
+  // Evidencia pickup: el comercio fotografía el pedido al entregarlo al
+  // repartidor. Sin foto el repartidor no puede marcarlo como recogido.
+  const uploadPickupPhoto = async (orderId: string, file: File) => {
+    setUploadingId(orderId);
+    try {
+      await api.uploadOrderProofPhoto(orderId, 'pickup', file);
+      await fetchOrders(true);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo subir la foto');
+    } finally {
+      setUploadingId(null);
+    }
+  };
 
   if (authLoading || loading) {
     return (
@@ -426,6 +442,49 @@ export default function OrdersPage() {
                               Todavía ningún repartidor lo toma. Te avisamos en cuanto alguien lo
                               acepte.
                             </p>
+                          )}
+
+                          {/* Evidencia pickup: foto al entregar al repartidor */}
+                          {(order.status === 'assigned' ||
+                            order.status === 'in_transit_to_pickup') && (
+                            <div className="rounded-xl bg-surface-50 dark:bg-surface-800 p-3">
+                              {order.pickupProofPhotoUrl ? (
+                                <div>
+                                  <p className="text-xs font-semibold text-kiwi-700 dark:text-kiwi-300">
+                                    ✓ Foto registrada: ya podés entregar al repartidor
+                                  </p>
+                                  <img
+                                    src={order.pickupProofPhotoUrl}
+                                    alt="Foto del pedido al entregar"
+                                    className="mt-2 rounded-xl w-full object-cover"
+                                  />
+                                </div>
+                              ) : (
+                                <div>
+                                  <label className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-kiwi-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-kiwi-800">
+                                    {uploadingId === order.id
+                                      ? 'Subiendo…'
+                                      : '📷 Subir foto del pedido'}
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      capture="environment"
+                                      className="hidden"
+                                      disabled={uploadingId === order.id}
+                                      onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        e.target.value = '';
+                                        if (!file) return;
+                                        void uploadPickupPhoto(order.id, file);
+                                      }}
+                                    />
+                                  </label>
+                                  <p className="mt-1.5 text-xs text-amber-600 dark:text-amber-400">
+                                    Sin foto no se puede entregar al repartidor.
+                                  </p>
+                                </div>
+                              )}
+                            </div>
                           )}
 
                           {/* Detalle */}

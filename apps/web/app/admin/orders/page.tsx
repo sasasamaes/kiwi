@@ -36,6 +36,8 @@ interface AdminOrder {
   merchant?: { businessName?: string | null } | null;
   driver?: { fullName?: string | null } | null;
   items?: Array<{ name: string; quantity: number }>;
+  pickupProofPhotoUrl?: string | null;
+  deliveryProofPhotoUrl?: string | null;
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -352,6 +354,33 @@ export default function AdminOrders() {
                         {it.quantity}x {it.name}
                       </p>
                     ))}
+                  </div>
+                )}
+                {(selected.pickupProofPhotoUrl || selected.deliveryProofPhotoUrl) && (
+                  <div className="rounded-xl bg-surface-50 dark:bg-surface-700/50 p-3 space-y-3">
+                    <p className="text-xs font-semibold text-surface-600 dark:text-surface-300">
+                      Evidencia fotográfica
+                    </p>
+                    {selected.pickupProofPhotoUrl && (
+                      <div>
+                        <p className="mb-1 text-xs text-surface-500">Comercio al entregar</p>
+                        <img
+                          src={selected.pickupProofPhotoUrl}
+                          alt="Foto del comercio al entregar"
+                          className="rounded-xl w-full object-cover"
+                        />
+                      </div>
+                    )}
+                    {selected.deliveryProofPhotoUrl && (
+                      <div>
+                        <p className="mb-1 text-xs text-surface-500">Entrega al cliente</p>
+                        <img
+                          src={selected.deliveryProofPhotoUrl}
+                          alt="Foto de la entrega al cliente"
+                          className="rounded-xl w-full object-cover"
+                        />
+                      </div>
+                    )}
                   </div>
                 )}
                 <div className="rounded-xl bg-surface-50 dark:bg-surface-700/50 p-3 space-y-1 text-xs">

@@ -231,6 +231,31 @@ class ApiClient {
     return data as { url: string };
   }
 
+  /**
+   * Sube la foto de evidencia de un pedido (multipart `photo` + `kind`).
+   * `pickup` la sube el comercio, `delivery` el repartidor asignado.
+   * El backend valida magic bytes + 5 MB igual que las imágenes de menú.
+   */
+  async uploadOrderProofPhoto(
+    orderId: string,
+    kind: 'pickup' | 'delivery',
+    file: File,
+  ): Promise<{ url: string }> {
+    const fd = new FormData();
+    fd.append('photo', file);
+    fd.append('kind', kind);
+    const response = await fetch(`${this.baseUrl}/orders/${orderId}/proof-photo`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${this.getToken() ?? ''}` },
+      body: fd,
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error((data as any)?.message || `Error al subir foto (${response.status})`);
+    }
+    return data as { url: string };
+  }
+
   async getMerchantProfile() {
     return this.request<any>('/merchants/me');
   }
@@ -1511,6 +1536,11 @@ export interface Order {
   specialInstructions?: string;
   customerName?: string | null;
   customerPhone?: string | null;
+  // Evidencia fotográfica 1+1 (el backend las exige para avanzar).
+  pickupProofPhotoUrl?: string | null;
+  pickupProofAt?: string | null;
+  deliveryProofPhotoUrl?: string | null;
+  deliveryProofAt?: string | null;
   createdAt: string;
   merchant?: { businessName?: string | null } | null;
   items?: Array<{
