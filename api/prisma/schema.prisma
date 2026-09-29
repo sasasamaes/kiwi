@@ -338,6 +338,11 @@ model Order {
   pickedUpAt  DateTime? @map("picked_up_at")
   deliveredAt DateTime? @map("delivered_at")
 
+  // Asignación con aceptación: deadline del driver y ventana de concurso.
+  acceptanceExpiresAt DateTime? @map("acceptance_expires_at")
+  contestStartedAt    DateTime? @map("contest_started_at")
+  contestEndsAt       DateTime? @map("contest_ends_at")
+
   // Evidencia fotográfica 1+1 (obligatoria para avanzar).
   pickupProofPhotoUrl    String?   @map("pickup_proof_photo_url")
   pickupProofAt          DateTime? @map("pickup_proof_at")
@@ -368,11 +373,13 @@ enum OrderStatus {
   pending
   driver_proposals
   assigned
+  pending_acceptance
   in_transit_to_pickup
   picked_up
   in_transit_to_delivery
   delivered
   cancelled
+  no_driver
 }
 
 enum OrderType {
@@ -765,4 +772,18 @@ model ContactMessage {
 
   @@index([status, createdAt], map: "contact_messages_status_created_idx")
   @@map("contact_messages")
+}
+
+// Auditoría de asignación/concurso por pedido (quién, cuándo, resultado).
+model OrderEvent {
+  id        String   @id @default(uuid())
+  orderId   String   @map("order_id")
+  type      String
+  actorId   String?  @map("actor_id")
+  driverId  String?  @map("driver_id")
+  meta      Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([orderId, createdAt])
+  @@map("order_events")
 }

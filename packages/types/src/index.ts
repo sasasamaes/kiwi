@@ -102,11 +102,13 @@ export type OrderStatus =
   | 'pending'
   | 'driver_proposals'
   | 'assigned'
+  | 'pending_acceptance'
   | 'in_transit_to_pickup'
   | 'picked_up'
   | 'in_transit_to_delivery'
   | 'delivered'
-  | 'cancelled';
+  | 'cancelled'
+  | 'no_driver';
 
 export type OrderType = 'immediate' | 'scheduled';
 
