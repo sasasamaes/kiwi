@@ -200,6 +200,7 @@ export default function Home() {
   // escondía los que ya van en camino).
   const ACTIVE_STATUSES = [
     'assigned',
+    'pending_acceptance',
     'in_transit_to_pickup',
     'picked_up',
     'in_transit_to_delivery',
@@ -373,6 +374,7 @@ export default function Home() {
   const getStatusLabel = (status: string) => {
     const labels: Record<string, string> = {
       assigned: 'Asignado',
+      pending_acceptance: 'Pendiente de aceptación',
       in_transit_to_pickup: 'En camino a recoger',
       picked_up: 'Recogido',
       in_transit_to_delivery: 'Entregando',

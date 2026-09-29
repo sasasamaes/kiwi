@@ -45,6 +45,7 @@ import {
 // Estados considerados "activos" para el repartidor
 const ACTIVE_STATUSES = [
   'assigned',
+  'pending_acceptance',
   'in_transit_to_pickup',
   'picked_up',
   'in_transit_to_delivery',
@@ -61,6 +62,7 @@ const FLOW_ORDER = [
 
 const STEP_META: Record<string, { label: string; hint: string }> = {
   assigned: { label: 'Aceptado', hint: 'Andá al comercio a recoger' },
+  pending_acceptance: { label: 'Aceptá el pedido', hint: 'El comercio te eligió' },
   in_transit_to_pickup: { label: 'En camino', hint: 'Vas hacia el comercio' },
   picked_up: { label: 'Recogido', hint: 'Llevá el pedido al cliente' },
   in_transit_to_delivery: { label: 'Entregando', hint: 'Estás por llegar' },
@@ -164,6 +166,8 @@ export default function ActiveOrders() {
   const [confirmArmed, setConfirmArmed] = useState(false);
   const [rejectArmed, setRejectArmed] = useState(false);
   const [rejecting, setRejecting] = useState(false);
+  const [accepting, setAccepting] = useState(false);
+  const [nowMs, setNowMs] = useState(() => Date.now());
   const [celebration, setCelebration] = useState<{ payout: number } | null>(null);
   // Reloj vivo para "hace X min"
   const [, setTick] = useState(0);
@@ -315,6 +319,27 @@ export default function ActiveOrders() {
       setRejecting(false);
     }
   };
+
+  const acceptAssignment = async () => {
+    if (accepting || rejecting) return;
+    setAccepting(true);
+    try {
+      await api.acceptAssignment(order.id);
+      setNotice('Pedido aceptado. ¡Andá a recogerlo!');
+      await fetchActiveOrders();
+    } catch (err) {
+      setNotice(err instanceof Error ? err.message : 'No se pudo aceptar el pedido.');
+    } finally {
+      setAccepting(false);
+    }
+  };
+
+  // Cuenta regresiva de aceptación: tick de 1s solo si hay oferta pendiente.
+  useEffect(() => {
+    if (!orders.some((o) => o.status === 'pending_acceptance')) return;
+    const t = setInterval(() => setNowMs(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [orders]);
 
   const advanceStatus = async (order: Order) => {
     const flow = NEXT_STATUS[order.status];
@@ -676,6 +701,61 @@ export default function ActiveOrders() {
             </p>
           </div>
         )}
+
+        {/* Aceptación: el comercio te eligió, confirmá antes de que vuelva a concurso */}
+        {order.status === 'pending_acceptance' &&
+          (() => {
+            const expires = (order as any).acceptanceExpiresAt
+              ? new Date((order as any).acceptanceExpiresAt).getTime()
+              : null;
+            const remaining = expires != null ? Math.max(0, expires - nowMs) : null;
+            const mm =
+              remaining != null ? String(Math.floor(remaining / 60000)).padStart(2, '0') : '--';
+            const ss =
+              remaining != null
+                ? String(Math.floor((remaining % 60000) / 1000)).padStart(2, '0')
+                : '--';
+            return (
+              <div className="mb-4 rounded-3xl glass p-5">
+                <p className="flex items-center gap-2 text-base font-semibold text-surface-800 dark:text-surface-100">
+                  <Timer className="h-5 w-5 text-kiwi-600" />
+                  Tenés un pedido para aceptar
+                </p>
+                <p className="mt-1 text-sm text-surface-500 dark:text-surface-400">
+                  {remaining != null && remaining <= 0
+                    ? 'Se venció el tiempo: volvé al inicio para refrescar.'
+                    : `Te quedan ${mm}:${ss} para aceptarlo antes de que vuelva a concurso.`}
+                </p>
+                <p className="mt-2 font-mono text-3xl font-bold text-kiwi-700 dark:text-kiwi-300">
+                  {mm}:{ss}
+                </p>
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  <TapButton
+                    haptic
+                    variant="gradient"
+                    className="h-12 w-full rounded-2xl text-sm font-bold"
+                    onClick={acceptAssignment}
+                    disabled={accepting || rejecting}
+                  >
+                    {accepting ? 'Aceptando…' : 'Aceptar pedido'}
+                  </TapButton>
+                  <TapButton
+                    haptic
+                    variant="secondary"
+                    className="h-12 w-full rounded-2xl text-sm font-bold"
+                    onClick={rejectOrder}
+                    disabled={accepting || rejecting}
+                  >
+                    {rejecting
+                      ? 'Rechazando…'
+                      : rejectArmed
+                        ? 'Tocá de nuevo para confirmar'
+                        : 'Rechazar'}
+                  </TapButton>
+                </div>
+              </div>
+            );
+          })()}
 
         {/* Cola de entregas: todos los activos en orden, se toca para cambiar */}
         {orders.length > 1 && (
@@ -1147,52 +1227,54 @@ export default function ActiveOrders() {
         )}
       </main>
 
-      {/* Barra de acción fija */}
-      <div className="fixed inset-x-0 bottom-0 z-40 pb-safe">
-        <div className="mx-auto max-w-lg px-4 pb-4">
-          <motion.div
-            layout
-            className="rounded-3xl glass-strong p-3 shadow-kiwi-lg flex items-center gap-3"
-          >
-            <div className="pl-2">
-              <p className="text-[11px] text-surface-400">Ganancia</p>
-              <p className="font-mono text-lg font-bold text-kiwi-700">
-                ₡{driverPayout.toLocaleString()}
-              </p>
-              <p className="text-[10px] text-surface-400">neta (−{feePct}% Kiwi)</p>
-            </div>
-            <div className="flex-1">
-              {pendingStatus ? (
-                <button
-                  disabled
-                  className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-surface-200 dark:bg-surface-700 font-semibold text-surface-600 dark:text-surface-300"
-                >
-                  <CloudUpload className="h-5 w-5 animate-pulse" />
-                  <span className="text-sm">Sincronizando…</span>
-                </button>
-              ) : (
-                flow && (
-                  <TapButton
-                    haptic
-                    variant={confirmArmed ? 'secondary' : 'gradient'}
-                    onClick={() => advanceStatus(order)}
-                    disabled={updating}
-                    className="h-14 w-full rounded-2xl text-base font-bold"
+      {/* Barra de acción fija: no se muestra en pending_acceptance (ahí mandan Aceptar/Rechazar) */}
+      {order.status !== 'pending_acceptance' && (
+        <div className="fixed inset-x-0 bottom-0 z-40 pb-safe">
+          <div className="mx-auto max-w-lg px-4 pb-4">
+            <motion.div
+              layout
+              className="rounded-3xl glass-strong p-3 shadow-kiwi-lg flex items-center gap-3"
+            >
+              <div className="pl-2">
+                <p className="text-[11px] text-surface-400">Ganancia</p>
+                <p className="font-mono text-lg font-bold text-kiwi-700">
+                  ₡{driverPayout.toLocaleString()}
+                </p>
+                <p className="text-[10px] text-surface-400">neta (−{feePct}% Kiwi)</p>
+              </div>
+              <div className="flex-1">
+                {pendingStatus ? (
+                  <button
+                    disabled
+                    className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-surface-200 dark:bg-surface-700 font-semibold text-surface-600 dark:text-surface-300"
                   >
-                    {updating ? (
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                    ) : confirmArmed ? (
-                      'Tocá de nuevo para confirmar'
-                    ) : (
-                      flow.label
-                    )}
-                  </TapButton>
-                )
-              )}
-            </div>
-          </motion.div>
+                    <CloudUpload className="h-5 w-5 animate-pulse" />
+                    <span className="text-sm">Sincronizando…</span>
+                  </button>
+                ) : (
+                  flow && (
+                    <TapButton
+                      haptic
+                      variant={confirmArmed ? 'secondary' : 'gradient'}
+                      onClick={() => advanceStatus(order)}
+                      disabled={updating}
+                      className="h-14 w-full rounded-2xl text-base font-bold"
+                    >
+                      {updating ? (
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                      ) : confirmArmed ? (
+                        'Tocá de nuevo para confirmar'
+                      ) : (
+                        flow.label
+                      )}
+                    </TapButton>
+                  )
+                )}
+              </div>
+            </motion.div>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Celebración de entrega */}
       <AnimatePresence>

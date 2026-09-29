@@ -44,23 +44,27 @@ const STATUS_LABEL: Record<string, string> = {
   pending: 'Pendiente',
   driver_proposals: 'Propuestas',
   assigned: 'Asignado',
+  pending_acceptance: 'Esperando al repartidor',
   in_transit_to_pickup: 'A recoger',
   picked_up: 'Recogido',
   in_transit_to_delivery: 'Entregando',
   delivered: 'Entregado',
   cancelled: 'Cancelado',
+  no_driver: 'Sin repartidores',
 };
 
 const STATUS_COLOR: Record<string, string> = {
   pending: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300',
   driver_proposals: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
   assigned: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+  pending_acceptance: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
   in_transit_to_pickup: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
   picked_up: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300',
   in_transit_to_delivery:
     'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300',
   delivered: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
   cancelled: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
+  no_driver: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
 };
 
 const FILTERS = [

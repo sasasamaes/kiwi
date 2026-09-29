@@ -454,6 +454,11 @@ class ApiClient {
     });
   }
 
+  /** El driver asignado acepta dentro de la ventana de aceptación. */
+  async acceptAssignment(orderId: string) {
+    return this.request<any>(`/orders/${orderId}/accept-assignment`, { method: 'POST' });
+  }
+
   async submitProposal(orderId: string, data: any) {
     return this.request<any>(`/orders/${orderId}/proposals`, {
       method: 'POST',

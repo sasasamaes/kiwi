@@ -11,16 +11,23 @@ import { ArrowLeft, Clock, Check, Bike, Package, Rocket, PartyPopper, X, Star } 
 type OrderStatus =
   | 'pending'
   | 'assigned'
+  | 'pending_acceptance'
   | 'in_transit_to_pickup'
   | 'picked_up'
   | 'in_transit_to_delivery'
   | 'delivered'
-  | 'cancelled';
+  | 'cancelled'
+  | 'no_driver';
 
 const statusConfig: Record<OrderStatus, { label: string; description: string; progress: number }> =
   {
     pending: { label: 'Pendiente', description: 'Esperando repartidor', progress: 10 },
     assigned: { label: 'Asignado', description: 'Repartidor asignado', progress: 20 },
+    pending_acceptance: {
+      label: 'Esperando al repartidor',
+      description: 'Confirmando repartidor',
+      progress: 15,
+    },
     in_transit_to_pickup: {
       label: 'En camino a recoger',
       description: 'El repartidor va al comercio',
@@ -46,6 +53,11 @@ const statusConfig: Record<OrderStatus, { label: string; description: string; pr
       description: 'El pedido fue cancelado',
       progress: 0,
     },
+    no_driver: {
+      label: 'Sin repartidores',
+      description: 'No hay repartidores disponibles en este momento.',
+      progress: 10,
+    },
   };
 
 const fallbackConfig = {
@@ -59,6 +71,8 @@ function StatusIcon({ status }: { status: string }) {
   switch (status) {
     case 'pending':
       return <Clock className={iconClass} />;
+    case 'pending_acceptance':
+      return <Clock className={iconClass} />;
     case 'assigned':
       return <Check className={iconClass} />;
     case 'in_transit_to_pickup':
@@ -70,6 +84,8 @@ function StatusIcon({ status }: { status: string }) {
     case 'delivered':
       return <PartyPopper className={iconClass} />;
     case 'cancelled':
+      return <X className={iconClass} />;
+    case 'no_driver':
       return <X className={iconClass} />;
     default:
       return <Clock className={iconClass} />;
@@ -139,11 +155,13 @@ function TrackingContent() {
   const STATUS_LABELS: Record<string, string> = {
     pending: 'Pedido recibido',
     assigned: 'Repartidor asignado',
+    pending_acceptance: 'Esperando al repartidor',
     in_transit_to_pickup: 'En camino a recoger',
     picked_up: 'Pedido recogido',
     in_transit_to_delivery: 'En camino a entregar',
     delivered: 'Entregado',
     cancelled: 'Cancelado',
+    no_driver: 'Sin repartidores',
   };
 
   const etaForStatus = (status?: string | null): number | null => {
@@ -486,6 +504,12 @@ function TrackingContent() {
             </motion.div>
           )}
         </motion.div>
+
+        {currentStatus === 'no_driver' && (
+          <div className="mb-6 rounded-2xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">
+            No hay repartidores disponibles en este momento.
+          </div>
+        )}
 
         {((order as any).pickupProofPhotoUrl || (order as any).deliveryProofPhotoUrl) && (
           <motion.div
