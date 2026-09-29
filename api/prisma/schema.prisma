@@ -338,6 +338,12 @@ model Order {
   pickedUpAt  DateTime? @map("picked_up_at")
   deliveredAt DateTime? @map("delivered_at")
 
+  // Evidencia fotográfica 1+1 (obligatoria para avanzar).
+  pickupProofPhotoUrl    String?   @map("pickup_proof_photo_url")
+  pickupProofAt          DateTime? @map("pickup_proof_at")
+  deliveryProofPhotoUrl  String?   @map("delivery_proof_photo_url")
+  deliveryProofAt        DateTime? @map("delivery_proof_at")
+
   // Relations
   merchant  MerchantProfile  @relation(fields: [merchantId], references: [id])
   driver    DriverProfile?   @relation(fields: [driverId], references: [id])
