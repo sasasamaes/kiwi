@@ -8,6 +8,7 @@ import { DriversModule } from '../drivers/drivers.module';
 import { GeocodingModule } from '../geocoding/geocoding.module';
 import { ProximityModule } from './proximity.module';
 import { SettingsModule } from '../settings/settings.module';
+import { ImageUploadService } from '../menu/image-upload.service';
 
 @Module({
   // NotificationsService llega vía NotificationsForwardModule (@Global).
@@ -19,7 +20,7 @@ import { SettingsModule } from '../settings/settings.module';
     ProximityModule,
     SettingsModule,
   ],
-  providers: [OrdersService],
+  providers: [OrdersService, ImageUploadService],
   controllers: [OrdersController],
   exports: [OrdersService],
 })

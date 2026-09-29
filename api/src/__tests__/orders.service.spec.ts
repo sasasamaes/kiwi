@@ -851,6 +851,8 @@ describe('OrdersService', () => {
       id: 'order-1',
       status: 'in_transit_to_delivery',
       driverId: 'dp-1',
+      pickupProofPhotoUrl: 'https://img/1.jpg',
+      deliveryProofPhotoUrl: 'https://img/2.jpg',
       merchant: { userId: 'merchant-user-1' },
       driver: { userId: 'user-d' },
     };

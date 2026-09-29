@@ -1,7 +1,19 @@
 // Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
-import { Controller, Get, Post, Put, Body, Param, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  UseInterceptors,
+  UploadedFile,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { Public } from '../auth/decorators/public.decorator';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiConsumes } from '@nestjs/swagger';
 import { OrdersService } from './orders.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -130,8 +142,24 @@ export class OrdersController {
     @Param('id') id: string,
     @Body('status') status: string,
     @CurrentUser() user: any,
+    @Body('proofPhotoUrl') proofPhotoUrl?: string,
   ) {
-    return this.ordersService.updateStatus(id, status, user.sub, user.role);
+    return this.ordersService.updateStatus(id, status, user.sub, user.role, proofPhotoUrl);
+  }
+
+  @Post(':id/proof-photo')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @UseInterceptors(FileInterceptor('photo', { limits: { fileSize: 5 * 1024 * 1024 } }))
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Upload order proof photo (pickup or delivery)' })
+  async uploadProofPhoto(
+    @Param('id') id: string,
+    @Body('kind') kind: 'pickup' | 'delivery',
+    @UploadedFile() file: any,
+    @CurrentUser() user: any,
+  ) {
+    return this.ordersService.uploadProofPhotoWithFile(id, kind, file, user.sub);
   }
 
   @Get(':id/messages')

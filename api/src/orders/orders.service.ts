@@ -5,6 +5,8 @@ import {
   ForbiddenException,
   BadRequestException,
   Logger,
+  Optional,
+  Inject,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventsGateway } from '../events/events.gateway';
@@ -16,6 +18,7 @@ import { SettingsService } from '../settings/settings.service';
 import { findDeliveryZone, findNearestZone, detectDeliveryZoneFromText } from './delivery-zones';
 import { parseScheduledCR } from '../common/costa-rica-time';
 import { isKycRequired } from '../feature-flags/feature-flags';
+import { ImageUploadService } from '../menu/image-upload.service';
 
 /**
  * Lo que un repartidor puede ver del comercio en respuestas de pedidos.
@@ -53,6 +56,9 @@ export class OrdersService {
     private proximity: ProximityService,
     private notificationsService: NotificationsService,
     private settingsService: SettingsService,
+    @Optional()
+    @Inject(ImageUploadService)
+    private readonly imageUpload?: ImageUploadService,
   ) {}
 
   /**
@@ -1149,7 +1155,67 @@ export class OrdersService {
     });
   }
 
-  async updateStatus(orderId: string, status: string, userId: string, role?: string) {
+  /**
+   * Registra la foto de evidencia del pedido (URLs del Task 1 + timestamps).
+   * - `pickup`: solo el comercio dueño sube la foto de entrega al repartidor.
+   * - `delivery`: solo el repartidor asignado sube la foto de entrega al cliente.
+   */
+  async uploadProofPhoto(
+    orderId: string,
+    kind: 'pickup' | 'delivery',
+    url: string,
+    userId: string,
+  ) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { merchant: true, driver: true },
+    });
+    if (!order) throw new NotFoundException('Pedido no encontrado');
+    const isMerchantOwner = order.merchant?.userId === userId;
+    const isAssignedDriver = order.driver?.userId === userId;
+    if (kind === 'pickup' && !isMerchantOwner)
+      throw new ForbiddenException('Solo el comercio sube la foto de entrega al repartidor');
+    if (kind === 'delivery' && !isAssignedDriver)
+      throw new ForbiddenException(
+        'Solo el repartidor asignado sube la foto de entrega al cliente',
+      );
+    const data: any =
+      kind === 'pickup'
+        ? { pickupProofPhotoUrl: url, pickupProofAt: new Date() }
+        : { deliveryProofPhotoUrl: url, deliveryProofAt: new Date() };
+    return this.prisma.order.update({ where: { id: orderId }, data });
+  }
+
+  /**
+   * Valida `kind`, sube el binario vía `imageUpload.uploadProofImage(file)`
+   * y registra la URL con `uploadProofPhoto`.
+   */
+  async uploadProofPhotoWithFile(
+    orderId: string,
+    kind: 'pickup' | 'delivery',
+    file: any,
+    userId: string,
+  ) {
+    if (kind !== 'pickup' && kind !== 'delivery') {
+      throw new BadRequestException('kind inválido: usá pickup o delivery');
+    }
+    if (!file) {
+      throw new BadRequestException('Foto requerida (multipart `photo`)');
+    }
+    if (!this.imageUpload) {
+      throw new BadRequestException('Subida de imágenes no disponible');
+    }
+    const { url } = await this.imageUpload.uploadProofImage(file);
+    return this.uploadProofPhoto(orderId, kind, url, userId);
+  }
+
+  async updateStatus(
+    orderId: string,
+    status: string,
+    userId: string,
+    role?: string,
+    proofPhotoUrl?: string,
+  ) {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
       include: { merchant: true, driver: true },
@@ -1176,8 +1242,33 @@ export class OrdersService {
       role,
     });
 
+    // Evidencia fotográfica 1+1 obligatoria para avanzar.
+    if (status === 'picked_up' && !(order as any).pickupProofPhotoUrl) {
+      throw new BadRequestException(
+        'Subí la foto de evidencia para continuar: el comercio debe fotografiar el pedido al entregarlo.',
+      );
+    }
+    if (status === 'delivered' && !(order as any).deliveryProofPhotoUrl) {
+      throw new BadRequestException(
+        'Subí la foto de evidencia para continuar: fotografiá la entrega al cliente.',
+      );
+    }
+
     // Update status with timestamp
     const updateData: any = { status };
+
+    // Atajo opcional: el cliente puede mandar la URL ya subida junto al
+    // cambio de estado (el flujo principal es POST :id/proof-photo).
+    if (proofPhotoUrl && status === 'picked_up' && !(order as any).pickupProofPhotoUrl) {
+      updateData.pickupProofPhotoUrl = proofPhotoUrl;
+      updateData.pickupProofAt = new Date();
+      (order as any).pickupProofPhotoUrl = proofPhotoUrl;
+    }
+    if (proofPhotoUrl && status === 'delivered' && !(order as any).deliveryProofPhotoUrl) {
+      updateData.deliveryProofPhotoUrl = proofPhotoUrl;
+      updateData.deliveryProofAt = new Date();
+      (order as any).deliveryProofPhotoUrl = proofPhotoUrl;
+    }
 
     if (status === 'assigned') {
       updateData.assignedAt = new Date();
