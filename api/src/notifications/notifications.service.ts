@@ -492,6 +492,33 @@ export class NotificationsService {
     });
   }
 
+  /** Te asignaron un pedido: tenés N minutos para aceptar. */
+  async notifyAssignmentOffered(orderId: string, driverUserId: string, minutes: number) {
+    return this.sendToUser(driverUserId, {
+      title: '🛵 Tenés un pedido para aceptar',
+      body: `Tenés ${minutes} min para aceptarlo antes de que vuelva a concurso. Pedido #${orderId.slice(0, 8)}`,
+      data: { orderId, type: 'assignment_offered' },
+    });
+  }
+
+  /** El driver inicial no aceptó: el pedido entró en concurso. */
+  async notifyContestStarted(orderId: string, merchantUserId: string) {
+    return this.sendToUser(merchantUserId, {
+      title: '🔍 Buscando otro repartidor',
+      body: `El repartidor seleccionado no aceptó tu pedido #${orderId.slice(0, 8)}. Ya está en concurso.`,
+      data: { orderId, type: 'contest_started' },
+    });
+  }
+
+  /** Nadie tomó el pedido en el concurso. */
+  async notifyNoDriverAvailable(orderId: string, merchantUserId: string) {
+    return this.sendToUser(merchantUserId, {
+      title: '⚠️ Sin repartidores disponibles',
+      body: 'No hay repartidores disponibles para aceptar este pedido en este momento.',
+      data: { orderId, type: 'no_driver' },
+    });
+  }
+
   /** El asignado rechazó → el comercio debe reasignar (push directo + inbox). */
   async notifyOrderRejected(orderId: string, merchantUserId: string, driverName: string) {
     return this.sendToUser(merchantUserId, {

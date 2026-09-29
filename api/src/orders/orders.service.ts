@@ -536,7 +536,7 @@ export class OrdersService {
    *
    * Fire-and-forget: un fallo de notificación NUNCA revierte el pedido.
    */
-  private async alertNearbyDrivers(
+  async alertNearbyDrivers(
     order: {
       id: string;
       pickupLat: any;
@@ -1499,6 +1499,9 @@ export class OrdersService {
         orderId,
         message: `Tenés un pedido pendiente de aceptación (${acceptanceMinutes} min para aceptar)`,
       });
+      void this.notificationsService
+        .notifyAssignmentOffered(orderId, driverProfile.userId, acceptanceMinutes)
+        .catch(() => undefined);
     }
 
     // Notify the assigned driver
