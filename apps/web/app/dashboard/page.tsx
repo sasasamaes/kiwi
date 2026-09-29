@@ -32,6 +32,20 @@ import {
 } from '@kiwi/ui';
 import { MerchantNav } from '../../components/MerchantNav';
 
+/**
+ * Nombre del cliente: campo estructurado (pedidos nuevos) o parseado de
+ * `specialInstructions` ("Cliente: Nombre (teléfono) · notas") para el
+ * historial viejo que se creó sin customerName.
+ */
+function getClientName(o: any): string {
+  const raw = typeof o?.customerName === 'string' ? o.customerName.trim() : '';
+  if (raw) return raw;
+  const instructions = typeof o?.specialInstructions === 'string' ? o.specialInstructions : '';
+  const m = instructions.match(/Cliente:\s*([^(()·]+?)\s*(?:\(([^)]+)\))?\s*(?:·|$)/i);
+  const name = (m?.[1] ?? '').trim();
+  return name || 'Cliente sin nombre';
+}
+
 export default function Dashboard() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
@@ -487,55 +501,60 @@ export default function Dashboard() {
 
                   return (
                     <ScrollReveal key={order.id} index={orderIndex} as="div">
-                      <motion.div
-                        className="group flex items-center justify-between rounded-xl border border-surface-100 dark:border-surface-700 bg-surface-50/50 dark:bg-surface-900/50 p-4 transition-all hover:border-kiwi-200 hover:bg-white dark:hover:bg-surface-800 hover:shadow-soft-md"
-                        whileHover={{ x: 4 }}
+                      <Link
+                        href="/orders"
+                        aria-label={`Ver detalle del pedido de ${getClientName(order)}`}
                       >
-                        <div className="flex items-center gap-4">
-                          <motion.div
-                            className="flex h-12 w-12 items-center justify-center rounded-xl bg-kiwi-100 text-kiwi-700 transition-colors group-hover:bg-kiwi-700 group-hover:text-white"
-                            whileHover={{ rotate: 10 }}
-                          >
-                            <span className="text-lg font-bold">#{order.id.slice(-4)}</span>
-                          </motion.div>
-                          <div>
-                            <p className="font-medium text-surface-800 dark:text-surface-200">
-                              {order.pickupAddress} → {order.deliveryAddress}
-                            </p>
-                            <div className="flex items-center gap-2">
-                              <p className="text-sm text-surface-400 flex items-center gap-1">
-                                {order.driver ? (
-                                  <>
-                                    <Bike className="h-4 w-4" /> Asignado
-                                  </>
-                                ) : (
-                                  <>
-                                    <Clock className="h-4 w-4" /> Sin repartidor
-                                  </>
-                                )}
+                        <motion.div
+                          className="group flex items-center justify-between rounded-xl border border-surface-100 dark:border-surface-700 bg-surface-50/50 dark:bg-surface-900/50 p-4 transition-all hover:border-kiwi-200 hover:bg-white dark:hover:bg-surface-800 hover:shadow-soft-md cursor-pointer"
+                          whileHover={{ x: 4 }}
+                        >
+                          <div className="flex items-center gap-4">
+                            <motion.div
+                              className="flex h-12 w-12 items-center justify-center rounded-xl bg-kiwi-100 text-kiwi-700 transition-colors group-hover:bg-kiwi-700 group-hover:text-white"
+                              whileHover={{ rotate: 10 }}
+                            >
+                              <span className="text-lg font-bold">#{order.id.slice(-4)}</span>
+                            </motion.div>
+                            <div>
+                              <p className="font-medium text-surface-800 dark:text-surface-200">
+                                {getClientName(order)}
                               </p>
-                              {order.driver && (
-                                <VehicleBadge
-                                  type={order.driver.vehicleType || 'motorcycle'}
-                                  size="sm"
-                                />
-                              )}
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm text-surface-400 flex items-center gap-1">
+                                  {order.driver ? (
+                                    <>
+                                      <Bike className="h-4 w-4" /> Asignado
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Clock className="h-4 w-4" /> Sin repartidor
+                                    </>
+                                  )}
+                                </p>
+                                {order.driver && (
+                                  <VehicleBadge
+                                    type={order.driver.vehicleType || 'motorcycle'}
+                                    size="sm"
+                                  />
+                                )}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <span className="text-lg font-semibold text-surface-700 dark:text-surface-300">
-                            ₡{Number(order.totalAmount).toLocaleString()}
-                          </span>
-                          <motion.span
-                            className={`rounded-full px-3 py-1 text-xs font-medium ${statusInfo.color}`}
-                            whileHover={{ scale: 1.05 }}
-                          >
-                            {statusInfo.label}
-                          </motion.span>
-                          <span className="text-sm text-surface-400">{time}</span>
-                        </div>
-                      </motion.div>
+                          <div className="flex items-center gap-4">
+                            <span className="text-lg font-semibold text-surface-700 dark:text-surface-300">
+                              ₡{Number(order.totalAmount).toLocaleString()}
+                            </span>
+                            <motion.span
+                              className={`rounded-full px-3 py-1 text-xs font-medium ${statusInfo.color}`}
+                              whileHover={{ scale: 1.05 }}
+                            >
+                              {statusInfo.label}
+                            </motion.span>
+                            <span className="text-sm text-surface-400">{time}</span>
+                          </div>
+                        </motion.div>
+                      </Link>
                     </ScrollReveal>
                   );
                 })}
