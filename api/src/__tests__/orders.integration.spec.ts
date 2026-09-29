@@ -70,6 +70,7 @@ describe('Orders Integration: Full Lifecycle', () => {
       driverProfile: {
         findUnique: jest.fn(),
         findMany: jest.fn(),
+        update: jest.fn().mockResolvedValue({}),
       },
       order: {
         create: jest.fn(),
@@ -290,6 +291,7 @@ describe('Orders Integration: Full Lifecycle', () => {
       prisma.order.findUnique.mockResolvedValue({
         id: ORDER_ID,
         status: 'in_transit_to_pickup',
+        pickupProofPhotoUrl: 'https://img/1.jpg',
         merchant: { userId: MERCHANT_USER_ID },
         driver: { userId: DRIVER_USER_ID },
       });
@@ -341,6 +343,7 @@ describe('Orders Integration: Full Lifecycle', () => {
       prisma.order.findUnique.mockResolvedValue({
         id: ORDER_ID,
         status: 'in_transit_to_delivery',
+        deliveryProofPhotoUrl: 'https://img/2.jpg',
         merchant: { userId: MERCHANT_USER_ID },
         driver: { userId: DRIVER_USER_ID },
       });

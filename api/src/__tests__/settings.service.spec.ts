@@ -59,7 +59,7 @@ describe('SettingsService', () => {
     } as any);
 
     expect(res.payments.sinpeEnabled).toBe(false);
-    expect(prisma.platformSetting.upsert).toHaveBeenCalledTimes(5); // 5 secciones
+    expect(prisma.platformSetting.upsert).toHaveBeenCalledTimes(6); // 6 secciones
 
     await expect(service.saveAll({ intruso: true } as any)).rejects.toThrow(BadRequestException);
   });
