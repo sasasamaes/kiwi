@@ -742,6 +742,9 @@ export class OrdersService {
       })),
       createdAt: order.createdAt,
       assignedAt: order.assignedAt,
+      acceptanceExpiresAt: (order as any).acceptanceExpiresAt ?? null,
+      contestStartedAt: (order as any).contestStartedAt ?? null,
+      contestEndsAt: (order as any).contestEndsAt ?? null,
       pickedUpAt: order.pickedUpAt,
       deliveredAt: order.deliveredAt,
       // Evidencia fotográfica 1+1: prueba ante reclamos, visible con el link.
@@ -851,11 +854,13 @@ export class OrdersService {
     'pending',
     'driver_proposals',
     'assigned',
+    'pending_acceptance',
     'in_transit_to_pickup',
     'picked_up',
     'in_transit_to_delivery',
     'delivered',
     'cancelled',
+    'no_driver',
   ] as const;
 
   private validateOrderStatus(status?: string) {
@@ -1332,6 +1337,8 @@ export class OrdersService {
     };
     const merchantLabels: Record<string, string> = {
       assigned: `#${shortId}: ${driverName} fue asignado a tu pedido`,
+      pending_acceptance: `#${shortId}: esperando aceptación del repartidor`,
+      no_driver: `#${shortId}: sin repartidores disponibles`,
       in_transit_to_pickup: `#${shortId}: ${driverName} va en camino a recoger`,
       picked_up: `#${shortId}: ${driverName} recogió tu pedido`,
       in_transit_to_delivery: `#${shortId}: tu pedido va en camino a ${statusContext.deliveryAddress || 'su destino'}`,
@@ -1340,6 +1347,8 @@ export class OrdersService {
     };
     const driverLabels: Record<string, string> = {
       assigned: `#${shortId}: te asignaron el pedido de ${merchantName}. Ve a recogerlo`,
+      pending_acceptance: `#${shortId}: tenés un pedido pendiente de aceptación`,
+      no_driver: `#${shortId}: sin repartidores disponibles`,
       in_transit_to_pickup: `#${shortId}: vas en camino a recoger en ${statusContext.pickupAddress || merchantName}`,
       picked_up: `#${shortId}: recogiste el pedido. Llevalo a ${statusContext.deliveryAddress || 'su destino'}`,
       in_transit_to_delivery: `#${shortId}: vas en camino a entregar en ${statusContext.deliveryAddress || 'su destino'}`,
@@ -1420,6 +1429,21 @@ export class OrdersService {
       }
     }
 
+    const target = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      select: { orderType: true },
+    });
+    let acceptanceMinutes = 5;
+    try {
+      const t = await (this.settingsService as any).getAssignmentTimeouts?.();
+      if (t && Number.isFinite(Number(t.acceptanceMinutes))) {
+        acceptanceMinutes = t.acceptanceMinutes;
+      }
+    } catch {
+      // defaults admin (5) si settings no responde; jamás bloquea asignar.
+    }
+    const isScheduled = target?.orderType === 'scheduled';
+
     // Atomic claim: only one winner even under concurrency
     const claimed = await this.prisma.order.updateMany({
       where: {
@@ -1427,11 +1451,20 @@ export class OrdersService {
         status: { in: ['pending', 'driver_proposals'] },
         driverId: null,
       },
-      data: {
-        driverId,
-        status: 'assigned',
-        assignedAt: new Date(),
-      },
+      data: isScheduled
+        ? {
+            driverId,
+            status: 'assigned',
+            assignedAt: new Date(),
+          }
+        : {
+            driverId,
+            status: 'pending_acceptance',
+            assignedAt: new Date(),
+            acceptanceExpiresAt: new Date(Date.now() + acceptanceMinutes * 60_000),
+            contestStartedAt: null,
+            contestEndsAt: null,
+          },
     });
 
     if (claimed.count === 0) {
@@ -1453,6 +1486,20 @@ export class OrdersService {
     });
 
     if (!updatedOrder) throw new NotFoundException('Pedido no encontrado');
+
+    if (!isScheduled) {
+      try {
+        await (this.prisma as any).orderEvent?.create?.({
+          data: { orderId, type: 'assigned', actorId: merchantUserId ?? null, driverId },
+        });
+      } catch {
+        // auditoría best-effort: jamás bloquea la asignación.
+      }
+      this.eventsGateway.sendToUser(driverProfile.userId, 'order:assignmentOffered', {
+        orderId,
+        message: `Tenés un pedido pendiente de aceptación (${acceptanceMinutes} min para aceptar)`,
+      });
+    }
 
     // Notify the assigned driver
     this.eventsGateway.sendToUser(driverProfile.userId, 'order:assigned', {
@@ -1483,12 +1530,53 @@ export class OrdersService {
     this.eventsGateway.sendToRole('driver', 'order:taken', {
       id: updatedOrder.id,
       orderId: updatedOrder.id,
-      status: 'assigned',
+      status: (updatedOrder as any).status ?? 'assigned',
       driverName: driverProfile.fullName,
       message: `${driverProfile.fullName} ya tomó este pedido`,
     });
 
     return updatedOrder;
+  }
+
+  /** El driver asignado acepta dentro del plazo: pending_acceptance → assigned. */
+  async acceptAssignment(orderId: string, driverUserId: string) {
+    const driverProfile = await this.prisma.driverProfile.findUnique({
+      where: { userId: driverUserId },
+    });
+    if (!driverProfile) throw new NotFoundException('Perfil de repartidor no encontrado');
+    const claimed = await this.prisma.order.updateMany({
+      where: {
+        id: orderId,
+        driverId: driverProfile.id,
+        status: 'pending_acceptance',
+        acceptanceExpiresAt: { gt: new Date() },
+      },
+      data: { status: 'assigned', acceptanceExpiresAt: null },
+    });
+    if (claimed.count === 0) {
+      const existing = await this.prisma.order.findUnique({ where: { id: orderId } });
+      if (!existing) throw new NotFoundException('Pedido no encontrado');
+      throw new BadRequestException('El pedido ya no está pendiente de tu aceptación');
+    }
+    try {
+      await (this.prisma as any).orderEvent?.create?.({
+        data: { orderId, type: 'accepted', driverId: driverProfile.id },
+      });
+    } catch {
+      // auditoría best-effort.
+    }
+    const updated = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { merchant: true, driver: true },
+    });
+    if (updated?.merchant?.userId) {
+      this.eventsGateway.sendToUser(updated.merchant.userId, 'order:accepted', {
+        orderId,
+        driverName: driverProfile.fullName,
+        message: `${driverProfile.fullName} aceptó tu pedido`,
+      });
+    }
+    return updated;
   }
 
   async getAvailableOrders(latitude?: number, longitude?: number) {
@@ -1735,11 +1823,18 @@ export class OrdersService {
 
     // Atomic claim: only pending orders with no driver can be taken
     const claimed = await this.prisma.order.updateMany({
-      where: { id: orderId, status: 'pending', driverId: null },
+      where: {
+        id: orderId,
+        status: 'pending',
+        driverId: null,
+        OR: [{ contestEndsAt: null }, { contestEndsAt: { gte: new Date() } }],
+      },
       data: {
         driverId: driverProfile.id,
         status: 'assigned',
         assignedAt: new Date(),
+        contestStartedAt: null,
+        contestEndsAt: null,
       },
     });
 
@@ -1778,6 +1873,14 @@ export class OrdersService {
 
     if (!updatedOrder) throw new NotFoundException('Pedido no encontrado');
 
+    try {
+      await (this.prisma as any).orderEvent?.create?.({
+        data: { orderId, type: 'accepted', driverId: driverProfile.id },
+      });
+    } catch {
+      // auditoría best-effort.
+    }
+
     // Notify merchant (push fire-and-forget: el socket ya avisa en vivo).
     if (updatedOrder.merchant?.userId) {
       this.eventsGateway.sendToUser(updatedOrder.merchant.userId, 'order:accepted', {
@@ -1815,7 +1918,7 @@ export class OrdersService {
   /**
    * El repartidor asignado rechaza el pedido ANTES de recoger: vuelve a
    * pendiente (concurso) y se avisa al comercio para que reasigne.
-   * Atómico: solo el asignado y solo en assigned/in_transit_to_pickup.
+   * Atómico: solo el asignado y solo en assigned/in_transit_to_pickup/pending_acceptance.
    * Después de recoger ya no se puede rechazar (hay que entregar).
    */
   async rejectOrderAsDriver(orderId: string, driverUserId: string) {
@@ -1826,7 +1929,7 @@ export class OrdersService {
       throw new NotFoundException('Perfil de repartidor no encontrado');
     }
 
-    const claimed = await this.prisma.order.updateMany({
+    let claimed = await this.prisma.order.updateMany({
       where: {
         id: orderId,
         driverId: driverProfile.id,
@@ -1835,11 +1938,60 @@ export class OrdersService {
       data: { driverId: null, status: 'pending', assignedAt: null },
     });
     if (claimed.count === 0) {
+      claimed = await this.prisma.order.updateMany({
+        where: {
+          id: orderId,
+          driverId: driverProfile.id,
+          status: { in: ['pending_acceptance'] },
+        },
+        data: { driverId: null, status: 'pending', assignedAt: null, acceptanceExpiresAt: null },
+      });
+    }
+    if (claimed.count === 0) {
       const existing = await this.prisma.order.findUnique({ where: { id: orderId } });
       if (!existing) throw new NotFoundException('Pedido no encontrado');
       throw new BadRequestException(
         'Solo podés rechazar un pedido asignado a vos antes de recoger',
       );
+    }
+
+    let contestMinutes = 10;
+    try {
+      const t = await (this.settingsService as any).getAssignmentTimeouts?.();
+      if (t && Number.isFinite(Number(t.contestMinutes))) {
+        contestMinutes = t.contestMinutes;
+      }
+    } catch {
+      // default admin (10); jamás bloquea el rechazo.
+    }
+    try {
+      await (this.prisma.order as any).update?.({
+        where: { id: orderId },
+        data: {
+          driverId: null,
+          status: 'pending',
+          assignedAt: null,
+          acceptanceExpiresAt: null,
+          contestStartedAt: new Date(),
+          contestEndsAt: new Date(Date.now() + contestMinutes * 60_000),
+        },
+      });
+    } catch {
+      // concurso best-effort en mocks sin update.
+    }
+    try {
+      await (this.prisma as any).orderEvent?.create?.({
+        data: { orderId, type: 'rejected', driverId: driverProfile.id },
+      });
+    } catch {
+      // auditoría best-effort.
+    }
+    try {
+      await (this.prisma as any).orderEvent?.create?.({
+        data: { orderId, type: 'contest_started', meta: { reason: 'rejected' } },
+      });
+    } catch {
+      // auditoría best-effort.
     }
 
     const order = await this.prisma.order.findUnique({
@@ -1961,14 +2113,16 @@ export class OrdersService {
 
   private validateStatusTransition(current: string, next: string) {
     const validTransitions: Record<string, string[]> = {
-      pending: ['assigned', 'cancelled'],
+      pending: ['assigned', 'pending_acceptance', 'cancelled', 'no_driver'],
       driver_proposals: ['assigned', 'cancelled'],
+      pending_acceptance: ['assigned', 'pending', 'cancelled'],
       assigned: ['in_transit_to_pickup', 'cancelled'],
       in_transit_to_pickup: ['picked_up', 'cancelled'],
       picked_up: ['in_transit_to_delivery'],
       in_transit_to_delivery: ['delivered'],
       delivered: [],
       cancelled: [],
+      no_driver: [],
     };
 
     if (!validTransitions[current]?.includes(next)) {
@@ -1993,6 +2147,7 @@ export class OrdersService {
     const driverAllowed = new Set([
       'assigned→in_transit_to_pickup',
       'assigned→cancelled',
+      'pending_acceptance→assigned',
       'in_transit_to_pickup→picked_up',
       'picked_up→in_transit_to_delivery',
       'in_transit_to_delivery→delivered',

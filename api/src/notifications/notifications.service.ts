@@ -539,6 +539,16 @@ export class NotificationsService {
           ? `Pedido ${tag} · ${route}. Te avisamos al recoger.`
           : `Pedido ${tag} asignado.`,
       },
+      pending_acceptance: {
+        title: `🛵 Pedido ${tag} esperando aceptación`,
+        body: route
+          ? `Pedido ${tag} · ${driver} tiene que aceptarlo. Te avisamos.`
+          : `Pedido ${tag} pendiente de aceptación del repartidor.`,
+      },
+      no_driver: {
+        title: `⚠️ Pedido ${tag} sin repartidores`,
+        body: 'No hay repartidores disponibles para aceptar este pedido en este momento.',
+      },
       in_transit_to_pickup: {
         title: `🛵 ${driver} va al comercio`,
         body:
@@ -578,6 +588,17 @@ export class NotificationsService {
           route || payout
             ? `${merchant}: ${route}${payout ? ` · Ganás ${payout}` : ''}. Ve a recogerlo.`
             : 'Te asignaron un pedido. Ve a recogerlo.',
+      },
+      pending_acceptance: {
+        title: `🛵 Pedido ${tag} pendiente de aceptación`,
+        body:
+          route || payout
+            ? `${merchant}: ${route}${payout ? ` · Ganás ${payout}` : ''}. Aceptalo antes de que vuelva a concurso.`
+            : 'Tenés un pedido pendiente de aceptación.',
+      },
+      no_driver: {
+        title: `⚠️ Pedido ${tag} sin repartidores`,
+        body: 'No hay repartidores disponibles para aceptar este pedido en este momento.',
       },
       in_transit_to_pickup: {
         title: `🛵 Vas a ${merchant} (${tag})`,

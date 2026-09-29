@@ -197,6 +197,15 @@ export class OrdersController {
     return this.ordersService.acceptOrderAsDriver(id, user.sub);
   }
 
+  @Post(':id/accept-assignment')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('driver')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Assigned driver accepts within the acceptance window' })
+  async acceptAssignment(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.ordersService.acceptAssignment(id, user.sub);
+  }
+
   @Post(':id/reject')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('driver')
