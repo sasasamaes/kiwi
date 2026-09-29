@@ -17,6 +17,7 @@ import {
   Star,
   PartyPopper,
   Calculator,
+  Timer,
 } from 'lucide-react';
 import { api } from '@kiwi/ui';
 
@@ -58,6 +59,7 @@ export default function SettingsPage() {
       gatewayPct: 2.9,
       digitalPct: 40,
     },
+    assignment: { acceptanceMinutes: 5, contestMinutes: 10 },
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -75,6 +77,7 @@ export default function SettingsPage() {
           notifications: { ...prev.notifications, ...(data?.notifications ?? {}) },
           security: { ...prev.security, ...(data?.security ?? {}) },
           operations: { ...prev.operations, ...(data?.operations ?? {}) },
+          assignment: { ...prev.assignment, ...(data?.assignment ?? {}) },
         }));
       })
       .catch((e) => setLoadError(e?.message || 'No se pudieron cargar los ajustes'))
@@ -82,7 +85,7 @@ export default function SettingsPage() {
   }, []);
 
   const [activeTab, setActiveTab] = useState<
-    'platform' | 'payments' | 'notifications' | 'security' | 'operations'
+    'platform' | 'payments' | 'notifications' | 'security' | 'operations' | 'assignment'
   >('platform');
 
   const handleSave = async () => {
@@ -96,6 +99,7 @@ export default function SettingsPage() {
         notifications: { ...prev.notifications, ...(saved?.notifications ?? {}) },
         security: { ...prev.security, ...(saved?.security ?? {}) },
         operations: { ...prev.operations, ...(saved?.operations ?? {}) },
+        assignment: { ...prev.assignment, ...(saved?.assignment ?? {}) },
       }));
       setSaveState('ok');
     } catch {
@@ -152,6 +156,7 @@ export default function SettingsPage() {
         {[
           { id: 'platform', label: 'Plataforma', icon: Settings },
           { id: 'operations', label: 'Costos', icon: Calculator },
+          { id: 'assignment', label: 'Asignación', icon: Timer },
           { id: 'payments', label: 'Pagos', icon: CreditCard },
           { id: 'notifications', label: 'Notificaciones', icon: Bell },
           { id: 'security', label: 'Seguridad', icon: Lock },
@@ -396,6 +401,63 @@ export default function SettingsPage() {
               <p className="mt-1 text-xs text-surface-400">
                 El fee solo aplica a la parte digital del GMV — el efectivo no pasa por la pasarela.
               </p>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {activeTab === 'assignment' && (
+        <motion.div
+          className="rounded-2xl glass p-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-1">
+            Tiempos de asignación
+          </h3>
+          <p className="mb-6 text-sm text-surface-500 dark:text-surface-400">
+            Cuánto espera un pedido al repartidor seleccionado antes de entrar en concurso, y cuánto
+            dura el concurso.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
+                Minutos para aceptar (1–60)
+              </label>
+              <input
+                type="number"
+                min={1}
+                max={60}
+                value={settings.assignment.acceptanceMinutes}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    assignment: {
+                      ...settings.assignment,
+                      acceptanceMinutes: Number(e.target.value),
+                    },
+                  })
+                }
+                className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
+                Minutos de concurso (1–60)
+              </label>
+              <input
+                type="number"
+                min={1}
+                max={60}
+                value={settings.assignment.contestMinutes}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    assignment: { ...settings.assignment, contestMinutes: Number(e.target.value) },
+                  })
+                }
+                className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
+              />
             </div>
           </div>
         </motion.div>

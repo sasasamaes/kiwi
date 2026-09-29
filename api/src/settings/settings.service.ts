@@ -47,6 +47,10 @@ export interface PlatformSettings {
     /** % de pagos que llegan por canal digital (el efectivo no paga fee). */
     digitalPct: number;
   };
+  assignment: {
+    acceptanceMinutes: number;
+    contestMinutes: number;
+  };
 }
 
 /** Valores con los que nace la plataforma (y fallback si algo falta). */
@@ -87,9 +91,17 @@ export const DEFAULT_SETTINGS: PlatformSettings = {
     gatewayPct: 2.9,
     digitalPct: 40,
   },
+  assignment: { acceptanceMinutes: 5, contestMinutes: 10 },
 };
 
-const KNOWN_KEYS = ['platform', 'payments', 'notifications', 'security', 'operations'] as const;
+const KNOWN_KEYS = [
+  'platform',
+  'payments',
+  'notifications',
+  'security',
+  'operations',
+  'assignment',
+] as const;
 
 @Injectable()
 export class SettingsService {
@@ -132,6 +144,7 @@ export class SettingsService {
       notifications: { ...DEFAULT_SETTINGS.notifications, ...(stored.notifications ?? {}) },
       security: { ...DEFAULT_SETTINGS.security, ...(stored.security ?? {}) },
       operations: { ...DEFAULT_SETTINGS.operations, ...(stored.operations ?? {}) },
+      assignment: { ...DEFAULT_SETTINGS.assignment, ...(stored.assignment ?? {}) },
     };
   }
 
@@ -149,6 +162,7 @@ export class SettingsService {
       notifications: { ...current.notifications, ...(input.notifications ?? {}) },
       security: { ...current.security, ...(input.security ?? {}) },
       operations: { ...current.operations, ...(input.operations ?? {}) },
+      assignment: { ...current.assignment, ...(input.assignment ?? {}) },
     };
     // Saneos numéricos mínimos
     next.platform.commission = Math.min(Math.max(Number(next.platform.commission) || 0, 0), 100);
@@ -173,6 +187,10 @@ export class SettingsService {
       Math.max(Number(next.operations.digitalPct) || 0, 0),
       100,
     );
+    const clampMin = (v: unknown, dflt: number) =>
+      Math.min(Math.max(Math.round(Number(v) || dflt), 1), 60);
+    next.assignment.acceptanceMinutes = clampMin(next.assignment.acceptanceMinutes, 5);
+    next.assignment.contestMinutes = clampMin(next.assignment.contestMinutes, 10);
     await this.prisma.$transaction(
       (Object.entries(next) as [string, unknown][]).map(([key, value]) =>
         this.prisma.platformSetting.upsert({
@@ -213,6 +231,19 @@ export class SettingsService {
     const raw = Number(all.platform?.commission);
     if (!Number.isFinite(raw)) return 15;
     return Math.min(Math.max(raw, 0), 100);
+  }
+
+  /** Minutos de aceptación y de concurso (admin, default 5/10, saneado 1–60). */
+  async getAssignmentTimeouts(): Promise<{ acceptanceMinutes: number; contestMinutes: number }> {
+    const all = await this.getAll();
+    const clamp = (v: unknown, dflt: number) => {
+      const n = Math.round(Number(v));
+      return Number.isFinite(n) ? Math.min(Math.max(n, 1), 60) : dflt;
+    };
+    return {
+      acceptanceMinutes: clamp(all.assignment?.acceptanceMinutes, 5),
+      contestMinutes: clamp(all.assignment?.contestMinutes, 10),
+    };
   }
 
   /** Historial mensual de escenarios fijados (más antiguo primero). */
