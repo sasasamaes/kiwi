@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados. -->
+<!-- Copyright (c) 2026 KiWi Costa Rica. Todos los derechos reservados. -->
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -44,13 +44,41 @@
   .cta .contact { font-size: 15px; opacity: .9; margin-top: 6px; }
   .foot { text-align: center; font-size: 11px; color: #a8a29e; padding: 14px; }
   @media print {
-    /* @page sin margen: Chrome/Edge no imprimen URL ni numeración */
-    @page { size: A4; margin: 0; }
-    body { background: #fff; padding: 0; }
-    .sheet { box-shadow: none; border-radius: 0; width: 100%; padding: 9mm 0; }
-    .hero { padding: 30px 40px 26px; }
-    .hero h1 { font-size: 34px; }
-    .body { padding: 22px 40px 26px; }
+    /* Una sola hoja A4: versión compacta del afiche (usar Márgenes: Ninguno). */
+    @page { size: A4; margin: 10mm; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    html, body { margin: 0 !important; padding: 0 !important; background: #fff; display: block; }
+    .sheet {
+      box-shadow: none; border-radius: 0; width: auto; max-width: none;
+      min-height: auto; overflow: visible;
+      display: block; position: static; padding-bottom: 0;
+    }
+    .hero { padding: 7mm 10mm 6mm; border-radius: 0; }
+    .hero h1 { font-size: 27px; }
+    .hero p.sub { font-size: 13.5px; }
+    .hero::after { display: none; }
+    .kicker { font-size: 10.5px; padding: 4px 10px; margin-bottom: 8px; }
+    .body { padding: 5mm 10mm 5mm; }
+    h2 { font-size: 15.5px; margin: 11px 0 7px; }
+    .steps { gap: 8px; }
+    .step { padding: 8px; border-radius: 9px; }
+    .step .n { font-size: 19px; }
+    .step p { font-size: 11.5px; }
+    .price-grid { gap: 8px; }
+    .price-card { padding: 10px; border-radius: 9px; }
+    .price-card .big { font-size: 21px; }
+    .price-card p { font-size: 11.5px; }
+    .example { padding: 10px 14px; margin-top: 8px; border-radius: 9px; }
+    .example h3 { font-size: 12px; margin-bottom: 6px; }
+    .example table { font-size: 12.5px; }
+    .example tr.total td { font-size: 14px; }
+    ul.clean { font-size: 12px; }
+    ul.clean li { padding: 2.5px 0 2.5px 24px; }
+    .kiwi-box { font-size: 12px; padding: 9px 12px; margin-top: 4px; }
+    .cta { padding: 12px; margin-top: 12px; border-radius: 9px; }
+    .cta p { font-size: 13.5px; }
+    .cta .contact { font-size: 11.5px; margin-top: 3px; }
+    .foot { position: static; font-size: 10px; }
   }
 </style>
 </head>
@@ -112,7 +140,7 @@
       <p class="contact">negocios.kiwicr.express · contacto@kiwicr.express</p>
     </div>
   </div>
-  <div class="foot">© 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.</div>
+  <div class="foot">© 2026 KiWi Costa Rica. Todos los derechos reservados.</div>
 </div>
 </body>
 </html>
