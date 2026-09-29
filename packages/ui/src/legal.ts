@@ -61,6 +61,7 @@ export const privacyPolicy: LegalDoc = {
         'Datos del repartidor: nombre, foto, tipo de vehículo, placa, nivel y calificación. Tu ubicación se usa para asignar envíos y, durante un viaje, para mostrarle al cliente en el mapa por dónde va el pedido. Guardamos la última ubicación conocida para alertas de tráfico por zona.',
         'Documentos de verificación (KYC): cédula (frente y reverso), selfie, licencia de conducir, registro vehicular y seguro del repartidor; licencia o documentos comerciales del comercio. Solo sirven para verificar tu identidad y habilitar tu cuenta; los revisa el equipo de Kiwi y no se muestran a otros usuarios.',
         'Datos de pago: los cobros con tarjeta y SINPE Móvil los procesa OnvoPay, nuestro proveedor de pagos. Kiwi nunca ve ni guarda el número de tu tarjeta. De los pagos en criptomonedas registramos la moneda, la wallet, la red y el hash de la transacción. El efectivo se registra como método de pago del pedido.',
+        'Fotos de evidencia del pedido: el comercio fotografía el pedido al entregarlo y el repartidor al entregarlo al cliente. Pueden mostrar empaques o etiquetas; se usan solo para soporte y reclamos y se conservan mientras el pedido esté activo y por el plazo contable o legal posterior.',
       ],
     },
     {
@@ -203,7 +204,7 @@ export const cookiePolicy: LegalDoc = {
 
 export const refundPolicy: LegalDoc = {
   title: 'Política de reembolsos y cancelaciones',
-  updated: '2026-09-24',
+  updated: '2026-09-29',
   intro: [
     'Esta política explica cuándo y cómo se cancela un pedido en Kiwi y cómo se devuelve tu dinero. Aplica a clientes (con o sin cuenta), comercios y pagos procesados por la plataforma.',
   ],
@@ -231,6 +232,7 @@ export const refundPolicy: LegalDoc = {
       paragraphs: [
         'Contactá al comercio de inmediato, o escribinos a soporte con tu número de pedido. Según el caso corresponde reembolso total o parcial del producto; si el error fue del comercio, el reembolso incluye el costo de envío.',
         'Kiwi facilita la comunicación y garantiza que el reembolso acordado se ejecute por el mismo medio de pago.',
+        'Los reclamos por daño o faltantes se resuelven contra la evidencia fotográfica: con foto del comercio en buen estado y entrega dañada, el costo lo asume el repartidor; sin foto del comercio, se presume a su cargo.',
       ],
     },
     {
@@ -260,7 +262,7 @@ export const refundPolicy: LegalDoc = {
 
 export const termsOfService: LegalDoc = {
   title: 'Términos de uso',
-  updated: '2026-09-23',
+  updated: '2026-09-29',
   intro: [
     'Estos términos regulan el uso de Kiwi, la plataforma que conecta comercios, repartidores independientes y clientes en Nicoya, Costa Rica. Al usar cualquier parte de Kiwi aceptás estos términos.',
   ],
@@ -292,6 +294,14 @@ export const termsOfService: LegalDoc = {
       paragraphs: [
         'Los tiempos de entrega son estimaciones que consideran preparación, distancia y tráfico; no son una garantía. El costo de envío depende de la zona de entrega.',
         'Si no hay nadie para recibir en la dirección indicada, el repartidor intentará contactarte; si no es posible entregar, el pedido puede cancelarse.',
+      ],
+    },
+    {
+      heading: 'Evidencia fotográfica y responsabilidad',
+      paragraphs: [
+        'Cada pedido lleva 2 fotos obligatorias: el comercio fotografía el pedido al entregarlo al repartidor y el repartidor fotografía la entrega al cliente. Sin foto no se puede avanzar el estado del pedido.',
+        'Las fotos son la prueba ante reclamos por daño, faltantes o mal estado: si el pedido salió bien en la foto del comercio y llega dañado, responde el repartidor, no Kiwi ni el comercio. Si no hay foto del comercio, el reclamo se presume a su cargo.',
+        'Kiwi es un intermediario tecnológico y no responde por el traslado una vez que el pedido fue entregado al repartidor en buen estado.',
       ],
     },
     {
