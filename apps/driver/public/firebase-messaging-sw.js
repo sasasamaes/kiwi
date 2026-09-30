@@ -62,6 +62,11 @@ function getActionsForType(type) {
         { action: 'view', title: '📦 Ver Pedido' },
         { action: 'dismiss', title: 'Cerrar' },
       ];
+    case 'new_scheduled_order':
+      return [
+        { action: 'view', title: '📅 Ver Programado' },
+        { action: 'dismiss', title: 'Cerrar' },
+      ];
     case 'order_accepted':
       return [
         { action: 'track', title: '📍 Rastrear' },
@@ -112,6 +117,9 @@ self.addEventListener('notificationclick', (event) => {
     if (data.type === 'new_order') {
       // Driver: el pedido nuevo se acepta desde el inicio
       url = '/';
+    } else if (data.type === 'new_scheduled_order') {
+      // Programado: se propone desde /scheduled (en /active no existe)
+      url = '/scheduled';
     } else {
       // Pedido asignado/en curso
       url = '/active';
