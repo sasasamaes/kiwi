@@ -425,6 +425,14 @@ export default function ActiveOrders() {
   // Después de subir se refresca la orden para que el avance se desbloquee.
   const uploadDeliveryPhoto = async (target: Order, file: File) => {
     if (uploadingPhoto) return;
+    if (file.size > 5 * 1024 * 1024) {
+      setNotice('La foto es muy grande (máx 5 MB). Probá con otra imagen.');
+      return;
+    }
+    if (file.type && !['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type)) {
+      setNotice('Formato no soportado. Usá JPG, PNG, WEBP o GIF (el iPhone a veces saca HEIC).');
+      return;
+    }
     setUploadingPhoto(true);
     try {
       await api.uploadOrderProofPhoto(target.id, 'delivery', file);
@@ -1187,7 +1195,7 @@ export default function ActiveOrders() {
                     {uploadingPhoto ? 'Subiendo…' : '📷 Tomar foto de la entrega'}
                     <input
                       type="file"
-                      accept="image/*"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
                       capture="environment"
                       className="hidden"
                       disabled={uploadingPhoto}

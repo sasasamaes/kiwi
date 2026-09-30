@@ -66,6 +66,7 @@ JWT_SECRET="..."                       # secreto fuerte, no compartir
 JWT_EXPIRES_IN="7d"
 NODE_ENV="production"
 SEED_DEMO_DATA="true"                  # false para un DB limpio
+CLOUDINARY_URL="cloudinary://KEY:SECRET@CLOUD"  # fotos de menú y evidencia 1+1; sin esto /menu/my/image-status da {enabled:false} y las subidas responden 503
 # Integraciones opcionales:
 # SENTRY_DSN, FIREBASE_*, ONVOPAY_API_KEY, ...
 ```

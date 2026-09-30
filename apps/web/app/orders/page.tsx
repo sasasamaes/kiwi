@@ -119,6 +119,8 @@ export default function OrdersPage() {
   const [rejected, setRejected] = useState<{ orderId: string; driverName?: string } | null>(null);
   // Subida de evidencia: orderId que está subiendo su foto pickup.
   const [uploadingId, setUploadingId] = useState<string | null>(null);
+  // Reintento/cancelación de pedidos sin repartidor.
+  const [actingId, setActingId] = useState<string | null>(null);
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchOrders = useCallback(async (silent = false) => {
@@ -177,14 +179,53 @@ export default function OrdersPage() {
   // Evidencia pickup: el comercio fotografía el pedido al entregarlo al
   // repartidor. Sin foto el repartidor no puede marcarlo como recogido.
   const uploadPickupPhoto = async (orderId: string, file: File) => {
+    // Validación local: evita esperar la subida para un HEIC de iPhone o un
+    // archivo gigante que el backend va a rechazar (magic bytes + 5 MB).
+    if (file.size > 5 * 1024 * 1024) {
+      setError('La foto es muy grande (máx 5 MB). Probá con otra imagen.');
+      return;
+    }
+    if (file.type && !['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type)) {
+      setError('Formato no soportado. Usá JPG, PNG, WEBP o GIF (el iPhone a veces saca HEIC).');
+      return;
+    }
     setUploadingId(orderId);
     try {
       await api.uploadOrderProofPhoto(orderId, 'pickup', file);
+      setError(null);
       await fetchOrders(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo subir la foto');
     } finally {
       setUploadingId(null);
+    }
+  };
+
+  // Sin repartidor: el concurso venció y el pedido quedó en no_driver. Sin
+  // estos botones el pedido quedaba bricked (no había transición de salida).
+  const retryOrder = async (orderId: string) => {
+    setActingId(orderId);
+    try {
+      setError(null);
+      await api.updateOrderStatus(orderId, 'pending');
+      await fetchOrders(true);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo reintentar el pedido');
+    } finally {
+      setActingId(null);
+    }
+  };
+
+  const cancelOrder = async (orderId: string) => {
+    setActingId(orderId);
+    try {
+      setError(null);
+      await api.updateOrderStatus(orderId, 'cancelled');
+      await fetchOrders(true);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo cancelar el pedido');
+    } finally {
+      setActingId(null);
     }
   };
 
@@ -473,7 +514,7 @@ export default function OrdersPage() {
                                       : '📷 Subir foto del pedido'}
                                     <input
                                       type="file"
-                                      accept="image/*"
+                                      accept="image/jpeg,image/png,image/webp,image/gif"
                                       capture="environment"
                                       className="hidden"
                                       disabled={uploadingId === order.id}
@@ -490,6 +531,31 @@ export default function OrdersPage() {
                                   </p>
                                 </div>
                               )}
+                            </div>
+                          )}
+
+                          {/* Sin repartidor: reintentar el concurso o cancelar */}
+                          {order.status === 'no_driver' && (
+                            <div className="rounded-xl bg-red-50 dark:bg-red-900/20 p-3">
+                              <p className="text-xs font-medium text-red-700 dark:text-red-300">
+                                Nadie pudo tomar este pedido. Reintentá el concurso o cancelalo.
+                              </p>
+                              <div className="mt-2 flex gap-2">
+                                <button
+                                  onClick={() => void retryOrder(order.id)}
+                                  disabled={actingId === order.id}
+                                  className="flex-1 rounded-xl bg-kiwi-700 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"
+                                >
+                                  {actingId === order.id ? 'Procesando…' : 'Reintentar'}
+                                </button>
+                                <button
+                                  onClick={() => void cancelOrder(order.id)}
+                                  disabled={actingId === order.id}
+                                  className="flex-1 rounded-xl border border-red-300 px-4 py-2.5 text-sm font-bold text-red-600 disabled:opacity-50"
+                                >
+                                  Cancelar
+                                </button>
+                              </div>
                             </div>
                           )}
 

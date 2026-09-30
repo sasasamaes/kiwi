@@ -1286,6 +1286,22 @@ export class OrdersService {
       updateData.pickedUpAt = new Date();
     } else if (status === 'delivered') {
       updateData.deliveredAt = new Date();
+    } else if (order.status === 'no_driver' && status === 'pending') {
+      // Reintento del comercio: reabre el concurso con ventana fresca para que
+      // el sweeper no lo marque no_driver de inmediato y la flota lo vea.
+      let contestMinutes = 10;
+      try {
+        const t = await (this.settingsService as any).getAssignmentTimeouts?.();
+        if (t && Number.isFinite(Number(t.contestMinutes))) {
+          contestMinutes = t.contestMinutes;
+        }
+      } catch {
+        // default admin (10); jamás bloquea el reintento.
+      }
+      const now = new Date();
+      updateData.driverId = null;
+      updateData.contestStartedAt = now;
+      updateData.contestEndsAt = new Date(now.getTime() + contestMinutes * 60_000);
     }
 
     const updatedOrder = await this.prisma.order.update({
@@ -1296,6 +1312,27 @@ export class OrdersService {
         driver: { select: DRIVER_PUBLIC_SELECT },
       },
     });
+
+    // Reintento: el pedido volvió a concurso, re-alertar a la flota
+    // (proximidad + fail-open a broadcast). Sin esto quedaba en pending
+    // invisible. Best-effort: jamás tumba el cambio de estado.
+    if (order.status === 'no_driver' && status === 'pending') {
+      void this.alertNearbyDrivers(updatedOrder as any, {
+        id: updatedOrder.id,
+        orderId: updatedOrder.id,
+        pickupAddress: (updatedOrder as any).pickupAddress,
+        deliveryAddress: (updatedOrder as any).deliveryAddress,
+        deliveryZone: (updatedOrder as any).deliveryZone ?? null,
+        totalAmount: Number((updatedOrder as any).totalAmount),
+        driverPayout:
+          (updatedOrder as any).driverPayout != null
+            ? Number((updatedOrder as any).driverPayout)
+            : null,
+        distanceKm: Number((updatedOrder as any).distanceKm),
+        merchantName: (updatedOrder as any).merchant?.businessName,
+        createdAt: (updatedOrder as any).createdAt,
+      }).catch(() => undefined);
+    }
 
     // Contador de viajes del repartidor: solo al entregar (la transición
     // validada impide doble conteo por API). Best-effort: jamás tumba la
@@ -1582,12 +1619,22 @@ export class OrdersService {
     return updated;
   }
 
-  async getAvailableOrders(latitude?: number, longitude?: number) {
+  async getAvailableOrders(latitude?: number, longitude?: number, opts?: { scheduled?: boolean }) {
+    // Programados: el concurso vive en driver_proposals. Sin este filtro la
+    // página de programados del driver pedía ?scheduled=true y recibía los
+    // inmediatos (el controlador ignoraba el flag).
+    const scheduledOnly = opts?.scheduled === true;
     const orders = await this.prisma.order.findMany({
-      where: {
-        status: 'pending',
-        driverId: null,
-      },
+      where: scheduledOnly
+        ? {
+            status: 'driver_proposals',
+            orderType: 'scheduled',
+            driverId: null,
+          }
+        : {
+            status: 'pending',
+            driverId: null,
+          },
       include: {
         merchant: { select: MERCHANT_PUBLIC_SELECT },
       },
@@ -2125,7 +2172,9 @@ export class OrdersService {
       in_transit_to_delivery: ['delivered'],
       delivered: [],
       cancelled: [],
-      no_driver: [],
+      // Sin salida el pedido quedaba bricked: el concurso vencido no se podía
+      // ni reintentar ni cancelar desde la UI del comercio.
+      no_driver: ['pending', 'cancelled'],
     };
 
     if (!validTransitions[current]?.includes(next)) {
@@ -2145,6 +2194,8 @@ export class OrdersService {
       'pending→cancelled',
       'driver_proposals→cancelled',
       'assigned→cancelled',
+      'no_driver→pending',
+      'no_driver→cancelled',
     ]);
     // El repartidor avanza su ciclo y solo abandona antes de recoger.
     const driverAllowed = new Set([

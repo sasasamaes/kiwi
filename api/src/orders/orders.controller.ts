@@ -12,6 +12,7 @@ import {
   UploadedFile,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 import { Public } from '../auth/decorators/public.decorator';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiConsumes } from '@nestjs/swagger';
 import { OrdersService } from './orders.service';
@@ -61,10 +62,17 @@ export class OrdersController {
   @ApiOperation({ summary: 'Get available orders for drivers' })
   @ApiQuery({ name: 'lat', required: false })
   @ApiQuery({ name: 'lng', required: false })
-  async getAvailable(@Query('lat') lat?: string, @Query('lng') lng?: string) {
+  @ApiQuery({ name: 'scheduled', required: false })
+  async getAvailable(
+    @Query('lat') lat?: string,
+    @Query('lng') lng?: string,
+    @Query('scheduled') scheduled?: string,
+  ) {
     const latitude = lat ? parseFloat(lat) : undefined;
     const longitude = lng ? parseFloat(lng) : undefined;
-    return this.ordersService.getAvailableOrders(latitude, longitude);
+    return this.ordersService.getAvailableOrders(latitude, longitude, {
+      scheduled: scheduled === 'true',
+    });
   }
 
   @Get('admin/all')
@@ -150,7 +158,9 @@ export class OrdersController {
   @Post(':id/proof-photo')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @UseInterceptors(FileInterceptor('photo', { limits: { fileSize: 5 * 1024 * 1024 } }))
+  @UseInterceptors(
+    FileInterceptor('photo', { storage: memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } }),
+  )
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Upload order proof photo (pickup or delivery)' })
   async uploadProofPhoto(
