@@ -406,8 +406,15 @@ describe('Orders Integration: Full Lifecycle', () => {
       expect(result.status).toBe('driver_proposals');
       expect(result.orderType).toBe('scheduled');
 
-      // Should NOT broadcast to drivers (they need to propose, not accept directly)
-      expect(mockEventsGateway.sendToRole).not.toHaveBeenCalled();
+      // Drivers ARE alerted so they propose — but with the scheduled event
+      // (proposal flow), never order:new (direct accept into Disponibles).
+      expect(mockEventsGateway.sendToRole).toHaveBeenCalledWith(
+        'driver',
+        'order:scheduledNew',
+        expect.objectContaining({ orderId: ORDER_ID, orderType: 'scheduled' }),
+      );
+      const roleCalls = mockEventsGateway.sendToRole.mock.calls.map((c: any[]) => c[1]);
+      expect(roleCalls).not.toContain('order:new');
     });
 
     it('Step 2: Multiple drivers submit proposals', async () => {

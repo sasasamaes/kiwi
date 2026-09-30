@@ -523,6 +523,27 @@ export class OrdersService {
       };
 
       void this.alertNearbyDrivers(order, payload);
+    } else if (order.status === 'driver_proposals') {
+      // Programados: antes nadie se enteraba (sin alerta la página de
+      // programados solo se llenaba con refresh manual). Evento propio para
+      // no mezclarlos con los inmediatos de Disponibles.
+      const payload = {
+        id: order.id,
+        orderId: order.id,
+        orderType: 'scheduled',
+        scheduledDate: order.scheduledDate,
+        scheduledTime: (order as any).scheduledTime ?? null,
+        pickupAddress: order.pickupAddress,
+        deliveryAddress: order.deliveryAddress,
+        deliveryZone: (order as any).deliveryZone ?? deliveryZone,
+        totalAmount: Number(order.totalAmount),
+        driverPayout: order.driverPayout != null ? Number(order.driverPayout) : null,
+        distanceKm: Number(order.distanceKm),
+        merchantName: merchantProfile.businessName,
+        createdAt: order.createdAt,
+      };
+
+      void this.alertNearbyDrivers(order, payload, 'order:scheduledNew');
     }
 
     return order;
@@ -547,7 +568,9 @@ export class OrdersService {
       distanceKm: any;
     },
     payload: Record<string, unknown>,
+    event: 'order:new' | 'order:scheduledNew' = 'order:new',
   ) {
+    const scheduled = event === 'order:scheduledNew';
     try {
       const pickupLat = order.pickupLat != null ? Number(order.pickupLat) : null;
       const pickupLng = order.pickupLng != null ? Number(order.pickupLng) : null;
@@ -560,20 +583,24 @@ export class OrdersService {
 
         if (candidates && candidates.length > 0) {
           for (const c of candidates) {
-            this.eventsGateway.sendToUser(c.userId, 'order:new', {
+            this.eventsGateway.sendToUser(c.userId, event, {
               ...payload,
               distanceToPickupKm: Math.round(c.distanceKm * 10) / 10,
             });
-            void this.notificationsService
-              .notifyDriverNewOrderTargeted(c.userId, {
-                id: order.id,
-                pickupAddress: order.pickupAddress,
-                deliveryAddress: order.deliveryAddress,
-                totalAmount: order.totalAmount,
-                driverPayout: (order as any).driverPayout,
-                distanceKm: order.distanceKm,
-              })
-              .catch(() => undefined);
+            const target = {
+              id: order.id,
+              pickupAddress: order.pickupAddress,
+              deliveryAddress: order.deliveryAddress,
+              totalAmount: order.totalAmount,
+              driverPayout: (order as any).driverPayout,
+              distanceKm: order.distanceKm,
+              scheduledTime: (order as any).scheduledTime ?? null,
+            };
+            void (
+              scheduled
+                ? this.notificationsService.notifyDriverScheduledOrderTargeted(c.userId, target)
+                : this.notificationsService.notifyDriverNewOrderTargeted(c.userId, target)
+            ).catch(() => undefined);
           }
           this.logger.log(
             `order ${order.id}: targeted alert → ${candidates.length} driver(s) within ${radiusUsedKm}km` +
@@ -587,20 +614,26 @@ export class OrdersService {
       }
 
       // Fail-open: sin coords del pickup o sin candidatos.
-      this.eventsGateway.sendToRole('driver', 'order:new', payload);
-      void this.notificationsService.notifyNewOrderTopic({
+      this.eventsGateway.sendToRole('driver', event, payload);
+      const topicOrder = {
         id: order.id,
         pickupAddress: order.pickupAddress,
         deliveryAddress: order.deliveryAddress,
         totalAmount: order.totalAmount,
         driverPayout: (order as any).driverPayout,
         distanceKm: order.distanceKm,
-      });
+        scheduledTime: (order as any).scheduledTime ?? null,
+      };
+      void (
+        scheduled
+          ? this.notificationsService.notifyScheduledOrderTopic(topicOrder)
+          : this.notificationsService.notifyNewOrderTopic(topicOrder)
+      ).catch(() => undefined);
     } catch (error) {
       // Última línea de defensa: la alerta jamás tumba la creación.
       this.logger.error(`alertNearbyDrivers(${order.id}) failed: ${String(error)}`);
       try {
-        this.eventsGateway.sendToRole('driver', 'order:new', payload);
+        this.eventsGateway.sendToRole('driver', event, payload);
       } catch {
         // ignore
       }

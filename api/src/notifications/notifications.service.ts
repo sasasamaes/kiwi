@@ -483,6 +483,62 @@ export class NotificationsService {
     return { delivered: true };
   }
 
+  /**
+   * Pedido PROGRAMADO publicado → mismo topic de drivers, pero copia propia
+   * (se propone, no se acepta) y data type distinto para que la app abra la
+   * página de programados en vez de Disponibles.
+   */
+  async notifyScheduledOrderTopic(order: {
+    id: string;
+    pickupAddress: string;
+    deliveryAddress: string;
+    totalAmount: any;
+    distanceKm: any;
+    driverPayout?: any;
+    scheduledTime?: string | null;
+  }) {
+    const gain =
+      order.driverPayout != null ? Number(order.driverPayout) : Number(order.totalAmount);
+    const when = order.scheduledTime ? ` · ⏰ ${order.scheduledTime}` : '';
+    return this.publishToTopic('driver.orders.new', {
+      title: '📅 Nuevo pedido programado',
+      body: `₡${gain.toLocaleString()} · ${order.pickupAddress} → ${order.deliveryAddress}${when}`,
+      data: { orderId: order.id, type: 'new_scheduled_order' },
+    });
+  }
+
+  /** Alerta de programado dirigida a UN driver (mismo targeting por proximidad). */
+  async notifyDriverScheduledOrderTargeted(
+    userId: string,
+    order: {
+      id: string;
+      pickupAddress: string;
+      deliveryAddress: string;
+      totalAmount: any;
+      distanceKm: any;
+      driverPayout?: any;
+      scheduledTime?: string | null;
+    },
+  ) {
+    const prefs = await this.prisma.topicPreference.findMany({
+      where: { userId, topic: 'driver.orders.new', enabled: true },
+      select: { userId: true },
+    });
+    if (prefs.length === 0) return { skipped: 'preference_off' as const };
+
+    const gain =
+      order.driverPayout != null ? Number(order.driverPayout) : Number(order.totalAmount);
+    const when = order.scheduledTime ? ` · ⏰ ${order.scheduledTime}` : '';
+    if (this.fcmAdmin) {
+      await this.sendPushToTokens(userId, {
+        title: '📅 Pedido programado cerca de ti',
+        body: `₡${gain.toLocaleString()} · ${order.pickupAddress} → ${order.deliveryAddress}${when}`,
+        data: { orderId: order.id, type: 'new_scheduled_order' },
+      });
+    }
+    return { delivered: true };
+  }
+
   /** Estado del pedido → al comercio (push directo + inbox). */
   async notifyOrderAccepted(orderId: string, merchantUserId: string, driverName: string) {
     return this.sendToUser(merchantUserId, {

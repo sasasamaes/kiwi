@@ -172,6 +172,9 @@ export default function OrdersPage() {
           setRejected({ orderId: d.orderId, driverName: d?.driverName });
         }
       }),
+      // Concurso y sin-repartidor: antes solo llegaban con refresh manual.
+      onSocket('order:contestStarted', (d: any) => scheduleRefresh(d?.orderId)),
+      onSocket('order:noDriver', (d: any) => scheduleRefresh(d?.orderId)),
     ];
     return () => offs.forEach((off) => off());
   }, [onSocket, scheduleRefresh]);

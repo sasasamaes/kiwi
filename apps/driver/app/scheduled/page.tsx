@@ -65,14 +65,15 @@ export default function ScheduledOrdersPage() {
     }
   }, [user, fetchScheduledOrders]);
 
-  // Listen for new scheduled orders
+  // Listen for new scheduled orders (evento propio + legacy order:new).
   useEffect(() => {
-    const cleanup = on('order:new', (data: any) => {
+    const refresh = (data: any) => {
       console.log('New scheduled order:', data);
       fetchScheduledOrders();
-    });
+    };
+    const offs = [on('order:scheduledNew', refresh), on('order:new', refresh)];
 
-    return cleanup;
+    return () => offs.forEach((off) => off());
   }, [on, fetchScheduledOrders]);
 
   const handleSelectOrder = (order: Order) => {

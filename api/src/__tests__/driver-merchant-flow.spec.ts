@@ -80,6 +80,8 @@ describe('Driver/merchant lifecycle regressions', () => {
           useValue: {
             notifyNewOrderTopic: jest.fn().mockResolvedValue({ delivered: 0, inbox: 0 }),
             notifyDriverNewOrderTargeted: jest.fn().mockResolvedValue({ delivered: true }),
+            notifyScheduledOrderTopic: jest.fn().mockResolvedValue({ delivered: 0, inbox: 0 }),
+            notifyDriverScheduledOrderTargeted: jest.fn().mockResolvedValue({ delivered: true }),
             notifyOrderAccepted: jest.fn().mockResolvedValue({}),
             notifyOrderStatusUpdate: jest.fn().mockResolvedValue({}),
             notifyOrderRejected: jest.fn().mockResolvedValue({}),
@@ -163,5 +165,32 @@ describe('Driver/merchant lifecycle regressions', () => {
       'merchant',
     );
     expect(updated.status).toBe('cancelled');
+  });
+
+  it('crear pedido programado alerta a la flota con order:scheduledNew (no order:new)', async () => {
+    prisma.merchantProfile.findUnique.mockResolvedValue({
+      id: 'merchant-1',
+      userId: 'merchant-user-1',
+      businessName: 'Soda Nicoya',
+    });
+    prisma.order.create.mockImplementation(async ({ data }: any) => ({
+      id: 'sched-order-1',
+      createdAt: new Date(),
+      ...data,
+    }));
+
+    const order: any = await service.create('merchant-user-1', {
+      orderType: 'scheduled',
+      scheduledDate: '2026-12-01T18:00',
+      scheduledTime: '18:00',
+      pickupAddress: 'Parque Nicoya',
+      deliveryAddress: 'Barrio San Martín',
+      distanceKm: 2,
+    });
+
+    expect(order.status).toBe('driver_proposals');
+    const calls = mockEventsGateway.sendToRole.mock.calls.map((c: any[]) => c.slice(0, 2));
+    expect(calls).toContainEqual(['driver', 'order:scheduledNew']);
+    expect(calls).not.toContainEqual(['driver', 'order:new']);
   });
 });
