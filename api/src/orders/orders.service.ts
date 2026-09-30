@@ -17,6 +17,7 @@ import { ProximityService, haversineKm } from './proximity.service';
 import { SettingsService } from '../settings/settings.service';
 import { findDeliveryZone, findNearestZone, detectDeliveryZoneFromText } from './delivery-zones';
 import { parseScheduledCR } from '../common/costa-rica-time';
+import { normalizeCRPhone } from '../common/phone';
 import { isKycRequired } from '../feature-flags/feature-flags';
 import { ImageUploadService } from '../menu/image-upload.service';
 
@@ -62,18 +63,6 @@ export class OrdersService {
   ) {}
 
   /**
-   * Normaliza teléfonos ticos aceptando pegados de WhatsApp: "+506 6380 5455",
-   * "50663805455", "6380 5455", "6380-5455" → "6380-5455". Devuelve null si
-   * no son 8 dígitos (con o sin código país 506).
-   */
-  static normalizeCRPhone(raw: unknown): string | null {
-    const digits = String(raw ?? '').replace(/[^\d]/g, '');
-    const local = digits.length === 11 && digits.startsWith('506') ? digits.slice(3) : digits;
-    if (!/^\d{8}$/.test(local)) return null;
-    return `${local.slice(0, 4)}-${local.slice(4)}`;
-  }
-
-  /**
    * Pedido invitado (link público del menú, sin cuenta): mismo pipeline con
    * precios del servidor que el flujo logueado, atribuido al comercio del
    * link. El id del perfil es público (viaja en la URL del menú); la
@@ -89,7 +78,7 @@ export class OrdersService {
       throw new NotFoundException('Comercio no encontrado');
     }
 
-    const phone = OrdersService.normalizeCRPhone(data?.customerPhone ?? '');
+    const phone = normalizeCRPhone(data?.customerPhone ?? '');
     if (!phone) {
       throw new BadRequestException('customerPhone es requerido (formato 8888-8888)');
     }
@@ -188,7 +177,7 @@ export class OrdersService {
     // Acepta pegados de WhatsApp ("+506 6380 5455", "50663805455",
     // "6380 5455") y los guarda canónicos "XXXX-XXXX".
     if (data.customerPhone != null && String(data.customerPhone).trim() !== '') {
-      const normalized = OrdersService.normalizeCRPhone(data.customerPhone);
+      const normalized = normalizeCRPhone(data.customerPhone);
       if (!normalized) {
         throw new BadRequestException('customerPhone inválido (formato 8888-8888)');
       }
