@@ -1191,7 +1191,10 @@ export class OrdersService {
     return this.prisma.order.findMany({
       where,
       include: {
-        merchant: { select: MERCHANT_PUBLIC_SELECT },
+        // El asignado necesita llamar al comercio si se pierde yendo al
+        // pickup. Solo ve este teléfono el driver del pedido (la vitrina de
+        // disponibles lo sigue ocultando a la flota).
+        merchant: { select: { ...MERCHANT_PUBLIC_SELECT, user: { select: { phone: true } } } },
         items: true,
       },
       orderBy: { createdAt: 'desc' },
@@ -1202,6 +1205,8 @@ export class OrdersService {
    * Registra la foto de evidencia del pedido (URLs del Task 1 + timestamps).
    * - `pickup`: solo el comercio dueño sube la foto de entrega al repartidor.
    * - `delivery`: solo el repartidor asignado sube la foto de entrega al cliente.
+   * - Congeladas al avanzar: re-subir la pickup ya recogido (o la delivery ya
+   *   entregado) invalidaría la prueba ante reclamos.
    */
   async uploadProofPhoto(
     orderId: string,
@@ -1222,6 +1227,18 @@ export class OrdersService {
       throw new ForbiddenException(
         'Solo el repartidor asignado sube la foto de entrega al cliente',
       );
+    const PICKUP_FROZEN = ['picked_up', 'in_transit_to_delivery', 'delivered'];
+    const DELIVERY_FROZEN = ['delivered'];
+    if (kind === 'pickup' && PICKUP_FROZEN.includes((order as any).status)) {
+      throw new BadRequestException(
+        'El pedido ya fue recogido: la foto de entrega al repartidor quedó registrada.',
+      );
+    }
+    if (kind === 'delivery' && DELIVERY_FROZEN.includes((order as any).status)) {
+      throw new BadRequestException(
+        'El pedido ya fue entregado: la foto de entrega al cliente quedó registrada.',
+      );
+    }
     const data: any =
       kind === 'pickup'
         ? { pickupProofPhotoUrl: url, pickupProofAt: new Date() }

@@ -622,6 +622,10 @@ export default function ActiveOrders() {
   const feePct = Math.round(Number((order as any).commissionRate ?? 0.15) * 100);
   const distanceKm = Number(order.distanceKm ?? 0);
   const customer = parseCustomer(order.specialInstructions);
+  const merchantPhone =
+    typeof (order as any).merchant?.user?.phone === 'string'
+      ? (order as any).merchant.user.phone
+      : null;
   const notes = (order.specialInstructions || '')
     .replace(/Cliente:[^·]*/g, '')
     .replace(/^·\s*/, '')
@@ -962,6 +966,14 @@ export default function ActiveOrders() {
               >
                 <Navigation className="h-4 w-4" /> Ver en mapa
               </TapButton>
+              {merchantPhone && (
+                <a
+                  href={`tel:${merchantPhone.replace(/\s/g, '')}`}
+                  className="mt-2 flex h-11 w-full items-center justify-center gap-2 rounded-xl glass text-sm font-semibold text-surface-700 dark:text-surface-200"
+                >
+                  <Phone className="h-4 w-4 text-kiwi-500" /> Llamar al comercio
+                </a>
+              )}
               <button
                 onClick={() =>
                   openMaps(

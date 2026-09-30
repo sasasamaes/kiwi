@@ -280,6 +280,11 @@ class ApiClient {
     }
   }
 
+  /** Si la subida de imágenes está configurada (Cloudinary). */
+  async getImageUploadStatus(): Promise<{ enabled: boolean }> {
+    return this.request<{ enabled: boolean }>('/menu/my/image-status');
+  }
+
   async getMerchantProfile() {
     return this.request<any>('/merchants/me');
   }
@@ -1571,7 +1576,7 @@ export interface Order {
   deliveryProofPhotoUrl?: string | null;
   deliveryProofAt?: string | null;
   createdAt: string;
-  merchant?: { businessName?: string | null } | null;
+  merchant?: { businessName?: string | null; user?: { phone?: string | null } | null } | null;
   items?: Array<{
     id: string;
     name: string;

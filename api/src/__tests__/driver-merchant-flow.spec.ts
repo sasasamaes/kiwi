@@ -167,6 +167,75 @@ describe('Driver/merchant lifecycle regressions', () => {
     expect(updated.status).toBe('cancelled');
   });
 
+  it('findByDriver expone el teléfono del comercio al repartidor asignado', async () => {
+    prisma.driverProfile.findUnique.mockResolvedValue({ id: 'dp-1', userId: 'user-d' });
+    prisma.order.findMany.mockResolvedValue([
+      {
+        id: 'order-1',
+        status: 'assigned',
+        merchant: { businessName: 'Soda Nicoya', user: { phone: '8888-1111' } },
+      },
+    ]);
+
+    const result: any[] = await service.findByDriver('user-d');
+
+    expect(prisma.order.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        include: expect.objectContaining({
+          merchant: expect.objectContaining({
+            select: expect.objectContaining({ user: expect.anything() }),
+          }),
+        }),
+      }),
+    );
+    expect(result[0].merchant?.user?.phone).toBe('8888-1111');
+  });
+
+  it('getAvailableOrders NO expone teléfono del comercio a la flota', async () => {
+    prisma.order.findMany.mockResolvedValue([
+      { id: 'imm-1', status: 'pending', merchant: { businessName: 'Soda' } },
+    ]);
+
+    const result: any[] = await service.getAvailableOrders();
+
+    expect(result[0].merchant?.user).toBeUndefined();
+  });
+
+  it('uploadProofPhoto pickup se congela una vez recogido el pedido', async () => {
+    prisma.order.findUnique.mockResolvedValue({
+      id: 'order-1',
+      status: 'picked_up',
+      pickupProofPhotoUrl: 'https://img/old.jpg',
+      merchant: { userId: 'merchant-user-1' },
+      driver: { userId: 'user-d' },
+    });
+
+    await expect(
+      (service as any).uploadProofPhoto(
+        'order-1',
+        'pickup',
+        'https://img/new.jpg',
+        'merchant-user-1',
+      ),
+    ).rejects.toThrow('ya fue recogido');
+    expect(prisma.order.update).not.toHaveBeenCalled();
+  });
+
+  it('uploadProofPhoto delivery se congela una vez entregado el pedido', async () => {
+    prisma.order.findUnique.mockResolvedValue({
+      id: 'order-1',
+      status: 'delivered',
+      deliveryProofPhotoUrl: 'https://img/old.jpg',
+      merchant: { userId: 'merchant-user-1' },
+      driver: { userId: 'user-d' },
+    });
+
+    await expect(
+      (service as any).uploadProofPhoto('order-1', 'delivery', 'https://img/new.jpg', 'user-d'),
+    ).rejects.toThrow('ya fue entregado');
+    expect(prisma.order.update).not.toHaveBeenCalled();
+  });
+
   it('crear pedido programado alerta a la flota con order:scheduledNew (no order:new)', async () => {
     prisma.merchantProfile.findUnique.mockResolvedValue({
       id: 'merchant-1',

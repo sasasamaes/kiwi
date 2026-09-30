@@ -119,6 +119,8 @@ export default function OrdersPage() {
   const [rejected, setRejected] = useState<{ orderId: string; driverName?: string } | null>(null);
   // Subida de evidencia: orderId que está subiendo su foto pickup.
   const [uploadingId, setUploadingId] = useState<string | null>(null);
+  // Config del servidor (Cloudinary): null = aún cargando o sin permiso.
+  const [uploadEnabled, setUploadEnabled] = useState<boolean | null>(null);
   // Reintento/cancelación de pedidos sin repartidor.
   const [actingId, setActingId] = useState<string | null>(null);
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -143,6 +145,16 @@ export default function OrdersPage() {
   useEffect(() => {
     if (user) fetchOrders();
   }, [user, fetchOrders]);
+
+  // Estado de la subida: si el servidor no la tiene configurada se avisa
+  // ANTES de intentar subir (el 503 tardío era el banner rojo confuso).
+  useEffect(() => {
+    if (!user) return;
+    api
+      .getImageUploadStatus()
+      .then((r) => setUploadEnabled(r?.enabled === true))
+      .catch(() => setUploadEnabled(null));
+  }, [user]);
 
   // Tiempo real: cualquier cambio del pedido refresca la lista y destella la fila
   const scheduleRefresh = useCallback(
@@ -293,6 +305,13 @@ export default function OrdersPage() {
         </div>
 
         {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+
+        {uploadEnabled === false && (
+          <p className="mt-4 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 px-4 py-3 text-sm text-amber-800 dark:text-amber-300">
+            La subida de fotos no está configurada en el servidor. Avisá al administrador para
+            activar las fotos de evidencia.
+          </p>
+        )}
 
         {rejected && (
           <div className="mt-4 flex items-center gap-3 rounded-2xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 p-4">
@@ -509,6 +528,11 @@ export default function OrdersPage() {
                                     className="mt-2 rounded-xl w-full object-cover"
                                   />
                                 </div>
+                              ) : uploadEnabled === false ? (
+                                <p className="rounded-xl bg-amber-50 dark:bg-amber-900/20 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
+                                  Subida desactivada: pedile al administrador que configure las
+                                  fotos de evidencia.
+                                </p>
                               ) : (
                                 <div>
                                   <label className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-kiwi-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-kiwi-800">
