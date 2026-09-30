@@ -77,6 +77,30 @@ En los frontends (Vercel → Project → Settings → Environment Variables):
 NEXT_PUBLIC_API_URL="https://kiwi-api-fe54.onrender.com/api"
 ```
 
+### 🔔 Push (Firebase, driver + comercio)
+
+Sin estas vars el push **no falla, se apaga en silencio** (la app avisa "Falta configuración" al activar alertas y el API solo guarda inbox). Checklist:
+
+Vercel → **kiwi-driver** y **kiwi-merchant** → Environment Variables (las 7, mismo proyecto Firebase):
+
+```bash
+NEXT_PUBLIC_FIREBASE_API_KEY="..."
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN="....firebaseapp.com"
+NEXT_PUBLIC_FIREBASE_PROJECT_ID="..."
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET="....appspot.com"
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID="..."
+NEXT_PUBLIC_FIREBASE_APP_ID="..."
+NEXT_PUBLIC_FIREBASE_VAPID_KEY="..."   # Cloud Messaging → Web Push certificates
+```
+
+Render → **kiwi-api** → Environment:
+
+```bash
+FIREBASE_SERVICE_ACCOUNT='{"project_id":"...","private_key":"-----BEGIN PRIVATE KEY-----...","client_email":"..."}'  # JSON de una línea
+```
+
+Verificación con la app instalada (driver o comercio): activar alertas → si falla, el diagnóstico dice el paso exacto (`missing-vapid`, `missing-config`, `token-failed`). Diagnóstico punta a punta del lado servidor: `POST /api/notifications/test-push` (logueado) devuelve `{fcmConfigured, tokens, sent}` — si `fcmConfigured=false`, falta `FIREBASE_SERVICE_ACCOUNT` en Render; si `tokens=0`, el celu no registró token (revisar vars públicas + permiso).
+
 ---
 
 ## 🛡️ Security headers
