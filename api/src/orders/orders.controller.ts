@@ -7,6 +7,7 @@ import {
   Body,
   Param,
   Query,
+  Headers,
   UseGuards,
   UseInterceptors,
   UploadedFile,
@@ -31,15 +32,30 @@ export class OrdersController {
   @Roles('merchant')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new order' })
-  async create(@CurrentUser() user: any, @Body() createOrderDto: any) {
-    return this.ordersService.create(user.sub, createOrderDto);
+  async create(
+    @CurrentUser() user: any,
+    @Body() createOrderDto: any,
+    @Headers('idempotency-key') idempotencyKey?: string,
+  ) {
+    const dto =
+      idempotencyKey && !createOrderDto?.idempotencyKey
+        ? { ...createOrderDto, idempotencyKey }
+        : createOrderDto;
+    return this.ordersService.create(user.sub, dto);
   }
 
   @Public()
   @Post('guest')
   @ApiOperation({ summary: 'Create a guest order from the public menu link (no auth)' })
-  async createGuest(@Body() createOrderDto: any) {
-    return this.ordersService.createGuestOrder(createOrderDto?.merchantId, createOrderDto);
+  async createGuest(
+    @Body() createOrderDto: any,
+    @Headers('idempotency-key') idempotencyKey?: string,
+  ) {
+    const dto =
+      idempotencyKey && !createOrderDto?.idempotencyKey
+        ? { ...createOrderDto, idempotencyKey }
+        : createOrderDto;
+    return this.ordersService.createGuestOrder(dto?.merchantId, dto);
   }
 
   @Get('my')

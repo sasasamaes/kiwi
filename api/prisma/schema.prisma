@@ -332,6 +332,12 @@ model Order {
   customerName  String? @map("customer_name")
   customerPhone String? @map("customer_phone")
 
+  // Anti-duplicados: el comercio con wifi caído reintentaba "Crear Pedido"
+  // y cada POST creaba un pedido distinto. El frontend manda una key única
+  // por intento (header Idempotency-Key + body): si ya existe un pedido de
+  // este comercio con esa key, se devuelve el existente sin crear otro.
+  idempotencyKey String? @map("idempotency_key")
+
   // Timestamps
   createdAt   DateTime  @default(now()) @map("created_at")
   assignedAt  DateTime? @map("assigned_at")
@@ -357,6 +363,7 @@ model Order {
   payment   Payment?
   ratings   Rating[]
 
+  @@unique([merchantId, idempotencyKey], map: "orders_merchant_idempotency_uk")
   @@index([merchantId, status])
   @@index([merchantId, createdAt])
   @@index([driverId, status])

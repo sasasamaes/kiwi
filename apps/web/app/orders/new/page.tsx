@@ -197,6 +197,23 @@ function NewOrderInner({
   const [step, setStep] = useState<Step>(1);
   const [loading, setLoading] = useState(false);
   const [orderCreated, setOrderCreated] = useState(false);
+  // Anti-duplicados: el comercio con wifi caído le daba varias veces a
+  // "Crear Pedido" y cada tap creaba un pedido distinto (7x Cinthya).
+  // - creatingRef bloquea el doble-tap mientras hay un POST en vuelo.
+  // - idempotencyKeyRef se genera una vez por intento y se reutiliza en
+  //   todos los reintentos: el backend devuelve el mismo pedido si la key
+  //   ya existe en vez de crear otro. Solo se regenera al lograrlo.
+  const creatingRef = useRef(false);
+  const idempotencyKeyRef = useRef<string | null>(null);
+  const ensureIdempotencyKey = () => {
+    if (!idempotencyKeyRef.current) {
+      idempotencyKeyRef.current =
+        typeof crypto !== 'undefined' && 'randomUUID' in crypto
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    }
+    return idempotencyKeyRef.current;
+  };
   const [createdOrderId, setCreatedOrderId] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   // El pedido puede existir sin pago (falló el cobro): se muestra reintento
@@ -711,17 +728,23 @@ function NewOrderInner({
   };
 
   const createOrderHandler = async () => {
+    // Doble-tap con wifi caído = N pedidos iguales. Si ya hay un POST en
+    // vuelo, el segundo tap se ignora en vez de crear otro pedido.
+    if (creatingRef.current) return;
+    creatingRef.current = true;
     setFormError(null);
     setPayError(null);
     setPaymentFailed(false);
     setOrderNotice(null);
     if (!deliveryZone) {
+      creatingRef.current = false;
       setFormError('Elegí el barrio de entrega para calcular el envío');
       return;
     }
     // Las coords pueden venir de un link/GPS erróneo: el precio de zona lo
     // enmascara en pantalla y el backend recién lo rechaza al crear.
     if (routeKm != null && routeKm > 300) {
+      creatingRef.current = false;
       setFormError(
         `La ubicación de entrega quedó a ${routeKm} km (máx 300 km). Revisá la dirección o volvé a fijar el punto en el mapa.`,
       );
@@ -735,6 +758,7 @@ function NewOrderInner({
         const fresh = Number(r?.balance ?? NaN);
         if (Number.isFinite(fresh)) setCreditBalance(fresh);
         if (Number.isFinite(fresh) && fresh < trip) {
+          creatingRef.current = false;
           setFormError(
             `Saldo insuficiente (₡${fresh.toLocaleString()}): este envío cuesta ₡${trip.toLocaleString()}. Recargá con tarjeta en Mi crédito o llamá a Kiwi.`,
           );
@@ -744,6 +768,7 @@ function NewOrderInner({
         // Sin red no se puede validar: el backend decide.
       }
       if (creditBalance != null && creditBalance < trip) {
+        creatingRef.current = false;
         setFormError(
           `Saldo insuficiente (₡${creditBalance.toLocaleString()}): este envío cuesta ₡${trip.toLocaleString()}. Recargá con tarjeta en Mi crédito o llamá a Kiwi.`,
         );
@@ -751,16 +776,26 @@ function NewOrderInner({
       }
     }
     if (isScheduled && (!scheduledDate || !scheduledTime)) {
+      creatingRef.current = false;
       setFormError('Elegí fecha y hora para programar el pedido');
       return;
     }
     if (isScheduled && scheduledDate && scheduledTime) {
       const when = new Date(`${scheduledDate}T${scheduledTime}`);
       if (!Number.isFinite(when.getTime()) || when.getTime() < Date.now()) {
+        creatingRef.current = false;
         setFormError('La fecha y hora programadas deben ser futuras');
         return;
       }
     }
+    // Sin internet el POST va a fallar: se avisa UNA vez y se conserva la
+    // misma key para que el reintento no duplique cuando vuelva la red.
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      creatingRef.current = false;
+      setFormError('Sin internet: no se creó el pedido. Reconectá y tocá Crear una sola vez.');
+      return;
+    }
+    const idempotencyKey = ensureIdempotencyKey();
     setLoading(true);
     try {
       // Asignación directa en la creación: el backend crea el pedido YA
@@ -768,50 +803,8 @@ function NewOrderInner({
       // concurso (alertando a toda la flota) y recién después se asignaba.
       let result: any = null;
       try {
-        result = await api.createOrder({
-          pickupAddress: pickupAddress || profileAddress || 'Nicoya Centro',
-          deliveryAddress,
-          deliveryZone,
-          payWithCredit: paymentMethod === 'credit',
-          deliveryLat,
-          deliveryLng,
-          orderType: isScheduled ? 'scheduled' : 'immediate',
-          scheduledDate: scheduledDate || undefined,
-          scheduledTime: scheduledTime || undefined,
-          customerName: deliveryName.trim() || undefined,
-          customerPhone: deliveryPhone.trim() || undefined,
-          specialInstructions: [`Cliente: ${deliveryName} (${deliveryPhone})`, notes]
-            .filter(Boolean)
-            .join(' · '),
-          distanceKm: routeKm ?? undefined,
-          kind,
-          items:
-            kind === 'food'
-              ? items.map((item) => ({
-                  menuItemId: item.menuItemId,
-                  name: item.name,
-                  price: item.price,
-                  quantity: item.quantity,
-                  notes: item.notes || undefined,
-                }))
-              : [],
-          packageDescription: kind === 'freight' ? packageDescription : undefined,
-          packageSize: kind === 'freight' && packageSize !== '' ? packageSize : undefined,
-          weightKg: kind === 'freight' && weightKg > 0 ? weightKg : undefined,
-          ...(selectedDriverId ? { driverId: selectedDriverId } : {}),
-        });
-      } catch (createErr: any) {
-        // El elegido se desconectó entre la lista y el crear: reintentar SIN
-        // driver (queda en concurso) en vez de perder todo el formulario.
-        const msg = String(createErr?.message ?? '');
-        if (
-          selectedDriverId &&
-          /no está disponible|verificado|Repartidor no encontrado/i.test(msg)
-        ) {
-          console.warn('Direct driver unavailable, retrying as contest:', createErr);
-          setOrderNotice(`No se pudo asignar al repartidor elegido (${msg}): quedó en concurso.`);
-          setSelectedDriverId(null);
-          result = await api.createOrder({
+        result = await api.createOrder(
+          {
             pickupAddress: pickupAddress || profileAddress || 'Nicoya Centro',
             deliveryAddress,
             deliveryZone,
@@ -841,7 +834,55 @@ function NewOrderInner({
             packageDescription: kind === 'freight' ? packageDescription : undefined,
             packageSize: kind === 'freight' && packageSize !== '' ? packageSize : undefined,
             weightKg: kind === 'freight' && weightKg > 0 ? weightKg : undefined,
-          });
+            ...(selectedDriverId ? { driverId: selectedDriverId } : {}),
+          },
+          { idempotencyKey },
+        );
+      } catch (createErr: any) {
+        // El elegido se desconectó entre la lista y el crear: reintentar SIN
+        // driver (queda en concurso) en vez de perder todo el formulario.
+        const msg = String(createErr?.message ?? '');
+        if (
+          selectedDriverId &&
+          /no está disponible|verificado|Repartidor no encontrado/i.test(msg)
+        ) {
+          console.warn('Direct driver unavailable, retrying as contest:', createErr);
+          setOrderNotice(`No se pudo asignar al repartidor elegido (${msg}): quedó en concurso.`);
+          setSelectedDriverId(null);
+          result = await api.createOrder(
+            {
+              pickupAddress: pickupAddress || profileAddress || 'Nicoya Centro',
+              deliveryAddress,
+              deliveryZone,
+              payWithCredit: paymentMethod === 'credit',
+              deliveryLat,
+              deliveryLng,
+              orderType: isScheduled ? 'scheduled' : 'immediate',
+              scheduledDate: scheduledDate || undefined,
+              scheduledTime: scheduledTime || undefined,
+              customerName: deliveryName.trim() || undefined,
+              customerPhone: deliveryPhone.trim() || undefined,
+              specialInstructions: [`Cliente: ${deliveryName} (${deliveryPhone})`, notes]
+                .filter(Boolean)
+                .join(' · '),
+              distanceKm: routeKm ?? undefined,
+              kind,
+              items:
+                kind === 'food'
+                  ? items.map((item) => ({
+                      menuItemId: item.menuItemId,
+                      name: item.name,
+                      price: item.price,
+                      quantity: item.quantity,
+                      notes: item.notes || undefined,
+                    }))
+                  : [],
+              packageDescription: kind === 'freight' ? packageDescription : undefined,
+              packageSize: kind === 'freight' && packageSize !== '' ? packageSize : undefined,
+              weightKg: kind === 'freight' && weightKg > 0 ? weightKg : undefined,
+            },
+            { idempotencyKey },
+          );
         } else {
           throw createErr;
         }
@@ -851,6 +892,8 @@ function NewOrderInner({
         const { redirected } = await payForOrder(result.id, paymentMethod);
         if (redirected) {
           // Vamos a Onvo: no mostrar éxito local, al volver tracking verifica.
+          // El pedido ya existe: consumir la key para no reutilizarla.
+          idempotencyKeyRef.current = null;
           setCreatedOrderId(result.id);
           return;
         }
@@ -869,13 +912,19 @@ function NewOrderInner({
 
       setCreatedOrderId(result.id);
       setOrderCreated(true);
+      // Pedido creado: la key ya se usó, la próxima creación necesita una nueva.
+      idempotencyKeyRef.current = null;
       // Sin emit socket: el backend ya alerta a drivers cercanos vía
       // alertNearbyDrivers (socket 1:1 + push). El emit duplicaba el
       // evento order:new y el repartidor lo recibía 2 veces.
     } catch (error: any) {
       console.error('Failed to create order:', error);
-      setFormError(error?.message || 'Error al crear el pedido. Intenta de nuevo.');
+      // La key se conserva: si el pedido SÍ se creó en el server pero la
+      // respuesta se perdió (timeout/wifi), el reintento devuelve el mismo
+      // pedido en vez de duplicarlo.
+      setFormError(error?.message || 'Error al crear el pedido. Tocá Crear una sola vez.');
     } finally {
+      creatingRef.current = false;
       setLoading(false);
     }
   };

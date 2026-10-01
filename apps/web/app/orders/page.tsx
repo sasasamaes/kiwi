@@ -586,6 +586,38 @@ export default function OrdersPage() {
                             </div>
                           )}
 
+                          {/* Duplicados por reintento sin internet: el comercio
+                              puede cancelar el/los de más (vale antes de que
+                              el repartidor lo recoja). */}
+                          {[
+                            'pending',
+                            'driver_proposals',
+                            'pending_acceptance',
+                            'assigned',
+                          ].includes(order.status) && (
+                            <div className="rounded-xl bg-surface-50 dark:bg-surface-800 p-3">
+                              <p className="text-xs text-surface-500">
+                                ¿Pedido duplicado? Cancelá el de más acá. Solo se puede antes de que
+                                lo recojan.
+                              </p>
+                              <button
+                                onClick={() => {
+                                  if (
+                                    window.confirm(
+                                      `Cancelar el pedido de ${clientName} (#${order.id.slice(-4).toUpperCase()})? Esta acción no se puede deshacer.`,
+                                    )
+                                  ) {
+                                    void cancelOrder(order.id);
+                                  }
+                                }}
+                                disabled={actingId === order.id}
+                                className="mt-2 w-full rounded-xl border border-red-300 px-4 py-2 text-sm font-bold text-red-600 disabled:opacity-50"
+                              >
+                                {actingId === order.id ? 'Cancelando…' : 'Cancelar este pedido'}
+                              </button>
+                            </div>
+                          )}
+
                           {/* Detalle */}
                           <div className="space-y-1 text-xs text-surface-500">
                             <p className="flex items-start gap-1.5">

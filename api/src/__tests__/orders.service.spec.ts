@@ -38,7 +38,8 @@ describe('OrdersService', () => {
     prisma = {
       order: {
         create: jest.fn(),
-        findUnique: jest.fn(),
+        findUnique: jest.fn().mockResolvedValue(null),
+        findFirst: jest.fn().mockResolvedValue(null),
         findMany: jest.fn(),
         update: jest.fn(),
         updateMany: jest.fn(),

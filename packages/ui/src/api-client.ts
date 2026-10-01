@@ -375,18 +375,22 @@ class ApiClient {
   // 📦 ORDERS
   // ============================================
 
-  async createOrder(data: any) {
+  async createOrder(data: any, opts?: { idempotencyKey?: string }) {
+    const idempotencyKey = opts?.idempotencyKey || (data as any)?.idempotencyKey;
     return this.request<any>('/orders', {
       method: 'POST',
-      body: data,
+      body: idempotencyKey ? { ...data, idempotencyKey } : data,
+      headers: idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined,
     });
   }
 
   /** Pedido invitado desde el link público del menú (sin cuenta). */
-  async createGuestOrder(data: any) {
+  async createGuestOrder(data: any, opts?: { idempotencyKey?: string }) {
+    const idempotencyKey = opts?.idempotencyKey || (data as any)?.idempotencyKey;
     return this.request<any>('/orders/guest', {
       method: 'POST',
-      body: data,
+      body: idempotencyKey ? { ...data, idempotencyKey } : data,
+      headers: idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined,
     });
   }
 

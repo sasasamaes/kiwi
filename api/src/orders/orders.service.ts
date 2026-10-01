@@ -107,6 +107,28 @@ export class OrdersService {
       throw new NotFoundException('Perfil de comerciante no encontrado');
     }
 
+    // Anti-duplicados (wifi caído + doble-tap = N pedidos iguales):
+    // si el frontend reintenta con la misma Idempotency-Key, se devuelve el
+    // pedido ya creado en vez de crear otro.
+    const rawKey = data?.idempotencyKey;
+    const idempotencyKey =
+      typeof rawKey === 'string' && rawKey.trim() !== '' ? rawKey.trim().slice(0, 100) : null;
+    if (idempotencyKey) {
+      const orderDelegate = this.prisma.order as any;
+      const existing = orderDelegate?.findUnique
+        ? await orderDelegate.findUnique({
+            where: {
+              orders_merchant_idempotency_uk: {
+                merchantId: merchantProfile.id,
+                idempotencyKey,
+              },
+            },
+            include: { merchant: true },
+          })
+        : null;
+      if (existing) return existing;
+    }
+
     // Validate inputs (all of these were Prisma 500s before).
     const orderType = data.orderType || 'immediate';
     if (orderType !== 'immediate' && orderType !== 'scheduled') {
@@ -398,63 +420,137 @@ export class OrdersService {
       }
     }
 
-    const order = await this.prisma.order.create({
-      data: {
-        merchantId: merchantProfile.id,
-        status: directDriver
-          ? 'assigned'
-          : orderType === 'scheduled'
-            ? 'driver_proposals'
-            : 'pending',
-        orderType,
-        scheduledDate,
-        scheduledTime: data.scheduledTime,
-        pickupAddress: data.pickupAddress,
-        pickupLat: data.pickupLat,
-        pickupLng: data.pickupLng,
-        deliveryAddress: data.deliveryAddress,
-        deliveryLat: data.deliveryLat,
-        deliveryLng: data.deliveryLng,
-        distanceKm,
-        deliveryZone,
-        basePrice: tripPrice,
-        commission,
-        commissionRate,
-        driverPayout,
-        totalAmount,
-        productsTotal,
-        kind,
-        packageDescription: data.packageDescription ?? null,
-        packageSize: data.packageSize ?? null,
-        declaredValue: data.declaredValue ?? null,
-        weightKg: weightKg != null ? weightKg : null,
-        specialInstructions: data.specialInstructions,
-        customerName: data.customerName != null ? String(data.customerName).trim() || null : null,
-        customerPhone:
-          data.customerPhone != null ? String(data.customerPhone).trim() || null : null,
-        ...(directDriver ? { driverId: directDriver.id, assignedAt: new Date() } : {}),
-        // Atómico: los items se crean en la misma escritura. Antes era un
-        // createMany best-effort que podía dejar el pedido cobrado sin items
-        // (el driver no veía qué llevar).
-        ...(resolvedItems.length > 0
-          ? {
-              items: {
-                create: resolvedItems.map((item) => ({
-                  menuItemId: item.menuItemId,
-                  name: item.name,
-                  price: item.price,
-                  quantity: item.quantity,
-                  notes: item.notes || undefined,
-                  selectedVariants: item.selectedVariants,
-                })),
+    // Fallback para clientes viejos sin key (app sin actualizar): si el
+    // mismo comercio crea el mismo destinatario+dirección en <2 min y sigue
+    // activo, se devuelve el existente en vez de duplicar.
+    if (!idempotencyKey) {
+      const fallbackName =
+        data?.customerName != null ? String(data.customerName).trim() || null : null;
+      const fallbackPhone =
+        data?.customerPhone != null ? String(data.customerPhone).trim() || null : null;
+      if (fallbackName && fallbackPhone && data?.deliveryAddress) {
+        const orderDelegate = this.prisma.order as any;
+        if (orderDelegate?.findFirst) {
+          const since = new Date(Date.now() - 2 * 60 * 1000);
+          const dupe = await orderDelegate.findFirst({
+            where: {
+              merchantId: merchantProfile.id,
+              customerName: fallbackName,
+              customerPhone: fallbackPhone,
+              deliveryAddress: String(data.deliveryAddress),
+              createdAt: { gte: since },
+              status: {
+                in: [
+                  'pending',
+                  'driver_proposals',
+                  'assigned',
+                  'pending_acceptance',
+                  'in_transit_to_pickup',
+                  'picked_up',
+                  'in_transit_to_delivery',
+                ],
               },
-            }
-          : {}),
-      },
-      include: {
-        merchant: true,
-      },
-    });
+            },
+            orderBy: { createdAt: 'desc' },
+            include: { merchant: true },
+          });
+          if (dupe) {
+            this.logger.warn(
+              `Dedup fallback: devolviendo pedido ${dupe.id} (mismo cliente+dirección <2min)`,
+            );
+            return dupe;
+          }
+        }
+      }
+    }
+
+    let order: any;
+    try {
+      order = await this.prisma.order.create({
+        data: {
+          merchantId: merchantProfile.id,
+          ...(idempotencyKey ? { idempotencyKey } : {}),
+          status: directDriver
+            ? 'assigned'
+            : orderType === 'scheduled'
+              ? 'driver_proposals'
+              : 'pending',
+          orderType,
+          scheduledDate,
+          scheduledTime: data.scheduledTime,
+          pickupAddress: data.pickupAddress,
+          pickupLat: data.pickupLat,
+          pickupLng: data.pickupLng,
+          deliveryAddress: data.deliveryAddress,
+          deliveryLat: data.deliveryLat,
+          deliveryLng: data.deliveryLng,
+          distanceKm,
+          deliveryZone,
+          basePrice: tripPrice,
+          commission,
+          commissionRate,
+          driverPayout,
+          totalAmount,
+          productsTotal,
+          kind,
+          packageDescription: data.packageDescription ?? null,
+          packageSize: data.packageSize ?? null,
+          declaredValue: data.declaredValue ?? null,
+          weightKg: weightKg != null ? weightKg : null,
+          specialInstructions: data.specialInstructions,
+          customerName: data.customerName != null ? String(data.customerName).trim() || null : null,
+          customerPhone:
+            data.customerPhone != null ? String(data.customerPhone).trim() || null : null,
+          ...(directDriver ? { driverId: directDriver.id, assignedAt: new Date() } : {}),
+          // Atómico: los items se crean en la misma escritura. Antes era un
+          // createMany best-effort que podía dejar el pedido cobrado sin items
+          // (el driver no veía qué llevar).
+          ...(resolvedItems.length > 0
+            ? {
+                items: {
+                  create: resolvedItems.map((item) => ({
+                    menuItemId: item.menuItemId,
+                    name: item.name,
+                    price: item.price,
+                    quantity: item.quantity,
+                    notes: item.notes || undefined,
+                    selectedVariants: item.selectedVariants,
+                  })),
+                },
+              }
+            : {}),
+        },
+        include: {
+          merchant: true,
+        },
+      });
+    } catch (e: any) {
+      // Carrera: dos taps con la misma key llegaron a la vez y ambos
+      // pasaron el findUnique. El segundo choca con el índice único: se
+      // devuelve el primero en vez de un 500.
+      if (
+        idempotencyKey &&
+        (e?.code === 'P2002' || String(e?.message ?? '').includes('orders_merchant_idempotency_uk'))
+      ) {
+        const delegate = this.prisma.order as any;
+        if (delegate?.findUnique) {
+          const raced = await delegate.findUnique({
+            where: {
+              orders_merchant_idempotency_uk: {
+                merchantId: merchantProfile.id,
+                idempotencyKey,
+              },
+            },
+            include: { merchant: true },
+          });
+          if (raced) {
+            this.logger.warn(`Idempotency race: devolviendo pedido ${raced.id} existente`);
+            return raced;
+          }
+        }
+      }
+      throw e;
+    }
 
     // Asignación directa: avisar SOLO al elegido (socket 1:1 + push 1:1).
     // Nada de broadcast: el resto de la flota no debe enterarse.
