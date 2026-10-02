@@ -18,10 +18,21 @@ export default function LoginPage() {
   const [formLoading, setFormLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Vuelta post-login: si el 401 te sacó a /login, volver a donde estabas.
+  const consumeReturnTo = () => {
+    try {
+      const to = window.sessionStorage.getItem('kiwi_redirect_after_login');
+      window.sessionStorage.removeItem('kiwi_redirect_after_login');
+      return to && to.startsWith('/') && !to.startsWith('//') ? to : null;
+    } catch {
+      return null;
+    }
+  };
+
   // Ya logueado y cae en /login: mandar a su home (ej. admin → /admin).
   useEffect(() => {
     if (!loading && user) {
-      router.replace(homeForRole((user as any).role));
+      router.replace(consumeReturnTo() ?? homeForRole((user as any).role));
     }
   }, [user, loading, router]);
 
@@ -31,7 +42,7 @@ export default function LoginPage() {
 
     try {
       const loggedUser = await login(data.email, data.password);
-      router.push(homeForRole((loggedUser as any)?.role));
+      router.push(consumeReturnTo() ?? homeForRole((loggedUser as any)?.role));
     } catch (err: any) {
       setError(err.message || 'Error al iniciar sesión. Intenta de nuevo.');
     } finally {

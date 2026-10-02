@@ -37,20 +37,28 @@ export function ShareTrackingButton({
   const share = async () => {
     const url = buildTrackingUrl(orderId);
     const text = buildTrackingMessage(orderId);
+    const copyToClipboard = async (): Promise<boolean> => {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch {
+        return false;
+      }
+    };
     try {
       if (typeof navigator !== 'undefined' && navigator.share) {
         await navigator.share({ title: 'Seguí tu pedido Kiwi', text, url });
         return;
       }
       throw new Error('no-native-share');
-    } catch {
-      // Fallback (o cancelación del share nativo): portapapeles con el
-      // mensaje listo para WhatsApp, no solo el link pelado.
-      try {
-        await navigator.clipboard.writeText(text);
+    } catch (e: any) {
+      // Cancelar el sheet nativo (AbortError) NO es un fallo: no copiar nada
+      // ni mostrar "¡Copiado!" falso. Solo el fallback real copia.
+      if (e?.name === 'AbortError') return;
+      if (await copyToClipboard()) {
         setCopied(true);
         setTimeout(() => setCopied(false), 2500);
-      } catch {
+      } else {
         // Último recurso: prompt con el mensaje seleccionable.
         window.prompt('Copiá el mensaje para el cliente:', text);
       }

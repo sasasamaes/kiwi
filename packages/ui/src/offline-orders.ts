@@ -270,8 +270,11 @@ class OfflineOrderService {
         updateRequest.onsuccess = () => {
           console.log(`🥝 Updated order: ${localId}`);
 
-          // Queue for sync (fire-and-forget with rejection handler)
-          if (navigator.onLine && this.options.autoSync) {
+          // Queue for sync (fire-and-forget with rejection handler).
+          // PERO no cuando el update es el propio marcador de sync
+          // (syncing/synced/failed): syncOrder marca vía updateOrder y sin
+          // este guard se re-encolaba solo en loop, duplicando POSTs.
+          if (navigator.onLine && this.options.autoSync && !updates.syncStatus) {
             this.syncOrder(localId).catch((err) =>
               console.error(`Failed to sync updated order ${localId}:`, err),
             );
@@ -393,6 +396,63 @@ class OfflineOrderService {
   }
 
   /**
+   * Arma el payload con forma de POST /orders desde la orden local. La cola
+   * persiste este objeto plano (sobrevive reloads); el execute custom solo
+   * vive en memoria para la sesión actual.
+   */
+  private toServerPayload(order: OfflineOrder): Record<string, any> {
+    const key =
+      (order.metadata as any)?.idempotencyKey ?? `offline_${order.localId}_${order.createdAt}`;
+    const scheduled = order.scheduledFor ? new Date(order.scheduledFor) : null;
+    // 'YYYY-MM-DDTHH:mm' en hora CR (el server lo interpreta como CR).
+    const crParts =
+      scheduled != null
+        ? new Intl.DateTimeFormat('en-CA', {
+            timeZone: 'America/Costa_Rica',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            hourCycle: 'h23',
+          })
+            .formatToParts(scheduled)
+            .reduce<Record<string, string>>((acc, p) => {
+              if (p.type !== 'literal') acc[p.type] = p.value;
+              return acc;
+            }, {})
+        : null;
+    return {
+      pickupAddress: order.pickupAddress,
+      pickupLat: order.pickupLat,
+      pickupLng: order.pickupLng,
+      deliveryAddress: order.deliveryAddress,
+      deliveryLat: order.deliveryLat,
+      deliveryLng: order.deliveryLng,
+      orderType: scheduled ? 'scheduled' : 'immediate',
+      ...(scheduled && crParts
+        ? {
+            scheduledDate: `${crParts.year}-${crParts.month}-${crParts.day}T${crParts.hour}:${crParts.minute}`,
+          }
+        : {}),
+      customerName: order.customerName,
+      customerPhone: order.customerPhone,
+      specialInstructions: order.notes,
+      kind: 'food',
+      items: order.items.map((item) => ({
+        menuItemId: item.menuItemId,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        notes: item.notes || undefined,
+      })),
+      // Misma key en todos los intentos (cola, retries, reloads): el backend
+      // devuelve el pedido existente en vez de duplicar.
+      idempotencyKey: key,
+    };
+  }
+
+  /**
    * Sync an order to the server. Resolves with the latest LOCAL snapshot —
    * the server round-trip completes in the background queue, so callers
    * must not treat the return value as server-confirmed.
@@ -407,36 +467,65 @@ class OfflineOrderService {
     if (order.syncStatus === 'synced') {
       return order; // Already synced
     }
+    // Otro sync ya está en curso (doble llamada del mismo tick): no encolar
+    // de más. Si ese sync muere, el estado vuelve a pending y reintenta.
+    if (order.syncStatus === 'syncing') {
+      return order;
+    }
 
-    // Mark as syncing
+    // Mark as syncing PRIMERO: updateOrder con metadata dispara auto-sync,
+    // pero ese reintento ve syncing y vuelve sin encolar (sin este orden,
+    // persistir la key abajo generaría una recursión con doble enqueue).
+    // (updateOrder además saltea el auto-sync cuando trae syncStatus.)
     await this.updateOrder(localId, { syncStatus: 'syncing' });
 
+    // Key estable por orden local: persiste en metadata (IndexedDB) para que
+    // los reintentos post-reload usen la misma y no dupliquen en el server.
+    const marked = (await this.getOrder(localId)) ?? order;
+    if (!(marked.metadata as any)?.idempotencyKey) {
+      const key =
+        typeof crypto !== 'undefined' && 'randomUUID' in crypto
+          ? crypto.randomUUID()
+          : `offline_${marked.localId}_${marked.createdAt}`;
+      await this.updateOrder(localId, {
+        metadata: { ...(marked.metadata ?? {}), idempotencyKey: key } as any,
+      } as any);
+    }
+    const fresh = (await this.getOrder(localId)) ?? order;
+    const payload = this.toServerPayload(fresh);
+
+    const postOrder = async () => {
+      const response = await apiFetch('/api/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Idempotency-Key': payload.idempotencyKey,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      // Update order with server ID
+      await this.updateOrder(localId, {
+        serverId: result.id,
+        syncStatus: 'synced',
+      });
+
+      return result;
+    };
+
     try {
-      // Enqueue for background sync
-      await backgroundSync.enqueue('order:create', order, {
+      // Enqueue for background sync (el payload plano sobrevive reloads; el
+      // execute custom acelera la sesión actual y concilia el serverId).
+      await backgroundSync.enqueue('order:create', payload, {
         priority: 'high',
         metadata: { localId: order.localId },
-        execute: async (data: OfflineOrder) => {
-          const response = await apiFetch('/api/orders', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data),
-          });
-
-          if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-          }
-
-          const result = await response.json();
-
-          // Update order with server ID
-          await this.updateOrder(localId, {
-            serverId: result.id,
-            syncStatus: 'synced',
-          });
-
-          return result;
-        },
+        execute: postOrder,
       });
 
       return this.getOrder(localId);

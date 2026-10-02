@@ -208,6 +208,7 @@ export default function MenuPage() {
     setCart([]);
     setDeliveryInfo({ address: '', phone: '', name: '', instructions: '', zone: '' });
     setPendingOrderId(null);
+    checkoutKeyRef.current = null;
     setOrderSuccess(null);
     setShowCheckout(false);
     setPaymentPending(false);
@@ -356,6 +357,11 @@ export default function MenuPage() {
     deliveryInfo.name.trim().length > 0 &&
     merchant?.isOpen !== false;
 
+  // Anti-duplicados (doble tap con wifi caído = N pedidos): el state
+  // llega tarde al segundo tap; el ref no. La key se reusa en reintentos
+  // para que el backend devuelva el mismo pedido.
+  const checkingOutRef = useRef(false);
+  const checkoutKeyRef = useRef<string | null>(null);
   // Checkout handler
   const handleCheckout = useCallback(async () => {
     if (cart.length === 0 || !merchant || !canCheckout) return;
@@ -365,6 +371,14 @@ export default function MenuPage() {
     if (pendingOrderId) {
       await retryPendingPayment();
       return;
+    }
+    if (checkingOutRef.current) return;
+    checkingOutRef.current = true;
+    if (!checkoutKeyRef.current) {
+      checkoutKeyRef.current =
+        typeof crypto !== 'undefined' && 'randomUUID' in crypto
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     }
 
     setCheckingOut(true);
@@ -390,8 +404,8 @@ export default function MenuPage() {
       };
 
       const order = api.getToken()
-        ? await api.createOrder(orderData)
-        : await api.createGuestOrder(orderData);
+        ? await api.createOrder(orderData, { idempotencyKey: checkoutKeyRef.current! })
+        : await api.createGuestOrder(orderData, { idempotencyKey: checkoutKeyRef.current! });
       setPendingOrderId(order.id);
 
       // Handle payment based on method
@@ -438,12 +452,14 @@ export default function MenuPage() {
         setCart([]);
         setShowCheckout(false);
         setPendingOrderId(null);
+        checkoutKeyRef.current = null;
         setOrderSuccess(order.id);
       }
     } catch (err) {
       console.error('Failed to create order:', err);
-      alert('Error al crear el pedido. Intenta de nuevo.');
+      alert('Error al crear el pedido. Tocá el botón una sola vez.');
     } finally {
+      checkingOutRef.current = false;
       setCheckingOut(false);
     }
   }, [

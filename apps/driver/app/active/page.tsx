@@ -372,9 +372,25 @@ export default function ActiveOrders() {
       return;
     }
 
+    // Marcar ANTES del request (ref síncrono + state): sin esto el guard de
+    // arriba nunca ve la transición en curso y el doble tap duplica el PUT.
+    // Se limpia al confirmar; si va a la cola, el marcador queda hasta el sync.
+    const markQueued = (next: string | null) => {
+      if (next == null) {
+        const { [order.id]: _dropped, ...rest } = queuedTransitionsRef.current;
+        queuedTransitionsRef.current = rest;
+        setQueuedTransitions(rest);
+      } else {
+        queuedTransitionsRef.current = { ...queuedTransitionsRef.current, [order.id]: next };
+        setQueuedTransitions(queuedTransitionsRef.current);
+      }
+    };
+    markQueued(flow.next);
+
     setUpdating(true);
     try {
       await api.updateOrderStatus(order.id, flow.next);
+      markQueued(null);
       if (flow.next === 'delivered') {
         setCelebration({ payout: netPayout({ ...order, status: flow.next }) });
       }
@@ -391,6 +407,7 @@ export default function ActiveOrders() {
           server != null &&
           (TERMINAL_STATUSES.includes(server.status) || rank(server.status) >= rank(flow.next));
         if (serverDone) {
+          markQueued(null);
           if (server.status === 'delivered') {
             setCelebration({ payout: netPayout({ ...order, status: flow.next }) });
           }

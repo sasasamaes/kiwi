@@ -284,10 +284,16 @@ interface CryptoQRProps {
 export function CryptoQR({ address, amount, coin }: CryptoQRProps) {
   const [copied, setCopied] = useState(false);
 
-  const copyAddress = () => {
-    navigator.clipboard.writeText(address);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const copyAddress = async () => {
+    // Clipboard falla en iOS no-HTTPS o sin permiso: solo mostrar "¡Copiado!"
+    // si el write tuvo éxito real.
+    try {
+      await navigator.clipboard.writeText(address);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      window.prompt('Copiá la dirección:', address);
+    }
   };
 
   return (

@@ -781,7 +781,9 @@ function NewOrderInner({
       return;
     }
     if (isScheduled && scheduledDate && scheduledTime) {
-      const when = new Date(`${scheduledDate}T${scheduledTime}`);
+      // La hora elegida es hora CR aunque el celu esté en otra zona: el
+      // backend también la lee como CR (parseScheduledCR).
+      const when = new Date(`${scheduledDate}T${scheduledTime}:00-06:00`);
       if (!Number.isFinite(when.getTime()) || when.getTime() < Date.now()) {
         creatingRef.current = false;
         setFormError('La fecha y hora programadas deben ser futuras');
@@ -898,7 +900,14 @@ function NewOrderInner({
           return;
         }
         if (paymentMethod === 'credit') {
-          setCreditBalance((b) => (b == null ? b : b - trip));
+          // Saldo real del servidor: el `- trip` optimista mentía si el
+          // viaje cambió a mitad del vuelo (routeKm resolviendo tarde).
+          try {
+            const r = await api.getCreditBalance();
+            setCreditBalance(Number(r?.balance ?? 0));
+          } catch {
+            setCreditBalance((b) => (b == null ? b : b - trip));
+          }
         }
       } catch (paymentError: any) {
         console.error('Failed to create payment:', paymentError);

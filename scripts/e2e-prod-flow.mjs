@@ -190,15 +190,16 @@ async function main() {
   const steal = await req('POST', `/orders/${orderId}/accept`, { token: d2Login.data?.accessToken ?? d2Login.data?.access_token });
   ok('other driver accept rejected', steal.status === 400, `HTTP ${steal.status}`);
 
-  // Status walk
-  const walk = async (status) => {
-    const r = await req('PUT', `/orders/${orderId}/status`, { token: driverToken, body: { status } });
+  // Status walk. picked_up/delivered exigen foto de evidencia 1+1: se manda
+  // por el atajo proofPhotoUrl del PUT (sin esto el gate responde 400).
+  const walk = async (status, extra = {}) => {
+    const r = await req('PUT', `/orders/${orderId}/status`, { token: driverToken, body: { status, ...extra } });
     return ok(`status → ${status}`, r.status === 200 && r.data?.status === status, `HTTP ${r.status}`);
   };
   await walk('in_transit_to_pickup');
-  await walk('picked_up');
+  await walk('picked_up', { proofPhotoUrl: 'https://e2e-test.local/pickup.jpg' });
   await walk('in_transit_to_delivery');
-  await walk('delivered');
+  await walk('delivered', { proofPhotoUrl: 'https://e2e-test.local/delivery.jpg' });
 
   const delivered = await req('GET', `/orders/${orderId}`, { token: merchantToken });
   ok('deliveredAt timestamp set', !!delivered.data?.deliveredAt, `deliveredAt=${delivered.data?.deliveredAt}`);
@@ -214,6 +215,10 @@ async function main() {
   // the driver pool.
   if (leftoverOrderId && !leftoverOrderDelivered && leftoverMerchantToken) {
     try {
+      // Si el pedido ya está en manos del driver (in_transit_to_pickup), el
+      // comercio no puede cancelarlo directo (403 por diseño): primero el
+      // driver lo devuelve a concurso y después se cancela.
+      await req('POST', `/orders/${leftoverOrderId}/reject`, { token: driverToken });
       const cancel = await req('PUT', `/orders/${leftoverOrderId}/status`, {
         token: leftoverMerchantToken,
         body: { status: 'cancelled' },

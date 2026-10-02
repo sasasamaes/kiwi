@@ -9,7 +9,10 @@
  *   así la política acota: object-src 'none', frame-ancestors 'none',
  *   base-uri 'none' y connect-src/img-src cerrados a los hosts reales
  *   (API + fonts.gstatic de next/font + mosaicos OSM/CARTO).
- * - HSTS: dominio 100% HTTPS (Vercel), includeSubDomains + preload.
+ * - HSTS: 1 día sin preload hasta verificar HTTPS en TODOS los
+ *   subdominios (el ápice estuvo sin cert válido). Recién ahí subir a
+ *   63072000 y evaluar preload: un preload submitteado brickea 2 años
+ *   cualquier subdominio que quede en HTTP.
  * - COOP/CORP: aíslan el browsing context y el recurso.
  * - Permissions-Policy: geolocation solo en client (direcciones) y driver
  *   (ubicación en vivo); el dashboard admin no la necesita. Camera/mic
@@ -62,7 +65,7 @@ function buildSecurityHeaders({ allowGeolocation = false, apiOrigin } = {}) {
 
   return [
     { key: 'Content-Security-Policy', value: csp },
-    { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains; preload' },
+    { key: 'Strict-Transport-Security', value: 'max-age=86400; includeSubDomains' },
     { key: 'X-Content-Type-Options', value: 'nosniff' },
     { key: 'X-Frame-Options', value: 'DENY' },
     { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },

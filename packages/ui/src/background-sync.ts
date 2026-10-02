@@ -427,9 +427,15 @@ class BackgroundSyncService {
 
     const method = methods[action.type] ?? 'POST';
 
+    // Si el payload trae idempotencyKey (ej. order:create offline), viaja
+    // como header para que el replay post-reload no duplique en el server.
+    const idempotencyKey = (action.data as any)?.idempotencyKey;
     const response = await apiFetch(endpoint, {
       method,
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(idempotencyKey ? { 'Idempotency-Key': String(idempotencyKey) } : {}),
+      },
       body: JSON.stringify(action.data),
     });
 

@@ -156,13 +156,23 @@ export default function OrdersPage() {
       .catch(() => setUploadEnabled(null));
   }, [user]);
 
+  // Destello de la fila actualizada (con ref para limpiarlo al desmontar).
+  const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    return () => {
+      if (refreshTimer.current) clearTimeout(refreshTimer.current);
+      if (flashTimer.current) clearTimeout(flashTimer.current);
+    };
+  }, []);
+
   // Tiempo real: cualquier cambio del pedido refresca la lista y destella la fila
   const scheduleRefresh = useCallback(
     (orderId?: string) => {
       if (refreshTimer.current) clearTimeout(refreshTimer.current);
+      if (flashTimer.current) clearTimeout(flashTimer.current);
       if (orderId) {
         setFlashId(orderId);
-        setTimeout(() => setFlashId(null), 4000);
+        flashTimer.current = setTimeout(() => setFlashId(null), 4000);
       }
       refreshTimer.current = setTimeout(() => fetchOrders(true), 800);
     },
@@ -477,6 +487,7 @@ export default function OrdersPage() {
                                   {s.at && (
                                     <p className="text-xs text-surface-400">
                                       {new Date(s.at).toLocaleString('es-CR', {
+                                        timeZone: 'America/Costa_Rica',
                                         day: 'numeric',
                                         month: 'short',
                                         hour: '2-digit',

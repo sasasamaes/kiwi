@@ -22,12 +22,16 @@ const DEFAULT_TIMEOUT_MS = 25000;
 class ApiClient {
   private baseUrl: string;
   private token: string | null = null;
+  private refreshToken: string | null = null;
+  /** Vuelo único de refresh: los 401 concurrentes comparten el intento. */
+  private refreshFlight: Promise<boolean> | null = null;
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
     // Load token from localStorage if available
     if (typeof window !== 'undefined') {
       this.token = localStorage.getItem('kiwi_token');
+      this.refreshToken = localStorage.getItem('kiwi_refresh_token');
     }
   }
 
@@ -49,7 +53,59 @@ class ApiClient {
     return this.token;
   }
 
-  private async request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
+  setRefreshToken(token: string | null) {
+    this.refreshToken = token;
+    if (typeof window !== 'undefined') {
+      if (token) {
+        localStorage.setItem('kiwi_refresh_token', token);
+      } else {
+        localStorage.removeItem('kiwi_refresh_token');
+      }
+    }
+  }
+
+  getRefreshToken(): string | null {
+    if (typeof window !== 'undefined' && !this.refreshToken) {
+      this.refreshToken = localStorage.getItem('kiwi_refresh_token');
+    }
+    return this.refreshToken;
+  }
+
+  /**
+   * Renueva la sesión con el refresh rotativo (un solo vuelo compartido).
+   * Devuelve true si hay access nuevo. False = login de nuevo.
+   */
+  private refreshSession(): Promise<boolean> {
+    if (!this.refreshFlight) {
+      this.refreshFlight = (async () => {
+        try {
+          const rt = this.getRefreshToken();
+          if (!rt) return false;
+          const res = await fetch(`${this.baseUrl}/auth/refresh`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refreshToken: rt }),
+          });
+          if (!res.ok) return false;
+          const data = await res.json();
+          if (!data?.accessToken) return false;
+          this.setToken(data.accessToken);
+          if (data?.refreshToken) this.setRefreshToken(data.refreshToken);
+          return true;
+        } catch {
+          return false;
+        } finally {
+          this.refreshFlight = null;
+        }
+      })();
+    }
+    return this.refreshFlight;
+  }
+
+  private async request<T>(
+    endpoint: string,
+    options: RequestOptions & { _retried?: boolean } = {},
+  ): Promise<T> {
     const { method = 'GET', body, headers = {}, timeout = DEFAULT_TIMEOUT_MS } = options;
 
     const requestHeaders: Record<string, string> = {
@@ -82,8 +138,36 @@ class ApiClient {
     }
 
     if (!response.ok) {
+      // Access vencido (15 min) pero con refresh vivo: renovar y reintentar
+      // UNA vez antes de mandar a login. Sin esto cada expiración sacaba al
+      // usuario aunque su sesión siguiera válida.
+      if (
+        response.status === 401 &&
+        !options._retried &&
+        !endpoint.startsWith('/auth/login') &&
+        !endpoint.startsWith('/auth/refresh') &&
+        !endpoint.startsWith('/auth/register')
+      ) {
+        const renewed = await this.refreshSession();
+        if (renewed) {
+          return this.request<T>(endpoint, { ...options, _retried: true });
+        }
+      }
+      // Sesión muerta (refresh vencido/revocado): limpiar y mandar a login.
+      // Se guarda la ruta para volver después.
+      if (response.status === 401 && typeof window !== 'undefined') {
+        this.setToken(null);
+        this.setRefreshToken(null);
+        const here = `${window.location.pathname}${window.location.search}`;
+        if (!window.location.pathname.includes('/login')) {
+          window.sessionStorage.setItem('kiwi_redirect_after_login', here);
+          window.location.href = '/login';
+        }
+      }
       const error = await response.json().catch(() => ({ message: 'Error desconocido' }));
-      throw new Error(error.message || `Error ${response.status}`);
+      const err: any = new Error(error.message || `Error ${response.status}`);
+      err.status = response.status;
+      throw err;
     }
 
     return response.json();
@@ -110,6 +194,7 @@ class ApiClient {
       body: data,
     });
     this.setToken(result.accessToken);
+    this.setRefreshToken(result.refreshToken ?? null);
     return result;
   }
 
@@ -119,6 +204,7 @@ class ApiClient {
       body: { email, password },
     });
     this.setToken(result.accessToken);
+    this.setRefreshToken(result.refreshToken ?? null);
     return result;
   }
 
@@ -127,7 +213,20 @@ class ApiClient {
   }
 
   logout() {
+    // Revocación global en el server (best-effort) + limpieza local.
+    try {
+      const token = this.getToken();
+      if (token) {
+        void fetch(`${this.baseUrl}/auth/logout`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+        }).catch(() => undefined);
+      }
+    } catch {
+      // noop: la limpieza local igual corre
+    }
     this.setToken(null);
+    this.setRefreshToken(null);
     if (typeof window !== 'undefined') {
       localStorage.removeItem('kiwi_user');
     }
@@ -707,32 +806,42 @@ class ApiClient {
   // 💳 PAYMENTS
   // ============================================
 
-  async createPayment(data: {
-    orderId: string;
-    method: 'onvopay_card' | 'onvopay_sinpe' | 'crypto' | 'cash' | 'credit';
-    amount: number;
-    customerEmail?: string;
-    customerPhone?: string;
-    cryptoCoin?: 'USDC' | 'USDT';
-  }) {
+  async createPayment(
+    data: {
+      orderId: string;
+      method: 'onvopay_card' | 'onvopay_sinpe' | 'crypto' | 'cash' | 'credit';
+      amount: number;
+      customerEmail?: string;
+      customerPhone?: string;
+      cryptoCoin?: 'USDC' | 'USDT';
+    },
+    opts?: { idempotencyKey?: string },
+  ) {
+    const idempotencyKey = opts?.idempotencyKey;
     return this.request<any>('/payments/create', {
       method: 'POST',
-      body: data,
+      body: idempotencyKey ? { ...data, idempotencyKey } : data,
+      headers: idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined,
     });
   }
 
   /** Cobro invitado desde el link público (sin cuenta, sin crédito). */
-  async createGuestPayment(data: {
-    orderId: string;
-    method: 'onvopay_card' | 'onvopay_sinpe' | 'crypto' | 'cash';
-    amount: number;
-    customerEmail?: string;
-    customerPhone?: string;
-    cryptoCoin?: 'USDC' | 'USDT';
-  }) {
+  async createGuestPayment(
+    data: {
+      orderId: string;
+      method: 'onvopay_card' | 'onvopay_sinpe' | 'crypto' | 'cash';
+      amount: number;
+      customerEmail?: string;
+      customerPhone?: string;
+      cryptoCoin?: 'USDC' | 'USDT';
+    },
+    opts?: { idempotencyKey?: string },
+  ) {
+    const idempotencyKey = opts?.idempotencyKey;
     return this.request<any>('/payments/guest', {
       method: 'POST',
-      body: data,
+      body: idempotencyKey ? { ...data, idempotencyKey } : data,
+      headers: idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined,
     });
   }
 

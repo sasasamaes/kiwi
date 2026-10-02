@@ -119,6 +119,19 @@ export function useSocket(options: UseSocketOptions = {}) {
     socketClient.subscribeToTopics(topics);
   }, []);
 
+  // Estables entre renders: .bind crea una función NUEVA cada vez y los
+  // efectos que dependen de `on` se desuscriben/resuscriben en cada render
+  // (ventana con doble listener = doble fetch por evento).
+  const onStable = useCallback(
+    (event: string, cb: (...args: any[]) => void) => socketClient.on(event, cb),
+    [],
+  );
+  const offStable = useCallback(
+    (event: string, cb: (...args: any[]) => void) => socketClient.off(event, cb as any),
+    [],
+  );
+  const emitStable = useCallback((event: string, data: any) => socketClient.emit(event, data), []);
+
   return {
     isConnected,
     socketId,
@@ -132,8 +145,8 @@ export function useSocket(options: UseSocketOptions = {}) {
     onOrderAccepted: optionsRef.current.onOrderAccepted,
     onOrderStatusChanged: optionsRef.current.onOrderStatusChanged,
     onOrderTaken: optionsRef.current.onOrderTaken,
-    on: socketClient.on.bind(socketClient),
-    off: socketClient.off.bind(socketClient),
-    emit: socketClient.emit.bind(socketClient),
+    on: onStable,
+    off: offStable,
+    emit: emitStable,
   };
 }

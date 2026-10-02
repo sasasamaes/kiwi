@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 'use client';
 
-import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -87,6 +87,20 @@ function CheckoutContent() {
   const [error, setError] = useState<string | null>(null);
   // El pedido puede existir sin cobro iniciado: avisar en vez de prometer link.
   const [payError, setPayError] = useState<string | null>(null);
+  // Anti-duplicados (doble tap con wifi caído = N pedidos): bloquea el
+  // segundo tap en vuelo y fija una key que se reusa en reintentos para que
+  // el backend devuelva el mismo pedido en vez de crear otro.
+  const placingRef = useRef(false);
+  const idempotencyKeyRef = useRef<string | null>(null);
+  const ensureIdempotencyKey = () => {
+    if (!idempotencyKeyRef.current) {
+      idempotencyKeyRef.current =
+        typeof crypto !== 'undefined' && 'randomUUID' in crypto
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    }
+    return idempotencyKeyRef.current;
+  };
 
   useEffect(() => {
     // Parse cart from URL params
@@ -143,9 +157,12 @@ function CheckoutContent() {
 
   const placeOrder = useCallback(async () => {
     if (!canPlaceOrder) return;
+    if (placingRef.current) return;
+    placingRef.current = true;
 
     setLoading(true);
     setError(null);
+    const idempotencyKey = ensureIdempotencyKey();
 
     try {
       // Create order via NestJS API
@@ -170,12 +187,15 @@ function CheckoutContent() {
       };
 
       const order = api.getToken()
-        ? await api.createOrder(orderData)
-        : await api.createGuestOrder({
-            ...orderData,
-            customerName: customerName.trim(),
-            customerPhone: phoneDigits,
-          });
+        ? await api.createOrder(orderData, { idempotencyKey })
+        : await api.createGuestOrder(
+            {
+              ...orderData,
+              customerName: customerName.trim(),
+              customerPhone: phoneDigits,
+            },
+            { idempotencyKey },
+          );
       setOrderId(order.id);
       events.orders.created(order.id, merchantId, total);
 
@@ -242,10 +262,14 @@ function CheckoutContent() {
       }
       // For cash (or after payment setup), order is placed successfully
       setOrderPlaced(true);
+      // Pedido creado: la key se consume; el próximo pedido necesita una nueva.
+      // (Si falló, se conserva para que el reintento no duplique.)
+      idempotencyKeyRef.current = null;
     } catch (err: any) {
       console.error('Error placing order:', err);
-      setError(err.message || 'No se pudo crear el pedido. Intenta de nuevo.');
+      setError(err.message || 'No se pudo crear el pedido. Tocá el botón una sola vez.');
     } finally {
+      placingRef.current = false;
       setLoading(false);
     }
   }, [

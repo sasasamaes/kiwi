@@ -113,12 +113,17 @@ export default function Dashboard() {
     else if (role && role !== 'merchant') router.replace('/login');
   }, [user, authLoading, router]);
 
+  // Si la carga falla (wifi caído, 401, 500), se muestra en vez de
+  // pintar ceros que parecen "sin ventas".
+  const [ordersError, setOrdersError] = useState<string | null>(null);
   const fetchOrders = async () => {
     try {
       const data = await api.getMyOrders();
       setOrders(data);
-    } catch (error) {
+      setOrdersError(null);
+    } catch (error: any) {
       console.error('Failed to fetch orders:', error);
+      setOrdersError(error?.message || 'No se pudieron cargar los pedidos');
     }
   };
 
@@ -176,6 +181,17 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        {ordersError && (
+          <div className="mb-4 flex items-center gap-3 rounded-2xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/30 px-4 py-3">
+            <p className="flex-1 text-sm text-red-600 dark:text-red-400">{ordersError}</p>
+            <button
+              onClick={() => void fetchOrders()}
+              className="shrink-0 rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white"
+            >
+              Reintentar
+            </button>
+          </div>
+        )}
         {/* Welcome Section */}
         <motion.div
           className="mb-8"

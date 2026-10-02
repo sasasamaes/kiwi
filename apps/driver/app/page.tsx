@@ -321,11 +321,16 @@ export default function Home() {
     };
   }, [user, isOnline]);
 
+  // Anti doble-tap: el state llega tarde al segundo tap; el ref no.
+  // (El backend igual es idempotente para el mismo driver.)
+  const acceptingRef = useRef<string | null>(null);
   const handleAcceptOrder = async (orderId: string) => {
     if (!orderId) {
       setPageError('Ese pedido llegó incompleto. Cerrá y volvé a abrir la app.');
       return;
     }
+    if (acceptingRef.current === orderId) return;
+    acceptingRef.current = orderId;
     setAcceptingOrder(orderId);
     setPageError(null);
     try {
@@ -362,6 +367,7 @@ export default function Home() {
       // El banner queda arriba (fuera de vista): toast para que sí se vea
       addNotification({ type: 'order_status', title: 'No se pudo aceptar', body: msg });
     } finally {
+      acceptingRef.current = null;
       setAcceptingOrder(null);
     }
   };
