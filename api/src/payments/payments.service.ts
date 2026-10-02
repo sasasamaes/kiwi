@@ -283,10 +283,11 @@ export class PaymentsService {
    * repartidor desde su payout) y los productos nunca salen del crédito.
    * Si ya hay pago completado, no duplica el gasto.
    *
-   * Anti doble-cobro: la fila payment (orderId UNIQUE) se reclama PRIMERO con
-   * create. Dos llamadas concurrentes (doble tap/retry) chocan en P2002 y la
-   * perdedora no llega al spend. Sin esto, ambas descontaban crédito y el
-   * upsert final pisaba una sola fila (cobro 2×, una fila).
+   * Todo el cobro (reclamo + descuento + asiento + complete) corre en UNA
+   * sola transacción: si cualquier paso falla, el saldo queda intacto y el
+   * retry puede reintentar. Antes el spend y el upsert final eran escrituras
+   * sueltas: si el upsert fallaba, el crédito quedaba descontado con el pago
+   * en `processing` y el retry moría en "pago en curso" (plata perdida).
    */
   private async createCreditPayment(
     orderId: string,
@@ -306,6 +307,10 @@ export class PaymentsService {
     if (existing && existing.status === PaymentStatus.completed) {
       throw new BadRequestException('El pedido ya tiene un pago completado');
     }
+    if (existing && existing.status !== PaymentStatus.failed) {
+      // Hay un pago pendiente/en curso de otro intento: no gastar de más.
+      throw new BadRequestException('Ya hay un pago en curso para este pedido');
+    }
 
     // Solo el viaje (NO productos, NO comisión): basePrice ya es el viaje
     // con recargos. La comisión la paga el repartidor desde su payout.
@@ -314,59 +319,77 @@ export class PaymentsService {
       throw new BadRequestException('Monto del envío inválido');
     }
 
-    // Reclamo atómico de la fila (orderId UNIQUE). Si ya existe una fila no
-    // completada de otro intento/método, no se pisa: se descuenta una sola vez.
-    if (!existing) {
-      try {
-        await this.prisma.payment.create({
+    try {
+      const { payment, balance } = await this.prisma.$transaction(async (tx) => {
+        if (!existing) {
+          // Reclamo de la fila (orderId UNIQUE): dos llamadas concurrentes
+          // chocan en P2002 y la perdedora no llega al spend.
+          await tx.payment.create({
+            data: {
+              order: { connect: { id: orderId } },
+              amount: spend,
+              currency: 'CRC',
+              method: 'credit' as PaymentMethod,
+              status: PaymentStatus.processing as PaymentStatus,
+            },
+          });
+        } else {
+          // Fila fallida de un intento anterior: se reclama solo si sigue
+          // en failed. Si otro retry la tomó en el medio, count===0 y no se
+          // gasta de más.
+          const claimed = await tx.payment.updateMany({
+            where: { orderId, status: PaymentStatus.failed },
+            data: {
+              amount: spend,
+              status: PaymentStatus.processing as PaymentStatus,
+            },
+          });
+          if (claimed.count === 0) {
+            throw new BadRequestException('Ya hay un pago en curso para este pedido');
+          }
+        }
+        // Descuento condicional: solo si alcanza. Con bloqueo de fila, dos
+        // retries concurrentes se serializan y el segundo revierte si no hay
+        // saldo para ambos.
+        const charged = await tx.merchantProfile.updateMany({
+          where: { id: merchant.id, creditBalance: { gte: spend } },
+          data: { creditBalance: { decrement: spend } },
+        });
+        if (charged.count === 0) {
+          throw new BadRequestException(
+            'Saldo insuficiente. Recargá con tarjeta en Mi crédito o llamá a Kiwi.',
+          );
+        }
+        await tx.creditTransaction.create({
           data: {
-            order: { connect: { id: orderId } },
-            amount: spend,
-            currency: 'CRC',
-            method: 'credit' as PaymentMethod,
-            status: PaymentStatus.processing as PaymentStatus,
+            merchantId: merchant.id,
+            amount: -spend,
+            kind: 'spend',
+            orderId,
+            reason: 'Envío del pedido',
           },
         });
-      } catch (e: any) {
-        if (e?.code === 'P2002') {
-          const raced = await this.prisma.payment.findUnique({ where: { orderId } });
-          if (raced?.status === PaymentStatus.completed) {
-            throw new BadRequestException('El pedido ya tiene un pago completado');
-          }
-          throw new BadRequestException('Ya hay un pago en curso para este pedido');
-        }
-        throw e;
-      }
-    } else if (existing.status !== PaymentStatus.failed) {
-      // Hay un pago pendiente/en curso de otro intento: no gastar de más.
-      throw new BadRequestException('Ya hay un pago en curso para este pedido');
-    }
+        const completed = await tx.payment.update({
+          where: { orderId },
+          data: { status: PaymentStatus.completed as PaymentStatus },
+        });
+        const updated = await tx.merchantProfile.findUnique({ where: { id: merchant.id } });
+        return { payment: completed, balance: Number(updated?.creditBalance ?? 0) };
+      });
 
-    let balance = 0;
-    try {
-      ({ balance } = await this.creditsService.spend(merchant.id, spend, orderId));
-    } catch (e) {
-      // Liberar el reclamo para que se pueda reintentar.
-      await this.prisma.payment
-        .update({ where: { orderId }, data: { status: PaymentStatus.failed } })
-        .catch(() => null);
+      this.logger.log(`Credit payment for order ${orderId}: spent=${spend} balance=${balance}`);
+      return { success: true, paymentId: payment.id };
+    } catch (e: any) {
+      if (e instanceof BadRequestException) throw e;
+      if (e?.code === 'P2002') {
+        const raced = await this.prisma.payment.findUnique({ where: { orderId } });
+        if (raced?.status === PaymentStatus.completed) {
+          throw new BadRequestException('El pedido ya tiene un pago completado');
+        }
+        throw new BadRequestException('Ya hay un pago en curso para este pedido');
+      }
       throw e;
     }
-
-    const data = {
-      amount: spend,
-      currency: 'CRC',
-      method: 'credit' as PaymentMethod,
-      status: PaymentStatus.completed as PaymentStatus,
-    };
-    const payment = await this.prisma.payment.upsert({
-      where: { orderId },
-      update: data,
-      create: { order: { connect: { id: orderId } }, ...data },
-    });
-
-    this.logger.log(`Credit payment for order ${orderId}: spent=${spend} balance=${balance}`);
-    return { success: true, paymentId: payment.id };
   }
 
   private async createOnvoPayPayment(

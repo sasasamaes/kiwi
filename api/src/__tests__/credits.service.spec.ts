@@ -161,6 +161,29 @@ describe('CreditsService', () => {
     expect(second).toBe(false);
   });
 
+  it('si la acreditación falla, el claim revierte y el retry acredita', async () => {
+    prisma.creditTopup.findUnique.mockResolvedValue({
+      id: 't1',
+      merchantId: 'm1',
+      amount: 20000,
+      status: 'pending',
+      createdBy: 'user-1',
+    });
+    prisma.creditTopup.updateMany.mockResolvedValue({ count: 1 });
+    // Primer intento: crash al acreditar. Segundo: ok.
+    prisma.merchantProfile.update
+      .mockRejectedValueOnce(new Error('DB cayó'))
+      .mockResolvedValueOnce({ creditBalance: 20000 });
+    prisma.creditTransaction.create.mockResolvedValue({});
+
+    await expect(service.completeTopup('t1', 'pi-1')).rejects.toThrow('DB cayó');
+    const retry = await service.completeTopup('t1', 'pi-1');
+    expect(retry).toBe(true);
+    // El claim se intentó en ambos (el primero revirtió junto con todo).
+    expect(prisma.creditTopup.updateMany).toHaveBeenCalledTimes(2);
+    expect(prisma.creditTransaction.create).toHaveBeenCalledTimes(1);
+  });
+
   it('getTopup niega recargas ajenas', async () => {
     prisma.merchantProfile.findUnique.mockResolvedValue({ id: 'm1' });
     prisma.creditTopup.findUnique.mockResolvedValue({ id: 't1', merchantId: 'm-otro' });

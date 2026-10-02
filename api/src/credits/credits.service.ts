@@ -13,6 +13,9 @@ import { OnvoPayProvider } from '../payments/providers/onvopay.provider';
 export const MIN_CARD_TOPUP = 10_000;
 export const MAX_CARD_TOPUP = 1_000_000;
 
+/** Señal interna: otra carrera ya reclamó el topup (no es un error). */
+class TopupClaimLost extends Error {}
+
 /**
  * Crédito prepago de comercios: el admin recarga, el comercio lo gasta en
  * envíos. Cada gasto = solo el viaje (el comercio no paga comisión: la paga
@@ -229,9 +232,13 @@ export class CreditsService {
   }
 
   /**
-   * Acredita una recarga cobrada. Gate anti doble-acreditación: el
-   * updateMany condicionado deja pasar a UNA sola carrera (webhook +
-   * polling simultáneos). Devuelve true si esta llamada acreditó.
+   * Acredita una recarga cobrada. Claim + acreditación + asiento en UNA sola
+   * transacción: si el proceso cae en el medio, nada queda a medio hacer y
+   * el webhook/polling puede reintentar. Antes el claim (`completed`) y el
+   * `recharge()` eran dos transacciones separadas: un crash entre ambas
+   * dejaba la recarga marcada sin acreditar y bloqueaba todo reintento
+   * (plata perdida). El updateMany condicionado deja pasar a UNA sola
+   * carrera (webhook + polling simultáneos). Devuelve true si acreditó.
    */
   async completeTopup(topupId: string, paymentIntentId?: string): Promise<boolean> {
     const topup = await this.prisma.creditTopup.findUnique({ where: { id: topupId } });
@@ -241,23 +248,46 @@ export class CreditsService {
     }
     if ((topup as any).status === 'completed') return false;
 
-    const claimed = await this.prisma.creditTopup.updateMany({
-      where: { id: topupId, NOT: { status: 'completed' } },
-      data: {
-        status: 'completed',
-        completedAt: new Date(),
-        ...(paymentIntentId ? { onvoPaymentId: paymentIntentId } : {}),
-      },
-    });
-    if (claimed.count === 0) return false;
-
     const amount = Math.round(Number((topup as any).amount));
-    await this.recharge(
-      (topup as any).merchantId,
-      amount,
-      (topup as any).createdBy ?? undefined,
-      'Recarga con tarjeta (Onvo)',
-    );
+    if (!Number.isFinite(amount) || amount <= 0) {
+      this.logger.warn(`completeTopup for topup ${topupId} with invalid amount — ignoring`);
+      return false;
+    }
+    const merchantId = (topup as any).merchantId as string;
+
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        const claimed = await tx.creditTopup.updateMany({
+          where: { id: topupId, NOT: { status: 'completed' } },
+          data: {
+            status: 'completed',
+            completedAt: new Date(),
+            ...(paymentIntentId ? { onvoPaymentId: paymentIntentId } : {}),
+          },
+        });
+        // Otra carrera (webhook + polling) ya la tomó: se revierte sin
+        // acreditar de más.
+        if (claimed.count === 0) throw new TopupClaimLost();
+        // Acreditar DENTRO de la misma tx: si falla, el claim revierte y el
+        // próximo webhook/polling puede reintentar.
+        await tx.merchantProfile.update({
+          where: { id: merchantId },
+          data: { creditBalance: { increment: amount } },
+        });
+        await tx.creditTransaction.create({
+          data: {
+            merchantId,
+            amount,
+            kind: 'recharge',
+            reason: 'Recarga con tarjeta (Onvo)',
+            createdBy: (topup as any).createdBy ?? undefined,
+          },
+        });
+      });
+    } catch (e: any) {
+      if (e instanceof TopupClaimLost) return false;
+      throw e;
+    }
     this.logger.log(`Credit topup ${topupId} completed: +${amount}`);
     return true;
   }

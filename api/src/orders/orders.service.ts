@@ -123,7 +123,8 @@ export class OrdersService {
                 idempotencyKey,
               },
             },
-            include: { merchant: true },
+            // Nunca la fila completa: creditBalance es interno del comercio.
+            include: { merchant: { select: MERCHANT_PUBLIC_SELECT } },
           })
         : null;
       if (existing) return existing;
@@ -452,7 +453,8 @@ export class OrdersService {
               },
             },
             orderBy: { createdAt: 'desc' },
-            include: { merchant: true },
+            // Nunca la fila completa: creditBalance es interno del comercio.
+            include: { merchant: { select: MERCHANT_PUBLIC_SELECT } },
           });
           if (dupe) {
             this.logger.warn(
@@ -520,8 +522,9 @@ export class OrdersService {
               }
             : {}),
         },
+        // Nunca la fila completa: creditBalance es interno del comercio.
         include: {
-          merchant: true,
+          merchant: { select: MERCHANT_PUBLIC_SELECT },
         },
       });
     } catch (e: any) {
@@ -541,7 +544,8 @@ export class OrdersService {
                 idempotencyKey,
               },
             },
-            include: { merchant: true },
+            // Nunca la fila completa: creditBalance es interno del comercio.
+            include: { merchant: { select: MERCHANT_PUBLIC_SELECT } },
           });
           if (raced) {
             this.logger.warn(`Idempotency race: devolviendo pedido ${raced.id} existente`);
