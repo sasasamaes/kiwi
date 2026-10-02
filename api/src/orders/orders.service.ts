@@ -126,14 +126,16 @@ export class OrdersService {
     const idempotencyKey =
       typeof rawKey === 'string' && rawKey.trim() !== '' ? rawKey.trim().slice(0, 100) : null;
     if (idempotencyKey) {
+      // findFirst (no findUnique por nombre de constraint): el unique existe
+      // en DB, pero el Prisma Client generado en un deploy puede no conocer
+      // el nombre del constraint y reventar con "Unknown argument" (500).
+      // Con los campos escalares basta y es robusto a clients viejos.
       const orderDelegate = this.prisma.order as any;
-      const existing = orderDelegate?.findUnique
-        ? await orderDelegate.findUnique({
+      const existing = orderDelegate?.findFirst
+        ? await orderDelegate.findFirst({
             where: {
-              orders_merchant_idempotency_uk: {
-                merchantId: merchantProfile.id,
-                idempotencyKey,
-              },
+              merchantId: merchantProfile.id,
+              idempotencyKey,
             },
             // Nunca la fila completa: creditBalance es interno del comercio.
             include: { merchant: { select: MERCHANT_PUBLIC_SELECT } },
@@ -567,16 +569,16 @@ export class OrdersService {
       // devuelve el primero en vez de un 500.
       if (
         idempotencyKey &&
-        (e?.code === 'P2002' || String(e?.message ?? '').includes('orders_merchant_idempotency_uk'))
+        (e?.code === 'P2002' ||
+          String(e?.message ?? '').includes('orders_merchant_idempotency_uk') ||
+          String(e?.message ?? '').includes('idempotency'))
       ) {
         const delegate = this.prisma.order as any;
-        if (delegate?.findUnique) {
-          const raced = await delegate.findUnique({
+        if (delegate?.findFirst) {
+          const raced = await delegate.findFirst({
             where: {
-              orders_merchant_idempotency_uk: {
-                merchantId: merchantProfile.id,
-                idempotencyKey,
-              },
+              merchantId: merchantProfile.id,
+              idempotencyKey,
             },
             // Nunca la fila completa: creditBalance es interno del comercio.
             include: { merchant: { select: MERCHANT_PUBLIC_SELECT } },
