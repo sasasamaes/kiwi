@@ -37,9 +37,12 @@ describe('Driver/merchant lifecycle regressions', () => {
         findFirst: jest.fn(),
         findMany: jest.fn(),
         update: jest.fn(),
-        updateMany: jest.fn(),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
         aggregate: jest.fn(),
         count: jest.fn(),
+      },
+      payment: {
+        updateMany: jest.fn().mockResolvedValue({ count: 0 }),
       },
       driverProfile: { findUnique: jest.fn(), update: jest.fn().mockResolvedValue({}) },
       merchantProfile: { findUnique: jest.fn() },
@@ -132,13 +135,15 @@ describe('Driver/merchant lifecycle regressions', () => {
   });
 
   it('comercio puede reintentar no_driver → pending', async () => {
-    prisma.order.findUnique.mockResolvedValue({
+    const nodriver = {
       id: 'order-1',
       status: 'no_driver',
       merchant: { userId: 'merchant-user-1' },
       driver: null,
-    });
-    prisma.order.update.mockResolvedValue({ id: 'order-1', status: 'pending' });
+    };
+    prisma.order.findUnique
+      .mockResolvedValueOnce(nodriver)
+      .mockResolvedValue({ ...nodriver, status: 'pending' });
 
     const updated: any = await service.updateStatus(
       'order-1',
@@ -150,13 +155,15 @@ describe('Driver/merchant lifecycle regressions', () => {
   });
 
   it('comercio puede cancelar no_driver → cancelled', async () => {
-    prisma.order.findUnique.mockResolvedValue({
+    const nodriver = {
       id: 'order-1',
       status: 'no_driver',
       merchant: { userId: 'merchant-user-1' },
       driver: null,
-    });
-    prisma.order.update.mockResolvedValue({ id: 'order-1', status: 'cancelled' });
+    };
+    prisma.order.findUnique
+      .mockResolvedValueOnce(nodriver)
+      .mockResolvedValue({ ...nodriver, status: 'cancelled' });
 
     const updated: any = await service.updateStatus(
       'order-1',

@@ -160,12 +160,8 @@ describe('Assignment contest (Task 6): 10 criterios', () => {
       fullName: 'Juan',
       userId: 'user-d',
     });
-    // Primer claim (assigned/in_transit) no matchea; segundo (pending_acceptance) sí.
-    prisma.order.updateMany.mockResolvedValueOnce({ count: 0 }).mockResolvedValueOnce({ count: 1 });
-    prisma.order.update.mockImplementation(async (args: any) => ({
-      id: 'order-1',
-      ...args.data,
-    }));
+    // Claim único con guarda completa (driver + estado + ventana de concurso).
+    prisma.order.updateMany.mockResolvedValue({ count: 1 });
     prisma.order.findUnique.mockResolvedValue({
       id: 'order-1',
       status: 'pending',
@@ -181,14 +177,18 @@ describe('Assignment contest (Task 6): 10 criterios', () => {
     const before = Date.now();
     await service.rejectOrderAsDriver('order-1', 'user-d');
 
-    expect(prisma.order.updateMany).toHaveBeenCalledTimes(2);
-    expect(prisma.order.update).toHaveBeenCalledWith(
+    expect(prisma.order.updateMany).toHaveBeenCalledTimes(1);
+    expect(prisma.order.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: 'order-1' },
+        where: expect.objectContaining({
+          id: 'order-1',
+          driverId: 'dp-1',
+          status: { in: ['assigned', 'pending_acceptance', 'in_transit_to_pickup'] },
+        }),
         data: expect.objectContaining({ driverId: null, status: 'pending' }),
       }),
     );
-    const contestData = prisma.order.update.mock.calls[0][0].data;
+    const contestData = prisma.order.updateMany.mock.calls[0][0].data;
     const endsIn = new Date(contestData.contestEndsAt).getTime() - before;
     expect(contestData.contestStartedAt).toBeInstanceOf(Date);
     expect(endsIn).toBeGreaterThan(9 * 60_000);

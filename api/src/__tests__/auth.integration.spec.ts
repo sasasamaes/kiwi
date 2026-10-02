@@ -34,8 +34,15 @@ describe('Auth Integration: Registration & Login Flow', () => {
     prisma = {
       user: {
         findFirst: jest.fn(),
-        findUnique: jest.fn(),
+        findUnique: jest.fn().mockResolvedValue({ tokenVersion: 0 }),
         create: jest.fn(),
+        update: jest.fn(),
+      },
+      refreshToken: {
+        create: jest.fn().mockResolvedValue({ id: 'rt-1' }),
+        findUnique: jest.fn(),
+        update: jest.fn(),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
     };
 
@@ -148,13 +155,15 @@ describe('Auth Integration: Registration & Login Flow', () => {
       expect(result.user.email).toBe('luis@kiwi.app');
       expect(result.accessToken).toBe('mock-jwt-token');
 
-      // JWT should contain user info
+      // JWT should contain user info + token version (revocable)
       expect(jwtService.sign).toHaveBeenCalledWith(
         expect.objectContaining({
           sub: 'user-merchant-1',
           email: 'luis@kiwi.app',
           role: 'MERCHANT',
+          v: 0,
         }),
+        expect.objectContaining({ expiresIn: expect.any(String) }),
       );
     });
 
@@ -179,7 +188,9 @@ describe('Auth Integration: Registration & Login Flow', () => {
       expect(jwtService.sign).toHaveBeenCalledWith(
         expect.objectContaining({
           role: 'DRIVER',
+          v: 0,
         }),
+        expect.objectContaining({ expiresIn: expect.any(String) }),
       );
     });
   });

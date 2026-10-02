@@ -25,6 +25,13 @@ describe('AuthService', () => {
         findFirst: jest.fn(),
         findUnique: jest.fn(),
         create: jest.fn(),
+        update: jest.fn(),
+      },
+      refreshToken: {
+        create: jest.fn().mockResolvedValue({ id: 'rt-1' }),
+        findUnique: jest.fn(),
+        update: jest.fn(),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
     };
 
@@ -246,6 +253,102 @@ describe('AuthService', () => {
       // otra cuenta sigue pudiendo intentar (fallo normal, 401 — no 429)
       await expect(service.login({ email: 'b@x.com', password: 'wrong123' })).rejects.toThrow(
         UnauthorizedException,
+      );
+    });
+  });
+
+  describe('refresh rotativo + logout', () => {
+    const { createHash } = jest.requireActual('node:crypto') as typeof import('node:crypto');
+    const hashOf = (v: string) => createHash('sha256').update(v).digest('hex');
+    const liveRow = (over: any = {}) => ({
+      id: 'rt-1',
+      userId: 'user-1',
+      revokedAt: null,
+      replacedBy: null,
+      expiresAt: new Date(Date.now() + 3600_000),
+      ...over,
+    });
+    const liveUser = {
+      id: 'user-1',
+      email: 'test@kiwi.app',
+      role: 'merchant',
+      status: 'active',
+      tokenVersion: 0,
+    };
+
+    beforeEach(() => {
+      prisma.user.findUnique.mockResolvedValue({
+        id: 'user-1',
+        email: 'test@kiwi.app',
+        role: 'merchant',
+        status: 'active',
+        tokenVersion: 0,
+      });
+      prisma.user.update.mockResolvedValue({});
+    });
+
+    it('rota: emite par nuevo y revoca el presentado', async () => {
+      prisma.refreshToken.findUnique.mockResolvedValue(liveRow());
+
+      const res = await service.refresh('raw-token-value');
+
+      expect(res.accessToken).toBe('mock-token');
+      expect(typeof res.refreshToken).toBe('string');
+      expect(res.refreshToken).not.toBe('raw-token-value');
+      expect(prisma.refreshToken.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: 'rt-1', revokedAt: null } }),
+      );
+    });
+
+    it('reuso de token rotado revoca la familia (posible robo)', async () => {
+      prisma.refreshToken.findUnique.mockResolvedValue(
+        liveRow({ revokedAt: new Date(), replacedBy: 'otro-hash' }),
+      );
+
+      await expect(service.refresh('raw-token-value')).rejects.toThrow(UnauthorizedException);
+      expect(prisma.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'user-1' },
+          data: { tokenVersion: { increment: 1 } },
+        }),
+      );
+    });
+
+    it('refresh expirado exige login', async () => {
+      prisma.refreshToken.findUnique.mockResolvedValue(
+        liveRow({ expiresAt: new Date(Date.now() - 1000) }),
+      );
+
+      await expect(service.refresh('raw-token-value')).rejects.toThrow('vencida');
+      expect(hashOf('x')).toHaveLength(64);
+    });
+
+    it('logout revoca refresh y sube tokenVersion', async () => {
+      const res = await service.logout('user-1');
+
+      expect(res).toEqual({ success: true });
+      expect(prisma.refreshToken.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { userId: 'user-1', revokedAt: null } }),
+      );
+      expect(prisma.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: { tokenVersion: { increment: 1 } } }),
+      );
+    });
+
+    it('login incluye refreshToken opaco (no el hash)', async () => {
+      prisma.user.findUnique.mockResolvedValue({
+        ...liveUser,
+        passwordHash: '$2a$10$hash',
+        merchantProfile: { id: 'mp-1' },
+        driverProfile: null,
+      });
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+
+      const res = await service.login({ email: 'test@kiwi.app', password: 'password123' });
+
+      expect(typeof res.refreshToken).toBe('string');
+      expect(prisma.refreshToken.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ userId: 'user-1' }) }),
       );
     });
   });

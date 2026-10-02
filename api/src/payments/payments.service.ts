@@ -1,5 +1,11 @@
 // Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
-import { Injectable, Logger, BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  BadRequestException,
+  ForbiddenException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { OnvoPayProvider } from './providers/onvopay.provider';
 import { StellarProvider } from './providers/stellar.provider';
@@ -111,6 +117,15 @@ export class PaymentsService {
       throw new BadRequestException('El pedido ya tiene un pago completado');
     }
 
+    // Reintento seguro: si ya hay un checkout pendiente con URL, se devuelve
+    // la misma en vez de crear otra sesión (cada sesión es cobrable y el
+    // retry por timeout/wifi duplicaba el cobro). Igual que el flujo invitado.
+    const reused = this.reusePendingCheckout(existingPayment);
+    if (reused) {
+      this.logger.log(`Payment reuses pending checkout for order ${orderId}`);
+      return reused;
+    }
+
     if (method === 'credit') {
       return this.createCreditPayment(orderId, order, payerUserId);
     }
@@ -166,20 +181,10 @@ export class PaymentsService {
     if (existingPayment && existingPayment.status === PaymentStatus.completed) {
       throw new BadRequestException('El pedido ya tiene un pago completado');
     }
-    if (
-      existingPayment &&
-      existingPayment.status === PaymentStatus.pending &&
-      (existingPayment as any).onvoCheckoutUrl
-    ) {
+    const reusedGuest = this.reusePendingCheckout(existingPayment);
+    if (reusedGuest) {
       this.logger.log(`Guest payment reuses pending checkout for order ${orderId}`);
-      return {
-        success: true,
-        checkoutUrl: (existingPayment as any).onvoCheckoutUrl,
-        paymentId:
-          (existingPayment as any).onvoSessionId ??
-          (existingPayment as any).onvoPaymentId ??
-          undefined,
-      };
+      return reusedGuest;
     }
 
     const result = await this.runProviderPayment(orderId, method, serverAmount, {
@@ -196,6 +201,84 @@ export class PaymentsService {
       result,
     );
     return result;
+  }
+
+  /**
+   * El webhook firmado autentica el evento, pero no garantiza que lo cobrado
+   * cubra el total (reintentos parciales, planes viejos, currency distinta).
+   * Si el payload trae monto y NO cubre, no se completa: se devuelve
+   * amountMismatch para que el retry/polling lo reconcilie. Sin monto en el
+   * payload no hay nada que validar (comportamiento actual).
+   * Unidades: se acepta el total exacto en colones o en céntimos; con moneda
+   * explícita distinta de CRC se rechaza siempre.
+   */
+  private webhookAmountCovers(expectedTotal: unknown, data: any): boolean {
+    const raw = data?.amount ?? data?.amountPaid ?? data?.total;
+    const n = Number(raw);
+    if (raw == null || !Number.isFinite(n) || n <= 0) return true;
+    const currency = data?.currency != null ? String(data.currency).toUpperCase() : null;
+    if (currency && currency !== 'CRC') return false;
+    const total = Math.round(Number(expectedTotal));
+    if (!Number.isFinite(total) || total <= 0) return true;
+    return n === total || n === total * 100 || (currency === 'CRC' && n > total);
+  }
+
+  /**
+   * ¿Lo cobrado cubre el total del pedido? Lee el total del servidor (nunca
+   * el del webhook) y compara. Si no cubre, loguea y NO completa.
+   */
+  private async orderAmountCovers(orderId: string, data: any): Promise<boolean> {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      select: { totalAmount: true },
+    });
+    if (!order) return true; // el updateMany de abajo reporta unknownOrder
+    if (this.webhookAmountCovers(order.totalAmount, data)) return true;
+    this.logger.error(
+      `Webhook amount mismatch for order ${orderId}: payload=${JSON.stringify(data?.amount ?? data)} total=${order.totalAmount} — NOT completing`,
+    );
+    return false;
+  }
+
+  /**
+   * ¿Lo cobrado cubre la recarga? Igual que pedidos, contra el monto de la
+   * fila credit_topups.
+   */
+  private async topupAmountCovers(topupId: string, data: any): Promise<boolean> {
+    const topup = await this.prisma.creditTopup.findUnique({
+      where: { id: topupId },
+      select: { amount: true },
+    });
+    if (!topup) return true; // completeTopup reporta topup desconocido
+    if (this.webhookAmountCovers(topup.amount, data)) return true;
+    this.logger.error(
+      `Webhook amount mismatch for topup ${topupId}: payload=${JSON.stringify(data?.amount ?? data)} expected=${topup.amount} — NOT completing`,
+    );
+    return false;
+  }
+
+  /**
+   * Checkout pendiente reutilizable: si el intento anterior dejó una URL de
+   * checkout sin completar (timeout, wifi caído, reintento), se devuelve esa
+   * misma sesión en vez de crear otra cobrable. Solo aplica a Onvo hosted
+   * checkout (card/sinpe con URL); crypto/cash generan cotización nueva.
+   */
+  private reusePendingCheckout(existingPayment: any): PaymentResult | null {
+    if (
+      existingPayment &&
+      existingPayment.status === PaymentStatus.pending &&
+      (existingPayment as any).onvoCheckoutUrl
+    ) {
+      return {
+        success: true,
+        checkoutUrl: (existingPayment as any).onvoCheckoutUrl,
+        paymentId:
+          (existingPayment as any).onvoSessionId ??
+          (existingPayment as any).onvoPaymentId ??
+          undefined,
+      };
+    }
+    return null;
   }
 
   /**
@@ -807,6 +890,44 @@ export class PaymentsService {
    * y completa el pago SOLO si aparece evidencia on-chain (mismo criterio
    * fail-closed que el polling automático).
    */
+  /**
+   * Reembolso Onvo con validación: dueño verificado (assertIntentAccess),
+   * solo sobre pagos completados, monto positivo y acotado a lo cobrado.
+   * Sin esto, un amount negativo o mayor al pago pasaba directo a Onvo.
+   */
+  async refundOnvoPayment(
+    paymentIntentId: string,
+    amount: number | undefined,
+    user: { sub?: string; role?: string },
+  ): Promise<{ success: boolean; refundId?: string; error?: string }> {
+    await this.assertIntentAccess(paymentIntentId, user, true);
+    if (amount !== undefined) {
+      const value = Number(amount);
+      if (!Number.isFinite(value) || value <= 0) {
+        throw new BadRequestException('Monto de reembolso inválido');
+      }
+    }
+    const payment = await this.prisma.payment.findFirst({
+      where: { OR: [{ onvoPaymentId: paymentIntentId }, { onvoSessionId: paymentIntentId }] },
+      select: { amount: true, status: true, method: true },
+    });
+    if (!payment) {
+      throw new BadRequestException('Pago no encontrado para ese intent');
+    }
+    if (payment.status !== PaymentStatus.completed) {
+      throw new BadRequestException('Solo se puede reembolsar un pago completado');
+    }
+    if (amount !== undefined) {
+      const paid = Number(payment.amount);
+      if (Number.isFinite(paid) && paid > 0 && Math.round(Number(amount)) > Math.round(paid)) {
+        throw new BadRequestException(
+          `El reembolso (₡${Math.round(Number(amount)).toLocaleString()}) supera lo cobrado (₡${Math.round(paid).toLocaleString()})`,
+        );
+      }
+    }
+    return this.onvopayProvider.refundPayment(paymentIntentId, amount);
+  }
+
   async adminReverifyCrypto(orderId: string) {
     const payment = await this.prisma.payment.findUnique({
       where: { orderId },
@@ -856,8 +977,10 @@ export class PaymentsService {
     const signedPayload =
       typeof rawBody === 'string' && rawBody.length > 0 ? rawBody : JSON.stringify(payload);
     if (!signature || !this.onvopayProvider.verifyWebhookSignature(signedPayload, signature)) {
+      // 401 (no 200): la firma inválida debe verse en métricas/alertas como
+      // intrusión, no como un webhook "recibido" más.
       this.logger.error('Invalid or missing OnvoPay webhook signature');
-      return { received: false, error: 'Invalid signature' };
+      throw new UnauthorizedException('Invalid webhook signature');
     }
 
     const { type, data } = payload;
@@ -867,6 +990,9 @@ export class PaymentsService {
       const { metadata } = data ?? {};
       // Recarga de crédito con tarjeta: acredita saldo, no pedido.
       if (metadata?.topupId) {
+        if (!(await this.topupAmountCovers(metadata.topupId, data))) {
+          return { received: true, amountMismatch: true };
+        }
         const done = await this.creditsService.completeTopup(metadata.topupId, data?.id);
         this.logger.log(`Credit topup webhook for ${metadata.topupId} (completed=${done})`);
         return { received: true, topup: metadata.topupId, completed: done };
@@ -874,9 +1000,17 @@ export class PaymentsService {
       const orderId = metadata?.orderId;
 
       if (orderId) {
+        if (!(await this.orderAmountCovers(orderId, data))) {
+          return { received: true, amountMismatch: true };
+        }
+        // Se guarda el intent igual que en checkout-session: si este evento
+        // llega primero, el refund por intent igual encuentra la fila.
         const res = await this.prisma.payment.updateMany({
           where: { orderId },
-          data: { status: PaymentStatus.completed },
+          data: {
+            status: PaymentStatus.completed,
+            ...(data?.id ? { onvoPaymentId: data.id } : {}),
+          },
         });
         if (res.count === 0) {
           this.logger.warn(`Webhook for unknown order ${orderId} — ignoring`);
@@ -896,12 +1030,18 @@ export class PaymentsService {
       const topupId = data?.metadata?.topupId;
       const paymentIntentId = data?.paymentIntentId;
       if (topupId) {
+        if (!(await this.topupAmountCovers(topupId, data))) {
+          return { received: true, amountMismatch: true };
+        }
         const done = await this.creditsService.completeTopup(topupId, paymentIntentId);
         this.logger.log(`Credit topup checkout completed for ${topupId} (completed=${done})`);
         return { received: true, topup: topupId, completed: done };
       }
       const orderId = data?.metadata?.orderId;
       if (orderId) {
+        if (!(await this.orderAmountCovers(orderId, data))) {
+          return { received: true, amountMismatch: true };
+        }
         const res = await this.prisma.payment.updateMany({
           where: { orderId },
           data: {
@@ -954,6 +1094,13 @@ export class PaymentsService {
 
     if (!orderId || !transactionHash) {
       this.logger.warn('Stellar webhook missing orderId/transactionHash — ignoring');
+      return { received: true, ignored: true };
+    }
+
+    // Forma del hash ANTES de tocar Horizon: un string malformado no debe
+    // costar un request externo (amplificación) ni romper el verifier.
+    if (typeof transactionHash !== 'string' || !/^[0-9a-f]{64}$/i.test(transactionHash)) {
+      this.logger.warn('Stellar webhook malformed transactionHash — ignoring');
       return { received: true, ignored: true };
     }
 

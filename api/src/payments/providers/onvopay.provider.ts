@@ -521,7 +521,9 @@ export class OnvoPayProvider {
   ): Promise<{ success: boolean; refundId?: string; error?: string }> {
     try {
       if (!this.secretKey) {
-        return { success: true, refundId: `ref_${Date.now()}` };
+        // Fail-closed: un refund "exitoso" ficticio haría creer que la plata
+        // volvió cuando nunca salió ningún request. Sin key, error explícito.
+        return { success: false, error: 'Onvo no configurado (falta ONVO_SECRET_KEY)' };
       }
 
       const response = await fetch(`${this.baseUrl}/payment-intents/${paymentIntentId}/refund`, {

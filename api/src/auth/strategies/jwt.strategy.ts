@@ -31,6 +31,15 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (!user || user.status !== 'active') {
       throw new UnauthorizedException();
     }
+    // Revocación inmediata: el logout global sube tokenVersion y los access
+    // viejos (con v menor) mueren aunque no hayan expirado.
+    if (
+      typeof payload.v === 'number' &&
+      typeof (user as any).tokenVersion === 'number' &&
+      payload.v !== (user as any).tokenVersion
+    ) {
+      throw new UnauthorizedException();
+    }
 
     return {
       sub: user.id,

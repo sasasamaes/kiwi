@@ -46,11 +46,11 @@ describe('RateLimiterMiddleware', () => {
     } as any;
   };
 
-  it('allows requests under every limit and sets route headers', () => {
+  it('allows requests under every limit and sets route headers', async () => {
     const mw = makeMw();
     const res = makeRes();
     let nexted = false;
-    mw.use(makeReq('GET', '/api/menu/merchant/abc'), res, () => {
+    await mw.use(makeReq('GET', '/api/menu/merchant/abc'), res, () => {
       nexted = true;
     });
     expect(nexted).toBe(true);
@@ -58,19 +58,18 @@ describe('RateLimiterMiddleware', () => {
     expect(res.headers['X-RateLimit-Remaining']).toBe('29');
   });
 
-  it('returns 429 with Retry-After when the per-route bucket is exceeded', () => {
+  it('returns 429 with Retry-After when the per-route bucket is exceeded', async () => {
     const mw = makeMw();
     // geocoding/search: 20/min
     for (let i = 0; i < 20; i++) {
-      expect(() =>
-        mw.use(makeReq('GET', '/api/geocoding/search?q=x'), makeRes(), () => {}),
-      ).not.toThrow();
+      await mw.use(makeReq('GET', '/api/geocoding/search?q=x'), makeRes(), () => {});
     }
-    expect(() => mw.use(makeReq('GET', '/api/geocoding/search?q=x'), makeRes(), () => {})).toThrow(
-      HttpException,
-    );
+    await expect(
+      mw.use(makeReq('GET', '/api/geocoding/search?q=x'), makeRes(), () => {}),
+    ).rejects.toThrow(HttpException);
     try {
-      mw.use(makeReq('GET', '/api/geocoding/search?q=x'), makeRes(), () => {});
+      await mw.use(makeReq('GET', '/api/geocoding/search?q=x'), makeRes(), () => {});
+      throw new Error('debió rechazar con 429');
     } catch (e: any) {
       expect(e.getStatus()).toBe(429);
       expect(e.response.message).toContain('búsquedas');
@@ -78,30 +77,26 @@ describe('RateLimiterMiddleware', () => {
     }
   });
 
-  it('applies the default 100/min to unconfigured routes', () => {
+  it('applies the default 100/min to unconfigured routes', async () => {
     const mw = makeMw();
     const res = makeRes();
-    mw.use(makeReq('GET', '/api/some/unlisted/route'), res, () => {});
+    await mw.use(makeReq('GET', '/api/some/unlisted/route'), res, () => {});
     expect(res.headers['X-RateLimit-Limit']).toBe('100');
   });
 
-  it('keeps separate buckets per route and per IP', () => {
+  it('keeps separate buckets per route and per IP', async () => {
     const mw = makeMw();
     // Saturar geocoding para la IP A no afecta a la IP B ni a otra ruta de A.
     for (let i = 0; i < 20; i++) {
-      mw.use(makeReq('GET', '/api/geocoding/search?q=x', '9.9.9.9'), makeRes(), () => {});
+      await mw.use(makeReq('GET', '/api/geocoding/search?q=x', '9.9.9.9'), makeRes(), () => {});
     }
     const resB = makeRes();
-    expect(() =>
-      mw.use(makeReq('GET', '/api/geocoding/search?q=x', '8.8.8.8'), resB, () => {}),
-    ).not.toThrow();
+    await mw.use(makeReq('GET', '/api/geocoding/search?q=x', '8.8.8.8'), resB, () => {});
     const resOtherRoute = makeRes();
-    expect(() =>
-      mw.use(makeReq('GET', '/api/geocoding/reverse?x=1', '9.9.9.9'), resOtherRoute, () => {}),
-    ).not.toThrow();
+    await mw.use(makeReq('GET', '/api/geocoding/reverse?x=1', '9.9.9.9'), resOtherRoute, () => {});
   });
 
-  it('the per-IP ceiling triggers across DIFFERENT routes (240/min)', () => {
+  it('the per-IP ceiling triggers across DIFFERENT routes (240/min)', async () => {
     const mw = makeMw();
     const ip = '7.7.7.7';
     // 100 requests a 3 rutas distintas sin límite propio = 300 > 240.
@@ -109,7 +104,7 @@ describe('RateLimiterMiddleware', () => {
     for (let i = 0; i < 300; i++) {
       const path = `/api/no-limit-${i % 3}`;
       try {
-        mw.use(makeReq('GET', path, ip), makeRes(), () => {});
+        await mw.use(makeReq('GET', path, ip), makeRes(), () => {});
       } catch {
         rejected++;
       }
@@ -117,25 +112,27 @@ describe('RateLimiterMiddleware', () => {
     expect(rejected).toBe(300 - 240);
   });
 
-  it('does not count rejected requests against other IPs', () => {
+  it('does not count rejected requests against other IPs', async () => {
     const mw = makeMw();
     for (let i = 0; i < 250; i++) {
       try {
-        mw.use(makeReq('GET', `/api/x${i % 5}`, '6.6.6.6'), makeRes(), () => {});
+        await mw.use(makeReq('GET', `/api/x${i % 5}`, '6.6.6.6'), makeRes(), () => {});
       } catch {
         /* saturado a propósito */
       }
     }
     // La IP vecina sigue navegando con su propio techo intacto.
     const res = makeRes();
-    expect(() => mw.use(makeReq('GET', '/api/x0', '5.5.5.5'), res, () => {})).not.toThrow();
+    await expect(
+      mw.use(makeReq('GET', '/api/x0', '5.5.5.5'), res, () => {}),
+    ).resolves.toBeUndefined();
     expect(res.headers['X-RateLimit-Remaining']).toBe('99');
   });
-  it('store is memory-bounded (no unbounded growth from IP rotation)', () => {
+  it('store is memory-bounded (no unbounded growth from IP rotation)', async () => {
     const mw = makeMw();
     for (let i = 0; i < 25_000; i++) {
       try {
-        mw.use(
+        await mw.use(
           makeReq('GET', `/api/route-${i % 50}`, `10.0.${Math.floor(i / 255) % 255}.${i % 255}`),
           makeRes(),
           () => {},
@@ -147,14 +144,14 @@ describe('RateLimiterMiddleware', () => {
     expect((mw as any).store.size).toBeLessThanOrEqual(20_000);
   });
 
-  it('REGRESIÓN: rutas distintas NO comparten bucket (req.path montado)', () => {
+  it('REGRESIÓN: rutas distintas NO comparten bucket (req.path montado)', async () => {
     const mw = makeMw();
     // Con el bug, ambas caían en el bucket 'GET:/' y compartían contador.
     // Ahora cada ruta tiene su propio bucket y su propio límite.
     const res1 = makeRes();
     const res2 = makeRes();
-    mw.use(makeReq('GET', '/api/geocoding/search'), res1, () => {});
-    mw.use(makeReq('GET', '/api/users/me'), res2, () => {});
+    await mw.use(makeReq('GET', '/api/geocoding/search'), res1, () => {});
+    await mw.use(makeReq('GET', '/api/users/me'), res2, () => {});
     expect(res1.headers['X-RateLimit-Limit']).toBe('20');
     expect(res2.headers['X-RateLimit-Limit']).toBe('100');
     expect(res1.headers['X-RateLimit-Remaining']).toBe('19');

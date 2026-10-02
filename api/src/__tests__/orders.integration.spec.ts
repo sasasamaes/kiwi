@@ -77,10 +77,15 @@ describe('Orders Integration: Full Lifecycle', () => {
         findUnique: jest.fn(),
         findMany: jest.fn(),
         update: jest.fn(),
-        updateMany: jest.fn(),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
         aggregate: jest.fn(),
         count: jest.fn(),
       },
+      payment: {
+        updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+      },
+      // updateStatus corre en transacción interactiva (claim + refund).
+      $transaction: jest.fn((fn: any) => fn(prisma)),
       orderItem: {
         create: jest.fn(),
         createMany: jest.fn().mockResolvedValue({ count: 0 }),
@@ -288,19 +293,16 @@ describe('Orders Integration: Full Lifecycle', () => {
     });
 
     it('Step 4: Driver picks up the order (in_transit_to_pickup → picked_up)', async () => {
-      prisma.order.findUnique.mockResolvedValue({
+      const picking = {
         id: ORDER_ID,
         status: 'in_transit_to_pickup',
         pickupProofPhotoUrl: 'https://img/1.jpg',
         merchant: { userId: MERCHANT_USER_ID },
         driver: { userId: DRIVER_USER_ID },
-      });
-
-      prisma.order.update.mockResolvedValue({
-        id: ORDER_ID,
-        status: 'picked_up',
-        pickedUpAt: new Date(),
-      });
+      };
+      prisma.order.findUnique
+        .mockResolvedValueOnce(picking)
+        .mockResolvedValue({ ...picking, status: 'picked_up', pickedUpAt: new Date() });
 
       prisma.notification.create.mockResolvedValue({});
 
@@ -324,35 +326,30 @@ describe('Orders Integration: Full Lifecycle', () => {
 
     it('Step 5: Driver delivers the order (picked_up → in_transit → delivered)', async () => {
       // First: picked_up → in_transit_to_delivery
-      prisma.order.findUnique.mockResolvedValue({
+      const picked = {
         id: ORDER_ID,
         status: 'picked_up',
         merchant: { userId: MERCHANT_USER_ID },
         driver: { userId: DRIVER_USER_ID },
-      });
-
-      prisma.order.update.mockResolvedValue({
-        id: ORDER_ID,
-        status: 'in_transit_to_delivery',
-      });
+      };
+      prisma.order.findUnique
+        .mockResolvedValueOnce(picked)
+        .mockResolvedValue({ ...picked, status: 'in_transit_to_delivery' });
       prisma.notification.create.mockResolvedValue({});
 
       await ordersService.updateStatus(ORDER_ID, 'in_transit_to_delivery', DRIVER_USER_ID);
 
       // Then: in_transit_to_delivery → delivered
-      prisma.order.findUnique.mockResolvedValue({
+      const intransit = {
         id: ORDER_ID,
         status: 'in_transit_to_delivery',
         deliveryProofPhotoUrl: 'https://img/2.jpg',
         merchant: { userId: MERCHANT_USER_ID },
         driver: { userId: DRIVER_USER_ID },
-      });
-
-      prisma.order.update.mockResolvedValue({
-        id: ORDER_ID,
-        status: 'delivered',
-        deliveredAt: new Date(),
-      });
+      };
+      prisma.order.findUnique
+        .mockResolvedValueOnce(intransit)
+        .mockResolvedValue({ ...intransit, status: 'delivered', deliveredAt: new Date() });
 
       const result = await ordersService.updateStatus(ORDER_ID, 'delivered', DRIVER_USER_ID);
 

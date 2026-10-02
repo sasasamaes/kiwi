@@ -18,6 +18,17 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Seeding Kiwi database...\n');
 
+  // En producción las cuentas demo NUNCA usan 123456: se exige password
+  // explícito y largo (el E2E lo lee de E2E_PASSWORD). Sin esto, una DB
+  // fresca de prod quedaba con credenciales públicas conocidas.
+  const isProdSeed = process.env.NODE_ENV === 'production';
+  const demoPassword = process.env.SEED_DEMO_PASSWORD ?? (isProdSeed ? '' : '123456');
+  if (!demoPassword || demoPassword.length < (isProdSeed ? 12 : 1)) {
+    throw new Error(
+      'Seed abortado: en producción definí SEED_DEMO_PASSWORD (mínimo 12 caracteres).',
+    );
+  }
+
   // Clean existing data
   console.log('🧹 Cleaning existing data...');
   await prisma.notification.deleteMany();
@@ -40,7 +51,7 @@ async function main() {
   // ============================================
   console.log('👤 Creating users...');
 
-  const passwordHash = await bcrypt.hash('123456', 10);
+  const passwordHash = await bcrypt.hash(demoPassword, 10);
 
   // Luis Alfredo - Merchant
   const luisUser = await prisma.user.create({
@@ -1006,7 +1017,7 @@ async function main() {
   console.log('✅ Seed completed successfully!');
   console.log('═'.repeat(50));
   console.log(`
-📱 Test Accounts (password: 123456):
+📱 Test Accounts (password: ${isProdSeed ? 'SEED_DEMO_PASSWORD' : '123456'}):
   🏪 Merchant: luis@kiwi.app
   🛵 Driver:   juan@kiwi.app
   🛵 Driver:   fran@kiwi.app

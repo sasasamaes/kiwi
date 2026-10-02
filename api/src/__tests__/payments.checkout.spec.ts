@@ -146,6 +146,26 @@ describe('OnvoPay Checkout hospedado (one-time-link)', () => {
     );
   });
 
+  it('webhook payment_intent.succeeded completa y guarda el intent', async () => {
+    prisma.payment.updateMany.mockResolvedValue({ count: 1 });
+
+    const res = await (service as any).handleOnvoPayWebhook(
+      {
+        type: 'payment_intent.succeeded',
+        data: { id: 'pi_123', metadata: { orderId: 'order-1' } },
+      },
+      'sig',
+    );
+
+    expect(res).toEqual({ received: true });
+    expect(prisma.payment.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { orderId: 'order-1' },
+        data: expect.objectContaining({ status: 'completed', onvoPaymentId: 'pi_123' }),
+      }),
+    );
+  });
+
   it('webhook de orden desconocida no revienta', async () => {
     prisma.payment.updateMany.mockResolvedValue({ count: 0 });
 

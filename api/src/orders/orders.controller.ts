@@ -63,9 +63,21 @@ export class OrdersController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get my orders (merchant or driver)' })
   @ApiQuery({ name: 'status', required: false })
-  async getMyOrders(@CurrentUser() user: any, @Query('status') status?: string) {
+  @ApiQuery({ name: 'take', required: false })
+  @ApiQuery({ name: 'skip', required: false })
+  async getMyOrders(
+    @CurrentUser() user: any,
+    @Query('status') status?: string,
+    @Query('take') take?: string,
+    @Query('skip') skip?: string,
+  ) {
     if (user.role === 'merchant') {
-      return this.ordersService.findByMerchant(user.sub, status);
+      return this.ordersService.findByMerchant(
+        user.sub,
+        status,
+        take != null ? Number(take) : undefined,
+        skip != null ? Number(skip) : undefined,
+      );
     } else {
       return this.ordersService.findByDriver(user.sub, status);
     }

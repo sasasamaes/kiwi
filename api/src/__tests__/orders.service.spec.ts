@@ -48,6 +48,14 @@ describe('OrdersService', () => {
       },
       merchantProfile: {
         findUnique: jest.fn(),
+        update: jest.fn(),
+      },
+      payment: {
+        findUnique: jest.fn(),
+        updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+      },
+      creditTransaction: {
+        create: jest.fn(),
       },
       menuItem: {
         findMany: jest.fn(),
@@ -58,6 +66,8 @@ describe('OrdersService', () => {
       orderItem: {
         create: jest.fn(),
       },
+      // updateStatus corre en transacción interactiva (claim + refund).
+      $transaction: jest.fn((fn: any) => fn(prisma)),
     };
 
     jest.clearAllMocks();
@@ -778,9 +788,13 @@ describe('OrdersService', () => {
           where: {
             id: 'order-1',
             driverId: 'dp-1',
-            status: { in: ['assigned', 'in_transit_to_pickup'] },
+            status: { in: ['assigned', 'pending_acceptance', 'in_transit_to_pickup'] },
           },
-          data: expect.objectContaining({ driverId: null, status: 'pending' }),
+          data: expect.objectContaining({
+            driverId: null,
+            status: 'pending',
+            contestStartedAt: expect.any(Date),
+          }),
         }),
       );
       expect(res.id).toBe('order-1');
@@ -855,6 +869,8 @@ describe('OrdersService', () => {
       id: 'order-1',
       status: 'in_transit_to_delivery',
       driverId: 'dp-1',
+      merchantId: 'merchant-1',
+      basePrice: 2000,
       pickupProofPhotoUrl: 'https://img/1.jpg',
       deliveryProofPhotoUrl: 'https://img/2.jpg',
       merchant: { userId: 'merchant-user-1' },
@@ -863,14 +879,21 @@ describe('OrdersService', () => {
 
     beforeEach(() => {
       prisma.driverProfile = { update: jest.fn().mockResolvedValue({}) };
+      prisma.order.updateMany.mockResolvedValue({ count: 1 });
     });
 
     it('delivered incrementa totalTrips una vez', async () => {
-      prisma.order.findUnique.mockResolvedValue(baseOrder);
-      prisma.order.update.mockResolvedValue({ ...baseOrder, status: 'delivered' });
+      prisma.order.findUnique
+        .mockResolvedValueOnce(baseOrder)
+        .mockResolvedValue({ ...baseOrder, status: 'delivered' });
 
       await service.updateStatus('order-1', 'delivered', 'user-d');
 
+      expect(prisma.order.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'order-1', status: 'in_transit_to_delivery' },
+        }),
+      );
       expect(prisma.driverProfile.update).toHaveBeenCalledWith({
         where: { id: 'dp-1' },
         data: { totalTrips: { increment: 1 } },
@@ -878,8 +901,10 @@ describe('OrdersService', () => {
     });
 
     it('otros estados no tocan el contador', async () => {
-      prisma.order.findUnique.mockResolvedValue({ ...baseOrder, status: 'in_transit_to_pickup' });
-      prisma.order.update.mockResolvedValue({ ...baseOrder, status: 'picked_up' });
+      const picking = { ...baseOrder, status: 'in_transit_to_pickup' };
+      prisma.order.findUnique
+        .mockResolvedValueOnce(picking)
+        .mockResolvedValue({ ...picking, status: 'picked_up' });
 
       await service.updateStatus('order-1', 'picked_up', 'user-d');
 
@@ -895,7 +920,7 @@ describe('OrdersService', () => {
       await expect(
         service.updateStatus('order-1', 'delivered', 'merchant-user-1', 'merchant'),
       ).rejects.toThrow('no puede cambiar');
-      expect(prisma.order.update).not.toHaveBeenCalled();
+      expect(prisma.order.updateMany).not.toHaveBeenCalled();
     });
 
     it('el repartidor no cancela a mitad de ruta', async () => {
@@ -904,16 +929,71 @@ describe('OrdersService', () => {
       await expect(
         service.updateStatus('order-1', 'cancelled', 'user-d', 'driver'),
       ).rejects.toThrow('no puede cambiar');
-      expect(prisma.order.update).not.toHaveBeenCalled();
+      expect(prisma.order.updateMany).not.toHaveBeenCalled();
     });
 
     it('el comercio sí cancela un pedido asignado', async () => {
-      prisma.order.findUnique.mockResolvedValue({ ...baseOrder, status: 'assigned' });
-      prisma.order.update.mockResolvedValue({ ...baseOrder, status: 'cancelled' });
+      const assigned = { ...baseOrder, status: 'assigned' };
+      prisma.order.findUnique
+        .mockResolvedValueOnce(assigned)
+        .mockResolvedValue({ ...assigned, status: 'cancelled' });
 
       await service.updateStatus('order-1', 'cancelled', 'merchant-user-1', 'merchant');
 
-      expect(prisma.order.update).toHaveBeenCalled();
+      expect(prisma.order.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: 'order-1', status: 'assigned' } }),
+      );
+    });
+
+    it('si otro request movió el pedido, responde 409 sin escribir', async () => {
+      prisma.order.findUnique.mockResolvedValue({ ...baseOrder, status: 'in_transit_to_pickup' });
+      prisma.order.updateMany.mockResolvedValue({ count: 0 });
+
+      await expect(service.updateStatus('order-1', 'picked_up', 'user-d')).rejects.toThrow(
+        'cambió de estado',
+      );
+      expect(prisma.driverProfile.update).not.toHaveBeenCalled();
+    });
+
+    it('cancelar con crédito pagado devuelve el viaje y marca refunded', async () => {
+      const assigned = { ...baseOrder, status: 'assigned' };
+      prisma.order.findUnique
+        .mockResolvedValueOnce(assigned)
+        .mockResolvedValue({ ...assigned, status: 'cancelled' });
+      prisma.payment.updateMany.mockResolvedValue({ count: 1 });
+
+      await service.updateStatus('order-1', 'cancelled', 'merchant-user-1', 'merchant');
+
+      expect(prisma.payment.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { orderId: 'order-1', method: 'credit', status: 'completed' },
+          data: { status: 'refunded' },
+        }),
+      );
+      expect(prisma.merchantProfile.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'merchant-1' },
+          data: { creditBalance: { increment: 2000 } },
+        }),
+      );
+      expect(prisma.creditTransaction.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ amount: 2000, kind: 'refund', orderId: 'order-1' }),
+        }),
+      );
+    });
+
+    it('cancelar sin pago con crédito no toca el saldo', async () => {
+      const assigned = { ...baseOrder, status: 'assigned' };
+      prisma.order.findUnique
+        .mockResolvedValueOnce(assigned)
+        .mockResolvedValue({ ...assigned, status: 'cancelled' });
+      prisma.payment.updateMany.mockResolvedValue({ count: 0 });
+
+      await service.updateStatus('order-1', 'cancelled', 'merchant-user-1', 'merchant');
+
+      expect(prisma.merchantProfile.update).not.toHaveBeenCalled();
+      expect(prisma.creditTransaction.create).not.toHaveBeenCalled();
     });
   });
 

@@ -41,11 +41,14 @@ describe('OrdersService proof photo (Task 2)', () => {
         findUnique: jest.fn(),
         findMany: jest.fn(),
         update: jest.fn(),
-        updateMany: jest.fn(),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
         aggregate: jest.fn(),
         count: jest.fn(),
       },
       driverProfile: { update: jest.fn().mockResolvedValue({}) },
+      payment: { updateMany: jest.fn().mockResolvedValue({ count: 0 }) },
+      // updateStatus corre en transacción interactiva (claim + refund).
+      $transaction: jest.fn((fn: any) => fn(prisma)),
     };
 
     jest.clearAllMocks();
@@ -104,18 +107,20 @@ describe('OrdersService proof photo (Task 2)', () => {
   });
 
   it('picked_up con foto avanza y sella pickupProofAt', async () => {
-    prisma.order.findUnique.mockResolvedValue({
+    const picking = {
       id: 'order-1',
       status: 'in_transit_to_pickup',
       driverId: 'dp-1',
       pickupProofPhotoUrl: 'https://img/1.jpg',
       merchant: { userId: 'merchant-user-1' },
       driver: { userId: 'user-d' },
-    });
-    prisma.order.update.mockResolvedValue({ id: 'order-1', status: 'picked_up' });
+    };
+    prisma.order.findUnique
+      .mockResolvedValueOnce(picking)
+      .mockResolvedValue({ ...picking, status: 'picked_up' });
     await service.updateStatus('order-1', 'picked_up', 'user-d');
-    expect(prisma.order.update).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: 'order-1' } }),
+    expect(prisma.order.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 'order-1', status: 'in_transit_to_pickup' } }),
     );
   });
 
@@ -135,18 +140,20 @@ describe('OrdersService proof photo (Task 2)', () => {
   });
 
   it('delivered con foto avanza', async () => {
-    prisma.order.findUnique.mockResolvedValue({
+    const intransit = {
       id: 'order-1',
       status: 'in_transit_to_delivery',
       driverId: 'dp-1',
       deliveryProofPhotoUrl: 'https://img/2.jpg',
       merchant: { userId: 'merchant-user-1' },
       driver: { userId: 'user-d' },
-    });
-    prisma.order.update.mockResolvedValue({ id: 'order-1', status: 'delivered' });
+    };
+    prisma.order.findUnique
+      .mockResolvedValueOnce(intransit)
+      .mockResolvedValue({ ...intransit, status: 'delivered' });
     await service.updateStatus('order-1', 'delivered', 'user-d');
-    expect(prisma.order.update).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: 'order-1' } }),
+    expect(prisma.order.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 'order-1', status: 'in_transit_to_delivery' } }),
     );
   });
 

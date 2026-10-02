@@ -22,6 +22,14 @@ model User {
   createdAt    DateTime   @default(now()) @map("created_at")
   updatedAt    DateTime   @updatedAt @map("updated_at")
 
+  // Sesiones: se invalida en logout global (los access viven 15 min).
+  tokenVersion Int @default(0) @map("token_version")
+
+  // Throttle de login por cuenta EN DB (sobrevive restarts e instancias;
+  // el Map en memoria solo cubre emails inexistentes).
+  failedLoginAttempts Int       @default(0) @map("failed_login_attempts")
+  loginLockedUntil    DateTime? @map("login_locked_until")
+
   // Relations
   merchantProfile  MerchantProfile?
   driverProfile    DriverProfile?
@@ -29,8 +37,26 @@ model User {
   notifications    Notification[]
   deviceTokens     DeviceToken[]
   topicPreferences TopicPreference[]
+  refreshTokens    RefreshToken[]
 
   @@map("users")
+}
+
+// Refresh tokens opacos rotativos (un uso cada uno). Solo viaja el hash:
+// si la DB se filtra, los tokens vivos no sirven sin el valor original.
+model RefreshToken {
+  id         String    @id @default(uuid())
+  userId     String    @map("user_id")
+  tokenHash  String    @unique @map("token_hash")
+  expiresAt  DateTime  @map("expires_at")
+  revokedAt  DateTime? @map("revoked_at")
+  replacedBy String?   @map("replaced_by")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@map("refresh_tokens")
 }
 
 enum Role {

@@ -49,4 +49,21 @@ export class AuthController {
     if (!user) throw new UnauthorizedException();
     return user;
   }
+
+  @Public()
+  @Post('refresh')
+  @ApiOperation({ summary: 'Rota el refresh token y emite un par nuevo' })
+  @ApiResponse({ status: 201, description: 'Tokens renovados' })
+  @ApiResponse({ status: 401, description: 'Refresh inválido o revocado' })
+  async refresh(@Body() body: { refreshToken?: string }) {
+    return this.authService.refresh(body?.refreshToken ?? '');
+  }
+
+  @Post('logout')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Logout global: revoca sesiones en todos los dispositivos' })
+  async logout(@Request() req) {
+    return this.authService.logout(req.user.sub);
+  }
 }

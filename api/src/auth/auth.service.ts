@@ -10,6 +10,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
+import { createHash, randomBytes } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -159,7 +160,7 @@ export class AuthService {
     });
 
     // Generate tokens
-    const tokens = this.generateTokens(user.id, user.email, user.role);
+    const tokens = await this.generateTokens(user as any);
 
     return {
       user: this.sanitizeUser(user),
@@ -189,8 +190,26 @@ export class AuthService {
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
+    // Bloqueo persistente en DB (sobrevive restarts e instancias).
+    if (
+      (user as any).loginLockedUntil &&
+      new Date((user as any).loginLockedUntil).getTime() > Date.now()
+    ) {
+      const retryAfter = Math.ceil(
+        (new Date((user as any).loginLockedUntil).getTime() - Date.now()) / 1000,
+      );
+      throw new HttpException(
+        {
+          statusCode: HttpStatus.TOO_MANY_REQUESTS,
+          message: 'Cuenta temporalmente bloqueada por intentos fallidos. Intenta en unos minutos.',
+          retryAfter,
+        },
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+
     if (user.status !== 'active') {
-      throw new UnauthorizedException('Tu cuenta está desactivada');
+      throw new UnauthorizedException('Credenciales inválidas');
     }
 
     // Verify password
@@ -201,19 +220,53 @@ export class AuthService {
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
     if (!isPasswordValid) {
       this.recordFailedAttempt(emailKey);
+      await this.recordDbFailedAttempt(user.id);
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
     // Successful login: reset the account's failed-attempt state.
     this.clearAttempts(emailKey);
+    try {
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { failedLoginAttempts: 0, loginLockedUntil: null },
+      });
+    } catch {
+      // best-effort: el login igual procede
+    }
 
     // Generate tokens
-    const tokens = this.generateTokens(user.id, user.email, user.role);
+    const tokens = await this.generateTokens(user as any);
 
     return {
       user: this.sanitizeUser(user),
       ...tokens,
     };
+  }
+
+  /**
+   * Throttle persistente: al 5º fallo bloquea 15 min en DB. Corre junto al
+   * Map en memoria (que cubre emails inexistentes y picos entre requests).
+   */
+  private async recordDbFailedAttempt(userId: string) {
+    try {
+      const updated = await this.prisma.user.update({
+        where: { id: userId },
+        data: { failedLoginAttempts: { increment: 1 } },
+        select: { failedLoginAttempts: true },
+      });
+      if ((updated?.failedLoginAttempts ?? 0) >= LOGIN_MAX_ATTEMPTS) {
+        await this.prisma.user.update({
+          where: { id: userId },
+          data: {
+            failedLoginAttempts: 0,
+            loginLockedUntil: new Date(Date.now() + LOGIN_LOCKOUT_MS),
+          },
+        });
+      }
+    } catch {
+      // best-effort: el throttle en memoria sigue valiendo
+    }
   }
 
   async validateUser(userId: string) {
@@ -232,15 +285,127 @@ export class AuthService {
     return this.sanitizeUser(user);
   }
 
-  private generateTokens(userId: string, email: string, role: string) {
-    const payload = { sub: userId, email, role };
+  /**
+   * Par de tokens: access corto (15 min, lleva tokenVersion para revocación
+   * inmediata) + refresh opaco rotativo (7 días, un solo uso). En DB solo
+   * vive el hash del refresh: si se filtra, los tokens vivos no sirven.
+   */
+  private async generateTokens(user: { id: string; email: string | null; role: string }) {
+    const fresh = await this.prisma.user.findUnique({
+      where: { id: user.id },
+      select: { tokenVersion: true },
+    });
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+      v: fresh?.tokenVersion ?? 0,
+    };
 
-    const accessToken = this.jwtService.sign(payload);
+    const accessToken = this.jwtService.sign(payload, {
+      expiresIn: this.configService.get<string>('JWT_ACCESS_EXPIRES_IN', '15m') as any,
+    });
+
+    const refreshValue = randomBytes(48).toString('hex');
+    const refreshExpiresIn = this.configService.get<string>('JWT_REFRESH_EXPIRES_IN', '7d');
+    await this.prisma.refreshToken.create({
+      data: {
+        userId: user.id,
+        tokenHash: createHash('sha256').update(refreshValue).digest('hex'),
+        expiresAt: new Date(Date.now() + this.parseDurationMs(refreshExpiresIn, 7 * 24 * 3600_000)),
+      },
+    });
 
     return {
       accessToken,
-      expiresIn: this.configService.get<string>('JWT_EXPIRES_IN', '7d'),
+      refreshToken: refreshValue,
+      expiresIn: this.configService.get<string>('JWT_ACCESS_EXPIRES_IN', '15m'),
     };
+  }
+
+  private parseDurationMs(raw: string, fallbackMs: number): number {
+    const m = /^(\d+)([smhd])$/.exec(String(raw ?? '').trim());
+    if (!m) return fallbackMs;
+    const n = Number(m[1]);
+    const mult = { s: 1000, m: 60_000, h: 3_600_000, d: 86_400_000 } as const;
+    return n * mult[m[2] as keyof typeof mult];
+  }
+
+  /**
+   * Rota un refresh: el presentado se revoca y se emite un par nuevo.
+   * Detección de robo: si el token ya estaba revocado CON reemplazo, alguien
+   * lo reusó → se revoca toda la familia (todas las sesiones) y 401.
+   */
+  async refresh(refreshToken: string) {
+    if (!refreshToken || typeof refreshToken !== 'string') {
+      throw new UnauthorizedException('Refresh inválido');
+    }
+    const hash = createHash('sha256').update(refreshToken).digest('hex');
+    const stored = await this.prisma.refreshToken.findUnique({ where: { tokenHash: hash } });
+    if (!stored) throw new UnauthorizedException('Refresh inválido');
+    if (stored.revokedAt) {
+      if (stored.replacedBy) {
+        // Reuso de un token ya rotado = posible robo: tumbar todo.
+        await this.prisma.refreshToken.updateMany({
+          where: { userId: stored.userId, revokedAt: null },
+          data: { revokedAt: new Date() },
+        });
+        await this.prisma.user.update({
+          where: { id: stored.userId },
+          data: { tokenVersion: { increment: 1 } },
+        });
+      }
+      throw new UnauthorizedException('Sesión terminada. Iniciá sesión de nuevo.');
+    }
+    if (stored.expiresAt.getTime() < Date.now()) {
+      throw new UnauthorizedException('Sesión vencida. Iniciá sesión de nuevo.');
+    }
+    const user = await this.prisma.user.findUnique({
+      where: { id: stored.userId },
+      include: { merchantProfile: true, driverProfile: true },
+    });
+    if (!user || user.status !== 'active') {
+      throw new UnauthorizedException('Cuenta no disponible');
+    }
+
+    const tokens = await this.generateTokens(user as any);
+    const nextHash = createHash('sha256').update(tokens.refreshToken).digest('hex');
+    // Revocación condicional: si otro request rotó este mismo token en el
+    // medio, count===0 y se trata como reuso (posible robo).
+    const revoked = await this.prisma.refreshToken.updateMany({
+      where: { id: stored.id, revokedAt: null },
+      data: { revokedAt: new Date(), replacedBy: nextHash },
+    });
+    if (revoked.count === 0) {
+      await this.prisma.refreshToken.updateMany({
+        where: { userId: stored.userId, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
+      await this.prisma.user.update({
+        where: { id: stored.userId },
+        data: { tokenVersion: { increment: 1 } },
+      });
+      throw new UnauthorizedException('Sesión terminada. Iniciá sesión de nuevo.');
+    }
+
+    return { user: this.sanitizeUser(user), ...tokens };
+  }
+
+  /**
+   * Logout global: revoca todos los refresh y sube tokenVersion (mata los
+   * access vivos, que igual expiran en 15 min). Cerrar sesión cierra en
+   * todos los dispositivos.
+   */
+  async logout(userId: string) {
+    await this.prisma.refreshToken.updateMany({
+      where: { userId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { tokenVersion: { increment: 1 } },
+    });
+    return { success: true };
   }
 
   private sanitizeUser(user: any) {

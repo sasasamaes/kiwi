@@ -4,6 +4,7 @@ import {
   NotFoundException,
   ForbiddenException,
   BadRequestException,
+  ConflictException,
   Logger,
   Optional,
   Inject,
@@ -33,6 +34,17 @@ const MERCHANT_PUBLIC_SELECT = {
   latitude: true,
   longitude: true,
   logoUrl: true,
+} as const;
+
+/**
+ * Lo que ve el repartidor del comercio en accept/assign: campos públicos +
+ * userId (para notificar al dueño) + teléfono (para coordinar la recogida).
+ * Jamás creditBalance/kyc: es interno del comercio.
+ */
+const MERCHANT_FOR_DRIVER_SELECT = {
+  ...MERCHANT_PUBLIC_SELECT,
+  userId: true,
+  user: { select: { phone: true } },
 } as const;
 
 /** Lo que se expone del repartidor en respuestas de pedidos. */
@@ -466,6 +478,27 @@ export class OrdersService {
       }
     }
 
+    // Concurso con vencimiento: el pedido a concurso nace con ventana para
+    // que el sweeper lo marque no_driver si nadie lo toma. Antes nacía sin
+    // contestEndsAt y quedaba en pending para siempre, invisible y sin aviso.
+    // (Asignación directa y programados no concursan: sin ventana.)
+    const isContest = !directDriver && orderType !== 'scheduled';
+    let contestStartedAt: Date | null = null;
+    let contestEndsAt: Date | null = null;
+    if (isContest) {
+      let contestMinutes = 10;
+      try {
+        const t = await (this.settingsService as any).getAssignmentTimeouts?.();
+        if (t && Number.isFinite(Number(t.contestMinutes))) {
+          contestMinutes = t.contestMinutes;
+        }
+      } catch {
+        // default admin (10); jamás bloquea la creación.
+      }
+      contestStartedAt = new Date();
+      contestEndsAt = new Date(contestStartedAt.getTime() + contestMinutes * 60_000);
+    }
+
     let order: any;
     try {
       order = await this.prisma.order.create({
@@ -477,6 +510,7 @@ export class OrdersService {
             : orderType === 'scheduled'
               ? 'driver_proposals'
               : 'pending',
+          ...(isContest ? { contestStartedAt, contestEndsAt } : {}),
           orderType,
           scheduledDate,
           scheduledTime: data.scheduledTime,
@@ -1136,9 +1170,33 @@ export class OrdersService {
    * simulador al rendimiento real.
    */
   async getMonthlyActuals(months = 6) {
+    // Todo en hora CR: el server corre en UTC y sin esto los pedidos de las
+    // 00:00–05:59 UTC caían en el mes anterior al real. CR no tiene DST
+    // (UTC-6 fijo), así que los bordes con -06:00 son exactos.
+    const crParts = (d: Date) => {
+      const p = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/Costa_Rica',
+        year: 'numeric',
+        month: '2-digit',
+      })
+        .formatToParts(d)
+        .reduce<Record<string, string>>((acc, x) => {
+          if (x.type !== 'literal') acc[x.type] = x.value;
+          return acc;
+        }, {});
+      return { y: Number(p.year), m: Number(p.month) };
+    };
+    const pad2 = (n: number) => String(n).padStart(2, '0');
+    const shiftMonth = (y: number, m: number, delta: number) => {
+      const total = (y * 12 + (m - 1) + delta) * 1;
+      return { y: Math.floor(total / 12), m: (total % 12) + 1 };
+    };
     const now = new Date();
-    const start = new Date(now.getFullYear(), now.getMonth() - (months - 1), 1);
-    const end = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const { y: cy, m: cm } = crParts(now);
+    const s = shiftMonth(cy, cm, -(months - 1));
+    const e = shiftMonth(cy, cm, 1);
+    const start = new Date(`${s.y}-${pad2(s.m)}-01T00:00:00-06:00`);
+    const end = new Date(`${e.y}-${pad2(e.m)}-01T00:00:00-06:00`);
     const start30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
     const orders = await this.prisma.order.findMany({
@@ -1162,10 +1220,14 @@ export class OrdersService {
         zones: Record<string, number>;
       }
     >();
-    const key = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const key = (d: Date) => {
+      const { y, m } = crParts(d);
+      return `${y}-${pad2(m)}`;
+    };
 
     for (let i = 0; i < months; i += 1) {
-      buckets.set(key(new Date(now.getFullYear(), now.getMonth() - (months - 1) + i, 1)), {
+      const b = shiftMonth(cy, cm, -(months - 1) + i);
+      buckets.set(`${b.y}-${pad2(b.m)}`, {
         trips: 0,
         gmv: 0,
         commission: 0,
@@ -1227,7 +1289,7 @@ export class OrdersService {
     };
   }
 
-  async findByMerchant(userId: string, status?: string) {
+  async findByMerchant(userId: string, status?: string, take?: number, skip?: number) {
     const merchantProfile = await this.prisma.merchantProfile.findUnique({
       where: { userId },
     });
@@ -1241,6 +1303,11 @@ export class OrdersService {
     if (status) {
       where.status = status;
     }
+
+    // Paginado con cotas: sin take la lista crecía sin límite (respuesta
+    // gigante/OOM en comercios con historial largo).
+    const t = Math.min(Math.max(Number(take) || 500, 1), 500);
+    const s = Math.max(Number(skip) || 0, 0);
 
     return this.prisma.order.findMany({
       where,
@@ -1259,6 +1326,8 @@ export class OrdersService {
         _count: { select: { proposals: true } },
       },
       orderBy: { createdAt: 'desc' },
+      take: t,
+      skip: s,
     });
   }
 
@@ -1391,6 +1460,24 @@ export class OrdersService {
       role,
     });
 
+    // Update status with timestamp
+    const updateData: any = { status };
+
+    // Atajo opcional: el cliente puede mandar la URL ya subida junto al
+    // cambio de estado (el flujo principal es POST :id/proof-photo). Va
+    // ANTES del gate: si no, el request que trae la foto sería rechazado
+    // por no tenerla todavía (atajo muerto).
+    if (proofPhotoUrl && status === 'picked_up' && !(order as any).pickupProofPhotoUrl) {
+      updateData.pickupProofPhotoUrl = proofPhotoUrl;
+      updateData.pickupProofAt = new Date();
+      (order as any).pickupProofPhotoUrl = proofPhotoUrl;
+    }
+    if (proofPhotoUrl && status === 'delivered' && !(order as any).deliveryProofPhotoUrl) {
+      updateData.deliveryProofPhotoUrl = proofPhotoUrl;
+      updateData.deliveryProofAt = new Date();
+      (order as any).deliveryProofPhotoUrl = proofPhotoUrl;
+    }
+
     // Evidencia fotográfica 1+1 obligatoria para avanzar.
     if (status === 'picked_up' && !(order as any).pickupProofPhotoUrl) {
       throw new BadRequestException(
@@ -1401,22 +1488,6 @@ export class OrdersService {
       throw new BadRequestException(
         'Subí la foto de evidencia para continuar: fotografiá la entrega al cliente.',
       );
-    }
-
-    // Update status with timestamp
-    const updateData: any = { status };
-
-    // Atajo opcional: el cliente puede mandar la URL ya subida junto al
-    // cambio de estado (el flujo principal es POST :id/proof-photo).
-    if (proofPhotoUrl && status === 'picked_up' && !(order as any).pickupProofPhotoUrl) {
-      updateData.pickupProofPhotoUrl = proofPhotoUrl;
-      updateData.pickupProofAt = new Date();
-      (order as any).pickupProofPhotoUrl = proofPhotoUrl;
-    }
-    if (proofPhotoUrl && status === 'delivered' && !(order as any).deliveryProofPhotoUrl) {
-      updateData.deliveryProofPhotoUrl = proofPhotoUrl;
-      updateData.deliveryProofAt = new Date();
-      (order as any).deliveryProofPhotoUrl = proofPhotoUrl;
     }
 
     if (status === 'assigned') {
@@ -1443,13 +1514,59 @@ export class OrdersService {
       updateData.contestEndsAt = new Date(now.getTime() + contestMinutes * 60_000);
     }
 
-    const updatedOrder = await this.prisma.order.update({
-      where: { id: orderId },
-      data: updateData,
-      include: {
-        merchant: { select: MERCHANT_PUBLIC_SELECT },
-        driver: { select: DRIVER_PUBLIC_SELECT },
-      },
+    // Escritura con guarda de estado + devolución atómica en UNA transacción:
+    // - El updateMany condicionado es el claim: si otro request movió el
+    //   pedido en el medio (doble delivered concurrente), count===0 y se
+    //   responde 409 en vez de duplicar totalTrips o pisar el estado.
+    // - Cancelar con crédito pagado devuelve el viaje (basePrice, lo mismo
+    //   que se descontó al cobrar) junto con el cambio de estado: si algo
+    //   falla, nada se persiste y se puede reintentar. El pago se marca
+    //   `refunded` de forma condicionada para no devolver dos veces.
+    const updatedOrder = await this.prisma.$transaction(async (tx) => {
+      const claimed = await tx.order.updateMany({
+        where: { id: orderId, status: order.status },
+        data: updateData,
+      });
+      if (claimed.count === 0) {
+        throw new ConflictException(
+          'El pedido cambió de estado. Recargá la lista e intentá de nuevo.',
+        );
+      }
+      const fresh = await tx.order.findUnique({
+        where: { id: orderId },
+        include: {
+          merchant: { select: MERCHANT_PUBLIC_SELECT },
+          driver: { select: DRIVER_PUBLIC_SELECT },
+        },
+      });
+      if (!fresh) throw new NotFoundException('Pedido no encontrado');
+      if (status === 'cancelled') {
+        const marked = await tx.payment.updateMany({
+          where: { orderId, method: 'credit', status: 'completed' },
+          data: { status: 'refunded' },
+        });
+        if (marked.count > 0) {
+          const amount = Math.round(Number((fresh as any).basePrice ?? order.basePrice ?? 0));
+          if (Number.isFinite(amount) && amount > 0) {
+            const merchantId = (fresh as any).merchantId ?? (order as any).merchantId;
+            await tx.merchantProfile.update({
+              where: { id: merchantId },
+              data: { creditBalance: { increment: amount } },
+            });
+            await tx.creditTransaction.create({
+              data: {
+                merchantId,
+                amount,
+                kind: 'refund',
+                orderId,
+                reason: `Cancelación del pedido #${orderId.slice(0, 8).toUpperCase()}`,
+              },
+            });
+            this.logger.log(`Credit refund for cancelled order ${orderId}: +${amount}`);
+          }
+        }
+      }
+      return fresh;
     });
 
     // Reintento: el pedido volvió a concurso, re-alertar a la flota
@@ -1746,7 +1863,8 @@ export class OrdersService {
     }
     const updated = await this.prisma.order.findUnique({
       where: { id: orderId },
-      include: { merchant: true, driver: true },
+      // Vista de repartidor: sin creditBalance ni KYC del comercio.
+      include: { merchant: { select: MERCHANT_FOR_DRIVER_SELECT }, driver: true },
     });
     if (updated?.merchant?.userId) {
       this.eventsGateway.sendToUser(updated.merchant.userId, 'order:accepted', {
@@ -1987,7 +2105,8 @@ export class OrdersService {
     ) {
       return this.prisma.order.findUnique({
         where: { id: orderId },
-        include: { merchant: true, driver: true },
+        // Vista de repartidor: sin creditBalance ni KYC del comercio.
+        include: { merchant: { select: MERCHANT_FOR_DRIVER_SELECT }, driver: true },
       });
     }
 
@@ -2037,7 +2156,8 @@ export class OrdersService {
       if (existing.driverId === driverProfile.id) {
         return this.prisma.order.findUnique({
           where: { id: orderId },
-          include: { merchant: true, driver: true },
+          // Vista de repartidor: sin creditBalance ni KYC del comercio.
+          include: { merchant: { select: MERCHANT_FOR_DRIVER_SELECT }, driver: true },
         });
       }
       if (existing.driverId) {
@@ -2057,7 +2177,8 @@ export class OrdersService {
     // Assign driver
     const updatedOrder = await this.prisma.order.findUnique({
       where: { id: orderId },
-      include: { merchant: true, driver: true },
+      // Vista de repartidor: sin creditBalance ni KYC del comercio.
+      include: { merchant: { select: MERCHANT_FOR_DRIVER_SELECT }, driver: true },
     });
 
     if (!updatedOrder) throw new NotFoundException('Pedido no encontrado');
@@ -2118,32 +2239,8 @@ export class OrdersService {
       throw new NotFoundException('Perfil de repartidor no encontrado');
     }
 
-    let claimed = await this.prisma.order.updateMany({
-      where: {
-        id: orderId,
-        driverId: driverProfile.id,
-        status: { in: ['assigned', 'in_transit_to_pickup'] },
-      },
-      data: { driverId: null, status: 'pending', assignedAt: null },
-    });
-    if (claimed.count === 0) {
-      claimed = await this.prisma.order.updateMany({
-        where: {
-          id: orderId,
-          driverId: driverProfile.id,
-          status: { in: ['pending_acceptance'] },
-        },
-        data: { driverId: null, status: 'pending', assignedAt: null, acceptanceExpiresAt: null },
-      });
-    }
-    if (claimed.count === 0) {
-      const existing = await this.prisma.order.findUnique({ where: { id: orderId } });
-      if (!existing) throw new NotFoundException('Pedido no encontrado');
-      throw new BadRequestException(
-        'Solo podés rechazar un pedido asignado a vos antes de recoger',
-      );
-    }
-
+    // Ventana de concurso fresca para el reintento (se lee ANTES del claim
+    // para incluirla en la misma escritura guardada).
     let contestMinutes = 10;
     try {
       const t = await (this.settingsService as any).getAssignmentTimeouts?.();
@@ -2153,20 +2250,31 @@ export class OrdersService {
     } catch {
       // default admin (10); jamás bloquea el rechazo.
     }
-    try {
-      await (this.prisma.order as any).update?.({
-        where: { id: orderId },
-        data: {
-          driverId: null,
-          status: 'pending',
-          assignedAt: null,
-          acceptanceExpiresAt: null,
-          contestStartedAt: new Date(),
-          contestEndsAt: new Date(Date.now() + contestMinutes * 60_000),
-        },
-      });
-    } catch {
-      // concurso best-effort en mocks sin update.
+    // UN solo write con guarda completa (driver + estado): el tercer update
+    // incondicional que había acá podía pisar la asignación de OTRO driver
+    // si tomaba el pedido en la ventana entre el claim y ese write.
+    const now = new Date();
+    const claimed = await this.prisma.order.updateMany({
+      where: {
+        id: orderId,
+        driverId: driverProfile.id,
+        status: { in: ['assigned', 'pending_acceptance', 'in_transit_to_pickup'] },
+      },
+      data: {
+        driverId: null,
+        status: 'pending',
+        assignedAt: null,
+        acceptanceExpiresAt: null,
+        contestStartedAt: now,
+        contestEndsAt: new Date(now.getTime() + contestMinutes * 60_000),
+      },
+    });
+    if (claimed.count === 0) {
+      const existing = await this.prisma.order.findUnique({ where: { id: orderId } });
+      if (!existing) throw new NotFoundException('Pedido no encontrado');
+      throw new BadRequestException(
+        'Solo podés rechazar un pedido asignado a vos antes de recoger',
+      );
     }
     try {
       await (this.prisma as any).orderEvent?.create?.({

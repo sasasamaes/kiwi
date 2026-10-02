@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
-import { Injectable, NestMiddleware, HttpException, HttpStatus } from '@nestjs/common';
+import { Injectable, NestMiddleware, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
+import Redis from 'ioredis';
 
 interface RateLimitEntry {
   count: number;
@@ -39,6 +40,13 @@ export class RateLimiterMiddleware implements NestMiddleware {
       windowMs: 60 * 60 * 1000,
       maxRequests: 3,
       message: 'Demasiados registros. Intenta de nuevo en 1 hora.',
+    },
+    // Refresh rotativo: un cliente sano lo usa cada ~15 min. Techo holgado
+    // que frena loops de reintento y fuerza bruta sobre tokens opacos.
+    'POST:/api/auth/refresh': {
+      windowMs: 60 * 1000,
+      maxRequests: 20,
+      message: 'Demasiadas renovaciones de sesión. Intenta de nuevo en un momento.',
     },
 
     // Contacto público (landing, sin auth): 5 por hora por IP — un humano
@@ -149,6 +157,15 @@ export class RateLimiterMiddleware implements NestMiddleware {
       maxRequests: 3,
       message: 'Demasiadas solicitudes de retiro. Intenta de nuevo en 1 hora.',
     },
+
+    // Webhooks de pago: cada POST dispara verificación on-chain (Stellar) o
+    // firma + updates (Onvo). Sin bucket propio caían en el default 100/min:
+    // 10/min por IP sobra para un proveedor real y frena amplificación.
+    'POST:/api/payments/webhook/:provider': {
+      windowMs: 60 * 1000,
+      maxRequests: 10,
+      message: 'Demasiadas notificaciones de pago. Espera un momento.',
+    },
   };
 
   // Default rate limit — per route per IP. Cada app consulta su propio set
@@ -175,41 +192,99 @@ export class RateLimiterMiddleware implements NestMiddleware {
   // llena la memoria del solo instanciar entradas. Máx 20k entradas vivas.
   private static readonly MAX_STORE_ENTRIES = 20_000;
 
+  private readonly logger = new Logger(RateLimiterMiddleware.name);
+  /**
+   * Store compartido entre instancias (Redis) cuando hay REDIS_URL. Sin
+   * Redis, cada instancia cuenta por su cuenta: los límites valen por
+   * instancia y se resetean con cada restart/deploy. Para login existe
+   * además el throttle por cuenta en DB, que sí es global.
+   */
+  private redis: Redis | null = null;
+
   constructor() {
     // Cleanup expired entries every 5 minutes
     this.cleanupInterval = setInterval(() => this.cleanup(), 5 * 60 * 1000);
+    const url = process.env.REDIS_URL;
+    if (url) {
+      try {
+        const client = new Redis(url, {
+          lazyConnect: true,
+          maxRetriesPerRequest: 0,
+          enableOfflineQueue: false,
+        });
+        client.on('error', (e) => this.logger.warn(`Redis rate-limit error: ${String(e)}`));
+        client
+          .connect()
+          .then(() => this.logger.log('Rate limiter usando Redis compartido'))
+          .catch((e) => this.logger.warn(`Redis no disponible, fallback en memoria: ${String(e)}`));
+        this.redis = client;
+      } catch (e) {
+        this.logger.warn(`Redis no se pudo iniciar, fallback en memoria: ${String(e)}`);
+        this.redis = null;
+      }
+    }
   }
 
-  use(req: Request, res: Response, next: NextFunction) {
+  /** Solo Redis listo acepta comandos: sin conexión no se encola nada. */
+  private redisReady(): Redis | null {
+    const r = this.redis;
+    return r && (r as any).status === 'ready' ? r : null;
+  }
+
+  async use(req: Request, res: Response, next: NextFunction) {
     const ip = req.ip || req.socket.remoteAddress || 'unknown';
     const now = Date.now();
     const ipKey = this.ipKey(ip);
 
     // 1) Techo por IP (todas las rutas suman aquí).
-    if (this.exceeded(ipKey, this.ipTotalLimit, now)) {
-      this.reject(res, this.ipTotalLimit, ipKey, now);
+    const ipHit = await this.hit(ipKey, this.ipTotalLimit, now);
+    if (ipHit.count > this.ipTotalLimit.maxRequests) {
+      this.reject(res, this.ipTotalLimit, ipHit.resetTime, now);
       return;
     }
 
     // 2) Techo por ruta (configurado o default).
     const limit = this.getLimit(req);
     const routeKey = this.getKey(req);
-    if (this.exceeded(routeKey, limit, now)) {
-      this.reject(res, limit, routeKey, now);
+    const routeHit = await this.hit(routeKey, limit, now);
+    if (routeHit.count > limit.maxRequests) {
+      this.reject(res, limit, routeHit.resetTime, now);
       return;
     }
 
     // Headers informativos sobre el límite por ruta (contrato original).
-    const entry = this.store.get(routeKey)!;
     res.setHeader('X-RateLimit-Limit', limit.maxRequests);
-    res.setHeader('X-RateLimit-Remaining', Math.max(0, limit.maxRequests - entry.count));
-    res.setHeader('X-RateLimit-Reset', Math.ceil(entry.resetTime / 1000));
+    res.setHeader('X-RateLimit-Remaining', Math.max(0, limit.maxRequests - routeHit.count));
+    res.setHeader('X-RateLimit-Reset', Math.ceil(routeHit.resetTime / 1000));
 
     next();
   }
 
-  /** Incrementa y reporta si excede. No lanza: el llamador decide la respuesta. */
-  private exceeded(key: string, limit: RateLimitConfig, now: number): boolean {
+  /**
+   * Incrementa el bucket y devuelve el estado. Redis primero (conteo global
+   * entre instancias); si no hay Redis listo, el Map en memoria de siempre.
+   * No lanza jamás: ante cualquier error usa memoria (fail-safe, no fail-open
+   * total: el límite por instancia sigue valiendo).
+   */
+  private async hit(
+    key: string,
+    limit: RateLimitConfig,
+    now: number,
+  ): Promise<{ count: number; resetTime: number }> {
+    const r = this.redisReady();
+    if (r) {
+      try {
+        const namespaced = `kiwi:rl:${key}`;
+        const count = await r.incr(namespaced);
+        if (count === 1) {
+          await r.pexpire(namespaced, limit.windowMs);
+        }
+        const ttl = await r.pttl(namespaced);
+        return { count, resetTime: now + (ttl > 0 ? ttl : limit.windowMs) };
+      } catch (e) {
+        this.logger.warn(`Redis hit falló, fallback en memoria: ${String(e)}`);
+      }
+    }
     let entry = this.store.get(key);
 
     if (!entry || now > entry.resetTime) {
@@ -224,12 +299,11 @@ export class RateLimiterMiddleware implements NestMiddleware {
     }
 
     entry.count++;
-    return entry.count > limit.maxRequests;
+    return { count: entry.count, resetTime: entry.resetTime };
   }
 
-  private reject(res: Response, limit: RateLimitConfig, key: string, now: number) {
-    const entry = this.store.get(key)!;
-    const retryAfter = Math.max(1, Math.ceil((entry.resetTime - now) / 1000));
+  private reject(res: Response, limit: RateLimitConfig, resetTime: number, now: number) {
+    const retryAfter = Math.max(1, Math.ceil((resetTime - now) / 1000));
     res.setHeader('Retry-After', retryAfter);
     throw new HttpException(
       {

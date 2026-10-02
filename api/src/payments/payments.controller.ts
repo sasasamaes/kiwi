@@ -236,8 +236,7 @@ export class PaymentsController {
     @Body() body: { amount?: number },
     @CurrentUser() user: any,
   ) {
-    await this.paymentsService.assertIntentAccess(paymentIntentId, user, true);
-    return this.onvopayProvider.refundPayment(paymentIntentId, body.amount);
+    return this.paymentsService.refundOnvoPayment(paymentIntentId, body?.amount, user);
   }
 
   @Get('onvo/intent/:paymentIntentId')
