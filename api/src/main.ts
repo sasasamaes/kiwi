@@ -60,9 +60,16 @@ async function ensureDatabaseReady(): Promise<void> {
   const prisma = new PrismaClient();
   const apiRoot = join(__dirname, '..'); // prisma/ and package.json live at the api root
 
+  // Lock de migraciones entre boots concurrentes (deploy con 2+ instancias
+  // o restart simultáneo): sin esto dos `migrate deploy` corren a la vez y
+  // pueden dejar la _prisma_migrations a medio escribir.
+  const MIGRATE_LOCK_KEY = 727581;
+  let lockHeld = false;
   try {
     // 0. Apply pending migrations on every boot (no-op when up to date).
     console.log('🛠️  Applying pending migrations (if any)...');
+    await prisma.$executeRawUnsafe(`SELECT pg_advisory_lock(${MIGRATE_LOCK_KEY})`);
+    lockHeld = true;
     execSync('npx prisma migrate deploy', {
       stdio: 'inherit',
       cwd: apiRoot,
@@ -71,6 +78,23 @@ async function ensureDatabaseReady(): Promise<void> {
     // 1. Reachability + schema probe.
     const userCount = await prisma.user.count();
     console.log(`🗄️  Database reachable (${userCount} users)`);
+
+    // 1b. Columnas que el código escribe sí o sí: si el migrate de arriba
+    // falló en silencio (ej. prisma CLI ausente), el primer pedido con
+    // idempotencyKey daría 500. Se grita en el log en vez de descubrirlo
+    // por un "Internal server error" en el celular del comercio.
+    const requiredColumns: Array<[string, string]> = [['orders', 'idempotency_key']];
+    for (const [table, column] of requiredColumns) {
+      const rows = (await prisma.$queryRawUnsafe(
+        `SELECT 1 FROM information_schema.columns WHERE table_name = '${table}' AND column_name = '${column}' LIMIT 1`,
+      )) as unknown[];
+      if (!Array.isArray(rows) || rows.length === 0) {
+        console.error(
+          `❌ FALTA la columna ${table}.${column}: las migraciones no se aplicaron. ` +
+            `Los pedidos con idempotencia van a fallar con 500. Revisá el deploy.`,
+        );
+      }
+    }
 
     // 2. Demo data: seed an empty database (fresh prod deploys, preview envs).
     // Opt-IN in production (seeding wipes/replaces data) to avoid ever
@@ -88,6 +112,11 @@ async function ensureDatabaseReady(): Promise<void> {
     // Render doesn't flap the deploy while the DB comes back online.
     console.error(`❌ Database bootstrap failed (${error?.code ?? 'unknown'}): ${error?.message}`);
   } finally {
+    if (lockHeld) {
+      await prisma
+        .$executeRawUnsafe(`SELECT pg_advisory_unlock(${MIGRATE_LOCK_KEY})`)
+        .catch(() => null);
+    }
     await prisma.$disconnect();
   }
 }
