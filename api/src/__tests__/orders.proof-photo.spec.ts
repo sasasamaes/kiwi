@@ -157,6 +157,41 @@ describe('OrdersService proof photo (Task 2)', () => {
     );
   });
 
+  it('admin cierra directo a delivered desde assigned (cola trabada)', async () => {
+    const assigned = {
+      id: 'order-1',
+      status: 'assigned',
+      driverId: 'dp-1',
+      pickupProofPhotoUrl: null,
+      deliveryProofPhotoUrl: null,
+      merchant: { userId: 'merchant-user-1' },
+      driver: { userId: 'user-d' },
+    };
+    prisma.order.findUnique
+      .mockResolvedValueOnce(assigned)
+      .mockResolvedValue({ ...assigned, status: 'delivered' });
+    const res: any = await service.updateStatus('order-1', 'delivered', 'admin-1', 'admin');
+    expect(res.status).toBe('delivered');
+    expect(prisma.order.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'order-1', status: 'assigned' },
+        data: expect.objectContaining({ status: 'delivered' }),
+      }),
+    );
+  });
+
+  it('comercio no puede saltar a delivered desde assigned', async () => {
+    prisma.order.findUnique.mockResolvedValue({
+      id: 'order-1',
+      status: 'assigned',
+      merchant: { userId: 'merchant-user-1' },
+      driver: { userId: 'user-d' },
+    });
+    await expect(
+      service.updateStatus('order-1', 'delivered', 'merchant-user-1', 'merchant'),
+    ).rejects.toThrow('No se puede cambiar');
+  });
+
   it('admin cierra trabados sin foto (delivered sin evidencia)', async () => {
     const intransit = {
       id: 'order-1',

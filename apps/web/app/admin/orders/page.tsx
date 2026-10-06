@@ -135,6 +135,30 @@ export default function AdminOrders() {
     }
   };
 
+  // Cierre directo a entregado (cola trabada vieja ya entregada en la calle).
+  const forceDeliverSelected = async () => {
+    if (!selected || advancing) return;
+    if (
+      !window.confirm(
+        `Marcar ENTREGADO el pedido #${selected.id.slice(0, 8).toUpperCase()} de ${selected.merchant?.businessName ?? ''}? Solo si ya se entregó en la calle.`,
+      )
+    ) {
+      return;
+    }
+    setAdvancing(true);
+    setCancelError(null);
+    try {
+      await api.updateOrderStatus(selected.id, 'delivered');
+      setSelected(null);
+      setNextStatus('');
+      await load(filter, search, page);
+    } catch (e: any) {
+      setCancelError(e?.message || 'No se pudo marcar entregado');
+    } finally {
+      setAdvancing(false);
+    }
+  };
+
   const cancelSelected = async () => {
     if (!selected || cancelling) return;
     if (
@@ -508,6 +532,13 @@ export default function AdminOrders() {
                         </button>
                       </div>
                     )}
+                    <button
+                      onClick={() => void forceDeliverSelected()}
+                      disabled={advancing}
+                      className="w-full rounded-xl bg-kiwi-700 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"
+                    >
+                      {advancing ? 'Marcando…' : 'Marcar entregado'}
+                    </button>
                     <button
                       onClick={() => void cancelSelected()}
                       disabled={cancelling}

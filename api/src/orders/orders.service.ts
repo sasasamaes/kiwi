@@ -1455,8 +1455,19 @@ export class OrdersService {
       throw new ForbiddenException('No tienes permiso para actualizar este pedido');
     }
 
-    // Validate status transition
-    this.validateStatusTransition(order.status, status);
+    // Limpieza admin: cierre directo a entregado desde cualquier estado
+    // activo (cola trabada vieja). Auditado; jamás desde delivered/cancelled.
+    // No aplica a comercio/driver: ellos siguen el ciclo con sus reglas.
+    const adminForceDeliver =
+      role === 'admin' &&
+      status === 'delivered' &&
+      !['delivered', 'cancelled'].includes(order.status);
+    if (adminForceDeliver) {
+      this.logger.warn(`Admin ${userId} marcó ${orderId} entregado directo desde ${order.status}`);
+    } else {
+      // Validate status transition
+      this.validateStatusTransition(order.status, status);
+    }
     // Cada actor solo mueve sus propios estados: el comercio no puede
     // pilotear el ciclo hasta entregado, ni el driver cancelar a mitad
     // de ruta (eso es abandono/rechazo por su propio endpoint).
@@ -1513,6 +1524,11 @@ export class OrdersService {
       updateData.pickedUpAt = new Date();
     } else if (status === 'delivered') {
       updateData.deliveredAt = new Date();
+      // Cierre directo admin: sellar también el recojo para no dejar el
+      // timeline a medias en un pedido que sí se entregó en la calle.
+      if (adminForceDeliver && !(order as any).pickedUpAt) {
+        updateData.pickedUpAt = new Date();
+      }
     } else if (order.status === 'no_driver' && status === 'pending') {
       // Reintento del comercio: reabre el concurso con ventana fresca para que
       // el sweeper no lo marque no_driver de inmediato y la flota lo vea.
