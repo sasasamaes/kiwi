@@ -4,6 +4,7 @@ import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getMessaging } from 'firebase-admin/messaging';
 import { PrismaService } from '../prisma/prisma.service';
 import { TOPIC_CATALOG, getTopic, topicsForRole } from './topics';
+import { findDeliveryZone } from '../orders/delivery-zones';
 
 export { TOPIC_CATALOG, getTopic, topicsForRole };
 export interface PushNotification {
@@ -427,6 +428,25 @@ export class NotificationsService {
   // 🔔 EVENTOS → TOPICS (llamados desde órdenes, retiros, ratings)
   // ============================================
 
+  /**
+   * Ruta corta para el push de pedido nuevo: "KyL Bowls ➡️ Los Ángeles".
+   * El barrio (legible de un vistazo) reemplaza a la dirección exacta; el
+   * detalle completo sigue en la app. Sin nombre de comercio o zona, cae a
+   * pickup/dirección como antes.
+   */
+  private newOrderRoute(order: {
+    merchantName?: string | null;
+    pickupAddress: string;
+    deliveryAddress: string;
+    deliveryZone?: string | null;
+  }): string {
+    const merchant = order.merchantName?.trim() || order.pickupAddress;
+    const zone =
+      (order.deliveryZone ? findDeliveryZone(order.deliveryZone)?.label : null) ||
+      order.deliveryAddress;
+    return `${merchant} ➡️ ${zone}`;
+  }
+
   /** Pedido nuevo publicado → topic amplio de drivers. */
   async notifyNewOrderTopic(order: {
     id: string;
@@ -435,13 +455,12 @@ export class NotificationsService {
     totalAmount: any;
     distanceKm: any;
     driverPayout?: any;
+    merchantName?: string | null;
+    deliveryZone?: string | null;
   }) {
-    // Al driver se le muestra SU ganancia, no el total con productos.
-    const gain =
-      order.driverPayout != null ? Number(order.driverPayout) : Number(order.totalAmount);
     return this.publishToTopic('driver.orders.new', {
       title: '📦 Nuevo pedido disponible',
-      body: `₡${gain.toLocaleString()} · ${order.pickupAddress} → ${order.deliveryAddress}`,
+      body: this.newOrderRoute(order),
       data: { orderId: order.id, type: 'new_order' },
     });
   }
@@ -463,6 +482,8 @@ export class NotificationsService {
       totalAmount: any;
       distanceKm: any;
       driverPayout?: any;
+      merchantName?: string | null;
+      deliveryZone?: string | null;
     },
   ) {
     const prefs = await this.prisma.topicPreference.findMany({
@@ -471,12 +492,10 @@ export class NotificationsService {
     });
     if (prefs.length === 0) return { skipped: 'preference_off' as const };
 
-    const gain =
-      order.driverPayout != null ? Number(order.driverPayout) : Number(order.totalAmount);
     if (this.fcmAdmin) {
       await this.sendPushToTokens(userId, {
         title: '📦 Nuevo pedido cerca de ti',
-        body: `₡${gain.toLocaleString()} · ${order.pickupAddress} → ${order.deliveryAddress}`,
+        body: this.newOrderRoute(order),
         data: { orderId: order.id, type: 'new_order' },
       });
     }
@@ -496,13 +515,13 @@ export class NotificationsService {
     distanceKm: any;
     driverPayout?: any;
     scheduledTime?: string | null;
+    merchantName?: string | null;
+    deliveryZone?: string | null;
   }) {
-    const gain =
-      order.driverPayout != null ? Number(order.driverPayout) : Number(order.totalAmount);
     const when = order.scheduledTime ? ` · ⏰ ${order.scheduledTime}` : '';
     return this.publishToTopic('driver.orders.new', {
       title: '📅 Nuevo pedido programado',
-      body: `₡${gain.toLocaleString()} · ${order.pickupAddress} → ${order.deliveryAddress}${when}`,
+      body: `${this.newOrderRoute(order)}${when}`,
       data: { orderId: order.id, type: 'new_scheduled_order' },
     });
   }
@@ -518,6 +537,8 @@ export class NotificationsService {
       distanceKm: any;
       driverPayout?: any;
       scheduledTime?: string | null;
+      merchantName?: string | null;
+      deliveryZone?: string | null;
     },
   ) {
     const prefs = await this.prisma.topicPreference.findMany({
@@ -526,13 +547,11 @@ export class NotificationsService {
     });
     if (prefs.length === 0) return { skipped: 'preference_off' as const };
 
-    const gain =
-      order.driverPayout != null ? Number(order.driverPayout) : Number(order.totalAmount);
     const when = order.scheduledTime ? ` · ⏰ ${order.scheduledTime}` : '';
     if (this.fcmAdmin) {
       await this.sendPushToTokens(userId, {
         title: '📅 Pedido programado cerca de ti',
-        body: `₡${gain.toLocaleString()} · ${order.pickupAddress} → ${order.deliveryAddress}${when}`,
+        body: `${this.newOrderRoute(order)}${when}`,
         data: { orderId: order.id, type: 'new_scheduled_order' },
       });
     }
