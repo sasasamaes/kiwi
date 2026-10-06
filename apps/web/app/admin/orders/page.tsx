@@ -97,6 +97,43 @@ export default function AdminOrders() {
   // reintentos sin internet). Solo estados cancelables por transición.
   const [cancelling, setCancelling] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
+  // Avance manual de pedidos ajenos trabados (el admin salta actores y,
+  // si hace falta, la foto — queda auditado en el log del servidor).
+  const [advancing, setAdvancing] = useState(false);
+  const [nextStatus, setNextStatus] = useState('');
+
+  const NEXT_STATUS: Record<string, Array<{ id: string; label: string }>> = {
+    pending: [
+      { id: 'pending_acceptance', label: 'En aceptación' },
+      { id: 'no_driver', label: 'Sin repartidores' },
+    ],
+    driver_proposals: [{ id: 'assigned', label: 'Asignado (elegir repartidor aparte)' }],
+    pending_acceptance: [
+      { id: 'assigned', label: 'Asignado' },
+      { id: 'pending', label: 'A concurso' },
+    ],
+    assigned: [{ id: 'in_transit_to_pickup', label: 'Va a recoger' }],
+    in_transit_to_pickup: [{ id: 'picked_up', label: 'Recogido' }],
+    picked_up: [{ id: 'in_transit_to_delivery', label: 'En camino a entregar' }],
+    in_transit_to_delivery: [{ id: 'delivered', label: 'Entregado' }],
+    no_driver: [{ id: 'pending', label: 'Reabrir concurso' }],
+  };
+
+  const advanceSelected = async () => {
+    if (!selected || !nextStatus || advancing) return;
+    setAdvancing(true);
+    setCancelError(null);
+    try {
+      await api.updateOrderStatus(selected.id, nextStatus);
+      setSelected(null);
+      setNextStatus('');
+      await load(filter, search, page);
+    } catch (e: any) {
+      setCancelError(e?.message || 'No se pudo cambiar el estado');
+    } finally {
+      setAdvancing(false);
+    }
+  };
 
   const cancelSelected = async () => {
     if (!selected || cancelling) return;
@@ -446,8 +483,31 @@ export default function AdminOrders() {
                     : ''}
                 </p>
                 {selected.status !== 'delivered' && selected.status !== 'cancelled' && (
-                  <div>
+                  <div className="space-y-2">
                     {cancelError && <p className="mb-2 text-xs text-red-600">{cancelError}</p>}
+                    {(NEXT_STATUS[selected.status] ?? []).length > 0 && (
+                      <div className="flex gap-2">
+                        <select
+                          value={nextStatus}
+                          onChange={(e) => setNextStatus(e.target.value)}
+                          className="min-w-0 flex-1 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-2.5 text-sm"
+                        >
+                          <option value="">Avanzar a…</option>
+                          {(NEXT_STATUS[selected.status] ?? []).map((s) => (
+                            <option key={s.id} value={s.id}>
+                              {s.label}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          onClick={() => void advanceSelected()}
+                          disabled={!nextStatus || advancing}
+                          className="shrink-0 rounded-xl bg-kiwi-700 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"
+                        >
+                          {advancing ? '…' : 'Aplicar'}
+                        </button>
+                      </div>
+                    )}
                     <button
                       onClick={() => void cancelSelected()}
                       disabled={cancelling}

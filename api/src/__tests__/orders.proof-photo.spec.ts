@@ -157,6 +157,22 @@ describe('OrdersService proof photo (Task 2)', () => {
     );
   });
 
+  it('admin cierra trabados sin foto (delivered sin evidencia)', async () => {
+    const intransit = {
+      id: 'order-1',
+      status: 'in_transit_to_delivery',
+      driverId: 'dp-1',
+      deliveryProofPhotoUrl: null,
+      merchant: { userId: 'merchant-user-1' },
+      driver: { userId: 'user-d' },
+    };
+    prisma.order.findUnique
+      .mockResolvedValueOnce(intransit)
+      .mockResolvedValue({ ...intransit, status: 'delivered' });
+    const res: any = await service.updateStatus('order-1', 'delivered', 'admin-1', 'admin');
+    expect(res.status).toBe('delivered');
+  });
+
   it('uploadProofPhoto: solo el comercio sube la foto pickup', async () => {
     prisma.order.findUnique.mockResolvedValue({
       id: 'order-1',
