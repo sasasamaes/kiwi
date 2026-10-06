@@ -192,6 +192,58 @@ describe('OrdersService', () => {
       expect(prisma.order.create).not.toHaveBeenCalled();
     });
 
+    it('programar para hoy más tarde valida fecha+hora (no solo la medianoche)', async () => {
+      prisma.merchantProfile.findUnique.mockResolvedValue({
+        id: 'merchant-1',
+        userId: 'user-1',
+        businessName: 'Bowl & Café',
+      });
+      prisma.order.create.mockResolvedValue({ id: 'sched-1', status: 'driver_proposals' });
+      // Pared CR real (el backend lee sin-offset como CR), da igual el TZ del runner.
+      const crParts = (d: Date) => {
+        const p = new Intl.DateTimeFormat('en-CA', {
+          timeZone: 'America/Costa_Rica',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          hourCycle: 'h23',
+        })
+          .formatToParts(d)
+          .reduce<Record<string, string>>((acc, x) => {
+            if (x.type !== 'literal') acc[x.type] = x.value;
+            return acc;
+          }, {});
+        return { day: `${p.year}-${p.month}-${p.day}`, time: `${p.hour}:${p.minute}` };
+      };
+      // +3h garantiza futuro; -3h garantiza pasado.
+      const future = new Date(Date.now() + 3 * 3600_000);
+
+      const f = crParts(future);
+      const res: any = await service.create('user-1', {
+        pickupAddress: 'A',
+        deliveryAddress: 'B',
+        orderType: 'scheduled',
+        scheduledDate: f.day,
+        scheduledTime: f.time,
+      });
+      expect(res.status).toBe('driver_proposals');
+      expect(prisma.order.create).toHaveBeenCalled();
+
+      // Ya pasada (fecha+hora) se rechaza con el mensaje conocido.
+      const p = crParts(new Date(Date.now() - 3 * 3600_000));
+      await expect(
+        service.create('user-1', {
+          pickupAddress: 'A',
+          deliveryAddress: 'B',
+          orderType: 'scheduled',
+          scheduledDate: p.day,
+          scheduledTime: p.time,
+        }),
+      ).rejects.toThrow('ya pasó');
+    });
+
     it('should price by deliveryZone catalog (server is source of truth)', async () => {
       prisma.merchantProfile.findUnique.mockResolvedValue({
         id: 'merchant-1',

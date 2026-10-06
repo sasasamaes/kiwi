@@ -161,8 +161,15 @@ export class OrdersService {
     );
     let scheduledDate: Date | null = null;
     if (data.scheduledDate) {
-      // Sin offset se interpreta como hora CR (no UTC del servidor).
-      scheduledDate = parseScheduledCR(data.scheduledDate);
+      // Fecha + hora combinadas: validar solo la fecha (medianoche) hacía
+      // imposible programar para hoy — la medianoche ya pasó aunque las
+      // 3:45 p. m. sean futuras. Sin offset se lee como hora CR.
+      const rawTime =
+        data.scheduledTime != null && /^\d{2}:\d{2}$/.test(String(data.scheduledTime))
+          ? String(data.scheduledTime)
+          : null;
+      const rawScheduled = rawTime ? `${data.scheduledDate}T${rawTime}` : data.scheduledDate;
+      scheduledDate = parseScheduledCR(rawScheduled);
       if (!scheduledDate) {
         throw new BadRequestException('scheduledDate inválida');
       }
