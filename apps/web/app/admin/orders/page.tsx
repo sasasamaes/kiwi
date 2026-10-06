@@ -93,6 +93,32 @@ export default function AdminOrders() {
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<AdminOrder | null>(null);
   const [copiedTrack, setCopiedTrack] = useState(false);
+  // Cancelación de duplicados/trabados (ej. chofer con 20 en curso por
+  // reintentos sin internet). Solo estados cancelables por transición.
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
+
+  const cancelSelected = async () => {
+    if (!selected || cancelling) return;
+    if (
+      !window.confirm(
+        `Cancelar el pedido #${selected.id.slice(0, 8).toUpperCase()} de ${selected.merchant?.businessName ?? ''}? No se puede deshacer.`,
+      )
+    ) {
+      return;
+    }
+    setCancelling(true);
+    setCancelError(null);
+    try {
+      await api.updateOrderStatus(selected.id, 'cancelled');
+      setSelected(null);
+      await load(filter, search, page);
+    } catch (e: any) {
+      setCancelError(e?.message || 'No se pudo cancelar');
+    } finally {
+      setCancelling(false);
+    }
+  };
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const load = useCallback(async (status: string, q: string, p: number) => {
@@ -419,6 +445,18 @@ export default function AdminOrders() {
                     ? ` · Entregado ${new Date(selected.deliveredAt).toLocaleString('es-CR')}`
                     : ''}
                 </p>
+                {selected.status !== 'delivered' && selected.status !== 'cancelled' && (
+                  <div>
+                    {cancelError && <p className="mb-2 text-xs text-red-600">{cancelError}</p>}
+                    <button
+                      onClick={() => void cancelSelected()}
+                      disabled={cancelling}
+                      className="w-full rounded-xl border border-red-300 px-4 py-2.5 text-sm font-bold text-red-600 disabled:opacity-50"
+                    >
+                      {cancelling ? 'Cancelando…' : 'Cancelar este pedido'}
+                    </button>
+                  </div>
+                )}
               </div>
             </motion.div>
           </motion.div>
