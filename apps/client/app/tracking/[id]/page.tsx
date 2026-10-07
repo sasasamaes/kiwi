@@ -294,10 +294,13 @@ function TrackingContent() {
         ]);
         if (data.status === 'delivered') setEta(0);
         else refreshEta({ ...(order as any), status: data.status }).catch(() => undefined);
+        // La evidencia (pickup/delivery URLs) vive en `order`: sin este
+        // refetch silencioso el tracking nunca muestra la foto hasta recargar.
+        fetchOrder(true).catch(() => undefined);
       }
     });
     return cleanup;
-  }, [on, orderId, order, refreshEta]);
+  }, [on, orderId, order, refreshEta, fetchOrder]);
 
   useEffect(() => {
     const cleanup = on('driver:location', (data: any) => {
