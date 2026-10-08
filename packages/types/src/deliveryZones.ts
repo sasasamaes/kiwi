@@ -87,6 +87,24 @@ export const NICOYA_DELIVERY_ZONES: DeliveryZone[] = [
     geometry: null,
     referenceOnly: true,
   },
+  {
+    id: 'los-malinches',
+    label: 'Los Malinches',
+    price: 1000,
+    latitude: 10.13648,
+    longitude: -85.45505,
+    geometry: null,
+    referenceOnly: true,
+  },
+  {
+    id: 'guadalupe',
+    label: 'Guadalupe',
+    price: 1000,
+    latitude: 10.14051,
+    longitude: -85.44541,
+    geometry: null,
+    referenceOnly: true,
+  },
   // ₡1500
   {
     id: 'matabuey',
@@ -142,6 +160,15 @@ export const NICOYA_DELIVERY_ZONES: DeliveryZone[] = [
     geometry: null,
     referenceOnly: true,
   },
+  {
+    id: 'cruce-casitas',
+    label: 'Cruce Casitas',
+    price: 1500,
+    latitude: 10.132,
+    longitude: -85.438,
+    geometry: null,
+    referenceOnly: true,
+  },
   // ₡1500 sin punto GPS (solo selección manual + match por texto)
   {
     id: 'brisas-del-cerro',
@@ -193,8 +220,8 @@ export const NICOYA_DELIVERY_ZONES: DeliveryZone[] = [
     id: 'casitas',
     label: 'Casitas',
     price: 2000,
-    latitude: 10.14,
-    longitude: -85.44,
+    latitude: 10.12491,
+    longitude: -85.43247,
     geometry: null,
     referenceOnly: true,
   },
@@ -365,10 +392,12 @@ const DETECTION_RULES: Array<{ tokens: string[]; zoneId: string }> = [
   { tokens: ['reserva', 'curime'], zoneId: 'reserva-curime' },
   { tokens: ['bosques', 'adentro'], zoneId: 'bosques-adentro' },
   { tokens: ['bosques', 'afuera'], zoneId: 'bosques-afuera' },
+  { tokens: ['cruce', 'casitas'], zoneId: 'cruce-casitas' },
   { tokens: ['cruce'], zoneId: 'cruce-afuera' },
   { tokens: ['aeropuerto'], zoneId: 'barrio-aeropuerto' },
   { tokens: ['san', 'martin'], zoneId: 'san-martin' },
   { tokens: ['angeles'], zoneId: 'los-angeles' },
+  { tokens: ['malinches'], zoneId: 'los-malinches' },
   { tokens: ['santa', 'lucia'], zoneId: 'santa-lucia' },
   { tokens: ['granja'], zoneId: 'la-granja' },
   { tokens: ['brisas', 'cerro'], zoneId: 'brisas-del-cerro' },
@@ -396,6 +425,7 @@ const DETECTION_RULES: Array<{ tokens: string[]; zoneId: string }> = [
   { tokens: ['cananga'], zoneId: 'cananga' },
   { tokens: ['virginia'], zoneId: 'virginia' },
   { tokens: ['cementerio'], zoneId: 'cementerio' },
+  { tokens: ['guadalupe'], zoneId: 'guadalupe' },
   { tokens: ['centro'], zoneId: 'centro' },
 ];
 
@@ -471,7 +501,7 @@ export const NEAREST_ZONE_AMBIGUITY_KM = 0.15;
 
 /**
  * Zona de referencia más cercana a un GPS. Solo considera zonas CON punto
- * (Casitas, sin coords, queda fuera hasta tener referencia o polígono).
+ * (las que tienen latitude/longitude en null quedan fuera).
  *
  * PUNTO DE EXTENSIÓN POSTGIS: cuando `geometry` exista, este es el lugar a
  * reemplazar por point-in-polygon: primero ST_Within(geometry), y solo como
