@@ -18,12 +18,7 @@ import {
   DeliveryZonesMap,
   safeNavigateToUrl,
 } from '@kiwi/ui';
-import {
-  computeDriverCommission,
-  findDeliveryZone,
-  detectDeliveryZoneFromText,
-  findNearestZone,
-} from '@kiwi/types';
+import { findDeliveryZone, detectDeliveryZoneFromText, findNearestZone } from '@kiwi/types';
 
 type Step = 1 | 2 | 3;
 
@@ -634,8 +629,6 @@ function NewOrderInner({
   const weightSurcharge = kind === 'freight' && weightKg > 5 ? Math.ceil(weightKg - 5) * 500 : 0;
   const trip = baseTrip + weightSurcharge;
   // El comercio NO paga comisión: paga productos + viaje.
-  // La comisión (configurable por admin) la paga el repartidor desde su payout.
-  const driverFee = computeDriverCommission(trip, commissionPct);
   const total = subtotal + trip;
   const etaMin = routeKm != null ? Math.max(5, Math.round((routeKm / 25) * 60)) : null;
 
@@ -1520,12 +1513,6 @@ function NewOrderInner({
                     {zoneLabel ? ` (${zoneLabel})` : routeKm != null ? ` (~${routeKm} km)` : ''}
                   </span>
                   <span className="text-kiwi-700 font-medium">₡{trip.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-surface-500">Repartidor recibe</span>
-                  <span className="text-surface-600 dark:text-surface-300 font-medium">
-                    ₡{(trip - driverFee).toLocaleString()} (viaje − {commissionPct}% Kiwi)
-                  </span>
                 </div>
                 <div className="flex justify-between text-lg font-bold pt-2 border-t border-surface-100 dark:border-surface-700">
                   <span>Total</span>
