@@ -153,7 +153,7 @@ function TrackingContent() {
   });
 
   const STATUS_LABELS: Record<string, string> = {
-    pending: 'Pedido recibido',
+    pending: 'Viaje recibido',
     assigned: 'Repartidor asignado',
     pending_acceptance: 'Esperando al repartidor',
     in_transit_to_pickup: 'En camino a recoger',
