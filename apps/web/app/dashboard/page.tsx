@@ -37,6 +37,17 @@ import { MerchantNav } from '../../components/MerchantNav';
  * `specialInstructions` ("Cliente: Nombre (teléfono) · notas") para el
  * historial viejo que se creó sin customerName.
  */
+/**
+ * Saludo por hora local (el comercio opera en CR):
+ * 05:00–11:59 días, 12:00–18:29 tardes, 18:30–04:59 noches.
+ */
+function getGreeting(now: Date = new Date()): string {
+  const mins = now.getHours() * 60 + now.getMinutes();
+  if (mins >= 5 * 60 && mins < 12 * 60) return 'Buenos días';
+  if (mins >= 12 * 60 && mins < 18 * 60 + 30) return 'Buenas tardes';
+  return 'Buenas noches';
+}
+
 function getClientName(o: any): string {
   const raw = typeof o?.customerName === 'string' ? o.customerName.trim() : '';
   if (raw) return raw;
@@ -200,7 +211,7 @@ export default function Dashboard() {
           transition={{ delay: 0.1 }}
         >
           <h2 className="text-2xl font-display font-bold text-surface-800 dark:text-surface-100">
-            Buenos días 👋 {user?.merchantProfile?.businessName || ''}
+            {getGreeting()} 👋 {user?.merchantProfile?.businessName || ''}
           </h2>
           <p className="text-surface-500 dark:text-surface-400">
             Aquí está el resumen de tu negocio hoy
