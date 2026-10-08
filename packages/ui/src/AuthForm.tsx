@@ -295,15 +295,17 @@ export function AuthForm({
               <span id="auth-password-hint" className="sr-only">
                 Mínimo 6 caracteres
               </span>
-              <motion.button
+              {/* Botón plano (no motion): framer-motion escribe `transform`
+                  inline y pisa el `-translate-y-1/2` de Tailwind, dejando el
+                  ojo colgando fuera del campo. */}
+              <button
                 type="button"
-                className="absolute right-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center text-surface-400 hover:text-surface-600"
+                className="absolute right-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center text-surface-400 transition-colors hover:text-surface-600 active:scale-90"
                 onClick={() => setShowPassword(!showPassword)}
-                whileTap={{ scale: 0.9 }}
                 aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
               >
                 {showPassword ? <Eye className="h-5 w-5" /> : <EyeOff className="h-5 w-5" />}
-              </motion.button>
+              </button>
             </div>
           </div>
 
