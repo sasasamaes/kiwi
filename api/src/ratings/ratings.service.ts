@@ -202,7 +202,10 @@ export class RatingsService {
           ? {
               id: (order.driver as any)?.id ?? null,
               fullName: (order.driver as any)?.fullName ?? null,
-              rating: (order.driver as any)?.rating ?? null,
+              // Decimal de Prisma serializa como string: normalizar a number
+              // para que el client no tenga que adivinar el tipo.
+              rating:
+                (order.driver as any)?.rating != null ? Number((order.driver as any).rating) : null,
               vehicleType: (order.driver as any)?.vehicleType ?? null,
             }
           : null,

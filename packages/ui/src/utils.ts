@@ -127,6 +127,17 @@ export function isEmojiImage(value: unknown): boolean {
 }
 
 /**
+ * Rating 1-5 con 1 decimal para pintar. El backend lo guarda como
+ * Decimal(3,2) y viaja en el JSON como string ("5.00") — llamar
+ * `.toFixed()` directo revienta el render. Acepta number|string|null.
+ */
+export function formatRating(value: unknown, fallback = '5.0'): string {
+  if (value == null || value === '') return fallback;
+  const n = Number(value);
+  return Number.isFinite(n) ? n.toFixed(1) : fallback;
+}
+
+/**
  * True si el valor es una URL http(s) — imagen subida a storage (Cloudinary,
  * S3/R2). Type-guard: permite `isHttpUrl(x) ? <img src={x}>` sin casts.
  */

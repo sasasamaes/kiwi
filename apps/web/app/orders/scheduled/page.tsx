@@ -19,6 +19,7 @@ import {
   Order,
   DriverProposal,
   VehicleBadge,
+  formatRating,
 } from '@kiwi/ui';
 
 export default function ScheduledOrdersPage() {
@@ -424,7 +425,7 @@ export default function ScheduledOrdersPage() {
                                     <Star className="h-4 w-4" />
                                   </span>
                                   <span className="text-sm font-medium text-surface-600 dark:text-surface-400">
-                                    {proposal.driver?.rating?.toFixed(1) || '5.0'}
+                                    {formatRating(proposal.driver?.rating)}
                                   </span>
                                 </div>
                               </div>

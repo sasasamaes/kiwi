@@ -13,6 +13,7 @@ import {
   useSocket,
   socketClient,
   api,
+  formatRating,
 } from '@kiwi/ui';
 import { MerchantNav } from '../../components/MerchantNav';
 
@@ -552,7 +553,7 @@ export default function DriversPage() {
                             <div className="flex items-center gap-4 mt-1 text-sm text-surface-500">
                               <span>
                                 <Star className="h-4 w-4 inline" />{' '}
-                                {driver.rating != null ? driver.rating.toFixed(1) : '—'}
+                                {driver.rating != null ? formatRating(driver.rating, '—') : '—'}
                               </span>
                               <span>
                                 <Package className="h-4 w-4 inline" /> {driver.totalTrips ?? 0}{' '}

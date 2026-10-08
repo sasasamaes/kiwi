@@ -6,13 +6,14 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Star, Loader2, CheckCircle2, Bike, PackageCheck, Clock, ShieldCheck } from 'lucide-react';
-import { api, Skeleton, AnimatedButton } from '@kiwi/ui';
+import { api, Skeleton, AnimatedButton, formatRating } from '@kiwi/ui';
 
 interface OrderInfo {
   id: string;
   status: string;
   merchant?: { businessName: string };
-  driver?: { id: string; fullName: string; rating: number; vehicleType: string };
+  // El rating viaja como Decimal→string en el JSON (ver formatRating).
+  driver?: { id: string; fullName: string; rating: number | string | null; vehicleType: string };
 }
 
 const RATING_LABELS: Record<number, { title: string; emoji: string }> = {
@@ -215,7 +216,7 @@ export default function RateOrderPage() {
               </p>
               <p className="text-xs text-surface-500 dark:text-surface-400 flex items-center gap-1">
                 <Star className="h-3 w-3 text-yellow-500" />
-                {order.driver.rating?.toFixed(1) || '5.0'} · calificación actual
+                {formatRating(order.driver.rating)} · calificación actual
               </p>
             </div>
           </div>

@@ -244,6 +244,7 @@ export {
   safeNavigateToUrl,
   isEmojiImage,
   isHttpUrl,
+  formatRating,
 } from './utils';
 
 // ============================================
