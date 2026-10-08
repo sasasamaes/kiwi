@@ -19,7 +19,7 @@ import {
   Calculator,
   Link2,
 } from 'lucide-react';
-import { ThemeToggle, useAuth, KiwiLogo } from '@kiwi/ui';
+import { ThemeToggle, useAuth, KiwiLogo, KiwiSlice } from '@kiwi/ui';
 
 const menuItems = [
   { href: '/admin', icon: BarChart3, label: 'Dashboard', exact: true },
@@ -85,10 +85,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         initial={{ x: -100 }}
         animate={{ x: 0 }}
       >
-        {/* Logo */}
-        <div className="p-4 border-b border-surface-200 dark:border-surface-700">
-          <Link href="/admin" className="flex items-center gap-3">
-            <KiwiLogo size={30} />
+        {/* Logo: completo con sidebar abierto; solo la rebanada cuando está
+            colapsado (el lockup icono + "Kiwi" no cabe en 80px y se recorta). */}
+        <div
+          className={`p-4 border-b border-surface-200 dark:border-surface-700 flex ${
+            sidebarOpen ? '' : 'justify-center'
+          }`}
+        >
+          <Link href="/admin" className="flex items-center gap-3" aria-label="Admin">
+            {sidebarOpen ? <KiwiLogo size={30} /> : <KiwiSlice size={30} />}
             {sidebarOpen && (
               <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
                 <h1 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100">
