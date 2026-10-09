@@ -863,10 +863,10 @@ export default function MenuPage() {
           {categories.map((cat) => (
             <TapButton
               key={cat}
-              className={`inline-flex min-h-[44px] flex-shrink-0 items-center rounded-full px-4 py-2 text-sm font-medium transition-all ${
+              className={`inline-flex min-h-[44px] flex-shrink-0 items-center rounded-full px-4 py-2 text-sm font-medium transition-colors ${
                 selectedCategory === cat
-                  ? 'bg-kiwi-700 text-white shadow-kiwi'
-                  : `bg-white dark:bg-surface-800 text-surface-600 dark:text-surface-400 shadow-soft dark:shadow-dark ${hoverChip}`
+                  ? 'bg-kiwi-700 text-white'
+                  : `bg-white dark:bg-surface-800 text-surface-600 dark:text-surface-400 shadow-soft dark:shadow-dark hover:bg-surface-100 dark:hover:bg-surface-700 ${hoverChip}`
               }`}
               onClick={() => setSelectedCategory(cat)}
             >

@@ -3,9 +3,11 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ConflictException,
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { normalizeCRPhone } from '../common/phone';
 
 const VALID_VEHICLE_TYPES = ['motorcycle', 'motorized_bike', 'bicycle', 'car', 'truck'];
 
@@ -129,6 +131,28 @@ export class UsersService {
 
     if (!user) {
       throw new NotFoundException('Usuario no encontrado');
+    }
+
+    // Teléfono propio (cualquier rol): se normaliza a 8888-8888 y debe ser
+    // único. Vacío lo libera (null) para no bloquear si cambia de número.
+    if (data.phone !== undefined) {
+      const raw = String(data.phone ?? '').trim();
+      if (raw === '') {
+        await this.prisma.user.update({ where: { id: userId }, data: { phone: null } });
+      } else {
+        const phone = normalizeCRPhone(raw);
+        if (!phone) {
+          throw new BadRequestException('Formato de teléfono inválido (8888-8888)');
+        }
+        const taken = await this.prisma.user.findFirst({
+          where: { phone, id: { not: userId } },
+          select: { id: true },
+        });
+        if (taken) {
+          throw new ConflictException('Ese teléfono ya está registrado');
+        }
+        await this.prisma.user.update({ where: { id: userId }, data: { phone } });
+      }
     }
 
     // Update profile based on role

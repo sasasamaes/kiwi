@@ -4,15 +4,38 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { User, MapPin, Bell, ClipboardList, LogOut } from 'lucide-react';
-import { api, useAuth, KiwiLogo } from '@kiwi/ui';
+import { MapPin, Bell, ClipboardList, LogOut, Pencil, X, Check, Phone } from 'lucide-react';
+import { api, useAuth, KiwiLogo, ZonePicker } from '@kiwi/ui';
+import { findNearestZone } from '@kiwi/types';
 import { BottomNav } from '../components/BottomNav';
+import { AvatarEditor } from '../components/AvatarEditor';
+import { InstallAppButton } from '../components/InstallAppButton';
+
+// Acepta +506 7219 9768, 72199768, 7219-9768 → 8888-8888 (igual que registro).
+const normalizePhone = (raw: string): string => {
+  const digits = raw.replace(/[^\d]/g, '');
+  const local = digits.length === 11 && digits.startsWith('506') ? digits.slice(3) : digits;
+  return /^\d{8}$/.test(local) ? `${local.slice(0, 4)}-${local.slice(4)}` : raw.trim();
+};
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { user, loading, logout } = useAuth();
+  const { user, loading, logout, updateUser } = useAuth();
   const [profile, setProfile] = useState<any>(null);
   const [offersOn, setOffersOn] = useState(true);
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [savedTick, setSavedTick] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [form, setForm] = useState({
+    fullName: '',
+    phone: '',
+    defaultAddress: '',
+    deliveryZone: '',
+  });
+  const [gps, setGps] = useState<{ lat: number; lng: number } | null>(null);
+  const [gpsZoneAuto, setGpsZoneAuto] = useState(false);
+  const [locating, setLocating] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) return;
@@ -50,6 +73,72 @@ export default function ProfilePage() {
   const signOut = () => {
     logout();
     router.push('/');
+  };
+
+  const startEditing = () => {
+    setForm({
+      fullName: profile?.fullName || '',
+      phone: (user as any)?.phone || '',
+      defaultAddress: profile?.defaultAddress || '',
+      deliveryZone: profile?.deliveryZone || '',
+    });
+    setGps(null);
+    setGpsZoneAuto(false);
+    setFormError(null);
+    setSavedTick(false);
+    setEditing(true);
+  };
+
+  const useGpsLocation = () => {
+    if (!('geolocation' in navigator)) return;
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setGps(coords);
+        setLocating(false);
+        try {
+          const near = findNearestZone(coords.lat, coords.lng);
+          if (near?.confident) {
+            setForm((f) => ({ ...f, deliveryZone: near.zone.id }));
+            setGpsZoneAuto(true);
+          }
+        } catch {
+          // sin zona: el picker manual sigue disponible
+        }
+      },
+      () => setLocating(false),
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 },
+    );
+  };
+
+  const saveProfile = async () => {
+    setSaving(true);
+    setFormError(null);
+    try {
+      const phone = normalizePhone(form.phone);
+      if (form.phone.trim() !== '' && !/^\d{4}-\d{4}$/.test(phone)) {
+        throw new Error('Teléfono inválido (formato 8888-8888)');
+      }
+      const [updated] = await Promise.all([
+        api.updateCustomerProfile({
+          fullName: form.fullName.trim() || null,
+          defaultAddress: form.defaultAddress.trim() || null,
+          deliveryZone: form.deliveryZone || null,
+          ...(gps ? { latitude: gps.lat, longitude: gps.lng } : {}),
+        }),
+        api.updateMe({ phone: phone || null }),
+      ]);
+      setProfile(updated);
+      updateUser({ phone: phone || undefined } as any);
+      setEditing(false);
+      setSavedTick(true);
+      setTimeout(() => setSavedTick(false), 3000);
+    } catch (err: any) {
+      setFormError(err?.message || 'No se pudo guardar.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (loading) {
@@ -98,9 +187,10 @@ export default function ProfilePage() {
     <div className="min-h-[100dvh] bg-bg-light dark:bg-surface-950 px-4 py-6 pb-24">
       <div className="mx-auto max-w-lg">
         <div className="flex items-center gap-3 mb-6">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-kiwi-100 dark:bg-kiwi-400/10">
-            <User className="h-7 w-7 text-kiwi-700 dark:text-kiwi-300" />
-          </div>
+          <AvatarEditor
+            avatarUrl={profile?.avatarUrl}
+            onChange={(url) => setProfile((p: any) => (p ? { ...p, avatarUrl: url } : p))}
+          />
           <div>
             <h1 className="text-xl font-display font-bold">
               {profile?.fullName || (user as any)?.email || 'Mi cuenta'}
@@ -110,13 +200,94 @@ export default function ProfilePage() {
         </div>
 
         <div className="rounded-2xl glass p-5 mb-3 space-y-3 text-sm">
-          <div className="flex items-center gap-3">
-            <MapPin className="h-4 w-4 text-surface-400 shrink-0" />
-            <span>
-              {profile?.defaultAddress || 'Sin dirección guardada'}
-              {profile?.citySlug ? ` · ${profile.citySlug}` : ''}
-            </span>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <MapPin className="h-4 w-4 text-surface-400 shrink-0" />
+              <span className="truncate">
+                {profile?.defaultAddress || 'Sin dirección guardada'}
+                {profile?.citySlug ? ` · ${profile.citySlug}` : ''}
+              </span>
+            </div>
+            {!editing && (
+              <button
+                onClick={startEditing}
+                className="flex shrink-0 items-center gap-1 rounded-full bg-surface-100 dark:bg-surface-700 px-3 py-1.5 text-xs font-semibold text-surface-600 dark:text-surface-300"
+              >
+                <Pencil className="h-3.5 w-3.5" /> Editar
+              </button>
+            )}
           </div>
+          {(user as any)?.phone && !editing && (
+            <div className="flex items-center gap-3">
+              <Phone className="h-4 w-4 text-surface-400 shrink-0" />
+              <span>{(user as any).phone}</span>
+            </div>
+          )}
+          {editing && (
+            <div className="space-y-3 pt-1">
+              <input
+                value={form.fullName}
+                onChange={(e) => setForm((f) => ({ ...f, fullName: e.target.value }))}
+                placeholder="Tu nombre"
+                className="w-full rounded-xl bg-surface-100 dark:bg-surface-800 px-4 py-3 text-sm outline-none"
+              />
+              <input
+                value={form.phone}
+                onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+                onBlur={() => setForm((f) => ({ ...f, phone: normalizePhone(f.phone) }))}
+                placeholder="Teléfono 8888-8888"
+                inputMode="tel"
+                className="w-full rounded-xl bg-surface-100 dark:bg-surface-800 px-4 py-3 text-sm outline-none"
+              />
+              <input
+                value={form.defaultAddress}
+                onChange={(e) => setForm((f) => ({ ...f, defaultAddress: e.target.value }))}
+                placeholder="Dirección de entrega"
+                className="w-full rounded-xl bg-surface-100 dark:bg-surface-800 px-4 py-3 text-sm outline-none"
+              />
+              <button
+                type="button"
+                onClick={useGpsLocation}
+                disabled={locating}
+                className="w-full rounded-xl bg-surface-100 dark:bg-surface-800 px-4 py-3 text-sm font-semibold disabled:opacity-60"
+              >
+                {locating ? 'Ubicando…' : gps ? '✓ Ubicación lista' : '📍 Usar mi ubicación GPS'}
+              </button>
+              <ZonePicker
+                value={form.deliveryZone}
+                onChange={(zoneId) => {
+                  setGpsZoneAuto(false);
+                  setForm((f) => ({ ...f, deliveryZone: zoneId }));
+                }}
+              />
+              {gpsZoneAuto && form.deliveryZone && (
+                <p className="text-xs text-kiwi-700 dark:text-kiwi-300">
+                  📍 Barrio por tu ubicación (podés cambiarlo).
+                </p>
+              )}
+              {formError && <p className="text-xs text-red-600">{formError}</p>}
+              {savedTick && <p className="text-xs text-kiwi-700 dark:text-kiwi-300">✓ Guardado</p>}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => void saveProfile()}
+                  disabled={saving}
+                  className="flex-1 flex items-center justify-center gap-1 rounded-xl bg-kiwi-600 px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
+                >
+                  <Check className="h-4 w-4" /> {saving ? 'Guardando…' : 'Guardar'}
+                </button>
+                <button
+                  onClick={() => setEditing(false)}
+                  disabled={saving}
+                  className="flex items-center justify-center gap-1 rounded-xl border border-surface-200 dark:border-surface-700 px-4 py-3 text-sm font-semibold"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          )}
+          {savedTick && !editing && (
+            <p className="text-xs text-kiwi-700 dark:text-kiwi-300">✓ Datos actualizados</p>
+          )}
           <label className="flex items-center justify-between gap-3 cursor-pointer">
             <span className="flex items-center gap-3">
               <Bell className="h-4 w-4 text-surface-400 shrink-0" />
@@ -132,6 +303,7 @@ export default function ProfilePage() {
         </div>
 
         <div className="flex flex-col gap-2">
+          <InstallAppButton />
           <Link
             href="/orders"
             className="flex items-center justify-center gap-2 rounded-xl bg-kiwi-600 px-4 py-3 text-sm font-semibold text-white"
