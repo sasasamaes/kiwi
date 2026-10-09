@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { motion, AnimatePresence, useAnimationControls, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import {
   Utensils,
   Star,
@@ -110,7 +110,6 @@ export default function MenuPage() {
   const [selectedCategory, setSelectedCategory] = useState('Todos');
   /** Clave que reinicia la animación de rebote del carrito (TapButton onSuccess). */
   const [cartBounceKey, setCartBounceKey] = useState(0);
-  const cartControls = useAnimationControls();
   const prefersReducedMotion = useReducedMotion();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -1027,7 +1026,7 @@ export default function MenuPage() {
           <motion.div
             className="fixed bottom-6 left-4 right-4 z-50 pb-safe"
             initial={{ y: 100, opacity: 0 }}
-            animate={cartControls}
+            animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
           >
             <motion.div

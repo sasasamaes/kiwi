@@ -36,6 +36,12 @@ export default function LoginPage() {
   return (
     <div className="min-h-[100dvh] bg-bg-light dark:bg-surface-950 px-4 py-10">
       <div className="mx-auto max-w-sm">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 text-sm text-surface-500 dark:text-surface-400 mb-6"
+        >
+          <span>←</span> Volver al inicio
+        </Link>
         <div className="flex justify-center mb-6">
           <KiwiLogo size={40} />
         </div>
