@@ -288,8 +288,8 @@ export default function ClientHome() {
                   onClick={() => setCategory(c.id)}
                   className={`flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-sm transition-colors ${
                     active
-                      ? 'bg-kiwi-700 text-white font-semibold shadow-kiwi'
-                      : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-300'
+                      ? 'bg-kiwi-700 text-white font-semibold'
+                      : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-300 hover:bg-surface-200 dark:hover:bg-surface-700'
                   }`}
                 >
                   <Icon className="h-4 w-4" />
