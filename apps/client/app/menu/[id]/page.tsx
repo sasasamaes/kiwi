@@ -833,11 +833,21 @@ export default function MenuPage() {
         transition={{ delay: 0.2 }}
       >
         {filteredItems.length === 0 ? (
-          <div className="text-center py-12">
-            <Utensils className="text-5xl mb-4 block h-12 w-12 mx-auto" />
-            <p className="text-surface-500 dark:text-surface-400">
-              No hay productos en esta categoría
+          <div className="text-center py-12 px-6 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark">
+            <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-kiwi-100 dark:bg-kiwi-400/10">
+              <Utensils className="h-10 w-10 text-kiwi-600/70 dark:text-kiwi-400/70" />
+            </div>
+            <p className="font-display font-semibold text-surface-800 dark:text-surface-100">
+              Este restaurante aún no tiene productos aquí
             </p>
+            <p className="text-sm text-surface-500 dark:text-surface-400 mt-1 mb-6">
+              Estamos esperando que cargue su menú. Probá con otro restaurante mientras tanto.
+            </p>
+            <Link href="/">
+              <AnimatedButton variant="gradient" className="w-full">
+                ← Ver restaurantes
+              </AnimatedButton>
+            </Link>
           </div>
         ) : (
           <div className="space-y-4">
