@@ -18,6 +18,7 @@ export default function RegisterPage() {
     defaultAddress: '',
   });
   const [offers, setOffers] = useState(true);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -26,9 +27,15 @@ export default function RegisterPage() {
     setError(null);
     setLoading(true);
     try {
+      if (!acceptedTerms) {
+        setError('Tenés que aceptar los Términos y la Política de Privacidad.');
+        setLoading(false);
+        return;
+      }
       await register({
         email: form.email.trim(),
         password: form.password,
+        acceptedTerms,
         fullName: form.fullName.trim() || undefined,
         phone: form.phone.trim() || undefined,
         citySlug: form.citySlug,
@@ -39,9 +46,16 @@ export default function RegisterPage() {
       if (!offers) {
         try {
           await api.setTopicPreference('customer.offers', false);
-        } catch {}
+        } catch {
+          /* best-effort: el opt-out se puede cambiar después en ajustes */
+        }
       }
-      router.push('/');
+      const next =
+        typeof window !== 'undefined'
+          ? window.sessionStorage.getItem('kiwi_redirect_after_login')
+          : null;
+      if (next) window.sessionStorage.removeItem('kiwi_redirect_after_login');
+      router.push(next && next.startsWith('/') ? next : '/');
     } catch (err: any) {
       setError(err?.message || 'No se pudo crear la cuenta.');
     } finally {
@@ -89,26 +103,35 @@ export default function RegisterPage() {
             value={form.phone}
             onChange={set('phone')}
             placeholder="Teléfono 8888-8888 (opcional)"
+            pattern="\d{4}-\d{4}"
+            title="Formato 8888-8888"
             className="w-full rounded-xl bg-surface-100 dark:bg-surface-800 px-4 py-3 text-sm outline-none"
           />
-          <div className="flex gap-2">
-            {['nicoya', 'liberia'].map((c) => (
-              <button
-                type="button"
-                key={c}
-                onClick={() => setForm((f) => ({ ...f, citySlug: c }))}
-                className={`flex-1 rounded-xl px-3 py-2.5 text-sm capitalize ${form.citySlug === c ? 'bg-kiwi-600 text-white font-semibold' : 'bg-surface-100 dark:bg-surface-800'}`}
-              >
-                {c}
-              </button>
-            ))}
-          </div>
+          {/* Lanzamiento en Nicoya: ciudad fija (Liberia es a futuro) */}
           <input
             value={form.defaultAddress}
             onChange={set('defaultAddress')}
             placeholder="Dirección de entrega (opcional)"
             className="w-full rounded-xl bg-surface-100 dark:bg-surface-800 px-4 py-3 text-sm outline-none"
           />
+          <label className="flex items-start gap-2 text-xs text-surface-500">
+            <input
+              type="checkbox"
+              checked={acceptedTerms}
+              onChange={(e) => setAcceptedTerms(e.target.checked)}
+              className="mt-0.5"
+            />
+            <span>
+              Acepto los{' '}
+              <a href="/terms" className="underline">
+                Términos
+              </a>{' '}
+              y la{' '}
+              <a href="/privacy" className="underline">
+                Política de Privacidad
+              </a>
+            </span>
+          </label>
           <label className="flex items-start gap-2 text-xs text-surface-500">
             <input
               type="checkbox"

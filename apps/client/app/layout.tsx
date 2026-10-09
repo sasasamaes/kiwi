@@ -11,6 +11,7 @@ import {
   ServiceWorkerUpdater,
   SkipToContent,
 } from '@kiwi/ui';
+import { UnauthorizedHandler } from './components/UnauthorizedHandler';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -33,6 +34,7 @@ export const metadata: Metadata = {
   title: 'Kiwi - Menu',
   description: 'Ordena desde tu restaurante favorito',
   themeColor: '#22c55e',
+  manifest: '/manifest.json',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -47,6 +49,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <AuthProvider>
             <NotificationProvider>
               <SkipToContent />
+              <UnauthorizedHandler />
               {children}
               <CookieConsentBanner />
               <ServiceWorkerUpdater />

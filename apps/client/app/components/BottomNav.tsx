@@ -20,14 +20,17 @@ const ITEMS = [
   { href: '/orders', label: 'Pedidos', icon: ClipboardList, exact: false },
 ];
 
+// Estados reales del backend (OrderStatus en schema.prisma): un pedido en
+// concurso, aceptado o sin driver sigue activo y se puede seguir.
 const ACTIVE_STATUSES = new Set([
   'pending',
-  'preparing',
-  'ready',
+  'driver_proposals',
   'assigned',
+  'pending_acceptance',
   'in_transit_to_pickup',
   'picked_up',
   'in_transit_to_delivery',
+  'no_driver',
 ]);
 
 export function BottomNav() {

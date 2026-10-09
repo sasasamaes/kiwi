@@ -151,7 +151,7 @@ export default function RateOrderPage() {
             Mis pedidos
           </Link>
           <Link
-            href={`/order/${orderId}/tracking`}
+            href={`/tracking/${orderId}`}
             className="rounded-xl px-5 py-3 font-medium bg-kiwi-gradient text-white"
           >
             Ver el pedido
@@ -171,7 +171,7 @@ export default function RateOrderPage() {
           Podrás calificar este pedido cuando sea entregado.
         </p>
         <Link
-          href={`/order/${orderId}/tracking`}
+          href={`/tracking/${orderId}`}
           className="rounded-xl px-5 py-3 font-medium bg-kiwi-gradient text-white"
         >
           Ver el seguimiento

@@ -20,7 +20,12 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(email.trim(), password);
-      router.push('/');
+      const next =
+        typeof window !== 'undefined'
+          ? window.sessionStorage.getItem('kiwi_redirect_after_login')
+          : null;
+      if (next) window.sessionStorage.removeItem('kiwi_redirect_after_login');
+      router.push(next && next.startsWith('/') ? next : '/');
     } catch (err: any) {
       setError(err?.message || 'No se pudo entrar. Revisá tus datos.');
     } finally {

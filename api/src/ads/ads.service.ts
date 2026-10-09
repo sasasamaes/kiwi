@@ -84,10 +84,13 @@ export class AdsService {
     const sponsoredIds = activeSpotlight.map((c) => c.merchantId);
     const campaignByMerchant = new Map(activeSpotlight.map((c) => [c.merchantId, c.id]));
 
+    // Feed de lanzamiento: entra todo comercio con usuario activo de rol
+    // merchant (menos admin/test). El KYC verificado ordena primero pero NO
+    // excluye: los comercios ya operando con la app de negocios (aunque su
+    // KYC siga pending) deben verse en la app de clientes.
     const where: any = {
       citySlug: city,
-      user: { status: 'active' },
-      kycStatus: 'approved',
+      user: { status: 'active', role: 'merchant' },
       ...(q?.trim()
         ? {
             OR: [
@@ -111,6 +114,7 @@ export class AdsService {
         openingHours: true,
         citySlug: true,
         createdAt: true,
+        kycStatus: true,
       },
       take: 100,
     });
@@ -138,6 +142,9 @@ export class AdsService {
 
     withRatings.sort((a, b) => {
       if (a.isSponsored !== b.isSponsored) return a.isSponsored ? -1 : 1;
+      const aVerified = (a as any).kycStatus === 'approved' ? 0 : 1;
+      const bVerified = (b as any).kycStatus === 'approved' ? 0 : 1;
+      if (aVerified !== bVerified) return aVerified - bVerified;
       if (a.isOpen !== b.isOpen) return a.isOpen ? -1 : 1;
       if (a.rating !== b.rating) return b.rating - a.rating;
       return 0;

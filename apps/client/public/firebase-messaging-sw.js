@@ -36,8 +36,8 @@ messaging.onBackgroundMessage((payload) => {
   const type = payload.data?.type || 'general';
   const notificationOptions = {
     body: payload.notification?.body || payload.data?.body || 'Tienes una nueva notificación',
-    icon: '/icon.png',
-    badge: '/icon.png',
+    icon: '/favicon.ico',
+    badge: '/favicon.ico',
     image: payload.notification?.image || payload.data?.image,
     data: payload.data,
     vibrate: [200, 100, 200],

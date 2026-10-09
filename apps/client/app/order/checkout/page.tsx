@@ -145,7 +145,9 @@ function CheckoutContent() {
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   // Sin comisión al cliente: paga productos + envío. El 15% lo paga el driver.
   const zoneTrip = findDeliveryZone(deliveryZone)?.price ?? null;
-  const deliveryFee = zoneTrip ?? (subtotal >= 5000 ? 0 : 500);
+  // Igual que el modal del menú y que el servidor: el envío es SIEMPRE el
+  // precio del barrio (el servidor no tiene regla de gratis +₡5000).
+  const deliveryFee = zoneTrip ?? 500;
   const total = subtotal + deliveryFee;
   const phoneDigits = phoneNumber.replace(/\D/g, '');
 

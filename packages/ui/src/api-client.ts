@@ -25,6 +25,18 @@ class ApiClient {
   private refreshToken: string | null = null;
   /** Vuelo único de refresh: los 401 concurrentes comparten el intento. */
   private refreshFlight: Promise<boolean> | null = null;
+  /**
+   * Handler de sesión muerta por app. Si la app lo registra, ella decide
+   * (ej. cliente: solo redirige en rutas protegidas; home/menu/tracking
+   * siguen funcionando sin sesión). Sin handler = redirect duro a /login
+   * (comportamiento legacy para driver/web).
+   */
+  private unauthorizedHandler: ((path: string) => void) | null = null;
+
+  /** La app registra cómo reaccionar a un 401 con refresh muerto. */
+  onUnauthorized(handler: ((path: string) => void) | null) {
+    this.unauthorizedHandler = handler;
+  }
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
@@ -153,15 +165,24 @@ class ApiClient {
           return this.request<T>(endpoint, { ...options, _retried: true });
         }
       }
-      // Sesión muerta (refresh vencido/revocado): limpiar y mandar a login.
-      // Se guarda la ruta para volver después.
+      // Sesión muerta (refresh vencido/revocado): limpiar y avisar.
+      // Se guarda la ruta para volver después. A dónde ir lo decide la app
+      // vía onUnauthorized; sin handler se mantiene el redirect a /login.
       if (response.status === 401 && typeof window !== 'undefined') {
         this.setToken(null);
         this.setRefreshToken(null);
         const here = `${window.location.pathname}${window.location.search}`;
         if (!window.location.pathname.includes('/login')) {
           window.sessionStorage.setItem('kiwi_redirect_after_login', here);
-          window.location.href = '/login';
+          if (this.unauthorizedHandler) {
+            try {
+              this.unauthorizedHandler(here);
+            } catch {
+              // la app decide; si su handler falla, no romper el request
+            }
+          } else {
+            window.location.href = '/login';
+          }
         }
       }
       const error = await response.json().catch(() => ({ message: 'Error desconocido' }));

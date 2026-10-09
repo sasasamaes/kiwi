@@ -16,7 +16,7 @@ import {
   X,
   Smartphone,
 } from 'lucide-react';
-import { api, Skeleton, hoverCard, ScrollToTop, ThemeToggle } from '@kiwi/ui';
+import { api, useAuth, Skeleton, hoverCard, ScrollToTop, ThemeToggle } from '@kiwi/ui';
 import { BottomNav } from '../components/BottomNav';
 
 interface OrderHistory {
@@ -59,6 +59,31 @@ const STATUS_CONFIG: Record<string, { label: string; icon: any; color: string }>
     icon: '🚀',
     color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400',
   },
+  driver_proposals: {
+    label: 'Buscando repartidor',
+    icon: RefreshCw,
+    color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400',
+  },
+  pending_acceptance: {
+    label: 'Por aceptar',
+    icon: Clock,
+    color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400',
+  },
+  in_transit_to_pickup: {
+    label: 'Repartidor en camino',
+    icon: Bike,
+    color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400',
+  },
+  picked_up: {
+    label: 'Recogido',
+    icon: Bike,
+    color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400',
+  },
+  no_driver: {
+    label: 'Sin repartidor',
+    icon: X,
+    color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-400',
+  },
   assigned: {
     label: 'Asignado',
     icon: Bike,
@@ -79,6 +104,7 @@ const FILTER_TABS = [
 ];
 
 export default function OrderHistoryPage() {
+  const { user, loading: authLoading } = useAuth();
   const [orders, setOrders] = useState<OrderHistory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -99,8 +125,18 @@ export default function OrderHistoryPage() {
   }, []);
 
   useEffect(() => {
+    // Ruta protegida: sin sesión se va a login (el login devuelve acá).
+    // La home y el resto siguen públicas: el redirect vive acá, no global.
+    if (authLoading) return;
+    if (!user) {
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.setItem('kiwi_redirect_after_login', '/orders');
+        window.location.href = '/login';
+      }
+      return;
+    }
     fetchOrders();
-  }, [fetchOrders]);
+  }, [fetchOrders, authLoading, user]);
 
   const filteredOrders = orders.filter((order) => {
     if (activeFilter === 'all') return true;
@@ -283,7 +319,7 @@ export default function OrderHistoryPage() {
                     exit={{ opacity: 0, scale: 0.9 }}
                     transition={{ delay: index * 0.05 }}
                   >
-                    <Link href={`/order/${order.id}/tracking`}>
+                    <Link href={`/tracking/${order.id}`}>
                       <motion.div
                         className={`rounded-2xl glass p-4 cursor-pointer overflow-hidden ${hoverCard}`}
                         whileTap={{ scale: 0.98 }}

@@ -17,7 +17,10 @@
         { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
         { "key": "X-XSS-Protection", "value": "1; mode=block" },
         { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
-        { "key": "Permissions-Policy", "value": "camera=(self), geolocation=(), microphone=()" },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(self), geolocation=(self), microphone=()"
+        },
         {
           "key": "Content-Security-Policy",
           "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://vercel.live; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://res.cloudinary.com https://*.tile.openstreetmap.org https://tile.openstreetmap.org https://*.basemaps.cartocdn.com; font-src 'self' data:; connect-src 'self' https://kiwi-api-fe54.onrender.com wss://kiwi-api-fe54.onrender.com https://api.kiwicr.express wss://api.kiwicr.express https://app.posthog.com https://*.sentry.io https://*.googleapis.com https://*.firebaseio.com https://firebaselogging-pa.googleapis.com; frame-ancestors 'self'; frame-src 'self' https://vercel.live; base-uri 'self'; form-action 'self'"

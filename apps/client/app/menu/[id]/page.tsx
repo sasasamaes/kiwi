@@ -38,6 +38,7 @@ import {
   CryptoCheckout,
   CryptoRateNote,
   safeNavigateToUrl,
+  useAuth,
   isEmojiImage,
   isHttpUrl,
   hoverCard,
@@ -61,6 +62,12 @@ const lineIdFor = (menuItemId: string, picks: SelectedOption[]) =>
     .map((p) => p.optionId)
     .sort()
     .join(',')}`;
+
+/** Rating Decimal→string-safe (ver rate/page: el rating viaja como Decimal→string). */
+const formatRating = (v: unknown): string => {
+  const n = typeof v === 'string' ? Number(v) : (v as number);
+  return Number.isFinite(n) ? (n as number).toFixed(1) : '5.0';
+};
 
 const unitPriceFor = (base: number, picks: SelectedOption[]) =>
   Math.round((base + picks.reduce((s, p) => s + p.priceDelta, 0)) * 100) / 100;
@@ -110,6 +117,7 @@ export default function MenuPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showCheckout, setShowCheckout] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [orderSuccess, setOrderSuccess] = useState<string | null>(null);
   // Producto en el picker de variantes (null = picker cerrado).
   const [picking, setPicking] = useState<MenuItem | null>(null);
@@ -174,6 +182,8 @@ export default function MenuPage() {
 
   // Socket for real-time order updates
   const { isConnected } = useSocket();
+  const { user } = useAuth();
+  const userRole = (user as any)?.role as string | undefined;
 
   // Fetch merchant profile and menu items
   const fetchData = useCallback(async () => {
@@ -403,9 +413,12 @@ export default function MenuPage() {
         paymentMethod,
       };
 
-      const order = api.getToken()
-        ? await api.createOrder(orderData, { idempotencyKey: checkoutKeyRef.current! })
-        : await api.createGuestOrder(orderData, { idempotencyKey: checkoutKeyRef.current! });
+      const order =
+        api.getToken() && userRole === 'customer'
+          ? await api.createCustomerOrder(orderData, { idempotencyKey: checkoutKeyRef.current! })
+          : api.getToken() && userRole === 'merchant'
+            ? await api.createOrder(orderData, { idempotencyKey: checkoutKeyRef.current! })
+            : await api.createGuestOrder(orderData, { idempotencyKey: checkoutKeyRef.current! });
       setPendingOrderId(order.id);
 
       // Handle payment based on method
@@ -456,8 +469,11 @@ export default function MenuPage() {
         setOrderSuccess(order.id);
       }
     } catch (err) {
-      console.error('Failed to create order:', err);
-      alert('Error al crear el pedido. Tocá el botón una sola vez.');
+      setCheckoutError(
+        err instanceof Error
+          ? err.message
+          : 'Error al crear el pedido. Tocá el botón una sola vez.',
+      );
     } finally {
       checkingOutRef.current = false;
       setCheckingOut(false);
@@ -513,8 +529,9 @@ export default function MenuPage() {
         setOrderSuccess(pendingOrderId);
       }
     } catch (err) {
-      console.error('Failed to retry payment:', err);
-      alert('No se pudo reintentar el pago. Intenta de nuevo.');
+      setCheckoutError(
+        err instanceof Error ? err.message : 'No se pudo reintentar el pago. Intentá de nuevo.',
+      );
     } finally {
       setCheckingOut(false);
     }
@@ -541,8 +558,7 @@ export default function MenuPage() {
   const handlePaymentError = useCallback((error: string) => {
     setPaymentPending(false);
     setPaymentIntent(null);
-    console.error('Payment error:', error);
-    alert('Error en el pago: ' + error);
+    setCheckoutError(typeof error === 'string' ? error : 'Error en el pago.');
   }, []);
 
   // Order success screen
@@ -595,7 +611,7 @@ export default function MenuPage() {
           </div>
 
           <div className="space-y-3">
-            <Link href={`/order/${orderSuccess}/tracking`}>
+            <Link href={`/tracking/${orderSuccess}`}>
               <AnimatedButton variant="gradient" className="w-full">
                 <MapPin className="h-4 w-4 inline" /> Rastrear Pedido
               </AnimatedButton>
@@ -755,7 +771,7 @@ export default function MenuPage() {
               </h2>
               <div className="flex items-center gap-3 mt-1">
                 <span className="text-sm text-surface-500 dark:text-surface-400">
-                  <Star className="h-4 w-4 inline" /> {merchant.rating.toFixed(1)} (
+                  <Star className="h-4 w-4 inline" /> {formatRating(merchant.rating)} (
                   {merchant.totalRatings})
                 </span>
                 <span className="text-sm text-surface-500 dark:text-surface-400">
@@ -1154,7 +1170,7 @@ export default function MenuPage() {
                     onChange={(address, coordinates) => {
                       setDeliveryInfo({ ...deliveryInfo, address });
                       if (coordinates) {
-                        console.log('MapPin Address coordinates:', coordinates);
+                        void coordinates;
                       }
                     }}
                     placeholder="Buscar dirección en Nicoya..."
@@ -1444,10 +1460,21 @@ export default function MenuPage() {
                 </div>
 
                 {/* Checkout Button */}
+                {checkoutError && (
+                  <p
+                    role="alert"
+                    className="rounded-xl bg-red-50 dark:bg-red-900/30 p-3 text-sm text-red-600 dark:text-red-400"
+                  >
+                    {checkoutError}
+                  </p>
+                )}
                 <AnimatedButton
                   variant="gradient"
                   className="w-full"
-                  onClick={handleCheckout}
+                  onClick={() => {
+                    setCheckoutError(null);
+                    void handleCheckout();
+                  }}
                   disabled={!canCheckout || checkingOut}
                 >
                   {checkingOut ? (

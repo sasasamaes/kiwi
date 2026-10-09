@@ -1,0 +1,17 @@
+{
+  "name": "Kiwi - Pedí a tu restaurante favorito",
+  "short_name": "Kiwi",
+  "description": "Ordena desde tu restaurante favorito",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b1326",
+  "theme_color": "#22c55e",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon"
+    }
+  ]
+}

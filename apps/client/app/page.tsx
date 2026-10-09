@@ -27,6 +27,8 @@ import {
   MapPin,
   Megaphone,
   User,
+  Store,
+  MessageCircle,
 } from 'lucide-react';
 import { BottomNav } from './components/BottomNav';
 
@@ -43,10 +45,17 @@ interface DiscoverItem {
   campaignId?: string | null;
 }
 
-const CITIES = [
-  { slug: 'nicoya', name: 'Nicoya' },
-  { slug: 'liberia', name: 'Liberia' },
-];
+/** Rating Decimal→string-safe: el backend puede serializar Decimal como string. */
+// WhatsApp comercial de Kiwi (ventas/adhesión). Se configura en Vercel con
+// NEXT_PUBLIC_SALES_WHATSAPP=506XXXXXXX. Fallback = placeholder visible.
+const SALES_WA_NUMBER = process.env.NEXT_PUBLIC_SALES_WHATSAPP || '50688888888';
+const waLink = (text: string) =>
+  `https://wa.me/${SALES_WA_NUMBER}?text=${encodeURIComponent(text)}`;
+
+const formatRating = (v: unknown): string => {
+  const n = typeof v === 'string' ? Number(v) : (v as number);
+  return Number.isFinite(n) ? (n as number).toFixed(1) : '5.0';
+};
 
 export default function ClientHome() {
   const router = useRouter();
@@ -54,11 +63,15 @@ export default function ClientHome() {
   const [showScanner, setShowScanner] = useState(false);
   const [scannerActive, setScannerActive] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
-  const [city, setCity] = useState('nicoya');
+  // Lanzamiento 23 en Nicoya: ciudad fija. Liberia es a futuro
+  // (el backend ya segmenta por ciudad; para activarla se muestra el toggle).
+  const [city] = useState('nicoya');
   const [q, setQ] = useState('');
   const [items, setItems] = useState<DiscoverItem[]>([]);
   const [banners, setBanners] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [feedError, setFeedError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   const handleScan = useCallback(
     (merchantId: string, url: string) => {
@@ -95,6 +108,7 @@ export default function ClientHome() {
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
+    setFeedError(false);
     const t = setTimeout(
       async () => {
         try {
@@ -117,6 +131,7 @@ export default function ClientHome() {
           if (!cancelled) {
             setItems([]);
             setBanners([]);
+            setFeedError(true);
           }
         } finally {
           if (!cancelled) setLoading(false);
@@ -128,7 +143,7 @@ export default function ClientHome() {
       cancelled = true;
       clearTimeout(t);
     };
-  }, [city, q]);
+  }, [city, q, reloadKey]);
 
   const openMerchant = (it: DiscoverItem) => {
     if (it.isSponsored && it.campaignId) {
@@ -155,10 +170,10 @@ export default function ClientHome() {
             <div className="flex items-center gap-2">
               {user ? (
                 <Link
-                  href="/orders"
+                  href="/profile"
                   className="text-sm font-medium text-kiwi-700 dark:text-kiwi-300 flex items-center gap-1"
                 >
-                  <User className="h-4 w-4" /> Mis pedidos
+                  <User className="h-4 w-4" /> Mi cuenta
                 </Link>
               ) : (
                 <>
@@ -179,23 +194,8 @@ export default function ClientHome() {
               <ThemeToggle />
             </div>
           </div>
-          {/* Ciudad + búsqueda */}
+          {/* Búsqueda (una sola ciudad por ahora: Nicoya) */}
           <div className="flex gap-2">
-            <div className="flex rounded-full bg-surface-100 dark:bg-surface-800 p-1">
-              {CITIES.map((c) => (
-                <button
-                  key={c.slug}
-                  onClick={() => setCity(c.slug)}
-                  className={`px-3 py-1.5 text-sm rounded-full transition-colors ${
-                    city === c.slug
-                      ? 'bg-white dark:bg-surface-700 font-semibold shadow'
-                      : 'text-surface-500'
-                  }`}
-                >
-                  {c.name}
-                </button>
-              ))}
-            </div>
             <div className="flex-1 flex items-center gap-2 rounded-full bg-surface-100 dark:bg-surface-800 px-3">
               <Search className="h-4 w-4 text-surface-400" />
               <input
@@ -319,8 +319,7 @@ export default function ClientHome() {
         {/* Feed real de comercios */}
         <ScrollReveal index={0}>
           <h2 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-4 flex items-center gap-2">
-            <MapPin className="h-5 w-5" /> Restaurantes en{' '}
-            {city === 'nicoya' ? 'Nicoya' : 'Liberia'}
+            <MapPin className="h-5 w-5" /> Restaurantes en Nicoya
           </h2>
           {loading ? (
             <div className="space-y-3">
@@ -337,11 +336,21 @@ export default function ClientHome() {
                 <Camera className="h-8 w-8 text-kiwi-700 dark:text-kiwi-400" />
               </div>
               <p className="font-medium text-surface-800 dark:text-surface-200">
-                Todavía no hay comercios por aquí
+                {feedError ? 'No se pudo cargar la lista' : 'Todavía no hay comercios por aquí'}
               </p>
               <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">
-                Usá el botón de arriba para escanear el QR de tu restaurante favorito
+                {feedError
+                  ? 'Revisá tu conexión e intentá de nuevo.'
+                  : 'Usá el botón de arriba para escanear el QR de tu restaurante favorito'}
               </p>
+              {feedError && (
+                <button
+                  onClick={() => setReloadKey((k) => k + 1)}
+                  className="mt-3 rounded-xl bg-kiwi-600 px-4 py-2.5 text-sm font-semibold text-white"
+                >
+                  Reintentar
+                </button>
+              )}
             </div>
           ) : (
             <div className="space-y-3">
@@ -381,7 +390,7 @@ export default function ClientHome() {
                       <div className="flex items-center gap-2 mt-1 text-xs">
                         <span className="flex items-center gap-1 text-surface-600 dark:text-surface-300">
                           <Star className="h-3.5 w-3.5 fill-gold-500 text-gold-500" />
-                          {it.rating.toFixed(1)} ({it.totalRatings})
+                          {formatRating(it.rating)} ({it.totalRatings})
                         </span>
                         <span className={it.isOpen ? 'text-kiwi-600' : 'text-red-500'}>
                           {it.isOpen ? 'Abierto' : 'Cerrado'}
@@ -393,6 +402,47 @@ export default function ClientHome() {
               ))}
             </div>
           )}
+        </ScrollReveal>
+
+        {/* Banner comercio: pautar + usar la app (manda al WhatsApp del negocio) */}
+        <ScrollReveal index={1}>
+          <div className="mt-8 rounded-2xl overflow-hidden border border-gold-500/30 dark:border-gold-500/20 bg-gradient-to-br from-gold-500/15 via-white to-white dark:from-gold-500/10 dark:via-surface-800 dark:to-surface-800 p-6 shadow-soft">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gold-500/20">
+                <Store className="h-6 w-6 text-gold-700 dark:text-gold-400" />
+              </div>
+              <div>
+                <p className="font-display font-bold text-surface-800 dark:text-surface-100">
+                  ¿Tienes un restaurante?
+                </p>
+                <p className="text-xs text-surface-500 dark:text-surface-400">
+                  Este espacio puede ser el tuyo
+                </p>
+              </div>
+            </div>
+            <p className="text-sm text-surface-600 dark:text-surface-300 mb-4">
+              Aparecé primero, poné tu banner y mandá ofertas por push a los clientes de tu ciudad.
+              O usá Kiwi para recibir pedidos en tu negocio.
+            </p>
+            <div className="flex flex-col gap-2">
+              <a
+                href={waLink('Hola Kiwi, tengo un restaurante y quiero pautar en la app')}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 rounded-xl bg-kiwi-600 px-4 py-3 text-sm font-semibold text-white"
+              >
+                <MessageCircle className="h-4 w-4" /> Quiero pautar mi restaurante
+              </a>
+              <a
+                href={waLink('Hola Kiwi, quiero usar la app en mi negocio')}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 rounded-xl border border-kiwi-600/30 px-4 py-3 text-sm font-semibold text-kiwi-700 dark:text-kiwi-300"
+              >
+                <Store className="h-4 w-4" /> Usar Kiwi en mi negocio
+              </a>
+            </div>
+          </div>
         </ScrollReveal>
 
         {/* How it Works */}
