@@ -211,6 +211,7 @@ class ApiClient {
     vehicleType?: string;
     citySlug?: string;
     defaultAddress?: string;
+    deliveryZone?: string;
     latitude?: number;
     longitude?: number;
   }) {

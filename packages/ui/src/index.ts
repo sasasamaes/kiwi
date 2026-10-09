@@ -299,6 +299,7 @@ export { ShareTrackingButton, buildTrackingUrl, buildTrackingMessage } from './S
 export { AddressInput } from './AddressInput';
 export type { AddressInputProps } from './AddressInput';
 export { DeliveryZoneSelect } from './DeliveryZoneSelect';
+export { ZonePicker } from './ZonePicker';
 export { DeliveryZonesMap } from './DeliveryZonesMap';
 
 // ============================================

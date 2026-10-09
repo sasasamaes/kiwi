@@ -1,10 +1,11 @@
 // Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useAuth, KiwiLogo, api } from '@kiwi/ui';
+import { useAuth, KiwiLogo, api, ZonePicker } from '@kiwi/ui';
+import { findNearestZone } from '@kiwi/types';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -16,10 +17,12 @@ export default function RegisterPage() {
     phone: '',
     citySlug: 'nicoya',
     defaultAddress: '',
+    deliveryZone: '',
   });
   const [offers, setOffers] = useState(true);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [gps, setGps] = useState<{ lat: number; lng: number } | null>(null);
+  const [gpsZoneAuto, setGpsZoneAuto] = useState(false);
   const [locating, setLocating] = useState(false);
   const [locDenied, setLocDenied] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,6 +46,7 @@ export default function RegisterPage() {
         phone: form.phone.trim() || undefined,
         citySlug: form.citySlug,
         defaultAddress: form.defaultAddress.trim() || undefined,
+        deliveryZone: form.deliveryZone || undefined,
         ...(gps ? { latitude: gps.lat, longitude: gps.lng } : {}),
         role: 'customer',
       });
@@ -68,6 +72,21 @@ export default function RegisterPage() {
   };
 
   const set = (k: string) => (e: any) => setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  // GPS → barrio más cercano con su precio. Solo autoselecciona si hay
+  // confianza (lejos de límites); si no, el usuario elige a mano.
+  useEffect(() => {
+    if (!gps) return;
+    try {
+      const near = findNearestZone(gps.lat, gps.lng);
+      if (near?.confident) {
+        setForm((f) => (f.deliveryZone ? f : { ...f, deliveryZone: near.zone.id }));
+        setGpsZoneAuto(true);
+      }
+    } catch {
+      // sin zona: el picker manual sigue disponible
+    }
+  }, [gps]);
 
   const useGpsLocation = () => {
     if (!('geolocation' in navigator)) {
@@ -163,6 +182,18 @@ export default function RegisterPage() {
           {locDenied && !gps && (
             <p className="text-xs text-surface-500">
               No pudimos usar el GPS; podés escribir tu dirección arriba.
+            </p>
+          )}
+          <ZonePicker
+            value={form.deliveryZone}
+            onChange={(zoneId) => {
+              setGpsZoneAuto(false);
+              setForm((f) => ({ ...f, deliveryZone: zoneId }));
+            }}
+          />
+          {gpsZoneAuto && form.deliveryZone && (
+            <p className="text-xs text-kiwi-700 dark:text-kiwi-300">
+              📍 Elegimos tu barrio por tu ubicación (podés cambiarlo).
             </p>
           )}
           <label className="flex items-start gap-2 text-xs text-surface-500">

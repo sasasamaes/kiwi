@@ -101,6 +101,12 @@ export class RegisterDto {
   @IsString()
   defaultAddress?: string;
 
+  @ApiPropertyOptional({ example: 'centro', description: 'Barrio de entrega (id del catálogo)' })
+  @EmptyToUndefined()
+  @IsOptional()
+  @IsString()
+  deliveryZone?: string;
+
   // Consentimiento de Términos/Privacidad (la app cliente lo exige en UI).
   // Se acepta para no romper con forbidNonWhitelisted; no se persiste.
   @ApiPropertyOptional({ example: true })

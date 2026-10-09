@@ -14,6 +14,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { findDeliveryZone } from '../orders/delivery-zones';
 
 /** Per-account brute-force throttle for login (independent of IP limits). */
 interface AttemptEntry {
@@ -107,6 +108,10 @@ export class AuthService {
       Number.isFinite(regLng) &&
       Math.abs(regLat) <= 90 &&
       Math.abs(regLng) <= 180;
+    // Barrio de entrega (opcional): solo ids del catálogo; inválidos se
+    // ignoran para no bloquear el registro.
+    const zoneId = (registerDto as any).deliveryZone;
+    const validZone = typeof zoneId === 'string' && findDeliveryZone(zoneId)?.id;
 
     // El email es case-insensitive (Postgres unique sí distingue): se
     // normaliza al guardar para que Local@x.com y local@x.com no creen
@@ -170,6 +175,7 @@ export class AuthService {
                   defaultAddress: defaultAddress?.trim() || null,
                   citySlug: citySlugNorm,
                   ...(hasGps ? { latitude: regLat, longitude: regLng } : {}),
+                  ...(validZone ? { deliveryZone: validZone } : {}),
                 },
               },
             }
