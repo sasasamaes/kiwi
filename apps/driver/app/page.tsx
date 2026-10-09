@@ -778,9 +778,13 @@ export default function Home() {
                           </div>
                           <div>
                             <p className="text-sm font-medium text-surface-800">
-                              {order.pickupAddress}
+                              {(order as any).merchant?.businessName || order.pickupAddress}
                             </p>
-                            <p className="text-xs text-surface-400">Recoger aquí</p>
+                            <p className="text-xs text-surface-400">
+                              {(order as any).merchant?.businessName
+                                ? `${order.pickupAddress} · Recoger aquí`
+                                : 'Recoger aquí'}
+                            </p>
                           </div>
                         </div>
                         <div className="flex items-start gap-3">
@@ -902,9 +906,13 @@ export default function Home() {
                         </div>
                         <div>
                           <p className="text-sm font-medium text-surface-800 dark:text-surface-200">
-                            {order.pickupAddress}
+                            {(order as any).merchant?.businessName || order.pickupAddress}
                           </p>
-                          <p className="text-xs text-surface-400">Origen</p>
+                          <p className="text-xs text-surface-400">
+                            {(order as any).merchant?.businessName
+                              ? `${order.pickupAddress} · Origen`
+                              : 'Origen'}
+                          </p>
                         </div>
                       </div>
                       <div className="flex items-start gap-3">
