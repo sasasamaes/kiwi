@@ -33,7 +33,7 @@ import {
   MerchantPublicProfile,
   useSocket,
   AddressInput,
-  DeliveryZoneSelect,
+  ZonePicker,
   OnvoPayCheckout,
   CryptoCheckout,
   CryptoRateNote,
@@ -47,7 +47,7 @@ import {
   hoverGhost,
   ThemeToggle,
 } from '@kiwi/ui';
-import { findDeliveryZone } from '@kiwi/types';
+import { findDeliveryZone, findNearestZone } from '@kiwi/types';
 
 interface CartItem extends MenuItem {
   quantity: number;
@@ -118,6 +118,9 @@ export default function MenuPage() {
   const [showCheckout, setShowCheckout] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [deliveryCoords, setDeliveryCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [zoneAuto, setZoneAuto] = useState(false);
+  const [profilePrefilled, setProfilePrefilled] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState<string | null>(null);
   // Producto en el picker de variantes (null = picker cerrado).
   const [picking, setPicking] = useState<MenuItem | null>(null);
@@ -181,9 +184,37 @@ export default function MenuPage() {
   const [placedTotal, setPlacedTotal] = useState(0);
 
   // Socket for real-time order updates
-  const { isConnected } = useSocket();
+  useSocket();
   const { user } = useAuth();
   const userRole = (user as any)?.role as string | undefined;
+  // Logueado: el checkout se autorrellena con tu perfil (nombre,
+  // dirección, barrio, teléfono) y lo que cambies se guarda para la próxima.
+  useEffect(() => {
+    if (!showCheckout || profilePrefilled || userRole !== 'customer') return;
+    setProfilePrefilled(true);
+    void (async () => {
+      try {
+        const [profile, me] = await Promise.all([
+          api.getCustomerProfile().catch(() => null),
+          api.getProfile().catch(() => null),
+        ]);
+        setDeliveryInfo((prev) => ({
+          address: prev.address || (profile as any)?.defaultAddress || '',
+          phone: prev.phone || (me as any)?.phone || '',
+          name: prev.name || (profile as any)?.fullName || '',
+          instructions: prev.instructions,
+          zone: prev.zone || (profile as any)?.deliveryZone || '',
+        }));
+        const plat = Number((profile as any)?.latitude);
+        const plng = Number((profile as any)?.longitude);
+        if (Number.isFinite(plat) && Number.isFinite(plng)) {
+          setDeliveryCoords((prev) => prev ?? { lat: plat, lng: plng });
+        }
+      } catch {
+        // invitado o sin perfil: el form manual sigue funcionando
+      }
+    })();
+  }, [showCheckout, profilePrefilled, userRole]);
 
   // Fetch merchant profile and menu items
   const fetchData = useCallback(async () => {
@@ -217,6 +248,9 @@ export default function MenuPage() {
   useEffect(() => {
     setCart([]);
     setDeliveryInfo({ address: '', phone: '', name: '', instructions: '', zone: '' });
+    setDeliveryCoords(null);
+    setZoneAuto(false);
+    setProfilePrefilled(false);
     setPendingOrderId(null);
     checkoutKeyRef.current = null;
     setOrderSuccess(null);
@@ -421,6 +455,21 @@ export default function MenuPage() {
             : await api.createGuestOrder(orderData, { idempotencyKey: checkoutKeyRef.current! });
       setPendingOrderId(order.id);
 
+      // Logueado: guarda estos datos en tu perfil para futuras compras
+      // (dirección, barrio, teléfono, GPS). Best-effort, no bloquea el pago.
+      if (userRole === 'customer') {
+        void api
+          .updateCustomerProfile({
+            fullName: deliveryInfo.name.trim() || undefined,
+            defaultAddress: deliveryInfo.address.trim() || undefined,
+            deliveryZone: deliveryInfo.zone || undefined,
+            ...(deliveryCoords
+              ? { latitude: deliveryCoords.lat, longitude: deliveryCoords.lng }
+              : {}),
+          })
+          .catch(() => undefined);
+      }
+
       // Handle payment based on method
       if (paymentMethod === 'sinpe' || paymentMethod === 'card') {
         // Create payment with OnvoPay
@@ -482,11 +531,13 @@ export default function MenuPage() {
     cart,
     merchant,
     deliveryInfo,
+    deliveryCoords,
     canCheckout,
     paymentMethod,
     totalWithDelivery,
     phoneDigits,
     pendingOrderId,
+    userRole,
   ]);
 
   // Reintenta SOLO el pago de un pedido ya creado (el modal se descartó).
@@ -1189,19 +1240,40 @@ export default function MenuPage() {
                   <AddressInput
                     value={deliveryInfo.address}
                     onChange={(address, coordinates) => {
-                      setDeliveryInfo({ ...deliveryInfo, address });
+                      setDeliveryInfo((prev) => ({ ...prev, address }));
                       if (coordinates) {
-                        void coordinates;
+                        setDeliveryCoords(coordinates);
+                        // GPS con barrio confiable: se autoselecciona con su
+                        // precio (cambiable si el GPS se equivoca).
+                        try {
+                          const near = findNearestZone(coordinates.lat, coordinates.lng);
+                          if (near?.confident) {
+                            setDeliveryInfo((prev) =>
+                              prev.zone ? prev : { ...prev, zone: near.zone.id },
+                            );
+                            setZoneAuto(true);
+                          }
+                        } catch {
+                          // sin zona: el picker manual sigue disponible
+                        }
                       }
                     }}
                     placeholder="Buscar dirección en Nicoya..."
                     nicoyaOnly={true}
                   />
                   <div className="mt-3">
-                    <DeliveryZoneSelect
+                    <ZonePicker
                       value={deliveryInfo.zone}
-                      onChange={(zone) => setDeliveryInfo({ ...deliveryInfo, zone })}
+                      onChange={(zone) => {
+                        setZoneAuto(false);
+                        setDeliveryInfo((prev) => ({ ...prev, zone }));
+                      }}
                     />
+                    {zoneAuto && deliveryInfo.zone && (
+                      <p className="text-xs text-kiwi-700 dark:text-kiwi-300 mt-1.5">
+                        📍 Barrio por tu ubicación (podés cambiarlo).
+                      </p>
+                    )}
                   </div>
                 </div>
 
