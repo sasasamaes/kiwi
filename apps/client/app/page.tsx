@@ -453,7 +453,7 @@ export default function ClientHome() {
                 <button
                   key={it.id}
                   onClick={() => openMerchant(it)}
-                  className="w-full text-left rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] p-4 shadow-soft dark:shadow-dark hover:shadow-kiwi transition-shadow"
+                  className="w-full text-left rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] p-4 shadow-soft dark:shadow-dark transition-all duration-200 hover:border-kiwi-600/40 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99]"
                 >
                   <div className="flex items-start gap-3">
                     <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-kiwi-100 dark:bg-kiwi-400/10 font-display font-bold text-kiwi-700 dark:text-kiwi-300 overflow-hidden">
