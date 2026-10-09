@@ -504,9 +504,21 @@ export default function OrdersPage() {
                           {order.driver ? (
                             <div className="flex items-center justify-between rounded-xl bg-surface-50 dark:bg-surface-800 p-3">
                               <p className="flex items-center gap-2 text-sm font-medium">
-                                <Bike className="h-4 w-4 text-kiwi-500" />
+                                {(order.driver as any).photoUrl ? (
+                                  // NOTE: <img> intencional — foto dinámica externa
+                                  <img
+                                    src={(order.driver as any).photoUrl}
+                                    alt={order.driver.fullName}
+                                    className="h-8 w-8 rounded-full object-cover"
+                                  />
+                                ) : (
+                                  <Bike className="h-4 w-4 text-kiwi-500" />
+                                )}
                                 {order.driver.fullName}
                                 {order.driver.vehicleType ? ` · ${order.driver.vehicleType}` : ''}
+                                {(order.driver as any).vehiclePlate
+                                  ? ` · ${(order.driver as any).vehiclePlate}`
+                                  : ''}
                               </p>
                               {driverPhone && (
                                 <a

@@ -410,9 +410,18 @@ export default function ScheduledOrdersPage() {
                         >
                           <div className="flex items-start gap-4">
                             {/* Driver Avatar */}
-                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-kiwi-gradient text-white font-bold text-lg flex-shrink-0">
-                              {proposal.driver?.fullName?.charAt(0) || 'D'}
-                            </div>
+                            {(proposal.driver as any)?.photoUrl ? (
+                              // NOTE: <img> intencional — foto dinámica externa
+                              <img
+                                src={(proposal.driver as any).photoUrl}
+                                alt={proposal.driver?.fullName || 'Repartidor'}
+                                className="h-12 w-12 rounded-full object-cover flex-shrink-0"
+                              />
+                            ) : (
+                              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-kiwi-gradient text-white font-bold text-lg flex-shrink-0">
+                                {proposal.driver?.fullName?.charAt(0) || 'D'}
+                              </div>
+                            )}
 
                             {/* Driver Info */}
                             <div className="flex-1 min-w-0">
@@ -438,6 +447,11 @@ export default function ScheduledOrdersPage() {
                                 <span className="text-xs text-surface-400">
                                   {proposal.driver?.totalTrips || 0} viajes
                                 </span>
+                                {(proposal.driver as any)?.vehiclePlate && (
+                                  <span className="rounded-md bg-surface-100 dark:bg-surface-700 px-2 py-0.5 font-mono text-xs font-semibold text-surface-700 dark:text-surface-200">
+                                    {(proposal.driver as any).vehiclePlate}
+                                  </span>
+                                )}
                               </div>
 
                               {/* Estimated Arrival */}

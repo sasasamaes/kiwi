@@ -537,9 +537,18 @@ export default function DriversPage() {
                         whileHover={{ y: -2, boxShadow: '0 8px 24px 0 rgb(0 0 0 / 0.08)' }}
                       >
                         <div className="flex items-center gap-4">
-                          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-kiwi-gradient text-white font-semibold shadow-kiwi">
-                            {initials(driver.fullName)}
-                          </div>
+                          {(driver as any).photoUrl ? (
+                            // NOTE: <img> intencional — foto dinámica externa, next/image no aporta aquí
+                            <img
+                              src={(driver as any).photoUrl}
+                              alt={driver.fullName}
+                              className="h-14 w-14 shrink-0 rounded-full object-cover shadow-kiwi"
+                            />
+                          ) : (
+                            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-kiwi-gradient text-white font-semibold shadow-kiwi">
+                              {initials(driver.fullName)}
+                            </div>
+                          )}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
                               <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100 truncate">
@@ -559,6 +568,11 @@ export default function DriversPage() {
                                 <Package className="h-4 w-4 inline" /> {driver.totalTrips ?? 0}{' '}
                                 viajes
                               </span>
+                              {(driver as any).vehiclePlate && (
+                                <span className="rounded-md bg-surface-100 dark:bg-surface-700 px-2 py-0.5 font-mono text-xs font-semibold text-surface-700 dark:text-surface-200">
+                                  {(driver as any).vehiclePlate}
+                                </span>
+                              )}
                             </div>
                           </div>
                           <div className="text-right shrink-0">

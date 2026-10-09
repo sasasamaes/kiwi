@@ -74,55 +74,7 @@ export class ImageUploadService {
     size: number;
     originalname?: string;
   }): Promise<{ url: string }> {
-    if (!this.configured) {
-      throw new ServiceUnavailableException(
-        'Subida de imágenes no configurada. Contacta al administrador.',
-      );
-    }
-
-    if (!file || !Buffer.isBuffer(file.buffer) || file.size === 0) {
-      throw new BadRequestException('Archivo vacío o inválido');
-    }
-    if (file.size > MAX_FILE_BYTES) {
-      throw new PayloadTooLargeException('Imagen demasiado grande (máx 5 MB)');
-    }
-
-    const sniff = Buffer.from(file.buffer.subarray(0, 12));
-    const match = MAGIC_BYTES.find((m) => m.test(sniff));
-    if (!match) {
-      throw new BadRequestException('Formato no soportado. Usa JPG, PNG, WEBP o GIF.');
-    }
-
-    try {
-      const result = await new Promise<UploadApiResponse>((resolve, reject) => {
-        const stream = cloudinary.uploader.upload_stream(
-          {
-            folder: 'kiwi/products',
-            resource_type: 'image',
-            // Eager: thumbnail webp 512×512 cover. Sirve listas y detalle.
-            eager: [
-              { width: 512, height: 512, crop: 'fill', fetch_format: 'auto', quality: 'auto' },
-            ],
-            eager_async: false,
-          },
-          (error, res) =>
-            error || !res ? reject(error ?? new Error('no response')) : resolve(res),
-        );
-        stream.end(file.buffer);
-      });
-
-      // eager[0].secure_url ya trae /c_fill,w_512,h_512/ en la URL.
-      const url = result.eager?.[0]?.secure_url || result.secure_url;
-      if (!url || !url.startsWith('https://')) {
-        throw new Error('Cloudinary devolvió una URL inesperada');
-      }
-      return { url };
-    } catch (err: any) {
-      // Errores de validación que levantamos arriba NO se tragan: ya son 4xx.
-      if (err?.status && err.status >= 400 && err.status < 500) throw err;
-      this.logger.error(`Cloudinary upload falló: ${err?.message ?? err}`);
-      throw new ServiceUnavailableException('No se pudo subir la imagen. Intenta de nuevo.');
-    }
+    return this.uploadToFolder(file, 'kiwi/products');
   }
 
   /**
@@ -135,6 +87,26 @@ export class ImageUploadService {
     size: number;
     originalname?: string;
   }): Promise<{ url: string }> {
+    return this.uploadToFolder(file, 'kiwi/proofs');
+  }
+
+  /**
+   * Valida y sube la foto de perfil del repartidor (carpeta `kiwi/drivers`).
+   * Misma validación que el resto; solo cambia la carpeta de destino.
+   */
+  async uploadDriverPhoto(file: {
+    buffer: Buffer;
+    size: number;
+    originalname?: string;
+  }): Promise<{ url: string }> {
+    return this.uploadToFolder(file, 'kiwi/drivers');
+  }
+
+  /** Núcleo compartido: validación estricta + subida a la carpeta indicada. */
+  private async uploadToFolder(
+    file: { buffer: Buffer; size: number; originalname?: string },
+    folder: string,
+  ): Promise<{ url: string }> {
     if (!this.configured) {
       throw new ServiceUnavailableException(
         'Subida de imágenes no configurada. Contacta al administrador.',
@@ -158,7 +130,7 @@ export class ImageUploadService {
       const result = await new Promise<UploadApiResponse>((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
           {
-            folder: 'kiwi/proofs',
+            folder,
             resource_type: 'image',
             // Eager: thumbnail webp 512×512 cover. Sirve listas y detalle.
             eager: [

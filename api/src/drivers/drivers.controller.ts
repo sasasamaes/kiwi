@@ -1,7 +1,22 @@
 // Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
-import { Controller, Get, Put, Body, Param, UseGuards, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Body,
+  Param,
+  UseGuards,
+  Query,
+  UseInterceptors,
+  UploadedFile,
+  HttpCode,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiConsumes } from '@nestjs/swagger';
 import { DriversService } from './drivers.service';
+import { ImageUploadService } from '../menu/image-upload.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -13,7 +28,10 @@ import { UpdateScheduleDto } from './dto/update-schedule.dto';
 @ApiTags('Drivers')
 @Controller('drivers')
 export class DriversController {
-  constructor(private readonly driversService: DriversService) {}
+  constructor(
+    private readonly driversService: DriversService,
+    private readonly imageUpload: ImageUploadService,
+  ) {}
 
   @Get('me')
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -49,6 +67,38 @@ export class DriversController {
   @ApiOperation({ summary: 'Update driver location' })
   async updateLocation(@CurrentUser() user: any, @Body() data: UpdateLocationDto) {
     return this.driversService.updateLocation(user.sub, data.lat, data.lng, data.orderId);
+  }
+
+  /**
+   * Foto de perfil del repartidor. Multipart (Multer memoryStorage), misma
+   * validación estricta que el resto de imágenes (magic bytes, 5MB). La URL
+   * https resultante se guarda en el perfil y aparece en la app del comercio
+   * y en el link de seguimiento.
+   */
+  @Post('me/photo')
+  @HttpCode(200)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('driver')
+  @UseInterceptors(
+    FileInterceptor('photo', { storage: memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } }),
+  )
+  @ApiOperation({ summary: 'Upload driver profile photo (multipart/form-data)' })
+  @ApiBearerAuth()
+  @ApiConsumes('multipart/form-data')
+  async uploadPhoto(@CurrentUser() user: any, @UploadedFile() file: any) {
+    const { url } = await this.imageUpload.uploadDriverPhoto(file);
+    await this.driversService.updateProfile(user.sub, { photoUrl: url });
+    return { url };
+  }
+
+  /** Estado de la subida para la UI (mostrar el picker una vez configurado). */
+  @Get('me/photo-status')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('driver')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Whether driver photo upload is configured' })
+  async photoStatus() {
+    return { enabled: this.imageUpload.isConfigured() };
   }
 
   @Get(':id/location')

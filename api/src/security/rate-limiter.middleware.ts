@@ -36,6 +36,12 @@ export class RateLimiterMiddleware implements NestMiddleware {
       maxRequests: 15,
       message: 'Demasiadas subidas de imagen. Espera unos minutos.',
     },
+    // Foto de perfil del repartidor: mismo costo que el resto de imágenes.
+    'POST:/api/drivers/me/photo': {
+      windowMs: 15 * 60 * 1000,
+      maxRequests: 15,
+      message: 'Demasiadas subidas de imagen. Espera unos minutos.',
+    },
     'POST:/api/auth/register': {
       windowMs: 60 * 60 * 1000,
       maxRequests: 3,

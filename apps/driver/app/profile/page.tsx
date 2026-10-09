@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { BottomNav } from '../components/BottomNav';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -22,6 +22,7 @@ import {
   Gem,
   BadgeCheck,
   Power,
+  Camera,
 } from 'lucide-react';
 import {
   AnimatedButton,
@@ -108,6 +109,10 @@ export default function Profile() {
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleType>('motorcycle');
   const [plate, setPlate] = useState('');
   const [savingVehicle, setSavingVehicle] = useState(false);
+  // Foto de perfil: la ven el comercio y el cliente en el seguimiento.
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [photoUploadEnabled, setPhotoUploadEnabled] = useState(true);
+  const photoInputRef = useRef<HTMLInputElement>(null);
   // Presencia socket: el toggle de Home avisa por socket; este también debe.
   const { updateDriverStatus: socketUpdateStatus } = useSocket({});
 
@@ -119,6 +124,10 @@ export default function Profile() {
         api.getKycStatus().catch(() => null),
       ]);
       setProfile(p);
+      api
+        .getDriverPhotoUploadStatus()
+        .then((s) => setPhotoUploadEnabled(s?.enabled !== false))
+        .catch(() => undefined);
       setKycRequired(p.kycRequired === true);
       setSelectedVehicle((p.vehicleType as VehicleType) || 'motorcycle');
       setPlate(p.vehiclePlate || '');
@@ -168,6 +177,22 @@ export default function Profile() {
   const handleLogout = () => {
     logout();
     router.push('/login');
+  };
+
+  /** Sube la foto de perfil (el backend la guarda y la publica). */
+  const handlePhotoSelect = async (file: File | undefined) => {
+    if (!file) return;
+    setUploadingPhoto(true);
+    setError(null);
+    try {
+      await api.uploadDriverPhoto(file);
+      await load();
+    } catch (e: any) {
+      setError(e?.message || 'No se pudo subir la foto');
+    } finally {
+      setUploadingPhoto(false);
+      if (photoInputRef.current) photoInputRef.current.value = '';
+    }
   };
 
   if (authLoading || loading) {
@@ -233,14 +258,52 @@ export default function Profile() {
             transition={{ duration: 4, repeat: Infinity }}
           />
           <motion.div
-            className="relative mb-4 inline-flex h-24 w-24 items-center justify-center rounded-full bg-white text-4xl font-bold text-kiwi-700 shadow-lg"
+            className="relative mb-4 inline-flex h-24 w-24 items-center justify-center rounded-full bg-white text-4xl font-bold text-kiwi-700 shadow-lg overflow-visible"
             whileHover={{ scale: 1.05 }}
           >
-            {initials(name)}
+            {profile?.photoUrl ? (
+              // NOTE: <img> intencional — foto dinámica externa, next/image no aporta aquí
+              <img
+                src={profile.photoUrl}
+                alt={name}
+                className="h-24 w-24 rounded-full object-cover"
+              />
+            ) : (
+              initials(name)
+            )}
+            {photoUploadEnabled && (
+              <button
+                onClick={() => photoInputRef.current?.click()}
+                disabled={uploadingPhoto}
+                aria-label="Cambiar foto de perfil"
+                title="Cambiar foto de perfil"
+                className="absolute -bottom-1 -right-1 flex h-9 w-9 items-center justify-center rounded-full bg-surface-900 text-white shadow-lg disabled:opacity-60"
+              >
+                {uploadingPhoto ? (
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                ) : (
+                  <Camera className="h-4 w-4" />
+                )}
+              </button>
+            )}
           </motion.div>
+          <input
+            ref={photoInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            capture="user"
+            className="hidden"
+            aria-label="Foto de perfil"
+            onChange={(e) => handlePhotoSelect(e.target.files?.[0])}
+          />
           <h2 className="relative text-xl font-display font-bold">{name}</h2>
           <p className="relative text-white/80">
             {since ? `Repartidor desde ${since}` : 'Repartidor Kiwi'}
+          </p>
+          <p className="relative mt-1 text-xs text-white/70">
+            {photoUploadEnabled
+              ? 'Tu foto la ven los comercios y los clientes en el seguimiento'
+              : 'Subida de fotos no disponible por el momento'}
           </p>
 
           <div className="relative mt-4 flex justify-center gap-6">

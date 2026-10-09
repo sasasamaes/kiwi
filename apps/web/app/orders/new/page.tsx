@@ -26,6 +26,8 @@ interface Driver {
   id: string;
   fullName: string;
   vehicleType?: string;
+  vehiclePlate?: string;
+  photoUrl?: string;
   rating?: number;
   status?: string;
 }
@@ -1700,10 +1702,23 @@ function DriverRow({
       }`}
       onClick={selectable ? onSelect : undefined}
     >
-      <div>
+      {driver.photoUrl ? (
+        // NOTE: <img> intencional — foto dinámica externa, next/image no aporta aquí
+        <img
+          src={driver.photoUrl}
+          alt={driver.fullName}
+          className="h-10 w-10 shrink-0 rounded-full object-cover"
+        />
+      ) : (
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-kiwi-100 dark:bg-kiwi-900/30 text-sm font-bold text-kiwi-700 dark:text-kiwi-400">
+          {driver.fullName.charAt(0).toUpperCase()}
+        </div>
+      )}
+      <div className="min-w-0 flex-1">
         <p className="text-sm font-medium">{driver.fullName}</p>
         <p className="text-xs text-surface-500">
           {driver.vehicleType ? (vehicleLabels[driver.vehicleType] ?? driver.vehicleType) : ''}{' '}
+          {driver.vehiclePlate ? `· ${driver.vehiclePlate} ` : ''}
           {driver.rating != null ? `• ⭐ ${Number(driver.rating).toFixed(1)}` : ''}
           {!selectable &&
             ` • ${driver.status === 'busy' ? 'Ocupado ahora' : driver.status === 'offline' ? 'Offline' : 'No disponible'}`}
