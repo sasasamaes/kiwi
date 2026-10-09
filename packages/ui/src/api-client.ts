@@ -185,9 +185,11 @@ class ApiClient {
     fullName?: string;
     /** Consentimiento explícito marcado en el formulario de registro. */
     acceptedTerms?: boolean;
-    role: 'merchant' | 'driver';
+    role: 'merchant' | 'driver' | 'customer';
     businessName?: string;
     vehicleType?: string;
+    citySlug?: string;
+    defaultAddress?: string;
   }) {
     const result = await this.request<any>('/auth/register', {
       method: 'POST',
@@ -274,6 +276,80 @@ class ApiClient {
   // ============================================
   // 🏪 MERCHANTS
   // ============================================
+
+  async discoverMerchants(params?: { city?: string; q?: string; take?: number }) {
+    const q = new URLSearchParams();
+    if (params?.city) q.append('city', params.city);
+    if (params?.q) q.append('q', params.q);
+    if (params?.take != null) q.append('take', String(params.take));
+    const qs = q.toString();
+    return this.request<any>(`/merchants/discover${qs ? `?${qs}` : ''}`);
+  }
+
+  async getBanners(city = 'nicoya') {
+    return this.request<any>(`/ads/banners?city=${encodeURIComponent(city)}`);
+  }
+
+  async recordAdEvent(data: {
+    campaignId?: string;
+    broadcastId?: string;
+    type: 'impression' | 'click' | 'push_open';
+  }) {
+    return this.request<any>('/ads/events', { method: 'POST', body: data });
+  }
+
+  async createCustomerOrder(data: any, opts?: { idempotencyKey?: string }) {
+    const idempotencyKey = opts?.idempotencyKey || (data as any)?.idempotencyKey;
+    return this.request<any>('/orders/mine', {
+      method: 'POST',
+      body: idempotencyKey ? { ...data, idempotencyKey } : data,
+      headers: idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined,
+    });
+  }
+
+  async setTopicPreference(topic: string, enabled: boolean) {
+    return this.request<any>(`/notifications/topics/${encodeURIComponent(topic)}`, {
+      method: 'PUT',
+      body: { enabled },
+    });
+  }
+
+  async getMyCampaigns() {
+    return this.request<any>('/ads/my');
+  }
+  async createCampaign(data: any) {
+    return this.request<any>('/ads/campaigns', { method: 'POST', body: data });
+  }
+  async getMyBroadcasts() {
+    return this.request<any>('/offers/my');
+  }
+  async createBroadcast(data: any) {
+    return this.request<any>('/offers', { method: 'POST', body: data });
+  }
+  async adminListCampaigns(status?: string, city?: string) {
+    const q = new URLSearchParams();
+    if (status) q.append('status', status);
+    if (city) q.append('city', city);
+    const qs = q.toString();
+    return this.request<any>(`/ads/admin/all${qs ? `?${qs}` : ''}`);
+  }
+  async reviewCampaign(id: string, approve: boolean) {
+    return this.request<any>(`/ads/campaigns/${id}/review`, { method: 'PUT', body: { approve } });
+  }
+  async reviewBroadcast(id: string, approve: boolean) {
+    return this.request<any>(`/offers/${id}/review`, { method: 'PUT', body: { approve } });
+  }
+  async sendBroadcast(id: string) {
+    return this.request<any>(`/offers/${id}/send`, { method: 'POST' });
+  }
+
+  async getCustomerProfile() {
+    return this.request<any>('/customers/me');
+  }
+
+  async updateCustomerProfile(data: any) {
+    return this.request<any>('/customers/me', { method: 'PUT', body: data });
+  }
 
   async getMerchantPublicProfile(merchantId: string) {
     return this.request<any>(`/menu/merchant/${merchantId}`);

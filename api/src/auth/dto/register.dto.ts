@@ -51,9 +51,9 @@ export class RegisterDto {
   @IsString()
   fullName?: string;
 
-  @ApiProperty({ enum: ['merchant', 'driver'] })
-  @IsEnum(['merchant', 'driver'], {
-    message: 'role debe ser "merchant" (comercio) o "driver" (repartidor)',
+  @ApiProperty({ enum: ['merchant', 'driver', 'customer'] })
+  @IsEnum(['merchant', 'driver', 'customer'], {
+    message: 'role debe ser "merchant" (comercio), "driver" (repartidor) o "customer" (cliente)',
   })
   role: string;
 
@@ -68,4 +68,16 @@ export class RegisterDto {
   @IsOptional()
   @IsEnum(['motorcycle', 'motorized_bike', 'bicycle', 'car', 'truck'])
   vehicleType?: string;
+
+  @ApiPropertyOptional({ example: 'nicoya', description: 'Ciudad operativa' })
+  @EmptyToUndefined()
+  @IsOptional()
+  @IsString()
+  citySlug?: string;
+
+  @ApiPropertyOptional({ example: 'Centro, 100m norte del parque' })
+  @EmptyToUndefined()
+  @IsOptional()
+  @IsString()
+  defaultAddress?: string;
 }

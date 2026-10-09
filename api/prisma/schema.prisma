@@ -33,11 +33,13 @@ model User {
   // Relations
   merchantProfile  MerchantProfile?
   driverProfile    DriverProfile?
+  customerProfile  CustomerProfile?
   kycVerification  KYCVerification?
   notifications    Notification[]
   deviceTokens     DeviceToken[]
   topicPreferences TopicPreference[]
   refreshTokens    RefreshToken[]
+  customerOrders   Order[]           @relation("CustomerOrders")
 
   @@map("users")
 }
@@ -63,6 +65,7 @@ enum Role {
   merchant
   driver
   admin
+  customer
 }
 
 enum UserStatus {
@@ -85,6 +88,10 @@ model MerchantProfile {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
+  // Ciudad operativa (multiciudad: nicoya hoy, liberia después).
+  // Default nicoya para no romper datos existentes.
+  citySlug String @default("nicoya") @map("city_slug")
+
   // KYC
   kycStatus     KYCStatus @default(pending) @map("kyc_status")
   kycVerifiedAt DateTime? @map("kyc_verified_at")
@@ -94,27 +101,166 @@ model MerchantProfile {
   creditBalance Decimal @default(0) @map("credit_balance") @db.Decimal(10, 2)
 
   // Relations
-  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  city            City                @relation(fields: [citySlug], references: [slug])
   orders          Order[]
   menuItems       MenuItem[]
   favoriteDrivers FavoriteDriver[]
   ratings         Rating[]
   creditLedger    CreditTransaction[]
   creditTopups    CreditTopup[]
+  campaigns       AdCampaign[]
+  broadcasts      OfferBroadcast[]
 
+  @@index([citySlug])
   @@map("merchant_profiles")
+}
+
+// Perfil público del cliente final (rol customer). Minimización Ley 8968:
+// solo nombre + dirección de entrega + ciudad/zona para segmentar ofertas.
+model CustomerProfile {
+  id             String   @id @default(uuid())
+  userId         String   @unique @map("user_id")
+  fullName       String?  @map("full_name")
+  defaultAddress String?  @map("default_address")
+  citySlug       String   @default("nicoya") @map("city_slug")
+  latitude       Decimal? @db.Decimal(10, 8)
+  longitude      Decimal? @db.Decimal(11, 8)
+  deliveryZone   String?  @map("delivery_zone")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  city City @relation(fields: [citySlug], references: [slug])
+
+  @@index([citySlug])
+  @@map("customer_profiles")
+}
+
+// Catálogo de ciudades operativas. Nicoya activa hoy; Liberia y otras se
+// activan sin migraciones (solo insert + catálogo de zonas en código).
+model City {
+  slug      String   @id
+  name      String
+  centerLat Decimal? @map("center_lat") @db.Decimal(10, 8)
+  centerLng Decimal? @map("center_lng") @db.Decimal(11, 8)
+  radiusKm  Int      @default(10) @map("radius_km")
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  merchants  MerchantProfile[]
+  customers  CustomerProfile[]
+  campaigns  AdCampaign[]
+  broadcasts OfferBroadcast[]
+
+  @@map("cities")
+}
+
+// Campaña de publicidad del comercio (destacado primero o banner home).
+// Cobro por día fijo descontado de creditBalance al aprobarse.
+model AdCampaign {
+  id           String           @id @default(uuid())
+  merchantId   String           @map("merchant_id")
+  citySlug     String           @default("nicoya") @map("city_slug")
+  type         AdCampaignType
+  title        String?
+  imageUrl     String?          @map("image_url")
+  startsAt     DateTime         @map("starts_at")
+  endsAt       DateTime         @map("ends_at")
+  status       AdCampaignStatus @default(pending)
+  pricePerDay  Decimal          @map("price_per_day") @db.Decimal(10, 2)
+  totalCharged Decimal          @default(0) @map("total_charged") @db.Decimal(10, 2)
+  createdBy    String?          @map("created_by")
+  createdAt    DateTime         @default(now()) @map("created_at")
+  updatedAt    DateTime         @updatedAt @map("updated_at")
+
+  merchant MerchantProfile @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  city     City            @relation(fields: [citySlug], references: [slug])
+  events   AdEvent[]
+
+  @@index([citySlug, status, startsAt, endsAt])
+  @@index([merchantId, status])
+  @@map("ad_campaigns")
+}
+
+enum AdCampaignType {
+  spotlight // aparecer primero en el feed
+  banner // carrusel home_top
+}
+
+enum AdCampaignStatus {
+  pending
+  active
+  paused
+  ended
+  rejected
+}
+
+// Push de ofertas segmentado por ciudad (+ zona opcional). Nace pending,
+// el admin aprueba y al enviarse descuenta de creditBalance (tier premium).
+model OfferBroadcast {
+  id             String      @id @default(uuid())
+  merchantId     String      @map("merchant_id")
+  citySlug       String      @default("nicoya") @map("city_slug")
+  zoneId         String?     @map("zone_id")
+  title          String
+  body           String
+  imageUrl       String?     @map("image_url")
+  linkMerchantId String?     @map("link_merchant_id")
+  status         OfferStatus @default(pending)
+  costCharged    Decimal     @default(0) @map("cost_charged") @db.Decimal(10, 2)
+  approvedBy     String?     @map("approved_by")
+  sentAt         DateTime?   @map("sent_at")
+  scheduledAt    DateTime?   @map("scheduled_at")
+  createdAt      DateTime    @default(now()) @map("created_at")
+
+  merchant MerchantProfile @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  city     City            @relation(fields: [citySlug], references: [slug])
+  events   AdEvent[]
+
+  @@index([citySlug, status])
+  @@index([merchantId, status])
+  @@map("offer_broadcasts")
+}
+
+enum OfferStatus {
+  pending
+  approved
+  sending
+  sent
+  rejected
+  cancelled
+}
+
+// Métrica auditable: impresiones/clicks/push enviados. Costo queda en 0 en
+// MVP día-fijo; sirve para reportar al comercio y para futuro por-click.
+model AdEvent {
+  id          String   @id @default(uuid())
+  campaignId  String?  @map("campaign_id")
+  broadcastId String?  @map("broadcast_id")
+  type        String // impression | click | push_sent | push_open
+  cost        Decimal  @default(0) @db.Decimal(10, 2)
+  userId      String?  @map("user_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  campaign  AdCampaign?     @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  broadcast OfferBroadcast? @relation(fields: [broadcastId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId, createdAt])
+  @@index([broadcastId, createdAt])
+  @@map("ad_events")
 }
 
 // Libro mayor del crédito prepago (auditable: toda recarga y gasto queda aquí)
 model CreditTransaction {
-  id         String   @id @default(uuid())
-  merchantId String   @map("merchant_id")
-  amount     Decimal  @db.Decimal(10, 2) // + recarga, − gasto
+  id         String                @id @default(uuid())
+  merchantId String                @map("merchant_id")
+  amount     Decimal               @db.Decimal(10, 2) // + recarga, − gasto
   kind       CreditTransactionKind
   reason     String?
-  orderId    String?  @map("order_id")
-  createdBy  String?  @map("created_by") // userId del admin que recargó
-  createdAt  DateTime @default(now()) @map("created_at")
+  orderId    String?               @map("order_id")
+  createdBy  String?               @map("created_by") // userId del admin que recargó
+  createdAt  DateTime              @default(now()) @map("created_at")
 
   merchant MerchantProfile @relation(fields: [merchantId], references: [id], onDelete: Cascade)
 
@@ -168,16 +314,16 @@ model PlatformSetting {
 // Historial mensual de escenarios: proyección fijada por el admin al cierre
 // de cada mes, para comparar contra lo que realmente pasó después.
 model ScenarioSnapshot {
-  id                 String   @id @default(uuid())
-  month              String   @unique
-  ordersPerDay       Int      @map("orders_per_day")
-  expectedTrip       Float    @map("expected_trip")
-  commissionPct      Float    @map("commission_pct")
-  operations         Json
-  projectedCommission Float   @map("projected_commission")
-  projectedNet       Float    @map("projected_net")
-  note               String?
-  createdAt          DateTime @default(now()) @map("created_at")
+  id                  String   @id @default(uuid())
+  month               String   @unique
+  ordersPerDay        Int      @map("orders_per_day")
+  expectedTrip        Float    @map("expected_trip")
+  commissionPct       Float    @map("commission_pct")
+  operations          Json
+  projectedCommission Float    @map("projected_commission")
+  projectedNet        Float    @map("projected_net")
+  note                String?
+  createdAt           DateTime @default(now()) @map("created_at")
 
   @@map("scenario_snapshots")
 }
@@ -318,6 +464,7 @@ model Order {
   id         String      @id @default(uuid())
   merchantId String      @map("merchant_id")
   driverId   String?     @map("driver_id")
+  customerId String?     @map("customer_id")
   status     OrderStatus @default(pending)
   orderType  OrderType   @map("order_type")
 
@@ -376,14 +523,15 @@ model Order {
   contestEndsAt       DateTime? @map("contest_ends_at")
 
   // Evidencia fotográfica 1+1 (obligatoria para avanzar).
-  pickupProofPhotoUrl    String?   @map("pickup_proof_photo_url")
-  pickupProofAt          DateTime? @map("pickup_proof_at")
-  deliveryProofPhotoUrl  String?   @map("delivery_proof_photo_url")
-  deliveryProofAt        DateTime? @map("delivery_proof_at")
+  pickupProofPhotoUrl   String?   @map("pickup_proof_photo_url")
+  pickupProofAt         DateTime? @map("pickup_proof_at")
+  deliveryProofPhotoUrl String?   @map("delivery_proof_photo_url")
+  deliveryProofAt       DateTime? @map("delivery_proof_at")
 
   // Relations
   merchant  MerchantProfile  @relation(fields: [merchantId], references: [id])
   driver    DriverProfile?   @relation(fields: [driverId], references: [id])
+  customer  User?            @relation("CustomerOrders", fields: [customerId], references: [id])
   proposals DriverProposal[]
   items     OrderItem[]
   payment   Payment?
@@ -394,6 +542,7 @@ model Order {
   @@index([merchantId, createdAt])
   @@index([driverId, status])
   @@index([driverId, createdAt])
+  @@index([customerId, status, createdAt], map: "orders_customer_status_created_idx")
   @@index([status, createdAt])
   @@index([merchantId, status, createdAt], map: "orders_merchant_status_created_idx")
   @@index([driverId, status, createdAt], map: "orders_driver_status_created_idx")
@@ -459,7 +608,7 @@ model Payment {
   onvoCheckoutUrl String? @map("onvo_checkout_url")
   // Checkout hospedado (one-time-link): la sesión es el objeto de cobro;
   // el intent real llega después por webhook y se guarda en onvoPaymentId.
-  onvoSessionId String? @map("onvo_session_id")
+  onvoSessionId   String? @map("onvo_session_id")
 
   // Crypto
   cryptoCoin          String?  @map("crypto_coin")

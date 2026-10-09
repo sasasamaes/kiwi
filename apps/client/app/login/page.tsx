@@ -1,0 +1,76 @@
+// Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { useAuth, KiwiLogo } from '@kiwi/ui';
+
+export default function LoginPage() {
+  const router = useRouter();
+  const { login } = useAuth();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    try {
+      await login(email.trim(), password);
+      router.push('/');
+    } catch (err: any) {
+      setError(err?.message || 'No se pudo entrar. Revisá tus datos.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-[100dvh] bg-bg-light dark:bg-surface-950 px-4 py-10">
+      <div className="mx-auto max-w-sm">
+        <div className="flex justify-center mb-6">
+          <KiwiLogo size={40} />
+        </div>
+        <h1 className="text-xl font-display font-bold text-center mb-1">Entrar</h1>
+        <p className="text-sm text-center text-surface-500 mb-6">
+          Pedí más rápido y recibí ofertas de tu ciudad
+        </p>
+        <form onSubmit={submit} className="rounded-2xl glass p-6 space-y-4">
+          <input
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="tu@correo.com"
+            className="w-full rounded-xl bg-surface-100 dark:bg-surface-800 px-4 py-3 text-sm outline-none"
+          />
+          <input
+            type="password"
+            required
+            minLength={6}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Contraseña"
+            className="w-full rounded-xl bg-surface-100 dark:bg-surface-800 px-4 py-3 text-sm outline-none"
+          />
+          {error && <p className="text-sm text-red-600">{error}</p>}
+          <button
+            disabled={loading}
+            className="w-full rounded-xl bg-kiwi-600 text-white font-semibold py-3 disabled:opacity-60"
+          >
+            {loading ? 'Entrando…' : 'Entrar'}
+          </button>
+        </form>
+        <p className="text-sm text-center mt-4">
+          ¿No tenés cuenta?{' '}
+          <Link href="/register" className="font-semibold text-kiwi-700">
+            Crear cuenta
+          </Link>
+        </p>
+      </div>
+    </div>
+  );
+}

@@ -17,7 +17,7 @@ export interface TopicDef {
   /** Nombre exacto del topic en FCM. */
   name: string;
   /** Rol que puede suscribirse. */
-  audience: 'driver' | 'merchant' | 'admin';
+  audience: 'driver' | 'merchant' | 'admin' | 'customer';
   /** Etiqueta corta para la UI. */
   label: string;
   /** Descripción de cuándo llega una notificación. */
@@ -118,6 +118,26 @@ export const TOPIC_CATALOG: TopicDef[] = [
     defaultEnabled: false,
     locked: false,
     delivery: 'push',
+  },
+
+  // ── CUSTOMERS ────────────────────────────────────────────────────────
+  {
+    name: 'customer.offers',
+    audience: 'customer',
+    label: 'Ofertas de comercios',
+    description: 'Promos de comercios de tu ciudad',
+    defaultEnabled: true,
+    locked: false,
+    delivery: 'push+inbox',
+  },
+  {
+    name: 'customer.orders.status',
+    audience: 'customer',
+    label: 'Estado de mis pedidos',
+    description: 'Confirmado, en camino o entregado',
+    defaultEnabled: true,
+    locked: true,
+    delivery: 'push+inbox',
   },
 
   // ── ADMIN ────────────────────────────────────────────────────────────

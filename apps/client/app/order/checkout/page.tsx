@@ -15,6 +15,7 @@ import {
   ConsentCheckbox,
   ConsentLink,
   api,
+  useAuth,
   events,
   safeNavigateToUrl,
   CryptoRateNote,
@@ -35,6 +36,7 @@ type PaymentMethod = 'sinpe' | 'card' | 'cash' | 'crypto_usdc' | 'crypto_usdt';
 function CheckoutContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { user } = useAuth();
 
   const [cart, setCart] = useState<CartItem[]>([]);
   const [merchantId, setMerchantId] = useState('');
@@ -186,16 +188,17 @@ function CheckoutContent() {
         paymentMethod,
       };
 
-      const order = api.getToken()
-        ? await api.createOrder(orderData, { idempotencyKey })
-        : await api.createGuestOrder(
-            {
-              ...orderData,
-              customerName: customerName.trim(),
-              customerPhone: phoneDigits,
-            },
-            { idempotencyKey },
-          );
+      const order =
+        api.getToken() && (user as any)?.role === 'customer'
+          ? await api.createCustomerOrder(orderData, { idempotencyKey })
+          : await api.createGuestOrder(
+              {
+                ...orderData,
+                customerName: customerName.trim(),
+                customerPhone: phoneDigits,
+              },
+              { idempotencyKey },
+            );
       setOrderId(order.id);
       events.orders.created(order.id, merchantId, total);
 

@@ -58,6 +58,23 @@ export class OrdersController {
     return this.ordersService.createGuestOrder(dto?.merchantId, dto);
   }
 
+  @Post('mine')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('customer')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Crear pedido como cliente registrado (queda atado a mi cuenta)' })
+  async createMine(
+    @CurrentUser() user: any,
+    @Body() createOrderDto: any,
+    @Headers('idempotency-key') idempotencyKey?: string,
+  ) {
+    const dto =
+      idempotencyKey && !createOrderDto?.idempotencyKey
+        ? { ...createOrderDto, idempotencyKey }
+        : createOrderDto;
+    return this.ordersService.createGuestOrder(dto?.merchantId, dto, user.sub);
+  }
+
   @Get('my')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -73,6 +90,13 @@ export class OrdersController {
   ) {
     if (user.role === 'merchant') {
       return this.ordersService.findByMerchant(
+        user.sub,
+        status,
+        take != null ? Number(take) : undefined,
+        skip != null ? Number(skip) : undefined,
+      );
+    } else if (user.role === 'customer') {
+      return this.ordersService.findByCustomer(
         user.sub,
         status,
         take != null ? Number(take) : undefined,

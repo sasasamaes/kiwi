@@ -88,7 +88,17 @@ export class AuthService {
   }
 
   async register(registerDto: RegisterDto) {
-    const { email, password, phone, fullName, role, businessName, vehicleType } = registerDto;
+    const {
+      email,
+      password,
+      phone,
+      fullName,
+      role,
+      businessName,
+      vehicleType,
+      citySlug,
+      defaultAddress,
+    } = registerDto as RegisterDto & { citySlug?: string; defaultAddress?: string };
 
     // El email es case-insensitive (Postgres unique sí distingue): se
     // normaliza al guardar para que Local@x.com y local@x.com no creen
@@ -121,21 +131,36 @@ export class AuthService {
     // Hash password
     const passwordHash = await bcrypt.hash(password, 10);
 
+    // Ciudad operativa: default nicoya; si viene otra, validar que exista y esté activa.
+    // Si no existe, caer a nicoya para no bloquear el registro.
+    let citySlugNorm = (citySlug || 'nicoya').trim().toLowerCase();
+    try {
+      const city = await this.prisma.city.findUnique({ where: { slug: citySlugNorm } });
+      if (!city) citySlugNorm = 'nicoya';
+    } catch {
+      citySlugNorm = 'nicoya';
+    }
+
     // Create user with profile
-    const user = await this.prisma.user.create({
-      data: {
-        email: emailNorm,
-        phone: phoneNorm,
-        passwordHash,
-        role: role as any,
-        status: 'active',
-        ...(role === 'merchant'
+    const profileData =
+      role === 'merchant'
+        ? {
+            merchantProfile: {
+              create: {
+                businessName: businessName || 'Mi Negocio',
+                address: 'Nicoya, Guanacaste',
+                kycStatus: 'pending' as any,
+                citySlug: citySlugNorm,
+              },
+            },
+          }
+        : role === 'customer'
           ? {
-              merchantProfile: {
+              customerProfile: {
                 create: {
-                  businessName: businessName || 'Mi Negocio',
-                  address: 'Nicoya, Guanacaste',
-                  kycStatus: 'pending',
+                  fullName: fullName?.trim() || null,
+                  defaultAddress: defaultAddress?.trim() || null,
+                  citySlug: citySlugNorm,
                 },
               },
             }
@@ -144,18 +169,27 @@ export class AuthService {
                 create: {
                   fullName,
                   vehicleType: (vehicleType as any) || 'motorcycle',
-                  level: 'bronce',
+                  level: 'bronce' as any,
                   rating: 5.0,
                   totalTrips: 0,
-                  status: 'offline',
-                  kycStatus: 'pending',
+                  status: 'offline' as any,
+                  kycStatus: 'pending' as any,
                 },
               },
-            }),
+            };
+    const user = await this.prisma.user.create({
+      data: {
+        email: emailNorm,
+        phone: phoneNorm,
+        passwordHash,
+        role: role as any,
+        status: 'active',
+        ...profileData,
       },
       include: {
         merchantProfile: true,
         driverProfile: true,
+        customerProfile: true,
       },
     });
 
@@ -182,6 +216,7 @@ export class AuthService {
       include: {
         merchantProfile: true,
         driverProfile: true,
+        customerProfile: true,
       },
     });
 
@@ -275,6 +310,7 @@ export class AuthService {
       include: {
         merchantProfile: true,
         driverProfile: true,
+        customerProfile: true,
       },
     });
 

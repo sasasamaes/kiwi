@@ -24,6 +24,8 @@ import { RoutingModule } from './routing/routing.module';
 import { SecurityModule } from './security/security.module';
 import { SentryModule } from './sentry/sentry.module';
 import { SettingsModule } from './settings/settings.module';
+import { AdsModule } from './ads/ads.module';
+import { CustomersModule } from './customers/customers.module';
 import { FeatureFlagsModule } from './feature-flags/feature-flags.module';
 
 @Module({
@@ -64,6 +66,8 @@ import { FeatureFlagsModule } from './feature-flags/feature-flags.module';
     SecurityModule,
     SentryModule,
     SettingsModule,
+    AdsModule,
+    CustomersModule,
   ],
 })
 export class AppModule {}

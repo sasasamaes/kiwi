@@ -82,7 +82,7 @@ export class OrdersService {
    * El teléfono es obligatorio: sin contacto el comercio no puede resolver
    * entregas. El pickup sale del comercio cuando el cliente no lo manda.
    */
-  async createGuestOrder(merchantProfileId: string, data: any) {
+  async createGuestOrder(merchantProfileId: string, data: any, customerId?: string) {
     const merchantProfile = await this.prisma.merchantProfile.findUnique({
       where: { id: merchantProfileId },
     });
@@ -99,9 +99,19 @@ export class OrdersService {
     }
 
     // Invitados siempre a concurso: un link público no puede elegir driver.
-    const { driverId: _ignored, ...guestData } = data ?? {};
+    const { driverId: _ignored, customerId: _cidIgnored, ...guestData } = data ?? {};
+    let linkedCustomer: string | undefined;
+    if (customerId) {
+      const cu = await this.prisma.user.findUnique({
+        where: { id: customerId },
+        select: { id: true, role: true, status: true },
+      });
+      if (cu && (cu as any).role === 'customer' && (cu as any).status === 'active')
+        linkedCustomer = cu.id;
+    }
     return this.create(merchantProfile.userId, {
       ...guestData,
+      ...(linkedCustomer ? { customerId: linkedCustomer } : {}),
       pickupAddress: data?.pickupAddress || merchantProfile.address,
       pickupLat: data?.pickupLat ?? merchantProfile.latitude,
       pickupLng: data?.pickupLng ?? merchantProfile.longitude,
@@ -546,6 +556,9 @@ export class OrdersService {
           customerName: data.customerName != null ? String(data.customerName).trim() || null : null,
           customerPhone:
             data.customerPhone != null ? String(data.customerPhone).trim() || null : null,
+          ...(typeof data.customerId === 'string' && data.customerId.trim() !== ''
+            ? { customerId: data.customerId.trim() }
+            : {}),
           ...(directDriver ? { driverId: directDriver.id, assignedAt: new Date() } : {}),
           // Atómico: los items se crean en la misma escritura. Antes era un
           // createMany best-effort que podía dejar el pedido cobrado sin items
@@ -1341,6 +1354,24 @@ export class OrdersService {
       orderBy: { createdAt: 'desc' },
       take: t,
       skip: s,
+    });
+  }
+
+  async findByCustomer(userId: string, status?: string, take?: number, skip?: number) {
+    this.validateOrderStatus(status);
+    const where: any = { customerId: userId };
+    if (status) where.status = status;
+    const t = Math.min(Math.max(Number(take) || 100, 1), 200);
+    const sk = Math.max(Number(skip) || 0, 0);
+    return this.prisma.order.findMany({
+      where,
+      include: {
+        merchant: { select: { businessName: true, logoUrl: true } },
+        items: true,
+      },
+      orderBy: { createdAt: 'desc' },
+      take: t,
+      skip: sk,
     });
   }
 

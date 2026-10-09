@@ -211,7 +211,10 @@ export class NotificationsService {
       const roleWhere =
         def.audience === 'admin'
           ? { role: 'admin' as const }
-          : { role: def.audience as 'driver' | 'merchant', status: 'active' as const };
+          : {
+              role: def.audience as 'driver' | 'merchant' | 'customer',
+              status: 'active' as const,
+            };
 
       const users = await this.prisma.user.findMany({
         where: roleWhere,
