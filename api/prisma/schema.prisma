@@ -92,6 +92,10 @@ model MerchantProfile {
   // Default nicoya para no romper datos existentes.
   citySlug String @default("nicoya") @map("city_slug")
 
+  // Visible en la lista pública de la app cliente. Los comercios de test
+  // (u ocultos por admin) siguen activos: QR, menú y pedidos funcionan.
+  isListed Boolean @default(true) @map("is_listed")
+
   // Categoría del negocio (filtros de la app cliente). Se autotaguea por
   // nombre al registrar; el comercio la puede cambiar después.
   category MerchantCategory @default(restaurante)

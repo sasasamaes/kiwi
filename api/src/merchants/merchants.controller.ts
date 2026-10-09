@@ -112,4 +112,13 @@ export class MerchantsController {
   async getMerchant(@Param('id') id: string) {
     return this.merchantsService.findById(id);
   }
+
+  @Put(':id/visibility')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Mostrar/ocultar comercio en la lista pública (test)' })
+  async setVisibility(@Param('id') id: string, @Body() body: { listed: boolean }) {
+    return this.merchantsService.setListed(id, body?.listed !== false);
+  }
 }

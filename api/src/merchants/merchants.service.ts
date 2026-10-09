@@ -44,6 +44,15 @@ export class MerchantsService {
     return merchant;
   }
 
+  /** Visibilidad en la lista pública (admin). No desactiva: QR y menú siguen. */
+  async setListed(id: string, listed: boolean) {
+    const merchant = await this.prisma.merchantProfile.findUnique({ where: { id } });
+    if (!merchant) {
+      throw new NotFoundException('Comercio no encontrado');
+    }
+    return this.prisma.merchantProfile.update({ where: { id }, data: { isListed: listed } });
+  }
+
   async findByUserId(userId: string) {
     const merchant = await this.prisma.merchantProfile.findUnique({
       where: { userId },

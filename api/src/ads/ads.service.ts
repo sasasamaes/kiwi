@@ -120,6 +120,7 @@ export class AdsService {
     // KYC siga pending) deben verse en la app de clientes.
     const where: any = {
       citySlug: city,
+      isListed: true,
       user: { status: 'active', role: 'merchant' },
       ...(isMerchantCategory(category) ? { category } : {}),
       ...(q?.trim()
