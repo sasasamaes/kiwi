@@ -43,7 +43,7 @@ export default function RegisterPage() {
         password: form.password,
         acceptedTerms,
         fullName: form.fullName.trim() || undefined,
-        phone: form.phone.trim() || undefined,
+        phone: normalizePhone(form.phone) || undefined,
         citySlug: form.citySlug,
         defaultAddress: form.defaultAddress.trim() || undefined,
         deliveryZone: form.deliveryZone || undefined,
@@ -72,6 +72,15 @@ export default function RegisterPage() {
   };
 
   const set = (k: string) => (e: any) => setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  // Acepta +506 7219 9768, 72199768, 7219-9768 y lo deja en 8888-8888.
+  // Se formatea al salir del campo (no mientras escribe, para no pelear
+  // con el teclado) y de nuevo al enviar. El backend normaliza igual.
+  const normalizePhone = (raw: string): string => {
+    const digits = raw.replace(/[^\d]/g, '');
+    const local = digits.length === 11 && digits.startsWith('506') ? digits.slice(3) : digits;
+    return /^\d{8}$/.test(local) ? `${local.slice(0, 4)}-${local.slice(4)}` : raw.trim();
+  };
 
   // GPS → barrio más cercano con su precio. Solo autoselecciona si hay
   // confianza (lejos de límites); si no, el usuario elige a mano.
@@ -151,9 +160,9 @@ export default function RegisterPage() {
           <input
             value={form.phone}
             onChange={set('phone')}
+            onBlur={() => setForm((f) => ({ ...f, phone: normalizePhone(f.phone) }))}
             placeholder="Teléfono 8888-8888 (opcional)"
-            pattern="\d{4}-\d{4}"
-            title="Formato 8888-8888"
+            title="Acepta +506, espacios y guiones: lo dejamos en 8888-8888"
             className="w-full rounded-xl bg-surface-100 dark:bg-surface-800 px-4 py-3 text-sm outline-none"
           />
           {/* Lanzamiento en Nicoya: ciudad fija (Liberia es a futuro) */}
