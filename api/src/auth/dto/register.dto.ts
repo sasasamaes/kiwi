@@ -6,6 +6,7 @@ import {
   IsOptional,
   IsEnum,
   IsNumber,
+  IsBoolean,
   Min,
   Max,
   Matches,
@@ -80,11 +81,6 @@ export class RegisterDto {
   vehicleType?: string;
 
   @ApiPropertyOptional({ example: 'nicoya', description: 'Ciudad operativa' })
-  @EmptyToUndefined()
-  @IsOptional()
-  @IsString()
-  citySlug?: string;
-
   @ApiPropertyOptional({ example: 10.1467, description: 'Latitud GPS del cliente' })
   @IsOptional()
   @IsNumber()
@@ -104,4 +100,11 @@ export class RegisterDto {
   @IsOptional()
   @IsString()
   defaultAddress?: string;
+
+  // Consentimiento de Términos/Privacidad (la app cliente lo exige en UI).
+  // Se acepta para no romper con forbidNonWhitelisted; no se persiste.
+  @ApiPropertyOptional({ example: true })
+  @IsOptional()
+  @IsBoolean()
+  acceptedTerms?: boolean;
 }
