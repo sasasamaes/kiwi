@@ -115,7 +115,7 @@ export function KiwiLogo({ size = 28, variant = 'brand', className = '' }: KiwiL
         }`}
         style={{ fontSize: size * 0.72 }}
       >
-        Kiwi
+        KiWi
       </span>
     </span>
   );

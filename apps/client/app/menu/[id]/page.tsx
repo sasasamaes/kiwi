@@ -1158,7 +1158,7 @@ export default function MenuPage() {
 
             {/* Modal */}
             <motion.div
-              className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto bg-white dark:bg-surface-800 rounded-t-3xl sm:rounded-3xl shadow-2xl"
+              className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto overflow-x-hidden bg-white dark:bg-surface-800 rounded-t-3xl sm:rounded-3xl shadow-2xl"
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
@@ -1354,9 +1354,9 @@ export default function MenuPage() {
                           <motion.button
                             key={method.id}
                             type="button"
-                            className={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all ${
+                            className={`relative flex min-w-0 flex-col items-center gap-1.5 p-3 rounded-2xl transition-all ${
                               paymentMethod === method.id
-                                ? 'bg-kiwi-100 dark:bg-kiwi-900/50 ring-2 ring-kiwi-600 shadow-kiwi'
+                                ? 'bg-kiwi-100 dark:bg-kiwi-900/50 ring-2 ring-kiwi-600'
                                 : 'bg-surface-100 dark:bg-surface-700 hover:bg-surface-200 dark:hover:bg-surface-600'
                             }`}
                             onClick={() => setPaymentMethod(method.id)}
@@ -1370,7 +1370,7 @@ export default function MenuPage() {
                               )}
                             </span>
                             <span
-                              className={`text-sm font-semibold ${
+                              className={`text-sm font-semibold leading-tight text-center ${
                                 paymentMethod === method.id
                                   ? 'text-kiwi-700 dark:text-kiwi-400'
                                   : 'text-surface-700 dark:text-surface-300'
@@ -1378,12 +1378,12 @@ export default function MenuPage() {
                             >
                               {method.label}
                             </span>
-                            <span className="text-xs text-surface-500 dark:text-surface-400">
+                            <span className="text-[11px] leading-tight text-center text-surface-500 dark:text-surface-400">
                               {method.desc}
                             </span>
                             {paymentMethod === method.id && (
                               <motion.div
-                                className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-kiwi-700 text-white text-xs flex items-center justify-center"
+                                className="absolute top-1.5 right-1.5 h-5 w-5 rounded-full bg-kiwi-700 text-white text-xs flex items-center justify-center"
                                 initial={{ scale: 0 }}
                                 animate={{ scale: 1 }}
                                 transition={{ type: 'spring', stiffness: 500 }}
@@ -1420,7 +1420,7 @@ export default function MenuPage() {
                             type="button"
                             className={`flex items-center gap-3 p-3 rounded-xl transition-all ${
                               paymentMethod === method.id
-                                ? 'bg-purple-100 dark:bg-purple-900/50 ring-2 ring-purple-500 shadow-purple'
+                                ? 'bg-purple-100 dark:bg-purple-900/50 ring-2 ring-purple-500'
                                 : 'bg-surface-100 dark:bg-surface-700 hover:bg-surface-200 dark:hover:bg-surface-600'
                             }`}
                             onClick={() => setPaymentMethod(method.id)}
