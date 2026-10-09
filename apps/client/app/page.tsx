@@ -43,6 +43,7 @@ interface DiscoverItem {
   isOpen: boolean;
   isSponsored: boolean;
   campaignId?: string | null;
+  distanceKm?: number | null;
 }
 
 /** Rating Decimal→string-safe: el backend puede serializar Decimal como string. */
@@ -72,6 +73,9 @@ export default function ClientHome() {
   const [loading, setLoading] = useState(true);
   const [feedError, setFeedError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [locating, setLocating] = useState(false);
+  const [locDenied, setLocDenied] = useState(false);
 
   const handleScan = useCallback(
     (merchantId: string, url: string) => {
@@ -113,7 +117,12 @@ export default function ClientHome() {
       async () => {
         try {
           const [feed, bn] = await Promise.all([
-            api.discoverMerchants({ city, q: q.trim() || undefined, take: 20 }),
+            api.discoverMerchants({
+              city,
+              q: q.trim() || undefined,
+              take: 20,
+              ...(coords ? { lat: coords.lat, lng: coords.lng } : {}),
+            }),
             api.getBanners(city).catch(() => ({ items: [] })),
           ]);
           if (cancelled) return;
@@ -143,7 +152,27 @@ export default function ClientHome() {
       cancelled = true;
       clearTimeout(t);
     };
-  }, [city, q, reloadKey]);
+  }, [city, q, reloadKey, coords]);
+
+  const useMyLocation = useCallback(() => {
+    if (!('geolocation' in navigator)) {
+      setLocDenied(true);
+      return;
+    }
+    setLocating(true);
+    setLocDenied(false);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setLocating(false);
+      },
+      () => {
+        setLocating(false);
+        setLocDenied(true);
+      },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 },
+    );
+  }, []);
 
   const openMerchant = (it: DiscoverItem) => {
     if (it.isSponsored && it.campaignId) {
@@ -205,7 +234,25 @@ export default function ClientHome() {
                 className="bg-transparent flex-1 py-2 text-sm outline-none placeholder:text-surface-400"
               />
             </div>
+            <button
+              onClick={useMyLocation}
+              disabled={locating}
+              title={coords ? 'Ordenado por cercanía' : 'Ordenar por cercanía'}
+              className={`flex items-center gap-1.5 rounded-full px-3 py-2 text-sm shrink-0 transition-colors ${
+                coords
+                  ? 'bg-kiwi-600 text-white font-semibold'
+                  : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-300'
+              }`}
+            >
+              <MapPin className="h-4 w-4" />
+              {locating ? '…' : coords ? 'Cerca' : 'Cerca de mí'}
+            </button>
           </div>
+          {locDenied && !coords && (
+            <p className="text-xs text-surface-500 mt-2">
+              No pudimos usar tu ubicación; mostramos por destacados.
+            </p>
+          )}
         </div>
       </motion.header>
 
@@ -392,6 +439,11 @@ export default function ClientHome() {
                           <Star className="h-3.5 w-3.5 fill-gold-500 text-gold-500" />
                           {formatRating(it.rating)} ({it.totalRatings})
                         </span>
+                        {it.distanceKm != null && (
+                          <span className="flex items-center gap-1 text-surface-600 dark:text-surface-300">
+                            <MapPin className="h-3.5 w-3.5" />a {it.distanceKm} km
+                          </span>
+                        )}
                         <span className={it.isOpen ? 'text-kiwi-600' : 'text-red-500'}>
                           {it.isOpen ? 'Abierto' : 'Cerrado'}
                         </span>

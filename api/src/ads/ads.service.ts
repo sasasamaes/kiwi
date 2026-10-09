@@ -63,8 +63,30 @@ export class AdsService {
     }
   }
 
-  /** Feed público de comercios: sponsored activo primero (máx 3), luego orgánico. */
-  async discover(citySlug = 'nicoya', q?: string, take = 20) {
+  /** Haversine en km (puntos de referencia WGS84, suficiente para ordenar). */
+  private distanceKm(
+    fromLat: number,
+    fromLng: number,
+    toLat: number | null,
+    toLng: number | null,
+  ): number | null {
+    if (toLat == null || toLng == null) return null;
+    const R = 6371;
+    const dLat = ((toLat - fromLat) * Math.PI) / 180;
+    const dLng = ((toLng - fromLng) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos((fromLat * Math.PI) / 180) *
+        Math.cos((toLat * Math.PI) / 180) *
+        Math.sin(dLng / 2) ** 2;
+    return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) * 10) / 10;
+  }
+
+  /**
+   * Feed público: publicidad paga primero (etiquetada isSponsored, máx 3),
+   * si no por cercanía al cliente (lat/lng) y si no por rating.
+   */
+  async discover(citySlug = 'nicoya', q?: string, take = 20, lat?: number, lng?: number) {
     const city = await this.resolveCity(citySlug);
     const now = new Date();
     const limit = Math.min(Math.max(Number(take) || 20, 1), 50);
@@ -120,6 +142,11 @@ export class AdsService {
     });
 
     // Rating por merchant (lote pequeño; N<=100, agregación individual aceptable en MVP).
+    const hasCoords =
+      typeof lat === 'number' &&
+      typeof lng === 'number' &&
+      Number.isFinite(lat) &&
+      Number.isFinite(lng);
     const withRatings = await Promise.all(
       merchants.map(async (m) => {
         const agg = await this.prisma.rating.aggregate({
@@ -127,24 +154,34 @@ export class AdsService {
           _avg: { rating: true },
           _count: { rating: true },
         });
+        const mLat = m.latitude != null ? Number(m.latitude) : null;
+        const mLng = m.longitude != null ? Number(m.longitude) : null;
         return {
           ...m,
-          latitude: m.latitude != null ? Number(m.latitude) : null,
-          longitude: m.longitude != null ? Number(m.longitude) : null,
+          latitude: mLat,
+          longitude: mLng,
           rating: agg._avg.rating != null ? Number(agg._avg.rating) : 5.0,
           totalRatings: agg._count.rating,
           isOpen: this.isOpen(m.openingHours),
           isSponsored: sponsoredIds.includes(m.id),
           campaignId: campaignByMerchant.get(m.id) ?? null,
+          distanceKm: hasCoords ? this.distanceKm(lat as number, lng as number, mLat, mLng) : null,
         };
       }),
     );
 
     withRatings.sort((a, b) => {
+      // 1. Publicidad paga primero (la card dice "Patrocinado").
       if (a.isSponsored !== b.isSponsored) return a.isSponsored ? -1 : 1;
       const aVerified = (a as any).kycStatus === 'approved' ? 0 : 1;
       const bVerified = (b as any).kycStatus === 'approved' ? 0 : 1;
       if (aVerified !== bVerified) return aVerified - bVerified;
+      // 2. Cercanía al cliente (si compartió ubicación), si no rating.
+      if (hasCoords) {
+        const ad = a.distanceKm ?? Number.POSITIVE_INFINITY;
+        const bd = b.distanceKm ?? Number.POSITIVE_INFINITY;
+        if (ad !== bd) return ad - bd;
+      }
       if (a.isOpen !== b.isOpen) return a.isOpen ? -1 : 1;
       if (a.rating !== b.rating) return b.rating - a.rating;
       return 0;

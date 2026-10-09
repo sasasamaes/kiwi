@@ -26,12 +26,31 @@ export class MerchantsController {
   @ApiQuery({ name: 'city', required: false })
   @ApiQuery({ name: 'q', required: false })
   @ApiQuery({ name: 'take', required: false })
+  @ApiQuery({ name: 'lat', required: false })
+  @ApiQuery({ name: 'lng', required: false })
   async discover(
     @Query('city') city?: string,
     @Query('q') q?: string,
     @Query('take') take?: string,
+    @Query('lat') lat?: string,
+    @Query('lng') lng?: string,
   ) {
-    return this.adsService.discover(city || 'nicoya', q, take ? Number(take) : 20);
+    // Ubicación del cliente (opcional): ordena por cercanía. Sin coords o
+    // inválidas se ignora y ordena por rating — nunca 400 por esto.
+    const flat = lat != null ? Number(lat) : NaN;
+    const flng = lng != null ? Number(lng) : NaN;
+    const valid =
+      Number.isFinite(flat) &&
+      Number.isFinite(flng) &&
+      Math.abs(flat) <= 90 &&
+      Math.abs(flng) <= 180;
+    return this.adsService.discover(
+      city || 'nicoya',
+      q,
+      take ? Number(take) : 20,
+      valid ? flat : undefined,
+      valid ? flng : undefined,
+    );
   }
 
   @Get('me')

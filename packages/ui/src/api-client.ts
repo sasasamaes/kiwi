@@ -298,11 +298,21 @@ class ApiClient {
   // 🏪 MERCHANTS
   // ============================================
 
-  async discoverMerchants(params?: { city?: string; q?: string; take?: number }) {
+  async discoverMerchants(params?: {
+    city?: string;
+    q?: string;
+    take?: number;
+    lat?: number;
+    lng?: number;
+  }) {
     const q = new URLSearchParams();
     if (params?.city) q.append('city', params.city);
     if (params?.q) q.append('q', params.q);
     if (params?.take != null) q.append('take', String(params.take));
+    if (params?.lat != null && params?.lng != null) {
+      q.append('lat', String(params.lat));
+      q.append('lng', String(params.lng));
+    }
     const qs = q.toString();
     return this.request<any>(`/merchants/discover${qs ? `?${qs}` : ''}`);
   }
