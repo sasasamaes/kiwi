@@ -193,7 +193,7 @@ export default function ClientHome() {
         initial={{ y: -100 }}
         animate={{ y: 0 }}
       >
-        <div className="mx-auto max-w-lg px-4 py-4">
+        <div className="mx-auto max-w-lg lg:max-w-5xl px-4 py-4">
           <div className="flex items-center justify-between mb-3">
             <KiwiLogo size={30} />
             <div className="flex items-center gap-2">
@@ -256,7 +256,7 @@ export default function ClientHome() {
         </div>
       </motion.header>
 
-      <main className="mx-auto max-w-lg px-4 py-6">
+      <main className="mx-auto max-w-lg lg:max-w-5xl px-4 py-6">
         {/* Banners patrocinados */}
         {banners.length > 0 && (
           <div className="mb-6 flex gap-3 overflow-x-auto pb-2 -mx-4 px-4">
@@ -400,7 +400,7 @@ export default function ClientHome() {
               )}
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-3 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-4">
               {items.map((it) => (
                 <button
                   key={it.id}
@@ -456,74 +456,78 @@ export default function ClientHome() {
           )}
         </ScrollReveal>
 
-        {/* Banner comercio: pautar + usar la app (manda al WhatsApp del negocio) */}
-        <ScrollReveal index={1}>
-          <div className="mt-8 rounded-2xl overflow-hidden border border-gold-500/30 dark:border-gold-500/20 bg-gradient-to-br from-gold-500/15 via-white to-white dark:from-gold-500/10 dark:via-surface-800 dark:to-surface-800 p-6 shadow-soft">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gold-500/20">
-                <Store className="h-6 w-6 text-gold-700 dark:text-gold-400" />
-              </div>
-              <div>
-                <p className="font-display font-bold text-surface-800 dark:text-surface-100">
-                  ¿Tienes un restaurante?
-                </p>
-                <p className="text-xs text-surface-500 dark:text-surface-400">
-                  Este espacio puede ser el tuyo
-                </p>
-              </div>
-            </div>
-            <p className="text-sm text-surface-600 dark:text-surface-300 mb-4">
-              Aparecé primero, poné tu banner y mandá ofertas por push a los clientes de tu ciudad.
-              O usá Kiwi para recibir pedidos en tu negocio.
-            </p>
-            <div className="flex flex-col gap-2">
-              <a
-                href={waLink('Hola Kiwi, tengo un restaurante y quiero pautar en la app')}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 rounded-xl bg-kiwi-600 px-4 py-3 text-sm font-semibold text-white"
-              >
-                <MessageCircle className="h-4 w-4" /> Quiero pautar mi restaurante
-              </a>
-              <a
-                href={waLink('Hola Kiwi, quiero usar la app en mi negocio')}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 rounded-xl border border-kiwi-600/30 px-4 py-3 text-sm font-semibold text-kiwi-700 dark:text-kiwi-300"
-              >
-                <Store className="h-4 w-4" /> Usar Kiwi en mi negocio
-              </a>
-            </div>
-          </div>
-        </ScrollReveal>
-
-        {/* How it Works */}
-        <ScrollReveal
-          className="mt-8 rounded-2xl border border-transparent bg-white dark:bg-surface-800 dark:border-white/[0.06] p-6 shadow-soft dark:shadow-dark"
-          index={1}
-        >
-          <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100 mb-4 text-center">
-            ¿Cómo funciona?
-          </h3>
-          <div className="space-y-4">
-            {[
-              { icon: Smartphone, title: 'Escanear QR', desc: 'En el restaurante o aqui' },
-              { icon: ClipboardList, title: 'Elige tu comida', desc: 'Selecciona del menu' },
-              { icon: CreditCard, title: 'Paga facil', desc: 'SINPE, tarjeta o efectivo' },
-              { icon: Bike, title: 'Recibe en casa', desc: 'Tracking en tiempo real' },
-            ].map((step, i) => (
-              <div key={i} className="flex items-center gap-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-kiwi-100 dark:bg-kiwi-400/10 dark:ring-1 dark:ring-kiwi-400/25">
-                  <step.icon className="h-6 w-6 text-kiwi-700 dark:text-kiwi-300" />
+        <div className="lg:grid lg:grid-cols-2 lg:gap-6 lg:items-start">
+          {/* Banner comercio: pautar + usar la app (manda al WhatsApp del negocio) */}
+          <ScrollReveal index={1} className="lg:h-full">
+            <div className="mt-8 rounded-2xl overflow-hidden border border-gold-500/30 dark:border-gold-500/20 bg-gradient-to-br from-gold-500/15 via-white to-white dark:from-gold-500/10 dark:via-surface-800 dark:to-surface-800 p-6 shadow-soft">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gold-500/20">
+                  <Store className="h-6 w-6 text-gold-700 dark:text-gold-400" />
                 </div>
                 <div>
-                  <p className="font-medium text-surface-800 dark:text-surface-100">{step.title}</p>
-                  <p className="text-sm text-surface-500 dark:text-surface-400">{step.desc}</p>
+                  <p className="font-display font-bold text-surface-800 dark:text-surface-100">
+                    ¿Tienes un restaurante?
+                  </p>
+                  <p className="text-xs text-surface-500 dark:text-surface-400">
+                    Este espacio puede ser el tuyo
+                  </p>
                 </div>
               </div>
-            ))}
-          </div>
-        </ScrollReveal>
+              <p className="text-sm text-surface-600 dark:text-surface-300 mb-4">
+                Aparecé primero, poné tu banner y mandá ofertas por push a los clientes de tu
+                ciudad. O usá Kiwi para recibir pedidos en tu negocio.
+              </p>
+              <div className="flex flex-col gap-2">
+                <a
+                  href={waLink('Hola Kiwi, tengo un restaurante y quiero pautar en la app')}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 rounded-xl bg-kiwi-600 px-4 py-3 text-sm font-semibold text-white"
+                >
+                  <MessageCircle className="h-4 w-4" /> Quiero pautar mi restaurante
+                </a>
+                <a
+                  href={waLink('Hola Kiwi, quiero usar la app en mi negocio')}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 rounded-xl border border-kiwi-600/30 px-4 py-3 text-sm font-semibold text-kiwi-700 dark:text-kiwi-300"
+                >
+                  <Store className="h-4 w-4" /> Usar Kiwi en mi negocio
+                </a>
+              </div>
+            </div>
+          </ScrollReveal>
+
+          {/* How it Works */}
+          <ScrollReveal
+            className="mt-8 rounded-2xl border border-transparent bg-white dark:bg-surface-800 dark:border-white/[0.06] p-6 shadow-soft dark:shadow-dark"
+            index={1}
+          >
+            <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100 mb-4 text-center">
+              ¿Cómo funciona?
+            </h3>
+            <div className="space-y-4">
+              {[
+                { icon: Smartphone, title: 'Escanear QR', desc: 'En el restaurante o aqui' },
+                { icon: ClipboardList, title: 'Elige tu comida', desc: 'Selecciona del menu' },
+                { icon: CreditCard, title: 'Paga facil', desc: 'SINPE, tarjeta o efectivo' },
+                { icon: Bike, title: 'Recibe en casa', desc: 'Tracking en tiempo real' },
+              ].map((step, i) => (
+                <div key={i} className="flex items-center gap-4">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-kiwi-100 dark:bg-kiwi-400/10 dark:ring-1 dark:ring-kiwi-400/25">
+                    <step.icon className="h-6 w-6 text-kiwi-700 dark:text-kiwi-300" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-surface-800 dark:text-surface-100">
+                      {step.title}
+                    </p>
+                    <p className="text-sm text-surface-500 dark:text-surface-400">{step.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </ScrollReveal>
+        </div>
       </main>
       <BottomNav />
     </div>
