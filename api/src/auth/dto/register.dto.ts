@@ -81,6 +81,11 @@ export class RegisterDto {
   vehicleType?: string;
 
   @ApiPropertyOptional({ example: 'nicoya', description: 'Ciudad operativa' })
+  @EmptyToUndefined()
+  @IsOptional()
+  @IsString()
+  citySlug?: string;
+
   @ApiPropertyOptional({ example: 10.1467, description: 'Latitud GPS del cliente' })
   @IsOptional()
   @IsNumber()
