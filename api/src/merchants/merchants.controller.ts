@@ -28,12 +28,14 @@ export class MerchantsController {
   @ApiQuery({ name: 'take', required: false })
   @ApiQuery({ name: 'lat', required: false })
   @ApiQuery({ name: 'lng', required: false })
+  @ApiQuery({ name: 'category', required: false })
   async discover(
     @Query('city') city?: string,
     @Query('q') q?: string,
     @Query('take') take?: string,
     @Query('lat') lat?: string,
     @Query('lng') lng?: string,
+    @Query('category') category?: string,
   ) {
     // Ubicación del cliente (opcional): ordena por cercanía. Sin coords o
     // inválidas se ignora y ordena por rating — nunca 400 por esto.
@@ -50,6 +52,7 @@ export class MerchantsController {
       take ? Number(take) : 20,
       valid ? flat : undefined,
       valid ? flng : undefined,
+      category,
     );
   }
 

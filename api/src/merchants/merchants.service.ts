@@ -1,6 +1,12 @@
 // Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { isMerchantCategory } from './merchant-category';
 
 @Injectable()
 export class MerchantsService {
@@ -65,6 +71,14 @@ export class MerchantsService {
       throw new NotFoundException('Perfil de comercio no encontrado');
     }
 
+    const extra: Record<string, unknown> = {};
+    if (data.category !== undefined) {
+      if (!isMerchantCategory(data.category)) {
+        throw new BadRequestException('Categoría inválida');
+      }
+      extra.category = data.category;
+    }
+
     return this.prisma.merchantProfile.update({
       where: { userId },
       data: {
@@ -74,6 +88,7 @@ export class MerchantsService {
         longitude: data.longitude,
         description: data.description,
         openingHours: data.openingHours,
+        ...extra,
       },
     });
   }

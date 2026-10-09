@@ -29,6 +29,15 @@ import {
   User,
   Store,
   MessageCircle,
+  LayoutGrid,
+  UtensilsCrossed,
+  Pizza,
+  Coffee,
+  Croissant,
+  Fish,
+  Sandwich,
+  Salad,
+  Beer,
 } from 'lucide-react';
 import { BottomNav } from './components/BottomNav';
 
@@ -49,6 +58,19 @@ interface DiscoverItem {
 /** Rating Decimal→string-safe: el backend puede serializar Decimal como string. */
 // WhatsApp comercial de Kiwi (ventas/adhesión). Se configura en Vercel con
 // NEXT_PUBLIC_SALES_WHATSAPP=506XXXXXXX. Fallback = placeholder visible.
+const CATEGORIES = [
+  { id: '', label: 'Todos', icon: LayoutGrid },
+  { id: 'restaurante', label: 'Restaurantes', icon: UtensilsCrossed },
+  { id: 'soda', label: 'Sodas', icon: Store },
+  { id: 'pizzeria', label: 'Pizzerías', icon: Pizza },
+  { id: 'cafe_brunch', label: 'Café & Brunch', icon: Coffee },
+  { id: 'panaderia', label: 'Panaderías', icon: Croissant },
+  { id: 'mariscos', label: 'Mariscos', icon: Fish },
+  { id: 'comida_rapida', label: 'Rápida', icon: Sandwich },
+  { id: 'saludable', label: 'Saludable', icon: Salad },
+  { id: 'bar', label: 'Bares', icon: Beer },
+];
+
 const SALES_WA_NUMBER = process.env.NEXT_PUBLIC_SALES_WHATSAPP || '50688888888';
 const waLink = (text: string) =>
   `https://wa.me/${SALES_WA_NUMBER}?text=${encodeURIComponent(text)}`;
@@ -68,6 +90,7 @@ export default function ClientHome() {
   // (el backend ya segmenta por ciudad; para activarla se muestra el toggle).
   const [city] = useState('nicoya');
   const [q, setQ] = useState('');
+  const [category, setCategory] = useState('');
   const [items, setItems] = useState<DiscoverItem[]>([]);
   const [banners, setBanners] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -120,6 +143,7 @@ export default function ClientHome() {
             api.discoverMerchants({
               city,
               q: q.trim() || undefined,
+              category: category || undefined,
               take: 20,
               ...(coords ? { lat: coords.lat, lng: coords.lng } : {}),
             }),
@@ -152,7 +176,7 @@ export default function ClientHome() {
       cancelled = true;
       clearTimeout(t);
     };
-  }, [city, q, reloadKey, coords]);
+  }, [city, q, reloadKey, coords, category]);
 
   const useMyLocation = useCallback(() => {
     if (!('geolocation' in navigator)) {
@@ -253,6 +277,27 @@ export default function ClientHome() {
               No pudimos usar tu ubicación; mostramos por destacados.
             </p>
           )}
+          {/* Categorías de negocios */}
+          <div className="flex gap-2 overflow-x-auto pb-1 pt-3 -mx-4 px-4 scrollbar-hide">
+            {CATEGORIES.map((c) => {
+              const active = category === c.id;
+              const Icon = c.icon;
+              return (
+                <button
+                  key={c.id || 'todos'}
+                  onClick={() => setCategory(c.id)}
+                  className={`flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-sm transition-colors ${
+                    active
+                      ? 'bg-kiwi-700 text-white font-semibold shadow-kiwi'
+                      : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-300'
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  {c.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </motion.header>
 

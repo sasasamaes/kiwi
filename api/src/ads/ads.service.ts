@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { isMerchantCategory } from '../merchants/merchant-category';
 
 const DEFAULT_PRICES = {
   spotlight: 1500,
@@ -84,9 +85,16 @@ export class AdsService {
 
   /**
    * Feed público: publicidad paga primero (etiquetada isSponsored, máx 3),
-   * si no por cercanía al cliente (lat/lng) y si no por rating.
+   * si no por cercanía al cliente (lat/lng) y si no alfabético.
    */
-  async discover(citySlug = 'nicoya', q?: string, take = 20, lat?: number, lng?: number) {
+  async discover(
+    citySlug = 'nicoya',
+    q?: string,
+    take = 20,
+    lat?: number,
+    lng?: number,
+    category?: string,
+  ) {
     const city = await this.resolveCity(citySlug);
     const now = new Date();
     const limit = Math.min(Math.max(Number(take) || 20, 1), 50);
@@ -113,6 +121,7 @@ export class AdsService {
     const where: any = {
       citySlug: city,
       user: { status: 'active', role: 'merchant' },
+      ...(isMerchantCategory(category) ? { category } : {}),
       ...(q?.trim()
         ? {
             OR: [
@@ -137,6 +146,7 @@ export class AdsService {
         citySlug: true,
         createdAt: true,
         kycStatus: true,
+        category: true,
       },
       take: 100,
     });

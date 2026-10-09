@@ -92,6 +92,10 @@ model MerchantProfile {
   // Default nicoya para no romper datos existentes.
   citySlug String @default("nicoya") @map("city_slug")
 
+  // Categoría del negocio (filtros de la app cliente). Se autotaguea por
+  // nombre al registrar; el comercio la puede cambiar después.
+  category MerchantCategory @default(restaurante)
+
   // KYC
   kycStatus     KYCStatus @default(pending) @map("kyc_status")
   kycVerifiedAt DateTime? @map("kyc_verified_at")
@@ -113,6 +117,7 @@ model MerchantProfile {
   broadcasts      OfferBroadcast[]
 
   @@index([citySlug])
+  @@index([citySlug, category])
   @@map("merchant_profiles")
 }
 
@@ -249,6 +254,20 @@ model AdEvent {
   @@index([campaignId, createdAt])
   @@index([broadcastId, createdAt])
   @@map("ad_events")
+}
+
+// Categorías de negocio para los filtros de la app cliente.
+enum MerchantCategory {
+  restaurante
+  soda
+  pizzeria
+  cafe_brunch
+  panaderia
+  mariscos
+  comida_rapida
+  saludable
+  bar
+  otro
 }
 
 // Libro mayor del crédito prepago (auditable: toda recarga y gasto queda aquí)

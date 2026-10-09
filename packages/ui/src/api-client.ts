@@ -307,9 +307,11 @@ class ApiClient {
     take?: number;
     lat?: number;
     lng?: number;
+    category?: string;
   }) {
     const q = new URLSearchParams();
     if (params?.city) q.append('city', params.city);
+    if (params?.category) q.append('category', params.category);
     if (params?.q) q.append('q', params.q);
     if (params?.take != null) q.append('take', String(params.take));
     if (params?.lat != null && params?.lng != null) {

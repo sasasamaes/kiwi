@@ -15,6 +15,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { findDeliveryZone } from '../orders/delivery-zones';
+import { isMerchantCategory, tagMerchantCategory } from '../merchants/merchant-category';
 
 /** Per-account brute-force throttle for login (independent of IP limits). */
 interface AttemptEntry {
@@ -164,6 +165,11 @@ export class AuthService {
                 address: 'Nicoya, Guanacaste',
                 kycStatus: 'pending' as any,
                 citySlug: citySlugNorm,
+                // Categoría: si viene válida se respeta, si no se autotaguea
+                // por nombre (igual que la migración de existentes).
+                category: (isMerchantCategory((registerDto as any).category)
+                  ? (registerDto as any).category
+                  : tagMerchantCategory(businessName)) as any,
               },
             },
           }

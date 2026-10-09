@@ -74,6 +74,25 @@ export class RegisterDto {
   @IsString()
   businessName?: string;
 
+  @ApiPropertyOptional({
+    enum: [
+      'restaurante',
+      'soda',
+      'pizzeria',
+      'cafe_brunch',
+      'panaderia',
+      'mariscos',
+      'comida_rapida',
+      'saludable',
+      'bar',
+      'otro',
+    ],
+  })
+  @EmptyToUndefined()
+  @IsOptional()
+  @IsString()
+  category?: string;
+
   @ApiPropertyOptional({ enum: ['motorcycle', 'motorized_bike', 'bicycle', 'car', 'truck'] })
   @EmptyToUndefined()
   @IsOptional()
