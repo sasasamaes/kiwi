@@ -176,12 +176,15 @@ export class AdsService {
       const aVerified = (a as any).kycStatus === 'approved' ? 0 : 1;
       const bVerified = (b as any).kycStatus === 'approved' ? 0 : 1;
       if (aVerified !== bVerified) return aVerified - bVerified;
-      // 2. Cercanía al cliente (si compartió ubicación), si no rating.
+      // 2. Cercanía al cliente, solo si compartió ubicación.
       if (hasCoords) {
         const ad = a.distanceKm ?? Number.POSITIVE_INFINITY;
         const bd = b.distanceKm ?? Number.POSITIVE_INFINITY;
         if (ad !== bd) return ad - bd;
       }
+      // 3. Alfabético por nombre (si no, el orden parece aleatorio).
+      const alpha = a.businessName.localeCompare(b.businessName, 'es', { sensitivity: 'base' });
+      if (alpha !== 0) return alpha;
       if (a.isOpen !== b.isOpen) return a.isOpen ? -1 : 1;
       if (a.rating !== b.rating) return b.rating - a.rating;
       return 0;
