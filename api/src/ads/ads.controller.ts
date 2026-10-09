@@ -14,17 +14,9 @@ import { CreateCampaignDto, CreateBroadcastDto, RecordAdEventDto } from './dto';
 export class AdsController {
   constructor(private readonly ads: AdsService) {}
 
-  @Public()
-  @Get('merchants/discover')
-  @ApiOperation({ summary: 'Feed público de comercios (sponsored primero, segmentado por ciudad)' })
-  async discover(
-    @Query('city') city?: string,
-    @Query('q') q?: string,
-    @Query('take') take?: string,
-  ) {
-    return this.ads.discover(city || 'nicoya', q, take ? Number(take) : 20);
-  }
-
+  // NOTA: GET /merchants/discover vive en MerchantsController (declarado
+  // antes de GET ':id'): acá quedaría sombreado por el ':id' solo-admin y
+  // los invitados recibirían 401. Ver merchants.controller.ts.
   @Public()
   @Get('ads/banners')
   @ApiOperation({ summary: 'Banners activos para el carrusel home' })

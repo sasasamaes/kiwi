@@ -2,8 +2,10 @@
 import { Module } from '@nestjs/common';
 import { MerchantsService } from './merchants.service';
 import { MerchantsController } from './merchants.controller';
+import { AdsModule } from '../ads/ads.module';
 
 @Module({
+  imports: [AdsModule],
   providers: [MerchantsService],
   controllers: [MerchantsController],
   exports: [MerchantsService],

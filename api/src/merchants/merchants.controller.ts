@@ -1,7 +1,9 @@
 // Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
-import { Controller, Get, Put, Post, Delete, Body, Param, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { Controller, Get, Put, Post, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { MerchantsService } from './merchants.service';
+import { AdsService } from '../ads/ads.service';
+import { Public } from '../auth/decorators/public.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -10,7 +12,27 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 @ApiTags('Merchants')
 @Controller('merchants')
 export class MerchantsController {
-  constructor(private readonly merchantsService: MerchantsService) {}
+  constructor(
+    private readonly merchantsService: MerchantsService,
+    private readonly adsService: AdsService,
+  ) {}
+
+  // OJO orden: esta ruta estática debe declararse ANTES de GET ':id'.
+  // Express matchea por orden de registro y ':id' (solo admin) se tragaría
+  // 'discover' devolviendo 401 a invitados (fue el 401 en prod).
+  @Public()
+  @Get('discover')
+  @ApiOperation({ summary: 'Feed público de comercios (sponsored primero, por ciudad)' })
+  @ApiQuery({ name: 'city', required: false })
+  @ApiQuery({ name: 'q', required: false })
+  @ApiQuery({ name: 'take', required: false })
+  async discover(
+    @Query('city') city?: string,
+    @Query('q') q?: string,
+    @Query('take') take?: string,
+  ) {
+    return this.adsService.discover(city || 'nicoya', q, take ? Number(take) : 20);
+  }
 
   @Get('me')
   @UseGuards(JwtAuthGuard, RolesGuard)
