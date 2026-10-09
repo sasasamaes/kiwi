@@ -371,7 +371,10 @@ export default function ClientHome() {
           {loading ? (
             <div className="space-y-3">
               {[0, 1, 2].map((i) => (
-                <div key={i} className="rounded-2xl glass p-4 animate-pulse">
+                <div
+                  key={i}
+                  className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] p-4 shadow-soft dark:shadow-dark animate-pulse"
+                >
                   <div className="h-4 w-2/3 bg-surface-200 dark:bg-surface-700 rounded mb-2" />
                   <div className="h-3 w-1/2 bg-surface-200 dark:bg-surface-700 rounded" />
                 </div>
@@ -405,7 +408,7 @@ export default function ClientHome() {
                 <button
                   key={it.id}
                   onClick={() => openMerchant(it)}
-                  className="w-full text-left rounded-2xl glass p-4 hover:shadow-soft transition-shadow"
+                  className="w-full text-left rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] p-4 shadow-soft dark:shadow-dark hover:shadow-kiwi transition-shadow"
                 >
                   <div className="flex items-start gap-3">
                     <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-kiwi-100 dark:bg-kiwi-400/10 font-display font-bold text-kiwi-700 dark:text-kiwi-300 overflow-hidden">
