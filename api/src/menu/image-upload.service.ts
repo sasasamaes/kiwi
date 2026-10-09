@@ -102,6 +102,18 @@ export class ImageUploadService {
     return this.uploadToFolder(file, 'kiwi/drivers');
   }
 
+  /**
+   * Valida y sube el avatar del cliente (carpeta `kiwi/customers`).
+   * Misma validación que el resto; solo cambia la carpeta de destino.
+   */
+  async uploadCustomerAvatar(file: {
+    buffer: Buffer;
+    size: number;
+    originalname?: string;
+  }): Promise<{ url: string }> {
+    return this.uploadToFolder(file, 'kiwi/customers');
+  }
+
   /** Núcleo compartido: validación estricta + subida a la carpeta indicada. */
   private async uploadToFolder(
     file: { buffer: Buffer; size: number; originalname?: string },

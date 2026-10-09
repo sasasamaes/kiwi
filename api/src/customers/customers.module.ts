@@ -2,9 +2,10 @@
 import { Module } from '@nestjs/common';
 import { CustomersService } from './customers.service';
 import { CustomersController } from './customers.controller';
+import { ImageUploadService } from '../menu/image-upload.service';
 
 @Module({
-  providers: [CustomersService],
+  providers: [CustomersService, ImageUploadService],
   controllers: [CustomersController],
   exports: [CustomersService],
 })

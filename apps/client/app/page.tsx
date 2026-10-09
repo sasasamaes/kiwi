@@ -40,6 +40,7 @@ import {
   Beer,
 } from 'lucide-react';
 import { BottomNav } from './components/BottomNav';
+import { PushOptInCard } from './components/PushOptInCard';
 
 interface DiscoverItem {
   id: string;
@@ -409,6 +410,7 @@ export default function ClientHome() {
         )}
 
         {/* Feed real de comercios */}
+        <PushOptInCard />
         <ScrollReveal index={0}>
           <h2 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-4 flex items-center gap-2">
             <MapPin className="h-5 w-5" /> Restaurantes en Nicoya

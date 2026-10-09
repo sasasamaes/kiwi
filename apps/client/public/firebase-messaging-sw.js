@@ -95,7 +95,10 @@ self.addEventListener('notificationclick', (event) => {
 
   // Determine URL to open (rutas del CLIENTE: existen en esta app).
   let url = '/orders';
-  if (data?.orderId) {
+  if (data?.type === 'offer' && data?.merchantId) {
+    // Oferta de un comercio: abrir su menú directo.
+    url = `/menu/${data.merchantId}`;
+  } else if (data?.orderId) {
     if (data.type === 'order_accepted' || data.type === 'order_status') {
       url = `/tracking/${data.orderId}`;
     } else {

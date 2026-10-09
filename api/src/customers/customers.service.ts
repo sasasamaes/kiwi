@@ -32,6 +32,15 @@ export class CustomersService {
       const city = await this.prisma.city.findUnique({ where: { slug } });
       if (city) data.citySlug = city.slug;
     }
+    // Avatar: URL https (foto subida) o emoji elegido; null lo quita.
+    // Máx 500 chars (una URL de Cloudinary cabe de sobra).
+    if (dto.avatarUrl !== undefined) {
+      if (dto.avatarUrl === null || String(dto.avatarUrl).trim() === '') {
+        data.avatarUrl = null;
+      } else {
+        data.avatarUrl = String(dto.avatarUrl).slice(0, 500);
+      }
+    }
     return this.prisma.customerProfile.upsert({
       where: { userId },
       update: data,
