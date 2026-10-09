@@ -678,6 +678,11 @@ class ApiClient {
     });
   }
 
+  /** Comandas del comercio: pedidos activos entrados por la app cliente. */
+  async getIncomingOrders() {
+    return this.request<any[]>('/orders/incoming');
+  }
+
   async getMyOrders(status?: string) {
     const params = status ? `?status=${status}` : '';
     return this.request<any>(`/orders/my${params}`);

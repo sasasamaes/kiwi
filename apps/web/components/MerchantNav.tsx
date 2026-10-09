@@ -12,6 +12,7 @@ import {
   LayoutDashboard,
   LogOut,
   Menu as MenuIcon,
+  Receipt,
   ShoppingBag,
   Utensils,
   X,
@@ -20,6 +21,7 @@ import { useAuth, ThemeToggle, KiwiLogo } from '@kiwi/ui';
 
 const LINKS = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/comandas', label: 'Comandas', icon: Receipt },
   { href: '/orders', label: 'Pedidos', icon: ShoppingBag },
   { href: '/menu', label: 'Menú', icon: Utensils },
   { href: '/drivers', label: 'Repartidores', icon: Bike },

@@ -107,6 +107,15 @@ export class OrdersController {
     }
   }
 
+  @Get('incoming')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('merchant')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Comandas: pedidos activos que entraron por la app cliente' })
+  async getIncoming(@CurrentUser() user: any) {
+    return this.ordersService.findIncoming(user.sub);
+  }
+
   @Get('available')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('driver')

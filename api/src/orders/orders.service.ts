@@ -112,6 +112,7 @@ export class OrdersService {
     return this.create(merchantProfile.userId, {
       ...guestData,
       ...(linkedCustomer ? { customerId: linkedCustomer } : {}),
+      origin: 'client_app',
       pickupAddress: data?.pickupAddress || merchantProfile.address,
       pickupLat: data?.pickupLat ?? merchantProfile.latitude,
       pickupLng: data?.pickupLng ?? merchantProfile.longitude,
@@ -559,6 +560,9 @@ export class OrdersService {
           ...(typeof data.customerId === 'string' && data.customerId.trim() !== ''
             ? { customerId: data.customerId.trim() }
             : {}),
+          // Origen: solo el flujo público (link/app cliente) marca
+          // client_app; el dashboard nace merchant_panel (default).
+          ...(data.origin === 'client_app' ? { origin: 'client_app' } : {}),
           ...(directDriver ? { driverId: directDriver.id, assignedAt: new Date() } : {}),
           // Atómico: los items se crean en la misma escritura. Antes era un
           // createMany best-effort que podía dejar el pedido cobrado sin items
@@ -1355,6 +1359,41 @@ export class OrdersService {
       orderBy: { createdAt: 'desc' },
       take: t,
       skip: s,
+    });
+  }
+
+  /**
+   * Comandas: pedidos que entraron por la app cliente (link público),
+   * en estados activos. Lo que ve la página /comandas del negocio.
+   */
+  async findIncoming(userId: string) {
+    const merchantProfile = await this.prisma.merchantProfile.findUnique({
+      where: { userId },
+    });
+    if (!merchantProfile) return [];
+    return this.prisma.order.findMany({
+      where: {
+        merchantId: merchantProfile.id,
+        origin: 'client_app',
+        status: {
+          in: [
+            'pending',
+            'driver_proposals',
+            'assigned',
+            'pending_acceptance',
+            'in_transit_to_pickup',
+            'picked_up',
+            'in_transit_to_delivery',
+          ],
+        },
+      },
+      include: {
+        items: { select: { name: true, quantity: true, notes: true, selectedVariants: true } },
+        driver: { select: { id: true, fullName: true, vehicleType: true } },
+        payment: { select: { status: true, method: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
     });
   }
 
