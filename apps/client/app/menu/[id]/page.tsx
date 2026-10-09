@@ -759,10 +759,18 @@ export default function MenuPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <div className="rounded-2xl glass p-4">
+        <div className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] p-4 shadow-soft dark:shadow-dark">
           <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-kiwi-100 dark:bg-kiwi-900/30 text-3xl">
-              🥗
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-kiwi-100 dark:bg-kiwi-400/10 font-display text-2xl font-bold text-kiwi-700 dark:text-kiwi-300 overflow-hidden">
+              {isHttpUrl(merchant.logoUrl) ? (
+                <img
+                  src={merchant.logoUrl}
+                  alt={merchant.businessName}
+                  className="h-16 w-16 object-cover"
+                />
+              ) : (
+                merchant.businessName.slice(0, 1).toUpperCase()
+              )}
             </div>
             <div>
               <h2 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100">
@@ -835,9 +843,11 @@ export default function MenuPage() {
               const quantity = getItemQuantity(item.id);
               return (
                 <ScrollReveal key={item.id} index={itemIndex} as="div">
-                  <motion.div className={`rounded-2xl glass p-4 ${hoverCard}`}>
+                  <motion.div
+                    className={`rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] p-4 shadow-soft dark:shadow-dark ${hoverCard}`}
+                  >
                     <div className="flex gap-4">
-                      <div className="flex h-20 w-20 items-center justify-center rounded-xl bg-surface-100 dark:bg-surface-700 text-3xl flex-shrink-0">
+                      <div className="flex h-20 w-20 items-center justify-center rounded-xl bg-kiwi-50 dark:bg-surface-700 text-3xl flex-shrink-0 overflow-hidden">
                         {isHttpUrl(item.image) ? (
                           // NOTE: <img> intencional — avatares dinámicos de Cloudinary, next/image no aporta aquí
                           <img
@@ -846,9 +856,9 @@ export default function MenuPage() {
                             className="h-full w-full object-cover rounded-xl"
                           />
                         ) : isEmojiImage(item.image) ? (
-                          item.image
+                          <span className="text-5xl leading-none">{item.image}</span>
                         ) : (
-                          <Utensils className="h-8 w-8" />
+                          <Utensils className="h-10 w-10 text-kiwi-600/60 dark:text-kiwi-400/60" />
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
