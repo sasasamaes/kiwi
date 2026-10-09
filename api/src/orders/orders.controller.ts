@@ -234,7 +234,7 @@ export class OrdersController {
     @CurrentUser() user: any,
     @Query('limit') limit?: string,
   ) {
-    return this.ordersService.getOrderMessages(id, user.sub, limit ? Number(limit) : 50);
+    return this.ordersService.getOrderMessages(id, user.sub, limit ? Number(limit) : 50, user.role);
   }
 
   @Put(':id/assign')

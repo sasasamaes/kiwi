@@ -824,11 +824,12 @@ export class OrdersService {
       throw new NotFoundException('Pedido no encontrado');
     }
 
-    // Check access: merchant owner, assigned driver, or admin
+    // Check access: merchant owner, assigned driver, owning customer, or admin
     const isMerchant = order.merchant?.userId === userId;
     const isDriver = order.driver?.userId === userId;
+    const isCustomer = role === 'customer' && (order as any).customerId === userId;
 
-    if (!isMerchant && !isDriver && role !== 'admin') {
+    if (!isMerchant && !isDriver && !isCustomer && role !== 'admin') {
       throw new ForbiddenException('No tienes acceso a este pedido');
     }
 
@@ -837,10 +838,10 @@ export class OrdersService {
 
   /**
    * Order-scoped chat history. Reuses findById for participant-only
-   * access: merchant owner, assigned driver, or admin.
+   * access: merchant owner, assigned driver, owning customer, or admin.
    */
-  async getOrderMessages(orderId: string, userId: string, limit = 50) {
-    await this.findById(orderId, userId);
+  async getOrderMessages(orderId: string, userId: string, limit = 50, role?: string) {
+    await this.findById(orderId, userId, role);
 
     const messages = await this.prisma.notification.findMany({
       where: {

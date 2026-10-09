@@ -44,13 +44,23 @@ export default function RateOrderPage() {
   const fetchOrder = useCallback(async () => {
     try {
       // Logueado: vista completa. Invitado con link: endpoints públicos.
+      // Cliente dueño u otro rol sin acceso: fallback público en 401/403.
       if (api.getToken()) {
-        const data = await api.getOrderById(orderId);
-        setOrder(data);
-        // ¿Ya fue calificado? El backend decide quién puede calificar.
-        const ratingInfo = await api.getRatingForOrder(orderId);
-        if (ratingInfo.rating) {
-          setDone(true);
+        try {
+          const data = await api.getOrderById(orderId);
+          setOrder(data);
+          // ¿Ya fue calificado? El backend decide quién puede calificar.
+          const ratingInfo = await api.getRatingForOrder(orderId);
+          if (ratingInfo.rating) {
+            setDone(true);
+          }
+        } catch (err: any) {
+          if (err?.status !== 401 && err?.status !== 403) throw err;
+          const pub = await api.getPublicRating(orderId);
+          setOrder(pub.order);
+          if (pub.rating) {
+            setDone(true);
+          }
         }
       } else {
         const pub = await api.getPublicRating(orderId);
@@ -89,7 +99,14 @@ export default function RateOrderPage() {
         carefulWithOrder: careful ?? undefined,
       };
       if (api.getToken()) {
-        await api.submitRating(payload);
+        try {
+          await api.submitRating(payload);
+        } catch (err: any) {
+          // Cliente dueño u otro rol sin permiso de rating logueado:
+          // la vía pública califica igual (invitados, una vez, entregado).
+          if (err?.status !== 401 && err?.status !== 403) throw err;
+          await api.submitPublicRating(payload);
+        }
       } else {
         await api.submitPublicRating(payload);
       }

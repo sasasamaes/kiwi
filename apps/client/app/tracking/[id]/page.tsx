@@ -206,10 +206,20 @@ function TrackingContent() {
       }
       try {
         if (!silent) setLoading(true);
-        // Invitado con link: endpoint público. Logueado: vista completa.
-        const data = api.getToken()
-          ? await api.getOrderById(orderId)
-          : await api.getPublicTracking(orderId);
+        // Invitado con link: endpoint público. Logueado: vista completa, con
+        // fallback a la pública si su rol no tiene acceso (ej. cliente dueño
+        // en APIs sin el permiso: igual ve su pedido, sin datos sensibles).
+        const data = await (async () => {
+          if (!api.getToken()) return api.getPublicTracking(orderId);
+          try {
+            return await api.getOrderById(orderId);
+          } catch (err: any) {
+            if (err?.status === 401 || err?.status === 403) {
+              return api.getPublicTracking(orderId);
+            }
+            throw err;
+          }
+        })();
         setOrder(data);
         setCurrentStatus(data.status as OrderStatus);
         // Sin socket (invitados): historial y ETA salen de los timestamps
@@ -250,11 +260,19 @@ function TrackingContent() {
   const fetchLocation = useCallback(async () => {
     if (!orderId) return;
     try {
-      const loc = api.getToken()
-        ? driverId
-          ? await api.getDriverLocation(driverId).catch(() => null)
-          : null
-        : await api.getPublicDriverLocation(orderId).catch(() => null);
+      // Punto azul en vivo: vía logueada si hay sesión, si no la pública.
+      // Si la logueada rebota (rol sin acceso), se cae a la pública.
+      let loc: any = null;
+      if (api.getToken()) {
+        if (driverId) {
+          loc = await api.getDriverLocation(driverId).catch(() => null);
+        }
+        if (!loc || loc.known === false) {
+          loc = await api.getPublicDriverLocation(orderId).catch(() => null);
+        }
+      } else {
+        loc = await api.getPublicDriverLocation(orderId).catch(() => null);
+      }
       if (loc && loc.known !== false && !loc.isStale && Number.isFinite(Number(loc.lat))) {
         setDriverLocation({ lat: Number(loc.lat), lng: Number(loc.lng) });
       }

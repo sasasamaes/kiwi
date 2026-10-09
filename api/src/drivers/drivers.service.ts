@@ -271,8 +271,9 @@ export class DriversService {
 
   /**
    * Row-level guard for live GPS: the driver himself, a participant of one of
-   * his ACTIVE orders (merchant owner or the assigned driver himself), or an
-   * admin. Delivered/cancelled orders no longer grant tracking access.
+   * his ACTIVE orders (merchant owner, the assigned driver himself, or the
+   * owning customer), or an admin. Delivered/cancelled orders no longer
+   * grant tracking access.
    */
   async getLocationForUser(driverId: string, user: { sub?: string; role?: string }) {
     if (user?.role === 'admin') {
@@ -295,7 +296,7 @@ export class DriversService {
           status: {
             in: ['assigned', 'in_transit_to_pickup', 'picked_up', 'in_transit_to_delivery'],
           },
-          OR: [{ merchant: { userId } }, { driver: { userId } }],
+          OR: [{ merchant: { userId } }, { driver: { userId } }, { customerId: userId }],
         },
         select: { id: true },
       });
