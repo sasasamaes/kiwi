@@ -19,6 +19,9 @@ export default function RegisterPage() {
   });
   const [offers, setOffers] = useState(true);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [gps, setGps] = useState<{ lat: number; lng: number } | null>(null);
+  const [locating, setLocating] = useState(false);
+  const [locDenied, setLocDenied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -40,6 +43,7 @@ export default function RegisterPage() {
         phone: form.phone.trim() || undefined,
         citySlug: form.citySlug,
         defaultAddress: form.defaultAddress.trim() || undefined,
+        ...(gps ? { latitude: gps.lat, longitude: gps.lng } : {}),
         role: 'customer',
       });
       // Opt-out de ofertas si no quiere (default ON en el server).
@@ -64,6 +68,26 @@ export default function RegisterPage() {
   };
 
   const set = (k: string) => (e: any) => setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  const useGpsLocation = () => {
+    if (!('geolocation' in navigator)) {
+      setLocDenied(true);
+      return;
+    }
+    setLocating(true);
+    setLocDenied(false);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setGps({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setLocating(false);
+      },
+      () => {
+        setLocating(false);
+        setLocDenied(true);
+      },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 },
+    );
+  };
 
   return (
     <div className="min-h-[100dvh] bg-bg-light dark:bg-surface-950 px-4 py-10">
@@ -120,6 +144,27 @@ export default function RegisterPage() {
             placeholder="Dirección de entrega (opcional)"
             className="w-full rounded-xl bg-surface-100 dark:bg-surface-800 px-4 py-3 text-sm outline-none"
           />
+          <button
+            type="button"
+            onClick={useGpsLocation}
+            disabled={locating}
+            className={`w-full rounded-xl px-4 py-3 text-sm font-semibold transition-colors disabled:opacity-60 ${
+              gps
+                ? 'bg-kiwi-100 dark:bg-kiwi-400/10 text-kiwi-700 dark:text-kiwi-300'
+                : 'bg-surface-100 dark:bg-surface-800 text-surface-700 dark:text-surface-200'
+            }`}
+          >
+            {locating
+              ? 'Ubicando…'
+              : gps
+                ? '✓ Ubicación lista para tu entrega'
+                : '📍 Usar mi ubicación GPS'}
+          </button>
+          {locDenied && !gps && (
+            <p className="text-xs text-surface-500">
+              No pudimos usar el GPS; podés escribir tu dirección arriba.
+            </p>
+          )}
           <label className="flex items-start gap-2 text-xs text-surface-500">
             <input
               type="checkbox"

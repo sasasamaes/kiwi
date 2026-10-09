@@ -1,5 +1,15 @@
 // Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
-import { IsEmail, IsString, MinLength, IsOptional, IsEnum, Matches } from 'class-validator';
+import {
+  IsEmail,
+  IsString,
+  MinLength,
+  IsOptional,
+  IsEnum,
+  IsNumber,
+  Min,
+  Max,
+  Matches,
+} from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { normalizeCRPhone } from '../../common/phone';
@@ -74,6 +84,20 @@ export class RegisterDto {
   @IsOptional()
   @IsString()
   citySlug?: string;
+
+  @ApiPropertyOptional({ example: 10.1467, description: 'Latitud GPS del cliente' })
+  @IsOptional()
+  @IsNumber()
+  @Min(-90)
+  @Max(90)
+  latitude?: number;
+
+  @ApiPropertyOptional({ example: -85.452, description: 'Longitud GPS del cliente' })
+  @IsOptional()
+  @IsNumber()
+  @Min(-180)
+  @Max(180)
+  longitude?: number;
 
   @ApiPropertyOptional({ example: 'Centro, 100m norte del parque' })
   @EmptyToUndefined()

@@ -211,6 +211,8 @@ class ApiClient {
     vehicleType?: string;
     citySlug?: string;
     defaultAddress?: string;
+    latitude?: number;
+    longitude?: number;
   }) {
     const result = await this.request<any>('/auth/register', {
       method: 'POST',

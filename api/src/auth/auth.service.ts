@@ -99,6 +99,14 @@ export class AuthService {
       citySlug,
       defaultAddress,
     } = registerDto as RegisterDto & { citySlug?: string; defaultAddress?: string };
+    // GPS del registro (opcional): solo se guarda si viene par válido.
+    const regLat = Number((registerDto as any).latitude);
+    const regLng = Number((registerDto as any).longitude);
+    const hasGps =
+      Number.isFinite(regLat) &&
+      Number.isFinite(regLng) &&
+      Math.abs(regLat) <= 90 &&
+      Math.abs(regLng) <= 180;
 
     // El email es case-insensitive (Postgres unique sí distingue): se
     // normaliza al guardar para que Local@x.com y local@x.com no creen
@@ -161,6 +169,7 @@ export class AuthService {
                   fullName: fullName?.trim() || null,
                   defaultAddress: defaultAddress?.trim() || null,
                   citySlug: citySlugNorm,
+                  ...(hasGps ? { latitude: regLat, longitude: regLng } : {}),
                 },
               },
             }
