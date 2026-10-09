@@ -39,6 +39,7 @@ import {
   CryptoRateNote,
   safeNavigateToUrl,
   useAuth,
+  KiwiMark,
   isEmojiImage,
   isHttpUrl,
   hoverCard,
@@ -745,7 +746,8 @@ export default function MenuPage() {
               <span>←</span>
               <span className="text-sm font-medium">Volver</span>
             </Link>
-            <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
+            <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100 flex items-center gap-2">
+              <KiwiMark size={22} />
               Menú
             </h1>
             <ThemeToggle />
