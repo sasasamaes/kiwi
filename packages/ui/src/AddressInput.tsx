@@ -56,6 +56,7 @@ export function AddressInput({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [gettingLocation, setGettingLocation] = useState(false);
+  const [geoError, setGeoError] = useState<string | null>(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -169,28 +170,64 @@ export function AddressInput({
     }
   };
 
+  // Mensaje claro según el motivo del fallo (sin alert() nativo: bloquea
+  // la página y en móvil se ve roto).
+  const geoErrorMessage = (code?: number): string => {
+    if (code === 1) {
+      return 'Permiso de ubicación denegado. Activalo en el navegador (ícono de la barra de dirección) o escribí la dirección a mano.';
+    }
+    if (code === 2) {
+      return 'No se pudo determinar tu posición. Probá cerca de una ventana o con el WiFi encendido, o escribí la dirección a mano.';
+    }
+    return 'La ubicación tardó demasiado. Revisá tu conexión o escribí la dirección a mano.';
+  };
+
+  const getPosition = (options: PositionOptions): Promise<GeolocationPosition> =>
+    new Promise((resolve, reject) =>
+      navigator.geolocation.getCurrentPosition(resolve, reject, options),
+    );
+
   // Get current location
   const handleGetCurrentLocation = async () => {
     if (!navigator.geolocation) {
-      alert('Tu navegador no soporta geolocalización');
+      setGeoError('Tu navegador no soporta geolocalización. Escribí la dirección a mano.');
       return;
     }
 
     setGettingLocation(true);
+    setGeoError(null);
 
     try {
-      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
+      let position: GeolocationPosition;
+      try {
+        // Intento 1: alta precisión (GPS del celu).
+        position = await getPosition({
           enableHighAccuracy: true,
           timeout: 10000,
           maximumAge: 60000,
         });
-      });
+      } catch (first) {
+        // Reintento: sin alta precisión (en desktop no hay GPS y el modo
+        // preciso suele dar timeout; red/WiFi responde igual).
+        const code = (first as GeolocationPositionError | undefined)?.code;
+        if (code === 1) throw first; // permiso denegado: reintentar no ayuda
+        position = await getPosition({
+          enableHighAccuracy: false,
+          timeout: 15000,
+          maximumAge: 300000,
+        });
+      }
 
       const { latitude, longitude } = position.coords;
 
-      // Reverse geocode to get address
-      const result = await api.reverseGeocode(latitude, longitude);
+      // Reverse geocode a nombre legible. Si falla (red), igual tenemos las
+      // coords: se usan como dirección, sin mostrar error de GPS.
+      let result: Awaited<ReturnType<typeof api.reverseGeocode>> | null = null;
+      try {
+        result = await api.reverseGeocode(latitude, longitude);
+      } catch {
+        result = null;
+      }
 
       if (result) {
         setQuery(result.shortName);
@@ -210,8 +247,14 @@ export function AddressInput({
         onChange(coordAddress, { lat: latitude, lng: longitude });
       }
     } catch (error) {
-      console.error('Geolocation error:', error);
-      alert('No se pudo obtener tu ubicación. Por favor, ingresa la dirección manualmente.');
+      const code = (error as GeolocationPositionError | undefined)?.code;
+      // El reverse-geocode fallando NO es error de GPS (ya tenemos coords):
+      // solo se muestra este mensaje cuando falló la posición en sí.
+      if (code === 1 || code === 2 || code === 3) {
+        setGeoError(geoErrorMessage(code));
+      } else {
+        setGeoError('No se pudo obtener tu ubicación. Escribí la dirección a mano.');
+      }
     } finally {
       setGettingLocation(false);
     }
@@ -292,6 +335,30 @@ export function AddressInput({
           )}
         </button>
       </div>
+
+      {/* Error de GPS en línea (nunca alert() nativo): explica y reintenta */}
+      <AnimatePresence>
+        {geoError && (
+          <motion.div
+            className="mt-2 flex items-start gap-2 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-3"
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+          >
+            <MapPin className="h-4 w-4 mt-0.5 shrink-0 text-amber-600 dark:text-amber-400" />
+            <div className="flex-1">
+              <p className="text-xs text-amber-700 dark:text-amber-300">{geoError}</p>
+              <button
+                type="button"
+                onClick={handleGetCurrentLocation}
+                className="mt-1 text-xs font-semibold text-amber-700 dark:text-amber-300 underline"
+              >
+                Reintentar ubicación
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Suggestions dropdown */}
       <AnimatePresence>
