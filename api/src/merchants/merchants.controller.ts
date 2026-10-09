@@ -1,8 +1,24 @@
 // Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
-import { Controller, Get, Put, Post, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Put,
+  Post,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  HttpCode,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiConsumes } from '@nestjs/swagger';
 import { MerchantsService } from './merchants.service';
 import { AdsService } from '../ads/ads.service';
+import { ImageUploadService } from '../menu/image-upload.service';
 import { Public } from '../auth/decorators/public.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -15,6 +31,7 @@ export class MerchantsController {
   constructor(
     private readonly merchantsService: MerchantsService,
     private readonly adsService: AdsService,
+    private readonly imageUpload: ImageUploadService,
   ) {}
 
   // OJO orden: esta ruta estática debe declararse ANTES de GET ':id'.
@@ -120,5 +137,36 @@ export class MerchantsController {
   @ApiOperation({ summary: 'Mostrar/ocultar comercio en la lista pública (test)' })
   async setVisibility(@Param('id') id: string, @Body() body: { listed: boolean }) {
     return this.merchantsService.setListed(id, body?.listed !== false);
+  }
+
+  /**
+   * Logo del comercio (foto de perfil). Multipart (Multer memoryStorage),
+   * misma validación estricta que el resto de imágenes (magic bytes, 5MB).
+   * Se ve en la app cliente (lista y menú).
+   */
+  @Post('me/logo')
+  @HttpCode(200)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('merchant')
+  @UseInterceptors(
+    FileInterceptor('photo', { storage: memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } }),
+  )
+  @ApiOperation({ summary: 'Subir logo del comercio (multipart/form-data)' })
+  @ApiBearerAuth()
+  @ApiConsumes('multipart/form-data')
+  async uploadLogo(@CurrentUser() user: any, @UploadedFile() file: any) {
+    const { url } = await this.imageUpload.uploadMerchantLogo(file);
+    await this.merchantsService.updateProfile(user.sub, { logoUrl: url });
+    return { url };
+  }
+
+  /** Estado de la subida para la UI (mostrar el picker una vez configurado). */
+  @Get('me/logo-status')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('merchant')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Whether merchant logo upload is configured' })
+  async logoStatus() {
+    return { enabled: this.imageUpload.isConfigured() };
   }
 }

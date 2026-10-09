@@ -114,6 +114,18 @@ export class ImageUploadService {
     return this.uploadToFolder(file, 'kiwi/customers');
   }
 
+  /**
+   * Valida y sube el logo del comercio (carpeta `kiwi/merchants`).
+   * Misma validación que el resto; solo cambia la carpeta de destino.
+   */
+  async uploadMerchantLogo(file: {
+    buffer: Buffer;
+    size: number;
+    originalname?: string;
+  }): Promise<{ url: string }> {
+    return this.uploadToFolder(file, 'kiwi/merchants');
+  }
+
   /** Núcleo compartido: validación estricta + subida a la carpeta indicada. */
   private async uploadToFolder(
     file: { buffer: Buffer; size: number; originalname?: string },

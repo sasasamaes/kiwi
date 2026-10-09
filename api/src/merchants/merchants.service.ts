@@ -87,6 +87,17 @@ export class MerchantsService {
       }
       extra.category = data.category;
     }
+    // Logo: URL https (foto subida). Se valida esquema para no guardar
+    // cualquier string que rompería <img> en la app cliente.
+    if (data.logoUrl !== undefined) {
+      if (data.logoUrl === null || String(data.logoUrl).trim() === '') {
+        extra.logoUrl = null;
+      } else if (/^https:\/\/\S+$/i.test(String(data.logoUrl).trim())) {
+        extra.logoUrl = String(data.logoUrl).trim().slice(0, 500);
+      } else {
+        throw new BadRequestException('Logo inválido (URL https)');
+      }
+    }
 
     return this.prisma.merchantProfile.update({
       where: { userId },

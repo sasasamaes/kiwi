@@ -31,6 +31,7 @@ import {
   KiwiLoader,
 } from '@kiwi/ui';
 import { MerchantNav } from '../../components/MerchantNav';
+import { MerchantLogoEditor } from '../../components/MerchantLogoEditor';
 
 /**
  * Nombre del cliente: campo estructurado (pedidos nuevos) o parseado de
@@ -59,7 +60,7 @@ function getClientName(o: any): string {
 
 export default function Dashboard() {
   const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, updateUser } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -210,12 +211,28 @@ export default function Dashboard() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <h2 className="text-2xl font-display font-bold text-surface-800 dark:text-surface-100">
-            {getGreeting()} 👋 {user?.merchantProfile?.businessName || ''}
-          </h2>
-          <p className="text-surface-500 dark:text-surface-400">
-            Aquí está el resumen de tu negocio hoy
-          </p>
+          <div className="flex items-center gap-4">
+            <MerchantLogoEditor
+              logoUrl={(user as any)?.merchantProfile?.logoUrl}
+              businessName={(user as any)?.merchantProfile?.businessName}
+              onChange={(url) =>
+                updateUser({
+                  merchantProfile: {
+                    ...((user as any)?.merchantProfile ?? {}),
+                    logoUrl: url,
+                  },
+                } as any)
+              }
+            />
+            <div>
+              <h2 className="text-2xl font-display font-bold text-surface-800 dark:text-surface-100">
+                {getGreeting()} 👋 {user?.merchantProfile?.businessName || ''}
+              </h2>
+              <p className="text-surface-500 dark:text-surface-400">
+                Aquí está el resumen de tu negocio hoy
+              </p>
+            </div>
+          </div>
         </motion.div>
 
         {/* Quick Actions */}

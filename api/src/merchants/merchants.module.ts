@@ -3,10 +3,11 @@ import { Module } from '@nestjs/common';
 import { MerchantsService } from './merchants.service';
 import { MerchantsController } from './merchants.controller';
 import { AdsModule } from '../ads/ads.module';
+import { ImageUploadService } from '../menu/image-upload.service';
 
 @Module({
   imports: [AdsModule],
-  providers: [MerchantsService],
+  providers: [MerchantsService, ImageUploadService],
   controllers: [MerchantsController],
   exports: [MerchantsService],
 })

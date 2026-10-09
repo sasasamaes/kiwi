@@ -576,6 +576,42 @@ class ApiClient {
   }
 
   /**
+   * Sube el logo del comercio (multipart `photo`). El backend lo guarda en
+   * el perfil y devuelve { url }. Se ve en la app cliente (lista y menú).
+   */
+  async uploadMerchantLogo(file: File): Promise<{ url: string }> {
+    const fd = new FormData();
+    fd.append('photo', file);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
+    try {
+      const response = await fetch(`${this.baseUrl}/merchants/me/logo`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${this.getToken() ?? ''}` },
+        body: fd,
+        signal: controller.signal,
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error((data as any)?.message || `Error al subir logo (${response.status})`);
+      }
+      return data as { url: string };
+    } catch (err: any) {
+      if (err?.name === 'AbortError') {
+        throw new Error('El servidor tardó demasiado. Revisá tu conexión e intentá de nuevo.');
+      }
+      throw err;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  /** Si la subida de logo del comercio está configurada (Cloudinary). */
+  async getMerchantLogoUploadStatus(): Promise<{ enabled: boolean }> {
+    return this.request<{ enabled: boolean }>('/merchants/me/logo-status');
+  }
+
+  /**
    * Sube la foto de perfil del cliente (multipart `photo`). El backend la
    * guarda como avatarUrl del perfil y devuelve { url }.
    */
