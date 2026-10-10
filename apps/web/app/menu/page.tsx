@@ -267,7 +267,10 @@ export default function MenuManagementPage() {
         </div>
         <div className="mx-auto max-w-4xl px-4 py-8 space-y-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="rounded-2xl glass p-4">
+            <div
+              key={i}
+              className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4"
+            >
               <div className="flex gap-4">
                 <Skeleton className="h-16 w-16 rounded-xl" />
                 <div className="flex-1">
@@ -362,7 +365,7 @@ export default function MenuManagementPage() {
         <AnimatePresence>
           {showCategoryManager && (
             <motion.div
-              className="mb-6 rounded-2xl glass p-6"
+              className="mb-6 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-6"
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
@@ -535,7 +538,7 @@ export default function MenuManagementPage() {
                 key={cat}
                 className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all ${
                   selectedCategory === cat
-                    ? 'bg-kiwi-700 text-white shadow-kiwi'
+                    ? 'bg-kiwi-700 text-white'
                     : 'bg-white dark:bg-surface-800 text-surface-600 dark:text-surface-400 shadow-soft dark:shadow-dark'
                 }`}
                 onClick={() => setSelectedCategory(cat)}
@@ -639,7 +642,7 @@ export default function MenuManagementPage() {
                 <Reorder.Item
                   key={item.id}
                   value={item}
-                  className={`rounded-2xl glass p-4 cursor-grab active:cursor-grabbing ${
+                  className={`rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4 cursor-grab active:cursor-grabbing ${
                     !item.isAvailable ? 'opacity-60' : ''
                   }`}
                 >
@@ -683,7 +686,7 @@ export default function MenuManagementPage() {
               {filteredItems.map((item, itemIndex) => (
                 <ScrollReveal key={item.id} index={itemIndex} as="div">
                   <motion.div
-                    className={`rounded-2xl glass p-4 transition-all ${
+                    className={`rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4 transition-all ${
                       !item.isAvailable ? 'opacity-60' : ''
                     } ${selectedItems.has(item.id) ? 'ring-2 ring-kiwi-600' : ''}`}
                     whileHover={{ y: -2 }}
@@ -901,7 +904,7 @@ export default function MenuManagementPage() {
         {/* Stats Summary */}
         {menuItems.length > 0 && (
           <motion.div
-            className="mt-8 rounded-2xl glass p-6"
+            className="mt-8 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-6"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}

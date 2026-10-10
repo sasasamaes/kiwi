@@ -125,7 +125,10 @@ export default function ScheduledOrdersPage() {
         </div>
         <div className="mx-auto max-w-4xl px-4 py-8 space-y-4">
           {[1, 2].map((i) => (
-            <div key={i} className="rounded-2xl glass p-4">
+            <div
+              key={i}
+              className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4"
+            >
               <div className="flex gap-4">
                 <Skeleton className="h-16 w-16 rounded-xl" />
                 <div className="flex-1">
@@ -217,7 +220,7 @@ export default function ScheduledOrdersPage() {
             {scheduledOrders.map((order, orderIndex) => (
               <ScrollReveal key={order.id} index={orderIndex} as="div">
                 <motion.div
-                  className="rounded-2xl glass p-4 cursor-pointer"
+                  className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4 cursor-pointer"
                   whileHover={{ y: -2, boxShadow: '0 12px 32px -8px rgba(34, 197, 94, 0.25)' }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => handleSelectOrder(order)}

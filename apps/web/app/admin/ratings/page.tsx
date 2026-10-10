@@ -85,18 +85,18 @@ export default function AdminRatings() {
 
       {/* Resumen */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="rounded-2xl glass p-4 text-center">
+        <div className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4 text-center">
           <p className="text-3xl font-bold text-surface-800 dark:text-surface-100">
             {average.toFixed(1)}
           </p>
           <Stars value={Math.round(average)} />
           <p className="mt-1 text-xs text-surface-500">Promedio ({count})</p>
         </div>
-        <div className="rounded-2xl glass p-4 text-center">
+        <div className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4 text-center">
           <p className="text-3xl font-bold text-surface-800 dark:text-surface-100">{total}</p>
           <p className="mt-1 text-xs text-surface-500">En esta vista</p>
         </div>
-        <div className="rounded-2xl glass p-4 text-center">
+        <div className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4 text-center">
           <p className="text-3xl font-bold text-kiwi-700">
             {items.filter((i) => (i.rating ?? 0) >= 4).length}
           </p>
@@ -153,7 +153,7 @@ export default function AdminRatings() {
             />
           ))
         ) : items.length === 0 ? (
-          <div className="rounded-2xl glass p-8 text-center">
+          <div className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-8 text-center">
             <MessageSquare className="h-10 w-10 mx-auto mb-2 text-surface-300" />
             <p className="text-sm text-surface-500">No hay comentarios con este filtro</p>
           </div>
@@ -161,7 +161,7 @@ export default function AdminRatings() {
           items.map((r, i) => (
             <motion.div
               key={r.id}
-              className="rounded-2xl glass p-4"
+              className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4"
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: Math.min(i * 0.04, 0.4) }}

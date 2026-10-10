@@ -299,7 +299,7 @@ export default function Schedule() {
                   onClick={() => setSelectedDay(index)}
                   className={`relative flex flex-col items-center rounded-xl px-4 py-3 min-w-[65px] transition-all ${
                     selectedDay === index
-                      ? 'bg-kiwi-700 text-white shadow-kiwi scale-105'
+                      ? 'bg-kiwi-700 text-white scale-105'
                       : 'bg-white dark:bg-surface-800 text-surface-600 dark:text-surface-400 shadow-soft dark:shadow-dark'
                   }`}
                   whileTap={{ scale: 0.95 }}
@@ -396,7 +396,7 @@ export default function Schedule() {
 
         {/* Hours Grid */}
         <motion.div
-          className="mb-6 rounded-2xl glass p-4"
+          className="mb-6 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.25 }}
@@ -412,7 +412,7 @@ export default function Schedule() {
                   onClick={() => toggleHour(hour)}
                   className={`relative rounded-xl py-4 text-center transition-all ${
                     isSelected
-                      ? 'bg-kiwi-700 text-white shadow-kiwi'
+                      ? 'bg-kiwi-700 text-white'
                       : 'bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400 hover:bg-surface-200 dark:hover:bg-surface-600'
                   }`}
                   whileTap={{ scale: 0.95 }}

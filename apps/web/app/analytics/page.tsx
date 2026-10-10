@@ -254,7 +254,10 @@ export default function MerchantAnalyticsPage() {
           {/* Overview Stats */}
           <StaggerContainer className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <StaggerItem>
-              <motion.div className="rounded-2xl glass p-4" whileHover={{ y: -2 }}>
+              <motion.div
+                className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4"
+                whileHover={{ y: -2 }}
+              >
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-2xl">
                     <Package className="h-6 w-6" />
@@ -274,7 +277,10 @@ export default function MerchantAnalyticsPage() {
             </StaggerItem>
 
             <StaggerItem>
-              <motion.div className="rounded-2xl glass p-4" whileHover={{ y: -2 }}>
+              <motion.div
+                className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4"
+                whileHover={{ y: -2 }}
+              >
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-2xl">
                     <Coins className="h-6 w-6" />
@@ -294,7 +300,10 @@ export default function MerchantAnalyticsPage() {
             </StaggerItem>
 
             <StaggerItem>
-              <motion.div className="rounded-2xl glass p-4" whileHover={{ y: -2 }}>
+              <motion.div
+                className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4"
+                whileHover={{ y: -2 }}
+              >
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-2xl">
                     <BarChart3 className="h-6 w-6" />
@@ -311,7 +320,10 @@ export default function MerchantAnalyticsPage() {
             </StaggerItem>
 
             <StaggerItem>
-              <motion.div className="rounded-2xl glass p-4" whileHover={{ y: -2 }}>
+              <motion.div
+                className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4"
+                whileHover={{ y: -2 }}
+              >
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-2xl">
                     <Check className="h-6 w-6" />
@@ -328,7 +340,10 @@ export default function MerchantAnalyticsPage() {
             </StaggerItem>
 
             <StaggerItem>
-              <motion.div className="rounded-2xl glass p-4" whileHover={{ y: -2 }}>
+              <motion.div
+                className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4"
+                whileHover={{ y: -2 }}
+              >
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-2xl">⏱️</span>
                   <span className="text-xs font-medium text-surface-500 dark:text-surface-400">
@@ -367,7 +382,7 @@ export default function MerchantAnalyticsPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Daily Orders Chart */}
             <motion.div
-              className="rounded-2xl glass p-6"
+              className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-6"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
@@ -406,7 +421,7 @@ export default function MerchantAnalyticsPage() {
 
             {/* Payment Methods */}
             <motion.div
-              className="rounded-2xl glass p-6"
+              className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-6"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
@@ -464,7 +479,7 @@ export default function MerchantAnalyticsPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Top Items */}
             <motion.div
-              className="rounded-2xl glass p-6"
+              className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-6"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
@@ -502,7 +517,7 @@ export default function MerchantAnalyticsPage() {
 
             {/* Peak Hours */}
             <motion.div
-              className="rounded-2xl glass p-6"
+              className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-6"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6 }}
@@ -552,7 +567,7 @@ export default function MerchantAnalyticsPage() {
 
           {/* Customer Stats */}
           <motion.div
-            className="rounded-2xl glass p-6"
+            className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-6"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7 }}
@@ -620,7 +635,7 @@ export default function MerchantAnalyticsPage() {
 
           {/* Quick Actions */}
           <motion.div
-            className="rounded-2xl glass p-6"
+            className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-6"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.8 }}

@@ -133,7 +133,10 @@ export default function RegisterPage() {
         <p className="text-sm text-center text-surface-500 mb-6">
           Guardá tu dirección y pedí en 1 tap
         </p>
-        <form onSubmit={submit} className="rounded-2xl glass p-6 space-y-3">
+        <form
+          onSubmit={submit}
+          className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-6 space-y-3"
+        >
           <input
             value={form.fullName}
             onChange={set('fullName')}

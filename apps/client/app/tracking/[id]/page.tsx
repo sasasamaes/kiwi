@@ -478,7 +478,7 @@ function TrackingContent() {
         )}
 
         <motion.div
-          className="rounded-2xl glass p-6 mb-6"
+          className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-6 mb-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
@@ -534,7 +534,7 @@ function TrackingContent() {
 
         {((order as any).pickupProofPhotoUrl || (order as any).deliveryProofPhotoUrl) && (
           <motion.div
-            className="rounded-2xl glass p-4 mb-6"
+            className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4 mb-6"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.28 }}
@@ -573,7 +573,7 @@ function TrackingContent() {
 
         {driver && currentStatus !== 'pending' && currentStatus !== 'cancelled' && (
           <motion.div
-            className="rounded-2xl glass p-4 mb-6"
+            className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4 mb-6"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.25 }}
@@ -620,7 +620,7 @@ function TrackingContent() {
         )}
 
         <motion.div
-          className="rounded-2xl glass p-4 mb-6"
+          className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4 mb-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
@@ -666,7 +666,7 @@ function TrackingContent() {
 
         {statusHistory.length > 0 && (
           <motion.div
-            className="rounded-2xl glass p-4 mb-6"
+            className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4 mb-6"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}

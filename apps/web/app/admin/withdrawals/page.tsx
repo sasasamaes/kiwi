@@ -291,7 +291,7 @@ export default function AdminWithdrawalsPage() {
               onClick={() => setActiveFilter(tab.id)}
               className={`flex-shrink-0 px-4 py-2.5 rounded-full text-sm font-medium transition-all ${
                 activeFilter === tab.id
-                  ? 'bg-kiwi-700 text-white shadow-kiwi'
+                  ? 'bg-kiwi-700 text-white'
                   : 'bg-white dark:bg-surface-800 text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700'
               }`}
               whileTap={{ scale: 0.95 }}
@@ -318,7 +318,7 @@ export default function AdminWithdrawalsPage() {
             return (
               <motion.div
                 key={withdrawal.id}
-                className="rounded-2xl glass p-4 cursor-pointer hover:shadow-medium dark:hover:shadow-dark transition-all"
+                className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4 cursor-pointer hover:shadow-medium dark:hover:shadow-dark transition-all"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}

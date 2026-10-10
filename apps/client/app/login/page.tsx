@@ -49,7 +49,10 @@ export default function LoginPage() {
         <p className="text-sm text-center text-surface-500 mb-6">
           Pedí más rápido y recibí ofertas de tu ciudad
         </p>
-        <form onSubmit={submit} className="rounded-2xl glass p-6 space-y-4">
+        <form
+          onSubmit={submit}
+          className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-6 space-y-4"
+        >
           <input
             type="email"
             required

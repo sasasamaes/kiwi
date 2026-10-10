@@ -223,7 +223,7 @@ export default function RateOrderPage() {
 
         {/* Repartidor */}
         {order.driver && (
-          <div className="mb-6 rounded-2xl glass p-4 flex items-center gap-4">
+          <div className="mb-6 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4 flex items-center gap-4">
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-kiwi-gradient text-white font-bold text-xl">
               {order.driver.fullName?.charAt(0) || 'D'}
             </div>

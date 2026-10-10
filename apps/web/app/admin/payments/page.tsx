@@ -152,7 +152,7 @@ export default function PaymentsPage() {
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <motion.div
-          className="lg:col-span-2 rounded-2xl glass p-6"
+          className="lg:col-span-2 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
@@ -167,7 +167,7 @@ export default function PaymentsPage() {
         </motion.div>
 
         <motion.div
-          className="rounded-2xl glass p-6"
+          className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}

@@ -387,7 +387,7 @@ function CheckoutContent() {
 
         {/* Cart Summary */}
         <motion.div
-          className="mb-6 rounded-2xl glass p-4"
+          className="mb-6 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
@@ -434,7 +434,7 @@ function CheckoutContent() {
 
         {/* Delivery Info */}
         <motion.div
-          className="mb-6 rounded-2xl glass p-4"
+          className="mb-6 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
@@ -508,7 +508,7 @@ function CheckoutContent() {
 
         {/* Payment Method */}
         <motion.div
-          className="mb-6 rounded-2xl glass p-4"
+          className="mb-6 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}

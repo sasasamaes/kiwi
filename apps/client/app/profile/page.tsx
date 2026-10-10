@@ -144,7 +144,7 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <div className="min-h-[100dvh] bg-bg-light dark:bg-surface-950 px-4 py-10">
-        <div className="mx-auto max-w-sm rounded-2xl glass p-6 animate-pulse">
+        <div className="mx-auto max-w-sm rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-6 animate-pulse">
           <div className="h-4 w-2/3 bg-surface-200 dark:bg-surface-700 rounded mb-2" />
           <div className="h-3 w-1/2 bg-surface-200 dark:bg-surface-700 rounded" />
         </div>
@@ -199,7 +199,7 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        <div className="rounded-2xl glass p-5 mb-3 space-y-3 text-sm">
+        <div className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-5 mb-3 space-y-3 text-sm">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
               <MapPin className="h-4 w-4 text-surface-400 shrink-0" />

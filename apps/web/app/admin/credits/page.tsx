@@ -153,7 +153,7 @@ export default function AdminCredits() {
             <motion.button
               key={m.id}
               onClick={() => openMerchant(m)}
-              className="flex w-full items-center justify-between rounded-2xl glass p-4 text-left"
+              className="flex w-full items-center justify-between rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4 text-left"
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: Math.min(i * 0.04, 0.4) }}

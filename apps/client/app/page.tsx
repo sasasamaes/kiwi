@@ -342,7 +342,7 @@ export default function ClientHome() {
               exit={{ opacity: 0, scale: 0.95 }}
               className="mb-6"
             >
-              <div className="rounded-2xl glass p-6">
+              <div className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 flex items-center gap-2">
                     <Camera className="h-5 w-5" /> Escanear QR
@@ -430,7 +430,7 @@ export default function ClientHome() {
               ))}
             </div>
           ) : items.length === 0 ? (
-            <div className="rounded-2xl glass p-6 text-center">
+            <div className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-6 text-center">
               <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-kiwi-100 dark:bg-kiwi-900/30 mx-auto mb-3">
                 <Camera className="h-8 w-8 text-kiwi-700 dark:text-kiwi-400" />
               </div>

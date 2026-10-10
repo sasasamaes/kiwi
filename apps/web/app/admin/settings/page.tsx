@@ -182,7 +182,7 @@ export default function SettingsPage() {
       {/* Platform Settings */}
       {activeTab === 'platform' && (
         <motion.div
-          className="rounded-2xl glass p-6"
+          className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
@@ -291,7 +291,7 @@ export default function SettingsPage() {
       {/* Operating Costs Settings */}
       {activeTab === 'operations' && (
         <motion.div
-          className="rounded-2xl glass p-6"
+          className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
@@ -408,7 +408,7 @@ export default function SettingsPage() {
 
       {activeTab === 'assignment' && (
         <motion.div
-          className="rounded-2xl glass p-6"
+          className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
@@ -466,7 +466,7 @@ export default function SettingsPage() {
       {/* Payment Settings */}
       {activeTab === 'payments' && (
         <motion.div
-          className="rounded-2xl glass p-6"
+          className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
@@ -591,7 +591,7 @@ export default function SettingsPage() {
       {/* Notification Settings */}
       {activeTab === 'notifications' && (
         <motion.div
-          className="rounded-2xl glass p-6"
+          className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
@@ -688,7 +688,7 @@ export default function SettingsPage() {
       {/* Security Settings */}
       {activeTab === 'security' && (
         <motion.div
-          className="rounded-2xl glass p-6"
+          className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >

@@ -100,7 +100,7 @@ export default function TestingPage() {
         )}
 
         {/* Prueba de notificaciones con diagnóstico real del servidor */}
-        <div className="mb-4 rounded-2xl glass p-4">
+        <div className="mb-4 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4">
           <p className="text-sm font-semibold text-surface-800 dark:text-surface-100">
             Probar notificaciones
           </p>
@@ -213,7 +213,7 @@ export default function TestingPage() {
 
         {/* Diagnóstico técnico */}
         {pushDebug && (
-          <details className="rounded-2xl glass p-4 text-xs text-surface-500 dark:text-surface-400">
+          <details className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4 text-xs text-surface-500 dark:text-surface-400">
             <summary className="font-semibold">Diagnóstico</summary>
             <pre className="mt-1 whitespace-pre-wrap break-all">
               {JSON.stringify(pushDebug, null, 1)}
@@ -222,7 +222,7 @@ export default function TestingPage() {
         )}
 
         {deviceTokens.length > 0 && (
-          <div className="mt-4 rounded-2xl glass p-4">
+          <div className="mt-4 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4">
             <p className="text-sm font-semibold text-surface-800 dark:text-surface-100">
               Registros de este usuario ({deviceTokens.length})
             </p>

@@ -379,7 +379,7 @@ export default function OrdersPage() {
         </div>
 
         {filtered.length === 0 && (
-          <div className="mt-6 rounded-2xl glass p-8 text-center">
+          <div className="mt-6 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-8 text-center">
             <Package className="mx-auto mb-2 h-10 w-10 text-surface-300" />
             <p className="text-sm text-surface-500">
               {tab === 'active' ? 'Sin envíos en curso. Todo entregado.' : 'Nada por aquí.'}

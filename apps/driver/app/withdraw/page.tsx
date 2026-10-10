@@ -321,7 +321,7 @@ export default function WithdrawPage() {
         <AnimatePresence>
           {showForm && (
             <motion.div
-              className="mb-6 rounded-2xl glass p-6"
+              className="mb-6 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-6"
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
@@ -522,7 +522,7 @@ export default function WithdrawPage() {
 
         {/* Withdrawal History */}
         <motion.div
-          className="rounded-2xl glass p-4"
+          className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}

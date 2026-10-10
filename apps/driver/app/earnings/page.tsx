@@ -295,19 +295,28 @@ export default function EarningsPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <motion.div className="rounded-xl glass p-4" whileHover={{ y: -2 }}>
+          <motion.div
+            className="rounded-xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4"
+            whileHover={{ y: -2 }}
+          >
             <p className="text-sm text-surface-500 dark:text-surface-400">Viajes</p>
             <p className="mt-1 text-2xl font-bold text-surface-800 dark:text-surface-100">
               {earnings?.totalTrips || 0}
             </p>
           </motion.div>
-          <motion.div className="rounded-xl glass p-4" whileHover={{ y: -2 }}>
+          <motion.div
+            className="rounded-xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4"
+            whileHover={{ y: -2 }}
+          >
             <p className="text-sm text-surface-500 dark:text-surface-400">Promedio/Viaje</p>
             <p className="mt-1 text-2xl font-bold text-surface-800 dark:text-surface-100">
               {formatCurrency(earnings?.averagePerTrip || 0)}
             </p>
           </motion.div>
-          <motion.div className="rounded-xl glass p-4" whileHover={{ y: -2 }}>
+          <motion.div
+            className="rounded-xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4"
+            whileHover={{ y: -2 }}
+          >
             <p className="text-sm text-surface-500 dark:text-surface-400">Horas</p>
             <p className="mt-1 text-2xl font-bold text-surface-800 dark:text-surface-100">
               {earnings?.totalHours?.toFixed(1) || '0'}h
@@ -327,7 +336,7 @@ export default function EarningsPage() {
         {/* Mini Bar Chart */}
         {earnings?.daily && earnings.daily.length > 0 && (
           <motion.div
-            className="mb-6 rounded-2xl glass p-4"
+            className="mb-6 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
@@ -367,7 +376,7 @@ export default function EarningsPage() {
 
         {/* Recent Transactions */}
         <motion.div
-          className="mb-6 rounded-2xl glass p-4"
+          className="mb-6 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}

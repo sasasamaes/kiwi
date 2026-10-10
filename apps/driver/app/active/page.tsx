@@ -745,7 +745,7 @@ export default function ActiveOrders() {
                 ? String(Math.floor((remaining % 60000) / 1000)).padStart(2, '0')
                 : '--';
             return (
-              <div className="mb-4 rounded-3xl glass p-5">
+              <div className="mb-4 rounded-3xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-5">
                 <p className="flex items-center gap-2 text-base font-semibold text-surface-800 dark:text-surface-100">
                   <Timer className="h-5 w-5 text-kiwi-600" />
                   Tenés un pedido para aceptar
@@ -788,7 +788,7 @@ export default function ActiveOrders() {
 
         {/* Cola de entregas: todos los activos en orden, se toca para cambiar */}
         {orders.length > 1 && (
-          <div className="mb-4 overflow-hidden rounded-3xl glass">
+          <div className="mb-4 overflow-hidden rounded-3xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark">
             <p className="px-4 pt-3 text-xs font-semibold uppercase tracking-wide text-surface-400">
               Cola de entregas ({orders.length})
             </p>
@@ -805,7 +805,7 @@ export default function ActiveOrders() {
                     }}
                     whileTap={{ scale: 0.98 }}
                     className={`flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition-colors ${
-                      active ? 'bg-kiwi-700 text-white shadow-kiwi' : ''
+                      active ? 'bg-kiwi-700 text-white' : ''
                     }`}
                   >
                     <span
@@ -940,15 +940,13 @@ export default function ActiveOrders() {
         </AnimatePresence>
 
         {/* TIMELINE: recoger -> entregar */}
-        <div className="mb-4 rounded-3xl glass p-5">
+        <div className="mb-4 rounded-3xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-5">
           {/* Recoger */}
           <div className="flex gap-3">
             <div className="flex flex-col items-center">
               <motion.div
                 className={`flex h-10 w-10 items-center justify-center rounded-2xl ${
-                  stepIndex >= 2
-                    ? 'bg-kiwi-100 text-kiwi-700'
-                    : 'bg-kiwi-700 text-white shadow-kiwi'
+                  stepIndex >= 2 ? 'bg-kiwi-100 text-kiwi-700' : 'bg-kiwi-700 text-white'
                 }`}
                 animate={stepIndex < 2 ? { scale: [1, 1.06, 1] } : {}}
                 transition={{ duration: 2, repeat: Infinity }}
@@ -986,7 +984,7 @@ export default function ActiveOrders() {
               {merchantPhone && (
                 <a
                   href={`tel:${merchantPhone.replace(/\s/g, '')}`}
-                  className="mt-2 flex h-11 w-full items-center justify-center gap-2 rounded-xl glass text-sm font-semibold text-surface-700 dark:text-surface-200"
+                  className="mt-2 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark text-sm font-semibold text-surface-700 dark:text-surface-200"
                 >
                   <Phone className="h-4 w-4 text-kiwi-500" /> Llamar al comercio
                 </a>
@@ -1084,7 +1082,7 @@ export default function ActiveOrders() {
           >
             <a
               href={`tel:${customer.phone.replace(/\s/g, '')}`}
-              className="flex h-12 items-center justify-center gap-2 rounded-2xl glass text-sm font-semibold text-surface-700 dark:text-surface-200"
+              className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark text-sm font-semibold text-surface-700 dark:text-surface-200"
             >
               <Phone className="h-4 w-4 text-kiwi-500" /> Llamar
             </a>
@@ -1092,7 +1090,7 @@ export default function ActiveOrders() {
               href={toWaLink(customer.phone)}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex h-12 items-center justify-center gap-2 rounded-2xl glass text-sm font-semibold text-surface-700 dark:text-surface-200"
+              className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark text-sm font-semibold text-surface-700 dark:text-surface-200"
             >
               <MessageCircle className="h-4 w-4 text-kiwi-500" /> WhatsApp
             </a>
@@ -1101,7 +1099,7 @@ export default function ActiveOrders() {
 
         {/* Paquete / flete */}
         {order.kind === 'freight' && (
-          <div className="mb-4 rounded-2xl glass p-4">
+          <div className="mb-4 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4">
             <p className="flex items-center gap-2 text-sm font-semibold text-surface-800 dark:text-surface-200">
               <Package className="h-4 w-4 text-kiwi-500" />
               {order.packageDescription || 'Encomienda'}
@@ -1119,7 +1117,7 @@ export default function ActiveOrders() {
 
         {/* Qué llevar (colapsable) */}
         {Array.isArray((order as any).items) && (order as any).items.length > 0 && (
-          <div className="mb-4 overflow-hidden rounded-2xl glass">
+          <div className="mb-4 overflow-hidden rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark">
             <button
               onClick={() => setShowItems((v) => !v)}
               className="flex w-full items-center justify-between p-4 text-sm font-semibold text-surface-700 dark:text-surface-200"
@@ -1182,7 +1180,7 @@ export default function ActiveOrders() {
         )}
 
         {/* Evidencia 1+1: foto del comercio al recoger, foto tuya al entregar */}
-        <div className="mb-4 rounded-2xl glass p-4">
+        <div className="mb-4 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4">
           <p className="mb-2 text-sm font-semibold text-surface-800 dark:text-surface-100">
             📷 Evidencia del pedido
           </p>

@@ -975,7 +975,7 @@ function NewOrderInner({
               </button>
             </div>
           )}
-          <div className="rounded-2xl glass p-6 mb-6">
+          <div className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-6 mb-6">
             <div className="flex justify-between">
               <span className="text-surface-500">Número</span>
               <span className="font-semibold font-mono">#{createdOrderId?.slice(0, 8)}</span>
@@ -1484,7 +1484,7 @@ function NewOrderInner({
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -50 }}
             >
-              <div className="mb-4 rounded-xl glass p-4 text-sm space-y-1.5">
+              <div className="mb-4 rounded-xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4 text-sm space-y-1.5">
                 <div className="flex justify-between">
                   <span className="text-surface-500">Entregar a</span>
                   <span className="font-medium text-right max-w-[60%]">
@@ -1522,7 +1522,7 @@ function NewOrderInner({
                 </div>
               </div>
 
-              <div className="mb-4 flex items-center justify-between rounded-xl glass p-4">
+              <div className="mb-4 flex items-center justify-between rounded-xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4">
                 <div>
                   <p className="font-medium text-sm">📅 Programar</p>
                   <p className="text-xs text-surface-500">Fecha y hora específica</p>

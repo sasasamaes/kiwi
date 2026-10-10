@@ -486,7 +486,7 @@ export default function Home() {
         )}
         {/* iPhone sin instalar: el push es imposible en Safari → guía */}
         {pushNeedsInstall && (
-          <div className="mb-4 rounded-2xl glass p-4">
+          <div className="mb-4 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4">
             <p className="text-sm font-semibold text-surface-800 dark:text-surface-100">
               Recibí pedidos con el celu bloqueado
             </p>
@@ -537,7 +537,7 @@ export default function Home() {
         )}
         {/* Alertas push: solo si el navegador las soporta y aún no se decidió */}
         {!pushNeedsInstall && !pushUnsupported && pushSupported && pushPermission === 'default' && (
-          <div className="mb-4 rounded-2xl glass p-4">
+          <div className="mb-4 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4">
             <p className="text-sm font-semibold text-surface-800 dark:text-surface-100">
               Recibí pedidos con el celu bloqueado
             </p>
@@ -696,13 +696,19 @@ export default function Home() {
         {/* Today's Stats */}
         <StaggerContainer className="mb-6 grid grid-cols-2 gap-3">
           <StaggerItem>
-            <motion.div className="rounded-xl glass p-4 text-center tactile" whileHover={{ y: -2 }}>
+            <motion.div
+              className="rounded-xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4 text-center tactile"
+              whileHover={{ y: -2 }}
+            >
               <AnimatedCounter value={stats.trips} className="text-2xl font-bold text-kiwi-700" />
               <p className="text-xs text-surface-500 dark:text-surface-400">Viajes</p>
             </motion.div>
           </StaggerItem>
           <StaggerItem>
-            <motion.div className="rounded-xl glass p-4 text-center tactile" whileHover={{ y: -2 }}>
+            <motion.div
+              className="rounded-xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4 text-center tactile"
+              whileHover={{ y: -2 }}
+            >
               <div className="flex items-center justify-center gap-1">
                 <Star className="h-5 w-5 fill-gold-400 text-gold-400" />
                 <AnimatedCounter
@@ -715,7 +721,10 @@ export default function Home() {
             </motion.div>
           </StaggerItem>
           <StaggerItem>
-            <motion.div className="rounded-xl glass p-4 text-center tactile" whileHover={{ y: -2 }}>
+            <motion.div
+              className="rounded-xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4 text-center tactile"
+              whileHover={{ y: -2 }}
+            >
               <span className="text-2xl font-bold text-kiwi-700">
                 ₡{Math.round(stats.earnings).toLocaleString()}
               </span>
@@ -723,7 +732,10 @@ export default function Home() {
             </motion.div>
           </StaggerItem>
           <StaggerItem>
-            <motion.div className="rounded-xl glass p-4 text-center tactile" whileHover={{ y: -2 }}>
+            <motion.div
+              className="rounded-xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4 text-center tactile"
+              whileHover={{ y: -2 }}
+            >
               <span className="text-2xl font-bold text-gold-600">{availableOrders.length}</span>
               <p className="text-xs text-surface-500 dark:text-surface-400">Disponibles</p>
             </motion.div>
@@ -752,7 +764,10 @@ export default function Home() {
 
                 return (
                   <StaggerItem key={order.id}>
-                    <motion.div className="rounded-2xl glass p-4 glow-kiwi" whileHover={{ y: -2 }}>
+                    <motion.div
+                      className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4 glow-kiwi"
+                      whileHover={{ y: -2 }}
+                    >
                       <div className="mb-3 flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <motion.span
@@ -835,7 +850,7 @@ export default function Home() {
 
           {filteredOrders.length === 0 ? (
             <motion.div
-              className="rounded-2xl glass p-8 text-center"
+              className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-8 text-center"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
             >
@@ -874,7 +889,7 @@ export default function Home() {
               {filteredOrders.map((order, index) => (
                 <StaggerItem key={order.id}>
                   <motion.div
-                    className="rounded-2xl glass p-4 tactile"
+                    className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4 tactile"
                     whileHover={{ y: -4, boxShadow: '0 12px 32px -8px rgba(34, 197, 94, 0.25)' }}
                     whileTap={{ scale: 0.98 }}
                     initial={{ opacity: 0, y: 20 }}
