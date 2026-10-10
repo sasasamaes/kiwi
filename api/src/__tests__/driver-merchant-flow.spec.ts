@@ -257,7 +257,7 @@ describe('Driver/merchant lifecycle regressions', () => {
 
     const order: any = await service.create('merchant-user-1', {
       orderType: 'scheduled',
-      scheduledDate: '2026-12-01T18:00',
+      scheduledDate: '2026-12-01',
       scheduledTime: '18:00',
       pickupAddress: 'Parque Nicoya',
       deliveryAddress: 'Barrio San Martín',

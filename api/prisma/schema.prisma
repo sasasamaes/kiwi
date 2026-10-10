@@ -577,6 +577,7 @@ model Order {
   payment   Payment?
   ratings   Rating[]
 
+  @@index([merchantId, origin, status, createdAt], map: "orders_merchant_origin_status_created_idx")
   @@unique([merchantId, idempotencyKey], map: "orders_merchant_idempotency_uk")
   @@index([merchantId, status])
   @@index([merchantId, createdAt])
