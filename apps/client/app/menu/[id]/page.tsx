@@ -414,6 +414,18 @@ export default function MenuPage() {
       ? menuItems
       : menuItems.filter((item) => item.category === selectedCategory);
 
+  // Builder "Crea tu Bowl": producto personalizable del comercio cuyo nombre
+  // matchea. Sin hardcodear IDs ni precios: todo sale de menuItems ya cargados.
+  const builderItem = menuItems.find(
+    (item) =>
+      /crea tu bowl/i.test(item.name) &&
+      (item.variantGroups ?? []).some((g) => g.options.length > 0),
+  );
+  // El builder vive en la hero card; no se repite en la lista normal.
+  const visibleItems = builderItem
+    ? filteredItems.filter((item) => item.id !== builderItem.id)
+    : filteredItems;
+
   // Validate checkout
   const canCheckout =
     deliveryInfo.address.trim().length > 0 &&
@@ -903,6 +915,36 @@ export default function MenuPage() {
         </div>
       </motion.div>
 
+      {/* Builder hero: solo si el comercio cargó el producto "Crea tu Bowl" */}
+      {builderItem && selectedCategory === 'Todos' && (
+        <motion.div
+          className="mx-auto max-w-lg px-4 mb-4"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+        >
+          <div
+            className={`rounded-2xl bg-kiwi-700 dark:bg-kiwi-800 p-5 shadow-soft dark:shadow-dark text-white ${hoverCard}`}
+          >
+            <p className="font-display text-lg font-bold">Crea tu Bowl</p>
+            <p className="text-sm text-white/80 mt-1">
+              Elegí tamaño, base, 3 frutas, 3 toppings y extras
+            </p>
+            <div className="flex items-center justify-between mt-3">
+              <p className="text-lg font-bold">Desde ₡{builderItem.price.toLocaleString()}</p>
+              <TapButton
+                haptic
+                className="inline-flex min-h-[44px] items-center rounded-full bg-white px-5 py-2 text-sm font-semibold text-kiwi-800"
+                onClick={() => addToCart(builderItem)}
+                disabled={!merchant?.isOpen}
+              >
+                Armar el mío +
+              </TapButton>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {/* Menu Items */}
       <motion.div
         className="mx-auto max-w-lg px-4"
@@ -910,7 +952,7 @@ export default function MenuPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
       >
-        {filteredItems.length === 0 ? (
+        {visibleItems.length === 0 ? (
           <div className="text-center py-12 px-6 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark">
             <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-kiwi-100 dark:bg-kiwi-400/10">
               <Utensils className="h-10 w-10 text-kiwi-600/70 dark:text-kiwi-400/70" />
@@ -929,7 +971,7 @@ export default function MenuPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {filteredItems.map((item, itemIndex) => {
+            {visibleItems.map((item, itemIndex) => {
               const quantity = getItemQuantity(item.id);
               return (
                 <ScrollReveal key={item.id} index={itemIndex} as="div">
