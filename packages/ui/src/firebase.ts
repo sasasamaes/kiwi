@@ -93,6 +93,20 @@ export async function requestNotificationPermission(): Promise<string> {
         registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
           scope: FCM_SW_SCOPE,
         });
+        // Recién registrado queda en installing/waiting y getToken revienta
+        // con "no active Service Worker": esperar a que active (con timeout).
+        if (registration && !registration.active) {
+          await Promise.race([
+            new Promise<void>((resolve) => {
+              const sw = registration!.installing ?? registration!.waiting;
+              if (!sw || sw.state === 'activated') return resolve();
+              sw.addEventListener('statechange', () => {
+                if (sw.state === 'activated') resolve();
+              });
+            }),
+            new Promise<void>((resolve) => setTimeout(resolve, 10000)),
+          ]);
+        }
       }
     } catch (swError) {
       // NO seguir a ciegas: si el registro explícito falla (CSP, 404, MIME),
