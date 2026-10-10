@@ -39,6 +39,8 @@ import {
   type KYCStatus,
   KiwiLoader,
   ThemeToggle,
+  isEmojiImage,
+  isHttpUrl,
 } from '@kiwi/ui';
 
 const LEVEL_LABEL: Record<string, string> = {
@@ -195,6 +197,17 @@ export default function Profile() {
     }
   };
 
+  /** Avatar emoji (funciona sin Cloudinary): se guarda como photoUrl. */
+  const pickEmoji = async (emoji: string) => {
+    setError(null);
+    try {
+      await api.updateDriverProfile({ photoUrl: emoji });
+      await load();
+    } catch {
+      setError('No se pudo guardar el avatar');
+    }
+  };
+
   if (authLoading || loading) {
     return (
       <main className="min-h-[100dvh] flex items-center justify-center bg-bg-light dark:bg-surface-950">
@@ -261,13 +274,15 @@ export default function Profile() {
             className="relative mb-4 inline-flex h-24 w-24 items-center justify-center rounded-full bg-white text-4xl font-bold text-kiwi-700 shadow-lg overflow-visible"
             whileHover={{ scale: 1.05 }}
           >
-            {profile?.photoUrl ? (
+            {isHttpUrl(profile?.photoUrl || '') ? (
               // NOTE: <img> intencional — foto dinámica externa, next/image no aporta aquí
               <img
                 src={profile.photoUrl}
                 alt={name}
                 className="h-24 w-24 rounded-full object-cover"
               />
+            ) : isEmojiImage(profile?.photoUrl || '') ? (
+              <span className="text-5xl leading-none">{profile.photoUrl}</span>
             ) : (
               initials(name)
             )}
@@ -305,6 +320,23 @@ export default function Profile() {
               ? 'Tu foto la ven los comercios y los clientes en el seguimiento'
               : 'Subida de fotos no disponible por el momento'}
           </p>
+          <div className="relative mt-3 flex flex-wrap justify-center gap-1.5">
+            {['🛵', '🚲', '🚗', '😎', '🦊', '🐼', '🦁', '🌮'].map((e) => (
+              <button
+                key={e}
+                type="button"
+                onClick={() => void pickEmoji(e)}
+                aria-label={`Usar ${e} como avatar`}
+                className={`flex h-9 w-9 items-center justify-center rounded-full text-xl transition-all ${
+                  profile?.photoUrl === e
+                    ? 'bg-white ring-2 ring-white scale-110'
+                    : 'bg-white/20 hover:bg-white/30'
+                }`}
+              >
+                {e}
+              </button>
+            ))}
+          </div>
 
           <div className="relative mt-4 flex justify-center gap-6">
             <div className="text-center">

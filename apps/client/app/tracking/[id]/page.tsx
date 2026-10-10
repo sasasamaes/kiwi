@@ -5,7 +5,16 @@ import { useState, useEffect, useCallback, Suspense } from 'react';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { AnimatedButton, TrackingMap, Skeleton, useSocket, api, Order } from '@kiwi/ui';
+import {
+  AnimatedButton,
+  TrackingMap,
+  Skeleton,
+  useSocket,
+  api,
+  Order,
+  isEmojiImage,
+  isHttpUrl,
+} from '@kiwi/ui';
 import { ArrowLeft, Clock, Check, Bike, Package, Rocket, PartyPopper, X, Star } from 'lucide-react';
 
 type OrderStatus =
@@ -582,13 +591,17 @@ function TrackingContent() {
               Tu repartidor
             </h3>
             <div className="flex items-center gap-3">
-              {driver.photoUrl ? (
+              {isHttpUrl(driver.photoUrl || '') ? (
                 // NOTE: <img> intencional — foto dinámica externa, next/image no aporta aquí
                 <img
                   src={driver.photoUrl}
                   alt={driver.fullName ?? 'Repartidor'}
                   className="h-14 w-14 rounded-full object-cover bg-surface-100 dark:bg-surface-700"
                 />
+              ) : isEmojiImage(driver.photoUrl || '') ? (
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-kiwi-100 dark:bg-kiwi-900/30">
+                  <span className="text-3xl leading-none">{driver.photoUrl}</span>
+                </div>
               ) : (
                 <div className="flex h-14 w-14 items-center justify-center rounded-full bg-kiwi-100 dark:bg-kiwi-900/30 text-xl font-bold text-kiwi-700 dark:text-kiwi-400">
                   {(driver.fullName ?? '?').charAt(0).toUpperCase()}

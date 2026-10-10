@@ -14,6 +14,8 @@ import {
   socketClient,
   api,
   formatRating,
+  isEmojiImage,
+  isHttpUrl,
 } from '@kiwi/ui';
 import { MerchantNav } from '../../components/MerchantNav';
 
@@ -537,13 +539,19 @@ export default function DriversPage() {
                         whileHover={{ y: -2, boxShadow: '0 8px 24px 0 rgb(0 0 0 / 0.08)' }}
                       >
                         <div className="flex items-center gap-4">
-                          {(driver as any).photoUrl ? (
+                          {isHttpUrl((driver as any).photoUrl || '') ? (
                             // NOTE: <img> intencional — foto dinámica externa, next/image no aporta aquí
                             <img
                               src={(driver as any).photoUrl}
                               alt={driver.fullName}
                               className="h-14 w-14 shrink-0 rounded-full object-cover shadow-kiwi"
                             />
+                          ) : isEmojiImage((driver as any).photoUrl || '') ? (
+                            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-kiwi-gradient text-white shadow-kiwi">
+                              <span className="text-2xl leading-none">
+                                {(driver as any).photoUrl}
+                              </span>
+                            </div>
                           ) : (
                             <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-kiwi-gradient text-white font-semibold shadow-kiwi">
                               {initials(driver.fullName)}
