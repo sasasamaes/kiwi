@@ -314,20 +314,23 @@ export default function MenuPage() {
     [addLine],
   );
 
-  const togglePick = useCallback((groupId: string, optionId: string, multiple: boolean) => {
-    setPicks((prev) => {
-      const current = prev[groupId] ?? [];
-      if (multiple) {
-        return {
-          ...prev,
-          [groupId]: current.includes(optionId)
-            ? current.filter((id) => id !== optionId)
-            : [...current, optionId],
-        };
-      }
-      return { ...prev, [groupId]: [optionId] };
-    });
-  }, []);
+  const togglePick = useCallback(
+    (groupId: string, optionId: string, multiple: boolean, max?: number | null) => {
+      setPicks((prev) => {
+        const current = prev[groupId] ?? [];
+        if (multiple) {
+          if (current.includes(optionId)) {
+            return { ...prev, [groupId]: current.filter((id) => id !== optionId) };
+          }
+          // Tope del grupo (ej. máximo 3 frutas): no suma de más.
+          if (typeof max === 'number' && current.length >= max) return prev;
+          return { ...prev, [groupId]: [...current, optionId] };
+        }
+        return { ...prev, [groupId]: [optionId] };
+      });
+    },
+    [],
+  );
 
   const confirmPick = useCallback(() => {
     if (!picking) return;
@@ -1056,24 +1059,35 @@ export default function MenuPage() {
                     {g.name}
                     {g.required && <span className="text-red-500"> *</span>}
                     {g.multiple && (
-                      <span className="ml-1 text-xs font-normal text-surface-400">(varias)</span>
+                      <span className="ml-1 text-xs font-normal text-surface-400">
+                        {typeof g.maxSelections === 'number'
+                          ? `(${(picks[g.id] ?? []).length} de ${g.maxSelections})`
+                          : '(varias)'}
+                      </span>
                     )}
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {g.options.map((o) => {
                       const active = (picks[g.id] ?? []).includes(o.id);
                       const soldOut = o.isAvailable === false;
+                      const capped =
+                        !active &&
+                        g.multiple &&
+                        typeof g.maxSelections === 'number' &&
+                        (picks[g.id] ?? []).length >= g.maxSelections;
                       return (
                         <button
                           key={o.id}
-                          disabled={soldOut}
-                          onClick={() => togglePick(g.id, o.id, g.multiple)}
+                          disabled={soldOut || capped}
+                          onClick={() => togglePick(g.id, o.id, g.multiple, g.maxSelections)}
                           className={`inline-flex min-h-[44px] items-center rounded-full px-3.5 py-2 text-sm font-medium transition-colors ${
                             soldOut
                               ? 'bg-surface-100 dark:bg-surface-800 text-surface-500 dark:text-surface-400 line-through opacity-60'
                               : active
                                 ? 'bg-kiwi-700 text-white'
-                                : 'bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-300'
+                                : capped
+                                  ? 'bg-surface-100 dark:bg-surface-800 text-surface-400 dark:text-surface-500 opacity-50'
+                                  : 'bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-300'
                           }`}
                         >
                           {soldOut && <span className="mr-1">⛔</span>}

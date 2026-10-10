@@ -55,6 +55,8 @@ interface VariantGroupForm {
   name: string;
   required: boolean;
   multiple: boolean;
+  /** Tope de elegibles (ej. 3). Null/undefined = sin tope. */
+  maxSelections?: number | null;
   options: VariantOptionForm[];
 }
 
@@ -77,6 +79,10 @@ const toVariantForm = (input: any): VariantGroupForm[] => {
     name: String(g?.name ?? ''),
     required: Boolean(g?.required),
     multiple: Boolean(g?.multiple),
+    maxSelections:
+      g?.maxSelections === null || g?.maxSelections === undefined || g?.maxSelections === ''
+        ? null
+        : Math.max(1, Math.min(30, Math.floor(Number(g.maxSelections) || 0))) || null,
     options: (Array.isArray(g?.options) ? g.options : []).map((o: any) => ({
       name: String(o?.name ?? ''),
       priceDelta: Number(o?.priceDelta ?? 0),
@@ -692,6 +698,29 @@ export function MenuItemForm({
                   >
                     {g.multiple ? '✓ Puede elegir varios' : 'Elige 1'}
                   </button>
+                  {g.multiple && (
+                    <label className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-200 dark:bg-surface-700 text-xs font-medium text-surface-500 dark:text-surface-300">
+                      Máx
+                      <input
+                        type="number"
+                        min={1}
+                        max={30}
+                        value={g.maxSelections ?? ''}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          updateGroup(gi, {
+                            maxSelections:
+                              v === ''
+                                ? null
+                                : Math.max(1, Math.min(30, Math.floor(Number(v) || 0))) || null,
+                          } as any);
+                        }}
+                        placeholder="∞"
+                        title="Máximo elegible (ej. 3 frutas). Vacío = sin tope."
+                        className="w-10 rounded-md border border-surface-200 dark:border-surface-600 bg-white dark:bg-surface-800 px-1 py-0.5 text-xs text-center"
+                      />
+                    </label>
+                  )}
                 </div>
                 {(errors as any)[`variant-${gi}`] && (
                   <p className="mt-1 text-xs text-red-500">{(errors as any)[`variant-${gi}`]}</p>

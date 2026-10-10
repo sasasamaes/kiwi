@@ -840,6 +840,8 @@ model MenuItemVariantGroup {
   name       String
   required   Boolean @default(false)
   multiple   Boolean @default(false)
+  // Tope de opciones elegibles (ej. "máximo 3 frutas"). Null = sin tope.
+  maxSelections Int? @map("max_selections")
   sortOrder  Int     @default(0) @map("sort_order")
 
   // Relations

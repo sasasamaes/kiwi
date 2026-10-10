@@ -294,7 +294,9 @@ export class OrdersService {
       const dbOptions = optionIds.length
         ? await this.prisma.menuItemVariantOption.findMany({
             where: { id: { in: optionIds } },
-            include: { group: { select: { id: true, name: true, menuItemId: true } } },
+            include: {
+              group: { select: { id: true, name: true, menuItemId: true, maxSelections: true } },
+            },
           })
         : [];
       const optionById = new Map(dbOptions.map((o) => [o.id, o]));
@@ -314,6 +316,7 @@ export class OrdersService {
           const requested = Array.isArray(item?.variants) ? item.variants : [];
           if (requested.length > 0) {
             const seen = new Set<string>();
+            const perGroup = new Map<string, number>();
             for (const v of requested) {
               const opt: any = optionById.get(v?.optionId);
               if (!opt || opt.group.menuItemId !== menuItem.id) {
@@ -324,6 +327,14 @@ export class OrdersService {
               }
               if (seen.has(opt.id)) continue;
               seen.add(opt.id);
+              // Tope del grupo (ej. máximo 3 frutas): el cliente nunca se
+              // lleva más opciones de las que el comercio permite.
+              const count = (perGroup.get(opt.group.id) ?? 0) + 1;
+              perGroup.set(opt.group.id, count);
+              const max = opt.group.maxSelections;
+              if (typeof max === 'number' && count > max) {
+                throw new BadRequestException(`Máximo ${max} opciones en "${opt.group.name}"`);
+              }
               const delta = Number(opt.priceDelta);
               unitPrice += delta;
               selectedVariants.push({

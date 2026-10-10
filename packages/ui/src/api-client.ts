@@ -1957,6 +1957,8 @@ export interface VariantGroup {
   name: string;
   required: boolean;
   multiple: boolean;
+  /** Tope de opciones elegibles (ej. 3 frutas). Ausente = sin tope. */
+  maxSelections?: number | null;
   options: VariantOption[];
 }
 

@@ -216,6 +216,7 @@ export class MenuService {
         name: string;
         required: boolean;
         multiple: boolean;
+        maxSelections: number | null;
         options: Array<{ name: string; priceDelta: number; isAvailable: boolean }>;
       }>
     | undefined {
@@ -237,10 +238,21 @@ export class MenuService {
       if (g.options.length > 30) {
         throw new BadRequestException(`Grupo "${name}": máximo 30 opciones`);
       }
+      // Tope de elegibles (ej. 3 frutas). Solo tiene sentido en múltiple;
+      // en simple el tope es 1 por naturaleza y se ignora.
+      let maxSelections: number | null = null;
+      if (g?.maxSelections !== undefined && g?.maxSelections !== null && g?.maxSelections !== '') {
+        const max = Number(g.maxSelections);
+        if (!Number.isInteger(max) || max < 1 || max > 30) {
+          throw new BadRequestException(`Grupo "${name}": tope inválido (1–30)`);
+        }
+        maxSelections = max;
+      }
       return {
         name,
         required: Boolean(g.required),
         multiple: Boolean(g.multiple),
+        maxSelections,
         options: g.options.map((o: any, oi: number) => {
           const oname = typeof o?.name === 'string' ? o.name.trim() : '';
           if (!oname || oname.length > 50) {
@@ -301,6 +313,7 @@ export class MenuService {
                   name: g.name,
                   required: g.required,
                   multiple: g.multiple,
+                  maxSelections: g.maxSelections,
                   sortOrder: gi,
                   options: {
                     create: g.options.map((o, oi) => ({ ...o, sortOrder: oi })),
@@ -354,6 +367,7 @@ export class MenuService {
               name: g.name,
               required: g.required,
               multiple: g.multiple,
+              maxSelections: g.maxSelections,
               sortOrder: gi,
             })),
           });
