@@ -36,13 +36,13 @@ const EMOJI_OPTIONS = [
   '🍦',
   '🍵',
   '🍺',
-  '🥤',
   '💧',
-  '🧃',
+  '🥛',
   '🍳',
   '🥘',
   '🍲',
   '🍛',
+  '🍩',
 ];
 
 interface VariantOptionForm {
@@ -277,7 +277,7 @@ export function MenuItemForm({
           </label>
           <div className="flex items-center gap-4">
             <motion.div
-              className="relative flex h-24 w-24 items-center justify-center rounded-2xl bg-surface-100 dark:bg-surface-700 text-5xl overflow-hidden"
+              className="relative flex h-24 w-24 shrink-0 items-center justify-center rounded-2xl bg-surface-100 dark:bg-surface-700 overflow-hidden"
               whileHover={{ scale: 1.05 }}
             >
               {imagePreview || (formData.image && !isEmojiImage(formData.image)) ? (
@@ -286,10 +286,10 @@ export function MenuItemForm({
                   alt="Preview"
                   className="w-full h-full object-cover"
                 />
-              ) : !formData.image ? (
-                <Utensils className="h-10 w-10" />
+              ) : formData.image ? (
+                <span className="text-5xl leading-none">{formData.image}</span>
               ) : (
-                formData.image
+                <Utensils className="h-10 w-10 text-surface-400" />
               )}
               <label className="absolute bottom-1 right-1 h-8 w-8 rounded-full bg-kiwi-700 text-white text-xs flex items-center justify-center cursor-pointer hover:bg-kiwi-800 transition-colors group">
                 <input
@@ -311,6 +311,8 @@ export function MenuItemForm({
                   <motion.button
                     key={emoji}
                     type="button"
+                    aria-pressed={formData.image === emoji}
+                    title={`Usar ${emoji} como imagen`}
                     className={`h-10 w-10 rounded-xl text-xl transition-all ${
                       formData.image === emoji
                         ? 'bg-kiwi-100 dark:bg-kiwi-900/50 ring-2 ring-kiwi-600'
@@ -833,7 +835,7 @@ export function MenuItemForm({
         </div>
 
         {/* Actions */}
-        <div className="flex gap-3 pt-4">
+        <div className="flex flex-col-reverse sm:flex-row gap-3 pt-4">
           <AnimatedButton
             type="button"
             variant="secondary"

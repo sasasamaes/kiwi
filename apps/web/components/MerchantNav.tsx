@@ -14,6 +14,7 @@ import {
   Menu as MenuIcon,
   Receipt,
   ShoppingBag,
+  User,
   Utensils,
   X,
 } from 'lucide-react';
@@ -26,6 +27,7 @@ const LINKS = [
   { href: '/menu', label: 'Menú', icon: Utensils },
   { href: '/drivers', label: 'Repartidores', icon: Bike },
   { href: '/analytics', label: 'Analytics', icon: BarChart3 },
+  { href: '/perfil', label: 'Perfil', icon: User },
 ];
 
 interface MerchantNavProps {
