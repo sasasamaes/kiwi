@@ -821,6 +821,8 @@ export default function MenuPage() {
                   alt={merchant.businessName}
                   className="h-16 w-16 object-cover"
                 />
+              ) : isEmojiImage(merchant.logoUrl) ? (
+                <span className="text-4xl leading-none">{merchant.logoUrl}</span>
               ) : (
                 merchant.businessName.slice(0, 1).toUpperCase()
               )}

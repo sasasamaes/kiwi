@@ -87,15 +87,20 @@ export class MerchantsService {
       }
       extra.category = data.category;
     }
-    // Logo: URL https (foto subida). Se valida esquema para no guardar
-    // cualquier string que rompería <img> en la app cliente.
+    // Logo: URL https (foto subida) o emoji elegido (funciona sin
+    // Cloudinary). Se valida esquema para no guardar cualquier string que
+    // rompería <img> en la app cliente.
     if (data.logoUrl !== undefined) {
       if (data.logoUrl === null || String(data.logoUrl).trim() === '') {
         extra.logoUrl = null;
-      } else if (/^https:\/\/\S+$/i.test(String(data.logoUrl).trim())) {
-        extra.logoUrl = String(data.logoUrl).trim().slice(0, 500);
       } else {
-        throw new BadRequestException('Logo inválido (URL https)');
+        const logo = String(data.logoUrl).trim();
+        const isHttp = /^https:\/\/\S+$/i.test(logo);
+        const isEmoji = logo.length <= 8 && /[^\u0000-\u007F]/.test(logo);
+        if (!isHttp && !isEmoji) {
+          throw new BadRequestException('Logo inválido (URL https o emoji)');
+        }
+        extra.logoUrl = logo.slice(0, 500);
       }
     }
 

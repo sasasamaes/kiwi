@@ -3,7 +3,9 @@
 
 import { useRef, useState } from 'react';
 import { Camera, Store } from 'lucide-react';
-import { api, isHttpUrl } from '@kiwi/ui';
+import { api, isEmojiImage, isHttpUrl } from '@kiwi/ui';
+
+const LOGO_EMOJIS = ['🍕', '🍔', '🌮', '🍣', '🥗', '☕', '🍰', '🍦', '🥤', '🍛', '🥟', '🍩'];
 
 interface MerchantLogoEditorProps {
   logoUrl?: string | null;
@@ -58,6 +60,16 @@ export function MerchantLogoEditor({ logoUrl, businessName, onChange }: Merchant
     }
   };
 
+  const pickEmoji = async (emoji: string) => {
+    setError(null);
+    try {
+      await api.updateMerchantProfile({ logoUrl: emoji });
+      onChange(emoji);
+    } catch {
+      setError('No se pudo guardar.');
+    }
+  };
+
   return (
     <div>
       <input
@@ -85,6 +97,8 @@ export function MerchantLogoEditor({ logoUrl, businessName, onChange }: Merchant
             alt={businessName || 'Logo'}
             className="h-16 w-16 object-cover"
           />
+        ) : isEmojiImage(logoUrl || '') ? (
+          <span className="text-4xl leading-none">{logoUrl}</span>
         ) : (
           (businessName || 'M').charAt(0).toUpperCase()
         )}
@@ -99,6 +113,23 @@ export function MerchantLogoEditor({ logoUrl, businessName, onChange }: Merchant
           <Store className="h-3 w-3" /> Logo en app cliente
         </p>
       )}
+      <div className="flex flex-wrap gap-1.5 mt-2 max-w-[180px]">
+        {LOGO_EMOJIS.map((e) => (
+          <button
+            key={e}
+            type="button"
+            onClick={() => void pickEmoji(e)}
+            aria-label={`Usar ${e} como logo`}
+            className={`flex h-8 w-8 items-center justify-center rounded-lg text-lg transition-colors ${
+              logoUrl === e
+                ? 'bg-kiwi-100 dark:bg-kiwi-900/50 ring-2 ring-kiwi-600'
+                : 'bg-surface-100 dark:bg-surface-700 hover:bg-surface-200 dark:hover:bg-surface-600'
+            }`}
+          >
+            {e}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

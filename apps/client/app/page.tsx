@@ -14,6 +14,8 @@ import {
   KiwiLogo,
   api,
   useAuth,
+  isEmojiImage,
+  isHttpUrl,
 } from '@kiwi/ui';
 import {
   Camera,
@@ -459,13 +461,15 @@ export default function ClientHome() {
                 >
                   <div className="flex items-start gap-3">
                     <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-kiwi-100 dark:bg-kiwi-400/10 font-display font-bold text-kiwi-700 dark:text-kiwi-300 overflow-hidden">
-                      {it.logoUrl ? (
+                      {isHttpUrl(it.logoUrl) ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={it.logoUrl}
                           alt={it.businessName}
                           className="h-12 w-12 object-cover"
                         />
+                      ) : isEmojiImage(it.logoUrl) ? (
+                        <span className="text-2xl leading-none">{it.logoUrl}</span>
                       ) : (
                         it.businessName.slice(0, 1).toUpperCase()
                       )}
