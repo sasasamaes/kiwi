@@ -10,6 +10,7 @@
     "clean": "rm -rf dist node_modules"
   },
   "dependencies": {
+    "@didit-protocol/sdk-web": "^0.4.0",
     "@kiwi/i18n": "*",
     "@sentry/react": "^10.73.0",
     "@types/leaflet": "^1.9.22",

@@ -453,6 +453,12 @@ model KYCVerification {
   rejectionReason String?   @map("rejection_reason")
   notes           String?
 
+  // Didit hosted verification (KYC automático por documento + liveness).
+  diditSessionId  String?   @unique @map("didit_session_id")
+  diditStatus     String?   @map("didit_status")
+  diditUrl        String?   @map("didit_url")
+  diditVerifiedAt DateTime? @map("didit_verified_at")
+
   // Timestamps
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -988,6 +994,15 @@ model ContactMessage {
 
   @@index([status, createdAt], map: "contact_messages_status_created_idx")
   @@map("contact_messages")
+}
+
+// Idempotencia de webhooks Didit: event_id único por delivery (Didit
+// reintenta 2 veces en 5xx/404; dos retries concurrentes no pasan dos veces).
+model DiditWebhookEvent {
+  eventId    String   @id @map("event_id")
+  receivedAt DateTime @default(now()) @map("received_at")
+
+  @@map("didit_webhook_events")
 }
 
 // Auditoría de asignación/concurso por pedido (quién, cuándo, resultado).

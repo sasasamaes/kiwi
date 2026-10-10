@@ -1,38 +1,49 @@
 // Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { MapPin } from 'lucide-react';
-import { KYCVerification, KYCStatusBadge } from '@kiwi/ui';
+import { KYCVerification, KYCStatusBadge, DiditVerifyButton, useAuth, api } from '@kiwi/ui';
 
 export default function MerchantKYCPage() {
   const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [kycStatus, setKycStatus] = useState<
     'pending' | 'documents_submitted' | 'under_review' | 'approved' | 'rejected'
   >('pending');
 
+  useEffect(() => {
+    if (!authLoading && !user) router.push('/login');
+  }, [user, authLoading, router]);
+
+  useEffect(() => {
+    if (!user) return;
+    api
+      .getKycStatus()
+      .then((s) => {
+        if (s?.status) setKycStatus(s.status);
+      })
+      .catch(() => undefined);
+  }, [user]);
+
   const handleSubmit = async (data: any) => {
     setLoading(true);
-
+    setSubmitError(null);
     try {
-      // Mock API call - replace with real backend
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      console.log('KYC submitted:', data);
-
-      // Update status to submitted
-      setKycStatus('documents_submitted');
-
-      // After a while, simulate review
-      setTimeout(() => {
-        setKycStatus('under_review');
-      }, 3000);
-    } catch (error) {
-      console.error('KYC error:', error);
+      const res = await api.submitKycDocuments({
+        idType: data.idType,
+        idNumber: data.idNumber,
+        businessLicenseUrl: data.businessLicenseUrl,
+        taxId: data.taxId,
+      });
+      setKycStatus(res?.status ?? 'documents_submitted');
+    } catch (error: any) {
+      setSubmitError(error?.message || 'No se pudo enviar. Intentá de nuevo.');
     } finally {
       setLoading(false);
     }
@@ -130,12 +141,35 @@ export default function MerchantKYCPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
+          {kycStatus !== 'approved' && kycStatus !== 'under_review' && (
+            <div className="mb-4 rounded-2xl bg-white p-6 shadow-soft">
+              <h3 className="font-display font-semibold text-surface-800 mb-1">
+                Verificación instantánea
+              </h3>
+              <p className="text-sm text-surface-500 mb-4">
+                Con tu cédula y un selfie, en menos de un minuto.
+              </p>
+              <DiditVerifyButton
+                onStatus={(s) => {
+                  if (s === 'approved' || s === 'rejected' || s === 'under_review') {
+                    setKycStatus(s as any);
+                  }
+                }}
+              />
+              <div className="my-4 flex items-center gap-3 text-xs text-surface-400">
+                <span className="h-px flex-1 bg-surface-200" />
+                o subí tus documentos
+                <span className="h-px flex-1 bg-surface-200" />
+              </div>
+            </div>
+          )}
           <KYCVerification
             role="merchant"
             kycData={kycStatus === 'pending' ? undefined : { status: kycStatus }}
             onSubmit={handleSubmit}
             loading={loading}
           />
+          {submitError && <p className="mt-3 text-center text-sm text-red-600">{submitError}</p>}
         </motion.div>
 
         {/* Help Section */}

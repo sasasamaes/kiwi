@@ -125,6 +125,7 @@ export type { CookieConsentValue } from './cookie-consent';
 //   KYC COMPONENTS
 // ============================================
 export { KYCVerification, KYCStatusBadge } from './KYCVerification';
+export { DiditVerifyButton } from './DiditVerifyButton';
 export type { KYCData, KYCStatus } from './KYCVerification';
 
 // ============================================

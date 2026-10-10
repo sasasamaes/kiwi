@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 import { Test, TestingModule } from '@nestjs/testing';
 import { KYCService } from '../kyc/kyc.service';
+import { DiditProvider } from '../kyc/didit.provider';
 import { PrismaService } from '../prisma/prisma.service';
 import { FieldCipher } from '../security/field-cipher';
 
@@ -22,7 +23,12 @@ describe('KYCService — cifrado de números de identidad en reposo', () => {
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [KYCService, { provide: PrismaService, useValue: prisma }, FieldCipher],
+      providers: [
+        KYCService,
+        DiditProvider,
+        { provide: PrismaService, useValue: prisma },
+        FieldCipher,
+      ],
     }).compile();
 
     service = module.get<KYCService>(KYCService);

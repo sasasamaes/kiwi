@@ -853,6 +853,18 @@ class ApiClient {
     });
   }
 
+  /** Inicia verificación Didit hospedada. Devuelve { url, sessionId, status }. */
+  async startDiditSession() {
+    return this.request<{ url: string; sessionId: string; status: string }>('/kyc/didit/start', {
+      method: 'POST',
+    });
+  }
+
+  /** Pull manual de la decisión Didit (si el webhook se perdió). */
+  async refreshDiditSession() {
+    return this.request<any>('/kyc/didit/refresh', { method: 'POST' });
+  }
+
   // Admin KYC endpoints
   async getAllKycVerifications(status?: string) {
     const params = status && status !== 'all' ? `?status=${status}` : '';

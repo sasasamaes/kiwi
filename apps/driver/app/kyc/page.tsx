@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Car, Shield } from 'lucide-react';
-import { KYCVerification, KYCStatusBadge, useAuth, api, events } from '@kiwi/ui';
+import { KYCVerification, KYCStatusBadge, DiditVerifyButton, useAuth, api, events } from '@kiwi/ui';
 
 export default function DriverKYCPage() {
   const router = useRouter();
@@ -151,6 +151,28 @@ export default function DriverKYCPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
+          {kycStatus !== 'approved' && kycStatus !== 'under_review' && (
+            <div className="mb-4 rounded-2xl bg-white p-6 shadow-soft">
+              <h3 className="font-display font-semibold text-surface-800 mb-1">
+                Verificación instantánea
+              </h3>
+              <p className="text-sm text-surface-500 mb-4">
+                Con tu cédula y un selfie, en menos de un minuto.
+              </p>
+              <DiditVerifyButton
+                onStatus={(s) => {
+                  if (s === 'approved' || s === 'rejected' || s === 'under_review') {
+                    setKycStatus(s as any);
+                  }
+                }}
+              />
+              <div className="my-4 flex items-center gap-3 text-xs text-surface-400">
+                <span className="h-px flex-1 bg-surface-200" />
+                o subí tus documentos
+                <span className="h-px flex-1 bg-surface-200" />
+              </div>
+            </div>
+          )}
           <KYCVerification
             role="driver"
             kycData={kycStatus === 'pending' ? undefined : { status: kycStatus }}

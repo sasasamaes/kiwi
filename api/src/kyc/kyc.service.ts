@@ -2,6 +2,8 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { FieldCipher } from '../security/field-cipher';
+import { DiditProvider } from './didit.provider';
+import { mapDiditStatus, verifyDiditWebhook } from './didit.webhook';
 
 @Injectable()
 export class KYCService {
@@ -27,6 +29,7 @@ export class KYCService {
   constructor(
     private prisma: PrismaService,
     private cipher: FieldCipher,
+    private didit: DiditProvider,
   ) {}
 
   /** https-only, ≤512 chars, no embedded credentials or non-web schemes. */
@@ -377,5 +380,243 @@ export class KYCService {
       approved,
       rejected,
     };
+  }
+
+  // ============================================
+  // 🤖 Didit hosted KYC
+  // ============================================
+
+  private assertDiditConfigured() {
+    if (!this.didit.isConfigured()) {
+      throw new BadRequestException(
+        'Verificación automática no configurada. Subí tus documentos manualmente.',
+      );
+    }
+  }
+
+  /**
+   * Crea (o reusa por vendor_data, según Didit) una sesión y devuelve la URL
+   * hospedada. Nunca expone la API key: solo viajan url + session_id.
+   */
+  async startDiditSession(userId: string) {
+    this.assertDiditConfigured();
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { driverProfile: true, merchantProfile: true },
+    });
+    if (!user) throw new NotFoundException('Usuario no encontrado');
+
+    const existing = await this.prisma.kYCVerification.findUnique({ where: { userId } });
+    if (existing?.status === 'approved') {
+      throw new BadRequestException('KYC ya está aprobado');
+    }
+
+    const fullName =
+      (user as any).driverProfile?.fullName ??
+      (user as any).merchantProfile?.businessName ??
+      undefined;
+    const [firstName, ...rest] = String(fullName ?? '')
+      .trim()
+      .split(/\s+/);
+    const session = await this.didit.createSession({
+      vendorData: userId,
+      language: 'es',
+      email: user.email ?? undefined,
+      phone: user.phone ?? undefined,
+      firstName: firstName || undefined,
+      lastName: rest.length > 0 ? rest.join(' ') : undefined,
+    });
+
+    const row = existing
+      ? await this.prisma.kYCVerification.update({
+          where: { userId },
+          data: {
+            diditSessionId: session.session_id,
+            diditStatus: session.status,
+            diditUrl: session.url,
+          },
+        })
+      : await this.prisma.kYCVerification.create({
+          data: {
+            userId,
+            status: 'pending',
+            diditSessionId: session.session_id,
+            diditStatus: session.status,
+            diditUrl: session.url,
+          },
+        });
+    return {
+      url: session.url,
+      sessionId: session.session_id,
+      status: session.status,
+      verificationId: row.id,
+    };
+  }
+
+  /** Pull manual de la decisión (fallback si el webhook se perdió). */
+  async refreshDiditSession(userId: string) {
+    this.assertDiditConfigured();
+    const verification = await this.prisma.kYCVerification.findUnique({ where: { userId } });
+    if (!verification?.diditSessionId) {
+      throw new BadRequestException('No hay sesión Didit para actualizar');
+    }
+    const decision = await this.didit.getDecision(verification.diditSessionId);
+    return this.applyDiditDecision(verification.diditSessionId, decision?.status, decision);
+  }
+
+  /**
+   * Aplica una decisión Didit (del webhook verificado o del pull manual).
+   * Espeja approve/reject manual: perfiles + notificación, todo atómico.
+   */
+  async applyDiditDecision(sessionId: string, diditStatus: unknown, decision?: unknown) {
+    const mapped = mapDiditStatus(diditStatus);
+    if (!mapped) {
+      throw new BadRequestException(`Estado Didit desconocido: ${String(diditStatus)}`);
+    }
+    const verification = await this.prisma.kYCVerification.findUnique({
+      where: { diditSessionId: sessionId },
+      include: { user: true },
+    });
+    if (!verification) {
+      throw new NotFoundException('Sesión Didit no registrada');
+    }
+    if (verification.status === 'approved' && mapped === 'approved') {
+      return this.decryptIdentityFields(verification, { mask: false });
+    }
+
+    const now = new Date();
+    if (mapped === 'approved') {
+      const updated = await this.prisma.$transaction(async (tx) => {
+        const row = await tx.kYCVerification.update({
+          where: { id: verification.id },
+          data: {
+            status: 'approved',
+            verifiedAt: now,
+            verifiedBy: 'didit',
+            diditStatus: String(diditStatus),
+            diditVerifiedAt: now,
+            rejectionReason: null,
+          },
+        });
+        if (verification.user.role === 'driver') {
+          await tx.driverProfile.update({
+            where: { userId: verification.userId },
+            data: { kycStatus: 'approved', kycVerifiedAt: now },
+          });
+        } else if (verification.user.role === 'merchant') {
+          await tx.merchantProfile.update({
+            where: { userId: verification.userId },
+            data: { kycStatus: 'approved', kycVerifiedAt: now },
+          });
+        }
+        await tx.notification.create({
+          data: {
+            userId: verification.userId,
+            title: 'KYC Aprobado',
+            body: 'Tu verificación de identidad fue aprobada. ¡Ya puedes usar la plataforma!',
+            type: 'kyc_approved',
+          },
+        });
+        return this.decryptIdentityFields(row, { mask: false });
+      });
+      return updated;
+    }
+
+    if (mapped === 'rejected') {
+      const updated = await this.prisma.$transaction(async (tx) => {
+        const row = await tx.kYCVerification.update({
+          where: { id: verification.id },
+          data: {
+            status: 'rejected',
+            verifiedAt: now,
+            verifiedBy: 'didit',
+            diditStatus: String(diditStatus),
+            rejectionReason:
+              'Verificación automática rechazada. Revisá tus documentos e intentá de nuevo.',
+          },
+        });
+        if (verification.user.role === 'driver') {
+          await tx.driverProfile.update({
+            where: { userId: verification.userId },
+            data: { kycStatus: 'rejected' },
+          });
+        } else if (verification.user.role === 'merchant') {
+          await tx.merchantProfile.update({
+            where: { userId: verification.userId },
+            data: { kycStatus: 'rejected' },
+          });
+        }
+        await tx.notification.create({
+          data: {
+            userId: verification.userId,
+            title: 'KYC Rechazado',
+            body: 'Tu verificación automática fue rechazada. Revisá tus documentos e intentá de nuevo.',
+            type: 'kyc_rejected',
+          },
+        });
+        return this.decryptIdentityFields(row, { mask: false });
+      });
+      return updated;
+    }
+
+    // under_review / pending / expired: solo se registra el estado Didit.
+    return this.prisma.kYCVerification.update({
+      where: { id: verification.id },
+      data: { status: mapped as any, diditStatus: String(diditStatus) },
+    });
+  }
+
+  /**
+   * Webhook Didit (público, firmado). Orden: firma → frescura → idempotencia
+   * → dispatch. Rápido: aplica el payload verificado sin fetches extra.
+   */
+  async handleDiditWebhook(signature: string, parsedBody: any) {
+    const secret = (process.env.DIDIT_WEBHOOK_SECRET || '').trim();
+    const check = verifyDiditWebhook(secret, parsedBody, signature || '');
+    if (!check.ok) {
+      const err: any = new Error(`Webhook Didit inválido: ${check.reason}`);
+      err.status = 401;
+      throw err;
+    }
+    const eventId = String((parsedBody as any)?.event_id || '');
+    if (!eventId) {
+      const err: any = new Error('Webhook Didit sin event_id');
+      err.status = 400;
+      throw err;
+    }
+    try {
+      await this.prisma.diditWebhookEvent.create({ data: { eventId } });
+    } catch (e: any) {
+      // P2002 = delivery duplicado (retry de Didit): ack sin reprocesar.
+      if (e?.code === 'P2002') return { ok: true, duplicate: true };
+      throw e;
+    }
+
+    if ((parsedBody as any)?.webhook_type !== 'status.updated') {
+      return { ok: true, ignored: (parsedBody as any)?.webhook_type };
+    }
+    const sessionId = String((parsedBody as any)?.session_id || '');
+    const status = (parsedBody as any)?.status;
+    if (!sessionId) return { ok: true, ignored: 'no-session' };
+
+    // Vincular por session_id; fallback por vendor_data (= nuestro userId).
+    let verification = await this.prisma.kYCVerification.findUnique({
+      where: { diditSessionId: sessionId },
+    });
+    if (!verification && typeof (parsedBody as any)?.vendor_data === 'string') {
+      const byVendor = await this.prisma.kYCVerification.findUnique({
+        where: { userId: (parsedBody as any).vendor_data },
+      });
+      if (byVendor) {
+        verification = await this.prisma.kYCVerification.update({
+          where: { userId: (parsedBody as any).vendor_data },
+          data: { diditSessionId: sessionId },
+        });
+      }
+    }
+    if (!verification) return { ok: true, ignored: 'unknown-session' };
+
+    await this.applyDiditDecision(sessionId, status, (parsedBody as any)?.decision);
+    return { ok: true, status };
   }
 }
