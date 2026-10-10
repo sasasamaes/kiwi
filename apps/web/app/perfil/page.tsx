@@ -178,91 +178,110 @@ export default function PerfilPage() {
         </h1>
         <p className="text-sm text-surface-500 mb-6">Estos datos los ven los clientes en la app.</p>
 
-        <div className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] p-5 shadow-soft dark:shadow-dark space-y-4">
-          <div className="flex items-center gap-4">
-            <MerchantLogoEditor
-              logoUrl={form.logoUrl}
-              businessName={form.businessName}
-              onChange={(url) => setForm((f) => ({ ...f, logoUrl: url }))}
-            />
-            <div>
-              <p className="font-semibold text-surface-800 dark:text-surface-100">Foto de perfil</p>
-              <p className="text-xs text-surface-500">Aparece en la lista y el menú del cliente.</p>
+        <div className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] p-5 shadow-soft dark:shadow-dark">
+          <p className="text-xs font-bold uppercase tracking-wider text-surface-400 mb-4">
+            Presentación
+          </p>
+          <div className="space-y-4">
+            <div className="flex items-center gap-4">
+              <MerchantLogoEditor
+                logoUrl={form.logoUrl}
+                businessName={form.businessName}
+                onChange={(url) => setForm((f) => ({ ...f, logoUrl: url }))}
+              />
+              <div>
+                <p className="font-semibold text-surface-800 dark:text-surface-100">
+                  Foto de perfil
+                </p>
+                <p className="text-xs text-surface-500">
+                  Aparece en la lista y el menú del cliente.
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-surface-600 dark:text-surface-400">
-              Nombre del negocio *
-            </label>
-            <input
-              value={form.businessName}
-              onChange={(e) => setForm((f) => ({ ...f, businessName: e.target.value }))}
-              placeholder="Restaurante El Sabor"
-              className={inputCls}
-            />
-          </div>
-
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-surface-600 dark:text-surface-400">
-              Descripción
-            </label>
-            <textarea
-              value={form.description}
-              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-              placeholder="Contanos qué ofrecen…"
-              rows={3}
-              className={`${inputCls} resize-none`}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="mb-1.5 block text-sm font-medium text-surface-600 dark:text-surface-400">
-                Dirección
+                Nombre del negocio *
               </label>
               <input
-                value={form.address}
-                onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
-                placeholder="Nicoya, Guanacaste"
+                value={form.businessName}
+                onChange={(e) => setForm((f) => ({ ...f, businessName: e.target.value }))}
+                placeholder="Restaurante El Sabor"
                 className={inputCls}
               />
             </div>
+
             <div>
               <label className="mb-1.5 block text-sm font-medium text-surface-600 dark:text-surface-400">
-                Teléfono
+                Descripción
               </label>
-              <input
-                value={form.phone}
-                onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-                onBlur={() => setForm((f) => ({ ...f, phone: normalizePhone(f.phone) }))}
-                placeholder="8888-8888"
-                inputMode="tel"
-                className={inputCls}
+              <textarea
+                value={form.description}
+                onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+                placeholder="Contanos qué ofrecen…"
+                rows={3}
+                className={`${inputCls} resize-none`}
               />
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-surface-600 dark:text-surface-400">
+                Categoría
+              </label>
+              <select
+                value={form.category}
+                onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
+                className={inputCls}
+              >
+                {CATEGORIES.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-surface-600 dark:text-surface-400">
-              Categoría
-            </label>
-            <select
-              value={form.category}
-              onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-              className={inputCls}
-            >
-              {CATEGORIES.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
+          <div className="my-5 border-t border-surface-100 dark:border-surface-700/60" />
+          <p className="text-xs font-bold uppercase tracking-wider text-surface-400 mb-4">
+            Contacto
+          </p>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-surface-600 dark:text-surface-400">
+                  Dirección
+                </label>
+                <input
+                  value={form.address}
+                  onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
+                  placeholder="Nicoya, Guanacaste"
+                  className={inputCls}
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-surface-600 dark:text-surface-400">
+                  Teléfono
+                </label>
+                <input
+                  value={form.phone}
+                  onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+                  onBlur={() => setForm((f) => ({ ...f, phone: normalizePhone(f.phone) }))}
+                  placeholder="8888-8888"
+                  inputMode="tel"
+                  className={inputCls}
+                />
+              </div>
+            </div>
           </div>
 
+          <div className="my-5 border-t border-surface-100 dark:border-surface-700/60" />
+          <p className="text-xs font-bold uppercase tracking-wider text-surface-400 mb-4">
+            Horario
+          </p>
           <div>
             <p className="mb-1.5 text-sm font-medium text-surface-600 dark:text-surface-400">
-              Horario (define si aparecés “Abierto”)
+              Define si aparecés “Abierto”
             </p>
             <div className="space-y-2">
               {DAYS.map((d) => {

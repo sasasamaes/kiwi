@@ -14,7 +14,7 @@ import {
   MenuItem,
   calculateDistance,
   ShareTrackingButton,
-  DeliveryZoneSelect,
+  ZonePicker,
   DeliveryZonesMap,
   safeNavigateToUrl,
 } from '@kiwi/ui';
@@ -1319,7 +1319,7 @@ function NewOrderInner({
                   rows={2}
                   className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm"
                 />
-                <DeliveryZoneSelect value={deliveryZone} onChange={setDeliveryZone} />
+                <ZonePicker value={deliveryZone} onChange={setDeliveryZone} />
                 <div>
                   <button
                     onClick={() => setShowZonesMap((v) => !v)}
