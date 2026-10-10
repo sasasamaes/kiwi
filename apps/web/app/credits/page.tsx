@@ -222,30 +222,34 @@ function CreditsInner() {
         </AnimatePresence>
 
         {/* Saldo */}
-        <div className="mt-4 rounded-2xl glass p-5 text-center">
-          <p className="text-xs uppercase tracking-wide text-surface-400">Saldo disponible</p>
-          <p className="font-mono text-4xl font-bold text-kiwi-700">
-            ₡{Number(balance ?? 0).toLocaleString()}
+        <div className="mt-4 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] p-6 text-center shadow-soft dark:shadow-dark">
+          <p className="text-xs font-semibold uppercase tracking-widest text-surface-400">
+            Saldo disponible
           </p>
+          <p className="mt-1 font-mono font-bold text-kiwi-700 dark:text-kiwi-400">
+            <span className="text-2xl align-middle">₡</span>
+            <span className="text-5xl">{Number(balance ?? 0).toLocaleString()}</span>
+          </p>
+          <p className="mt-1 text-xs text-surface-400">Cubre solo el viaje de tus envíos</p>
         </div>
 
         {/* Recarga con tarjeta */}
-        <div className="mt-4 rounded-2xl glass p-5">
+        <div className="mt-4 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] p-5 shadow-soft dark:shadow-dark">
           <p className="mb-1 flex items-center gap-2 text-sm font-bold">
             <CreditCard className="h-4 w-4 text-kiwi-600" /> Recargar con tarjeta
           </p>
           <p className="mb-3 text-xs text-surface-500">
             Pago seguro con Onvo. Se acredita solo al confirmarse el cobro.
           </p>
-          <div className="mb-3 grid grid-cols-4 gap-2">
+          <div className="mb-3 grid grid-cols-2 sm:grid-cols-4 gap-2">
             {PACKAGES.map((p) => (
               <button
                 key={p}
                 onClick={() => setAmount(String(p))}
-                className={`rounded-xl py-2.5 text-sm font-bold ${
+                className={`rounded-xl py-2.5 text-sm font-bold transition-colors ${
                   Number(amount) === p
                     ? 'bg-kiwi-700 text-white'
-                    : 'bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-300'
+                    : 'bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-300 hover:bg-surface-200 dark:hover:bg-surface-600'
                 }`}
               >
                 ₡{(p / 1000).toFixed(0)}k
@@ -259,7 +263,7 @@ function CreditsInner() {
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="Otro monto"
-              className="flex-1 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-2.5 text-sm"
+              className="flex-1 min-w-0 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-2.5 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             />
             <button
               onClick={payWithCard}
@@ -278,9 +282,14 @@ function CreditsInner() {
             <History className="h-4 w-4" /> Movimientos
           </p>
           {history.length === 0 ? (
-            <p className="rounded-2xl glass p-6 text-center text-sm text-surface-500">
-              Todavía no hay movimientos.
-            </p>
+            <div className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] p-6 text-center shadow-soft dark:shadow-dark">
+              <p className="text-sm font-medium text-surface-700 dark:text-surface-200">
+                Todavía no hay movimientos.
+              </p>
+              <p className="mt-1 text-xs text-surface-400">
+                Tus recargas y gastos de envío aparecen aquí.
+              </p>
+            </div>
           ) : (
             <div className="space-y-2">
               {history.map((h: any) => (

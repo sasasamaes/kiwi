@@ -44,20 +44,30 @@ export function BottomNav() {
       return;
     }
     let cancelled = false;
-    api
-      .getMyOrders()
-      .then((orders: Order[]) => {
-        if (cancelled) return;
-        const active = orders
-          .filter((o) => ACTIVE_STATUSES.has(o.status))
-          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
-        setActiveOrderId(active?.id ?? null);
-      })
-      .catch(() => {
-        /* sin conexión: el link simplemente no aparece */
-      });
+    const refresh = () => {
+      api
+        .getMyOrders()
+        .then((orders: Order[]) => {
+          if (cancelled) return;
+          const active = orders
+            .filter((o) => ACTIVE_STATUSES.has(o.status))
+            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+          // Solo si hay pedido activo: si se entregó/canceló, el tab desaparece.
+          setActiveOrderId(active?.id ?? null);
+        })
+        .catch(() => {
+          /* sin conexión: el link simplemente no aparece */
+        });
+    };
+    refresh();
+    // Re-chequear cada 30s y al volver a la app: un pedido entregado no
+    // debe dejar el tab "Seguir pedido" pegado.
+    const interval = setInterval(refresh, 30000);
+    window.addEventListener('focus', refresh);
     return () => {
       cancelled = true;
+      clearInterval(interval);
+      window.removeEventListener('focus', refresh);
     };
   }, [user, pathname]);
 
