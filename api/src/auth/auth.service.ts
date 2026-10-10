@@ -15,6 +15,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { findDeliveryZone } from '../orders/delivery-zones';
+import { normalizeCRPhone } from '../common/phone';
 import { isMerchantCategory, tagMerchantCategory } from '../merchants/merchant-category';
 
 /** Per-account brute-force throttle for login (independent of IP limits). */
@@ -118,21 +119,25 @@ export class AuthService {
     // normaliza al guardar para que Local@x.com y local@x.com no creen
     // dos cuentas ni burlen el throttle de login.
     const emailNorm = email.trim().toLowerCase();
-    const phoneNorm = phone?.trim() || undefined;
+    // Normalizado a 8888-8888 para que +506 7219 9768 y 72199768 no creen
+    // dos cuentas distintas del mismo número.
+    const phoneNorm = normalizeCRPhone(phone?.trim() || '') ?? undefined;
 
-    // Check if user exists
-    const orConditions: Array<{ email?: string; phone?: string }> = [];
-    if (emailNorm) orConditions.push({ email: emailNorm });
-    if (phoneNorm) orConditions.push({ phone: phoneNorm });
-
-    const existingUser = orConditions.length
-      ? await this.prisma.user.findFirst({
-          where: { OR: orConditions },
-        })
+    // Email único global; teléfono único POR ROL (la misma persona puede
+    // tener cuenta cliente + comercio + repartidor con el mismo número).
+    const existingEmail = emailNorm
+      ? await this.prisma.user.findFirst({ where: { email: emailNorm } })
       : null;
-
-    if (existingUser) {
-      throw new ConflictException('El correo o teléfono ya está registrado');
+    if (existingEmail) {
+      throw new ConflictException('El correo ya está registrado');
+    }
+    if (phoneNorm) {
+      const existingPhone = await this.prisma.user.findFirst({
+        where: { phone: phoneNorm, role: role as any },
+      });
+      if (existingPhone) {
+        throw new ConflictException('Ese teléfono ya está registrado en una cuenta de este tipo');
+      }
     }
 
     // Minimización: el nombre personal es requerido solo para repartidores

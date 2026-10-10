@@ -145,11 +145,11 @@ export class UsersService {
           throw new BadRequestException('Formato de teléfono inválido (8888-8888)');
         }
         const taken = await this.prisma.user.findFirst({
-          where: { phone, id: { not: userId } },
+          where: { phone, role: user.role, id: { not: userId } },
           select: { id: true },
         });
         if (taken) {
-          throw new ConflictException('Ese teléfono ya está registrado');
+          throw new ConflictException('Ese teléfono ya está registrado en una cuenta de este tipo');
         }
         await this.prisma.user.update({ where: { id: userId }, data: { phone } });
       }
