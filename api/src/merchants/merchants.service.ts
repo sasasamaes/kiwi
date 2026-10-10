@@ -53,6 +53,18 @@ export class MerchantsService {
     return this.prisma.merchantProfile.update({ where: { id }, data: { isListed: listed } });
   }
 
+  /** Cobro con tarjeta/SINPE (admin, tras KYC de Onvo). */
+  async setCardPayments(id: string, enabled: boolean) {
+    const merchant = await this.prisma.merchantProfile.findUnique({ where: { id } });
+    if (!merchant) {
+      throw new NotFoundException('Comercio no encontrado');
+    }
+    return this.prisma.merchantProfile.update({
+      where: { id },
+      data: { cardPaymentsEnabled: enabled },
+    });
+  }
+
   async findByUserId(userId: string) {
     const merchant = await this.prisma.merchantProfile.findUnique({
       where: { userId },

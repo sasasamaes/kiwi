@@ -72,8 +72,10 @@ export class UsersService {
         include: {
           merchantProfile: {
             select: {
+              id: true,
               businessName: true,
               kycStatus: true,
+              cardPaymentsEnabled: true,
               _count: { select: { orders: true } },
             },
           },

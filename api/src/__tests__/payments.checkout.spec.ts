@@ -25,7 +25,9 @@ describe('OnvoPay Checkout hospedado (one-time-link)', () => {
         upsert: jest.fn(),
         updateMany: jest.fn(),
       },
-      merchantProfile: { findUnique: jest.fn().mockResolvedValue({ id: 'merchant-1' }) },
+      merchantProfile: {
+        findUnique: jest.fn().mockResolvedValue({ id: 'merchant-1', cardPaymentsEnabled: true }),
+      },
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -268,5 +270,77 @@ describe('OnvoPay Checkout hospedado (one-time-link)', () => {
     await expect(
       service.createGuestPayment({ orderId: 'order-1', method: 'cash' } as any),
     ).rejects.toThrow('ya no admite pagos');
+  });
+
+  it('cliente dueño paga su pedido con tarjeta (sin 403)', async () => {
+    const provWithKey = new OnvoPayProvider({ get: () => 'onvo_test_secret' } as any);
+    (service as any).onvopayProvider = provWithKey;
+    fetchSpy.mockResolvedValue({
+      ok: true,
+      json: async () => ({ id: 'clcs1', url: 'https://checkout.onvopay.com/pay/clcs1' }),
+    });
+    prisma.order.findUnique.mockResolvedValue({
+      ...order,
+      customerId: 'user-cli',
+      status: 'pending',
+    });
+    prisma.payment.findUnique.mockResolvedValue(null);
+    prisma.payment.create.mockResolvedValue({ id: 'pay-1' });
+    const res = await service.createPayment(
+      { orderId: 'order-1', method: 'onvopay_card', amount: 1500 } as any,
+      'user-cli',
+      'customer',
+    );
+    expect(res.checkoutUrl).toBe('https://checkout.onvopay.com/pay/clcs1');
+  });
+
+  it('cliente no paga pedido ajeno ni con crédito', async () => {
+    prisma.order.findUnique.mockResolvedValue({
+      ...order,
+      customerId: 'otro-cli',
+      status: 'pending',
+    });
+    await expect(
+      service.createPayment(
+        { orderId: 'order-1', method: 'onvopay_card', amount: 1500 } as any,
+        'user-cli',
+        'customer',
+      ),
+    ).rejects.toThrow('tus propios pedidos');
+    prisma.order.findUnique.mockResolvedValue({
+      ...order,
+      customerId: 'user-cli',
+      status: 'pending',
+    });
+    await expect(
+      service.createPayment(
+        { orderId: 'order-1', method: 'credit', amount: 1500 } as any,
+        'user-cli',
+        'customer',
+      ),
+    ).rejects.toThrow('crédito');
+  });
+
+  it('tarjeta bloqueada si el comercio no pasó KYC de Onvo', async () => {
+    prisma.order.findUnique.mockResolvedValue({
+      ...order,
+      customerId: 'user-cli',
+      status: 'pending',
+    });
+    prisma.payment.findUnique.mockResolvedValue(null);
+    prisma.merchantProfile.findUnique.mockResolvedValue({
+      id: 'merchant-1',
+      cardPaymentsEnabled: false,
+    });
+    await expect(
+      service.createPayment(
+        { orderId: 'order-1', method: 'onvopay_card', amount: 1500 } as any,
+        'user-cli',
+        'customer',
+      ),
+    ).rejects.toThrow('aún no cobra con tarjeta');
+    await expect(
+      service.createGuestPayment({ orderId: 'order-1', method: 'onvopay_sinpe' } as any),
+    ).rejects.toThrow('aún no cobra con tarjeta');
   });
 });

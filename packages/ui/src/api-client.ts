@@ -297,6 +297,14 @@ class ApiClient {
     });
   }
 
+  /** Activa/apaga cobro con tarjeta/SINPE de un comercio (tras KYC de Onvo). */
+  async setMerchantCardPayments(merchantId: string, enabled: boolean) {
+    return this.request<any>(`/merchants/${merchantId}/card-payments`, {
+      method: 'PUT',
+      body: { enabled },
+    });
+  }
+
   // ============================================
   // 🏪 MERCHANTS
   // ============================================

@@ -15,7 +15,13 @@ interface AdminUser {
   role: string;
   status: string;
   createdAt: string;
-  merchantProfile?: { businessName: string; kycStatus: string; _count?: { orders: number } } | null;
+  merchantProfile?: {
+    id?: string;
+    businessName: string;
+    kycStatus: string;
+    cardPaymentsEnabled?: boolean;
+    _count?: { orders: number };
+  } | null;
   driverProfile?: {
     fullName: string;
     rating: number | string;
@@ -88,6 +94,26 @@ export default function UsersPage() {
       setSelectedUser((prev) => (prev?.id === u.id ? { ...prev, status: updated.status } : prev));
     } catch (e: any) {
       setError(e?.message || 'No se pudo cambiar el estado');
+    } finally {
+      setToggling(false);
+    }
+  };
+
+  const toggleCardPayments = async (u: AdminUser) => {
+    const merchantId = u.merchantProfile?.id;
+    if (!merchantId) return;
+    const enabled = !(u.merchantProfile?.cardPaymentsEnabled === true);
+    setToggling(true);
+    try {
+      await api.setMerchantCardPayments(merchantId, enabled);
+      const patch = (x: AdminUser) =>
+        x.id === u.id && x.merchantProfile
+          ? { ...x, merchantProfile: { ...x.merchantProfile, cardPaymentsEnabled: enabled } }
+          : x;
+      setUsers((prev) => prev.map(patch));
+      setSelectedUser((prev) => (prev?.id === u.id ? patch(prev) : prev));
+    } catch (e: any) {
+      setError(e?.message || 'No se pudo cambiar el cobro con tarjeta');
     } finally {
       setToggling(false);
     }
@@ -406,6 +432,40 @@ export default function UsersPage() {
                         <span className="font-semibold text-surface-800 dark:text-surface-200">
                           {selectedUser.driverProfile?.totalTrips ?? 0}
                         </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedUser.role === 'merchant' && (
+                    <div className="p-4 rounded-xl bg-kiwi-50 dark:bg-kiwi-900/30">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <p className="text-sm font-semibold text-surface-800 dark:text-surface-200">
+                            Cobra con tarjeta / SINPE
+                          </p>
+                          <p className="text-xs text-surface-500">
+                            Solo tras KYC de Onvo. Apagado = solo efectivo.
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => toggleCardPayments(selectedUser)}
+                          disabled={toggling}
+                          role="switch"
+                          aria-checked={selectedUser.merchantProfile?.cardPaymentsEnabled === true}
+                          className={`relative h-8 w-14 shrink-0 rounded-full p-1 transition-colors disabled:opacity-50 ${
+                            selectedUser.merchantProfile?.cardPaymentsEnabled === true
+                              ? 'bg-kiwi-600'
+                              : 'bg-surface-300 dark:bg-surface-600'
+                          }`}
+                        >
+                          <span
+                            className={`block h-6 w-6 rounded-full bg-white shadow transition-transform ${
+                              selectedUser.merchantProfile?.cardPaymentsEnabled === true
+                                ? 'translate-x-6'
+                                : ''
+                            }`}
+                          />
+                        </button>
                       </div>
                     </div>
                   )}

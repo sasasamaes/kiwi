@@ -80,12 +80,34 @@ export class PaymentsService {
     }
 
     if (payerRole !== 'admin') {
-      const merchant = await this.prisma.merchantProfile.findUnique({
-        where: { userId: payerUserId },
-        select: { id: true },
+      if (payerRole === 'customer') {
+        // El cliente dueño paga su propio pedido (tarjeta/SINPE/efectivo).
+        // El crédito prepago es saldo del comercio, jamás del cliente.
+        if (!order.customerId || order.customerId !== payerUserId) {
+          throw new ForbiddenException('Solo puedes pagar tus propios pedidos');
+        }
+        if (method === 'credit') {
+          throw new ForbiddenException('El crédito prepago es solo del comercio');
+        }
+      } else {
+        const merchant = await this.prisma.merchantProfile.findUnique({
+          where: { userId: payerUserId },
+          select: { id: true },
+        });
+        if (!merchant || merchant.id !== order.merchantId) {
+          throw new ForbiddenException('Solo el comercio dueño puede gestionar este cobro');
+        }
+      }
+    }
+
+    // Tarjeta/SINPE solo si el comercio pasó el KYC de Onvo (flag del admin).
+    if (method === 'onvopay_card' || method === 'onvopay_sinpe') {
+      const payee = await this.prisma.merchantProfile.findUnique({
+        where: { id: order.merchantId },
+        select: { cardPaymentsEnabled: true },
       });
-      if (!merchant || merchant.id !== order.merchantId) {
-        throw new ForbiddenException('Solo el comercio dueño puede gestionar este cobro');
+      if (!payee?.cardPaymentsEnabled) {
+        throw new BadRequestException('Este comercio aún no cobra con tarjeta (solo efectivo)');
       }
     }
 
@@ -170,6 +192,16 @@ export class PaymentsService {
     }
     if (order.status === 'delivered' || order.status === 'cancelled') {
       throw new BadRequestException('El pedido ya no admite pagos');
+    }
+    // Tarjeta/SINPE solo si el comercio pasó el KYC de Onvo (igual que logueado).
+    if (method === 'onvopay_card' || method === 'onvopay_sinpe') {
+      const payee = await this.prisma.merchantProfile.findUnique({
+        where: { id: order.merchantId },
+        select: { cardPaymentsEnabled: true },
+      });
+      if (!payee?.cardPaymentsEnabled) {
+        throw new BadRequestException('Este comercio aún no cobra con tarjeta (solo efectivo)');
+      }
     }
 
     const serverAmount = Number(order.totalAmount);

@@ -136,6 +136,10 @@ export default function MenuPage() {
     zone: '',
   });
 
+  // Auth del comprador (para elegir endpoint de pedido/pago por rol).
+  const { user } = useAuth();
+  const userRole = (user as any)?.role as string | undefined;
+
   // Payment method
   type PaymentMethod = 'sinpe' | 'card' | 'cash' | 'crypto_usdc' | 'crypto_usdt';
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('sinpe');
@@ -146,6 +150,21 @@ export default function MenuPage() {
     cash: true,
     crypto: true,
   });
+
+  // Tarjeta/SINPE solo si el comercio pasó el KYC de Onvo (flag del admin).
+  // Sin eso el backend rechaza el cobro: ni se muestran.
+  const cardAllowed = (merchant as any)?.cardPaymentsEnabled === true;
+  const payWithAuthedEndpoint =
+    !!api.getToken() && (userRole === 'customer' || userRole === 'merchant');
+
+  // Si el método elegido deja de estar disponible (flag del comercio o
+  // settings), caer a uno válido en vez de dejar un botón muerto.
+  useEffect(() => {
+    setPaymentMethod((prev) => {
+      if ((prev === 'sinpe' || prev === 'card') && !cardAllowed) return 'cash';
+      return prev;
+    });
+  }, [cardAllowed]);
 
   useEffect(() => {
     api
@@ -185,8 +204,7 @@ export default function MenuPage() {
 
   // Socket for real-time order updates
   useSocket();
-  const { user } = useAuth();
-  const userRole = (user as any)?.role as string | undefined;
+
   // Logueado: el checkout se autorrellena con tu perfil (nombre,
   // dirección, barrio, teléfono) y lo que cambies se guarda para la próxima.
   useEffect(() => {
@@ -480,7 +498,7 @@ export default function MenuPage() {
           amount: totalWithDelivery,
           customerPhone: phoneDigits,
         };
-        const paymentResult = api.getToken()
+        const paymentResult = payWithAuthedEndpoint
           ? await api.createPayment(payPayload)
           : await api.createGuestPayment(payPayload);
 
@@ -502,7 +520,7 @@ export default function MenuPage() {
           amount: totalWithDelivery,
           cryptoCoin: coin as 'USDC' | 'USDT',
         };
-        const paymentResult = api.getToken()
+        const paymentResult = payWithAuthedEndpoint
           ? await api.createPayment(cryptoPayload)
           : await api.createGuestPayment(cryptoPayload);
 
@@ -538,6 +556,7 @@ export default function MenuPage() {
     phoneDigits,
     pendingOrderId,
     userRole,
+    payWithAuthedEndpoint,
   ]);
 
   // Reintenta SOLO el pago de un pedido ya creado (el modal se descartó).
@@ -553,7 +572,7 @@ export default function MenuPage() {
           amount: totalWithDelivery,
           customerPhone: phoneDigits,
         };
-        const paymentResult = api.getToken()
+        const paymentResult = payWithAuthedEndpoint
           ? await api.createPayment(retryPayload)
           : await api.createGuestPayment(retryPayload);
         if (paymentResult.checkoutUrl && safeNavigateToUrl(paymentResult.checkoutUrl)) return;
@@ -567,7 +586,7 @@ export default function MenuPage() {
           amount: totalWithDelivery,
           cryptoCoin: coin as 'USDC' | 'USDT',
         };
-        const paymentResult = api.getToken()
+        const paymentResult = payWithAuthedEndpoint
           ? await api.createPayment(retryCrypto)
           : await api.createGuestPayment(retryCrypto);
         setPaymentIntent(paymentResult);
@@ -586,7 +605,7 @@ export default function MenuPage() {
     } finally {
       setCheckingOut(false);
     }
-  }, [pendingOrderId, paymentMethod, totalWithDelivery, phoneDigits]);
+  }, [pendingOrderId, paymentMethod, totalWithDelivery, phoneDigits, payWithAuthedEndpoint]);
 
   // Payment success handler
   const handlePaymentSuccess = useCallback(
@@ -1331,6 +1350,12 @@ export default function MenuPage() {
                   <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-3">
                     <CreditCard className="h-4 w-4 inline" /> Método de pago
                   </h3>
+                  {!cardAllowed && (
+                    <p className="mb-3 rounded-xl bg-surface-100 dark:bg-surface-700/60 px-3 py-2 text-xs text-surface-500 dark:text-surface-400">
+                      Este comercio cobra en efectivo. La tarjeta se habilita cuando complete su
+                      verificación.
+                    </p>
+                  )}
                   <div className="grid grid-cols-3 gap-3">
                     {[
                       {
@@ -1352,7 +1377,12 @@ export default function MenuPage() {
                         desc: 'Al repartidor',
                       },
                     ]
-                      .filter((method) => (payAvailability as Record<string, boolean>)[method.id])
+                      .filter(
+                        (method) =>
+                          (payAvailability as Record<string, boolean>)[method.id] &&
+                          // Sin KYC de Onvo el comercio no cobra tarjeta/SINPE.
+                          (method.id === 'sinpe' || method.id === 'card' ? cardAllowed : true),
+                      )
                       .map((method) => {
                         const MethodIcon = method.icon as any;
                         return (

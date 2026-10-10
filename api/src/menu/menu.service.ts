@@ -28,6 +28,7 @@ export class MenuService {
         longitude: true,
         openingHours: true,
         createdAt: true,
+        cardPaymentsEnabled: true,
       },
     });
 

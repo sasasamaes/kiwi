@@ -100,6 +100,10 @@ model MerchantProfile {
   // (u ocultos por admin) siguen activos: QR, menú y pedidos funcionan.
   isListed Boolean @default(true) @map("is_listed")
 
+  // Cobra con tarjeta/SINPE vía Onvo en la app cliente. El admin lo activa
+  // cuando el comercio pasa el KYC de Onvo. Sin esto solo efectivo (y crypto).
+  cardPaymentsEnabled Boolean @default(false) @map("card_payments_enabled")
+
   // Categoría del negocio (filtros de la app cliente). Se autotaguea por
   // nombre al registrar; el comercio la puede cambiar después.
   category MerchantCategory @default(restaurante)

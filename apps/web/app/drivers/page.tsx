@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Star, Package, Search, MessageCircle, X, Send, Trophy } from 'lucide-react';
+import { Star, Package, Search, MessageCircle, X, Send, Trophy, Phone } from 'lucide-react';
 import {
   AnimatedButton,
   ScrollReveal,
@@ -146,6 +146,7 @@ export default function DriversPage() {
   // Assign modal
   const [assignDriver, setAssignDriver] = useState<Driver | null>(null);
   const [assigning, setAssigning] = useState(false);
+  const [detailDriver, setDetailDriver] = useState<Driver | null>(null);
 
   // Chat drawer: driver + shared active order
   const [chatDriver, setChatDriver] = useState<Driver | null>(null);
@@ -535,8 +536,9 @@ export default function DriversPage() {
                   return (
                     <ScrollReveal key={driver.id} index={driverIndex} as="div">
                       <motion.div
-                        className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft"
+                        className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft cursor-pointer"
                         whileHover={{ y: -2, boxShadow: '0 8px 24px 0 rgb(0 0 0 / 0.08)' }}
+                        onClick={() => setDetailDriver(driver)}
                       >
                         <div className="flex items-center gap-4">
                           {isHttpUrl((driver as any).photoUrl || '') ? (
@@ -591,7 +593,10 @@ export default function DriversPage() {
                             </span>
                             <div className="mt-2 flex gap-1 justify-end">
                               <button
-                                onClick={() => toggleFavorite(driver)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleFavorite(driver);
+                                }}
                                 title={isFav ? 'Quitar de favoritos' : 'Marcar favorito'}
                                 className="flex h-11 w-11 items-center justify-center rounded-lg text-surface-400 hover:text-gold-500 transition-colors"
                               >
@@ -601,7 +606,10 @@ export default function DriversPage() {
                               </button>
                               {sharedOrder && (
                                 <button
-                                  onClick={() => openChat(driver)}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openChat(driver);
+                                  }}
                                   title="Chatear"
                                   className="flex h-11 w-11 items-center justify-center rounded-lg text-surface-400 hover:text-kiwi-500 transition-colors"
                                 >
@@ -614,7 +622,10 @@ export default function DriversPage() {
                                 <AnimatedButton
                                   variant="primary"
                                   size="sm"
-                                  onClick={() => setAssignDriver(driver)}
+                                  onClick={(e: any) => {
+                                    e.stopPropagation();
+                                    setAssignDriver(driver);
+                                  }}
                                 >
                                   Asignar
                                 </AnimatedButton>
@@ -660,6 +671,30 @@ export default function DriversPage() {
             assigning={assigning}
             onClose={() => setAssignDriver(null)}
             onConfirm={confirmAssign}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Driver detail */}
+      <AnimatePresence>
+        {detailDriver && (
+          <DriverDetailModal
+            driver={detailDriver}
+            isFav={favIds.has(detailDriver.id)}
+            hasSharedOrder={openOrders.some(
+              (o) => o.driver?.id === detailDriver.id || o.driverId === detailDriver.id,
+            )}
+            phone={(detailDriver as any).user?.phone ?? null}
+            onToggleFav={() => toggleFavorite(detailDriver)}
+            onAssign={() => {
+              setDetailDriver(null);
+              setAssignDriver(detailDriver);
+            }}
+            onChat={() => {
+              openChat(detailDriver);
+              setDetailDriver(null);
+            }}
+            onClose={() => setDetailDriver(null)}
           />
         )}
       </AnimatePresence>
@@ -795,6 +830,147 @@ function ContestPanel({
         ))
       )}
     </div>
+  );
+}
+
+function DriverDetailModal({
+  driver,
+  isFav,
+  hasSharedOrder,
+  phone,
+  onToggleFav,
+  onAssign,
+  onChat,
+  onClose,
+}: {
+  driver: Driver;
+  isFav: boolean;
+  hasSharedOrder: boolean;
+  phone: string | null;
+  onToggleFav: () => void;
+  onAssign: () => void;
+  onChat: () => void;
+  onClose: () => void;
+}) {
+  const photo = (driver as any).photoUrl as string | undefined;
+  return (
+    <motion.div
+      className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/50 p-4"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onClick={onClose}
+    >
+      <motion.div
+        className="w-full max-w-md rounded-2xl bg-white dark:bg-surface-800 p-6 shadow-xl"
+        initial={{ y: 40, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 40, opacity: 0 }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-4 min-w-0">
+            {isHttpUrl(photo || '') ? (
+              // NOTE: <img> intencional — foto dinámica externa, next/image no aporta aquí
+              <img
+                src={photo}
+                alt={driver.fullName}
+                className="h-20 w-20 shrink-0 rounded-full object-cover"
+              />
+            ) : isEmojiImage(photo || '') ? (
+              <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-kiwi-gradient text-white">
+                <span className="text-4xl leading-none">{photo}</span>
+              </div>
+            ) : (
+              <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-kiwi-gradient text-white text-2xl font-semibold">
+                {initials(driver.fullName)}
+              </div>
+            )}
+            <div className="min-w-0">
+              <h3 className="font-display text-lg font-semibold text-surface-800 dark:text-surface-100 truncate">
+                {driver.fullName}
+              </h3>
+              <div className="mt-1 flex flex-wrap items-center gap-2">
+                {driver.vehicleType && (
+                  <VehicleBadge type={driver.vehicleType as VehicleType} size="sm" />
+                )}
+                {(driver as any).vehiclePlate && (
+                  <span className="rounded-md bg-surface-100 dark:bg-surface-700 px-2 py-0.5 font-mono text-xs font-semibold text-surface-700 dark:text-surface-200">
+                    {(driver as any).vehiclePlate}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            aria-label="Cerrar detalle"
+            className="rounded-lg p-1.5 text-surface-400 hover:text-surface-600 transition-colors shrink-0"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+          <div className="rounded-xl bg-surface-50 dark:bg-surface-700/50 p-3">
+            <p className="text-lg font-bold text-surface-800 dark:text-surface-100">
+              <Star className="h-4 w-4 inline text-gold-500" />{' '}
+              {driver.rating != null ? formatRating(driver.rating, '—') : '—'}
+            </p>
+            <p className="text-xs text-surface-500">Rating</p>
+          </div>
+          <div className="rounded-xl bg-surface-50 dark:bg-surface-700/50 p-3">
+            <p className="text-lg font-bold text-surface-800 dark:text-surface-100">
+              {driver.totalTrips ?? 0}
+            </p>
+            <p className="text-xs text-surface-500">Viajes</p>
+          </div>
+          <div className="rounded-xl bg-surface-50 dark:bg-surface-700/50 p-3">
+            <p className="text-lg font-bold text-surface-800 dark:text-surface-100">
+              {statusText(driver.status)}
+            </p>
+            <p className="text-xs text-surface-500">Estado</p>
+          </div>
+        </div>
+
+        {phone && (
+          <a
+            href={`tel:${phone.replace(/\D/g, '')}`}
+            className="mt-3 flex items-center justify-center gap-2 rounded-xl bg-surface-100 dark:bg-surface-700 px-4 py-3 text-sm font-semibold text-surface-700 dark:text-surface-200"
+          >
+            <Phone className="h-4 w-4 text-kiwi-600" /> {phone}
+          </a>
+        )}
+
+        <div className="mt-4 flex gap-2">
+          <button
+            onClick={onToggleFav}
+            title={isFav ? 'Quitar de favoritos' : 'Marcar favorito'}
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-surface-200 dark:border-surface-700 text-surface-400 hover:text-gold-500 transition-colors"
+          >
+            <Star className={`h-5 w-5 ${isFav ? 'fill-gold-500 text-gold-500' : ''}`} />
+          </button>
+          {hasSharedOrder && (
+            <button
+              onClick={onChat}
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-surface-200 dark:border-surface-700 text-surface-400 hover:text-kiwi-500 transition-colors"
+              title="Chatear"
+            >
+              <MessageCircle className="h-5 w-5" />
+            </button>
+          )}
+          {driver.status === 'available' ? (
+            <AnimatedButton variant="primary" className="flex-1" onClick={onAssign}>
+              Asignar pedido
+            </AnimatedButton>
+          ) : (
+            <div className="flex flex-1 items-center justify-center rounded-xl bg-surface-100 dark:bg-surface-700 px-4 text-sm font-medium text-surface-500">
+              No disponible ahora
+            </div>
+          )}
+        </div>
+      </motion.div>
+    </motion.div>
   );
 }
 

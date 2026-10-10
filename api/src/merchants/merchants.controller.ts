@@ -139,6 +139,15 @@ export class MerchantsController {
     return this.merchantsService.setListed(id, body?.listed !== false);
   }
 
+  @Put(':id/card-payments')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Activar cobro con tarjeta/SINPE (tras KYC de Onvo)' })
+  async setCardPayments(@Param('id') id: string, @Body() body: { enabled: boolean }) {
+    return this.merchantsService.setCardPayments(id, body?.enabled === true);
+  }
+
   /**
    * Logo del comercio (foto de perfil). Multipart (Multer memoryStorage),
    * misma validación estricta que el resto de imágenes (magic bytes, 5MB).
