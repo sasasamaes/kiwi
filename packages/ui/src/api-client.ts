@@ -610,6 +610,27 @@ class ApiClient {
     return this.request<{ enabled: boolean }>('/drivers/me/photo-status');
   }
 
+  async getDriverMarketplaceStatus(): Promise<{ accountId: string | null; status: string | null }> {
+    return this.request<any>('/drivers/me/marketplace/status').catch(() => ({
+      accountId: null,
+      status: null,
+    }));
+  }
+  async startDriverMarketplaceOnboarding(): Promise<{
+    accountId: string;
+    status: string;
+    onboardingUrl?: string;
+  }> {
+    return this.request<any>('/drivers/me/marketplace/onboarding', { method: 'POST' });
+  }
+  async regenerateDriverMarketplaceLink(): Promise<{
+    accountId: string;
+    status?: string;
+    onboardingUrl?: string;
+  }> {
+    return this.request<any>('/drivers/me/marketplace/onboarding-link', { method: 'POST' });
+  }
+
   /**
    * Sube el logo del comercio (multipart `photo`). El backend lo guarda en
    * el perfil y devuelve { url }. Se ve en la app cliente (lista y menú).

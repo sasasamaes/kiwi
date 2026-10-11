@@ -115,6 +115,15 @@ export default function Profile() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [photoUploadEnabled, setPhotoUploadEnabled] = useState(true);
   const photoInputRef = useRef<HTMLInputElement>(null);
+  // Cobros Onvo marketplace: el flete/express liquida en el IBAN propio.
+  const [mpStatus, setMpStatus] = useState<{
+    accountId: string | null;
+    status: string | null;
+  } | null>(null);
+  const [mpLoading, setMpLoading] = useState(true);
+  const [mpBusy, setMpBusy] = useState(false);
+  const [mpError, setMpError] = useState<string | null>(null);
+  const [mpInfo, setMpInfo] = useState<string | null>(null);
   // Presencia socket: el toggle de Home avisa por socket; este también debe.
   const { updateDriverStatus: socketUpdateStatus } = useSocket({});
 
@@ -158,6 +167,79 @@ export default function Profile() {
   useEffect(() => {
     if (user) load();
   }, [user, load]);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      setMpLoading(true);
+      setMpError(null);
+      try {
+        const st = await api.getDriverMarketplaceStatus();
+        if (!cancelled) setMpStatus(st);
+      } catch {
+        if (!cancelled) setMpError('No se pudo cargar el estado de cobros.');
+      } finally {
+        if (!cancelled) setMpLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  const startMpOnboarding = async () => {
+    setMpBusy(true);
+    setMpError(null);
+    setMpInfo(null);
+    try {
+      const out = await api.startDriverMarketplaceOnboarding();
+      setMpStatus({ accountId: out.accountId, status: out.status });
+      if (out.onboardingUrl) {
+        window.open(out.onboardingUrl, '_blank', 'noopener,noreferrer');
+        setMpInfo('Completá el registro en Onvo y volvé a revisar estado.');
+      }
+    } catch {
+      setMpError('No se pudo activar los cobros. Intentá de nuevo.');
+    } finally {
+      setMpBusy(false);
+    }
+  };
+
+  const openMpRegistration = async () => {
+    setMpBusy(true);
+    setMpError(null);
+    setMpInfo(null);
+    try {
+      const out = await api.regenerateDriverMarketplaceLink();
+      if (out.status) setMpStatus({ accountId: out.accountId, status: out.status });
+      if (out.onboardingUrl) {
+        window.open(out.onboardingUrl, '_blank', 'noopener,noreferrer');
+        setMpInfo('Completá el registro en Onvo y volvé a revisar estado.');
+      }
+    } catch {
+      setMpError('No se pudo abrir el registro. Intentá de nuevo.');
+    } finally {
+      setMpBusy(false);
+    }
+  };
+
+  const refreshMpStatus = async () => {
+    setMpBusy(true);
+    setMpError(null);
+    setMpInfo(null);
+    try {
+      const st = await api.getDriverMarketplaceStatus();
+      setMpStatus(st);
+      if (st?.status !== 'active') {
+        setMpInfo('Todavía no está activo. Terminá el registro en Onvo e intentá de nuevo.');
+      }
+    } catch {
+      setMpError('No se pudo revisar el estado. Intentá de nuevo.');
+    } finally {
+      setMpBusy(false);
+    }
+  };
 
   const saveVehicle = async () => {
     setSavingVehicle(true);
@@ -514,6 +596,70 @@ export default function Profile() {
               <p className="text-sm text-surface-500">Placa: {profile?.vehiclePlate || '—'}</p>
             </div>
           </div>
+        </motion.div>
+
+        {/* Cobros Onvo marketplace */}
+        <motion.div
+          className="mb-6 rounded-2xl bg-white dark:bg-surface-800 p-5 shadow-soft"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
+            Cobros
+          </h3>
+          {mpLoading ? (
+            <p className="text-sm text-surface-500">Cargando estado de cobros…</p>
+          ) : mpStatus?.status === 'active' ? (
+            <p className="text-sm font-semibold text-kiwi-700 dark:text-kiwi-300">
+              Cobros con tarjeta activos ✓
+            </p>
+          ) : mpStatus?.accountId ? (
+            <div className="space-y-3">
+              <p className="text-sm font-semibold text-surface-800 dark:text-surface-100">
+                Registro pendiente
+              </p>
+              <p className="text-sm text-surface-500">
+                Terminá el registro en Onvo para activar los cobros de tus fletes.
+              </p>
+              <div className="flex flex-col gap-2">
+                <AnimatedButton
+                  variant="primary"
+                  className="w-full"
+                  onClick={() => void openMpRegistration()}
+                  disabled={mpBusy}
+                >
+                  {mpBusy ? 'Abriendo…' : 'Abrir registro'}
+                </AnimatedButton>
+                <AnimatedButton
+                  variant="ghost"
+                  className="w-full"
+                  onClick={() => void refreshMpStatus()}
+                  disabled={mpBusy}
+                >
+                  {mpBusy ? 'Revisando…' : 'Ya lo completé'}
+                </AnimatedButton>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-sm text-surface-500">
+                Recibí el pago de tus fletes y express con tarjeta directo en tu cuenta IBAN.
+              </p>
+              <AnimatedButton
+                variant="primary"
+                className="w-full"
+                onClick={() => void startMpOnboarding()}
+                disabled={mpBusy}
+              >
+                {mpBusy ? 'Activando…' : 'Activar cobros con tarjeta'}
+              </AnimatedButton>
+            </div>
+          )}
+          {mpError && <p className="mt-3 text-sm text-red-600">{mpError}</p>}
+          {mpInfo && (
+            <p className="mt-3 text-sm text-surface-600 dark:text-surface-300">{mpInfo}</p>
+          )}
         </motion.div>
 
         {/* Logout real */}
