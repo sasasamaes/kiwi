@@ -8,10 +8,17 @@ import { motion } from 'framer-motion';
 import {
   ArrowRight,
   BadgeCheck,
+  BellRing,
+  CalendarClock,
+  ChefHat,
   LayoutDashboard,
   MapPin,
+  Package,
   QrCode,
+  Share2,
   ShieldCheck,
+  Store,
+  Wallet,
   WifiOff,
 } from 'lucide-react';
 import {
@@ -63,8 +70,11 @@ function Landing() {
             </span>
           </Link>
           <nav className="hidden items-center gap-8 text-sm font-medium text-surface-500 md:flex dark:text-surface-400">
-            <a href="#beneficios" className="transition-colors hover:text-kiwi-600">
-              Beneficios
+            <a href="#restaurantes" className="transition-colors hover:text-kiwi-600">
+              Restaurantes
+            </a>
+            <a href="#cocina-casera" className="transition-colors hover:text-kiwi-600">
+              Cocina casera
             </a>
             <a href="#como-funciona" className="transition-colors hover:text-kiwi-600">
               Cómo funciona
@@ -144,9 +154,9 @@ function Landing() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
           >
-            Recibí pedidos express de tu propio menú{' '}
+            Vendé a domicilio{' '}
             <span className="bg-gradient-to-r from-kiwi-600 to-kiwi-400 bg-clip-text text-transparent">
-              y vendé más sin contratar repartidores
+              sin contratar repartidores
             </span>
           </motion.h1>
           <motion.p
@@ -155,9 +165,9 @@ function Landing() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
           >
-            Unimos tu comercio con repartidores verificados y a tus clientes con tu menú: QR en la
-            mesa, pedido o encomienda en segundos y entrega a domicilio. Vos lo ves todo llegar a tu
-            panel.
+            Restaurantes y cocinas caseras reciben pedidos de su propio menú con entrega incluida:
+            QR en la mesa, preventa programada y repartidores verificados. Vos lo ves todo llegar a
+            tu panel.
           </motion.p>
 
           <motion.div
@@ -168,13 +178,14 @@ function Landing() {
           >
             <Link href="/register">
               <AnimatedButton variant="gradient" size="lg" className="min-w-[220px] shadow-kiwi-lg">
+                <Store className="h-4 w-4" />
                 Registrar mi comercio
-                <ArrowRight className="h-4 w-4" />
               </AnimatedButton>
             </Link>
-            <Link href="#como-funciona">
+            <Link href="#cocina-casera">
               <AnimatedButton variant="glass" size="lg" className="min-w-[220px]">
-                Ver cómo funciona
+                <ChefHat className="h-4 w-4" />
+                Cocino en casa
               </AnimatedButton>
             </Link>
           </motion.div>
@@ -206,8 +217,50 @@ function Landing() {
         </div>
       </section>
 
-      {/* Beneficios */}
-      <section id="beneficios" className="scroll-mt-20 px-6 py-20 lg:px-8">
+      {/* Bifurcación */}
+      <section className="px-6 pb-4 lg:px-8">
+        <div className="mx-auto grid max-w-6xl gap-6 md:grid-cols-2">
+          <motion.a
+            href="#restaurantes"
+            className="group rounded-3xl border border-white/40 bg-white/70 p-8 shadow-soft-md backdrop-blur-xl dark:border-surface-800 dark:bg-surface-900"
+            whileHover={{ y: -6 }}
+          >
+            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-kiwi-100 text-kiwi-700 dark:bg-kiwi-950 dark:text-kiwi-400">
+              <Store className="h-7 w-7" />
+            </div>
+            <h3 className="mb-2 text-xl font-display font-semibold">Tengo un restaurante o soda</h3>
+            <p className="text-pretty text-surface-500 dark:text-surface-400">
+              QR con tu menú, pedidos express y encomiendas con entrega incluida.
+            </p>
+            <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-kiwi-700 dark:text-kiwi-400">
+              Ver beneficios{' '}
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+            </span>
+          </motion.a>
+          <motion.a
+            href="#cocina-casera"
+            className="group rounded-3xl border border-orange-500/30 bg-orange-500/[0.06] p-8 shadow-soft-md backdrop-blur-xl dark:border-orange-400/20"
+            whileHover={{ y: -6 }}
+          >
+            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-100 text-orange-600 dark:bg-orange-950 dark:text-orange-400">
+              <ChefHat className="h-7 w-7" />
+            </div>
+            <h3 className="mb-2 text-xl font-display font-semibold">
+              🧡 Cocino en casa y quiero vender
+            </h3>
+            <p className="text-pretty text-surface-500 dark:text-surface-400">
+              Menú del día, ventas por fecha y preventa: vendé sin abrir todos los días.
+            </p>
+            <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-orange-600 dark:text-orange-400">
+              Cómo funciona{' '}
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+            </span>
+          </motion.a>
+        </div>
+      </section>
+
+      {/* Restaurantes */}
+      <section id="restaurantes" className="scroll-mt-20 px-6 py-20 lg:px-8">
         <div className="mx-auto max-w-6xl">
           <motion.div
             className="mb-12 max-w-2xl"
@@ -216,7 +269,7 @@ function Landing() {
             viewport={{ once: true }}
           >
             <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-kiwi-600">
-              Beneficios
+              Restaurantes y sodas
             </p>
             <h2 className="mb-3 text-balance text-3xl font-display font-bold tracking-tight lg:text-4xl">
               Todo lo que tu comercio necesita para vender a domicilio
@@ -272,31 +325,137 @@ function Landing() {
               </motion.div>
             </StaggerItem>
 
-            <StaggerItem className="md:col-span-5">
+            <StaggerItem className="md:col-span-2">
               <motion.div
-                className="flex flex-col gap-6 rounded-3xl border border-white/40 bg-white/70 p-8 shadow-soft-md backdrop-blur-xl md:flex-row md:items-center dark:border-surface-800 dark:bg-surface-900"
+                className="h-full rounded-3xl border border-white/40 bg-white/70 p-8 shadow-soft-md backdrop-blur-xl dark:border-surface-800 dark:bg-surface-900"
                 whileHover={{ y: -6, boxShadow: '0 20px 40px -12px rgba(34, 197, 94, 0.2)' }}
               >
                 <motion.div
-                  className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-kiwi-700 text-white"
+                  className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-kiwi-100 text-kiwi-700 dark:bg-kiwi-950 dark:text-kiwi-400"
+                  whileHover={{ scale: 1.1 }}
+                  transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+                >
+                  <Wallet className="h-7 w-7" />
+                </motion.div>
+                <h3 className="mb-2 text-xl font-display font-semibold">Cobrá como quieras</h3>
+                <p className="text-pretty text-surface-500 dark:text-surface-400">
+                  Efectivo desde el primer día; tarjeta y SINPE web al completar tu verificación.
+                  Tus redes y tu horario visibles en tu menú.
+                </p>
+              </motion.div>
+            </StaggerItem>
+
+            <StaggerItem className="md:col-span-3">
+              <motion.div
+                className="h-full rounded-3xl border border-white/40 bg-white/70 p-8 shadow-soft-md backdrop-blur-xl dark:border-surface-800 dark:bg-surface-900"
+                whileHover={{ y: -6, boxShadow: '0 20px 40px -12px rgba(34, 197, 94, 0.2)' }}
+              >
+                <motion.div
+                  className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-kiwi-700 text-white"
                   whileHover={{ scale: 1.1 }}
                   transition={{ type: 'spring', stiffness: 260, damping: 20 }}
                 >
                   <LayoutDashboard className="h-7 w-7" />
                 </motion.div>
-                <div>
-                  <h3 className="mb-2 text-xl font-display font-semibold">
-                    Tu negocio en un panel
-                  </h3>
-                  <p className="max-w-3xl text-pretty text-surface-500 dark:text-surface-400">
-                    Pedidos de tu menú y encomiendas, estados de entrega, historial y calificaciones
-                    en un solo lugar. Programá envíos para la hora que quieras y seguí cada entrega
-                    en el mapa en tiempo real.
-                  </p>
-                </div>
+                <h3 className="mb-2 text-xl font-display font-semibold">Tu negocio en un panel</h3>
+                <p className="max-w-md text-pretty text-surface-500 dark:text-surface-400">
+                  Pedidos de tu menú y encomiendas, estados de entrega, historial y calificaciones
+                  en un solo lugar. Programá envíos para la hora que quieras y seguí cada entrega en
+                  el mapa en tiempo real.
+                </p>
               </motion.div>
             </StaggerItem>
           </StaggerContainer>
+        </div>
+      </section>
+
+      {/* Cocina casera */}
+      <section
+        id="cocina-casera"
+        className="scroll-mt-20 bg-orange-500/[0.05] px-6 py-20 lg:px-8 dark:bg-orange-950/10"
+      >
+        <div className="mx-auto max-w-6xl">
+          <motion.div
+            className="mb-12 max-w-2xl"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-orange-600 dark:text-orange-400">
+              🧡 Cocina casera
+            </p>
+            <h2 className="mb-3 text-balance text-3xl font-display font-bold tracking-tight lg:text-4xl">
+              Vendé tu comida casera sin abrir todos los días
+            </h2>
+            <p className="text-pretty text-surface-500 dark:text-surface-400">
+              Hacés rollos de canela los jueves o la comida del día: la publicás una vez y los
+              clientes te compran por adelantado, hasta agotar stock.
+            </p>
+          </motion.div>
+
+          <StaggerContainer className="grid gap-6 md:grid-cols-3">
+            {[
+              {
+                icon: CalendarClock,
+                title: 'Vende por fechas',
+                text: 'Marcá los días de cada plato: solo jueves, solo fines de semana. El resto de la semana tu menú descansa solo.',
+              },
+              {
+                icon: Package,
+                title: 'Stock por día',
+                text: 'Hacés 50 y se acabó: cargás la cantidad y cada día se repone sola. El cliente ve cuántas quedan.',
+              },
+              {
+                icon: BellRing,
+                title: 'Avisá a tus seguidores',
+                text: '“Mañana vendo rollos” les llega como push. Cuando repongas stock, se enteran solos.',
+              },
+            ].map((f) => {
+              const FIcon = f.icon as any;
+              return (
+                <StaggerItem key={f.title}>
+                  <motion.div
+                    className="h-full rounded-3xl border border-orange-500/20 bg-white/70 p-8 shadow-soft-md backdrop-blur-xl dark:border-orange-400/10 dark:bg-surface-900"
+                    whileHover={{ y: -6, boxShadow: '0 20px 40px -12px rgba(249, 115, 22, 0.25)' }}
+                  >
+                    <motion.div
+                      className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-100 text-orange-600 dark:bg-orange-950 dark:text-orange-400"
+                      whileHover={{ rotate: 10, scale: 1.1 }}
+                      transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+                    >
+                      <FIcon className="h-7 w-7" />
+                    </motion.div>
+                    <h3 className="mb-2 text-xl font-display font-semibold">{f.title}</h3>
+                    <p className="text-pretty text-surface-500 dark:text-surface-400">{f.text}</p>
+                  </motion.div>
+                </StaggerItem>
+              );
+            })}
+          </StaggerContainer>
+
+          <motion.div
+            className="mt-6 rounded-3xl border border-orange-500/20 bg-white/70 p-8 shadow-soft-md backdrop-blur-xl md:flex md:items-center md:gap-6 dark:border-orange-400/10 dark:bg-surface-900"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <motion.div
+              className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-orange-500 text-white"
+              whileHover={{ scale: 1.1 }}
+              transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+            >
+              <Share2 className="h-7 w-7" />
+            </motion.div>
+            <div>
+              <h3 className="mb-2 text-xl font-display font-semibold">
+                Tus clientes te siguen y te promocionan
+              </h3>
+              <p className="max-w-3xl text-pretty text-surface-500 dark:text-surface-400">
+                Te siguen con un toque y les avisamos tus ventas. Tu horario, tus redes y tu sección
+                propia en la app de clientes hacen el resto.
+              </p>
+            </div>
+          </motion.div>
         </div>
       </section>
 
@@ -325,17 +484,17 @@ function Landing() {
               {
                 n: '01',
                 title: 'Registrá tu comercio',
-                text: 'Creá tu cuenta, cargá tu menú y generá tu QR. Quedás listo para vender el mismo día.',
+                text: 'Creá tu cuenta gratis: restaurante, soda o cocina casera. Quedás listo para vender el mismo día.',
               },
               {
                 n: '02',
-                title: 'Recibí pedidos',
-                text: 'Los pedidos llegan a tu panel en tiempo real. Aceptás y un repartidor cercano lo toma.',
+                title: 'Cargá tu menú',
+                text: 'Tus platos fijos o tu menú del día con fechas, cantidades y horarios. Generá tu QR.',
               },
               {
                 n: '03',
-                title: 'Entregá y crecé',
-                text: 'Seguí la entrega en el mapa, cobrá por tu canal favorito y calificá el servicio.',
+                title: 'Recibí y entregá',
+                text: 'Los pedidos llegan a tu panel en tiempo real, un repartidor cercano los toma y los seguís en el mapa.',
               },
             ].map((step, i) => (
               <StaggerItem key={step.n}>
@@ -390,8 +549,8 @@ function Landing() {
                 Activá tu QR y vendé más
               </h2>
               <p className="mx-auto mb-8 max-w-xl text-pretty text-lg text-white/80">
-                Creá tu cuenta gratis, publicá tu menú y recibí pedidos y encomiendas express con
-                entrega incluida.
+                Creá tu cuenta gratis, publicá tu menú o tu plato del día y recibí pedidos y
+                encomiendas express con entrega incluida.
               </p>
               <Link href="/register">
                 <AnimatedButton
