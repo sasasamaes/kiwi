@@ -607,6 +607,135 @@ export function MenuItemForm({
                   ],
                 },
               },
+              {
+                label: '🥩 Término',
+                group: {
+                  name: 'Término',
+                  required: true,
+                  multiple: false,
+                  options: [
+                    { name: 'Término medio', priceDelta: 0, isAvailable: true },
+                    { name: 'Bien cocido', priceDelta: 0, isAvailable: true },
+                    { name: 'Rojo', priceDelta: 0, isAvailable: true },
+                  ],
+                },
+              },
+              {
+                label: '🍗 Proteína',
+                group: {
+                  name: 'Proteína',
+                  required: true,
+                  multiple: false,
+                  options: [
+                    { name: 'Pollo', priceDelta: 0, isAvailable: true },
+                    { name: 'Carne', priceDelta: 0, isAvailable: true },
+                    { name: 'Cerdo', priceDelta: 0, isAvailable: true },
+                    { name: 'Pescado', priceDelta: 0, isAvailable: true },
+                  ],
+                },
+              },
+              {
+                label: '🍚 Guarnición',
+                group: {
+                  name: 'Guarnición',
+                  required: true,
+                  multiple: true,
+                  maxSelections: 2,
+                  options: [
+                    { name: 'Arroz', priceDelta: 0, isAvailable: true },
+                    { name: 'Frijoles', priceDelta: 0, isAvailable: true },
+                    { name: 'Ensalada', priceDelta: 0, isAvailable: true },
+                    { name: 'Papas fritas', priceDelta: 0, isAvailable: true },
+                    { name: 'Puré', priceDelta: 0, isAvailable: true },
+                  ],
+                },
+              },
+              {
+                label: '🥫 Salsas',
+                group: {
+                  name: 'Salsas',
+                  required: false,
+                  multiple: true,
+                  maxSelections: 3,
+                  options: [
+                    { name: 'Ketchup', priceDelta: 0, isAvailable: true },
+                    { name: 'Mayonesa', priceDelta: 0, isAvailable: true },
+                    { name: 'Mostaza', priceDelta: 0, isAvailable: true },
+                    { name: 'Salsa de tomate', priceDelta: 0, isAvailable: true },
+                    { name: 'Chile', priceDelta: 0, isAvailable: true },
+                    { name: 'Barbacoa', priceDelta: 0, isAvailable: true },
+                  ],
+                },
+              },
+              {
+                label: '🍔 Pan',
+                group: {
+                  name: 'Pan',
+                  required: true,
+                  multiple: false,
+                  options: [
+                    { name: 'Blanco', priceDelta: 0, isAvailable: true },
+                    { name: 'Integral', priceDelta: 0, isAvailable: true },
+                    { name: 'Brioche', priceDelta: 0, isAvailable: true },
+                  ],
+                },
+              },
+              {
+                label: '🌮 Tortilla',
+                group: {
+                  name: 'Tortilla',
+                  required: true,
+                  multiple: true,
+                  maxSelections: 2,
+                  options: [
+                    { name: 'Maíz', priceDelta: 0, isAvailable: true },
+                    { name: 'Harina', priceDelta: 0, isAvailable: true },
+                  ],
+                },
+              },
+              {
+                label: '🥬 Vegetales',
+                group: {
+                  name: 'Vegetales',
+                  required: false,
+                  multiple: true,
+                  maxSelections: 5,
+                  options: [
+                    { name: 'Lechuga', priceDelta: 0, isAvailable: true },
+                    { name: 'Tomate', priceDelta: 0, isAvailable: true },
+                    { name: 'Cebolla', priceDelta: 0, isAvailable: true },
+                    { name: 'Pepino', priceDelta: 0, isAvailable: true },
+                    { name: 'Zanahoria', priceDelta: 0, isAvailable: true },
+                    { name: 'Repollo', priceDelta: 0, isAvailable: true },
+                  ],
+                },
+              },
+              {
+                label: '🧊 Hielo',
+                group: {
+                  name: 'Hielo',
+                  required: true,
+                  multiple: false,
+                  options: [
+                    { name: 'Normal', priceDelta: 0, isAvailable: true },
+                    { name: 'Poco hielo', priceDelta: 0, isAvailable: true },
+                    { name: 'Sin hielo', priceDelta: 0, isAvailable: true },
+                  ],
+                },
+              },
+              {
+                label: '🍬 Azúcar',
+                group: {
+                  name: 'Azúcar',
+                  required: true,
+                  multiple: false,
+                  options: [
+                    { name: 'Normal', priceDelta: 0, isAvailable: true },
+                    { name: 'Poca', priceDelta: 0, isAvailable: true },
+                    { name: 'Sin azúcar', priceDelta: 0, isAvailable: true },
+                  ],
+                },
+              },
             ].map((t) => {
               const exists = formData.variants.some((g) => g.name === t.group.name);
               return (
