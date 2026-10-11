@@ -19,7 +19,12 @@ import {
   events,
   safeNavigateToUrl,
   CryptoRateNote,
+  SchedulePicker,
+  EMPTY_SCHEDULE,
+  isValidSchedule,
+  scheduleFields,
 } from '@kiwi/ui';
+import type { ScheduleValue } from '@kiwi/ui';
 import { findDeliveryZone } from '@kiwi/types';
 
 interface CartItem {
@@ -42,6 +47,9 @@ function CheckoutContent() {
   const [merchantId, setMerchantId] = useState('');
   const [merchantName, setMerchantName] = useState('');
   const [pickupAddress, setPickupAddress] = useState('');
+  // ¿El comercio es cocina casera? Habilita preventa programada.
+  const [isHomeCook, setIsHomeCook] = useState(false);
+  const [schedule, setSchedule] = useState<ScheduleValue>(EMPTY_SCHEDULE);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   // Métodos habilitados por el admin (/admin/settings)
   const [payAvailability, setPayAvailability] = useState({
@@ -140,6 +148,14 @@ function CheckoutContent() {
     if (merchantParam) setMerchantId(merchantParam);
     if (merchantNameParam) setMerchantName(merchantNameParam);
     if (pickupParam) setPickupAddress(decodeURIComponent(pickupParam));
+    // Marca de cocina casera del comercio (preventa). Best-effort: si falla,
+    // el checkout inmediato sigue funcionando igual que antes.
+    if (merchantParam) {
+      api
+        .getMerchantPublicProfile(merchantParam)
+        .then((m) => setIsHomeCook((m as any)?.isHomeCook === true))
+        .catch(() => undefined);
+    }
   }, [searchParams]);
 
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -157,6 +173,7 @@ function CheckoutContent() {
     address.trim().length > 0 &&
     deliveryZone.trim().length > 0 &&
     cart.length > 0 &&
+    isValidSchedule(schedule) &&
     acceptedTerms;
 
   const placeOrder = useCallback(async () => {
@@ -175,7 +192,7 @@ function CheckoutContent() {
         pickupAddress: pickupAddress || 'Nicoya Centro',
         deliveryAddress: address,
         deliveryZone,
-        orderType: 'immediate',
+        ...scheduleFields(schedule),
         items: cart.map((item) => ({
           menuItemId: item.menuItemId || item.id,
           name: item.name,
@@ -505,6 +522,25 @@ function CheckoutContent() {
             </div>
           </div>
         </motion.div>
+
+        {/* Preventa (solo cocinas caseras) */}
+        {isHomeCook && (
+          <motion.div
+            className="mb-6 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+          >
+            <h2 className="font-semibold text-surface-800 dark:text-surface-100 mb-3">
+              📅 ¿Para cuándo?
+            </h2>
+            <SchedulePicker
+              value={schedule}
+              onChange={setSchedule}
+              hint="Cocina casera: podés pedir hoy aunque esté cerrada, programando su día de venta."
+            />
+          </motion.div>
+        )}
 
         {/* Payment Method */}
         <motion.div

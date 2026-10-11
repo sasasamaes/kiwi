@@ -20,6 +20,7 @@ interface AdminUser {
     businessName: string;
     kycStatus: string;
     cardPaymentsEnabled?: boolean;
+    isHomeCook?: boolean;
     _count?: { orders: number };
   } | null;
   driverProfile?: {
@@ -114,6 +115,26 @@ export default function UsersPage() {
       setSelectedUser((prev) => (prev?.id === u.id ? patch(prev) : prev));
     } catch (e: any) {
       setError(e?.message || 'No se pudo cambiar el cobro con tarjeta');
+    } finally {
+      setToggling(false);
+    }
+  };
+
+  const toggleHomeCook = async (u: AdminUser) => {
+    const merchantId = u.merchantProfile?.id;
+    if (!merchantId) return;
+    const enabled = !(u.merchantProfile?.isHomeCook === true);
+    setToggling(true);
+    try {
+      await api.setMerchantHomeCook(merchantId, enabled);
+      const patch = (x: AdminUser) =>
+        x.id === u.id && x.merchantProfile
+          ? { ...x, merchantProfile: { ...x.merchantProfile, isHomeCook: enabled } }
+          : x;
+      setUsers((prev) => prev.map(patch));
+      setSelectedUser((prev) => (prev?.id === u.id ? patch(prev) : prev));
+    } catch (e: any) {
+      setError(e?.message || 'No se pudo cambiar la marca de cocina casera');
     } finally {
       setToggling(false);
     }
@@ -461,6 +482,36 @@ export default function UsersPage() {
                           <span
                             className={`block h-6 w-6 rounded-full bg-white shadow transition-transform ${
                               selectedUser.merchantProfile?.cardPaymentsEnabled === true
+                                ? 'translate-x-6'
+                                : ''
+                            }`}
+                          />
+                        </button>
+                      </div>
+                      <div className="flex justify-between items-center mt-3 pt-3 border-t border-kiwi-200/50 dark:border-kiwi-800/30">
+                        <div>
+                          <p className="text-sm font-semibold text-surface-800 dark:text-surface-200">
+                            🧡 Cocina casera
+                          </p>
+                          <p className="text-xs text-surface-500">
+                            Sección propia, preventa y comisión reducida.
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => toggleHomeCook(selectedUser)}
+                          disabled={toggling}
+                          role="switch"
+                          aria-checked={selectedUser.merchantProfile?.isHomeCook === true}
+                          aria-label="Marcar como cocina casera"
+                          className={`relative h-8 w-14 shrink-0 rounded-full p-1 transition-colors disabled:opacity-50 ${
+                            selectedUser.merchantProfile?.isHomeCook === true
+                              ? 'bg-orange-500'
+                              : 'bg-surface-300 dark:bg-surface-600'
+                          }`}
+                        >
+                          <span
+                            className={`block h-6 w-6 rounded-full bg-white shadow transition-transform ${
+                              selectedUser.merchantProfile?.isHomeCook === true
                                 ? 'translate-x-6'
                                 : ''
                             }`}

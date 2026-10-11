@@ -46,7 +46,12 @@ import {
   hoverChip,
   hoverGhost,
   ThemeToggle,
+  SchedulePicker,
+  EMPTY_SCHEDULE,
+  isValidSchedule,
+  scheduleFields,
 } from '@kiwi/ui';
+import type { ScheduleValue } from '@kiwi/ui';
 import { findDeliveryZone, findNearestZone } from '@kiwi/types';
 
 interface CartItem extends MenuItem {
@@ -126,6 +131,8 @@ export default function MenuPage() {
   const [picking, setPicking] = useState<MenuItem | null>(null);
   const [picks, setPicks] = useState<Record<string, string[]>>({});
   const [pickError, setPickError] = useState<string | null>(null);
+  // Preventa (cocinas caseras): pedir hoy para recibir el día que toca.
+  const [schedule, setSchedule] = useState<ScheduleValue>(EMPTY_SCHEDULE);
 
   // Delivery info
   const [deliveryInfo, setDeliveryInfo] = useState<DeliveryInfo>({
@@ -275,6 +282,7 @@ export default function MenuPage() {
     setShowCheckout(false);
     setPaymentPending(false);
     setPaymentIntent(null);
+    setSchedule(EMPTY_SCHEDULE);
   }, [merchantId]);
 
   // Cart functions
@@ -427,12 +435,16 @@ export default function MenuPage() {
     : filteredItems;
 
   // Validate checkout
+  // Cocina casera cerrada hoy igual acepta preventa futura (ej. lunes pido
+  // para el jueves): el isOpen solo bloquea el "lo quiero ahora".
+  const schedulingFuture = schedule.mode === 'scheduled' && isValidSchedule(schedule);
   const canCheckout =
     deliveryInfo.address.trim().length > 0 &&
     deliveryInfo.zone.trim().length > 0 &&
     phoneDigits.length >= 8 &&
     deliveryInfo.name.trim().length > 0 &&
-    merchant?.isOpen !== false;
+    isValidSchedule(schedule) &&
+    (merchant?.isOpen !== false || schedulingFuture);
 
   // Anti-duplicados (doble tap con wifi caído = N pedidos): el state
   // llega tarde al segundo tap; el ref no. La key se reusa en reintentos
@@ -442,7 +454,7 @@ export default function MenuPage() {
   // Checkout handler
   const handleCheckout = useCallback(async () => {
     if (cart.length === 0 || !merchant || !canCheckout) return;
-    if (merchant.isOpen === false) return;
+    if (merchant.isOpen === false && !schedulingFuture) return;
 
     // Pago pendiente de un pedido ya creado: reintentar SOLO el pago.
     if (pendingOrderId) {
@@ -465,7 +477,7 @@ export default function MenuPage() {
         pickupAddress: merchant.address,
         deliveryAddress: deliveryInfo.address,
         deliveryZone: deliveryInfo.zone,
-        orderType: 'immediate',
+        ...scheduleFields(schedule),
         items: cart.map((item) => ({
           menuItemId: item.id,
           name: item.name,
@@ -566,6 +578,8 @@ export default function MenuPage() {
     deliveryInfo,
     deliveryCoords,
     canCheckout,
+    schedulingFuture,
+    schedule,
     paymentMethod,
     totalWithDelivery,
     phoneDigits,
@@ -885,6 +899,11 @@ export default function MenuPage() {
                 >
                   {merchant.isOpen ? 'Abierto' : 'Cerrado'}
                 </span>
+                {merchant.isHomeCook && (
+                  <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300">
+                    🧡 Cocina casera
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -1311,12 +1330,25 @@ export default function MenuPage() {
                   </div>
                 </div>
 
+                {/* Preventa (solo cocinas caseras): pedir hoy, recibir el día que toca */}
+                {merchant.isHomeCook && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-3">
+                      📅 ¿Para cuándo?
+                    </h3>
+                    <SchedulePicker
+                      value={schedule}
+                      onChange={setSchedule}
+                      hint="Acepta pedidos aunque hoy esté cerrada: programá para su día de venta."
+                    />
+                  </div>
+                )}
+
                 {/* Delivery Address */}
                 <div>
                   <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-3">
                     <MapPin className="h-4 w-4 inline" /> Dirección de entrega
                   </h3>
-
                   <AddressInput
                     value={deliveryInfo.address}
                     onChange={(address, coordinates) => {

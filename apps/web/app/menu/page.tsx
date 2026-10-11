@@ -163,7 +163,8 @@ export default function MenuManagementPage() {
         image: item.image,
         isPopular: item.isPopular,
         isAvailable: item.isAvailable,
-        // Clonar también los modificadores; sin esto un duplicado los pierde.
+        // Clonar también días y modificadores; sin esto un duplicado los pierde.
+        availableDays: (item as any).availableDays ?? [],
         variants: (item.variantGroups ?? []).map((g) => ({
           name: g.name,
           required: g.required,
@@ -741,6 +742,22 @@ export default function MenuManagementPage() {
                               {!item.isAvailable && (
                                 <span className="px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/50 text-xs font-medium text-red-700 dark:text-red-400">
                                   Agotado
+                                </span>
+                              )}
+                              {((item as any).availableDays ?? []).length > 0 && (
+                                <span
+                                  className="px-2 py-0.5 rounded-full bg-sky-100 dark:bg-sky-900/50 text-xs font-medium text-sky-700 dark:text-sky-400"
+                                  title="Días en que se muestra en la app de clientes"
+                                >
+                                  📅{' '}
+                                  {((item as any).availableDays as number[])
+                                    .slice()
+                                    .sort()
+                                    .map(
+                                      (d) =>
+                                        ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][d] ?? d,
+                                    )
+                                    .join(' · ')}
                                 </span>
                               )}
                               {(item.variantGroups ?? []).some((g) => g.options.length > 0) &&

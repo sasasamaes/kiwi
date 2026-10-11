@@ -14,6 +14,7 @@ export const MERCHANT_CATEGORIES = [
   'mariscos',
   'comida_rapida',
   'saludable',
+  'cocina_casera',
   'bar',
   'otro',
 ] as const;
@@ -29,6 +30,7 @@ export const MERCHANT_CATEGORY_LABELS: Record<MerchantCategoryId, string> = {
   mariscos: 'Mariscos',
   comida_rapida: 'Comida rápida',
   saludable: 'Saludable',
+  cocina_casera: 'Cocina casera',
   bar: 'Bares',
   otro: 'Otros',
 };
@@ -41,6 +43,16 @@ export function isMerchantCategory(value: unknown): value is MerchantCategoryId 
 export function tagMerchantCategory(businessName: unknown): MerchantCategoryId {
   const name = String(businessName ?? '').toLowerCase();
   if (!name.trim()) return 'otro';
+  // Cocina casera primero: es lo más específico ("cocina" solo iría a
+  // restaurante y taparía a las emprendedoras).
+  if (
+    name.includes('cocina casera') ||
+    name.includes('caser') ||
+    name.includes('emprend') ||
+    name.includes('hecho en casa') ||
+    name.includes('antojito')
+  )
+    return 'cocina_casera';
   if (name.includes('pizza')) return 'pizzeria';
   if (name.includes('ceviche') || name.includes('marisco') || name.includes('pescad'))
     return 'mariscos';

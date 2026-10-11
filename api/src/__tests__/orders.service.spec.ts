@@ -32,7 +32,7 @@ import { ProximityService } from '../orders/proximity.service';
 describe('OrdersService', () => {
   let service: OrdersService;
   let prisma: any;
-  let settingsStub: { getDriverCommissionPct: jest.Mock };
+  let settingsStub: { getDriverCommissionPct: jest.Mock; getHomeCookCommissionPct: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
@@ -72,7 +72,10 @@ describe('OrdersService', () => {
 
     jest.clearAllMocks();
 
-    settingsStub = { getDriverCommissionPct: jest.fn().mockResolvedValue(15) };
+    settingsStub = {
+      getDriverCommissionPct: jest.fn().mockResolvedValue(15),
+      getHomeCookCommissionPct: jest.fn().mockResolvedValue(5),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -653,6 +656,51 @@ describe('OrdersService', () => {
           items: [{ name: 'Mano', price: 100, quantity: 1, variants: [{ optionId: 'opt-x' }] }],
         }),
       ).rejects.toThrow('personalizados');
+    });
+
+    it('rechaza producto fuera de su día (availableDays)', async () => {
+      prisma.merchantProfile.findUnique.mockResolvedValue({ id: 'merchant-1', userId: 'user-1' });
+      // Un día que NO es hoy en CR: el pedido inmediato debe rebotar.
+      const { crWeekday } = jest.requireActual(
+        '../common/costa-rica-time',
+      ) as typeof import('../common/costa-rica-time');
+      const notToday = (crWeekday(new Date()) + 1) % 7;
+      prisma.menuItem.findMany.mockResolvedValue([
+        { id: 'item-jueves', price: 2900, availableDays: [notToday] },
+      ]);
+
+      await expect(
+        service.create('user-1', {
+          pickupAddress: 'A',
+          deliveryAddress: 'B',
+          items: [{ menuItemId: 'item-jueves', quantity: 1 }],
+        }),
+      ).rejects.toThrow('no se ofrece ese día');
+      expect(prisma.order.create).not.toHaveBeenCalled();
+    });
+
+    it('cocina casera usa la comisión reducida de emprendedores', async () => {
+      prisma.merchantProfile.findUnique.mockResolvedValue({
+        id: 'merchant-1',
+        userId: 'user-1',
+        isHomeCook: true,
+      });
+      prisma.menuItem.findMany.mockResolvedValue([]);
+      prisma.order.create.mockImplementation((args: any) =>
+        Promise.resolve({ id: 'o-hc', ...args.data }),
+      );
+
+      const order: any = await service.create('user-1', {
+        pickupAddress: 'Parque Nicoya',
+        deliveryAddress: 'Barrio San Martín',
+        distanceKm: 2.5,
+        kind: 'food',
+        productsTotal: 5000,
+      });
+
+      expect(settingsStub.getHomeCookCommissionPct).toHaveBeenCalled();
+      expect(order.commissionRate).toBe(0.05);
+      expect(order.commission).toBe(100); // 5% de 2000 (envío)
     });
   });
 

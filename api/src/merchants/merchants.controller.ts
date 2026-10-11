@@ -160,6 +160,15 @@ export class MerchantsController {
     return this.merchantsService.setCardPayments(id, body?.enabled === true);
   }
 
+  @Put(':id/home-cook')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Marcar/desmarcar como cocina casera (emprendedores)' })
+  async setHomeCook(@Param('id') id: string, @Body() body: { enabled: boolean }) {
+    return this.merchantsService.setHomeCook(id, body?.enabled === true);
+  }
+
   /**
    * Logo del comercio (foto de perfil). Multipart (Multer memoryStorage),
    * misma validación estricta que el resto de imágenes (magic bytes, 5MB).

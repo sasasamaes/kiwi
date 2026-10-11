@@ -76,6 +76,7 @@ export class UsersService {
               businessName: true,
               kycStatus: true,
               cardPaymentsEnabled: true,
+              isHomeCook: true,
               _count: { select: { orders: true } },
             },
           },

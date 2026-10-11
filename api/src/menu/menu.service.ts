@@ -7,6 +7,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { isOpenNow, offeredToday } from '../merchants/opening-hours';
 
 @Injectable()
 export class MenuService {
@@ -29,6 +30,8 @@ export class MenuService {
         openingHours: true,
         createdAt: true,
         cardPaymentsEnabled: true,
+        category: true,
+        isHomeCook: true,
       },
     });
 
@@ -93,13 +96,18 @@ export class MenuService {
       },
     });
 
-    // Group by category
-    const categories = [...new Set(items.map((item) => item.category))];
+    // Días disponibles: lo que no se ofrece hoy no se muestra (menú del día,
+    // "solo jueves"). Vacío = todos los días.
+    const offered = items.filter((item) => offeredToday((item as any).availableDays ?? []));
+
+    // Group by category (solo de lo visible hoy: sin pills vacías).
+    const categories = [...new Set(offered.map((item) => item.category))];
 
     return {
-      items: items.map((item) => ({
+      items: offered.map((item) => ({
         ...item,
         price: Number(item.price),
+        availableDays: (item as any).availableDays ?? [],
         variantGroups: (item as any).variantGroups.map((g: any) => ({
           ...g,
           options: g.options.map((o: any) => ({ ...o, priceDelta: Number(o.priceDelta) })),
@@ -202,6 +210,18 @@ export class MenuService {
     }
     if (data.isPopular !== undefined) out.isPopular = Boolean(data.isPopular);
     if (data.isAvailable !== undefined) out.isAvailable = Boolean(data.isAvailable);
+    // Días en que se ofrece (0=dom…6=sáb). Vacío/ausente = todos los días.
+    if (data.availableDays !== undefined) {
+      if (!Array.isArray(data.availableDays)) {
+        throw new BadRequestException('availableDays debe ser un arreglo');
+      }
+      const days: number[] = (data.availableDays as any[]).map((d: any) => Number(d));
+      const unique: number[] = [...new Set(days)];
+      if (unique.some((d) => !Number.isInteger(d) || d < 0 || d > 6)) {
+        throw new BadRequestException('availableDays: días inválidos (0–6)');
+      }
+      out.availableDays = unique;
+    }
 
     return out;
   }
@@ -438,19 +458,9 @@ export class MenuService {
   }
 
   /**
-   * Check if merchant is open based on opening hours
+   * Check if merchant is open based on opening hours (hora Costa Rica).
    */
   private isOpen(openingHours: any): boolean {
-    if (!openingHours) return true; // Default to open if no hours set
-
-    const now = new Date();
-    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-    const currentDay = dayNames[now.getDay()];
-    const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-
-    const todayHours = openingHours[currentDay];
-    if (!todayHours) return false;
-
-    return currentTime >= todayHours.open && currentTime <= todayHours.close;
+    return isOpenNow(openingHours);
   }
 }

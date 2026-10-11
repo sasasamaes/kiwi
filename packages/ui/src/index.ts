@@ -302,6 +302,14 @@ export type { AddressInputProps } from './AddressInput';
 export { DeliveryZoneSelect } from './DeliveryZoneSelect';
 export { ZonePicker } from './ZonePicker';
 export { DeliveryZonesMap } from './DeliveryZonesMap';
+export {
+  SchedulePicker,
+  EMPTY_SCHEDULE,
+  todayCR,
+  isValidSchedule,
+  scheduleFields,
+} from './SchedulePicker';
+export type { ScheduleValue } from './SchedulePicker';
 
 // ============================================
 //   ONVOPAY CHECKOUT

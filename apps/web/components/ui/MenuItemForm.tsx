@@ -70,7 +70,29 @@ interface MenuItemFormData {
   isPopular: boolean;
   isAvailable: boolean;
   variants: VariantGroupForm[];
+  /** Días 0=dom…6=sáb en que se ofrece. Vacío = todos los días. */
+  availableDays: number[];
 }
+
+const WEEKDAYS = [
+  { day: 1, label: 'Lun' },
+  { day: 2, label: 'Mar' },
+  { day: 3, label: 'Mié' },
+  { day: 4, label: 'Jue' },
+  { day: 5, label: 'Vie' },
+  { day: 6, label: 'Sáb' },
+  { day: 0, label: 'Dom' },
+];
+
+const toAvailableDays = (input: any): number[] => {
+  const raw = (input as any)?.availableDays;
+  if (!Array.isArray(raw)) return [];
+  return [
+    ...new Set(
+      raw.map((d: any) => Number(d)).filter((d) => Number.isInteger(d) && d >= 0 && d <= 6),
+    ),
+  ];
+};
 
 const toVariantForm = (input: any): VariantGroupForm[] => {
   const groups = input?.variantGroups ?? input?.variants ?? [];
@@ -115,6 +137,7 @@ export function MenuItemForm({
     isPopular: initialData?.isPopular || false,
     isAvailable: initialData?.isAvailable ?? true,
     variants: toVariantForm(initialData),
+    availableDays: toAvailableDays(initialData),
   });
 
   const [loading, setLoading] = useState(false);
@@ -135,6 +158,7 @@ export function MenuItemForm({
         isPopular: initialData.isPopular || false,
         isAvailable: initialData.isAvailable ?? true,
         variants: toVariantForm(initialData),
+        availableDays: toAvailableDays(initialData),
       });
     }
   }, [initialData, categories]);
@@ -441,8 +465,59 @@ export function MenuItemForm({
           </div>
         </div>
 
+        {/* Días disponibles (menú del día / "solo jueves") */}
+        <div>
+          <label className="mb-2 block text-sm font-medium text-surface-600 dark:text-surface-400">
+            Días disponibles
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {WEEKDAYS.map(({ day, label }) => {
+              const active = formData.availableDays.includes(day);
+              const allDays = formData.availableDays.length === 0;
+              return (
+                <motion.button
+                  key={day}
+                  type="button"
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      availableDays: active
+                        ? prev.availableDays.filter((d) => d !== day)
+                        : [...prev.availableDays, day],
+                    }))
+                  }
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                    active
+                      ? 'bg-kiwi-700 text-white'
+                      : 'bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400 hover:bg-surface-200 dark:hover:bg-surface-600'
+                  }`}
+                >
+                  {label}
+                </motion.button>
+              );
+            })}
+            {formData.availableDays.length > 0 && (
+              <motion.button
+                type="button"
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setFormData((prev) => ({ ...prev, availableDays: [] }))}
+                className="px-3 py-1.5 rounded-full text-xs font-medium text-kiwi-700 dark:text-kiwi-400 hover:underline"
+              >
+                Todos los días
+              </motion.button>
+            )}
+          </div>
+          <p className="text-xs text-surface-500 dark:text-surface-400 mt-2">
+            {formData.availableDays.length === 0
+              ? 'Se muestra todos los días.'
+              : 'Solo se muestra esos días en la app de clientes (ej. rollos de canela solo jueves).'}
+          </p>
+        </div>
+
         {/* Toggles */}
         <div className="flex gap-4">
+          {' '}
           {/* isPopular */}
           <div className="flex-1 rounded-xl bg-surface-50 dark:bg-surface-900 p-4">
             <div className="flex items-center justify-between">
@@ -468,7 +543,6 @@ export function MenuItemForm({
               </motion.button>
             </div>
           </div>
-
           {/* isAvailable */}
           <div className="flex-1 rounded-xl bg-surface-50 dark:bg-surface-900 p-4">
             <div className="flex items-center justify-between">

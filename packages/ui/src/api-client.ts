@@ -86,7 +86,13 @@ class ApiClient {
   /**
    * Renueva la sesión con el refresh rotativo (un solo vuelo compartido).
    * Devuelve true si hay access nuevo. False = login de nuevo.
+   * Público para que AuthProvider pueda restaurar sesión al arrancar
+   * aunque el access falte o esté vencido (sesión de 7 días).
    */
+  async restoreSession(): Promise<boolean> {
+    return this.refreshSession();
+  }
+
   private refreshSession(): Promise<boolean> {
     if (!this.refreshFlight) {
       this.refreshFlight = (async () => {
@@ -150,7 +156,7 @@ class ApiClient {
     }
 
     if (!response.ok) {
-      // Access vencido (15 min) pero con refresh vivo: renovar y reintentar
+      // Access vencido (7 días) pero con refresh vivo: renovar y reintentar
       // UNA vez antes de mandar a login. Sin esto cada expiración sacaba al
       // usuario aunque su sesión siguiera válida.
       if (
@@ -300,6 +306,14 @@ class ApiClient {
   /** Activa/apaga cobro con tarjeta/SINPE de un comercio (tras KYC de Onvo). */
   async setMerchantCardPayments(merchantId: string, enabled: boolean) {
     return this.request<any>(`/merchants/${merchantId}/card-payments`, {
+      method: 'PUT',
+      body: { enabled },
+    });
+  }
+
+  /** Marca/desmarca un comercio como cocina casera (admin, emprendedores). */
+  async setMerchantHomeCook(merchantId: string, enabled: boolean) {
+    return this.request<any>(`/merchants/${merchantId}/home-cook`, {
       method: 'PUT',
       body: { enabled },
     });
@@ -468,12 +482,20 @@ class ApiClient {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
     try {
-      const response = await fetch(`${this.baseUrl}/menu/my/image`, {
+      let response = await fetch(`${this.baseUrl}/menu/my/image`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${this.getToken() ?? ''}` },
         body: fd,
         signal: controller.signal,
       });
+      if (response.status === 401 && (await this.refreshSession())) {
+        response = await fetch(`${this.baseUrl}/menu/my/image`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${this.getToken() ?? ''}` },
+          body: fd,
+          signal: controller.signal,
+        });
+      }
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
         throw new Error((data as any)?.message || `Error al subir imagen (${response.status})`);
@@ -505,12 +527,20 @@ class ApiClient {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
     try {
-      const response = await fetch(`${this.baseUrl}/orders/${orderId}/proof-photo`, {
+      let response = await fetch(`${this.baseUrl}/orders/${orderId}/proof-photo`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${this.getToken() ?? ''}` },
         body: fd,
         signal: controller.signal,
       });
+      if (response.status === 401 && (await this.refreshSession())) {
+        response = await fetch(`${this.baseUrl}/orders/${orderId}/proof-photo`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${this.getToken() ?? ''}` },
+          body: fd,
+          signal: controller.signal,
+        });
+      }
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
         throw new Error((data as any)?.message || `Error al subir foto (${response.status})`);
@@ -591,12 +621,20 @@ class ApiClient {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
     try {
-      const response = await fetch(`${this.baseUrl}/drivers/me/photo`, {
+      let response = await fetch(`${this.baseUrl}/drivers/me/photo`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${this.getToken() ?? ''}` },
         body: fd,
         signal: controller.signal,
       });
+      if (response.status === 401 && (await this.refreshSession())) {
+        response = await fetch(`${this.baseUrl}/drivers/me/photo`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${this.getToken() ?? ''}` },
+          body: fd,
+          signal: controller.signal,
+        });
+      }
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
         throw new Error((data as any)?.message || `Error al subir foto (${response.status})`);
@@ -651,12 +689,20 @@ class ApiClient {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
     try {
-      const response = await fetch(`${this.baseUrl}/merchants/me/logo`, {
+      let response = await fetch(`${this.baseUrl}/merchants/me/logo`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${this.getToken() ?? ''}` },
         body: fd,
         signal: controller.signal,
       });
+      if (response.status === 401 && (await this.refreshSession())) {
+        response = await fetch(`${this.baseUrl}/merchants/me/logo`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${this.getToken() ?? ''}` },
+          body: fd,
+          signal: controller.signal,
+        });
+      }
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
         throw new Error((data as any)?.message || `Error al subir logo (${response.status})`);
@@ -687,12 +733,20 @@ class ApiClient {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
     try {
-      const response = await fetch(`${this.baseUrl}/customers/me/avatar`, {
+      let response = await fetch(`${this.baseUrl}/customers/me/avatar`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${this.getToken() ?? ''}` },
         body: fd,
         signal: controller.signal,
       });
+      if (response.status === 401 && (await this.refreshSession())) {
+        response = await fetch(`${this.baseUrl}/customers/me/avatar`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${this.getToken() ?? ''}` },
+          body: fd,
+          signal: controller.signal,
+        });
+      }
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
         throw new Error((data as any)?.message || `Error al subir foto (${response.status})`);
@@ -2032,6 +2086,8 @@ export interface MenuItem {
   isAvailable: boolean;
   sortOrder: number;
   variantGroups?: VariantGroup[];
+  /** Días 0=dom…6=sáb en que se ofrece. Vacío/ausente = todos los días. */
+  availableDays?: number[];
 }
 
 export interface MerchantPublicProfile {
@@ -2047,6 +2103,9 @@ export interface MerchantPublicProfile {
   activeOrders: number;
   isOpen: boolean;
   openingHours: any;
+  category?: string;
+  /** Cocina casera (emprendedores): sección propia + preventa. */
+  isHomeCook?: boolean;
 }
 
 export interface DriverProposal {

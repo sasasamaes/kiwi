@@ -235,6 +235,41 @@ export default function Dashboard() {
           </div>
         </motion.div>
 
+        {/* Cocina casera: guía contextual para emprendedores */}
+        {(user as any)?.merchantProfile?.isHomeCook === true && (
+          <motion.div
+            className="mb-8 rounded-2xl border border-orange-500/30 bg-gradient-to-br from-orange-500/10 via-white to-white dark:from-orange-500/10 dark:via-surface-800 dark:to-surface-800 p-5 shadow-soft"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+          >
+            <p className="font-display font-bold text-surface-800 dark:text-surface-100">
+              🧡 Sos cocina casera: vendé aunque no abras todos los días
+            </p>
+            <ul className="mt-2 space-y-1 text-sm text-surface-600 dark:text-surface-300">
+              <li>
+                • En{' '}
+                <Link href="/menu" className="font-semibold text-kiwi-700 hover:underline">
+                  Menú
+                </Link>
+                , marcá en cada producto los <strong>Días disponibles</strong> (ej. rollos solo
+                jueves).
+              </li>
+              <li>
+                • Tus clientes pueden pedir por adelantado: la preventa llega como pedido
+                programado.
+              </li>
+              <li>
+                • En{' '}
+                <Link href="/perfil" className="font-semibold text-kiwi-700 hover:underline">
+                  Perfil
+                </Link>{' '}
+                definí tus horarios por día: cerrada igual recibís preventas futuras.
+              </li>
+            </ul>
+          </motion.div>
+        )}
+
         {/* Quick Actions */}
         <StaggerContainer className="mb-8 grid gap-4 md:grid-cols-3">
           <StaggerItem>

@@ -6,6 +6,8 @@ export interface PlatformSettings {
   platform: {
     name: string;
     commission: number;
+    /** Comisión % para cocinas caseras (emprendedores). Default = standard. */
+    homeCookCommission: number;
     minimumOrder: number;
     maximumDeliveryDistance: number;
     freeDeliveryThreshold: number;
@@ -58,6 +60,7 @@ export const DEFAULT_SETTINGS: PlatformSettings = {
   platform: {
     name: 'Kiwi',
     commission: 15,
+    homeCookCommission: 15,
     minimumOrder: 2000,
     maximumDeliveryDistance: 20,
     freeDeliveryThreshold: 10000,
@@ -166,6 +169,10 @@ export class SettingsService {
     };
     // Saneos numéricos mínimos
     next.platform.commission = Math.min(Math.max(Number(next.platform.commission) || 0, 0), 100);
+    next.platform.homeCookCommission = Math.min(
+      Math.max(Number(next.platform.homeCookCommission) || 0, 0),
+      100,
+    );
     next.platform.minimumOrder = Math.max(Math.round(Number(next.platform.minimumOrder) || 0), 0);
     next.security.sessionTimeout = Math.min(
       Math.max(Math.round(Number(next.security.sessionTimeout) || 30), 5),
@@ -230,6 +237,19 @@ export class SettingsService {
     const all = await this.getAll();
     const raw = Number(all.platform?.commission);
     if (!Number.isFinite(raw)) return 15;
+    return Math.min(Math.max(raw, 0), 100);
+  }
+
+  /**
+   * % de comisión para pedidos de cocinas caseras (incentivo emprendedor).
+   * Lo edita el admin en /admin/settings; default = tasa standard (sin
+   * descuento hasta que el admin lo baje). Igual que la standard, queda
+   * guardada por pedido: solo afecta pedidos NUEVOS.
+   */
+  async getHomeCookCommissionPct(): Promise<number> {
+    const all = await this.getAll();
+    const raw = Number(all.platform?.homeCookCommission);
+    if (!Number.isFinite(raw)) return this.getDriverCommissionPct();
     return Math.min(Math.max(raw, 0), 100);
   }
 

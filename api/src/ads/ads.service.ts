@@ -8,6 +8,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { isMerchantCategory } from '../merchants/merchant-category';
+import { isOpenNow } from '../merchants/opening-hours';
 
 const DEFAULT_PRICES = {
   spotlight: 1500,
@@ -52,16 +53,9 @@ export class AdsService {
   }
 
   private isOpen(openingHours: any): boolean {
-    if (!openingHours) return true;
-    try {
-      const now = new Date();
-      // Formato esperado { days: { mon: [open, close] } } o array; si no se
-      // entiende, no bloquear: se muestra abierto.
-      if (typeof openingHours === 'object' && openingHours.days) return true;
-      return true;
-    } catch {
-      return true;
-    }
+    // Lógica real en hora CR (ver opening-hours.ts): sin horarios → abierto,
+    // día ausente → cerrado. Antes era un stub que siempre decía abierto.
+    return isOpenNow(openingHours);
   }
 
   /** Haversine en km (puntos de referencia WGS84, suficiente para ordenar). */
@@ -148,6 +142,7 @@ export class AdsService {
         createdAt: true,
         kycStatus: true,
         category: true,
+        isHomeCook: true,
       },
       take: 100,
     });
@@ -187,16 +182,18 @@ export class AdsService {
       const aVerified = (a as any).kycStatus === 'approved' ? 0 : 1;
       const bVerified = (b as any).kycStatus === 'approved' ? 0 : 1;
       if (aVerified !== bVerified) return aVerified - bVerified;
-      // 2. Cercanía al cliente, solo si compartió ubicación.
+      // 2. Abiertos hoy primero (cocinas caseras "solo jueves" no entierran
+      // el feed el resto de la semana… ni al revés: lo abierto va arriba).
+      if (a.isOpen !== b.isOpen) return a.isOpen ? -1 : 1;
+      // 3. Cercanía al cliente, solo si compartió ubicación.
       if (hasCoords) {
         const ad = a.distanceKm ?? Number.POSITIVE_INFINITY;
         const bd = b.distanceKm ?? Number.POSITIVE_INFINITY;
         if (ad !== bd) return ad - bd;
       }
-      // 3. Alfabético por nombre (si no, el orden parece aleatorio).
+      // 4. Alfabético por nombre (si no, el orden parece aleatorio).
       const alpha = a.businessName.localeCompare(b.businessName, 'es', { sensitivity: 'base' });
       if (alpha !== 0) return alpha;
-      if (a.isOpen !== b.isOpen) return a.isOpen ? -1 : 1;
       if (a.rating !== b.rating) return b.rating - a.rating;
       return 0;
     });

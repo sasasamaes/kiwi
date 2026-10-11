@@ -40,6 +40,7 @@ import {
   Sandwich,
   Salad,
   Beer,
+  CookingPot,
 } from 'lucide-react';
 import { BottomNav } from './components/BottomNav';
 import { PushOptInCard } from './components/PushOptInCard';
@@ -56,6 +57,7 @@ interface DiscoverItem {
   isSponsored: boolean;
   campaignId?: string | null;
   distanceKm?: number | null;
+  isHomeCook?: boolean;
 }
 
 /** Rating Decimal→string-safe: el backend puede serializar Decimal como string. */
@@ -71,6 +73,7 @@ const CATEGORIES = [
   { id: 'mariscos', label: 'Mariscos', icon: Fish },
   { id: 'comida_rapida', label: 'Rápida', icon: Sandwich },
   { id: 'saludable', label: 'Saludable', icon: Salad },
+  { id: 'cocina_casera', label: 'Cocina casera', icon: CookingPot },
   { id: 'bar', label: 'Bares', icon: Beer },
 ];
 
@@ -484,6 +487,11 @@ export default function ClientHome() {
                             Patrocinado
                           </span>
                         )}
+                        {it.isHomeCook && (
+                          <span className="text-[10px] font-semibold bg-orange-500/20 text-orange-700 dark:text-orange-300 rounded-full px-2 py-0.5 shrink-0">
+                            🧡 Casera
+                          </span>
+                        )}
                       </div>
                       <p className="text-xs text-surface-500 dark:text-surface-400 truncate">
                         {it.address}
@@ -547,6 +555,16 @@ export default function ClientHome() {
                   className="flex items-center justify-center gap-2 rounded-xl border border-kiwi-600/30 px-4 py-3 text-sm font-semibold text-kiwi-700 dark:text-kiwi-300"
                 >
                   <Store className="h-4 w-4" /> Usar Kiwi en mi negocio
+                </a>
+                <a
+                  href={waLink(
+                    'Hola Kiwi, cocino en casa (emprendimiento) y quiero vender por la app',
+                  )}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 rounded-xl border border-orange-500/40 bg-orange-500/10 px-4 py-3 text-sm font-semibold text-orange-700 dark:text-orange-300"
+                >
+                  <CookingPot className="h-4 w-4" /> 🧡 Cocino en casa, quiero vender
                 </a>
               </div>
             </div>

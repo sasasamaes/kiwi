@@ -26,6 +26,7 @@ export default function SettingsPage() {
     platform: {
       name: 'Kiwi',
       commission: 15,
+      homeCookCommission: 15,
       minimumOrder: 2000,
       maximumDeliveryDistance: 20,
       freeDeliveryThreshold: 10000,
@@ -225,6 +226,29 @@ export default function SettingsPage() {
               />
               <p className="mt-1 text-xs text-surface-400">
                 Rige para pedidos nuevos (cada pedido guarda su tasa). El comercio no paga comisión.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
+                🧡 Comisión cocina casera (% del viaje)
+              </label>
+              <input
+                type="number"
+                value={(settings.platform as any).homeCookCommission ?? 15}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    platform: {
+                      ...settings.platform,
+                      homeCookCommission: Number(e.target.value),
+                    } as any,
+                  })
+                }
+                className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
+              />
+              <p className="mt-1 text-xs text-surface-400">
+                Incentivo a emprendedores. Igual a la standard = sin descuento. Solo pedidos nuevos.
               </p>
             </div>
 

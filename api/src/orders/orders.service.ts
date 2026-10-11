@@ -18,6 +18,7 @@ import { ProximityService, haversineKm } from './proximity.service';
 import { SettingsService } from '../settings/settings.service';
 import { findDeliveryZone, findNearestZone, detectDeliveryZoneFromText } from './delivery-zones';
 import { parseScheduledCR } from '../common/costa-rica-time';
+import { offeredToday } from '../merchants/opening-hours';
 import { normalizeCRPhone } from '../common/phone';
 import { isKycRequired } from '../feature-flags/feature-flags';
 import { ImageUploadService } from '../menu/image-upload.service';
@@ -311,6 +312,13 @@ export class OrdersService {
           if (!menuItem) {
             throw new BadRequestException('Producto del menú no válido para este comercio');
           }
+          // Días disponibles: en preventa se valida contra el día de entrega,
+          // en inmediato contra hoy. Sin esto se podría pedir el jueves algo
+          // de "solo lunes" programándolo mal.
+          const fulfillment = scheduledDate ?? new Date();
+          if (!offeredToday((menuItem as any).availableDays ?? [], fulfillment)) {
+            throw new BadRequestException(`"${menuItem.name}" no se ofrece ese día`);
+          }
           const selectedVariants: Array<{ group: string; option: string; priceDelta: number }> = [];
           let unitPrice = Number(menuItem.price);
           const requested = Array.isArray(item?.variants) ? item.variants : [];
@@ -426,8 +434,13 @@ export class OrdersService {
     // (/admin/settings). El medio de pago (payWithCredit) solo elige cómo
     // paga el comercio, no cambia la tasa. La tasa queda guardada por pedido
     // (commissionRate): cambiar el setting solo afecta pedidos NUEVOS.
+    // Cocinas caseras pagan la tasa reducida de emprendedores (si el admin
+    // la bajó; si no, es la misma standard).
     // El servidor pone el monto, el cliente nunca lo decide.
-    const commissionPct = await this.settingsService.getDriverCommissionPct();
+    const isHomeCook = (merchantProfile as any).isHomeCook === true;
+    const commissionPct = isHomeCook
+      ? await this.settingsService.getHomeCookCommissionPct()
+      : await this.settingsService.getDriverCommissionPct();
     const commissionRate = commissionPct / 100;
     const commission = Math.round(tripPrice * commissionRate);
     const driverPayout = tripPrice - commission;

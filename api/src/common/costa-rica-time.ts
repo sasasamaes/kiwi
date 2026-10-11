@@ -50,8 +50,7 @@ export function toCRDateKey(d: Date | string): string {
 /**
  * Parsea fecha de input datetime-local ("2026-09-22T18:00", sin offset)
  * como hora de Costa Rica. Si ya trae offset/Z se respeta.
- */
-export function parseScheduledCR(raw: unknown): Date | null {
+ */ export function parseScheduledCR(raw: unknown): Date | null {
   if (typeof raw !== 'string' || !raw.trim()) return null;
   const s = raw.trim();
   let d: Date;
@@ -63,4 +62,15 @@ export function parseScheduledCR(raw: unknown): Date | null {
     d = new Date(`${s}-06:00`);
   }
   return isNaN(d.getTime()) ? null : d;
+}
+
+/** Día de la semana 0=dom…6=sáb en muro CR (para horarios y disponibles). */
+export function crWeekday(date: Date = new Date()): number {
+  return new Date(date.getTime() + CR_OFFSET_MS).getUTCDay();
+}
+
+/** HH:MM actual en muro CR (para comparar contra openingHours). */
+export function crTimeHHMM(date: Date = new Date()): string {
+  const cr = new Date(date.getTime() + CR_OFFSET_MS);
+  return `${String(cr.getUTCHours()).padStart(2, '0')}:${String(cr.getUTCMinutes()).padStart(2, '0')}`;
 }
