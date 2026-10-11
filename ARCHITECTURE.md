@@ -185,13 +185,13 @@ Las acciones sin red (cambios de estado, formularios) entran a la cola local →
 
 ### Variables críticas
 
-| Variable                        | Dónde             | Uso                                |
-| ------------------------------- | ----------------- | ---------------------------------- |
-| `DATABASE_URL`                  | Render (API)      | PostgreSQL                         |
-| `JWT_SECRET` / `JWT_EXPIRES_IN` | Render (API)      | Sesiones                           |
-| `SEED_DEMO_DATA`                | Render (API)      | `false` = DB limpia sin datos demo |
-| `NEXT_PUBLIC_API_URL`           | Vercel (cada app) | Base de la API                     |
-| `SENTRY_DSN`, Firebase, OnvoPay | Render/Vercel     | Integraciones opcionales           |
+| Variable                                                          | Dónde             | Uso                                |
+| ----------------------------------------------------------------- | ----------------- | ---------------------------------- |
+| `DATABASE_URL`                                                    | Render (API)      | PostgreSQL                         |
+| `JWT_SECRET` / `JWT_ACCESS_EXPIRES_IN` / `JWT_REFRESH_EXPIRES_IN` | Render (API)      | Sesiones (7 días logueado)         |
+| `SEED_DEMO_DATA`                                                  | Render (API)      | `false` = DB limpia sin datos demo |
+| `NEXT_PUBLIC_API_URL`                                             | Vercel (cada app) | Base de la API                     |
+| `SENTRY_DSN`, Firebase, OnvoPay                                   | Render/Vercel     | Integraciones opcionales           |
 
 ---
 

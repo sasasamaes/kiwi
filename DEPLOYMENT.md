@@ -63,7 +63,8 @@ Configuradas en **Render Dashboard → kiwi-api → Environment**:
 ```bash
 DATABASE_URL="postgresql://..."        # Render PostgreSQL
 JWT_SECRET="..."                       # secreto fuerte, no compartir
-JWT_EXPIRES_IN="7d"
+JWT_ACCESS_EXPIRES_IN="7d"           # sesión del comercio: 1 semana logueado
+JWT_REFRESH_EXPIRES_IN="7d"          # refresh rotativo, ventana deslizante de 7 días
 NODE_ENV="production"
 SEED_DEMO_DATA="true"                  # false para un DB limpio
 CLOUDINARY_URL="cloudinary://KEY:SECRET@CLOUD"  # fotos de menú y evidencia 1+1; sin esto /menu/my/image-status da {enabled:false} y las subidas responden 503

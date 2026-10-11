@@ -348,9 +348,11 @@ export class AuthService {
   }
 
   /**
-   * Par de tokens: access corto (15 min, lleva tokenVersion para revocación
-   * inmediata) + refresh opaco rotativo (7 días, un solo uso). En DB solo
-   * vive el hash del refresh: si se filtra, los tokens vivos no sirven.
+   * Par de tokens: access de 7 días (lleva tokenVersion para revocación
+   * inmediata vía logout global) + refresh opaco rotativo (7 días, un solo
+   * uso, ventana deslizante). En DB solo vive el hash del refresh: si se
+   * filtra, los tokens vivos no sirven. Con esto el comercio queda logueado
+   * una semana sin reingresar credenciales.
    */
   private async generateTokens(user: { id: string; email: string | null; role: string }) {
     const fresh = await this.prisma.user.findUnique({
@@ -365,7 +367,7 @@ export class AuthService {
     };
 
     const accessToken = this.jwtService.sign(payload, {
-      expiresIn: this.configService.get<string>('JWT_ACCESS_EXPIRES_IN', '15m') as any,
+      expiresIn: this.configService.get<string>('JWT_ACCESS_EXPIRES_IN', '7d') as any,
     });
 
     const refreshValue = randomBytes(48).toString('hex');
@@ -381,7 +383,7 @@ export class AuthService {
     return {
       accessToken,
       refreshToken: refreshValue,
-      expiresIn: this.configService.get<string>('JWT_ACCESS_EXPIRES_IN', '15m'),
+      expiresIn: this.configService.get<string>('JWT_ACCESS_EXPIRES_IN', '7d'),
     };
   }
 
@@ -455,7 +457,7 @@ export class AuthService {
 
   /**
    * Logout global: revoca todos los refresh y sube tokenVersion (mata los
-   * access vivos, que igual expiran en 15 min). Cerrar sesión cierra en
+   * access vivos, que igual expiran en 7 días). Cerrar sesión cierra en
    * todos los dispositivos.
    */
   async logout(userId: string) {

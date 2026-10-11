@@ -135,7 +135,8 @@ We use Prisma with PostgreSQL. Key models:
 ```env
 DATABASE_URL=postgresql://...
 JWT_SECRET=your-secret-key
-JWT_EXPIRES_IN=7d
+JWT_ACCESS_EXPIRES_IN=7d
+JWT_REFRESH_EXPIRES_IN=7d
 PORT=3000
 ```
 

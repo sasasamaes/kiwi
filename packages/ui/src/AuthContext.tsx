@@ -23,17 +23,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check for existing session
+    // Check for existing session (válida 7 días). El access vive en
+    // localStorage; si venció pero el refresh sigue vivo, getProfile lo
+    // renueva solo vía api-client. Solo un 401 real cierra la sesión:
+    // un error de red (Render cold start, offline) NO desloguea.
     const checkAuth = async () => {
       try {
-        const token = api.getToken();
-        if (token) {
+        if (api.getToken() || api.getRefreshToken()) {
           const userData = await api.getProfile();
           setUser(userData);
+        } else {
+          setLoading(false);
+          return;
         }
-      } catch (error) {
-        // Token invalid or expired
-        api.logout();
+      } catch (error: any) {
+        // 401 = sesión muerta (refresh vencido/revocado): limpiar.
+        // Cualquier otro error (red, timeout, 5xx) conserva los tokens
+        // para reintentar en la próxima navegación.
+        if (error?.status === 401) {
+          api.logout();
+        }
       } finally {
         setLoading(false);
       }
