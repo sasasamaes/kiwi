@@ -17,7 +17,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { ProximityService, haversineKm } from './proximity.service';
 import { SettingsService } from '../settings/settings.service';
 import { findDeliveryZone, findNearestZone, detectDeliveryZoneFromText } from './delivery-zones';
-import { parseScheduledCR } from '../common/costa-rica-time';
+import { parseScheduledCR, toCRDateKey } from '../common/costa-rica-time';
 import { offeredToday } from '../merchants/opening-hours';
 import { normalizeCRPhone } from '../common/phone';
 import { isKycRequired } from '../feature-flags/feature-flags';
@@ -318,6 +318,42 @@ export class OrdersService {
           const fulfillment = scheduledDate ?? new Date();
           if (!offeredToday((menuItem as any).availableDays ?? [], fulfillment)) {
             throw new BadRequestException(`"${menuItem.name}" no se ofrece ese día`);
+          }
+          // Stock por día de venta: cada día CR nuevo el stock vuelve al
+          // lote (dailyQty). Luego se descuenta atómico para no sobrevender
+          // con pedidos concurrentes (50 rollos son 50).
+          const dayKey = toCRDateKey(fulfillment);
+          let row: any = menuItem;
+          const daily = row.dailyQty as number | null;
+          if (daily != null && row.stockDay !== dayKey) {
+            await this.prisma.menuItem.updateMany({
+              where: { id: row.id, stockDay: row.stockDay },
+              data: { stockQty: daily, stockDay: dayKey },
+            });
+            const fresh = await this.prisma.menuItem.findUnique({ where: { id: row.id } });
+            if (fresh) {
+              row = fresh;
+              menuById.set(row.id, fresh as any);
+            }
+          }
+          const stock = row.stockQty as number | null;
+          if (stock != null) {
+            const took = await this.prisma.menuItem.updateMany({
+              where: { id: row.id, stockQty: { gte: quantity } },
+              data: { stockQty: { decrement: quantity } },
+            });
+            if (took.count === 0) {
+              const left = await this.prisma.menuItem.findUnique({
+                where: { id: row.id },
+                select: { stockQty: true },
+              });
+              const n = left?.stockQty ?? 0;
+              throw new BadRequestException(
+                n > 0
+                  ? `Solo quedan ${n} de "${row.name}" — bajá la cantidad`
+                  : `"${row.name}" se agotó`,
+              );
+            }
           }
           const selectedVariants: Array<{ group: string; option: string; priceDelta: number }> = [];
           let unitPrice = Number(menuItem.price);

@@ -291,6 +291,13 @@ export default function MenuPage() {
     const unitPrice = unitPriceFor(Number(item.price), selected);
     events.menu.itemAdded(item.id, item.name, unitPrice);
     setCart((prev) => {
+      // Stock del día: no deja pedir más de lo que queda (el backend
+      // revalida atómico; esto es solo para no frustrar en el +).
+      const stock = (item as any).stockQty as number | null | undefined;
+      if (typeof stock === 'number') {
+        const inCart = prev.filter((c) => c.id === item.id).reduce((s, c) => s + c.quantity, 0);
+        if (inCart >= stock) return prev;
+      }
       const existing = prev.find((c) => c.lineId === lineId);
       if (existing) {
         return prev.map((c) => (c.lineId === lineId ? { ...c, quantity: c.quantity + 1 } : c));
@@ -1035,6 +1042,11 @@ export default function MenuPage() {
                                 {item.description}
                               </p>
                             )}
+                            {(item as any).stockQty != null && (item as any).stockQty <= 10 && (
+                              <p className="mt-1 text-xs font-semibold text-orange-600 dark:text-orange-300">
+                                ¡Solo quedan {(item as any).stockQty} hoy!
+                              </p>
+                            )}
                           </div>
                         </div>
                         <div className="flex items-center justify-between mt-3">
@@ -1066,7 +1078,11 @@ export default function MenuPage() {
                               onSuccess={() => setCartBounceKey((k) => k + 1)}
                               className="flex h-10 w-10 items-center justify-center rounded-full bg-kiwi-700 text-white"
                               onClick={() => addToCart(item)}
-                              disabled={!merchant.isOpen}
+                              disabled={
+                                !merchant.isOpen ||
+                                ((item as any).stockQty != null &&
+                                  quantity >= (item as any).stockQty)
+                              }
                             >
                               +
                             </TapButton>

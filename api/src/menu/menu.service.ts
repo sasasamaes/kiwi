@@ -7,6 +7,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { toCRDateKey } from '../common/costa-rica-time';
 import { isOpenNow, offeredToday } from '../merchants/opening-hours';
 
 @Injectable()
@@ -98,7 +99,9 @@ export class MenuService {
 
     // Días disponibles: lo que no se ofrece hoy no se muestra (menú del día,
     // "solo jueves"). Vacío = todos los días.
-    const offered = items.filter((item) => offeredToday((item as any).availableDays ?? []));
+    const offered = items.filter(
+      (item) => offeredToday((item as any).availableDays ?? []) && (item as any).stockQty !== 0,
+    );
 
     // Group by category (solo de lo visible hoy: sin pills vacías).
     const categories = [...new Set(offered.map((item) => item.category))];
@@ -210,6 +213,20 @@ export class MenuService {
     }
     if (data.isPopular !== undefined) out.isPopular = Boolean(data.isPopular);
     if (data.isAvailable !== undefined) out.isAvailable = Boolean(data.isAvailable);
+    // Stock por día de venta (ej. 50 rollos). Null/vacío = sin límite.
+    for (const key of ['stockQty', 'dailyQty'] as const) {
+      if (data[key] !== undefined) {
+        if (data[key] === null || data[key] === '') {
+          out[key] = null;
+        } else {
+          const n = Math.floor(Number(data[key]));
+          if (!Number.isFinite(n) || n < 0 || n > 999999) {
+            throw new BadRequestException(`${key} inválido (0–999999)`);
+          }
+          out[key] = n;
+        }
+      }
+    }
     // Días en que se ofrece (0=dom…6=sáb). Vacío/ausente = todos los días.
     if (data.availableDays !== undefined) {
       if (!Array.isArray(data.availableDays)) {
@@ -374,6 +391,11 @@ export class MenuService {
     const variants = MenuService.normalizeVariants(data);
     if (Object.keys(input).length === 0 && variants === undefined) {
       throw new BadRequestException('Nada que actualizar');
+    }
+    // Si el comercio toca el stock a mano, el día vigente es hoy (hora CR):
+    // evita que la reposición automática del lote lo pise con el día viejo.
+    if (input.stockQty !== undefined || input.dailyQty !== undefined) {
+      input.stockDay = toCRDateKey(new Date());
     }
 
     return this.prisma.$transaction(async (tx) => {

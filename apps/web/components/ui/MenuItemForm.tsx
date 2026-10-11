@@ -72,6 +72,9 @@ interface MenuItemFormData {
   variants: VariantGroupForm[];
   /** Días 0=dom…6=sáb en que se ofrece. Vacío = todos los días. */
   availableDays: number[];
+  /** Stock del día (null = sin límite). dailyQty = lote que se repone solo. */
+  stockQty: number | null;
+  dailyQty: number | null;
 }
 
 const WEEKDAYS = [
@@ -92,6 +95,14 @@ const toAvailableDays = (input: any): number[] => {
       raw.map((d: any) => Number(d)).filter((d) => Number.isInteger(d) && d >= 0 && d <= 6),
     ),
   ];
+};
+
+/** Cantidad de stock o null (= sin límite). */
+const toStockQty = (input: any, key: 'stockQty' | 'dailyQty'): number | null => {
+  const v = (input as any)?.[key];
+  if (v === null || v === undefined || v === '') return null;
+  const n = Math.floor(Number(v));
+  return Number.isFinite(n) && n >= 0 ? n : null;
 };
 
 const toVariantForm = (input: any): VariantGroupForm[] => {
@@ -138,6 +149,8 @@ export function MenuItemForm({
     isAvailable: initialData?.isAvailable ?? true,
     variants: toVariantForm(initialData),
     availableDays: toAvailableDays(initialData),
+    stockQty: toStockQty(initialData, 'stockQty'),
+    dailyQty: toStockQty(initialData, 'dailyQty'),
   });
 
   const [loading, setLoading] = useState(false);
@@ -159,6 +172,8 @@ export function MenuItemForm({
         isAvailable: initialData.isAvailable ?? true,
         variants: toVariantForm(initialData),
         availableDays: toAvailableDays(initialData),
+        stockQty: toStockQty(initialData, 'stockQty'),
+        dailyQty: toStockQty(initialData, 'dailyQty'),
       });
     }
   }, [initialData, categories]);
@@ -513,6 +528,55 @@ export function MenuItemForm({
               ? 'Se muestra todos los días.'
               : 'Solo se muestra esos días en la app de clientes (ej. rollos de canela solo jueves).'}
           </p>
+        </div>
+
+        {/* Cantidad por día de venta (ej. 50 rollos cada jueves) */}
+        <div>
+          <label className="mb-2 block text-sm font-medium text-surface-600 dark:text-surface-400">
+            Cantidad por día de venta
+          </label>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <input
+                type="number"
+                min={0}
+                max={999999}
+                value={formData.dailyQty ?? ''}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setFormData((prev) => ({
+                    ...prev,
+                    dailyQty: v === '' ? null : Math.max(0, Math.floor(Number(v) || 0)),
+                  }));
+                }}
+                placeholder="Ej: 50"
+                className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20 transition-all"
+              />
+              <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">
+                Lote del día: cada día se repone solo a esta cantidad.
+              </p>
+            </div>
+            <div>
+              <input
+                type="number"
+                min={0}
+                max={999999}
+                value={formData.stockQty ?? ''}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setFormData((prev) => ({
+                    ...prev,
+                    stockQty: v === '' ? null : Math.max(0, Math.floor(Number(v) || 0)),
+                  }));
+                }}
+                placeholder="Stock actual"
+                className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20 transition-all"
+              />
+              <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">
+                Quedan hoy. Vacío = sin límite.
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Toggles */}

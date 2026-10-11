@@ -2088,6 +2088,10 @@ export interface MenuItem {
   variantGroups?: VariantGroup[];
   /** Días 0=dom…6=sáb en que se ofrece. Vacío/ausente = todos los días. */
   availableDays?: number[];
+  /** Stock del día de venta. Null/ausente = sin límite. */
+  stockQty?: number | null;
+  /** Tamaño del lote diario (cada día el stock vuelve a este valor). */
+  dailyQty?: number | null;
 }
 
 export interface MerchantPublicProfile {

@@ -702,6 +702,84 @@ describe('OrdersService', () => {
       expect(order.commissionRate).toBe(0.05);
       expect(order.commission).toBe(100); // 5% de 2000 (envío)
     });
+
+    it('rechaza cuando el stock del día no alcanza', async () => {
+      prisma.merchantProfile.findUnique.mockResolvedValue({ id: 'merchant-1', userId: 'user-1' });
+      prisma.menuItem.findMany.mockResolvedValue([
+        { id: 'item-1', price: 1000, stockQty: 0, dailyQty: null, stockDay: null },
+      ]);
+      prisma.menuItem.updateMany = jest.fn().mockResolvedValue({ count: 0 });
+      prisma.menuItem.findUnique = jest.fn().mockResolvedValue({ stockQty: 0 });
+
+      await expect(
+        service.create('user-1', {
+          pickupAddress: 'A',
+          deliveryAddress: 'B',
+          items: [{ menuItemId: 'item-1', quantity: 1 }],
+        }),
+      ).rejects.toThrow('se agotó');
+      expect(prisma.order.create).not.toHaveBeenCalled();
+    });
+
+    it('descuenta el stock al crear el pedido', async () => {
+      prisma.merchantProfile.findUnique.mockResolvedValue({ id: 'merchant-1', userId: 'user-1' });
+      prisma.menuItem.findMany.mockResolvedValue([
+        { id: 'item-1', price: 1000, stockQty: 50, dailyQty: null, stockDay: null },
+      ]);
+      prisma.menuItem.updateMany = jest.fn().mockResolvedValue({ count: 1 });
+      prisma.order.create.mockImplementation((args: any) =>
+        Promise.resolve({ id: 'o-stock', ...args.data }),
+      );
+
+      await service.create('user-1', {
+        pickupAddress: 'A',
+        deliveryAddress: 'B',
+        items: [{ menuItemId: 'item-1', quantity: 2 }],
+      });
+
+      expect(prisma.menuItem.updateMany).toHaveBeenCalledWith({
+        where: { id: 'item-1', stockQty: { gte: 2 } },
+        data: { stockQty: { decrement: 2 } },
+      });
+    });
+
+    it('repone el lote cuando empieza un nuevo día de venta', async () => {
+      const { toCRDateKey } = jest.requireActual(
+        '../common/costa-rica-time',
+      ) as typeof import('../common/costa-rica-time');
+      const today = toCRDateKey(new Date());
+      prisma.merchantProfile.findUnique.mockResolvedValue({ id: 'merchant-1', userId: 'user-1' });
+      prisma.menuItem.findMany.mockResolvedValue([
+        { id: 'item-1', price: 1000, stockQty: 3, dailyQty: 50, stockDay: '2020-01-01' },
+      ]);
+      prisma.menuItem.updateMany = jest.fn().mockResolvedValue({ count: 1 });
+      prisma.menuItem.findUnique = jest.fn().mockResolvedValue({
+        id: 'item-1',
+        price: 1000,
+        stockQty: 50,
+        dailyQty: 50,
+        stockDay: today,
+      });
+      prisma.order.create.mockImplementation((args: any) =>
+        Promise.resolve({ id: 'o-reset', ...args.data }),
+      );
+
+      await service.create('user-1', {
+        pickupAddress: 'A',
+        deliveryAddress: 'B',
+        items: [{ menuItemId: 'item-1', quantity: 1 }],
+      });
+
+      // 1º reposición al lote del día, 2º descuento de la unidad pedida.
+      expect(prisma.menuItem.updateMany).toHaveBeenNthCalledWith(1, {
+        where: { id: 'item-1', stockDay: '2020-01-01' },
+        data: { stockQty: 50, stockDay: today },
+      });
+      expect(prisma.menuItem.updateMany).toHaveBeenNthCalledWith(2, {
+        where: { id: 'item-1', stockQty: { gte: 1 } },
+        data: { stockQty: { decrement: 1 } },
+      });
+    });
   });
 
   describe('getOrderMessages', () => {

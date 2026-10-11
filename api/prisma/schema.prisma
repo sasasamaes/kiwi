@@ -837,6 +837,12 @@ model MenuItem {
   // Días de la semana en que se ofrece (0=dom…6=sáb, hora Costa Rica).
   // Vacío = todos los días. Ej. rollos de canela solo jueves → [4].
   availableDays Int[]  @default([]) @map("available_days")
+  // Stock por día de venta (ej. 50 rollos cada jueves). Null = sin límite.
+  // dailyQty es el tamaño del lote: cada día CR nuevo el stock vuelve a ese
+  // valor solo. stockDay guarda el día (YYYY-MM-DD CR) del stock vigente.
+  stockQty  Int?    @map("stock_qty")
+  dailyQty  Int?    @map("daily_qty")
+  stockDay  String? @map("stock_day")
   sortOrder   Int      @default(0) @map("sort_order")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")

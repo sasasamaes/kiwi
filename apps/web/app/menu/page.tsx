@@ -760,6 +760,18 @@ export default function MenuManagementPage() {
                                     .join(' · ')}
                                 </span>
                               )}
+                              {(item as any).stockQty != null && (
+                                <span
+                                  className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                    (item as any).stockQty === 0
+                                      ? 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-400'
+                                      : 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400'
+                                  }`}
+                                  title="Stock del día de venta"
+                                >
+                                  📦 {(item as any).stockQty}
+                                </span>
+                              )}
                               {(item.variantGroups ?? []).some((g) => g.options.length > 0) &&
                                 (() => {
                                   const soldOut = (item.variantGroups ?? []).reduce(
