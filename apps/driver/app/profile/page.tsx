@@ -579,14 +579,16 @@ export default function Profile() {
             </h3>
             <KYCStatusBadge status={kycStatus} size="sm" />
           </div>
-          {kycRequired && kycStatus !== 'approved' && (
+          {kycStatus !== 'approved' && (
             <>
               <p className="text-sm text-surface-500 dark:text-surface-400 mb-4">
-                Verifica tu identidad para empezar a trabajar
+                {kycRequired
+                  ? 'Verifica tu identidad para empezar a trabajar'
+                  : 'Verificá tu identidad con Didit para generar confianza y acceder a más pedidos'}
               </p>
               <Link href="/kyc">
                 <AnimatedButton variant="primary" className="w-full">
-                  Verificar Ahora
+                  Verificar identidad
                 </AnimatedButton>
               </Link>
             </>

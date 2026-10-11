@@ -88,7 +88,7 @@ function Landing() {
               Iniciar sesión
             </Link>
             <Link href="/register">
-              <AnimatedButton variant="gradient" size="sm" className="shadow-kiwi">
+              <AnimatedButton variant="gradient" size="sm">
                 Registrar comercio
               </AnimatedButton>
             </Link>

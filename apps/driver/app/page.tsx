@@ -25,6 +25,8 @@ import {
   staggerContainer,
   KiwiLoader,
   KiwiLogo,
+  isHttpUrl,
+  isEmojiImage,
 } from '@kiwi/ui';
 import {
   ClipboardList,
@@ -460,11 +462,24 @@ export default function Home() {
               </div>
               <ThemeToggle />
               <motion.div
-                className="h-8 w-8 rounded-full bg-kiwi-gradient text-white flex items-center justify-center text-sm font-semibold shadow-kiwi"
+                className="h-8 w-8 rounded-full bg-kiwi-gradient text-white flex items-center justify-center text-sm font-semibold shadow-kiwi overflow-hidden"
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
               >
-                {user?.driverProfile?.fullName?.charAt(0) || 'D'}
+                {isHttpUrl((user as any)?.driverProfile?.photoUrl) ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={(user as any).driverProfile.photoUrl}
+                    alt="Mi foto"
+                    className="h-8 w-8 object-cover"
+                  />
+                ) : isEmojiImage((user as any)?.driverProfile?.photoUrl) ? (
+                  <span className="text-lg leading-none">
+                    {(user as any).driverProfile.photoUrl}
+                  </span>
+                ) : (
+                  user?.driverProfile?.fullName?.charAt(0) || 'D'
+                )}
               </motion.div>
             </div>
           </div>
