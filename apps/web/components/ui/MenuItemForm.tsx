@@ -75,6 +75,8 @@ interface MenuItemFormData {
   /** Stock del día (null = sin límite). dailyQty = lote que se repone solo. */
   stockQty: number | null;
   dailyQty: number | null;
+  /** Nota de entrega programada ("Se entrega el jueves a las 2:00 p. m."). */
+  fulfillNote: string;
 }
 
 const WEEKDAYS = [
@@ -151,6 +153,7 @@ export function MenuItemForm({
     availableDays: toAvailableDays(initialData),
     stockQty: toStockQty(initialData, 'stockQty'),
     dailyQty: toStockQty(initialData, 'dailyQty'),
+    fulfillNote: String((initialData as any)?.fulfillNote ?? ''),
   });
 
   const [loading, setLoading] = useState(false);
@@ -174,6 +177,7 @@ export function MenuItemForm({
         availableDays: toAvailableDays(initialData),
         stockQty: toStockQty(initialData, 'stockQty'),
         dailyQty: toStockQty(initialData, 'dailyQty'),
+        fulfillNote: String((initialData as any)?.fulfillNote ?? ''),
       });
     }
   }, [initialData, categories]);
@@ -427,6 +431,20 @@ export function MenuItemForm({
             rows={3}
             className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20 transition-all resize-none"
           />
+          <label className="mt-3 mb-2 block text-sm font-medium text-surface-600 dark:text-surface-400">
+            Nota de entrega programada <span className="font-normal">(opcional)</span>
+          </label>
+          <input
+            type="text"
+            value={formData.fulfillNote}
+            onChange={(e) => setFormData({ ...formData, fulfillNote: e.target.value })}
+            placeholder="Ej: Se entrega el jueves a las 2:00 p. m."
+            maxLength={120}
+            className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20 transition-all"
+          />
+          <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">
+            Se muestra en la vitrina de mañana y en la preventa.
+          </p>
         </div>
 
         {/* Price and Category Row */}
