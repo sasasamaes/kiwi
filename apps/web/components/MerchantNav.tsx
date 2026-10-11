@@ -18,7 +18,7 @@ import {
   Utensils,
   X,
 } from 'lucide-react';
-import { useAuth, ThemeToggle, KiwiLogo } from '@kiwi/ui';
+import { useAuth, ThemeToggle, KiwiLogo, isHttpUrl, isEmojiImage } from '@kiwi/ui';
 
 const LINKS = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -45,8 +45,11 @@ interface MerchantNavProps {
 export function MerchantNav({ isConnected, unreadCount = 0, businessName }: MerchantNavProps = {}) {
   const pathname = usePathname();
   const router = useRouter();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
+  // Logo del comercio (foto subida o emoji). Vive en el perfil del user
+  // logueado, así se actualiza solo al cambiarlo en el dashboard.
+  const logoUrl = (user as any)?.merchantProfile?.logoUrl as string | undefined;
 
   const handleLogout = () => {
     logout();
@@ -111,8 +114,19 @@ export function MerchantNav({ isConnected, unreadCount = 0, businessName }: Merc
                   <span className="text-sm font-medium text-surface-600 dark:text-surface-400">
                     {businessName || 'Mi Negocio'}
                   </span>
-                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-kiwi-gradient text-white text-sm font-semibold shadow-kiwi">
-                    {(businessName || 'M').charAt(0)}
+                  <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-kiwi-gradient text-white text-sm font-semibold shadow-kiwi">
+                    {isHttpUrl(logoUrl) ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={logoUrl}
+                        alt={businessName || 'Logo del comercio'}
+                        className="h-9 w-9 object-cover"
+                      />
+                    ) : isEmojiImage(logoUrl) ? (
+                      <span className="text-xl leading-none">{logoUrl}</span>
+                    ) : (
+                      (businessName || 'M').charAt(0)
+                    )}
                   </span>
                 </span>
               </>
