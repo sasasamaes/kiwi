@@ -16,6 +16,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiConsumes } from '@nestjs/swagger';
 import { DriversService } from './drivers.service';
+import { DriverMarketplaceService } from '../payments/marketplace/driver-marketplace.service';
 import { ImageUploadService } from '../menu/image-upload.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -31,6 +32,7 @@ export class DriversController {
   constructor(
     private readonly driversService: DriversService,
     private readonly imageUpload: ImageUploadService,
+    private readonly marketplace: DriverMarketplaceService,
   ) {}
 
   @Get('me')
@@ -99,6 +101,36 @@ export class DriversController {
   @ApiOperation({ summary: 'Whether driver photo upload is configured' })
   async photoStatus() {
     return { enabled: this.imageUpload.isConfigured() };
+  }
+
+  @Post('me/marketplace/onboarding')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('driver')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Crear cuenta conectada Onvo y obtener link de onboarding' })
+  async startOnboarding(@CurrentUser() user: any) {
+    const driver = await this.driversService.findByUserId(user.sub);
+    return this.marketplace.startOnboarding(driver.id);
+  }
+
+  @Get('me/marketplace/status')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('driver')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Consultar estado de la cuenta conectada Onvo' })
+  async marketplaceStatus(@CurrentUser() user: any) {
+    const driver = await this.driversService.findByUserId(user.sub);
+    return this.marketplace.refreshStatus(driver.id);
+  }
+
+  @Post('me/marketplace/onboarding-link')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('driver')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Regenerar link de onboarding Onvo' })
+  async regenerateOnboardingLink(@CurrentUser() user: any) {
+    const driver = await this.driversService.findByUserId(user.sub);
+    return this.marketplace.regenerateLink(driver.id);
   }
 
   @Get(':id/location')
