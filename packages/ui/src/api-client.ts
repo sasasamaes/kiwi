@@ -328,6 +328,10 @@ class ApiClient {
     return this.request<any>('/merchants/me/marketplace/onboarding-link', { method: 'POST' });
   }
 
+  async listMarketplacePayments(): Promise<Array<{ id: string; amount: number; status: string }>> {
+    return this.request<any>('/merchants/me/marketplace/payments');
+  }
+
   // ============================================
   // 🏪 MERCHANTS
   // ============================================

@@ -210,4 +210,14 @@ export class MerchantsController {
     const merchant = await this.merchantsService.findByUserId(user.sub);
     return this.marketplace.regenerateLink(merchant.id);
   }
+
+  @Get('me/marketplace/payments')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('merchant')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Cobros liquidados al comercio (cuenta conectada Onvo)' })
+  async marketplacePayments(@CurrentUser() user: any) {
+    const merchant = await this.merchantsService.findByUserId(user.sub);
+    return this.marketplace.sellerIntents(merchant.id);
+  }
 }

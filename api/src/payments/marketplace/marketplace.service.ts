@@ -49,4 +49,10 @@ export class MarketplaceService {
     if (link.error) throw new BadRequestException(link.error);
     return { accountId: merchant.onvoConnectedAccountId, onboardingUrl: link.onboardingUrl };
   }
+
+  async sellerIntents(merchantId: string) {
+    const merchant = await this.prisma.merchantProfile.findUnique({ where: { id: merchantId } });
+    if (!merchant?.onvoConnectedAccountId) throw new BadRequestException('Sin cuenta conectada');
+    return this.onvo.listSellerIntents(merchant.onvoConnectedAccountId);
+  }
 }

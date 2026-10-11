@@ -666,4 +666,17 @@ export class OnvoPayProvider {
     if (!response.ok) throw new Error(data.message || 'No se pudo regenerar el enlace');
     return { onboardingUrl: data.onboardingUrl };
   }
+
+  async listSellerIntents(accountId: string): Promise<any[]> {
+    if (!this.secretKey) return [];
+    const response = await fetch(`${this.baseUrl}/payment-intents`, {
+      headers: {
+        Authorization: `Bearer ${this.secretKey}`,
+        'onvo-on-behalf-of': accountId,
+      },
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'No se pudieron listar los cobros');
+    return data.data ?? [];
+  }
 }

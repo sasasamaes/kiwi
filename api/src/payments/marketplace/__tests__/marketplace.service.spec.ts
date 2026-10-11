@@ -12,6 +12,7 @@ describe('MarketplaceService', () => {
     createConnectedAccount: jest.fn(),
     getConnectedAccount: jest.fn(),
     regenerateOnboardingLink: jest.fn(),
+    listSellerIntents: jest.fn(),
   };
   const svc = async () =>
     (
@@ -88,5 +89,25 @@ describe('MarketplaceService', () => {
     onvo.getConnectedAccount.mockResolvedValueOnce({ status: 'active' });
     const out = await (await svc()).regenerateLink('m1');
     expect((out as any).status).toBe('active');
+  });
+
+  it('lists seller intents through the primary key with the seller header', async () => {
+    prisma.merchantProfile.findUnique.mockResolvedValueOnce({
+      id: 'm1',
+      onvoConnectedAccountId: 'ca_1',
+    });
+    onvo.listSellerIntents.mockResolvedValueOnce([
+      { id: 'pi_1', amount: 10000, status: 'succeeded' },
+    ]);
+    const out = await (await svc()).sellerIntents('m1');
+    expect(out).toEqual([{ id: 'pi_1', amount: 10000, status: 'succeeded' }]);
+  });
+
+  it('throws when the merchant has no connected account', async () => {
+    prisma.merchantProfile.findUnique.mockResolvedValueOnce({
+      id: 'm1',
+      onvoConnectedAccountId: null,
+    });
+    await expect((await svc()).sellerIntents('m1')).rejects.toThrow('Sin cuenta conectada');
   });
 });
