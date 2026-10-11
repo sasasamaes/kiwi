@@ -542,6 +542,13 @@ class ApiClient {
     });
   }
 
+  async setMyVisibility(listed: boolean) {
+    return this.request<any>('/merchants/me/visibility', {
+      method: 'PUT',
+      body: { listed },
+    });
+  }
+
   async getFavoriteDrivers() {
     return this.request<any>('/merchants/me/favorites');
   }

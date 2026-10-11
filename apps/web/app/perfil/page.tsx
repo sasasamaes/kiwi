@@ -55,6 +55,9 @@ export default function PerfilPage() {
   } | null>(null);
   const [mpLoading, setMpLoading] = useState(true);
   const [mpBusy, setMpBusy] = useState(false);
+  const [listed, setListed] = useState(true);
+  const [listedBusy, setListedBusy] = useState(false);
+  const [listedError, setListedError] = useState<string | null>(null);
   const [mpError, setMpError] = useState<string | null>(null);
   const [mpInfo, setMpInfo] = useState<string | null>(null);
   const [mpPayments, setMpPayments] = useState<Array<{
@@ -102,6 +105,7 @@ export default function PerfilPage() {
           logoUrl: (profile as any)?.logoUrl || null,
           hours,
         });
+        setListed((profile as any)?.isListed !== false);
       } catch {
         if (!cancelled) setFormError('No se pudo cargar el perfil.');
       } finally {
@@ -197,6 +201,21 @@ export default function PerfilPage() {
       setFormError(err?.message || 'No se pudo guardar.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const toggleListed = async () => {
+    const next = !listed;
+    setListed(next);
+    setListedError(null);
+    setListedBusy(true);
+    try {
+      await api.setMyVisibility(next);
+    } catch {
+      setListed(!next);
+      setListedError('No se pudo cambiar la visibilidad. Intentá de nuevo.');
+    } finally {
+      setListedBusy(false);
     }
   };
 
@@ -455,6 +474,31 @@ export default function PerfilPage() {
           >
             {saving ? 'Guardando…' : 'Guardar cambios'}
           </button>
+          <div className="mt-4 rounded-xl bg-surface-50 dark:bg-surface-900 p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-surface-800 dark:text-surface-100">
+                  Visible en la app cliente
+                </p>
+                <p className="text-xs text-surface-500 dark:text-surface-400">
+                  Ocultalo para probar sin que te vean. Tu QR y tu menú directo siguen funcionando.
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={listed}
+                onClick={() => void toggleListed()}
+                disabled={listedBusy}
+                className={`relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-60 ${listed ? 'bg-kiwi-600' : 'bg-surface-300 dark:bg-surface-600'}`}
+              >
+                <span
+                  className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-all ${listed ? 'left-[22px]' : 'left-0.5'}`}
+                />
+              </button>
+            </div>
+            {listedError && <p className="mt-2 text-sm text-red-600">{listedError}</p>}
+          </div>
         </div>
 
         <div className="mt-6 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] p-5 shadow-soft dark:shadow-dark">
