@@ -19,18 +19,9 @@ import {
   safeNavigateToUrl,
 } from '@kiwi/ui';
 import { findDeliveryZone, detectDeliveryZoneFromText, findNearestZone } from '@kiwi/types';
+import { Driver, toDriverList } from '../../drivers/mappers';
 
 type Step = 1 | 2 | 3;
-
-interface Driver {
-  id: string;
-  fullName: string;
-  vehicleType?: string;
-  vehiclePlate?: string;
-  photoUrl?: string;
-  rating?: number;
-  status?: string;
-}
 
 interface OrderItem {
   id: string;
@@ -40,30 +31,6 @@ interface OrderItem {
   notes?: string;
   menuItemId?: string;
 }
-
-/**
- * Normaliza a perfil de repartidor: favoritos viene como
- * {id: favoriteId, driver: {...perfil}}, disponibles como perfil directo.
- */
-const toDriverList = (data: any): Driver[] => {
-  const raw = Array.isArray(data) ? data : (data?.drivers ?? data?.favorites ?? data?.data ?? []);
-  if (!Array.isArray(raw)) return [];
-  return raw
-    .map((item: any) => {
-      const p = item?.driver ?? item;
-      if (!p?.id) return null;
-      return {
-        id: String(p.id),
-        fullName: p.fullName ?? 'Repartidor',
-        vehicleType: p.vehicleType,
-        rating: p.rating != null ? Number(p.rating) : undefined,
-        // Sin status todo se veía "No disponible" aunque el driver
-        // estuviera en línea: el backend sí lo manda.
-        status: p.status,
-      } as Driver;
-    })
-    .filter(Boolean) as Driver[];
-};
 
 /** Misma zona plana del backend: ₡2000 en 10 km del parque de Nicoya. */
 const NICOYA_LAT = 10.1467;

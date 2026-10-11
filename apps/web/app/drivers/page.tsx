@@ -18,15 +18,7 @@ import {
   isHttpUrl,
 } from '@kiwi/ui';
 import { MerchantNav } from '../../components/MerchantNav';
-
-interface Driver {
-  id: string;
-  fullName: string;
-  vehicleType?: string;
-  rating?: number;
-  totalTrips?: number;
-  status?: string;
-}
+import { Driver, toDriverList } from './mappers';
 
 interface OpenOrder {
   id: string;
@@ -48,27 +40,6 @@ interface ChatMessage {
   createdAt: string;
   mine: boolean;
 }
-
-/** Favorites API returns {id: favoriteId, driver: {...profile}} — the id
- *  that matters for assign/favorite is always DriverProfile.id. */
-const toDriverList = (data: any): Driver[] => {
-  const raw = Array.isArray(data) ? data : (data?.drivers ?? data?.favorites ?? data?.data ?? []);
-  if (!Array.isArray(raw)) return [];
-  return raw
-    .map((item: any) => {
-      const p = item?.driver ?? item;
-      if (!p?.id) return null;
-      return {
-        id: String(p.id),
-        fullName: p.fullName ?? 'Repartidor',
-        vehicleType: p.vehicleType,
-        rating: p.rating != null ? Number(p.rating) : undefined,
-        totalTrips: p.totalTrips != null ? Number(p.totalTrips) : undefined,
-        status: p.status,
-      } as Driver;
-    })
-    .filter(Boolean) as Driver[];
-};
 
 const initials = (name: string) =>
   name
@@ -541,18 +512,16 @@ export default function DriversPage() {
                         onClick={() => setDetailDriver(driver)}
                       >
                         <div className="flex items-center gap-4">
-                          {isHttpUrl((driver as any).photoUrl || '') ? (
+                          {isHttpUrl(driver.photoUrl || '') ? (
                             // NOTE: <img> intencional — foto dinámica externa, next/image no aporta aquí
                             <img
-                              src={(driver as any).photoUrl}
+                              src={driver.photoUrl}
                               alt={driver.fullName}
                               className="h-14 w-14 shrink-0 rounded-full object-cover shadow-kiwi"
                             />
-                          ) : isEmojiImage((driver as any).photoUrl || '') ? (
+                          ) : isEmojiImage(driver.photoUrl || '') ? (
                             <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-kiwi-gradient text-white shadow-kiwi">
-                              <span className="text-2xl leading-none">
-                                {(driver as any).photoUrl}
-                              </span>
+                              <span className="text-2xl leading-none">{driver.photoUrl}</span>
                             </div>
                           ) : (
                             <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-kiwi-gradient text-white font-semibold shadow-kiwi">
@@ -852,7 +821,7 @@ function DriverDetailModal({
   onChat: () => void;
   onClose: () => void;
 }) {
-  const photo = (driver as any).photoUrl as string | undefined;
+  const photo = driver.photoUrl as string | undefined;
   return (
     <motion.div
       className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/50 p-4"
