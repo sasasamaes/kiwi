@@ -462,7 +462,7 @@ export default function Home() {
               </div>
               <ThemeToggle />
               <motion.div
-                className="h-8 w-8 rounded-full bg-kiwi-gradient text-white flex items-center justify-center text-sm font-semibold shadow-kiwi overflow-hidden"
+                className="h-8 w-8 rounded-full bg-kiwi-gradient text-white flex items-center justify-center text-sm font-semibold ring-2 ring-white dark:ring-surface-800 shadow-sm overflow-hidden"
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
               >

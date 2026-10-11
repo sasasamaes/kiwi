@@ -114,7 +114,7 @@ export function MerchantNav({ isConnected, unreadCount = 0, businessName }: Merc
                   <span className="text-sm font-medium text-surface-600 dark:text-surface-400">
                     {businessName || 'Mi Negocio'}
                   </span>
-                  <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-kiwi-gradient text-white text-sm font-semibold shadow-kiwi">
+                  <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-kiwi-gradient text-white text-sm font-semibold ring-2 ring-white shadow-sm dark:ring-surface-800">
                     {isHttpUrl(logoUrl) ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img

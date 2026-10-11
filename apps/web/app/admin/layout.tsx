@@ -169,7 +169,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <div className="flex items-center gap-4">
               <ThemeToggle />
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-kiwi-gradient flex items-center justify-center text-white font-semibold shadow-kiwi">
+                <div className="w-10 h-10 rounded-full bg-kiwi-gradient flex items-center justify-center text-white font-semibold ring-2 ring-white shadow-sm dark:ring-surface-800">
                   A
                 </div>
                 <div className="hidden sm:block">
