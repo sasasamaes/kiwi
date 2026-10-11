@@ -517,14 +517,14 @@ export default function DriversPage() {
                             <img
                               src={driver.photoUrl}
                               alt={driver.fullName}
-                              className="h-14 w-14 shrink-0 rounded-full object-cover shadow-kiwi"
+                              className="h-14 w-14 shrink-0 rounded-full object-cover ring-1 ring-black/10 dark:ring-white/15"
                             />
                           ) : isEmojiImage(driver.photoUrl || '') ? (
-                            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-kiwi-gradient text-white shadow-kiwi">
+                            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-kiwi-gradient text-white ring-1 ring-black/10 dark:ring-white/15">
                               <span className="text-2xl leading-none">{driver.photoUrl}</span>
                             </div>
                           ) : (
-                            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-kiwi-gradient text-white font-semibold shadow-kiwi">
+                            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-kiwi-gradient text-white font-semibold ring-1 ring-black/10 dark:ring-white/15">
                               {initials(driver.fullName)}
                             </div>
                           )}
