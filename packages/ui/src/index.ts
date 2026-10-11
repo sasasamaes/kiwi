@@ -306,10 +306,14 @@ export {
   SchedulePicker,
   EMPTY_SCHEDULE,
   todayCR,
+  tomorrowKeyCR,
+  weekdayNameES,
   isValidSchedule,
   scheduleFields,
 } from './SchedulePicker';
 export type { ScheduleValue } from './SchedulePicker';
+export { formatOpeningHours } from './merchant-hours';
+export type { FormattedHours } from './merchant-hours';
 
 // ============================================
 //   ONVOPAY CHECKOUT

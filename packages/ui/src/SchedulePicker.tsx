@@ -25,6 +25,20 @@ export function todayCR(): string {
   return cr.toISOString().slice(0, 10);
 }
 
+/** YYYY-MM-DD de mañana en hora CR (vitrina de preventa). */
+export function tomorrowKeyCR(): string {
+  const cr = new Date(Date.now() - 6 * 3_600_000);
+  const t = new Date(cr.getTime() + 86_400_000);
+  return t.toISOString().slice(0, 10);
+}
+
+/** Nombre del día (ej. "jueves") para una fecha YYYY-MM-DD. */
+export function weekdayNameES(dateKey: string): string {
+  const d = new Date(`${dateKey}T12:00:00-06:00`);
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('es-CR', { weekday: 'long', timeZone: 'America/Costa_Rica' });
+}
+
 /** ¿La preventa tiene fecha+hora válidas y futuras? (el server revalida). */
 export function isValidSchedule(v: ScheduleValue): boolean {
   if (v.mode === 'now') return true;

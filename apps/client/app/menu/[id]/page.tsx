@@ -21,6 +21,9 @@ import {
   User,
   FileText,
   X,
+  Instagram,
+  Facebook,
+  MessageCircle,
 } from 'lucide-react';
 import {
   AnimatedButton,
@@ -50,6 +53,9 @@ import {
   EMPTY_SCHEDULE,
   isValidSchedule,
   scheduleFields,
+  tomorrowKeyCR,
+  weekdayNameES,
+  formatOpeningHours,
 } from '@kiwi/ui';
 import type { ScheduleValue } from '@kiwi/ui';
 import { findDeliveryZone, findNearestZone } from '@kiwi/types';
@@ -133,6 +139,10 @@ export default function MenuPage() {
   const [pickError, setPickError] = useState<string | null>(null);
   // Preventa (cocinas caseras): pedir hoy para recibir el día que toca.
   const [schedule, setSchedule] = useState<ScheduleValue>(EMPTY_SCHEDULE);
+  // Seguir al comercio: avisos de ventas por fecha y reposiciones de stock.
+  // null = sin cuenta o sin cargar (el botón igual se muestra e invita).
+  const [following, setFollowing] = useState<boolean | null>(null);
+  const [followBusy, setFollowBusy] = useState(false);
 
   // Delivery info
   const [deliveryInfo, setDeliveryInfo] = useState<DeliveryInfo>({
@@ -268,6 +278,44 @@ export default function MenuPage() {
     fetchData();
   }, [fetchData]);
 
+  // ¿Sigo a este comercio? Solo con cuenta de cliente; invitados ven el
+  // botón que los manda a crear cuenta (el 401 del API redirige a login).
+  useEffect(() => {
+    if (!api.getToken() || (userRole !== undefined && userRole !== 'customer')) {
+      setFollowing(null);
+      return;
+    }
+    let cancelled = false;
+    api
+      .getMyFollows()
+      .then((list) => {
+        if (!cancelled) setFollowing(list.some((f) => f.id === merchantId));
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [merchantId, userRole]);
+
+  const toggleFollow = useCallback(async () => {
+    if (followBusy) return;
+    if (!api.getToken()) {
+      router.push('/register');
+      return;
+    }
+    setFollowBusy(true);
+    const next = !(following === true);
+    setFollowing(next);
+    try {
+      if (next) await api.followMerchant(merchantId);
+      else await api.unfollowMerchant(merchantId);
+    } catch {
+      setFollowing(!next);
+    } finally {
+      setFollowBusy(false);
+    }
+  }, [followBusy, following, merchantId, router]);
+
   // Otro comercio (navegación cliente entre menús): carrito, zona y pedido
   // pendiente son del anterior — resetear para no cobrarle a quien no es.
   useEffect(() => {
@@ -283,6 +331,8 @@ export default function MenuPage() {
     setPaymentPending(false);
     setPaymentIntent(null);
     setSchedule(EMPTY_SCHEDULE);
+    setFollowing(null);
+    setFollowBusy(false);
   }, [merchantId]);
 
   // Cart functions
@@ -308,6 +358,11 @@ export default function MenuPage() {
 
   const addToCart = useCallback(
     (item: MenuItem) => {
+      // Item de mañana: la preventa queda preset para mañana (el cliente
+      // solo elige la hora en el checkout).
+      if ((item as any).offeredTomorrow) {
+        setSchedule((prev) => ({ ...prev, mode: 'scheduled', date: tomorrowKeyCR() }));
+      }
       const groups = item.variantGroups ?? [];
       const hasOptions = groups.some((g) => g.options.length > 0);
       if (hasOptions) {
@@ -376,6 +431,9 @@ export default function MenuPage() {
       }
     }
     addLine(picking, selected);
+    if ((picking as any).offeredTomorrow) {
+      setSchedule((prev) => ({ ...prev, mode: 'scheduled', date: tomorrowKeyCR() }));
+    }
     setPicking(null);
     setPicks({});
   }, [picking, picks, addLine]);
@@ -440,6 +498,14 @@ export default function MenuPage() {
   const visibleItems = builderItem
     ? filteredItems.filter((item) => item.id !== builderItem.id)
     : filteredItems;
+  // Vitrina de mañana: lo de mañana se vende hoy solo en preventa.
+  const tomorrowKey = tomorrowKeyCR();
+  const tomorrowItems =
+    selectedCategory === 'Todos' ? menuItems.filter((i) => (i as any).offeredTomorrow) : [];
+  const todayItems = visibleItems.filter((i) => !(i as any).offeredTomorrow);
+  // Si el carrito trae algo de mañana, el pedido entero es programado para
+  // mañana (un pedido = una fecha de entrega).
+  const cartHasTomorrow = cart.some((c) => (c as any).offeredTomorrow);
 
   // Validate checkout
   // Cocina casera cerrada hoy igual acepta preventa futura (ej. lunes pido
@@ -451,7 +517,8 @@ export default function MenuPage() {
     phoneDigits.length >= 8 &&
     deliveryInfo.name.trim().length > 0 &&
     isValidSchedule(schedule) &&
-    (merchant?.isOpen !== false || schedulingFuture);
+    (merchant?.isOpen !== false || schedulingFuture) &&
+    (!cartHasTomorrow || (schedule.mode === 'scheduled' && schedule.date === tomorrowKey));
 
   // Anti-duplicados (doble tap con wifi caído = N pedidos): el state
   // llega tarde al segundo tap; el ref no. La key se reusa en reintentos
@@ -914,6 +981,73 @@ export default function MenuPage() {
               </div>
             </div>
           </div>
+          <TapButton
+            haptic
+            onClick={() => void toggleFollow()}
+            className={`mt-3 inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+              following === true
+                ? 'bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300'
+                : 'bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-300'
+            }`}
+          >
+            {followBusy
+              ? '…'
+              : following === true
+                ? '✓ Siguiendo · te aviso ventas y stock'
+                : '🔔 Seguir · avisame ventas y stock'}
+          </TapButton>
+          {(() => {
+            const socials = (merchant as any)?.socials as Record<string, string> | null;
+            const hours = formatOpeningHours((merchant as any)?.openingHours);
+            if (!socials && !hours) return null;
+            const links = [
+              socials?.instagram
+                ? { href: socials.instagram, label: 'Instagram', Icon: Instagram }
+                : null,
+              socials?.facebook
+                ? { href: socials.facebook, label: 'Facebook', Icon: Facebook }
+                : null,
+              socials?.tiktok ? { href: socials.tiktok, label: 'TikTok', Icon: null } : null,
+              socials?.whatsapp
+                ? { href: socials.whatsapp, label: 'WhatsApp', Icon: MessageCircle }
+                : null,
+            ].filter(Boolean) as Array<{ href: string; label: string; Icon: any }>;
+            return (
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                {links.map((l) => (
+                  <a
+                    key={l.label}
+                    href={l.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`${merchant.businessName} en ${l.label}`}
+                    className="inline-flex min-h-[40px] items-center gap-1.5 rounded-full bg-surface-100 dark:bg-surface-700 px-3 py-2 text-xs font-semibold text-surface-600 dark:text-surface-300"
+                  >
+                    {l.Icon ? (
+                      <l.Icon className="h-4 w-4" />
+                    ) : (
+                      <span className="text-xs font-bold">TikTok</span>
+                    )}
+                    {l.label}
+                  </a>
+                ))}
+                {hours && (
+                  <details className="inline-flex items-center">
+                    <summary className="inline-flex min-h-[40px] cursor-pointer list-none items-center gap-1.5 rounded-full bg-surface-100 dark:bg-surface-700 px-3 py-2 text-xs font-semibold text-surface-600 dark:text-surface-300">
+                      <Clock className="h-4 w-4" /> {hours.today}
+                    </summary>
+                    <div className="mt-2 w-full rounded-xl bg-surface-50 dark:bg-surface-900 p-3 text-xs text-surface-600 dark:text-surface-300">
+                      {hours.week.map((line) => (
+                        <p key={line} className="py-0.5">
+                          {line}
+                        </p>
+                      ))}
+                    </div>
+                  </details>
+                )}
+              </div>
+            );
+          })()}
         </div>
       </motion.div>
 
@@ -978,7 +1112,7 @@ export default function MenuPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
       >
-        {visibleItems.length === 0 ? (
+        {todayItems.length === 0 && tomorrowItems.length === 0 ? (
           <div className="text-center py-12 px-6 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark">
             <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-kiwi-100 dark:bg-kiwi-400/10">
               <Utensils className="h-10 w-10 text-kiwi-600/70 dark:text-kiwi-400/70" />
@@ -997,7 +1131,7 @@ export default function MenuPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {visibleItems.map((item, itemIndex) => {
+            {todayItems.map((item, itemIndex) => {
               const quantity = getItemQuantity(item.id);
               return (
                 <ScrollReveal key={item.id} index={itemIndex} as="div">
@@ -1044,9 +1178,15 @@ export default function MenuPage() {
                             )}
                             {(item as any).stockQty != null && (item as any).stockQty <= 10 && (
                               <p className="mt-1 text-xs font-semibold text-orange-600 dark:text-orange-300">
-                                ¡Solo quedan {(item as any).stockQty} hoy!
+                                ¡Solo quedan {(item as any).stockQty} hoy! · Hasta agotar stock
                               </p>
                             )}
+                            {((item as any).stockQty == null || (item as any).stockQty > 10) &&
+                              (item as any).dailyQty != null && (
+                                <p className="mt-1 text-xs text-surface-500 dark:text-surface-400">
+                                  Hasta agotar stock del día
+                                </p>
+                              )}
                           </div>
                         </div>
                         <div className="flex items-center justify-between mt-3">
@@ -1097,6 +1237,114 @@ export default function MenuPage() {
           </div>
         )}
       </motion.div>
+
+      {/* Vitrina de mañana: se vende mañana, se aparta hoy (hasta agotar stock) */}
+      {tomorrowItems.length > 0 && (
+        <motion.div
+          className="mx-auto max-w-lg px-4 mt-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+        >
+          <div className="rounded-2xl bg-orange-600 dark:bg-orange-700 p-4 shadow-soft text-white">
+            <p className="font-display text-base font-bold">
+              📅 Mañana {weekdayNameES(tomorrowKey)} venden esto
+            </p>
+            <p className="text-xs text-white/85 mt-0.5">
+              Apartá el tuyo hoy en preventa — hasta agotar stock.
+            </p>
+          </div>
+          <div className="space-y-4 mt-4">
+            {tomorrowItems.map((item, itemIndex) => {
+              const quantity = getItemQuantity(item.id);
+              const stockLeft = (item as any).stockQty as number | null | undefined;
+              const stockCapped = typeof stockLeft === 'number' && quantity >= stockLeft;
+              return (
+                <ScrollReveal key={item.id} index={itemIndex} as="div">
+                  <motion.div
+                    className={`rounded-2xl bg-white dark:bg-surface-800 border-2 border-orange-500/40 dark:border-orange-400/30 p-4 shadow-soft dark:shadow-dark ${hoverCard}`}
+                  >
+                    <div className="flex gap-4">
+                      <div className="flex h-20 w-20 items-center justify-center rounded-xl bg-orange-50 dark:bg-surface-700 text-3xl flex-shrink-0 overflow-hidden">
+                        {isHttpUrl(item.image) ? (
+                          // NOTE: <img> intencional — avatares dinámicos de Cloudinary
+                          <img
+                            src={item.image}
+                            alt={item.name}
+                            className="h-full w-full object-cover rounded-xl"
+                          />
+                        ) : isEmojiImage(item.image) ? (
+                          <span className="text-5xl leading-none">{item.image}</span>
+                        ) : (
+                          <Utensils className="h-10 w-10 text-orange-500/60 dark:text-orange-400/60" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">
+                            {item.name}
+                          </h3>
+                          <span className="px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-900/50 text-xs font-medium text-orange-700 dark:text-orange-300">
+                            📅 Mañana
+                          </span>
+                        </div>
+                        {(item as any).fulfillNote && (
+                          <p className="text-xs font-medium text-orange-700 dark:text-orange-300 mt-1">
+                            🚚 {(item as any).fulfillNote}
+                          </p>
+                        )}
+                        <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">
+                          {typeof stockLeft === 'number'
+                            ? stockLeft > 0
+                              ? `Hasta agotar stock · quedan ${stockLeft}`
+                              : 'Agotado'
+                            : 'Hasta agotar stock'}
+                        </p>
+                        <div className="flex items-center justify-between mt-2">
+                          <p className="text-lg font-bold text-kiwi-700 dark:text-kiwi-400">
+                            ₡{item.price.toLocaleString()}
+                          </p>
+                          <div className="flex items-center gap-2">
+                            {quantity > 0 && (
+                              <motion.div
+                                className="flex items-center gap-2"
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                              >
+                                <TapButton
+                                  haptic
+                                  className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400"
+                                  onClick={() => decrementMenuItem(item.id)}
+                                >
+                                  −
+                                </TapButton>
+                                <span className="w-6 text-center font-semibold text-surface-800 dark:text-surface-200">
+                                  {quantity}
+                                </span>
+                              </motion.div>
+                            )}
+                            <TapButton
+                              haptic
+                              success
+                              onSuccess={() => setCartBounceKey((k) => k + 1)}
+                              className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-600 text-white"
+                              onClick={() => addToCart(item)}
+                              disabled={stockCapped}
+                              title={stockCapped ? 'Sin stock' : 'Apartar para mañana'}
+                            >
+                              +
+                            </TapButton>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                </ScrollReveal>
+              );
+            })}
+          </div>
+        </motion.div>
+      )}
 
       {/* Floating Cart Button */}
       <AnimatePresence>
@@ -1347,7 +1595,7 @@ export default function MenuPage() {
                 </div>
 
                 {/* Preventa (solo cocinas caseras): pedir hoy, recibir el día que toca */}
-                {merchant.isHomeCook && (
+                {(merchant.isHomeCook || tomorrowItems.length > 0) && (
                   <div>
                     <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-3">
                       📅 ¿Para cuándo?
@@ -1355,7 +1603,11 @@ export default function MenuPage() {
                     <SchedulePicker
                       value={schedule}
                       onChange={setSchedule}
-                      hint="Acepta pedidos aunque hoy esté cerrada: programá para su día de venta."
+                      hint={
+                        cartHasTomorrow
+                          ? `Tu pedido incluye productos de mañana: sale programado para mañana ${weekdayNameES(tomorrowKey)}. Elegí la hora.`
+                          : 'Acepta pedidos aunque hoy esté cerrada: programá para su día de venta.'
+                      }
                     />
                   </div>
                 )}

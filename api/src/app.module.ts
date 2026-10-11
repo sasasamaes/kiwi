@@ -11,6 +11,7 @@ import { OrdersModule } from './orders/orders.module';
 import { RatingsModule } from './ratings/ratings.module';
 import { ContactModule } from './contact/contact.module';
 import { MenuModule } from './menu/menu.module';
+import { FollowsModule } from './follows/follows.module';
 import { KYCModule } from './kyc/kyc.module';
 import { EventsModule } from './events/events.module';
 import { NotificationsModule } from './notifications/notifications.module';
@@ -53,6 +54,7 @@ import { FeatureFlagsModule } from './feature-flags/feature-flags.module';
     RatingsModule,
     ContactModule,
     MenuModule,
+    FollowsModule,
     KYCModule,
     EventsModule,
     NotificationsModule,

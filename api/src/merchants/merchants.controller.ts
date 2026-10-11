@@ -103,6 +103,25 @@ export class MerchantsController {
     return this.merchantsService.setListed(merchant.id, body?.listed !== false);
   }
 
+  @Get('me/followers')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('merchant')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Cuántos clientes me siguen (avisos)' })
+  async followersCount(@CurrentUser() user: any) {
+    const merchant = await this.merchantsService.findByUserId(user.sub);
+    return this.merchantsService.followersCount(merchant.id);
+  }
+
+  @Post('me/announce')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('merchant')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Avisar a mis seguidores (venta por fecha o stock, máx 3/día)' })
+  async announce(@CurrentUser() user: any, @Body() body: { title?: string; body?: string }) {
+    return this.merchantsService.announceToFollowers(user.sub, body ?? {});
+  }
+
   @Get('me/favorites')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('merchant')

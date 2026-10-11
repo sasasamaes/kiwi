@@ -326,7 +326,7 @@ export class OrdersService {
           let row: any = menuItem;
           const daily = row.dailyQty as number | null;
           if (daily != null && row.stockDay !== dayKey) {
-            await this.prisma.menuItem.updateMany({
+            const reset = await this.prisma.menuItem.updateMany({
               where: { id: row.id, stockDay: row.stockDay },
               data: { stockQty: daily, stockDay: dayKey },
             });
@@ -334,6 +334,21 @@ export class OrdersService {
             if (fresh) {
               row = fresh;
               menuById.set(row.id, fresh as any);
+            }
+            // Reposición automática del día: avisar una vez (solo quien
+            // aplicó el reset notifica; el update es condicional por día).
+            if (reset.count > 0) {
+              try {
+                void this.notificationsService
+                  .notifyFollowers(row.merchantId, {
+                    title: `🧡 ¡Hoy hay ${row.name}!`,
+                    body: `Ya podés pedirlo — quedan ${daily} de hoy. Hasta agotar stock.`,
+                    data: { kind: 'restock', menuItemId: row.id },
+                  })
+                  .catch(() => undefined);
+              } catch {
+                // noop: el pedido igual se crea
+              }
             }
           }
           const stock = row.stockQty as number | null;

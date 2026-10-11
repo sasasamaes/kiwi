@@ -23,6 +23,16 @@ export default function ProfilePage() {
   const { user, loading, logout, updateUser } = useAuth();
   const [profile, setProfile] = useState<any>(null);
   const [offersOn, setOffersOn] = useState(true);
+  const [followsOn, setFollowsOn] = useState(true);
+  const [follows, setFollows] = useState<
+    Array<{
+      id: string;
+      businessName: string;
+      logoUrl: string | null;
+      address: string;
+      isHomeCook: boolean;
+    }>
+  >([]);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savedTick, setSavedTick] = useState(false);
@@ -53,6 +63,14 @@ export default function ProfilePage() {
         if (cancelled || !Array.isArray(topics)) return;
         const t = topics.find((x) => x.name === 'customer.offers');
         if (t) setOffersOn(t.enabled !== false);
+        const f = topics.find((x) => x.name === 'customer.follows');
+        if (f) setFollowsOn(f.enabled !== false);
+      })
+      .catch(() => undefined);
+    api
+      .getMyFollows()
+      .then((list) => {
+        if (!cancelled) setFollows(Array.isArray(list) ? list : []);
       })
       .catch(() => undefined);
     return () => {
@@ -67,6 +85,26 @@ export default function ProfilePage() {
       await api.setTopicPreference('customer.offers', next);
     } catch {
       setOffersOn(!next);
+    }
+  };
+
+  const toggleFollows = async () => {
+    const next = !followsOn;
+    setFollowsOn(next);
+    try {
+      await api.setTopicPreference('customer.follows', next);
+    } catch {
+      setFollowsOn(!next);
+    }
+  };
+
+  const removeFollow = async (merchantId: string) => {
+    const prev = follows;
+    setFollows((list) => list.filter((f) => f.id !== merchantId));
+    try {
+      await api.unfollowMerchant(merchantId);
+    } catch {
+      setFollows(prev);
     }
   };
 
@@ -300,7 +338,54 @@ export default function ProfilePage() {
               className="h-5 w-5 accent-kiwi-600"
             />
           </label>
+          <label className="flex items-center justify-between gap-3 cursor-pointer">
+            <span className="flex items-center gap-3">
+              <span className="text-surface-400 shrink-0">🧡</span>
+              Avisos de comercios que sigo
+            </span>
+            <input
+              type="checkbox"
+              checked={followsOn}
+              onChange={toggleFollows}
+              className="h-5 w-5 accent-kiwi-600"
+            />
+          </label>
         </div>
+
+        {follows.length > 0 && (
+          <div className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-5 mb-3">
+            <p className="text-sm font-semibold text-surface-700 dark:text-surface-200 mb-3">
+              🧡 Comercios que sigo
+            </p>
+            <div className="space-y-2">
+              {follows.map((f) => (
+                <div key={f.id} className="flex items-center gap-3">
+                  <Link
+                    href={`/menu/${f.id}`}
+                    className="flex flex-1 items-center gap-3 min-w-0 rounded-xl px-2 py-1.5 hover:bg-surface-100 dark:hover:bg-surface-700"
+                  >
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-orange-100 dark:bg-orange-900/40 font-bold text-orange-700 dark:text-orange-300 overflow-hidden">
+                      {f.businessName.slice(0, 1).toUpperCase()}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-medium text-surface-800 dark:text-surface-100">
+                        {f.businessName}
+                      </span>
+                      <span className="block truncate text-xs text-surface-500">{f.address}</span>
+                    </span>
+                  </Link>
+                  <button
+                    onClick={() => void removeFollow(f.id)}
+                    aria-label={`Dejar de seguir a ${f.businessName}`}
+                    className="shrink-0 rounded-full px-2 py-1 text-xs font-semibold text-surface-400 hover:text-red-500"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="flex flex-col gap-2">
           <InstallAppButton />

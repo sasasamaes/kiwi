@@ -139,6 +139,15 @@ export const TOPIC_CATALOG: TopicDef[] = [
     locked: true,
     delivery: 'push+inbox',
   },
+  {
+    name: 'customer.follows',
+    audience: 'customer',
+    label: 'Comercios que sigo',
+    description: 'Cuando un comercio seguido anuncia venta o repone stock',
+    defaultEnabled: true,
+    locked: false,
+    delivery: 'push+inbox',
+  },
 
   // ── ADMIN ────────────────────────────────────────────────────────────
   {

@@ -43,6 +43,7 @@ model User {
   topicPreferences TopicPreference[]
   refreshTokens    RefreshToken[]
   customerOrders   Order[]           @relation("CustomerOrders")
+  merchantFollows  MerchantFollow[]
 
   @@index([phone])
   @@map("users")
@@ -92,6 +93,10 @@ model MerchantProfile {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
+  // Redes sociales del negocio (links que ve el cliente en el menú).
+  // { instagram, facebook, tiktok, whatsapp }: URLs https ya normalizadas.
+  socials Json? @map("socials")
+
   // Ciudad operativa (multiciudad: nicoya hoy, liberia después).
   // Default nicoya para no romper datos existentes.
   citySlug String @default("nicoya") @map("city_slug")
@@ -131,6 +136,7 @@ model MerchantProfile {
   orders          Order[]
   menuItems       MenuItem[]
   favoriteDrivers FavoriteDriver[]
+  followers       MerchantFollow[]
   ratings         Rating[]
   creditLedger    CreditTransaction[]
   creditTopups    CreditTopup[]
@@ -184,8 +190,23 @@ model City {
   @@map("cities")
 }
 
+// Seguidores de un comercio (clientes que quieren avisos de ventas y
+// reposiciones). El push respeta el topic `customer.follows` (opt-out).
+model MerchantFollow {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  merchantId String   @map("merchant_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  merchant MerchantProfile @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, merchantId])
+  @@index([merchantId])
+  @@map("merchant_follows")
+}
+
 // Campaña de publicidad del comercio (destacado primero o banner home).
-// Cobro por día fijo descontado de creditBalance al aprobarse.
 model AdCampaign {
   id           String           @id @default(uuid())
   merchantId   String           @map("merchant_id")
@@ -843,6 +864,9 @@ model MenuItem {
   stockQty  Int?    @map("stock_qty")
   dailyQty  Int?    @map("daily_qty")
   stockDay  String? @map("stock_day")
+  // Nota de entrega programada (ej. "Se entrega el jueves a las 2:00 p. m.").
+  // Se muestra en la vitrina de mañana y en la preventa.
+  fulfillNote String? @map("fulfill_note")
   sortOrder   Int      @default(0) @map("sort_order")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")

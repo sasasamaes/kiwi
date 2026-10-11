@@ -780,6 +780,43 @@ describe('OrdersService', () => {
         data: { stockQty: { decrement: 1 } },
       });
     });
+
+    it('preventa: item solo-mañana se puede pedir programado para mañana', async () => {
+      const { crWeekday, toCRDateKey } = jest.requireActual(
+        '../common/costa-rica-time',
+      ) as typeof import('../common/costa-rica-time');
+      const now = new Date();
+      const tomorrow = (crWeekday(now) + 1) % 7;
+      const tomorrowKey = toCRDateKey(new Date(now.getTime() + 86_400_000));
+      prisma.merchantProfile.findUnique.mockResolvedValue({ id: 'merchant-1', userId: 'user-1' });
+      prisma.menuItem.findMany.mockResolvedValue([
+        { id: 'item-jueves', price: 2500, availableDays: [tomorrow], stockQty: null },
+      ]);
+      prisma.menuItem.updateMany = jest.fn().mockResolvedValue({ count: 1 });
+      prisma.order.create.mockImplementation((args: any) =>
+        Promise.resolve({ id: 'o-prev', ...args.data }),
+      );
+
+      // Inmediato hoy: rebota (no se ofrece hoy).
+      await expect(
+        service.create('user-1', {
+          pickupAddress: 'A',
+          deliveryAddress: 'B',
+          items: [{ menuItemId: 'item-jueves', quantity: 1 }],
+        }),
+      ).rejects.toThrow('no se ofrece ese día');
+
+      // Programado para mañana: pasa.
+      const order: any = await service.create('user-1', {
+        pickupAddress: 'A',
+        deliveryAddress: 'B',
+        orderType: 'scheduled',
+        scheduledDate: tomorrowKey,
+        scheduledTime: '14:00',
+        items: [{ menuItemId: 'item-jueves', quantity: 2 }],
+      });
+      expect(order.id).toBe('o-prev');
+    });
   });
 
   describe('getOrderMessages', () => {

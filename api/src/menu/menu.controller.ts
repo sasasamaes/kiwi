@@ -83,6 +83,14 @@ export class MenuController {
     return this.menuService.getMenuItems(id, category);
   }
 
+  @Public()
+  @Get('tomorrow')
+  @ApiOperation({ summary: 'Vitrina de mañana: qué se vende mañana (preventa)' })
+  @ApiQuery({ name: 'city', required: false })
+  async tomorrowPreview(@Query('city') city?: string) {
+    return this.menuService.tomorrowPreview(city || 'nicoya');
+  }
+
   // ============================================
   // 🔐 AUTHENTICATED ENDPOINTS (merchant only)
   // ============================================

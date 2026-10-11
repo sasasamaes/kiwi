@@ -436,6 +436,48 @@ class ApiClient {
     return this.request<any>('/customers/me', { method: 'PUT', body: data });
   }
 
+  // ============================================
+  // 🧡 FOLLOWS (avisos de ventas y stock)
+  // ============================================
+
+  /** Comercios que sigo (con mini-perfil para la lista). */
+  async getMyFollows(): Promise<
+    Array<{
+      id: string;
+      businessName: string;
+      logoUrl: string | null;
+      address: string;
+      isHomeCook: boolean;
+      category: string;
+      followedAt: string;
+    }>
+  > {
+    return this.request<any[]>('/follows').catch(() => []);
+  }
+
+  /** Seguir un comercio (requiere cuenta de cliente). */
+  async followMerchant(merchantId: string): Promise<{ following: boolean }> {
+    return this.request<{ following: boolean }>(`/follows/${merchantId}`, { method: 'POST' });
+  }
+
+  /** Dejar de seguir un comercio. */
+  async unfollowMerchant(merchantId: string): Promise<{ following: boolean }> {
+    return this.request<{ following: boolean }>(`/follows/${merchantId}`, { method: 'DELETE' });
+  }
+
+  /** Cuántos clientes me siguen (panel del comercio). */
+  async getFollowersCount(): Promise<{ count: number }> {
+    return this.request<{ count: number }>('/merchants/me/followers').catch(() => ({ count: 0 }));
+  }
+
+  /** Avisar a mis seguidores (venta por fecha o stock, máx 3/día). */
+  async announceToFollowers(data: { title: string; body: string }): Promise<{ reached: number }> {
+    return this.request<{ reached: number }>('/merchants/me/announce', {
+      method: 'POST',
+      body: data,
+    });
+  }
+
   async getMerchantPublicProfile(merchantId: string) {
     return this.request<any>(`/menu/merchant/${merchantId}`);
   }
@@ -444,6 +486,28 @@ class ApiClient {
     const params =
       category && category !== 'Todos' ? `?category=${encodeURIComponent(category)}` : '';
     return this.request<any>(`/menu/merchant/${merchantId}/items${params}`);
+  }
+
+  /** Vitrina de mañana: qué comercios venden mañana (para la preventa). */
+  async getTomorrowPreview(city = 'nicoya'): Promise<{
+    items: Array<{
+      merchantId: string;
+      businessName: string;
+      logoUrl: string | null;
+      isHomeCook: boolean;
+      items: Array<{
+        id: string;
+        name: string;
+        price: number;
+        image: string | null;
+        stockQty: number | null;
+        fulfillNote: string | null;
+      }>;
+    }>;
+  }> {
+    return this.request<any>(`/menu/tomorrow?city=${encodeURIComponent(city)}`).catch(() => ({
+      items: [],
+    }));
   }
 
   async getMyMenuItems() {
@@ -2092,6 +2156,10 @@ export interface MenuItem {
   stockQty?: number | null;
   /** Tamaño del lote diario (cada día el stock vuelve a este valor). */
   dailyQty?: number | null;
+  /** Solo-mañana (no hoy): se muestra en preventa. */
+  offeredTomorrow?: boolean;
+  /** Nota de entrega programada ("Se entrega el jueves a las 2:00 p. m."). */
+  fulfillNote?: string | null;
 }
 
 export interface MerchantPublicProfile {
@@ -2110,6 +2178,8 @@ export interface MerchantPublicProfile {
   category?: string;
   /** Cocina casera (emprendedores): sección propia + preventa. */
   isHomeCook?: boolean;
+  /** Redes normalizadas { instagram, facebook, tiktok, whatsapp, website }. */
+  socials?: Record<string, string> | null;
 }
 
 export interface DriverProposal {

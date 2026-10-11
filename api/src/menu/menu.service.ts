@@ -7,12 +7,16 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { toCRDateKey } from '../common/costa-rica-time';
+import { NotificationsService } from '../notifications/notifications.service';
+import { toCRDateKey, crWeekday } from '../common/costa-rica-time';
 import { isOpenNow, offeredToday } from '../merchants/opening-hours';
 
 @Injectable()
 export class MenuService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notifications: NotificationsService,
+  ) {}
 
   /**
    * Get merchant public profile (for client menu page)
@@ -33,6 +37,7 @@ export class MenuService {
         cardPaymentsEnabled: true,
         category: true,
         isHomeCook: true,
+        socials: true,
       },
     });
 
@@ -98,9 +103,15 @@ export class MenuService {
     });
 
     // Días disponibles: lo que no se ofrece hoy no se muestra (menú del día,
-    // "solo jueves"). Vacío = todos los días.
+    // "solo jueves"). Vacío = todos los días. Agotado (stock 0) tampoco.
+    // Vitrina de mañana: lo de mañana SÍ se muestra, marcado para preventa
+    // ("mañana venden rollos"): el cliente lo pide hoy programado.
+    const tomorrow = (crWeekday(new Date()) + 1) % 7;
     const offered = items.filter(
-      (item) => offeredToday((item as any).availableDays ?? []) && (item as any).stockQty !== 0,
+      (item) =>
+        (offeredToday((item as any).availableDays ?? []) ||
+          ((item as any).availableDays ?? []).includes(tomorrow)) &&
+        (item as any).stockQty !== 0,
     );
 
     // Group by category (solo de lo visible hoy: sin pills vacías).
@@ -111,6 +122,10 @@ export class MenuService {
         ...item,
         price: Number(item.price),
         availableDays: (item as any).availableDays ?? [],
+        // Solo-mañana (no hoy): la app lo pinta en la sección de preventa.
+        offeredTomorrow:
+          !offeredToday((item as any).availableDays ?? []) &&
+          ((item as any).availableDays ?? []).includes(tomorrow),
         variantGroups: (item as any).variantGroups.map((g: any) => ({
           ...g,
           options: g.options.map((o: any) => ({ ...o, priceDelta: Number(o.priceDelta) })),
@@ -118,6 +133,66 @@ export class MenuService {
       })),
       categories: ['Todos', ...categories],
     };
+  }
+
+  /**
+   * Vitrina de mañana ("mañana venden rollos"): comercios con productos que
+   * se ofrecen mañana (no necesariamente hoy), para promocionar la preventa
+   * el día antes. Una sola query, topeado para el home del cliente.
+   */
+  async tomorrowPreview(citySlug = 'nicoya') {
+    const city = String(citySlug || 'nicoya')
+      .trim()
+      .toLowerCase();
+    const tomorrow = (crWeekday(new Date()) + 1) % 7;
+    const rows = await this.prisma.menuItem.findMany({
+      where: {
+        isAvailable: true,
+        NOT: { stockQty: 0 },
+        availableDays: { has: tomorrow },
+        merchant: { isListed: true, citySlug: city, user: { status: 'active' } },
+      },
+      orderBy: [{ isPopular: 'desc' }, { name: 'asc' }],
+      take: 60,
+      select: {
+        id: true,
+        name: true,
+        price: true,
+        image: true,
+        stockQty: true,
+        dailyQty: true,
+        fulfillNote: true,
+        merchant: {
+          select: { id: true, businessName: true, logoUrl: true, isHomeCook: true },
+        },
+      },
+    });
+    const byMerchant = new Map<string, any>();
+    for (const r of rows) {
+      const m = r.merchant as any;
+      if (!byMerchant.has(m.id)) {
+        byMerchant.set(m.id, {
+          merchantId: m.id,
+          businessName: m.businessName,
+          logoUrl: m.logoUrl,
+          isHomeCook: (m as any).isHomeCook ?? false,
+          items: [],
+        });
+        if (byMerchant.size >= 10) break;
+      }
+      const entry = byMerchant.get(m.id);
+      if (entry.items.length < 3) {
+        entry.items.push({
+          id: r.id,
+          name: r.name,
+          price: Number(r.price),
+          image: r.image,
+          stockQty: r.stockQty,
+          fulfillNote: r.fulfillNote,
+        });
+      }
+    }
+    return { items: [...byMerchant.values()] };
   }
 
   /**
@@ -213,6 +288,16 @@ export class MenuService {
     }
     if (data.isPopular !== undefined) out.isPopular = Boolean(data.isPopular);
     if (data.isAvailable !== undefined) out.isAvailable = Boolean(data.isAvailable);
+    // Nota de entrega programada ("Se entrega el jueves a las 2:00 p. m.").
+    if (data.fulfillNote !== undefined) {
+      if (data.fulfillNote === null || String(data.fulfillNote).trim() === '') {
+        out.fulfillNote = null;
+      } else if (typeof data.fulfillNote !== 'string' || data.fulfillNote.trim().length > 120) {
+        throw new BadRequestException('fulfillNote inválida (máx 120 caracteres)');
+      } else {
+        out.fulfillNote = data.fulfillNote.trim();
+      }
+    }
     // Stock por día de venta (ej. 50 rollos). Null/vacío = sin límite.
     for (const key of ['stockQty', 'dailyQty'] as const) {
       if (data[key] !== undefined) {
@@ -398,47 +483,68 @@ export class MenuService {
       input.stockDay = toCRDateKey(new Date());
     }
 
-    return this.prisma.$transaction(async (tx) => {
-      if (variants !== undefined) {
-        // Replace strategy: modifier setup is small and fully owned here.
-        await tx.menuItemVariantGroup.deleteMany({ where: { menuItemId: itemId } });
-        if (variants.length > 0) {
-          await tx.menuItemVariantGroup.createMany({
-            data: variants.map((g, gi) => ({
-              menuItemId: itemId,
-              name: g.name,
-              required: g.required,
-              multiple: g.multiple,
-              maxSelections: g.maxSelections,
-              sortOrder: gi,
-            })),
-          });
-          const groups = await tx.menuItemVariantGroup.findMany({
-            where: { menuItemId: itemId },
-            orderBy: { sortOrder: 'asc' },
-          });
-          for (let gi = 0; gi < groups.length; gi++) {
-            const opts = variants[gi].options;
-            if (opts.length > 0) {
-              await tx.menuItemVariantOption.createMany({
-                data: opts.map((o, oi) => ({
-                  groupId: groups[gi].id,
-                  name: o.name,
-                  priceDelta: o.priceDelta,
-                  isAvailable: o.isAvailable,
-                  sortOrder: oi,
-                })),
-              });
+    return this.prisma
+      .$transaction(async (tx) => {
+        if (variants !== undefined) {
+          // Replace strategy: modifier setup is small and fully owned here.
+          await tx.menuItemVariantGroup.deleteMany({ where: { menuItemId: itemId } });
+          if (variants.length > 0) {
+            await tx.menuItemVariantGroup.createMany({
+              data: variants.map((g, gi) => ({
+                menuItemId: itemId,
+                name: g.name,
+                required: g.required,
+                multiple: g.multiple,
+                maxSelections: g.maxSelections,
+                sortOrder: gi,
+              })),
+            });
+            const groups = await tx.menuItemVariantGroup.findMany({
+              where: { menuItemId: itemId },
+              orderBy: { sortOrder: 'asc' },
+            });
+            for (let gi = 0; gi < groups.length; gi++) {
+              const opts = variants[gi].options;
+              if (opts.length > 0) {
+                await tx.menuItemVariantOption.createMany({
+                  data: opts.map((o, oi) => ({
+                    groupId: groups[gi].id,
+                    name: o.name,
+                    priceDelta: o.priceDelta,
+                    isAvailable: o.isAvailable,
+                    sortOrder: oi,
+                  })),
+                });
+              }
             }
           }
         }
-      }
-      return tx.menuItem.update({
-        where: { id: itemId },
-        data: input,
-        include: { variantGroups: { include: { options: true } } },
+        return tx.menuItem.update({
+          where: { id: itemId },
+          data: input,
+          include: { variantGroups: { include: { options: true } } },
+        });
+      })
+      .then((updated) => {
+        // Reposición 0 → con stock: avisar a seguidores (best-effort, nunca
+        // traba el guardado).
+        try {
+          const before = (item as any).stockQty as number | null;
+          const after = (updated as any).stockQty as number | null;
+          if (before === 0 && typeof after === 'number' && after > 0) {
+            void this.notifications
+              .notifyFollowers(merchant.id, {
+                title: `🧡 ¡Volvió ${(updated as any).name}!`,
+                body: `${merchant.businessName} repuso stock — quedan ${after}. Pedilo antes de que se acabe.`,
+                data: { kind: 'restock', menuItemId: itemId },
+              })
+              .catch(() => undefined);
+          }
+        } catch {
+          // noop
+        }
+        return updated;
       });
-    });
   }
 
   /**

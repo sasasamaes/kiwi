@@ -300,6 +300,38 @@ export class NotificationsService {
   }
 
   /**
+   * Aviso a seguidores de un comercio (anuncio de venta o reposición).
+   * Respeta el opt-out `customer.follows`: quien lo apagó no recibe nada.
+   * Devuelve cuántos seguidores fueron alcanzados.
+   */
+  async notifyFollowers(
+    merchantId: string,
+    notification: { title: string; body: string; data?: Record<string, string> },
+  ): Promise<{ reached: number }> {
+    const follows = await this.prisma.merchantFollow.findMany({
+      where: { merchantId, user: { status: 'active' } },
+      select: { userId: true },
+    });
+    if (follows.length === 0) return { reached: 0 };
+    const ids = [...new Set(follows.map((f) => f.userId))];
+
+    const optedOut = await this.prisma.topicPreference.findMany({
+      where: { userId: { in: ids }, topic: 'customer.follows', enabled: false },
+      select: { userId: true },
+    });
+    const outSet = new Set(optedOut.map((o) => o.userId));
+    const targets = ids.filter((id) => !outSet.has(id));
+    if (targets.length === 0) return { reached: 0 };
+
+    await this.sendToMultipleUsers(targets, {
+      title: notification.title,
+      body: notification.body,
+      data: { type: 'merchant-follow', merchantId, ...(notification.data ?? {}) },
+    });
+    return { reached: targets.length };
+  }
+
+  /**
    * Payload data-only: título/cuerpo viajan en `data` y el SW los muestra
    * con showNotification. NO se manda bloque `notification`: con bloque, el
    * SDK de FCM muestra su propio banner ADEMÁS del nuestro (1 envío = 2

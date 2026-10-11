@@ -1,0 +1,13 @@
+// Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
+import { Module } from '@nestjs/common';
+import { FollowsService } from './follows.service';
+import { FollowsController } from './follows.controller';
+import { PrismaModule } from '../prisma/prisma.module';
+
+@Module({
+  imports: [PrismaModule],
+  providers: [FollowsService],
+  controllers: [FollowsController],
+  exports: [FollowsService],
+})
+export class FollowsModule {}

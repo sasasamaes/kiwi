@@ -17,6 +17,7 @@ const CATEGORIES = [
   { id: 'mariscos', label: 'Mariscos' },
   { id: 'comida_rapida', label: 'Comida rápida' },
   { id: 'saludable', label: 'Saludable' },
+  { id: 'cocina_casera', label: 'Cocina casera' },
   { id: 'bar', label: 'Bar' },
   { id: 'otro', label: 'Otro' },
 ];
@@ -74,6 +75,7 @@ export default function PerfilPage() {
     category: 'restaurante',
     logoUrl: '' as string | null,
     hours: {} as Record<string, DayHours>,
+    socials: { instagram: '', facebook: '', tiktok: '', whatsapp: '' },
   });
 
   useEffect(() => {
@@ -104,6 +106,12 @@ export default function PerfilPage() {
           category: (profile as any)?.category || 'restaurante',
           logoUrl: (profile as any)?.logoUrl || null,
           hours,
+          socials: {
+            instagram: (profile as any)?.socials?.instagram || '',
+            facebook: (profile as any)?.socials?.facebook || '',
+            tiktok: (profile as any)?.socials?.tiktok || '',
+            whatsapp: (profile as any)?.socials?.whatsapp || '',
+          },
         });
         setListed((profile as any)?.isListed !== false);
       } catch {
@@ -191,6 +199,12 @@ export default function PerfilPage() {
           category: form.category,
           openingHours,
           logoUrl: form.logoUrl || null,
+          socials: {
+            instagram: form.socials.instagram.trim(),
+            facebook: form.socials.facebook.trim(),
+            tiktok: form.socials.tiktok.trim(),
+            whatsapp: form.socials.whatsapp.trim(),
+          },
         }),
         api.updateMe({ phone: phone || null }),
       ]);
@@ -398,6 +412,38 @@ export default function PerfilPage() {
                 />
               </div>
             </div>
+          </div>
+
+          <div className="my-5 border-t border-surface-100 dark:border-surface-700/60" />
+          <p className="text-xs font-bold uppercase tracking-wider text-surface-400 mb-4">
+            Redes sociales
+          </p>
+          <p className="mb-3 text-sm text-surface-500 dark:text-surface-400">
+            Se muestran en tu menú de la app cliente. Acepta link o @usuario.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {(
+              [
+                { key: 'instagram', label: 'Instagram', placeholder: '@mi_negocio' },
+                { key: 'facebook', label: 'Facebook', placeholder: 'link o nombre' },
+                { key: 'tiktok', label: 'TikTok', placeholder: '@mi_negocio' },
+                { key: 'whatsapp', label: 'WhatsApp', placeholder: '8888-8888' },
+              ] as const
+            ).map((s) => (
+              <div key={s.key}>
+                <label className="mb-1.5 block text-sm font-medium text-surface-600 dark:text-surface-400">
+                  {s.label}
+                </label>
+                <input
+                  value={form.socials[s.key]}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, socials: { ...f.socials, [s.key]: e.target.value } }))
+                  }
+                  placeholder={s.placeholder}
+                  className={inputCls}
+                />
+              </div>
+            ))}
           </div>
 
           <div className="my-5 border-t border-surface-100 dark:border-surface-700/60" />

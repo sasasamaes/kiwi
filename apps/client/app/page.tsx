@@ -99,6 +99,16 @@ export default function ClientHome() {
   const [category, setCategory] = useState('');
   const [items, setItems] = useState<DiscoverItem[]>([]);
   const [banners, setBanners] = useState<any[]>([]);
+  // Vitrina de mañana (preventa del día antes). Solo en la vista general.
+  const [tomorrow, setTomorrow] = useState<
+    Array<{
+      merchantId: string;
+      businessName: string;
+      logoUrl: string | null;
+      isHomeCook: boolean;
+      items: Array<{ id: string; name: string; price: number; stockQty: number | null }>;
+    }>
+  >([]);
   const [loading, setLoading] = useState(true);
   const [feedError, setFeedError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
@@ -158,6 +168,17 @@ export default function ClientHome() {
           if (cancelled) return;
           setItems(feed.items ?? []);
           setBanners(bn.items ?? []);
+          // Vitrina de mañana solo en la vista general (sin búsqueda ni filtro).
+          if (!q.trim() && !category) {
+            api
+              .getTomorrowPreview(city)
+              .then((t) => {
+                if (!cancelled) setTomorrow(t.items ?? []);
+              })
+              .catch(() => undefined);
+          } else if (!cancelled) {
+            setTomorrow([]);
+          }
           // Métrica: impresiones de sponsored (best-effort, no bloquea).
           for (const it of (feed.items ?? []).filter(
             (i: DiscoverItem) => i.isSponsored && i.campaignId,
@@ -308,7 +329,7 @@ export default function ClientHome() {
       </motion.header>
 
       <main className="mx-auto max-w-lg lg:max-w-5xl px-4 py-6">
-        {/* Banners patrocinados */}
+        {/* Banners patrocinados */}{' '}
         {banners.length > 0 && (
           <div className="mb-6 flex gap-3 overflow-x-auto pb-2 -mx-4 px-4">
             {banners.map((b) => (
@@ -334,7 +355,67 @@ export default function ClientHome() {
             ))}
           </div>
         )}
-
+        {/* Vitrina de mañana: lo que se vende mañana se aparta hoy */}
+        {tomorrow.length > 0 && (
+          <div className="mb-6">
+            <p className="font-display font-bold text-surface-800 dark:text-surface-100 mb-1">
+              📅 Mañana venden esto
+            </p>
+            <p className="text-xs text-surface-500 dark:text-surface-400 mb-3">
+              Apartá hoy en preventa — hasta agotar stock.
+            </p>
+            <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4">
+              {tomorrow.map((t) => (
+                <button
+                  key={t.merchantId}
+                  onClick={() => router.push(`/menu/${t.merchantId}`)}
+                  className="shrink-0 w-64 rounded-2xl overflow-hidden border-2 border-orange-500/40 dark:border-orange-400/30 bg-white dark:bg-surface-800 p-4 text-left shadow-soft"
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-orange-100 dark:bg-orange-900/40 overflow-hidden">
+                      {isHttpUrl(t.logoUrl) ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={t.logoUrl}
+                          alt={t.businessName}
+                          className="h-9 w-9 object-cover"
+                        />
+                      ) : isEmojiImage(t.logoUrl) ? (
+                        <span className="text-xl leading-none">{t.logoUrl}</span>
+                      ) : (
+                        <span className="font-bold text-orange-700 dark:text-orange-300">
+                          {t.businessName.slice(0, 1).toUpperCase()}
+                        </span>
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-sm text-surface-800 dark:text-surface-100 truncate">
+                        {t.businessName}
+                      </p>
+                      {t.isHomeCook && (
+                        <p className="text-[10px] text-orange-600 dark:text-orange-300">
+                          🧡 Cocina casera
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  {t.items.slice(0, 2).map((i) => (
+                    <p
+                      key={i.id}
+                      className="text-xs text-surface-600 dark:text-surface-300 truncate"
+                    >
+                      • {i.name} — ₡{Number(i.price).toLocaleString()}
+                      {typeof i.stockQty === 'number' ? ` (quedan ${i.stockQty})` : ''}
+                    </p>
+                  ))}
+                  <p className="mt-2 text-xs font-semibold text-orange-700 dark:text-orange-300">
+                    Apartar para mañana →
+                  </p>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         {/* QR Scanner View */}
         <AnimatePresence mode="wait">
           {showScanner && (
@@ -376,7 +457,6 @@ export default function ClientHome() {
             </motion.div>
           )}
         </AnimatePresence>
-
         {/* QR hero */}
         {!showScanner && (
           <motion.div
@@ -413,7 +493,6 @@ export default function ClientHome() {
             </motion.div>
           </motion.div>
         )}
-
         {/* Feed real de comercios */}
         <PushOptInCard />
         <ScrollReveal index={0}>
@@ -517,7 +596,6 @@ export default function ClientHome() {
             </div>
           )}
         </ScrollReveal>
-
         <div className="lg:grid lg:grid-cols-2 lg:gap-6 lg:items-start">
           {/* Banner comercio: pautar + usar la app (manda al WhatsApp del negocio) */}
           <ScrollReveal index={1} className="lg:h-full">

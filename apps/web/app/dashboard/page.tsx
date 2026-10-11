@@ -67,6 +67,12 @@ export default function Dashboard() {
   const [unreadCount, setUnreadCount] = useState(0);
   // Crédito prepago: solo cubre envíos. Se recarga por semana con Kiwi.
   const [creditBalance, setCreditBalance] = useState<number | null>(null);
+  // Avisos a seguidores (venta por fecha o stock). Máx 3/día (lo aplica el API).
+  const [followersCount, setFollowersCount] = useState<number | null>(null);
+  const [announceTitle, setAnnounceTitle] = useState('');
+  const [announceBody, setAnnounceBody] = useState('');
+  const [announcing, setAnnouncing] = useState(false);
+  const [announceResult, setAnnounceResult] = useState<string | null>(null);
 
   // Push notifications
   const { requestPermission } = usePushNotifications({
@@ -128,6 +134,31 @@ export default function Dashboard() {
   // Si la carga falla (wifi caído, 401, 500), se muestra en vez de
   // pintar ceros que parecen "sin ventas".
   const [ordersError, setOrdersError] = useState<string | null>(null);
+
+  const sendAnnounce = async () => {
+    if (announcing || !announceTitle.trim() || !announceBody.trim()) return;
+    setAnnouncing(true);
+    setAnnounceResult(null);
+    try {
+      const res = await api.announceToFollowers({
+        title: announceTitle.trim(),
+        body: announceBody.trim(),
+      });
+      setAnnounceResult(
+        res.reached > 0
+          ? `✓ Aviso enviado a ${res.reached} seguidor${res.reached === 1 ? '' : 'es'}`
+          : 'No tenés seguidores todavía — compartí tu QR para que te sigan.',
+      );
+      if (res.reached > 0) {
+        setAnnounceTitle('');
+        setAnnounceBody('');
+      }
+    } catch (e: any) {
+      setAnnounceResult(e?.message || 'No se pudo enviar el aviso');
+    } finally {
+      setAnnouncing(false);
+    }
+  };
   const fetchOrders = async () => {
     try {
       const data = await api.getMyOrders();
@@ -156,6 +187,13 @@ export default function Dashboard() {
         setUnreadCount(data.count);
       } catch {
         // Ignore notification count fetch failures
+      }
+      // Seguidores (para el botón de avisar ventas/stock)
+      try {
+        const f = await api.getFollowersCount();
+        setFollowersCount(Number(f?.count ?? 0));
+      } catch {
+        setFollowersCount(null);
       }
       // Request push notification permission
       requestPermission();
@@ -234,7 +272,6 @@ export default function Dashboard() {
             </div>
           </div>
         </motion.div>
-
         {/* Cocina casera: guía contextual para emprendedores */}
         {(user as any)?.merchantProfile?.isHomeCook === true && (
           <motion.div
@@ -269,8 +306,56 @@ export default function Dashboard() {
             </ul>
           </motion.div>
         )}
-
-        {/* Quick Actions */}
+        {/* Avisar a seguidores (venta por fecha o stock, máx 3/día) */}
+        <motion.div
+          className="mb-8 rounded-2xl border border-orange-500/30 bg-white dark:bg-surface-800 p-5 shadow-soft"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <div className="flex items-center justify-between gap-2">
+            <p className="font-display font-bold text-surface-800 dark:text-surface-100">
+              📣 Avisar a seguidores
+            </p>
+            <span className="text-xs font-semibold text-orange-700 dark:text-orange-300">
+              {followersCount == null ? '' : `${followersCount} te siguen`}
+            </span>
+          </div>
+          <p className="mt-1 text-xs text-surface-500 dark:text-surface-400">
+            Ej. «Mañana vendo rollos de canela» o «Ya hay comida del día». Les llega push + campana.
+          </p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_2fr_auto]">
+            <input
+              type="text"
+              value={announceTitle}
+              onChange={(e) => setAnnounceTitle(e.target.value)}
+              placeholder="Título (ej. Mañana hay rollos)"
+              maxLength={60}
+              className="rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-2.5 text-sm"
+            />
+            <input
+              type="text"
+              value={announceBody}
+              onChange={(e) => setAnnounceBody(e.target.value)}
+              placeholder="Mensaje (ej. Se entregan el jueves a las 2:00 p. m.)"
+              maxLength={200}
+              className="rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-2.5 text-sm"
+            />
+            <button
+              onClick={() => void sendAnnounce()}
+              disabled={announcing || !announceTitle.trim() || !announceBody.trim()}
+              className="rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"
+            >
+              {announcing ? 'Enviando…' : 'Avisar'}
+            </button>
+          </div>
+          {announceResult && (
+            <p className="mt-2 text-xs font-medium text-surface-600 dark:text-surface-300">
+              {announceResult}
+            </p>
+          )}
+        </motion.div>
+        {/* Quick Actions */}{' '}
         <StaggerContainer className="mb-8 grid gap-4 md:grid-cols-3">
           <StaggerItem>
             <Link href="/orders/new?kind=freight">
@@ -437,7 +522,6 @@ export default function Dashboard() {
             </Link>
           </StaggerItem>
         </StaggerContainer>
-
         {/* Stats Grid */}
         <StaggerContainer className="mb-8 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           <StaggerItem>
@@ -481,7 +565,6 @@ export default function Dashboard() {
             />
           </StaggerItem>
         </StaggerContainer>
-
         {/* Crédito prepago */}
         {creditBalance != null && (
           <motion.div
@@ -519,7 +602,6 @@ export default function Dashboard() {
             </div>
           </motion.div>
         )}
-
         {/* Recent Orders */}
         <ScrollReveal as="section">
           <div className="rounded-2xl bg-white dark:bg-surface-800 shadow-soft dark:shadow-dark p-6">
