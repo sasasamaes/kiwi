@@ -49,6 +49,8 @@ interface OnvoPayCheckoutSessionRequest {
   cancelUrl: string;
   /** Metadata extra (ej. { topupId }) para matchear el webhook. */
   metadata?: Record<string, string>;
+  /** Cuenta conectada vendedora (marketplace). Ausente = cuenta primaria. */
+  onBehalfOf?: string;
 }
 
 interface OnvoPayCheckoutSessionResponse {
@@ -188,6 +190,7 @@ export class OnvoPayProvider {
           ...(request.customerEmail ? { customerEmail: request.customerEmail } : {}),
           redirectUrl: request.redirectUrl,
           cancelUrl: request.cancelUrl,
+          ...(request.onBehalfOf ? { onBehalfOf: request.onBehalfOf } : {}),
           metadata: {
             ...(request.orderId ? { orderId: request.orderId } : {}),
             ...(request.customerPhone ? { customerPhone: request.customerPhone } : {}),

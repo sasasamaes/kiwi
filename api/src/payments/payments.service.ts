@@ -101,14 +101,24 @@ export class PaymentsService {
     }
 
     // Tarjeta/SINPE solo si el comercio pasó el KYC de Onvo (flag del admin).
+    // Marketplace: la cuenta conectada `active` también habilita.
+    let seller: string | undefined;
     if (method === 'onvopay_card' || method === 'onvopay_sinpe') {
       const payee = await this.prisma.merchantProfile.findUnique({
         where: { id: order.merchantId },
-        select: { cardPaymentsEnabled: true },
+        select: {
+          cardPaymentsEnabled: true,
+          onvoConnectedAccountId: true,
+          onvoOnboardingStatus: true,
+        },
       });
-      if (!payee?.cardPaymentsEnabled) {
+      if (!(payee?.cardPaymentsEnabled || payee?.onvoOnboardingStatus === 'active')) {
         throw new BadRequestException('Este comercio aún no cobra con tarjeta (solo efectivo)');
       }
+      seller =
+        payee?.onvoOnboardingStatus === 'active'
+          ? (payee.onvoConnectedAccountId ?? undefined)
+          : undefined;
     }
 
     // Server is the source of truth for money: the client amount is only
@@ -157,6 +167,7 @@ export class PaymentsService {
       customerPhone,
       cryptoCoin,
       paymentMethodId,
+      onBehalfOf: seller,
     });
     await this.savePaymentRecord(orderId, existingPayment, method, amount, cryptoCoin, result);
 
@@ -194,14 +205,24 @@ export class PaymentsService {
       throw new BadRequestException('El pedido ya no admite pagos');
     }
     // Tarjeta/SINPE solo si el comercio pasó el KYC de Onvo (igual que logueado).
+    // Marketplace: la cuenta conectada `active` también habilita.
+    let guestSeller: string | undefined;
     if (method === 'onvopay_card' || method === 'onvopay_sinpe') {
       const payee = await this.prisma.merchantProfile.findUnique({
         where: { id: order.merchantId },
-        select: { cardPaymentsEnabled: true },
+        select: {
+          cardPaymentsEnabled: true,
+          onvoConnectedAccountId: true,
+          onvoOnboardingStatus: true,
+        },
       });
-      if (!payee?.cardPaymentsEnabled) {
+      if (!(payee?.cardPaymentsEnabled || payee?.onvoOnboardingStatus === 'active')) {
         throw new BadRequestException('Este comercio aún no cobra con tarjeta (solo efectivo)');
       }
+      guestSeller =
+        payee?.onvoOnboardingStatus === 'active'
+          ? (payee.onvoConnectedAccountId ?? undefined)
+          : undefined;
     }
 
     const serverAmount = Number(order.totalAmount);
@@ -223,6 +244,7 @@ export class PaymentsService {
       customerEmail,
       customerPhone,
       cryptoCoin,
+      onBehalfOf: guestSeller,
     });
     await this.savePaymentRecord(
       orderId,
@@ -326,6 +348,7 @@ export class PaymentsService {
       customerPhone?: string;
       cryptoCoin?: 'USDC' | 'USDT';
       paymentMethodId?: string;
+      onBehalfOf?: string;
     },
   ): Promise<PaymentResult> {
     switch (method) {
@@ -338,6 +361,7 @@ export class PaymentsService {
           contact.customerEmail,
           contact.customerPhone,
           contact.paymentMethodId,
+          contact.onBehalfOf,
         );
       case 'crypto':
         return this.createCryptoPayment(orderId, amount, contact.cryptoCoin || 'USDC');
@@ -514,6 +538,7 @@ export class PaymentsService {
     customerEmail?: string,
     customerPhone?: string,
     paymentMethodId?: string,
+    onBehalfOf?: string,
   ): Promise<PaymentResult> {
     const paymentType = method === 'onvopay_card' ? 'Tarjeta' : 'SINPE';
 
@@ -539,6 +564,7 @@ export class PaymentsService {
       customerPhone,
       redirectUrl: `${frontendBase}/tracking/${orderId}?paid=1`,
       cancelUrl: `${frontendBase}/tracking/${orderId}?cancelled=1`,
+      onBehalfOf,
     });
 
     if (!sessionResult.success) {
