@@ -618,4 +618,49 @@ export class OnvoPayProvider {
       return { setupIntentId: '', clientSecret: '', error: error.message };
     }
   }
+
+  async createConnectedAccount(
+    businessName: string,
+    appFee: number,
+  ): Promise<{ id?: string; status?: string; onboardingUrl?: string; error?: string }> {
+    if (!this.secretKey) return { error: 'Onvo no configurado (falta ONVO_SECRET_KEY)' };
+    const response = await fetch(`${this.baseUrl}/connected-accounts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${this.secretKey}` },
+      body: JSON.stringify({
+        businessName: String(businessName).slice(0, 50),
+        marketplaceAppFee: appFee,
+      }),
+    });
+    const data = await response.json();
+    if (!response.ok)
+      throw new Error(
+        Array.isArray(data.message)
+          ? data.message.join('. ')
+          : data.message || 'No se pudo crear la cuenta',
+      );
+    return { id: data.id, status: data.status, onboardingUrl: data.onboardingUrl };
+  }
+
+  async getConnectedAccount(id: string): Promise<{ status?: string; details?: any }> {
+    if (!this.secretKey) return {};
+    const response = await fetch(`${this.baseUrl}/connected-accounts/${id}`, {
+      headers: { Authorization: `Bearer ${this.secretKey}` },
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Cuenta no encontrada');
+    return { status: data.status, details: data };
+  }
+
+  async regenerateOnboardingLink(id: string): Promise<{ onboardingUrl?: string; error?: string }> {
+    if (!this.secretKey) return { error: 'Onvo no configurado (falta ONVO_SECRET_KEY)' };
+    const response = await fetch(`${this.baseUrl}/connected-accounts/${id}/onboarding-link`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${this.secretKey}` },
+    });
+    const data = await response.json();
+    if (response.status === 409) return { error: 'already_completed' };
+    if (!response.ok) throw new Error(data.message || 'No se pudo regenerar el enlace');
+    return { onboardingUrl: data.onboardingUrl };
+  }
 }

@@ -18,6 +18,7 @@ import { memoryStorage } from 'multer';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiConsumes } from '@nestjs/swagger';
 import { MerchantsService } from './merchants.service';
 import { AdsService } from '../ads/ads.service';
+import { MarketplaceService } from '../payments/marketplace/marketplace.service';
 import { ImageUploadService } from '../menu/image-upload.service';
 import { Public } from '../auth/decorators/public.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -32,6 +33,7 @@ export class MerchantsController {
     private readonly merchantsService: MerchantsService,
     private readonly adsService: AdsService,
     private readonly imageUpload: ImageUploadService,
+    private readonly marketplace: MarketplaceService,
   ) {}
 
   // OJO orden: esta ruta estática debe declararse ANTES de GET ':id'.
@@ -177,5 +179,35 @@ export class MerchantsController {
   @ApiOperation({ summary: 'Whether merchant logo upload is configured' })
   async logoStatus() {
     return { enabled: this.imageUpload.isConfigured() };
+  }
+
+  @Post('me/marketplace/onboarding')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('merchant')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Crear cuenta conectada Onvo y obtener link de onboarding' })
+  async startOnboarding(@CurrentUser() user: any) {
+    const merchant = await this.merchantsService.findByUserId(user.sub);
+    return this.marketplace.startOnboarding(merchant.id);
+  }
+
+  @Get('me/marketplace/status')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('merchant')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Estado de onboarding Onvo del comercio' })
+  async onboardingStatus(@CurrentUser() user: any) {
+    const merchant = await this.merchantsService.findByUserId(user.sub);
+    return this.marketplace.refreshStatus(merchant.id);
+  }
+
+  @Post('me/marketplace/onboarding-link')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('merchant')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Regenerar link de onboarding Onvo' })
+  async onboardingLink(@CurrentUser() user: any) {
+    const merchant = await this.merchantsService.findByUserId(user.sub);
+    return this.marketplace.regenerateLink(merchant.id);
   }
 }
