@@ -26,6 +26,17 @@ export class SettingsController {
     return { pct: await this.settingsService.getDriverCommissionPct() };
   }
 
+  @Public()
+  @Get('platform-fees')
+  @ApiOperation({ summary: 'Tasas del cargo por servicio (público, espejo de pricing)' })
+  async platformFees() {
+    const [standardPct, homeCookPct] = await Promise.all([
+      this.settingsService.getDriverCommissionPct(),
+      this.settingsService.getHomeCookCommissionPct(),
+    ]);
+    return { standardPct, homeCookPct };
+  }
+
   @Get('admin')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')

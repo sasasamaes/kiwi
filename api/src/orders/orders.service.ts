@@ -153,7 +153,14 @@ export class OrdersService {
             include: { merchant: { select: MERCHANT_PUBLIC_SELECT } },
           })
         : null;
-      if (existing) return existing;
+      if (existing) {
+        // Retry de un pedido cash creado justo antes: asegurar la fila
+        // Payment aunque el primer intento muriera después del create.
+        if (data?.paymentMethod === 'cash') {
+          await this.ensureCashPayment(existing.id, Number(existing.totalAmount));
+        }
+        return existing;
+      }
     }
 
     // Validate inputs (all of these were Prisma 500s before).
@@ -247,10 +254,10 @@ export class OrdersService {
       throw new BadRequestException('scheduledTime inválida (formato HH:MM)');
     }
 
-    // Pricing: el comercio paga productos + viaje, SIN comisión.
-    // La comisión (15% fija por viaje) la paga el repartidor: se descuenta
-    // de su payout. Kiwi une comercios con repartidores: los productos son
-    // 100% del comercio, sin comisión.
+    // Pricing: el cliente paga productos + cargo por servicio + viaje.
+    // El cargo (15% standard, 10% cocina casera) es extra sobre el precio
+    // del comercio. Aparte, el viaje deja el corte del repartidor (tasa
+    // standard). Los productos son 100% del comercio.
     const kind = data.kind ?? 'food';
     if (kind !== 'food' && kind !== 'freight') {
       throw new BadRequestException('kind inválido: use food o freight');
@@ -481,21 +488,42 @@ export class OrdersService {
           { lat: data.deliveryLat, lng: data.deliveryLng },
         )) + weightSurcharge,
     );
-    // Comisión del repartidor: % configurable por el admin
-    // (/admin/settings). El medio de pago (payWithCredit) solo elige cómo
-    // paga el comercio, no cambia la tasa. La tasa queda guardada por pedido
-    // (commissionRate): cambiar el setting solo afecta pedidos NUEVOS.
-    // Cocinas caseras pagan la tasa reducida de emprendedores (si el admin
-    // la bajó; si no, es la misma standard).
+    // Cargo por servicio de Kiwi: % EXTRA sobre el precio del comercio
+    // (lo paga el cliente). 15% standard, 10% cocina casera (emprendedores).
+    // % configurable por el admin (/admin/settings). El medio de pago solo
+    // elige cómo paga el comercio, no cambia la tasa. La tasa queda guardada
+    // por pedido (commissionRate): cambiar el setting solo afecta NUEVOS.
+    // Aparte: el corte del viaje al repartidor sigue igual (15% del viaje,
+    // tasa standard, no toca la de cocina casera).
     // El servidor pone el monto, el cliente nunca lo decide.
     const isHomeCook = (merchantProfile as any).isHomeCook === true;
-    const commissionPct = isHomeCook
-      ? await this.settingsService.getHomeCookCommissionPct()
-      : await this.settingsService.getDriverCommissionPct();
-    const commissionRate = commissionPct / 100;
-    const commission = Math.round(tripPrice * commissionRate);
-    const driverPayout = tripPrice - commission;
-    const totalAmount = productsTotal + tripPrice;
+    const [standardPct, servicePct] = await Promise.all([
+      this.settingsService.getDriverCommissionPct(),
+      isHomeCook
+        ? this.settingsService.getHomeCookCommissionPct()
+        : this.settingsService.getDriverCommissionPct(),
+    ]);
+    const commissionRate = servicePct / 100;
+    const serviceFee = Math.round(productsTotal * commissionRate);
+    const tripCut = Math.round(tripPrice * (standardPct / 100));
+    const commission = serviceFee + tripCut;
+    const driverPayout = tripPrice - tripCut;
+    const totalAmount = productsTotal + serviceFee + tripPrice;
+    // Efectivo: con cuánto paga el cliente (para llevar el vuelto listo).
+    // Opcional; si viene debe cubrir el total. Se guarda en el pedido.
+    let cashTendered: number | null = null;
+    if (data.cashTendered != null && data.cashTendered !== '') {
+      const ct = Math.round(Number(data.cashTendered) * 100) / 100;
+      if (!Number.isFinite(ct) || ct < 0 || ct > 99999999.99) {
+        throw new BadRequestException('cashTendered inválido');
+      }
+      if (ct < totalAmount) {
+        throw new BadRequestException(
+          `El monto (₡${ct.toLocaleString()}) no cubre el total (₡${totalAmount.toLocaleString()})`,
+        );
+      }
+      cashTendered = ct;
+    }
     if (data.packageSize != null && !['S', 'M', 'L'].includes(data.packageSize)) {
       throw new BadRequestException('packageSize inválido');
     }
@@ -632,6 +660,7 @@ export class OrdersService {
           customerName: data.customerName != null ? String(data.customerName).trim() || null : null,
           customerPhone:
             data.customerPhone != null ? String(data.customerPhone).trim() || null : null,
+          ...(cashTendered != null ? { cashTendered } : {}),
           ...(typeof data.customerId === 'string' && data.customerId.trim() !== ''
             ? { customerId: data.customerId.trim() }
             : {}),
@@ -689,6 +718,13 @@ export class OrdersService {
         }
       }
       throw e;
+    }
+
+    // Efectivo: dejar fila Payment desde el nacimiento para que comercio y
+    // driver vean método y monto a cobrar (el checkout cash no llama a
+    // /payments). Best-effort: jamás traba el pedido.
+    if (data.paymentMethod === 'cash') {
+      await this.ensureCashPayment(order.id, Number(order.totalAmount));
     }
 
     // Asignación directa: avisar SOLO al elegido (socket 1:1 + push 1:1).
@@ -1041,6 +1077,22 @@ export class OrdersService {
       isStale: !!loc.isStale,
       known: true,
     };
+  }
+
+  /**
+   * Fila Payment para pedidos en efectivo (upsert idempotente: si el retry
+   * de idempotencia devuelve un pedido existente, igual queda la fila).
+   */
+  private async ensureCashPayment(orderId: string, total: number): Promise<void> {
+    try {
+      await this.prisma.payment.upsert({
+        where: { orderId },
+        update: {},
+        create: { orderId, amount: total, currency: 'CRC', method: 'cash', status: 'pending' },
+      });
+    } catch {
+      // best-effort: el pedido ya existe igual
+    }
   }
 
   /**

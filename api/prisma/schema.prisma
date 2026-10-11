@@ -579,6 +579,10 @@ model Order {
   customerName  String? @map("customer_name")
   customerPhone String? @map("customer_phone")
 
+  // Efectivo: con cuánto paga el cliente (para llevar el vuelto listo).
+  // Null = no indicó. El vuelto se deriva: cashTendered − totalAmount.
+  cashTendered Decimal? @map("cash_tendered") @db.Decimal(10, 2)
+
   // Origen: client_app (link público / app cliente) vs merchant_panel
   // (creado por el comercio en el dashboard). La página de comandas muestra
   // solo client_app.

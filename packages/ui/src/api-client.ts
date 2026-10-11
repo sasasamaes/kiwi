@@ -1505,6 +1505,25 @@ class ApiClient {
     return 15;
   }
 
+  /**
+   * Tasas del cargo por servicio (extra sobre productos: standard 15%,
+   * cocina casera 10%). El backend cobra el total real; esto es espejo
+   * para mostrar el desglose antes de pagar.
+   */
+  async getPlatformFees(): Promise<{ standardPct: number; homeCookPct: number }> {
+    try {
+      const r = await this.request<any>('/settings/platform-fees');
+      const std = Number(r?.standardPct);
+      const hc = Number(r?.homeCookPct);
+      return {
+        standardPct: Number.isFinite(std) ? Math.min(Math.max(std, 0), 100) : 15,
+        homeCookPct: Number.isFinite(hc) ? Math.min(Math.max(hc, 0), 100) : 10,
+      };
+    } catch {
+      return { standardPct: 15, homeCookPct: 10 };
+    }
+  }
+
   async getOrdersAdmin(params?: {
     take?: number;
     skip?: number;
@@ -2105,6 +2124,10 @@ export interface Order {
   specialInstructions?: string;
   customerName?: string | null;
   customerPhone?: string | null;
+  /** Efectivo: con cuánto paga el cliente (null = no indicó). */
+  cashTendered?: number | string | null;
+  /** Pago registrado (método/estado), cuando existe fila Payment. */
+  payment?: { status: string; method: string } | null;
   // Evidencia fotográfica 1+1 (el backend las exige para avanzar).
   pickupProofPhotoUrl?: string | null;
   pickupProofAt?: string | null;

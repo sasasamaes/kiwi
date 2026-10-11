@@ -87,6 +87,8 @@ function CheckoutContent() {
   const [address, setAddress] = useState('');
   const [deliveryZone, setDeliveryZone] = useState('');
   const [notes, setNotes] = useState('');
+  // Efectivo: con cuánto paga (opcional; debe cubrir el total).
+  const [cashTendered, setCashTendered] = useState('');
   // Consentimiento explícito para tratar los datos del pedido (nombre, teléfono
   // y dirección se comparten con comercio y repartidor). Obligatorio para ordenar.
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -159,12 +161,22 @@ function CheckoutContent() {
   }, [searchParams]);
 
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  // Sin comisión al cliente: paga productos + envío. El 15% lo paga el driver.
+  // Cargo por servicio Kiwi: % extra sobre productos (standard/cocina casera).
+  // El backend cobra el total real; esto es espejo para el desglose.
+  const [feeRates, setFeeRates] = useState({ standardPct: 15, homeCookPct: 10 });
+  useEffect(() => {
+    api
+      .getPlatformFees()
+      .then((f) => setFeeRates(f))
+      .catch(() => undefined);
+  }, []);
+  const servicePct = (isHomeCook ? feeRates.homeCookPct : feeRates.standardPct) / 100;
+  const serviceFee = Math.round(subtotal * servicePct);
   const zoneTrip = findDeliveryZone(deliveryZone)?.price ?? null;
   // Igual que el modal del menú y que el servidor: el envío es SIEMPRE el
   // precio del barrio (el servidor no tiene regla de gratis +₡5000).
   const deliveryFee = zoneTrip ?? 500;
-  const total = subtotal + deliveryFee;
+  const total = subtotal + serviceFee + deliveryFee;
   const phoneDigits = phoneNumber.replace(/\D/g, '');
 
   const canPlaceOrder =
@@ -174,6 +186,7 @@ function CheckoutContent() {
     deliveryZone.trim().length > 0 &&
     cart.length > 0 &&
     isValidSchedule(schedule) &&
+    (paymentMethod !== 'cash' || cashTendered === '' || Number(cashTendered) >= total) &&
     acceptedTerms;
 
   const placeOrder = useCallback(async () => {
@@ -205,6 +218,9 @@ function CheckoutContent() {
         customerPhone: phoneDigits,
         customerName,
         paymentMethod,
+        ...(paymentMethod === 'cash' && cashTendered !== ''
+          ? { cashTendered: Number(cashTendered) }
+          : {}),
       };
 
       const order =
@@ -431,6 +447,14 @@ function CheckoutContent() {
               </span>
             </div>
             <div className="flex justify-between text-sm mt-1">
+              <span className="text-surface-500">
+                Servicio Kiwi ({Math.round(servicePct * 100)}%)
+              </span>
+              <span className="text-surface-700 dark:text-surface-300">
+                ₡{serviceFee.toLocaleString()}
+              </span>
+            </div>
+            <div className="flex justify-between text-sm mt-1">
               <span className="text-surface-500">Envío</span>
               <span
                 className={
@@ -587,6 +611,41 @@ function CheckoutContent() {
           </div>
         </motion.div>
 
+        {/* Efectivo: con cuánto paga (para el vuelto) */}
+        {paymentMethod === 'cash' && (
+          <motion.div
+            className="mb-6 rounded-2xl bg-gold-50 dark:bg-gold-900/20 border border-gold-200/60 dark:border-gold-800/40 p-4"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <label className="block">
+              <span className="mb-1 block text-sm font-medium text-gold-700 dark:text-gold-300">
+                ¿Con cuánto pagás? <span className="font-normal">(opcional)</span>
+              </span>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-surface-500">₡</span>
+                <input
+                  type="number"
+                  min={0}
+                  value={cashTendered}
+                  onChange={(e) => setCashTendered(e.target.value)}
+                  placeholder={`Ej: ${total.toLocaleString()}`}
+                  className="w-full rounded-xl border border-gold-200 dark:border-gold-800 bg-white dark:bg-surface-900 pl-8 pr-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20"
+                />
+              </div>
+            </label>
+            {cashTendered !== '' && Number(cashTendered) > total && (
+              <p className="mt-1.5 text-xs font-semibold text-kiwi-700 dark:text-kiwi-300">
+                Vuelto: ₡{(Number(cashTendered) - total).toLocaleString()}
+              </p>
+            )}
+            {cashTendered !== '' && Number(cashTendered) < total && (
+              <p className="mt-1.5 text-xs font-semibold text-red-500">
+                El monto no cubre el total de ₡{total.toLocaleString()}
+              </p>
+            )}
+          </motion.div>
+        )}
         {/* Consentimiento (Ley 8968): sin pre-marcar, obligatorio para ordenar. */}
         <ConsentCheckbox
           checked={acceptedTerms}
@@ -650,7 +709,7 @@ function CheckoutContent() {
               <span>
                 <Coins className="h-3 w-3 inline" /> Pagas al repartidor al recibir tu pedido
               </span>
-            )}
+            )}{' '}
             {paymentMethod === 'sinpe' && (
               <span>
                 <Smartphone className="h-3 w-3 inline" /> Recibirás un link de pago por SINPE

@@ -230,12 +230,26 @@ export default function ComandasPage() {
                               Pagado
                             </span>
                           )}
+                          {(o.payment?.method === 'cash' || (o as any).cashTendered != null) && (
+                            <span className="rounded-full px-2 py-0.5 font-semibold bg-gold-100 text-gold-700 dark:bg-gold-900/40 dark:text-gold-300">
+                              Efectivo
+                            </span>
+                          )}
                         </div>
                       </div>
                       <div className="text-right shrink-0">
                         <p className="text-xl font-bold text-kiwi-700 dark:text-kiwi-400">
                           ₡{Number(o.totalAmount ?? 0).toLocaleString()}
                         </p>
+                        {(o as any).cashTendered != null && (
+                          <p className="text-xs font-semibold text-gold-700 dark:text-gold-300">
+                            Paga con ₡{Number((o as any).cashTendered).toLocaleString()} · Vuelto ₡
+                            {Math.max(
+                              0,
+                              Number((o as any).cashTendered) - Number(o.totalAmount ?? 0),
+                            ).toLocaleString()}
+                          </p>
+                        )}
                         {o.deliveryZone && (
                           <p className="text-xs text-surface-500">{o.deliveryZone}</p>
                         )}

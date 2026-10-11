@@ -267,7 +267,7 @@ describe('OrdersService', () => {
         payWithCredit: true,
       });
 
-      // Viaje ₡7000: el comercio paga ₡7000, el driver paga 15% (₡1050)
+      // Viaje ₡7000 sin productos: sin cargo extra; corte 15% aparte (₡1050)
       expect(order.deliveryZone).toBe('hojancha');
       expect(order.basePrice).toBe(7000);
       expect(order.driverPayout).toBe(5950);
@@ -276,7 +276,7 @@ describe('OrdersService', () => {
       expect(order.totalAmount).toBe(7000);
     });
 
-    it('el medio de pago no cambia la comisión: siempre 15% del driver', async () => {
+    it('el medio de pago no cambia el cargo: sin productos no hay cargo extra', async () => {
       prisma.merchantProfile.findUnique.mockResolvedValue({
         id: 'merchant-1',
         userId: 'user-1',
@@ -295,14 +295,14 @@ describe('OrdersService', () => {
         distanceKm: 1,
       });
 
-      // Viaje ₡7000: comercio paga ₡7000, driver recibe ₡5950 (15% Kiwi)
+      // Viaje ₡7000 sin productos: sin cargo extra, corte 15% aparte (₡1050)
       expect(order.commission).toBe(1050);
       expect(order.commissionRate).toBe(0.15);
       expect(order.totalAmount).toBe(7000);
       expect(order.driverPayout).toBe(5950);
     });
 
-    it('la tasa del admin manda: 20% configured → comisión 1400 en viaje 7000', async () => {
+    it('la tasa del admin manda: 20% configured → cargo y corte con 20%', async () => {
       prisma.merchantProfile.findUnique.mockResolvedValue({
         id: 'merchant-1',
         userId: 'user-1',
@@ -547,7 +547,7 @@ describe('OrdersService', () => {
       expect(prisma.order.create).not.toHaveBeenCalled();
     });
 
-    it('comida en zona: productos sin comisión, comercio paga envío pleno', async () => {
+    it('comida en zona: cargo extra sobre productos + corte del viaje aparte', async () => {
       const order: any = await service.create('user-1', {
         pickupAddress: 'Parque Nicoya',
         deliveryAddress: 'Barrio San Martín',
@@ -556,11 +556,12 @@ describe('OrdersService', () => {
         payWithCredit: true,
         productsTotal: 5000,
       });
-      // 15% de 2000 (envío) lo paga el driver; productos 100% del comercio
+      // Productos 5000 + cargo 15% (750) + viaje 2000. Corte del viaje 300.
       expect(order.basePrice).toBe(2000);
-      expect(order.commission).toBe(300);
+      expect(order.commission).toBe(750 + 300);
+      expect(order.commissionRate).toBe(0.15);
       expect(order.driverPayout).toBe(1700);
-      expect(order.totalAmount).toBe(2000 + 5000);
+      expect(order.totalAmount).toBe(5000 + 750 + 2000);
     });
 
     it('rechaza kind invalido y productsTotal negativo', async () => {
@@ -679,7 +680,7 @@ describe('OrdersService', () => {
       expect(prisma.order.create).not.toHaveBeenCalled();
     });
 
-    it('cocina casera usa la comisión reducida de emprendedores', async () => {
+    it('cocina casera: cargo 5% sobre productos + corte del viaje aparte', async () => {
       prisma.merchantProfile.findUnique.mockResolvedValue({
         id: 'merchant-1',
         userId: 'user-1',
@@ -700,7 +701,10 @@ describe('OrdersService', () => {
 
       expect(settingsStub.getHomeCookCommissionPct).toHaveBeenCalled();
       expect(order.commissionRate).toBe(0.05);
-      expect(order.commission).toBe(100); // 5% de 2000 (envío)
+      // Cargo 5% de 5000 (250) + corte 15% del viaje 2000 (300).
+      expect(order.commission).toBe(250 + 300);
+      expect(order.driverPayout).toBe(1700);
+      expect(order.totalAmount).toBe(5000 + 250 + 2000);
     });
 
     it('rechaza cuando el stock del día no alcanza', async () => {
@@ -816,6 +820,93 @@ describe('OrdersService', () => {
         items: [{ menuItemId: 'item-jueves', quantity: 2 }],
       });
       expect(order.id).toBe('o-prev');
+    });
+
+    it('efectivo con monto: guarda cashTendered y crea fila Payment cash', async () => {
+      prisma.merchantProfile.findUnique.mockResolvedValue({ id: 'merchant-1', userId: 'user-1' });
+      prisma.menuItem.findMany.mockResolvedValue([]);
+      prisma.payment.upsert = jest.fn().mockResolvedValue({});
+      prisma.order.create.mockImplementation((args: any) =>
+        Promise.resolve({ id: 'o-cash', ...args.data }),
+      );
+
+      const order: any = await service.create('user-1', {
+        pickupAddress: 'Parque Nicoya',
+        deliveryAddress: 'Barrio San Martín',
+        distanceKm: 2.5,
+        kind: 'food',
+        productsTotal: 5000,
+        paymentMethod: 'cash',
+        cashTendered: 10000,
+      });
+
+      // Total 5000 + 750 (15%) + 2000 = 7750 ≤ 10000.
+      expect(order.totalAmount).toBe(7750);
+      expect(prisma.order.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ cashTendered: 10000 }) }),
+      );
+      expect(prisma.payment.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { orderId: 'o-cash' },
+          create: expect.objectContaining({ method: 'cash', amount: 7750, status: 'pending' }),
+        }),
+      );
+    });
+
+    it('efectivo con monto menor al total se rechaza', async () => {
+      prisma.merchantProfile.findUnique.mockResolvedValue({ id: 'merchant-1', userId: 'user-1' });
+      prisma.menuItem.findMany.mockResolvedValue([]);
+      prisma.payment.upsert = jest.fn().mockResolvedValue({});
+
+      await expect(
+        service.create('user-1', {
+          pickupAddress: 'Parque Nicoya',
+          deliveryAddress: 'Barrio San Martín',
+          distanceKm: 2.5,
+          kind: 'food',
+          productsTotal: 5000,
+          paymentMethod: 'cash',
+          cashTendered: 1000,
+        }),
+      ).rejects.toThrow('no cubre el total');
+      expect(prisma.order.create).not.toHaveBeenCalled();
+      expect(prisma.payment.upsert).not.toHaveBeenCalled();
+    });
+
+    it('sin cashTendered no guarda monto pero igual crea fila cash', async () => {
+      prisma.merchantProfile.findUnique.mockResolvedValue({ id: 'merchant-1', userId: 'user-1' });
+      prisma.menuItem.findMany.mockResolvedValue([]);
+      prisma.payment.upsert = jest.fn().mockResolvedValue({});
+      prisma.order.create.mockImplementation((args: any) =>
+        Promise.resolve({ id: 'o-cash2', ...args.data }),
+      );
+
+      await service.create('user-1', {
+        pickupAddress: 'A',
+        deliveryAddress: 'B',
+        paymentMethod: 'cash',
+      });
+
+      const data = prisma.order.create.mock.calls[0][0].data;
+      expect('cashTendered' in data).toBe(false);
+      expect(prisma.payment.upsert).toHaveBeenCalled();
+    });
+
+    it('pedido no-efectivo no crea fila Payment', async () => {
+      prisma.merchantProfile.findUnique.mockResolvedValue({ id: 'merchant-1', userId: 'user-1' });
+      prisma.menuItem.findMany.mockResolvedValue([]);
+      prisma.payment.upsert = jest.fn().mockResolvedValue({});
+      prisma.order.create.mockImplementation((args: any) =>
+        Promise.resolve({ id: 'o-card', ...args.data }),
+      );
+
+      await service.create('user-1', {
+        pickupAddress: 'A',
+        deliveryAddress: 'B',
+        paymentMethod: 'card',
+      });
+
+      expect(prisma.payment.upsert).not.toHaveBeenCalled();
     });
   });
 

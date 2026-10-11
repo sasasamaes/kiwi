@@ -888,8 +888,30 @@ export default function ActiveOrders() {
                   </p>
                 </div>
               </div>
-
-              {/* Stepper */}
+              {/* Efectivo: cuánto cobrar y vuelto listo */}
+              {((order as any).payment?.method === 'cash' ||
+                (order as any).cashTendered != null) && (
+                <div className="mt-4 rounded-2xl bg-gold-400/90 p-4 text-surface-900">
+                  <p className="text-sm font-bold">
+                    💵 Efectivo: cobrá ₡{Number(order.totalAmount ?? 0).toLocaleString()}
+                  </p>
+                  {(order as any).cashTendered != null ? (
+                    <p className="mt-0.5 text-sm font-semibold">
+                      Paga con ₡{Number((order as any).cashTendered).toLocaleString()} · Vuelto ₡
+                      {Math.max(
+                        0,
+                        Number((order as any).cashTendered) - Number(order.totalAmount ?? 0),
+                      ).toLocaleString()}{' '}
+                      listo
+                    </p>
+                  ) : (
+                    <p className="mt-0.5 text-xs">
+                      El cliente no indicó con cuánto paga: llevá sencillo.
+                    </p>
+                  )}
+                </div>
+              )}
+              {/* Stepper */}{' '}
               <div className="mt-4 flex items-center">
                 {FLOW_ORDER.map((s, i) => {
                   const done = i < stepIndex;

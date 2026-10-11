@@ -60,7 +60,9 @@ export const DEFAULT_SETTINGS: PlatformSettings = {
   platform: {
     name: 'Kiwi',
     commission: 15,
-    homeCookCommission: 15,
+    // Incentivo emprendedor: Kiwi se queda con 10% en cocina casera
+    // (15% en el resto). Lo puede subir/bajar el admin.
+    homeCookCommission: 10,
     minimumOrder: 2000,
     maximumDeliveryDistance: 20,
     freeDeliveryThreshold: 10000,
@@ -228,7 +230,7 @@ export class SettingsService {
   }
 
   /**
-   * % de comisión que paga el REPARTIDOR por viaje (lo cobra Kiwi).
+   * % standard del cargo por servicio (lo cobra Kiwi, extra sobre productos).
    * Lo edita el admin en /admin/settings; el pricing lo lee por pedido.
    * Saneado 0–100, default 15. Queda guardado por pedido en commissionRate,
    * así que cambiarlo solo afecta pedidos NUEVOS.
@@ -241,10 +243,9 @@ export class SettingsService {
   }
 
   /**
-   * % de comisión para pedidos de cocinas caseras (incentivo emprendedor).
-   * Lo edita el admin en /admin/settings; default = tasa standard (sin
-   * descuento hasta que el admin lo baje). Igual que la standard, queda
-   * guardada por pedido: solo afecta pedidos NUEVOS.
+   * % de comisión para pedidos de cocinas caseras (incentivo emprendedor:
+   * 10% vs 15% standard). Lo edita el admin en /admin/settings. Igual que
+   * la standard, queda guardada por pedido: solo afecta pedidos NUEVOS.
    */
   async getHomeCookCommissionPct(): Promise<number> {
     const all = await this.getAll();

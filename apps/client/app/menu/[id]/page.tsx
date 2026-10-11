@@ -331,6 +331,7 @@ export default function MenuPage() {
     setPaymentPending(false);
     setPaymentIntent(null);
     setSchedule(EMPTY_SCHEDULE);
+    setCashTendered('');
     setFollowing(null);
     setFollowBusy(false);
   }, [merchantId]);
@@ -472,11 +473,23 @@ export default function MenuPage() {
 
   const cartTotal = cart.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
-  // Sin comisión al cliente: paga productos + envío. El envío es SIEMPRE el
-  // precio del barrio (sin "gratis +₡5000": el servidor no tiene esa regla).
+  // Cargo por servicio Kiwi: % extra sobre productos (15% standard, 10%
+  // cocina casera). El envío es SIEMPRE el precio del barrio (sin
+  // "gratis +₡5000": el servidor no tiene esa regla). El backend cobra el
+  // total real; esto es espejo para mostrar el desglose.
+  const [feeRates, setFeeRates] = useState({ standardPct: 15, homeCookPct: 10 });
+  useEffect(() => {
+    api
+      .getPlatformFees()
+      .then((f) => setFeeRates(f))
+      .catch(() => undefined);
+  }, []);
+  const servicePct =
+    ((merchant as any)?.isHomeCook ? feeRates.homeCookPct : feeRates.standardPct) / 100;
+  const serviceFee = Math.round(cartTotal * servicePct);
   const zoneTrip = findDeliveryZone(deliveryInfo.zone)?.price ?? null;
   const deliveryFee = zoneTrip ?? 500;
-  const totalWithDelivery = cartTotal + deliveryFee;
+  const totalWithDelivery = cartTotal + serviceFee + deliveryFee;
 
   /** Solo dígitos para validar y para el email invitado. */
   const phoneDigits = deliveryInfo.phone.replace(/\D/g, '');
@@ -506,17 +519,22 @@ export default function MenuPage() {
   // Si el carrito trae algo de mañana, el pedido entero es programado para
   // mañana (un pedido = una fecha de entrega).
   const cartHasTomorrow = cart.some((c) => (c as any).offeredTomorrow);
+  // Efectivo: con cuánto paga (opcional; si viene debe cubrir el total).
+  const [cashTendered, setCashTendered] = useState('');
 
   // Validate checkout
   // Cocina casera cerrada hoy igual acepta preventa futura (ej. lunes pido
   // para el jueves): el isOpen solo bloquea el "lo quiero ahora".
   const schedulingFuture = schedule.mode === 'scheduled' && isValidSchedule(schedule);
+  const cashCovers =
+    paymentMethod !== 'cash' || cashTendered === '' || Number(cashTendered) >= totalWithDelivery;
   const canCheckout =
     deliveryInfo.address.trim().length > 0 &&
     deliveryInfo.zone.trim().length > 0 &&
     phoneDigits.length >= 8 &&
     deliveryInfo.name.trim().length > 0 &&
     isValidSchedule(schedule) &&
+    cashCovers &&
     (merchant?.isOpen !== false || schedulingFuture) &&
     (!cartHasTomorrow || (schedule.mode === 'scheduled' && schedule.date === tomorrowKey));
 
@@ -564,6 +582,9 @@ export default function MenuPage() {
         customerPhone: phoneDigits,
         customerName: deliveryInfo.name,
         paymentMethod,
+        ...(paymentMethod === 'cash' && cashTendered !== ''
+          ? { cashTendered: Number(cashTendered) }
+          : {}),
       };
 
       const order =
@@ -1885,6 +1906,36 @@ export default function MenuPage() {
                         <DollarSign className="h-4 w-4 inline" /> Paga en efectivo al repartidor
                         cuando te entreguen tu pedido
                       </p>
+                      <label className="mt-2 block">
+                        <span className="mb-1 block text-xs font-medium text-gold-700 dark:text-gold-400">
+                          ¿Con cuánto pagás? (para llevarte el vuelto listo)
+                        </span>
+                        <div className="relative">
+                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-surface-500">
+                            ₡
+                          </span>
+                          <input
+                            type="number"
+                            min={0}
+                            value={cashTendered}
+                            onChange={(e) => setCashTendered(e.target.value)}
+                            placeholder={`Ej: ${totalWithDelivery.toLocaleString()}`}
+                            className="w-full rounded-xl border border-gold-200 dark:border-gold-800 bg-white dark:bg-surface-900 pl-8 pr-4 py-2.5 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20"
+                          />
+                        </div>
+                      </label>
+                      {cashTendered !== '' &&
+                        Number(cashTendered) >= totalWithDelivery &&
+                        Number(cashTendered) > totalWithDelivery && (
+                          <p className="mt-1.5 text-xs font-semibold text-kiwi-700 dark:text-kiwi-300">
+                            Vuelto: ₡{(Number(cashTendered) - totalWithDelivery).toLocaleString()}
+                          </p>
+                        )}
+                      {cashTendered !== '' && Number(cashTendered) < totalWithDelivery && (
+                        <p className="mt-1.5 text-xs font-semibold text-red-500">
+                          El monto no cubre el total de ₡{totalWithDelivery.toLocaleString()}
+                        </p>
+                      )}
                     </motion.div>
                   )}
 
@@ -1910,6 +1961,14 @@ export default function MenuPage() {
                       <span className="text-surface-500 dark:text-surface-400">Subtotal</span>
                       <span className="text-surface-800 dark:text-surface-200">
                         ₡{cartTotal.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-surface-500 dark:text-surface-400">
+                        Servicio Kiwi ({Math.round(servicePct * 100)}%)
+                      </span>
+                      <span className="text-surface-800 dark:text-surface-200">
+                        ₡{serviceFee.toLocaleString()}
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
