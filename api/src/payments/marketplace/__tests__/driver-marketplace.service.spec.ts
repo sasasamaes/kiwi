@@ -11,6 +11,7 @@ describe('DriverMarketplaceService', () => {
     createConnectedAccount: jest.fn(),
     getConnectedAccount: jest.fn(),
     regenerateOnboardingLink: jest.fn(),
+    listSellerIntents: jest.fn(),
   };
   const svc = async () =>
     (
@@ -51,5 +52,25 @@ describe('DriverMarketplaceService', () => {
       where: { id: 'd1' },
       data: { onvoOnboardingStatus: 'active' },
     });
+  });
+
+  it('lists seller intents through the primary key with the seller header', async () => {
+    prisma.driverProfile.findUnique.mockResolvedValueOnce({
+      id: 'd1',
+      onvoConnectedAccountId: 'ca_9',
+    });
+    onvo.listSellerIntents.mockResolvedValueOnce([
+      { id: 'pi_1', amount: 10000, status: 'succeeded' },
+    ]);
+    const out = await (await svc()).sellerIntents('d1');
+    expect(out).toEqual([{ id: 'pi_1', amount: 10000, status: 'succeeded' }]);
+  });
+
+  it('throws when the driver has no connected account', async () => {
+    prisma.driverProfile.findUnique.mockResolvedValueOnce({
+      id: 'd1',
+      onvoConnectedAccountId: null,
+    });
+    await expect((await svc()).sellerIntents('d1')).rejects.toThrow('Sin cuenta conectada');
   });
 });

@@ -124,6 +124,12 @@ export default function Profile() {
   const [mpBusy, setMpBusy] = useState(false);
   const [mpError, setMpError] = useState<string | null>(null);
   const [mpInfo, setMpInfo] = useState<string | null>(null);
+  const [mpPayments, setMpPayments] = useState<Array<{
+    id: string;
+    amount: number;
+    status: string;
+  }> | null>(null);
+  const [mpPaymentsLoading, setMpPaymentsLoading] = useState(false);
   // Presencia socket: el toggle de Home avisa por socket; este también debe.
   const { updateDriverStatus: socketUpdateStatus } = useSocket({});
 
@@ -187,6 +193,25 @@ export default function Profile() {
       cancelled = true;
     };
   }, [user]);
+
+  useEffect(() => {
+    if (!user || mpStatus?.status !== 'active') return;
+    let cancelled = false;
+    (async () => {
+      setMpPaymentsLoading(true);
+      try {
+        const payments = await api.listDriverMarketplacePayments();
+        if (!cancelled) setMpPayments(Array.isArray(payments) ? payments : []);
+      } catch {
+        if (!cancelled) setMpPayments([]);
+      } finally {
+        if (!cancelled) setMpPaymentsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user, mpStatus?.status]);
 
   const startMpOnboarding = async () => {
     setMpBusy(true);
@@ -611,9 +636,41 @@ export default function Profile() {
           {mpLoading ? (
             <p className="text-sm text-surface-500">Cargando estado de cobros…</p>
           ) : mpStatus?.status === 'active' ? (
-            <p className="text-sm font-semibold text-kiwi-700 dark:text-kiwi-300">
-              Cobros con tarjeta activos ✓
-            </p>
+            <>
+              <p className="text-sm font-semibold text-kiwi-700 dark:text-kiwi-300">
+                Cobros con tarjeta activos ✓
+              </p>
+              <div className="mt-5 border-t border-surface-100 dark:border-surface-700/60 pt-4">
+                <p className="text-xs font-bold uppercase tracking-wider text-surface-400 mb-3">
+                  Cobros liquidados
+                </p>
+                {mpPaymentsLoading ? (
+                  <p className="text-sm text-surface-500">Cargando cobros…</p>
+                ) : mpPayments && mpPayments.length > 0 ? (
+                  <ul className="space-y-2">
+                    {mpPayments.map((p) => (
+                      <li
+                        key={p.id}
+                        className="flex items-center justify-between gap-2 rounded-xl bg-surface-50 dark:bg-surface-900 px-3 py-2"
+                      >
+                        <span className="text-sm font-semibold text-surface-800 dark:text-surface-100">
+                          {new Intl.NumberFormat('es-CR', {
+                            style: 'currency',
+                            currency: 'CRC',
+                            maximumFractionDigits: 0,
+                          }).format(Number(p.amount) || 0)}
+                        </span>
+                        <span className="shrink-0 rounded-full bg-surface-100 dark:bg-surface-700 px-2.5 py-1 text-xs font-semibold text-surface-600 dark:text-surface-200">
+                          {p.status}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-surface-500">Aún no hay cobros liquidados</p>
+                )}
+              </div>
+            </>
           ) : mpStatus?.accountId ? (
             <div className="space-y-3">
               <p className="text-sm font-semibold text-surface-800 dark:text-surface-100">

@@ -50,4 +50,10 @@ export class DriverMarketplaceService {
     if (link.error) throw new BadRequestException(link.error);
     return { accountId: driver.onvoConnectedAccountId, onboardingUrl: link.onboardingUrl };
   }
+
+  async sellerIntents(driverId: string) {
+    const driver = await this.prisma.driverProfile.findUnique({ where: { id: driverId } });
+    if (!driver?.onvoConnectedAccountId) throw new BadRequestException('Sin cuenta conectada');
+    return this.onvo.listSellerIntents(driver.onvoConnectedAccountId);
+  }
 }

@@ -133,6 +133,16 @@ export class DriversController {
     return this.marketplace.regenerateLink(driver.id);
   }
 
+  @Get('me/marketplace/payments')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('driver')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Cobros liquidados al repartidor (cuenta conectada Onvo)' })
+  async marketplacePayments(@CurrentUser() user: any) {
+    const driver = await this.driversService.findByUserId(user.sub);
+    return this.marketplace.sellerIntents(driver.id);
+  }
+
   @Get(':id/location')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()

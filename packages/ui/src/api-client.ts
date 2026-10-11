@@ -630,6 +630,9 @@ class ApiClient {
   }> {
     return this.request<any>('/drivers/me/marketplace/onboarding-link', { method: 'POST' });
   }
+  async listDriverMarketplacePayments(): Promise<any[]> {
+    return this.request<any[]>('/drivers/me/marketplace/payments').catch(() => []);
+  }
 
   /**
    * Sube el logo del comercio (multipart `photo`). El backend lo guarda en
