@@ -372,6 +372,10 @@ model DriverProfile {
   userId       String       @unique @map("user_id")
   fullName     String       @map("full_name")
   photoUrl     String?      @map("photo_url")
+  // Onvo marketplace: cuenta conectada del repartidor (flete/express).
+  // onboardingStatus: pending_onboarding | awaiting_approval | active | ...
+  onvoConnectedAccountId String? @map("onvo_connected_account_id")
+  onvoOnboardingStatus   String? @map("onvo_onboarding_status")
   vehicleType  VehicleType  @map("vehicle_type")
   vehiclePlate String?      @map("vehicle_plate")
   level        DriverLevel  @default(bronce)
