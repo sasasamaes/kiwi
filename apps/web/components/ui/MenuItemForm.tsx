@@ -736,6 +736,47 @@ export function MenuItemForm({
                   ],
                 },
               },
+              {
+                label: '🍪 Sabor',
+                group: {
+                  name: 'Sabor',
+                  required: true,
+                  multiple: true,
+                  maxSelections: 3,
+                  options: [
+                    { name: 'Vainilla', priceDelta: 0, isAvailable: true },
+                    { name: 'Chocolate', priceDelta: 0, isAvailable: true },
+                    { name: 'Red Velvet', priceDelta: 0, isAvailable: true },
+                    { name: 'Limón', priceDelta: 0, isAvailable: true },
+                  ],
+                },
+              },
+              {
+                label: '📦 Caja',
+                group: {
+                  name: 'Cantidad',
+                  required: true,
+                  multiple: false,
+                  options: [
+                    { name: 'Unidad', priceDelta: 0, isAvailable: true },
+                    { name: 'Caja x6', priceDelta: 0, isAvailable: true },
+                    { name: 'Caja x12', priceDelta: 0, isAvailable: true },
+                  ],
+                },
+              },
+              {
+                label: '🎀 Empaque',
+                group: {
+                  name: 'Empaque',
+                  required: false,
+                  multiple: false,
+                  options: [
+                    { name: 'Bolsa', priceDelta: 0, isAvailable: true },
+                    { name: 'Cajita de regalo', priceDelta: 0, isAvailable: true },
+                    { name: 'Bandeja', priceDelta: 0, isAvailable: true },
+                  ],
+                },
+              },
             ].map((t) => {
               const exists = formData.variants.some((g) => g.name === t.group.name);
               return (
