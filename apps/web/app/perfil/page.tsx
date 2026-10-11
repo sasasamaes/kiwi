@@ -49,6 +49,14 @@ export default function PerfilPage() {
   const [saving, setSaving] = useState(false);
   const [savedTick, setSavedTick] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [mpStatus, setMpStatus] = useState<{
+    accountId: string | null;
+    status: string | null;
+  } | null>(null);
+  const [mpLoading, setMpLoading] = useState(true);
+  const [mpBusy, setMpBusy] = useState(false);
+  const [mpError, setMpError] = useState<string | null>(null);
+  const [mpInfo, setMpInfo] = useState<string | null>(null);
   const [form, setForm] = useState({
     businessName: '',
     description: '',
@@ -92,6 +100,26 @@ export default function PerfilPage() {
         if (!cancelled) setFormError('No se pudo cargar el perfil.');
       } finally {
         if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      setMpLoading(true);
+      setMpError(null);
+      try {
+        const st = await api.getMarketplaceStatus();
+        if (!cancelled) setMpStatus(st);
+      } catch {
+        if (!cancelled) setMpError('No se pudo cargar el estado de cobros con tarjeta.');
+      } finally {
+        if (!cancelled) setMpLoading(false);
       }
     })();
     return () => {
@@ -144,6 +172,59 @@ export default function PerfilPage() {
       setFormError(err?.message || 'No se pudo guardar.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const startOnboarding = async () => {
+    setMpBusy(true);
+    setMpError(null);
+    setMpInfo(null);
+    try {
+      const out = await api.startMarketplaceOnboarding();
+      setMpStatus({ accountId: out.accountId, status: out.status });
+      if (out.onboardingUrl) {
+        window.open(out.onboardingUrl, '_blank', 'noopener,noreferrer');
+        setMpInfo('Completá el registro en Onvo y volvé a revisar estado.');
+      }
+    } catch {
+      setMpError('No se pudo activar los cobros con tarjeta. Intentá de nuevo.');
+    } finally {
+      setMpBusy(false);
+    }
+  };
+
+  const openRegistration = async () => {
+    setMpBusy(true);
+    setMpError(null);
+    setMpInfo(null);
+    try {
+      const out = await api.regenerateMarketplaceLink();
+      if (out.status) setMpStatus({ accountId: out.accountId, status: out.status });
+      if (out.onboardingUrl) {
+        window.open(out.onboardingUrl, '_blank', 'noopener,noreferrer');
+        setMpInfo('Completá el registro en Onvo y volvé a revisar estado.');
+      }
+    } catch {
+      setMpError('No se pudo abrir el registro. Intentá de nuevo.');
+    } finally {
+      setMpBusy(false);
+    }
+  };
+
+  const refreshMarketplaceStatus = async () => {
+    setMpBusy(true);
+    setMpError(null);
+    setMpInfo(null);
+    try {
+      const st = await api.getMarketplaceStatus();
+      setMpStatus(st);
+      if (st?.status !== 'active') {
+        setMpInfo('Todavía no está activo. Terminá el registro en Onvo e intentá de nuevo.');
+      }
+    } catch {
+      setMpError('No se pudo revisar el estado. Intentá de nuevo.');
+    } finally {
+      setMpBusy(false);
     }
   };
 
@@ -349,6 +430,64 @@ export default function PerfilPage() {
           >
             {saving ? 'Guardando…' : 'Guardar cambios'}
           </button>
+        </div>
+
+        <div className="mt-6 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] p-5 shadow-soft dark:shadow-dark">
+          <p className="text-xs font-bold uppercase tracking-wider text-surface-400 mb-4">
+            Cobros con tarjeta
+          </p>
+          {mpLoading ? (
+            <p className="text-sm text-surface-500">Cargando estado de cobros…</p>
+          ) : mpStatus?.status === 'active' ? (
+            <p className="text-sm font-semibold text-kiwi-700 dark:text-kiwi-300">
+              Cobros con tarjeta activos ✓
+            </p>
+          ) : mpStatus?.accountId ? (
+            <div className="space-y-3">
+              <p className="text-sm font-semibold text-surface-800 dark:text-surface-100">
+                Registro pendiente
+              </p>
+              <p className="text-sm text-surface-500">
+                Terminá el registro en Onvo para activar los cobros con tarjeta.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <button
+                  type="button"
+                  onClick={() => void openRegistration()}
+                  disabled={mpBusy}
+                  className="flex-1 rounded-xl bg-kiwi-600 px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
+                >
+                  {mpBusy ? 'Abriendo…' : 'Abrir registro'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void refreshMarketplaceStatus()}
+                  disabled={mpBusy}
+                  className="flex-1 rounded-xl border border-surface-200 dark:border-surface-700 px-4 py-3 text-sm font-semibold text-surface-700 dark:text-surface-200 disabled:opacity-60"
+                >
+                  {mpBusy ? 'Revisando…' : 'Ya lo completé'}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-sm text-surface-500">
+                Aceptá pagos con tarjeta y SINPE directo en tu cuenta IBAN.
+              </p>
+              <button
+                type="button"
+                onClick={() => void startOnboarding()}
+                disabled={mpBusy}
+                className="w-full rounded-xl bg-kiwi-600 px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
+              >
+                {mpBusy ? 'Activando…' : 'Activar cobros con tarjeta'}
+              </button>
+            </div>
+          )}
+          {mpError && <p className="mt-3 text-sm text-red-600">{mpError}</p>}
+          {mpInfo && (
+            <p className="mt-3 text-sm text-surface-600 dark:text-surface-300">{mpInfo}</p>
+          )}
         </div>
       </main>
     </>

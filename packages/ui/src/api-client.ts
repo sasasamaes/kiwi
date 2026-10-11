@@ -305,6 +305,29 @@ class ApiClient {
     });
   }
 
+  async getMarketplaceStatus(): Promise<{ accountId: string | null; status: string | null }> {
+    return this.request<any>('/merchants/me/marketplace/status').catch(() => ({
+      accountId: null,
+      status: null,
+    }));
+  }
+
+  async startMarketplaceOnboarding(): Promise<{
+    accountId: string;
+    status: string;
+    onboardingUrl?: string;
+  }> {
+    return this.request<any>('/merchants/me/marketplace/onboarding', { method: 'POST' });
+  }
+
+  async regenerateMarketplaceLink(): Promise<{
+    accountId: string;
+    status?: string;
+    onboardingUrl?: string;
+  }> {
+    return this.request<any>('/merchants/me/marketplace/onboarding-link', { method: 'POST' });
+  }
+
   // ============================================
   // 🏪 MERCHANTS
   // ============================================
