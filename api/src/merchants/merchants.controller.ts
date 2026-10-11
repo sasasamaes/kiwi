@@ -93,6 +93,16 @@ export class MerchantsController {
     return this.merchantsService.updateProfile(user.sub, updateData);
   }
 
+  @Put('me/visibility')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('merchant')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Mostrar/ocultar mi comercio en la app cliente (modo prueba)' })
+  async setOwnVisibility(@CurrentUser() user: any, @Body() body: { listed: boolean }) {
+    const merchant = await this.merchantsService.findByUserId(user.sub);
+    return this.merchantsService.setListed(merchant.id, body?.listed !== false);
+  }
+
   @Get('me/favorites')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('merchant')
