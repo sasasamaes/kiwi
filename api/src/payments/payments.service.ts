@@ -119,6 +119,19 @@ export class PaymentsService {
         payee?.onvoOnboardingStatus === 'active'
           ? (payee.onvoConnectedAccountId ?? undefined)
           : undefined;
+      // Express/flete: el cobro liquida a la cuenta conectada del repartidor
+      // asignado, no a la del comercio. Solo express + driverId; los pedidos
+      // de comercio quedan byte-idénticos.
+      if ((order as any).orderType === 'express' && (order as any).driverId) {
+        const driver = await this.prisma.driverProfile.findUnique({
+          where: { id: (order as any).driverId },
+          select: { onvoConnectedAccountId: true, onvoOnboardingStatus: true },
+        });
+        seller =
+          driver?.onvoOnboardingStatus === 'active'
+            ? (driver.onvoConnectedAccountId ?? undefined)
+            : undefined;
+      }
     }
 
     // Server is the source of truth for money: the client amount is only
@@ -223,6 +236,18 @@ export class PaymentsService {
         payee?.onvoOnboardingStatus === 'active'
           ? (payee.onvoConnectedAccountId ?? undefined)
           : undefined;
+      // Express/flete invitado: igual que el flujo logueado, el seller es la
+      // cuenta activa del repartidor asignado. Solo express + driverId.
+      if ((order as any).orderType === 'express' && (order as any).driverId) {
+        const guestDriver = await this.prisma.driverProfile.findUnique({
+          where: { id: (order as any).driverId },
+          select: { onvoConnectedAccountId: true, onvoOnboardingStatus: true },
+        });
+        guestSeller =
+          guestDriver?.onvoOnboardingStatus === 'active'
+            ? (guestDriver.onvoConnectedAccountId ?? undefined)
+            : undefined;
+      }
     }
 
     const serverAmount = Number(order.totalAmount);
