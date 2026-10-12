@@ -232,9 +232,6 @@ export class AuthService {
     const { email, password } = loginDto;
     const emailKey = email.trim().toLowerCase();
 
-    // Per-account brute-force throttle (IP throttle is separate, in middleware).
-    this.assertNotLocked(emailKey);
-
     // Find user (por la forma normalizada: el unique de Postgres
     // distingue mayúsculas y el registro ya guarda minúsculas).
     const user = await this.prisma.user.findUnique({
@@ -247,62 +244,72 @@ export class AuthService {
     });
 
     if (!user) {
+      // Sin cuenta no hay contraseña que verificar: el gate en memoria
+      // frena el barrido de emails sin negar nada a un dueño real.
+      this.assertNotLocked(emailKey);
       this.recordFailedAttempt(emailKey);
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
-    // Bloqueo persistente en DB (sobrevive restarts e instancias).
-    if (
-      (user as any).loginLockedUntil &&
-      new Date((user as any).loginLockedUntil).getTime() > Date.now()
-    ) {
-      const retryAfter = Math.ceil(
-        (new Date((user as any).loginLockedUntil).getTime() - Date.now()) / 1000,
-      );
-      throw new HttpException(
-        {
-          statusCode: HttpStatus.TOO_MANY_REQUESTS,
-          message: 'Cuenta temporalmente bloqueada por intentos fallidos. Intenta en unos minutos.',
-          retryAfter,
-        },
-        HttpStatus.TOO_MANY_REQUESTS,
-      );
+    // La contraseña correcta SIEMPRE entra (y limpia el throttle): el costo
+    // del bloqueo lo paga quien falla, nunca el dueño. Solo el fallo suma.
+    const isPasswordValid = user.passwordHash
+      ? await bcrypt.compare(password, user.passwordHash)
+      : false;
+    if (isPasswordValid) {
+      if (user.status !== 'active') {
+        throw new UnauthorizedException('Credenciales inválidas');
+      }
+      // Successful login: reset the account's failed-attempt state.
+      this.clearAttempts(emailKey);
+      try {
+        await this.prisma.user.update({
+          where: { id: user.id },
+          data: { failedLoginAttempts: 0, loginLockedUntil: null },
+        });
+      } catch {
+        // best-effort: el login igual procede
+      }
+
+      // Generate tokens
+      const tokens = await this.generateTokens(user as any);
+
+      return {
+        user: this.sanitizeUser(user),
+        ...tokens,
+      };
     }
 
-    if (user.status !== 'active') {
-      throw new UnauthorizedException('Credenciales inválidas');
-    }
-
-    // Verify password
-    if (!user.passwordHash) {
-      throw new UnauthorizedException('Credenciales inválidas');
-    }
-
-    const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
-    if (!isPasswordValid) {
-      this.recordFailedAttempt(emailKey);
-      await this.recordDbFailedAttempt(user.id);
-      throw new UnauthorizedException('Credenciales inválidas');
-    }
-
-    // Successful login: reset the account's failed-attempt state.
-    this.clearAttempts(emailKey);
+    this.recordFailedAttempt(emailKey);
+    await this.recordDbFailedAttempt(user.id);
+    // Recién ahora se niega por bloqueo: quien falló paga el 429, el dueño
+    // con la clave correcta nunca llega a esta rama.
+    this.assertNotLocked(emailKey);
     try {
-      await this.prisma.user.update({
+      const fresh = await this.prisma.user.findUnique({
         where: { id: user.id },
-        data: { failedLoginAttempts: 0, loginLockedUntil: null },
+        select: { loginLockedUntil: true },
       });
-    } catch {
-      // best-effort: el login igual procede
+      const until = (fresh as any)?.loginLockedUntil
+        ? new Date((fresh as any).loginLockedUntil).getTime()
+        : 0;
+      if (until > Date.now()) {
+        const retryAfter = Math.ceil((until - Date.now()) / 1000);
+        throw new HttpException(
+          {
+            statusCode: HttpStatus.TOO_MANY_REQUESTS,
+            message:
+              'Cuenta temporalmente bloqueada por intentos fallidos. Intenta en unos minutos.',
+            retryAfter,
+          },
+          HttpStatus.TOO_MANY_REQUESTS,
+        );
+      }
+    } catch (e) {
+      if (e instanceof HttpException && e.getStatus() === HttpStatus.TOO_MANY_REQUESTS) throw e;
+      // best-effort: sin lectura fresca, el gate en memoria ya decidió
     }
-
-    // Generate tokens
-    const tokens = await this.generateTokens(user as any);
-
-    return {
-      user: this.sanitizeUser(user),
-      ...tokens,
-    };
+    throw new UnauthorizedException('Credenciales inválidas');
   }
 
   /**

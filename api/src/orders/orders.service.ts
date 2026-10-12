@@ -661,9 +661,9 @@ export class OrdersService {
           customerPhone:
             data.customerPhone != null ? String(data.customerPhone).trim() || null : null,
           ...(cashTendered != null ? { cashTendered } : {}),
-          ...(typeof data.customerId === 'string' && data.customerId.trim() !== ''
-            ? { customerId: data.customerId.trim() }
-            : {}),
+          // customerId nunca viene del dashboard: el flujo invitado lo
+          // vincula en createGuestOrder tras verificar rol customer activo.
+          // Aceptarlo aquí permitiría inyectar pedidos en la cuenta ajena.
           // Origen: solo el flujo público (link/app cliente) marca
           // client_app; el dashboard nace merchant_panel (default).
           ...(data.origin === 'client_app' ? { origin: 'client_app' } : {}),
@@ -948,6 +948,58 @@ export class OrdersService {
       throw new ForbiddenException('No tienes acceso a este pedido');
     }
 
+    // Proyección por rol: la fila completa solo la ve el dueño y el admin.
+    // Listas ya usan MERCHANT_PUBLIC_SELECT / MERCHANT_FOR_DRIVER_SELECT;
+    // el detalle no debe ser más permisivo que las listas.
+    if (role === 'admin' || isMerchant) return order;
+    const o: any = order;
+    if (isDriver) {
+      const m: any = o.merchant ?? null;
+      o.merchant = m
+        ? {
+            id: m.id,
+            businessName: m.businessName,
+            address: m.address,
+            latitude: m.latitude,
+            longitude: m.longitude,
+            logoUrl: m.logoUrl,
+            userId: m.userId,
+            user: m.user ? { phone: m.user.phone } : undefined,
+          }
+        : m;
+      if (o.payment) o.payment = { status: o.payment.status, method: o.payment.method };
+      o.ratings = [];
+      return order;
+    }
+    // Vista cliente: pública en ambos lados, pago mínimo, sin ratings.
+    if (isCustomer) {
+      const m: any = o.merchant ?? null;
+      o.merchant = m
+        ? {
+            id: m.id,
+            businessName: m.businessName,
+            address: m.address,
+            latitude: m.latitude,
+            longitude: m.longitude,
+            logoUrl: m.logoUrl,
+          }
+        : m;
+      const d: any = o.driver ?? null;
+      o.driver = d
+        ? {
+            id: d.id,
+            fullName: d.fullName,
+            photoUrl: d.photoUrl,
+            vehicleType: d.vehicleType,
+            vehiclePlate: d.vehiclePlate,
+            rating: d.rating,
+          }
+        : d;
+      if (o.payment) o.payment = { status: o.payment.status, method: o.payment.method };
+      o.ratings = [];
+      return order;
+    }
+
     return order;
   }
 
@@ -1061,6 +1113,17 @@ export class OrdersService {
     const order = await this.prisma.order.findUnique({ where: { id: orderId } });
 
     if (!order || !order.driverId) {
+      throw new NotFoundException('Ubicación no disponible');
+    }
+
+    // La ubicación en vivo solo tiene sentido con el reparto en curso:
+    // mismo guarda que getLocationForUser. Terminado/cancelado → 404 para
+    // que un link viejo no trackee al repartidor indefinidamente.
+    if (
+      !['assigned', 'in_transit_to_pickup', 'picked_up', 'in_transit_to_delivery'].includes(
+        order.status,
+      )
+    ) {
       throw new NotFoundException('Ubicación no disponible');
     }
 
@@ -1688,13 +1751,39 @@ export class OrdersService {
     // Atajo opcional: el cliente puede mandar la URL ya subida junto al
     // cambio de estado (el flujo principal es POST :id/proof-photo). Va
     // ANTES del gate: si no, el request que trae la foto sería rechazado
-    // por no tenerla todavía (atajo muerto).
+    // por no tenerla todavía (atajo muerto). Misma regla kind-actor que el
+    // upload (pickup = comercio dueño, delivery = repartidor asignado) más
+    // validación de URL https: sin esto el driver forjaba la evidencia
+    // pickup y cualquier URL sin validar terminaba en el tracking público.
+    const isAllowedProofUrl = (value: unknown): value is string => {
+      if (typeof value !== 'string' || value.length === 0 || value.length > 2048) return false;
+      try {
+        const parsed = new URL(value);
+        return parsed.protocol === 'https:' && !parsed.username && !parsed.password;
+      } catch {
+        return false;
+      }
+    };
     if (proofPhotoUrl && status === 'picked_up' && !(order as any).pickupProofPhotoUrl) {
+      if (role !== 'admin' && !isMerchantOwner)
+        throw new ForbiddenException('Solo el comercio sube la foto de entrega al repartidor');
+      if (!isAllowedProofUrl(proofPhotoUrl))
+        throw new BadRequestException(
+          'URL de evidencia inválida: subí la foto por POST :id/proof-photo',
+        );
       updateData.pickupProofPhotoUrl = proofPhotoUrl;
       updateData.pickupProofAt = new Date();
       (order as any).pickupProofPhotoUrl = proofPhotoUrl;
     }
     if (proofPhotoUrl && status === 'delivered' && !(order as any).deliveryProofPhotoUrl) {
+      if (role !== 'admin' && !isAssignedDriver)
+        throw new ForbiddenException(
+          'Solo el repartidor asignado sube la foto de entrega al cliente',
+        );
+      if (!isAllowedProofUrl(proofPhotoUrl))
+        throw new BadRequestException(
+          'URL de evidencia inválida: subí la foto por POST :id/proof-photo',
+        );
       updateData.deliveryProofPhotoUrl = proofPhotoUrl;
       updateData.deliveryProofAt = new Date();
       (order as any).deliveryProofPhotoUrl = proofPhotoUrl;

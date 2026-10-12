@@ -5,6 +5,9 @@ import { createContext, useContext, useEffect, useMemo, useState, ReactNode } fr
 import { api, User } from './api-client';
 import { socketClient } from './socket-client';
 import { analytics } from './analytics';
+import { offlineQueue } from './offline-queue';
+import { backgroundSync } from './background-sync';
+import { offlineCache } from './offline-cache';
 
 interface AuthContextType {
   user: User | null;
@@ -74,6 +77,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Resetear la identidad de tracking: los eventos posteriores no deben
     // atribuirse al usuario que cerró sesión.
     void analytics.reset();
+    // Purga de estado personalizado (dispositivo compartido): la cola
+    // offline y los cachés van atados a la sesión. Sin purga, el próximo
+    // login lee los pedidos del anterior y sus mutaciones se replays con
+    // el token nuevo.
+    try {
+      offlineQueue.clear();
+    } catch {
+      // noop: la limpieza local igual corre
+    }
+    void backgroundSync.clearAll().catch(() => undefined);
+    void offlineCache.clear().catch(() => undefined);
     setUser(null);
   };
 

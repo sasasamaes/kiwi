@@ -29,10 +29,21 @@ if (process.env.SENTRY_DSN) {
       if (event.request?.data) {
         const data = event.request.data as Record<string, unknown>;
         if (data && typeof data === 'object') {
-          delete data['password'];
-          delete data['passwordHash'];
-          delete data['token'];
-          delete data['accessToken'];
+          for (const key of [
+            'password',
+            'passwordHash',
+            'token',
+            'accessToken',
+            'idNumber',
+            'licenseNumber',
+            'taxId',
+            'idFrontUrl',
+            'idBackUrl',
+            'selfieUrl',
+            'diditSessionId',
+          ]) {
+            delete data[key];
+          }
         }
       }
       return event;

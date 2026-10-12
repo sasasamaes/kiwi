@@ -172,6 +172,30 @@ export class RateLimiterMiddleware implements NestMiddleware {
       maxRequests: 10,
       message: 'Demasiadas notificaciones de pago. Espera un momento.',
     },
+
+    // KYC: escritura costosa (AES + upsert) y fan-out externo (Didit). Mismo
+    // criterio que el webhook de pagos: sin bucket propio caían en el
+    // default 100/min por ruta.
+    'POST:/api/kyc/submit': {
+      windowMs: 60 * 1000,
+      maxRequests: 10,
+      message: 'Demasiados envíos de verificación. Espera un momento.',
+    },
+    'POST:/api/kyc/didit/start': {
+      windowMs: 60 * 1000,
+      maxRequests: 5,
+      message: 'Demasiadas sesiones de verificación. Espera un momento.',
+    },
+    'POST:/api/kyc/didit/refresh': {
+      windowMs: 60 * 1000,
+      maxRequests: 10,
+      message: 'Demasiadas consultas de verificación. Espera un momento.',
+    },
+    'POST:/api/kyc/webhook/didit': {
+      windowMs: 60 * 1000,
+      maxRequests: 10,
+      message: 'Demasiadas notificaciones de verificación. Espera un momento.',
+    },
   };
 
   // Default rate limit — per route per IP. Cada app consulta su propio set

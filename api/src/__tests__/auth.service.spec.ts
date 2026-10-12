@@ -189,25 +189,26 @@ describe('AuthService', () => {
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
     }
 
-    it('bloquea la cuenta tras 5 intentos fallidos (429), aunque roten IPs', async () => {
+    it('frena el barrido tras 5 fallos (429) pero la clave correcta siempre entra', async () => {
       mockVictim();
 
-      for (let i = 0; i < 5; i++) {
+      for (let i = 0; i < 4; i++) {
         await expect(
           service.login({ email: 'Victim@Kiwi.app', password: 'wrong123' }),
         ).rejects.toThrow(UnauthorizedException);
       }
 
-      // 6º intento — ya no llega a validar credenciales: 429.
+      // 5º fallo — el throttle en memoria ya niega al que falla: 429.
       await expect(
         service.login({ email: 'victim@kiwi.app', password: 'wrong123' }),
       ).rejects.toThrow(HttpException);
 
-      // Ni con la contraseña correcta se cede mientras esté bloqueada.
+      // La contraseña correcta rompe el bloqueo y limpia el throttle: el
+      // dueño nunca queda denegado por intentos ajenos.
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-      await expect(
-        service.login({ email: 'victim@kiwi.app', password: 'goodpass123' }),
-      ).rejects.toThrow(HttpException);
+      const result = await service.login({ email: 'victim@kiwi.app', password: 'goodpass123' });
+      expect(result.accessToken).toBe('mock-token');
+      expect(service['loginAttempts'].has('victim@kiwi.app')).toBe(false);
     });
 
     it('normaliza el email (mayúsculas/espacios) para contar intentos', async () => {
@@ -244,7 +245,7 @@ describe('AuthService', () => {
 
     it('una cuenta bloqueada no afecta a otras cuentas', async () => {
       mockVictim();
-      for (let i = 0; i < 5; i++) {
+      for (let i = 0; i < 4; i++) {
         await expect(service.login({ email: 'a@x.com', password: 'wrong123' })).rejects.toThrow(
           UnauthorizedException,
         );

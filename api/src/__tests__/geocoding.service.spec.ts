@@ -80,3 +80,56 @@ describe('GeocodingService respeto a Nominatim (1 req/s + cooldown)', () => {
     expect(fetchSpy).toHaveBeenCalledTimes(2);
   });
 });
+
+describe('GeocodingService.resolveMapLink (allowlist por hop)', () => {
+  let service: GeocodingService;
+  let fetchSpy: jest.SpyInstance;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [GeocodingService],
+    }).compile();
+    service = module.get(GeocodingService);
+    fetchSpy = jest.spyOn(global, 'fetch');
+  });
+
+  afterEach(() => {
+    fetchSpy.mockRestore();
+  });
+
+  const redirect = (location: string) =>
+    ({
+      status: 302,
+      headers: { get: (k: string) => (k.toLowerCase() === 'location' ? location : null) },
+      arrayBuffer: async () => new ArrayBuffer(0),
+    }) as any;
+
+  it('redirect fuera del allowlist → null sin seguir (SSRF)', async () => {
+    fetchSpy.mockResolvedValueOnce(redirect('http://169.254.169.254/latest/meta-data/'));
+    const res = await service.resolveMapLink('https://maps.app.goo.gl/corto123');
+    expect(res).toBeNull();
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('downgrade a http en el redirect → null', async () => {
+    fetchSpy.mockResolvedValueOnce(redirect('http://www.google.com/maps?q=x'));
+    const res = await service.resolveMapLink('https://maps.app.goo.gl/corto123');
+    expect(res).toBeNull();
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('redirect dentro del allowlist con coords → resuelve', async () => {
+    fetchSpy
+      .mockResolvedValueOnce(redirect('https://www.google.com/maps?q=10.1,-85.4'))
+      .mockResolvedValueOnce({
+        status: 200,
+        headers: { get: () => null },
+        arrayBuffer: async () => new ArrayBuffer(0),
+        text: async () => '',
+      } as any);
+    const res = await service.resolveMapLink('https://maps.app.goo.gl/corto123');
+    expect(res).not.toBeNull();
+    expect(res!.lat).toBeCloseTo(10.1);
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+  });
+});

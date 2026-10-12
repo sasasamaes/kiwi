@@ -9,17 +9,20 @@ import { Injectable } from '@nestjs/common';
  *   KYC_REQUIRED=true  → comportamiento estricto: no se puede asignar un
  *                        pedido a un repartidor sin KYC approved, ni retirar
  *                        ganancias, y el perfil deja de ser visible.
- *   KYC_REQUIRED=false (default, desactivado de momento) → el KYC se sigue
- *                        pudiendo enviar y revisar desde /kyc y el panel
- *                        admin (no se pierde ningún dato), pero no bloquea
- *                        nada. Reactivar = poner la var en Render y
- *                        redeployar; cero cambios de código.
+ *   KYC_REQUIRED=false → el KYC se sigue pudiendo enviar y revisar desde
+ *                        /kyc y el panel admin (no se pierde ningún dato),
+ *                        pero no bloquea nada.
+ *   Sin variable: fail-closed en producción (equivale a true), fail-open
+ *                  fuera de producción para no frenar dev/test. Desactivar
+ *                  en prod requiere KYC_REQUIRED=false explícito.
  *
  * Lectura DINÁMICA (por request): se puede activar/desactivar sin rebuild
  * y los tests pueden alternarlo con process.env.
  */
 export function isKycRequired(): boolean {
-  return (process.env.KYC_REQUIRED ?? 'false') === 'true';
+  const raw = process.env.KYC_REQUIRED;
+  if (raw === 'true' || raw === 'false') return raw === 'true';
+  return process.env.NODE_ENV === 'production';
 }
 
 @Injectable()

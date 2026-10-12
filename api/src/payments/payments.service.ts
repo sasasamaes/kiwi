@@ -1011,6 +1011,36 @@ export class PaymentsService {
     return this.onvopayProvider.refundPayment(paymentIntentId, amount);
   }
 
+  /**
+   * Cancelación Onvo con la misma regla que el reembolso: solo el comercio
+   * (o admin), solo sobre intentos no completados, y con transición local
+   * a failed para no dejar la DB en pending contra un intent cancelado.
+   */
+  async cancelOnvoPayment(
+    paymentIntentId: string,
+    user: { sub?: string; role?: string },
+  ): Promise<{ success: boolean; error?: string }> {
+    await this.assertIntentAccess(paymentIntentId, user, true);
+    const payment = await this.prisma.payment.findFirst({
+      where: { OR: [{ onvoPaymentId: paymentIntentId }, { onvoSessionId: paymentIntentId }] },
+      select: { id: true, status: true },
+    });
+    if (!payment) {
+      throw new BadRequestException('Pago no encontrado para ese intent');
+    }
+    if (payment.status === PaymentStatus.completed) {
+      throw new BadRequestException('No se puede cancelar un pago completado (usá reembolso)');
+    }
+    const result = await this.onvopayProvider.cancelPaymentIntent(paymentIntentId);
+    if (result?.success) {
+      await this.prisma.payment.updateMany({
+        where: { id: payment.id, status: { not: PaymentStatus.completed } },
+        data: { status: PaymentStatus.failed as PaymentStatus },
+      });
+    }
+    return result;
+  }
+
   async adminReverifyCrypto(orderId: string) {
     const payment = await this.prisma.payment.findUnique({
       where: { orderId },

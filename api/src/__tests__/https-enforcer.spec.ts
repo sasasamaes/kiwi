@@ -92,4 +92,42 @@ describe('HttpsEnforcerMiddleware', () => {
     expect(res.statusCode).not.toBe(302);
     expect(res.statusCode).toBe(308);
   });
+
+  it('ignores spoofed x-forwarded-host (uses the routed Host)', () => {
+    process.env.NODE_ENV = 'production';
+    const mw = new HttpsEnforcerMiddleware();
+    const req: any = {
+      headers: {
+        'x-forwarded-proto': 'http',
+        'x-forwarded-host': 'evil.example',
+        host: 'kiwi-api.onrender.com',
+      },
+      originalUrl: '/api/orders/my',
+      url: '/api/orders/my',
+    };
+    const res = makeRes();
+    mw.use(req, res, () => {});
+    expect(res.location).toBe('https://kiwi-api.onrender.com/api/orders/my');
+  });
+
+  it('invalid host or URL falls back to a safe relative target', () => {
+    process.env.NODE_ENV = 'production';
+    const mw = new HttpsEnforcerMiddleware();
+    const badHost: any = {
+      headers: { 'x-forwarded-proto': 'http', host: 'evil.example/x' },
+      originalUrl: '/api/orders/my',
+      url: '/api/orders/my',
+    };
+    const res1 = makeRes();
+    mw.use(badHost, res1, () => {});
+    expect(res1.location).toBe('/api/orders/my');
+    const badUrl: any = {
+      headers: { 'x-forwarded-proto': 'http', host: 'kiwi-api.onrender.com' },
+      originalUrl: '/api/x\r\nSet-Cookie: a=b',
+      url: '/api/x',
+    };
+    const res2 = makeRes();
+    mw.use(badUrl, res2, () => {});
+    expect(res2.location).toBe('/');
+  });
 });

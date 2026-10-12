@@ -34,6 +34,7 @@ export interface InboundPayment {
   txHash: string;
   amount: number;
   assetCode: 'USDC' | 'USDT';
+  assetIssuer: string;
   to: string;
   memo?: string | null;
   createdAt: string;
@@ -84,6 +85,11 @@ export class StellarProvider {
   isConfigured(): boolean {
     if (this.isMockEnabled()) return true;
     return Boolean(this.receivingWallet);
+  }
+
+  /** Issuer oficial esperado para el asset en la red activa. */
+  private expectedIssuerFor(asset: 'USDC' | 'USDT'): string {
+    return ISSUERS[asset][this.network === 'testnet' ? 'testnet' : 'mainnet'];
   }
 
   /** Mock de demo (aleatorio) SOLO fuera de producción o con STELLAR_MOCK=true. */
@@ -186,6 +192,7 @@ export class StellarProvider {
           expectedAmount,
           expectedAsset,
           expectedWallet,
+          expectedIssuer: this.expectedIssuerFor(expectedAsset),
         },
         { since, excludeTxHashes },
       );
@@ -244,7 +251,12 @@ export class StellarProvider {
       }
 
       const payments = await this.fetchInboundPayments(this.receivingWallet, null, txHash);
-      const match = this.matchPayment(payments, { orderId, expectedAmount, expectedAsset });
+      const match = this.matchPayment(payments, {
+        orderId,
+        expectedAmount,
+        expectedAsset,
+        expectedIssuer: this.expectedIssuerFor(expectedAsset),
+      });
 
       if (!match || match.txHash !== txHash) {
         this.logger.warn(
@@ -334,6 +346,11 @@ export class StellarProvider {
     const assetCode = String(record?.asset_code || '');
     if (assetCode !== 'USDC' && assetCode !== 'USDT') return null;
 
+    // Identidad del asset = (code, issuer). Sin issuer no se puede distinguir
+    // el USDC oficial de un token auto-minteado con el mismo code.
+    const assetIssuer = String(record?.asset_issuer || '');
+    if (!assetIssuer) return null;
+
     const amount = Number(record?.amount);
     if (!Number.isFinite(amount) || amount <= 0) return null;
 
@@ -344,6 +361,7 @@ export class StellarProvider {
       txHash,
       amount,
       assetCode,
+      assetIssuer,
       to: String(record?.to || record?.claimant || address),
       // join=transactions embebe la tx padre (con su memo) en record.transaction.
       memo: record?.transaction?.memo ?? null,
@@ -362,6 +380,7 @@ export class StellarProvider {
       orderId: string;
       expectedAmount: number;
       expectedAsset: 'USDC' | 'USDT';
+      expectedIssuer: string;
       expectedWallet?: string | null;
     },
     options?: { since?: Date | null; excludeTxHashes?: string[] },
@@ -381,6 +400,7 @@ export class StellarProvider {
 
     const candidates = payments
       .filter((p) => p.assetCode === expected.expectedAsset)
+      .filter((p) => p.assetIssuer === expected.expectedIssuer)
       .filter((p) => p.amount >= expected.expectedAmount - tolerance)
       // Dedup de doble gasto: una tx que ya acreditó otro pedido no vuelve a
       // valer, aunque monto/asset coincidan (el service pasa los hashes usados).

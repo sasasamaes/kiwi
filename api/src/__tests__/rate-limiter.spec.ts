@@ -84,6 +84,19 @@ describe('RateLimiterMiddleware', () => {
     expect(res.headers['X-RateLimit-Limit']).toBe('100');
   });
 
+  it('KYC write paths have dedicated tight buckets (not the 100/min default)', async () => {
+    const mw = makeMw();
+    const res = makeRes();
+    await mw.use(makeReq('POST', '/api/kyc/submit'), res, () => {});
+    expect(res.headers['X-RateLimit-Limit']).toBe('10');
+    const res2 = makeRes();
+    await mw.use(makeReq('POST', '/api/kyc/didit/start'), res2, () => {});
+    expect(res2.headers['X-RateLimit-Limit']).toBe('5');
+    const res3 = makeRes();
+    await mw.use(makeReq('POST', '/api/kyc/webhook/didit'), res3, () => {});
+    expect(res3.headers['X-RateLimit-Limit']).toBe('10');
+  });
+
   it('keeps separate buckets per route and per IP', async () => {
     const mw = makeMw();
     // Saturar geocoding para la IP A no afecta a la IP B ni a otra ruta de A.

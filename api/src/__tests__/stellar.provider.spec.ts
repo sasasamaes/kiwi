@@ -23,6 +23,7 @@ describe('StellarProvider — verificación on-chain (Horizon)', () => {
     to: WALLET,
     asset_type: 'credit_alphanum4',
     asset_code: 'USDC',
+    asset_issuer: 'GA5ZSEJYB37JDD5GUPFIU6IZYYGB7UJDM7M4ZSSAPQY3GTCEK4XZI5R',
     amount: '12.000000',
     transaction_hash: TX,
     transaction: { memo: 'KIWI-ABCDEF' }, // deriva de orderId 'abc-def'
@@ -130,6 +131,22 @@ describe('StellarProvider — verificación on-chain (Horizon)', () => {
       expect(res.reason).toBe('no_matching_payment');
     });
 
+    it('mismo code con issuer falso (auto-minteado) → no matchea', async () => {
+      const res = await happyPath([
+        paymentOp({ asset_issuer: 'GATOFALSOISSUERXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX' }),
+      ]);
+      expect(res.verified).toBe(false);
+      expect(res.reason).toBe('no_matching_payment');
+    });
+
+    it('sin asset_issuer → no matchea (fail-closed)', async () => {
+      const rec: any = paymentOp();
+      delete rec.asset_issuer;
+      const res = await happyPath([rec]);
+      expect(res.verified).toBe(false);
+      expect(res.reason).toBe('no_matching_payment');
+    });
+
     it('monto menor al esperado (fuera de tolerancia) → no matchea', async () => {
       const res = await happyPath([paymentOp({ amount: '11.900000' })]);
       expect(res.verified).toBe(false);
@@ -183,6 +200,7 @@ describe('StellarProvider — verificación on-chain (Horizon)', () => {
           claimants: [{ destination: WALLET }],
           asset_type: 'credit_alphanum4',
           asset_code: 'USDC',
+          asset_issuer: 'GA5ZSEJYB37JDD5GUPFIU6IZYYGB7UJDM7M4ZSSAPQY3GTCEK4XZI5R',
           amount: '12.000000',
           transaction_hash: TX,
           transaction: { memo: 'KIWI-ABCDEF' },

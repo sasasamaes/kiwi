@@ -1001,7 +1001,11 @@ describe('OrdersService', () => {
       prisma.order.findUnique.mockResolvedValue({ id: 'order-1', driverId: null });
       await expect(service.getPublicDriverLocation('order-1')).rejects.toThrow(NotFoundException);
 
-      prisma.order.findUnique.mockResolvedValue({ id: 'order-1', driverId: 'dp-1' });
+      prisma.order.findUnique.mockResolvedValue({
+        id: 'order-1',
+        driverId: 'dp-1',
+        status: 'in_transit_to_delivery',
+      });
       const driversService = (service as any).driversService;
       driversService.getLocation.mockResolvedValue({
         lat: 10.2,
@@ -1014,6 +1018,13 @@ describe('OrdersService', () => {
       const loc: any = await service.getPublicDriverLocation('order-1');
       expect(loc.lat).toBe(10.2);
       expect(loc).not.toHaveProperty('driverId');
+    });
+
+    it('ubicación 404 en pedido entregado/cancelado aunque haya repartidor', async () => {
+      for (const status of ['delivered', 'cancelled', 'pending', 'no_driver']) {
+        prisma.order.findUnique.mockResolvedValue({ id: 'order-1', driverId: 'dp-1', status });
+        await expect(service.getPublicDriverLocation('order-1')).rejects.toThrow(NotFoundException);
+      }
     });
   });
 

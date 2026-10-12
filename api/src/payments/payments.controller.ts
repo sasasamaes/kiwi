@@ -215,8 +215,7 @@ export class PaymentsController {
     @Param('paymentIntentId') paymentIntentId: string,
     @CurrentUser() user: any,
   ) {
-    await this.paymentsService.assertIntentAccess(paymentIntentId, user);
-    return this.onvopayProvider.cancelPaymentIntent(paymentIntentId);
+    return this.paymentsService.cancelOnvoPayment(paymentIntentId, user);
   }
 
   @Get('onvo/methods')

@@ -123,3 +123,69 @@ describe('PaymentsService refund + webhook amount guard', () => {
     expect(res).toEqual({ received: true });
   });
 });
+
+describe('PaymentsService cancel (merchant-only + estado)', () => {
+  let service: PaymentsService;
+  let prisma: any;
+  let onvo: any;
+
+  const admin = { sub: 'admin-1', role: 'admin' };
+  const driver = { sub: 'driver-1', role: 'driver' };
+
+  beforeEach(async () => {
+    prisma = {
+      order: { findUnique: jest.fn() },
+      payment: {
+        findUnique: jest.fn(),
+        findFirst: jest.fn(),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+      },
+      creditTopup: { findUnique: jest.fn() },
+    };
+    onvo = {
+      cancelPaymentIntent: jest.fn().mockResolvedValue({ success: true }),
+    };
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        PaymentsService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: OnvoPayProvider, useValue: onvo },
+        { provide: StellarProvider, useValue: {} },
+        { provide: CreditsService, useValue: {} },
+      ],
+    }).compile();
+
+    service = module.get<PaymentsService>(PaymentsService);
+  });
+
+  it('driver no puede cancelar el intent del comercio (403)', async () => {
+    prisma.payment.findFirst.mockResolvedValue({
+      id: 'pay-1',
+      status: 'pending',
+      order: { merchant: { userId: 'm-1' }, driver: { userId: 'driver-1' } },
+    });
+    await expect(service.cancelOnvoPayment('pi-1', driver)).rejects.toThrow(
+      'No tienes acceso a este pago',
+    );
+    expect(onvo.cancelPaymentIntent).not.toHaveBeenCalled();
+  });
+
+  it('completado no se cancela (usar reembolso)', async () => {
+    prisma.payment.findFirst.mockResolvedValue({ id: 'pay-1', status: 'completed' });
+    await expect(service.cancelOnvoPayment('pi-1', admin)).rejects.toThrow(
+      'No se puede cancelar un pago completado',
+    );
+    expect(onvo.cancelPaymentIntent).not.toHaveBeenCalled();
+  });
+
+  it('pending cancela en Onvo y transiciona a failed local', async () => {
+    prisma.payment.findFirst.mockResolvedValue({ id: 'pay-1', status: 'pending' });
+    const res = await service.cancelOnvoPayment('pi-1', admin);
+    expect(res).toEqual({ success: true });
+    expect(onvo.cancelPaymentIntent).toHaveBeenCalledWith('pi-1');
+    expect(prisma.payment.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ status: 'failed' }) }),
+    );
+  });
+});

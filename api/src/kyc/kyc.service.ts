@@ -111,7 +111,7 @@ export class KYCService {
       },
       orderBy: { createdAt: 'asc' },
     });
-    return rows.map((r) => this.decryptIdentityFields(r, { mask: false }));
+    return rows.map((r) => this.decryptIdentityFields(r, { mask: true }));
   }
 
   async getAllVerifications(status?: string) {
@@ -124,14 +124,14 @@ export class KYCService {
       where,
       orderBy: { createdAt: 'desc' },
     });
-    return rows.map((r) => this.decryptIdentityFields(r, { mask: false }));
+    return rows.map((r) => this.decryptIdentityFields(r, { mask: true }));
   }
 
   async getVerificationByUserId(userId: string, opts?: { maskIdentity?: boolean }) {
     const row = await this.prisma.kYCVerification.findUnique({
       where: { userId },
     });
-    return this.decryptIdentityFields(row, { mask: opts?.maskIdentity ?? false });
+    return this.decryptIdentityFields(row, { mask: opts?.maskIdentity ?? true });
   }
 
   async getVerificationById(id: string) {
@@ -304,7 +304,7 @@ export class KYCService {
         },
       });
 
-      return this.decryptIdentityFields(updatedVerification, { mask: false });
+      return this.decryptIdentityFields(updatedVerification, { mask: true });
     });
 
     return updated;
@@ -358,7 +358,7 @@ export class KYCService {
         },
       });
 
-      return this.decryptIdentityFields(rejected, { mask: false });
+      return this.decryptIdentityFields(rejected, { mask: true });
     });
 
     return updated;
@@ -481,7 +481,7 @@ export class KYCService {
       throw new NotFoundException('Sesión Didit no registrada');
     }
     if (verification.status === 'approved' && mapped === 'approved') {
-      return this.decryptIdentityFields(verification, { mask: false });
+      return this.decryptIdentityFields(verification, { mask: true });
     }
 
     const now = new Date();
@@ -517,7 +517,7 @@ export class KYCService {
             type: 'kyc_approved',
           },
         });
-        return this.decryptIdentityFields(row, { mask: false });
+        return this.decryptIdentityFields(row, { mask: true });
       });
       return updated;
     }
@@ -554,7 +554,7 @@ export class KYCService {
             type: 'kyc_rejected',
           },
         });
-        return this.decryptIdentityFields(row, { mask: false });
+        return this.decryptIdentityFields(row, { mask: true });
       });
       return updated;
     }

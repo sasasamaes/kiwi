@@ -282,9 +282,30 @@ export class GeocodingService {
       'waze.com',
       'www.waze.com',
     ];
-    const host = initial.hostname.toLowerCase();
-    const allowed = allowedHosts.some((h) => host === h || host.endsWith(`.${h}`));
-    if (!allowed) return null;
+    const isPrivateLiteral = (hostname: string): boolean => {
+      const h = hostname.toLowerCase().replace(/^\[|\]$/g, '');
+      if (h === 'localhost' || h === '::1' || h === '::ffff:127.0.0.1') return true;
+      const v4 = h.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+      if (v4) {
+        const [, a, b] = v4.map(Number);
+        return (
+          a === 10 ||
+          a === 127 ||
+          (a === 169 && b === 254) ||
+          (a === 192 && b === 168) ||
+          (a === 172 && b >= 16 && b <= 31) ||
+          a === 0
+        );
+      }
+      return false;
+    };
+    const isAllowedMapUrl = (u: URL): boolean => {
+      if (u.protocol !== 'https:') return false;
+      const host = u.hostname.toLowerCase();
+      if (isPrivateLiteral(host)) return false;
+      return allowedHosts.some((h) => host === h || host.endsWith(`.${h}`));
+    };
+    if (!isAllowedMapUrl(initial)) return null;
 
     const cacheKey = `resolvelink:${initial.toString().toLowerCase()}`;
     const cached = this.getFromCache(cacheKey);
@@ -309,7 +330,16 @@ export class GeocodingService {
         lastResponse = response;
         const location = response.headers.get('location');
         if (response.status >= 300 && response.status < 400 && location) {
-          current = new URL(location, current).toString();
+          let next: URL;
+          try {
+            next = new URL(location, current);
+          } catch {
+            return null;
+          }
+          // Cada hop debe seguir dentro del allowlist con https y sin
+          // literales privados: el check inicial solo no alcanza (TOCTOU).
+          if (!isAllowedMapUrl(next)) return null;
+          current = next.toString();
           finalUrl = current;
           // No hace falta leer el body de un redirect
           try {
@@ -324,8 +354,11 @@ export class GeocodingService {
       }
       const point = this.extractCoordsFromUrl(finalUrl);
       if (!point) {
-        // Fallback: scan a bit of the HTML body for !3dLAT!4dLNG or @LAT,LNG
+        // Fallback: scan a bit of the HTML body for !3dLAT!4dLNG or @LAT,LNG.
+        // Acotado: si el servidor anuncia más de 1MB, no descargar.
         try {
+          const announced = Number(lastResponse?.headers.get('content-length') ?? 0);
+          if (announced > 1024 * 1024) return null;
           const text = lastResponse ? await lastResponse.text() : '';
           const bodyPoint = this.extractCoordsFromUrl(text.slice(0, 200000));
           if (bodyPoint) {

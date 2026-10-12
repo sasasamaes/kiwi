@@ -6,6 +6,12 @@ on:
   pull_request:
     branches: [main]
 
+# Least privilege: este workflow ejecuta código de PRs (checkout del merge
+# commit + npm ci con lifecycle scripts). Sin este bloque el GITHUB_TOKEN
+# ambiente hereda el default del repo/org, que puede ser write.
+permissions:
+  contents: read
+
 jobs:
   hygiene:
     name: Repo Hygiene

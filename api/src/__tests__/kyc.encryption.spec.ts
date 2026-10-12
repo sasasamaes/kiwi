@@ -48,12 +48,21 @@ describe('KYCService — cifrado de números de identidad en reposo', () => {
     expect(stored.idType).toBe('cedula'); // campo no sensible queda intacto
   });
 
-  it('getVerificationByUserId (dueño) recibe el número completo', async () => {
+  it('getVerificationByUserId (dueño) recibe el número enmascarado por defecto', async () => {
     prisma.kYCVerification.findUnique.mockResolvedValue({
       idNumber: cipher.encrypt('209880065'),
     });
 
     const row = await service.getVerificationByUserId('u-1');
+    expect(row.idNumber).toBe('••••0065');
+  });
+
+  it('detalle de revisión admin recibe el número completo', async () => {
+    prisma.kYCVerification.findUnique.mockResolvedValue({
+      idNumber: cipher.encrypt('209880065'),
+    });
+
+    const row = await service.getVerificationById('v-1');
     expect(row.idNumber).toBe('209880065');
   });
 
@@ -73,11 +82,11 @@ describe('KYCService — cifrado de números de identidad en reposo', () => {
     expect(row.idNumber).toBe('••••0065');
   });
 
-  it('listas admin devuelven el valor descifrado', async () => {
+  it('listas admin devuelven el valor enmascarado', async () => {
     prisma.kYCVerification.findMany.mockResolvedValue([{ idNumber: cipher.encrypt('1234567890') }]);
 
     const rows = await service.getAllVerifications();
-    expect(rows[0].idNumber).toBe('1234567890');
+    expect(rows[0].idNumber).toBe('••••7890');
   });
 
   it('production sin KYC_FIELD_ENCRYPTION_KEY no arranca', () => {

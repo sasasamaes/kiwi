@@ -31,9 +31,17 @@ export class HttpsEnforcerMiddleware implements NestMiddleware {
     const proto = (req.headers['x-forwarded-proto'] as string | undefined)?.split(',')[0]?.trim();
 
     if (proto === 'http') {
-      const host = req.headers['x-forwarded-host'] || req.headers.host || '';
+      // Solo el host validado por el enrutador (Host), nunca el
+      // x-forwarded-host que el cliente puede inventar. Caracteres fuera de
+      // [host]:[puerto] o URLs raras → redirect relativo sin host.
+      const rawHost = String(req.headers.host || '');
+      const hostOk = /^[A-Za-z0-9.-]+(?::\d+)?$/.test(rawHost) && rawHost.length <= 253;
+      const rawUrl = req.originalUrl || req.url || '/';
+      const urlOk =
+        rawUrl.startsWith('/') && !/[\s\x00-\x1f\x7f]/.test(rawUrl) && rawUrl.length <= 4096;
+      const target = hostOk && urlOk ? `https://${rawHost}${rawUrl}` : urlOk ? rawUrl : '/';
       // 308 preserva método y body (301/302 degradan POST a GET en algunos clientes).
-      res.redirect(308, `https://${host}${req.originalUrl || req.url}`);
+      res.redirect(308, target);
       return;
     }
 

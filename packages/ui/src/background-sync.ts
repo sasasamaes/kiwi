@@ -735,6 +735,23 @@ class BackgroundSyncService {
   }
 
   /**
+   * Purga total de la cola (logout/cambio de cuenta): pendientes incluidos.
+   * Sin esto, mutaciones encoladas por el usuario A se replays con el token
+   * del usuario B en un dispositivo compartido.
+   */
+  async clearAll(): Promise<void> {
+    await this.initialize();
+    if (!this.db) return;
+    await new Promise<void>((resolve, reject) => {
+      const transaction = this.db!.transaction([STORE_NAME], 'readwrite');
+      const request = transaction.objectStore(STORE_NAME).clear();
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+    await this.notifyQueueChange().catch(() => undefined);
+  }
+
+  /**
    * Destroy the service
    */
   destroy(): void {

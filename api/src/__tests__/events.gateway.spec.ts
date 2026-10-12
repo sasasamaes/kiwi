@@ -177,6 +177,7 @@ describe('EventsGateway payload restrictions', () => {
     it('accepts a real flow status', async () => {
       connect('merchant', 'merchant-user-1');
       (gateway as any).prisma.order.findUnique.mockResolvedValue({
+        status: 'picked_up',
         merchant: { userId: 'merchant-user-1' },
         driver: null,
       });
@@ -185,6 +186,22 @@ describe('EventsGateway payload restrictions', () => {
         status: 'picked_up',
       });
       expect(res).toEqual({ success: true });
+    });
+
+    it('rejects a valid-but-divergent status (confirm-only, no spoof)', async () => {
+      connect('merchant', 'merchant-user-1');
+      (gateway as any).prisma.order.findUnique.mockResolvedValue({
+        status: 'assigned',
+        merchant: { userId: 'merchant-user-1' },
+        driver: { userId: 'd1' },
+      });
+      expect(
+        await gateway.handleOrderStatusUpdate(client, {
+          orderId: 'o1',
+          status: 'delivered',
+        }),
+      ).toEqual({ error: 'Estado desactualizado: actualizá por REST y el socket lo difunde' });
+      expect(emitMock).not.toHaveBeenCalled();
     });
   });
 

@@ -67,6 +67,27 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const userId = payload.sub;
       const role = payload.role;
 
+      // Paridad con HTTP (JwtStrategy): la firma sola no alcanza. Un usuario
+      // desactivado o con logout global (tokenVersion++) no abre sockets
+      // nuevos aunque el access token de 7d siga sin expirar.
+      try {
+        const live = await this.prisma.user.findUnique({
+          where: { id: userId },
+          select: { status: true, tokenVersion: true },
+        });
+        if (
+          !live ||
+          (live as any).status !== 'active' ||
+          (payload.v !== undefined && (live as any).tokenVersion !== payload.v)
+        ) {
+          client.disconnect();
+          return;
+        }
+      } catch {
+        client.disconnect();
+        return;
+      }
+
       // Store connection
       this.connectedUsers.set(client.id, { socketId: client.id, role, userId });
 
@@ -246,6 +267,13 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const requester = userData.userId;
     if (requester !== merchantUserId && requester !== driverUserId) {
       return { error: 'Unauthorized' };
+    }
+
+    // Confirm-only: el socket re-emite el estado persistido por REST, no lo
+    // inventa. Sin esto cualquier participante pushaba un status válido
+    // arbitrario y la contraparte lo veía como cambio real con la DB intacta.
+    if ((order as any).status !== data.status) {
+      return { error: 'Estado desactualizado: actualizá por REST y el socket lo difunde' };
     }
 
     // Notify both merchant and driver
@@ -434,6 +462,19 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const senderId = userData.userId;
     // Solo los participantes de la orden pueden chatear en ella.
     if (senderId !== merchantUserId && senderId !== driverUserId) {
+      return { error: 'Unauthorized' };
+    }
+    // Liveness: un socket abierto antes del logout/baja no escribe más.
+    try {
+      const live = await this.prisma.user.findUnique({
+        where: { id: senderId },
+        select: { status: true },
+      });
+      if (!live || (live as any).status !== 'active') {
+        client.disconnect();
+        return { error: 'Unauthorized' };
+      }
+    } catch {
       return { error: 'Unauthorized' };
     }
     if (!merchantUserId || !driverUserId) {

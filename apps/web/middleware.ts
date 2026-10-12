@@ -45,9 +45,16 @@ export function middleware(req: NextRequest) {
   const { pathname, searchParams } = req.nextUrl;
 
   const expected = expectedHash();
-  // Sin clave configurada: la puerta queda abierta (comportamiento explícito,
-  // documentado en .env.example). Si preferís fail-closed, cambiá este return.
-  if (!expected) return NextResponse.next();
+  // Sin clave configurada: fail-closed al formulario. Una puerta cuya
+  // ausencia abre el contenido es un fail-open: en prod la var siempre va
+  // seteada (ver .env.example); en preview/dev sin var, el playbook pide
+  // clave igual y nadie lo ve por accidente.
+  if (!expected) {
+    if (pathname === ACCESS_FORM_PATH) return NextResponse.next();
+    const formUrl = req.nextUrl.clone();
+    formUrl.pathname = ACCESS_FORM_PATH;
+    return NextResponse.rewrite(formUrl);
+  }
 
   // 0. El formulario de acceso y su acción pasan siempre.
   if (pathname === ACCESS_FORM_PATH) return NextResponse.next();

@@ -157,6 +157,36 @@ describe('OrdersService proof photo (Task 2)', () => {
     );
   });
 
+  it('atajo: driver no puede forjar la foto pickup del comercio', async () => {
+    prisma.order.findUnique.mockResolvedValue({
+      id: 'order-1',
+      status: 'in_transit_to_pickup',
+      driverId: 'dp-1',
+      pickupProofPhotoUrl: null,
+      merchant: { userId: 'merchant-user-1' },
+      driver: { userId: 'user-d' },
+    });
+    await expect(
+      service.updateStatus('order-1', 'picked_up', 'user-d', 'driver', 'https://img/fake.jpg'),
+    ).rejects.toThrow('Solo el comercio sube la foto de entrega al repartidor');
+    expect(prisma.order.update).not.toHaveBeenCalled();
+  });
+
+  it('atajo: URL no-https se rechaza aunque el actor sea correcto', async () => {
+    prisma.order.findUnique.mockResolvedValue({
+      id: 'order-1',
+      status: 'in_transit_to_delivery',
+      driverId: 'dp-1',
+      deliveryProofPhotoUrl: null,
+      merchant: { userId: 'merchant-user-1' },
+      driver: { userId: 'user-d' },
+    });
+    await expect(
+      service.updateStatus('order-1', 'delivered', 'user-d', 'driver', 'javascript:alert(1)'),
+    ).rejects.toThrow('URL de evidencia inválida');
+    expect(prisma.order.update).not.toHaveBeenCalled();
+  });
+
   it('admin cierra directo a delivered desde assigned (cola trabada)', async () => {
     const assigned = {
       id: 'order-1',
