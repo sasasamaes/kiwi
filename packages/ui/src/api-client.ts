@@ -303,6 +303,14 @@ class ApiClient {
     });
   }
 
+  /** Fija la contraseña de un usuario (admin). Revoca sus sesiones. */
+  async setUserPassword(id: string, password: string) {
+    return this.request<any>(`/users/${id}/password`, {
+      method: 'PUT',
+      body: { password },
+    });
+  }
+
   /** Activa/apaga cobro con tarjeta/SINPE de un comercio (tras KYC de Onvo). */
   async setMerchantCardPayments(merchantId: string, enabled: boolean) {
     return this.request<any>(`/merchants/${merchantId}/card-payments`, {

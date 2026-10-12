@@ -6,6 +6,7 @@ import {
   ConflictException,
   ForbiddenException,
 } from '@nestjs/common';
+import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { normalizeCRPhone } from '../common/phone';
 
@@ -120,6 +121,35 @@ export class UsersService {
       throw new NotFoundException('Usuario no encontrado');
     }
     await this.prisma.user.update({ where: { id: targetUserId }, data: { status: status as any } });
+    return this.findById(targetUserId);
+  }
+
+  /**
+   * Admin fija la contraseña de un usuario (soporte: "olvidé mi clave").
+   * Resetea el throttle de login y sube tokenVersion para revocar sesiones
+   * y WS vivos del dueño anterior de la clave.
+   */
+  async setPassword(targetUserId: string, password: string) {
+    if (typeof password !== 'string' || password.length < 6) {
+      throw new BadRequestException('La contraseña debe tener al menos 6 caracteres');
+    }
+    if (password.length > 128) {
+      throw new BadRequestException('La contraseña no puede superar 128 caracteres');
+    }
+    const user = await this.prisma.user.findUnique({ where: { id: targetUserId } });
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+    const passwordHash = await bcrypt.hash(password, 10);
+    await this.prisma.user.update({
+      where: { id: targetUserId },
+      data: {
+        passwordHash,
+        failedLoginAttempts: 0,
+        loginLockedUntil: null,
+        tokenVersion: { increment: 1 },
+      },
+    });
     return this.findById(targetUserId);
   }
 

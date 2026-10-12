@@ -83,4 +83,13 @@ export class UsersController {
   ) {
     return this.usersService.setStatus(id, status, user?.sub ?? user?.id);
   }
+
+  @Put(':id/password')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Set a user password (admin support)' })
+  async setPassword(@Param('id') id: string, @Body('password') password: string) {
+    return this.usersService.setPassword(id, password);
+  }
 }

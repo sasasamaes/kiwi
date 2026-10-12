@@ -49,6 +49,10 @@ export default function UsersPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [toggling, setToggling] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [pwSaving, setPwSaving] = useState(false);
+  const [pwMessage, setPwMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -82,6 +86,36 @@ export default function UsersPage() {
       if (searchTimer.current) clearTimeout(searchTimer.current);
     };
   }, [user, filter, search, load]);
+
+  const openUser = (u: AdminUser) => {
+    setSelectedUser(u);
+    setNewPassword('');
+    setConfirmPassword('');
+    setPwMessage(null);
+  };
+
+  const changePassword = async (u: AdminUser) => {
+    if (newPassword.length < 6) {
+      setPwMessage({ ok: false, text: 'Mínimo 6 caracteres' });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPwMessage({ ok: false, text: 'No coinciden' });
+      return;
+    }
+    setPwSaving(true);
+    setPwMessage(null);
+    try {
+      await api.setUserPassword(u.id, newPassword);
+      setNewPassword('');
+      setConfirmPassword('');
+      setPwMessage({ ok: true, text: 'Contraseña actualizada y sesiones revocadas' });
+    } catch (e: any) {
+      setPwMessage({ ok: false, text: e?.message || 'No se pudo cambiar la contraseña' });
+    } finally {
+      setPwSaving(false);
+    }
+  };
 
   const toggleStatus = async (u: AdminUser) => {
     if (u.id === user?.id && u.status === 'active') {
@@ -335,7 +369,7 @@ export default function UsersPage() {
                           <td className="py-4 px-6">
                             <div className="flex items-center justify-end gap-2">
                               <button
-                                onClick={() => setSelectedUser(u)}
+                                onClick={() => openUser(u)}
                                 className="px-3 py-1.5 text-xs font-medium text-surface-500 hover:text-kiwi-700 hover:bg-kiwi-50 dark:hover:bg-kiwi-900/30 rounded-lg transition-colors"
                               >
                                 Ver
@@ -520,6 +554,47 @@ export default function UsersPage() {
                       </div>
                     </div>
                   )}
+
+                  <div className="p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50">
+                    <p className="text-sm font-semibold text-surface-800 dark:text-surface-200 mb-1">
+                      Cambiar contraseña
+                    </p>
+                    <p className="text-xs text-surface-500 dark:text-surface-400 mb-3">
+                      Soporte: fija una clave nueva y revoca sus sesiones.
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        type="password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="Nueva clave"
+                        autoComplete="new-password"
+                        className="px-3 py-2 text-sm rounded-lg border border-surface-200 dark:border-surface-600 bg-white dark:bg-surface-800 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
+                      />
+                      <input
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="Repetir clave"
+                        autoComplete="new-password"
+                        className="px-3 py-2 text-sm rounded-lg border border-surface-200 dark:border-surface-600 bg-white dark:bg-surface-800 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
+                      />
+                    </div>
+                    {pwMessage && (
+                      <p
+                        className={`mt-2 text-xs font-medium ${pwMessage.ok ? 'text-kiwi-700 dark:text-kiwi-400' : 'text-red-500'}`}
+                      >
+                        {pwMessage.text}
+                      </p>
+                    )}
+                    <button
+                      onClick={() => changePassword(selectedUser)}
+                      disabled={pwSaving}
+                      className="mt-3 w-full py-2 px-4 text-sm font-medium rounded-lg bg-surface-800 dark:bg-surface-600 text-white hover:opacity-90 transition-opacity disabled:opacity-50"
+                    >
+                      {pwSaving ? 'Guardando…' : 'Fijar contraseña'}
+                    </button>
+                  </div>
 
                   <div className="flex gap-3 pt-2">
                     <button

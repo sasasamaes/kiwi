@@ -71,4 +71,36 @@ describe('UsersService admin', () => {
       });
     });
   });
+
+  describe('setPassword', () => {
+    it('rechaza claves cortas y usuarios inexistentes', async () => {
+      await expect(service.setPassword('u1', '12345')).rejects.toThrow(BadRequestException);
+      expect(prisma.user.findUnique).not.toHaveBeenCalled();
+
+      prisma.user.findUnique.mockResolvedValue(null);
+      await expect(service.setPassword('ghost', 'nueva123')).rejects.toThrow(NotFoundException);
+    });
+
+    it('hashea, desbloquea y revoca sesiones sin exponer el hash', async () => {
+      prisma.user.findUnique
+        .mockResolvedValueOnce({ id: 'u1', status: 'active' })
+        .mockResolvedValueOnce({ id: 'u1', email: 'a@x.com', role: 'driver' });
+
+      const res = await service.setPassword('u1', 'nueva123');
+
+      const [call] = prisma.user.update.mock.calls;
+      expect(call[0]).toEqual({
+        where: { id: 'u1' },
+        data: expect.objectContaining({
+          failedLoginAttempts: 0,
+          loginLockedUntil: null,
+          tokenVersion: { increment: 1 },
+        }),
+      });
+      const hash = call[0].data.passwordHash as string;
+      expect(hash).toMatch(/^\$2[aby]\$/);
+      expect(hash).not.toContain('nueva123');
+      expect(res).not.toHaveProperty('passwordHash');
+    });
+  });
 });
