@@ -66,4 +66,21 @@ export class AuthController {
   async logout(@Request() req) {
     return this.authService.logout(req.user.sub);
   }
+
+  @Public()
+  @Post('forgot-password')
+  @ApiOperation({ summary: 'Pide el email de recupero (respuesta siempre igual)' })
+  @ApiResponse({ status: 201, description: 'Si la cuenta existe, se envió el email' })
+  async forgotPassword(@Body() body: { email?: string }) {
+    return this.authService.requestPasswordReset(body?.email ?? '');
+  }
+
+  @Public()
+  @Post('reset-password')
+  @ApiOperation({ summary: 'Canjea el token por una contraseña nueva' })
+  @ApiResponse({ status: 201, description: 'Contraseña actualizada' })
+  @ApiResponse({ status: 400, description: 'Token inválido o vencido' })
+  async resetPassword(@Body() body: { token?: string; password?: string }) {
+    return this.authService.resetPassword(body?.token ?? '', body?.password ?? '');
+  }
 }

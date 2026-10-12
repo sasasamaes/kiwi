@@ -14,6 +14,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { MailService } from '../mail/mail.service';
 import { findDeliveryZone } from '../orders/delivery-zones';
 import { normalizeCRPhone } from '../common/phone';
 import { isMerchantCategory, tagMerchantCategory } from '../merchants/merchant-category';
@@ -38,6 +39,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private configService: ConfigService,
+    private mailService: MailService,
   ) {
     // Periodic cleanup so entries for abandoned accounts don't accumulate.
     setInterval(
@@ -477,6 +479,88 @@ export class AuthService {
       data: { tokenVersion: { increment: 1 } },
     });
     return { success: true };
+  }
+
+  /**
+   * Recupero por email. Anti-enumeración: siempre responde igual, exista o
+   * no la cuenta. Si existe y está activa, invalida tokens viejos, crea uno
+   * nuevo (1 hora, un solo uso, solo hash en DB) y manda el link.
+   */
+  async requestPasswordReset(email: string): Promise<{ sent: boolean }> {
+    const emailKey = String(email ?? '')
+      .trim()
+      .toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailKey)) {
+      throw new BadRequestException('Email inválido');
+    }
+    const user = await this.prisma.user.findUnique({ where: { email: emailKey } });
+    if (user && (user as any).status === 'active' && (user as any).email) {
+      await this.prisma.passwordResetToken.updateMany({
+        where: { userId: user.id, usedAt: null },
+        data: { usedAt: new Date() },
+      });
+      const raw = randomBytes(32).toString('hex');
+      const tokenHash = createHash('sha256').update(raw).digest('hex');
+      await this.prisma.passwordResetToken.create({
+        data: { userId: user.id, tokenHash, expiresAt: new Date(Date.now() + 60 * 60 * 1000) },
+      });
+      const base =
+        this.configService.get<string>('WEB_URL') ??
+        this.configService.get<string>('FRONTEND_URL') ??
+        'http://localhost:3000';
+      await this.mailService.sendPasswordReset(
+        (user as any).email,
+        `${base.replace(/\/$/, '')}/reset-password?token=${raw}`,
+      );
+    }
+    return { sent: true };
+  }
+
+  /**
+   * Canjea el token por una contraseña nueva. Un solo uso, 1 hora de vida.
+   * Revoca sesiones (tokenVersion++) y limpia el throttle de login.
+   */
+  async resetPassword(token: string, password: string): Promise<{ reset: boolean }> {
+    if (typeof password !== 'string' || password.length < 6) {
+      throw new BadRequestException('La contraseña debe tener al menos 6 caracteres');
+    }
+    if (password.length > 128) {
+      throw new BadRequestException('La contraseña no puede superar 128 caracteres');
+    }
+    if (typeof token !== 'string' || token.length < 32) {
+      throw new BadRequestException('Token inválido o vencido');
+    }
+    const tokenHash = createHash('sha256').update(token).digest('hex');
+    const row: any = await this.prisma.passwordResetToken.findUnique({
+      where: { tokenHash },
+      include: { user: true },
+    });
+    if (
+      !row ||
+      row.usedAt ||
+      new Date(row.expiresAt).getTime() <= Date.now() ||
+      !row.user ||
+      row.user.status !== 'active'
+    ) {
+      throw new BadRequestException('Token inválido o vencido');
+    }
+    const passwordHash = await bcrypt.hash(password, 10);
+    await this.prisma.$transaction([
+      this.prisma.passwordResetToken.update({
+        where: { id: row.id },
+        data: { usedAt: new Date() },
+      }),
+      this.prisma.user.update({
+        where: { id: row.userId },
+        data: {
+          passwordHash,
+          failedLoginAttempts: 0,
+          loginLockedUntil: null,
+          tokenVersion: { increment: 1 },
+        },
+      }),
+    ]);
+    return { reset: true };
   }
 
   private sanitizeUser(user: any) {

@@ -240,6 +240,22 @@ class ApiClient {
     return result;
   }
 
+  /** Pide el email de recupero (respuesta siempre igual, exista o no la cuenta). */
+  async requestPasswordReset(email: string) {
+    return this.request<any>('/auth/forgot-password', {
+      method: 'POST',
+      body: { email },
+    });
+  }
+
+  /** Canjea el token del email por una contraseña nueva. */
+  async resetPassword(token: string, password: string) {
+    return this.request<any>('/auth/reset-password', {
+      method: 'POST',
+      body: { token, password },
+    });
+  }
+
   async getProfile() {
     return this.request<any>('/auth/profile');
   }

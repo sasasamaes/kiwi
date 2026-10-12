@@ -4,6 +4,7 @@ import { AuthService } from '../auth/auth.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { MailService } from '../mail/mail.service';
 import { ConflictException, HttpException, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 
@@ -33,6 +34,13 @@ describe('AuthService', () => {
         update: jest.fn(),
         updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
+      passwordResetToken: {
+        findUnique: jest.fn(),
+        create: jest.fn(),
+        update: jest.fn(),
+        updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+      },
+      $transaction: jest.fn((ops: any) => Promise.resolve(ops)),
     };
 
     jwtService = {
@@ -45,6 +53,7 @@ describe('AuthService', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: JwtService, useValue: jwtService },
         { provide: ConfigService, useValue: { get: jest.fn().mockReturnValue('7d') } },
+        { provide: MailService, useValue: { sendPasswordReset: jest.fn() } },
       ],
     }).compile();
 
@@ -255,6 +264,91 @@ describe('AuthService', () => {
       await expect(service.login({ email: 'b@x.com', password: 'wrong123' })).rejects.toThrow(
         UnauthorizedException,
       );
+    });
+  });
+
+  describe('recupero de contraseña por email', () => {
+    const getMail = () =>
+      ((service as any).mailService as { sendPasswordReset: jest.Mock }).sendPasswordReset;
+
+    it('email inválido → 400 sin tocar DB', async () => {
+      await expect(service.requestPasswordReset('no-es-email')).rejects.toThrow('Email inválido');
+      expect(prisma.user.findUnique).not.toHaveBeenCalled();
+    });
+
+    it('cuenta inexistente responde igual sin crear token ni mandar mail', async () => {
+      prisma.user.findUnique.mockResolvedValue(null);
+      await expect(service.requestPasswordReset('ghost@kiwi.app')).resolves.toEqual({
+        sent: true,
+      });
+      expect(prisma.passwordResetToken.create).not.toHaveBeenCalled();
+      expect(getMail()).not.toHaveBeenCalled();
+    });
+
+    it('cuenta activa invalida anteriores, crea token hasheado y manda el link', async () => {
+      prisma.user.findUnique.mockResolvedValue({
+        id: 'u1',
+        email: 'a@x.com',
+        status: 'active',
+      });
+      const res = await service.requestPasswordReset('A@x.com');
+      expect(res).toEqual({ sent: true });
+      expect(prisma.passwordResetToken.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { userId: 'u1', usedAt: null } }),
+      );
+      const created = prisma.passwordResetToken.create.mock.calls[0][0].data;
+      expect(created.userId).toBe('u1');
+      expect(created.tokenHash).toMatch(/^[a-f0-9]{64}$/);
+      expect(new Date(created.expiresAt).getTime()).toBeGreaterThan(Date.now());
+      expect(getMail()).toHaveBeenCalledWith(
+        'a@x.com',
+        expect.stringContaining('/reset-password?token='),
+      );
+    });
+
+    it('reset rechaza clave corta y token inválido', async () => {
+      await expect(service.resetPassword('x'.repeat(64), '12345')).rejects.toThrow(
+        'al menos 6 caracteres',
+      );
+      await expect(service.resetPassword('corto', 'nueva123456')).rejects.toThrow(
+        'Token inválido o vencido',
+      );
+    });
+
+    it('reset rechaza token usado o vencido', async () => {
+      prisma.passwordResetToken.findUnique.mockResolvedValue({
+        id: 't1',
+        usedAt: new Date(),
+        expiresAt: new Date(Date.now() + 3600_000),
+        user: { id: 'u1', status: 'active' },
+      });
+      await expect(service.resetPassword('y'.repeat(64), 'nueva123456')).rejects.toThrow(
+        'Token inválido o vencido',
+      );
+
+      prisma.passwordResetToken.findUnique.mockResolvedValue({
+        id: 't1',
+        usedAt: null,
+        expiresAt: new Date(Date.now() - 1000),
+        user: { id: 'u1', status: 'active' },
+      });
+      await expect(service.resetPassword('z'.repeat(64), 'nueva123456')).rejects.toThrow(
+        'Token inválido o vencido',
+      );
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('reset válido marca uso, cambia hash, limpia throttle y revoca sesiones', async () => {
+      prisma.passwordResetToken.findUnique.mockResolvedValue({
+        id: 't1',
+        userId: 'u1',
+        usedAt: null,
+        expiresAt: new Date(Date.now() + 3600_000),
+        user: { id: 'u1', status: 'active' },
+      });
+      const res = await service.resetPassword('w'.repeat(64), 'nueva123456');
+      expect(res).toEqual({ reset: true });
+      expect(prisma.$transaction).toHaveBeenCalledTimes(1);
     });
   });
 

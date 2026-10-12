@@ -13,6 +13,8 @@ export interface AuthFormProps {
   role: 'merchant' | 'driver';
   onSubmit: (data: AuthFormData) => void;
   onToggle?: () => void;
+  /** A dónde va "¿Olvidaste tu contraseña?" (login). Sin esto no se muestra. */
+  onForgotPassword?: () => void;
   loading?: boolean;
   error?: string;
 }
@@ -33,6 +35,7 @@ export function AuthForm({
   role,
   onSubmit,
   onToggle,
+  onForgotPassword,
   loading = false,
   error,
 }: AuthFormProps) {
@@ -376,7 +379,7 @@ export function AuthForm({
           </motion.button>
 
           {/* Forgot Password (Login only) */}
-          {type === 'login' && (
+          {type === 'login' && onForgotPassword && (
             <motion.div
               className="text-center"
               initial={{ opacity: 0 }}
@@ -385,6 +388,7 @@ export function AuthForm({
             >
               <button
                 type="button"
+                onClick={onForgotPassword}
                 className="inline-flex min-h-[44px] items-center px-1 text-sm text-kiwi-700 hover:text-kiwi-800 font-medium"
               >
                 ¿Olvidaste tu contraseña?

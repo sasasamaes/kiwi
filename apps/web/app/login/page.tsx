@@ -93,6 +93,7 @@ export default function LoginPage() {
           role="merchant"
           onSubmit={handleSubmit}
           onToggle={() => router.push('/register')}
+          onForgotPassword={() => router.push('/forgot-password')}
           loading={formLoading}
           error={error || undefined}
         />

@@ -47,6 +47,18 @@ export class RateLimiterMiddleware implements NestMiddleware {
       maxRequests: 3,
       message: 'Demasiados registros. Intenta de nuevo en 1 hora.',
     },
+    // Recupero: el link vale 1 hora, así que 5 pedidos/hora sobra para un
+    // humano y frena el spam de emails (costo del proveedor SMTP).
+    'POST:/api/auth/forgot-password': {
+      windowMs: 60 * 60 * 1000,
+      maxRequests: 5,
+      message: 'Demasiados pedidos de recupero. Intenta de nuevo en 1 hora.',
+    },
+    'POST:/api/auth/reset-password': {
+      windowMs: 60 * 60 * 1000,
+      maxRequests: 10,
+      message: 'Demasiados intentos. Intenta de nuevo en 1 hora.',
+    },
     // Refresh rotativo: un cliente sano lo usa cada ~15 min. Techo holgado
     // que frena loops de reintento y fuerza bruta sobre tokens opacos.
     'POST:/api/auth/refresh': {

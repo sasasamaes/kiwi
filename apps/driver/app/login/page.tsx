@@ -70,6 +70,7 @@ export default function DriverLoginPage() {
           role="driver"
           onSubmit={handleSubmit}
           onToggle={() => router.push('/register')}
+          onForgotPassword={() => router.push('/forgot-password')}
           loading={loading}
           error={error || undefined}
         />

@@ -28,6 +28,7 @@ import { SettingsModule } from './settings/settings.module';
 import { AdsModule } from './ads/ads.module';
 import { CustomersModule } from './customers/customers.module';
 import { FeatureFlagsModule } from './feature-flags/feature-flags.module';
+import { MailModule } from './mail/mail.module';
 
 @Module({
   imports: [
@@ -38,6 +39,9 @@ import { FeatureFlagsModule } from './feature-flags/feature-flags.module';
 
     // Database
     PrismaModule,
+
+    // Email transaccional (global — recupero de contraseña)
+    MailModule,
 
     // Feature flags (global — KYC_REQUIRED, …)
     FeatureFlagsModule,
