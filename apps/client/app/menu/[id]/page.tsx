@@ -21,6 +21,7 @@ import {
   User,
   FileText,
   X,
+  Lock,
   Instagram,
   Facebook,
   MessageCircle,
@@ -169,7 +170,7 @@ export default function MenuPage() {
   });
 
   // Tarjeta/SINPE solo si el comercio pasó el KYC de Onvo (flag del admin).
-  // Sin eso el backend rechaza el cobro: ni se muestran.
+  // Sin eso el backend rechaza el cobro: se muestran inactivos en gris.
   const cardAllowed = (merchant as any)?.cardPaymentsEnabled === true;
   const payWithAuthedEndpoint =
     !!api.getToken() && (userRole === 'customer' || userRole === 'merchant');
@@ -1753,59 +1754,79 @@ export default function MenuPage() {
                         label: 'Efectivo',
                         desc: 'Al repartidor',
                       },
-                    ]
-                      .filter(
-                        (method) =>
-                          (payAvailability as Record<string, boolean>)[method.id] &&
-                          // Sin KYC de Onvo el comercio no cobra tarjeta/SINPE.
-                          (method.id === 'sinpe' || method.id === 'card' ? cardAllowed : true),
-                      )
-                      .map((method) => {
-                        const MethodIcon = method.icon as any;
-                        return (
-                          <motion.button
-                            key={method.id}
-                            type="button"
-                            className={`relative flex min-w-0 flex-col items-center gap-1.5 p-3 rounded-2xl transition-all ${
-                              paymentMethod === method.id
-                                ? 'bg-kiwi-100 dark:bg-kiwi-900/50 ring-2 ring-kiwi-600'
-                                : 'bg-surface-100 dark:bg-surface-700 hover:bg-surface-200 dark:hover:bg-surface-600'
-                            }`}
-                            onClick={() => setPaymentMethod(method.id)}
-                            whileTap={{ scale: 0.95 }}
-                          >
-                            <span className="text-2xl">
-                              {typeof method.icon === 'string' ? (
-                                method.icon
-                              ) : (
-                                <MethodIcon className="h-6 w-6" />
-                              )}
-                            </span>
-                            <span
-                              className={`text-sm font-semibold leading-tight text-center ${
-                                paymentMethod === method.id
-                                  ? 'text-kiwi-700 dark:text-kiwi-400'
-                                  : 'text-surface-700 dark:text-surface-300'
-                              }`}
-                            >
-                              {method.label}
-                            </span>
-                            <span className="text-[11px] leading-tight text-center text-surface-500 dark:text-surface-400">
-                              {method.desc}
-                            </span>
-                            {paymentMethod === method.id && (
-                              <motion.div
-                                className="absolute top-1.5 right-1.5 h-5 w-5 rounded-full bg-kiwi-700 text-white text-xs flex items-center justify-center"
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                transition={{ type: 'spring', stiffness: 500 }}
-                              >
-                                ✓
-                              </motion.div>
+                    ].map((method) => {
+                      const platformOff = !(payAvailability as Record<string, boolean>)[method.id];
+                      // Sin KYC de Onvo el comercio no cobra tarjeta/SINPE.
+                      const merchantOff =
+                        (method.id === 'sinpe' || method.id === 'card') && !cardAllowed;
+                      const enabled = !platformOff && !merchantOff;
+                      const offReason = platformOff
+                        ? 'No disponible'
+                        : merchantOff
+                          ? 'No activado'
+                          : null;
+                      const selected = paymentMethod === method.id;
+                      const MethodIcon = method.icon as any;
+                      return (
+                        <motion.button
+                          key={method.id}
+                          type="button"
+                          disabled={!enabled}
+                          aria-disabled={!enabled}
+                          title={enabled ? method.label : `${method.label}: ${offReason}`}
+                          aria-label={
+                            enabled ? method.label : `${method.label} inactivo: ${offReason}`
+                          }
+                          className={`relative flex min-w-0 flex-col items-center gap-1.5 p-3 rounded-2xl transition-all ${
+                            selected
+                              ? 'bg-kiwi-100 dark:bg-kiwi-900/50 ring-2 ring-kiwi-600'
+                              : enabled
+                                ? 'bg-surface-100 dark:bg-surface-700 hover:bg-surface-200 dark:hover:bg-surface-600'
+                                : 'bg-surface-100 dark:bg-surface-700/60 opacity-50 grayscale cursor-not-allowed'
+                          }`}
+                          onClick={() => {
+                            if (enabled) setPaymentMethod(method.id);
+                          }}
+                          whileTap={enabled ? { scale: 0.95 } : undefined}
+                        >
+                          <span className="text-2xl">
+                            {typeof method.icon === 'string' ? (
+                              method.icon
+                            ) : (
+                              <MethodIcon className="h-6 w-6" />
                             )}
-                          </motion.button>
-                        );
-                      })}
+                          </span>
+                          <span
+                            className={`text-sm font-semibold leading-tight text-center ${
+                              selected
+                                ? 'text-kiwi-700 dark:text-kiwi-400'
+                                : 'text-surface-700 dark:text-surface-300'
+                            }`}
+                          >
+                            {method.label}
+                          </span>
+                          <span className="text-[11px] leading-tight text-center text-surface-500 dark:text-surface-400">
+                            {method.desc}
+                          </span>
+                          {offReason && (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-surface-200 dark:bg-surface-600 px-2 py-0.5 text-[10px] font-medium text-surface-500 dark:text-surface-400">
+                              <Lock className="h-3 w-3" />
+                              {offReason}
+                            </span>
+                          )}
+                          {selected && (
+                            <motion.div
+                              className="absolute top-1.5 right-1.5 h-5 w-5 rounded-full bg-kiwi-700 text-white text-xs flex items-center justify-center"
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              transition={{ type: 'spring', stiffness: 500 }}
+                            >
+                              ✓
+                            </motion.div>
+                          )}
+                        </motion.button>
+                      );
+                    })}
                   </div>
 
                   {/* Crypto Options */}

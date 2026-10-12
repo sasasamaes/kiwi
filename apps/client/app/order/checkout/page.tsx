@@ -49,6 +49,10 @@ function CheckoutContent() {
   const [pickupAddress, setPickupAddress] = useState('');
   // ¿El comercio es cocina casera? Habilita preventa programada.
   const [isHomeCook, setIsHomeCook] = useState(false);
+  // Tarjeta/SINPE solo si el comercio pasó el KYC de Onvo (flag del admin).
+  // Sin eso el backend rechaza el cobro: se muestran inactivos en gris.
+  // Default false (fail-closed) hasta cargar el perfil.
+  const [cardAllowed, setCardAllowed] = useState(false);
   const [schedule, setSchedule] = useState<ScheduleValue>(EMPTY_SCHEDULE);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   // Métodos habilitados por el admin (/admin/settings)
@@ -77,11 +81,16 @@ function CheckoutContent() {
     const keyOf = (m: PaymentMethod) => (m === 'crypto_usdc' || m === 'crypto_usdt' ? 'crypto' : m);
     setPaymentMethod((prev) => {
       const avail = payAvailability as Record<string, boolean>;
+      if ((prev === 'sinpe' || prev === 'card') && !cardAllowed) return 'cash';
       if (avail[keyOf(prev)]) return prev;
       const fallback: PaymentMethod[] = ['cash', 'sinpe', 'card', 'crypto_usdc'];
-      return fallback.find((f) => avail[keyOf(f)]) ?? prev;
+      return (
+        fallback.find(
+          (f) => avail[keyOf(f)] && (f === 'sinpe' || f === 'card' ? cardAllowed : true),
+        ) ?? prev
+      );
     });
-  }, [payAvailability]);
+  }, [payAvailability, cardAllowed]);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [address, setAddress] = useState('');
@@ -155,7 +164,10 @@ function CheckoutContent() {
     if (merchantParam) {
       api
         .getMerchantPublicProfile(merchantParam)
-        .then((m) => setIsHomeCook((m as any)?.isHomeCook === true))
+        .then((m) => {
+          setIsHomeCook((m as any)?.isHomeCook === true);
+          setCardAllowed((m as any)?.cardPaymentsEnabled === true);
+        })
         .catch(() => undefined);
     }
   }, [searchParams]);
@@ -577,6 +589,13 @@ function CheckoutContent() {
             Método de pago
           </h2>
 
+          {!cardAllowed && (
+            <p className="mb-3 rounded-xl bg-surface-100 dark:bg-surface-700/60 px-3 py-2 text-xs text-surface-500 dark:text-surface-400">
+              Este comercio cobra en efectivo. La tarjeta se habilita cuando complete su
+              verificación.
+            </p>
+          )}
+
           <div className="grid grid-cols-2 gap-2">
             {(
               [
@@ -586,28 +605,46 @@ function CheckoutContent() {
                 { id: 'crypto_usdc', label: 'USDC', desc: 'Cripto' },
                 { id: 'crypto_usdt', label: 'USDT', desc: 'Cripto' },
               ] as const
-            )
-              .filter((method) =>
-                method.id === 'crypto_usdc' || method.id === 'crypto_usdt'
-                  ? payAvailability.crypto
-                  : (payAvailability as Record<string, boolean>)[method.id],
-              )
-              .map((method) => (
+            ).map((method) => {
+              const isCrypto = method.id === 'crypto_usdc' || method.id === 'crypto_usdt';
+              const platformOff = isCrypto
+                ? !payAvailability.crypto
+                : !(payAvailability as Record<string, boolean>)[method.id];
+              // Sin KYC de Onvo el comercio no cobra tarjeta/SINPE (el backend lo rechaza).
+              const merchantOff = (method.id === 'sinpe' || method.id === 'card') && !cardAllowed;
+              const enabled = !platformOff && !merchantOff;
+              const offReason = platformOff ? 'No disponible' : merchantOff ? 'No activado' : null;
+              const selected = paymentMethod === method.id;
+              return (
                 <button
                   key={method.id}
-                  onClick={() => setPaymentMethod(method.id)}
+                  onClick={() => {
+                    if (enabled) setPaymentMethod(method.id);
+                  }}
+                  disabled={!enabled}
+                  aria-disabled={!enabled}
+                  title={enabled ? method.label : `${method.label}: ${offReason}`}
+                  aria-label={enabled ? method.label : `${method.label} inactivo: ${offReason}`}
                   className={`p-3 rounded-xl border-2 text-left transition-all ${
-                    paymentMethod === method.id
+                    selected
                       ? 'border-kiwi-600 bg-kiwi-50 dark:bg-kiwi-900/20'
-                      : 'border-surface-200 dark:border-surface-700 hover:border-surface-300'
+                      : enabled
+                        ? 'border-surface-200 dark:border-surface-700 hover:border-surface-300'
+                        : 'border-surface-200 dark:border-surface-700 opacity-50 grayscale cursor-not-allowed'
                   }`}
                 >
                   <span className="text-sm font-medium text-surface-800 dark:text-surface-100">
                     {method.label}
                   </span>
                   <span className="block text-xs text-surface-500 mt-0.5">{method.desc}</span>
+                  {offReason && (
+                    <span className="mt-1 inline-block rounded-full bg-surface-200 dark:bg-surface-600 px-2 py-0.5 text-[10px] font-medium text-surface-500 dark:text-surface-400">
+                      🔒 {offReason}
+                    </span>
+                  )}
                 </button>
-              ))}
+              );
+            })}
           </div>
         </motion.div>
 
