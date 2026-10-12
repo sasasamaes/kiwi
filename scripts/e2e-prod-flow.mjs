@@ -56,6 +56,29 @@ async function req(method, path, { token, body } = {}) {
   return { status: res.status, data };
 }
 
+// PNG mínimo 1x1 (magic bytes válidos) para los uploads de evidencia.
+const PNG_1X1 = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+  'base64',
+);
+
+async function reqMultipart(path, { token, fields = {} } = {}) {
+  const form = new FormData();
+  for (const [k, v] of Object.entries(fields)) form.append(k, String(v));
+  form.append('photo', new Blob([PNG_1X1], { type: 'image/png' }), 'proof.png');
+  const res = await fetch(`${API}${path}`, {
+    method: 'POST',
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: form,
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+  });
+  let data = null;
+  try { data = await res.json(); } catch { /* non-JSON */ }
+  return { status: res.status, data };
+}
+
 async function main() {
   console.log(`\n🥝 Kiwi E2E flow — ${API}\n` + '─'.repeat(60));
 
@@ -190,23 +213,63 @@ async function main() {
   const steal = await req('POST', `/orders/${orderId}/accept`, { token: d2Login.data?.accessToken ?? d2Login.data?.access_token });
   ok('other driver accept rejected', steal.status === 400, `HTTP ${steal.status}`);
 
-  // Status walk. picked_up/delivered exigen foto de evidencia 1+1: se manda
-  // por el atajo proofPhotoUrl del PUT (sin esto el gate responde 400).
+  // Status walk con evidencia 1+1 por el flujo REAL (kind-actor): la foto
+  // pickup la sube el comercio (archivo) y la delivery el driver (archivo).
+  // El atajo proofPhotoUrl crudo ya no acepta evidencia forjada.
   const walk = async (status, extra = {}) => {
     const r = await req('PUT', `/orders/${orderId}/status`, { token: driverToken, body: { status, ...extra } });
     return ok(`status → ${status}`, r.status === 200 && r.data?.status === status, `HTTP ${r.status}`);
   };
   await walk('in_transit_to_pickup');
-  await walk('picked_up', { proofPhotoUrl: 'https://e2e-test.local/pickup.jpg' });
-  await walk('in_transit_to_delivery');
-  await walk('delivered', { proofPhotoUrl: 'https://e2e-test.local/delivery.jpg' });
+  // Regresión kind-actor: el driver no puede forjar la evidencia pickup del
+  // comercio por el atajo URL (antes devolvía 200 y la persistía).
+  const forged = await req('PUT', `/orders/${orderId}/status`, {
+    token: driverToken,
+    body: { status: 'picked_up', proofPhotoUrl: 'https://e2e-test.local/pickup.jpg' },
+  });
+  ok('driver cannot forge merchant pickup evidence (403)', forged.status === 403, `HTTP ${forged.status}`);
+  // Flujo real con archivos (requiere CLOUDINARY_URL en el API): la foto
+  // pickup la sube el comercio y la delivery el driver. Sin Cloudinary el
+  // entorno no puede probar subidas: se registra SKIP (no fallo de código).
+  const upPickup = await reqMultipart(`/orders/${orderId}/proof-photo`, {
+    token: merchantToken,
+    fields: { kind: 'pickup' },
+  });
+  const proofsAvailable =
+    [200, 201].includes(upPickup.status);
+  if (upPickup.status === 503) {
+    ok('merchant uploads pickup proof (file) — SKIPPED, API sin CLOUDINARY_URL', true,
+      'HTTP 503: flujo con archivos no aplicable en este entorno');
+  } else {
+    ok('merchant uploads pickup proof (file)', proofsAvailable, `HTTP ${upPickup.status}`);
+  }
+  if (!proofsAvailable) {
+    // Sin subidas no hay evidencia posible: el gate debe seguir negando el
+    // avance y el walk de entrega se omite (no es fallo de código).
+    const gated = await req('PUT', `/orders/${orderId}/status`, {
+      token: driverToken,
+      body: { status: 'picked_up' },
+    });
+    ok('picked_up without proof still rejected (400)', gated.status === 400, `HTTP ${gated.status}`);
+    console.log('⏭️  Walk de entrega omitido: configuran CLOUDINARY_URL en el API para el flujo completo.');
+  } else {
+    await walk('picked_up');
+    await walk('in_transit_to_delivery');
+    const upDelivery = await reqMultipart(`/orders/${orderId}/proof-photo`, {
+      token: driverToken,
+      fields: { kind: 'delivery' },
+    });
+    ok('driver uploads delivery proof (file)', [200, 201].includes(upDelivery.status),
+      `HTTP ${upDelivery.status}${upDelivery.status === 503 ? ' (API sin CLOUDINARY_URL)' : ''}`);
+    await walk('delivered');
 
-  const delivered = await req('GET', `/orders/${orderId}`, { token: merchantToken });
-  ok('deliveredAt timestamp set', !!delivered.data?.deliveredAt, `deliveredAt=${delivered.data?.deliveredAt}`);
-  if (delivered.data?.status === 'delivered') leftoverOrderDelivered = true;
+    const delivered = await req('GET', `/orders/${orderId}`, { token: merchantToken });
+    ok('deliveredAt timestamp set', !!delivered.data?.deliveredAt, `deliveredAt=${delivered.data?.deliveredAt}`);
+    if (delivered.data?.status === 'delivered') leftoverOrderDelivered = true;
 
-  const invalid = await req('PUT', `/orders/${orderId}/status`, { token: driverToken, body: { status: 'pending' } });
-  ok('invalid transition (delivered → pending) rejected', invalid.status === 400, `HTTP ${invalid.status}`);
+    const invalid = await req('PUT', `/orders/${orderId}/status`, { token: driverToken, body: { status: 'pending' } });
+    ok('invalid transition (delivered → pending) rejected', invalid.status === 400, `HTTP ${invalid.status}`);
+  }
 
   // ── Cleanup ────────────────────────────────────────────
   // Delivered orders have no delete endpoint: the test order stays as a
@@ -237,7 +300,7 @@ async function main() {
     console.log('\nFailed steps:');
     for (const f of failed) console.log(`   ❌ ${f.name} ${f.detail}`);
   }
-  console.log(`\nℹ️  Left behind: one delivered test order (${orderId}) marked "E2E TEST" in deliveryAddress (no delete endpoint — historical record).`);
+  console.log(`\nℹ️  Left behind: ${leftoverOrderDelivered ? `one delivered test order (${orderId}) marked "E2E TEST" in deliveryAddress (no delete endpoint — historical record)` : 'no delivered test order (leftover was cancelled above)'}.`);
   console.log(`   Merchant menu was restored (test item created and deleted).`);
 
   if (failed.length) process.exit(1);
