@@ -110,4 +110,14 @@ describe('MarketplaceService', () => {
     });
     await expect((await svc()).sellerIntents('m1')).rejects.toThrow('Sin cuenta conectada');
   });
+
+  it('returns [] instead of 500 when Onvo fails', async () => {
+    prisma.merchantProfile.findUnique.mockResolvedValueOnce({
+      id: 'm1',
+      onvoConnectedAccountId: 'ca_1',
+    });
+    onvo.listSellerIntents.mockRejectedValueOnce(new Error('onvo caído'));
+    const out = await (await svc()).sellerIntents('m1');
+    expect(out).toEqual([]);
+  });
 });

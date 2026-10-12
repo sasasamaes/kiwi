@@ -110,8 +110,10 @@ export function TrafficAlertBanner({
   className = '',
 }: TrafficAlertBannerProps) {
   const { t } = useTranslations();
-  const config = ALERT_CONFIG[alert.type];
-  const severityConfig = SEVERITY_CONFIG[alert.severity];
+  // Fallbacks defensivos: un tipo/severidad nuevo del backend no debe
+  // tumbar la pantalla (misma guarda que KYCStatusBadge).
+  const config = ALERT_CONFIG[alert.type] ?? ALERT_CONFIG.congestion;
+  const severityConfig = SEVERITY_CONFIG[alert.severity] ?? SEVERITY_CONFIG.medium;
 
   return (
     <motion.div
@@ -237,8 +239,8 @@ export function TrafficAlertList({
 
       <AnimatePresence>
         {alerts.map((alert, index) => {
-          const config = ALERT_CONFIG[alert.type];
-          const severityConfig = SEVERITY_CONFIG[alert.severity];
+          const config = ALERT_CONFIG[alert.type] ?? ALERT_CONFIG.congestion;
+          const severityConfig = SEVERITY_CONFIG[alert.severity] ?? SEVERITY_CONFIG.medium;
           const isExpanded = expandedAlert === alert.id;
 
           return (

@@ -1,10 +1,12 @@
 // Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { OnvoPayProvider } from '../providers/onvopay.provider';
 
 @Injectable()
 export class DriverMarketplaceService {
+  private readonly logger = new Logger(DriverMarketplaceService.name);
+
   constructor(
     private prisma: PrismaService,
     private onvo: OnvoPayProvider,
@@ -54,6 +56,15 @@ export class DriverMarketplaceService {
   async sellerIntents(driverId: string) {
     const driver = await this.prisma.driverProfile.findUnique({ where: { id: driverId } });
     if (!driver?.onvoConnectedAccountId) throw new BadRequestException('Sin cuenta conectada');
-    return this.onvo.listSellerIntents(driver.onvoConnectedAccountId);
+    // Listado best-effort: si Onvo falla (red, credenciales), se devuelve []
+    // en vez de un 500 que rompe el perfil (igual que sin secretKey).
+    try {
+      return await this.onvo.listSellerIntents(driver.onvoConnectedAccountId);
+    } catch (error) {
+      this.logger.warn(
+        `listSellerIntents(${driverId}) falló: ${String((error as any)?.message ?? error)}`,
+      );
+      return [];
+    }
   }
 }

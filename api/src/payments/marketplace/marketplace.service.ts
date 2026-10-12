@@ -1,10 +1,12 @@
 // Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { OnvoPayProvider } from '../providers/onvopay.provider';
 
 @Injectable()
 export class MarketplaceService {
+  private readonly logger = new Logger(MarketplaceService.name);
+
   constructor(
     private prisma: PrismaService,
     private onvo: OnvoPayProvider,
@@ -53,6 +55,14 @@ export class MarketplaceService {
   async sellerIntents(merchantId: string) {
     const merchant = await this.prisma.merchantProfile.findUnique({ where: { id: merchantId } });
     if (!merchant?.onvoConnectedAccountId) throw new BadRequestException('Sin cuenta conectada');
-    return this.onvo.listSellerIntents(merchant.onvoConnectedAccountId);
+    // Listado best-effort: si Onvo falla, [] en vez de 500 (igual que drivers).
+    try {
+      return await this.onvo.listSellerIntents(merchant.onvoConnectedAccountId);
+    } catch (error) {
+      this.logger.warn(
+        `listSellerIntents(${merchantId}) falló: ${String((error as any)?.message ?? error)}`,
+      );
+      return [];
+    }
   }
 }

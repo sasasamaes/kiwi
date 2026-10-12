@@ -105,7 +105,9 @@ export function KYCVerification({
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   const status = kycData?.status || 'pending';
-  const config = statusConfig[status];
+  // Fallback defensivo: un estado desconocido del backend no debe tumbar
+  // la pantalla (misma guarda que KYCStatusBadge).
+  const config = statusConfig[status] ?? statusConfig.pending;
 
   const updateField = (field: string, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));

@@ -73,4 +73,14 @@ describe('DriverMarketplaceService', () => {
     });
     await expect((await svc()).sellerIntents('d1')).rejects.toThrow('Sin cuenta conectada');
   });
+
+  it('returns [] instead of 500 when Onvo fails', async () => {
+    prisma.driverProfile.findUnique.mockResolvedValueOnce({
+      id: 'd1',
+      onvoConnectedAccountId: 'ca_9',
+    });
+    onvo.listSellerIntents.mockRejectedValueOnce(new Error('onvo caído'));
+    const out = await (await svc()).sellerIntents('d1');
+    expect(out).toEqual([]);
+  });
 });
