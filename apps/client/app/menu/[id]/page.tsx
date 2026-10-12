@@ -175,14 +175,28 @@ export default function MenuPage() {
   const payWithAuthedEndpoint =
     !!api.getToken() && (userRole === 'customer' || userRole === 'merchant');
 
+  // Cuadro habilitado = flag de plataforma + (SINPE/tarjeta exigen KYC Onvo).
+  // Si el método elegido se apaga (o nada está activo), Pedir se desactiva:
+  // una selección vieja en un cuadro gris no debe dejar pedir.
+  const isPayMethodEnabled = useCallback(
+    (id: PaymentMethod): boolean => {
+      if (id === 'crypto_usdc' || id === 'crypto_usdt') return payAvailability.crypto;
+      if (!(payAvailability as Record<string, boolean>)[id]) return false;
+      if ((id === 'sinpe' || id === 'card') && !cardAllowed) return false;
+      return true;
+    },
+    [payAvailability, cardAllowed],
+  );
+
   // Si el método elegido deja de estar disponible (flag del comercio o
   // settings), caer a uno válido en vez de dejar un botón muerto.
   useEffect(() => {
     setPaymentMethod((prev) => {
-      if ((prev === 'sinpe' || prev === 'card') && !cardAllowed) return 'cash';
-      return prev;
+      if (isPayMethodEnabled(prev)) return prev;
+      const fallback: PaymentMethod[] = ['cash', 'sinpe', 'card', 'crypto_usdc'];
+      return fallback.find((f) => isPayMethodEnabled(f)) ?? prev;
     });
-  }, [cardAllowed]);
+  }, [isPayMethodEnabled]);
 
   useEffect(() => {
     api
@@ -536,6 +550,7 @@ export default function MenuPage() {
     deliveryInfo.name.trim().length > 0 &&
     isValidSchedule(schedule) &&
     cashCovers &&
+    isPayMethodEnabled(paymentMethod) &&
     (merchant?.isOpen !== false || schedulingFuture) &&
     (!cartHasTomorrow || (schedule.mode === 'scheduled' && schedule.date === tomorrowKey));
 
@@ -1755,14 +1770,11 @@ export default function MenuPage() {
                         desc: 'Al repartidor',
                       },
                     ].map((method) => {
-                      const platformOff = !(payAvailability as Record<string, boolean>)[method.id];
-                      // Sin KYC de Onvo el comercio no cobra tarjeta/SINPE.
-                      const merchantOff =
-                        (method.id === 'sinpe' || method.id === 'card') && !cardAllowed;
-                      const enabled = !platformOff && !merchantOff;
-                      const offReason = platformOff
+                      const enabled = isPayMethodEnabled(method.id);
+                      const platformOn = !!(payAvailability as Record<string, boolean>)[method.id];
+                      const offReason = !platformOn
                         ? 'No disponible'
-                        : merchantOff
+                        : !enabled
                           ? 'No activado'
                           : null;
                       const selected = paymentMethod === method.id;
@@ -2057,9 +2069,14 @@ export default function MenuPage() {
                   )}
                 </AnimatedButton>
 
-                {!canCheckout && (
+                {!canCheckout && isPayMethodEnabled(paymentMethod) && (
                   <p className="text-xs text-center text-surface-400">
                     Completa nombre, dirección y teléfono para continuar
+                  </p>
+                )}
+                {!isPayMethodEnabled(paymentMethod) && (
+                  <p className="text-xs text-center font-medium text-red-500">
+                    Este comercio no tiene métodos de pago activos: no se puede pedir ahora
                   </p>
                 )}
               </div>

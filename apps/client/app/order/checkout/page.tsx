@@ -77,20 +77,25 @@ function CheckoutContent() {
       .catch(() => undefined);
   }, []);
 
+  // Cuadro habilitado = flag de plataforma + (SINPE/tarjeta exigen KYC Onvo).
+  // Si el método elegido se apaga (o nada está activo), Pedir se desactiva.
+  const isPayMethodEnabled = useCallback(
+    (id: PaymentMethod): boolean => {
+      if (id === 'crypto_usdc' || id === 'crypto_usdt') return payAvailability.crypto;
+      if (!(payAvailability as Record<string, boolean>)[id]) return false;
+      if ((id === 'sinpe' || id === 'card') && !cardAllowed) return false;
+      return true;
+    },
+    [payAvailability, cardAllowed],
+  );
+
   useEffect(() => {
-    const keyOf = (m: PaymentMethod) => (m === 'crypto_usdc' || m === 'crypto_usdt' ? 'crypto' : m);
     setPaymentMethod((prev) => {
-      const avail = payAvailability as Record<string, boolean>;
-      if ((prev === 'sinpe' || prev === 'card') && !cardAllowed) return 'cash';
-      if (avail[keyOf(prev)]) return prev;
+      if (isPayMethodEnabled(prev)) return prev;
       const fallback: PaymentMethod[] = ['cash', 'sinpe', 'card', 'crypto_usdc'];
-      return (
-        fallback.find(
-          (f) => avail[keyOf(f)] && (f === 'sinpe' || f === 'card' ? cardAllowed : true),
-        ) ?? prev
-      );
+      return fallback.find((f) => isPayMethodEnabled(f)) ?? prev;
     });
-  }, [payAvailability, cardAllowed]);
+  }, [isPayMethodEnabled]);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [address, setAddress] = useState('');
@@ -199,6 +204,7 @@ function CheckoutContent() {
     cart.length > 0 &&
     isValidSchedule(schedule) &&
     (paymentMethod !== 'cash' || cashTendered === '' || Number(cashTendered) >= total) &&
+    isPayMethodEnabled(paymentMethod) &&
     acceptedTerms;
 
   const placeOrder = useCallback(async () => {
@@ -741,6 +747,11 @@ function CheckoutContent() {
               `Ordenar — ₡${total.toLocaleString()}`
             )}
           </TapButton>
+          {!isPayMethodEnabled(paymentMethod) && (
+            <p className="text-center text-xs font-medium text-red-500 mt-3">
+              Este comercio no tiene métodos de pago activos: no se puede pedir ahora
+            </p>
+          )}
           <p className="text-center text-xs text-surface-400 mt-3">
             {paymentMethod === 'cash' && (
               <span>
