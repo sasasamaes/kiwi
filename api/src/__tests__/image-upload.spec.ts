@@ -59,6 +59,27 @@ describe('ImageUploadService', () => {
     );
   });
 
+  it('acepta HEIC real por magic bytes ftyp (alta eficiencia Samsung/iPhone)', async () => {
+    const svc = await build('cloudinary://k:s@c');
+    const heic = Buffer.concat([
+      Buffer.from([0x00, 0x00, 0x00, 0x18]),
+      Buffer.from('ftypheic', 'ascii'),
+      Buffer.alloc(2048, 0x00),
+    ]);
+    jest.spyOn(cloudinary.uploader, 'upload_stream').mockImplementation(((
+      _options: any,
+      cb: (e: any) => void,
+    ) => {
+      setImmediate(() => cb(new Error('network disabled in test')));
+      return { end: () => {} } as any;
+    }) as any);
+    // Pasa la validación (llega al proveedor); sin red falla como 503, no 400.
+    await expect(
+      svc.uploadProductImage({ buffer: heic, size: heic.length, originalname: 'foto.heic' }),
+    ).rejects.toBeInstanceOf(ServiceUnavailableException);
+    jest.restoreAllMocks();
+  });
+
   it('acepta PNG real por magic bytes (llega al proveedor; sin red falla como 503, no 400)', async () => {
     const svc = await build('cloudinary://k:s@c');
     const png = Buffer.concat([

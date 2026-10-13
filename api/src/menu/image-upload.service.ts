@@ -19,14 +19,29 @@ import { v2 as cloudinary, UploadApiResponse } from 'cloudinary';
  *
  * Validación estricta ANTES de tocar el proveedor (el binario jamás se
  * parsea como JSON — Multer usa memoryStorage y límite en bytes):
- * - Solo image/jpeg|png|webp|gif. Los "magic bytes" se verifican, no se confía
- *   en el filename ni en el content-type que manda el cliente.
+ * - Solo image/jpeg|png|webp|gif|heic. Los "magic bytes" se verifican, no se
+ *   confía en el filename ni en el content-type que manda el cliente. HEIC
+ *   (modo alta eficiencia de Samsung/iPhone) lo ingiere Cloudinary y el
+ *   eager con fetch_format auto lo entrega como webp visible en todos lados.
  * - Máx 5 MB (límite free de Cloudinary).
  * - Extensiones: deshabilitadas — un .php renombrado a .jpg es exactamente
  *   lo que esto bloquea.
  */
 
 const MAX_FILE_BYTES = 5 * 1024 * 1024; // 5 MB
+
+const HEIC_BRANDS = new Set([
+  'heic',
+  'heix',
+  'hevc',
+  'hevx',
+  'heim',
+  'heis',
+  'hevm',
+  'hevs',
+  'mif1',
+  'msf1',
+]);
 
 const MAGIC_BYTES: Array<{ mime: string; test: (b: Buffer) => boolean }> = [
   // JPEG: FF D8 FF
@@ -44,6 +59,13 @@ const MAGIC_BYTES: Array<{ mime: string; test: (b: Buffer) => boolean }> = [
   },
   // GIF: "GIF8"
   { mime: 'image/gif', test: (b) => b.slice(0, 4).toString('ascii') === 'GIF8' },
+  // HEIC/HEIF: ...."ftyp"+marca (alta eficiencia Samsung/iPhone)
+  {
+    mime: 'image/heic',
+    test: (b) =>
+      b.slice(4, 8).toString('ascii') === 'ftyp' &&
+      HEIC_BRANDS.has(b.slice(8, 12).toString('ascii')),
+  },
 ];
 
 @Injectable()
@@ -147,7 +169,7 @@ export class ImageUploadService {
     const sniff = Buffer.from(file.buffer.subarray(0, 12));
     const match = MAGIC_BYTES.find((m) => m.test(sniff));
     if (!match) {
-      throw new BadRequestException('Formato no soportado. Usa JPG, PNG, WEBP o GIF.');
+      throw new BadRequestException('Formato no soportado. Usa JPG, PNG, WEBP, GIF o HEIC.');
     }
 
     try {

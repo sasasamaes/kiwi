@@ -483,8 +483,13 @@ export default function ActiveOrders() {
       setNotice('La foto es muy grande (máx 5 MB). Probá con otra imagen.');
       return;
     }
-    if (file.type && !['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type)) {
-      setNotice('Formato no soportado. Usá JPG, PNG, WEBP o GIF (el iPhone a veces saca HEIC).');
+    if (
+      file.type &&
+      !['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif'].includes(
+        file.type,
+      )
+    ) {
+      setNotice('Formato no soportado. Usá JPG, PNG, WEBP, GIF o HEIC.');
       return;
     }
     setUploadingPhoto(true);
@@ -1323,7 +1328,7 @@ export default function ActiveOrders() {
                     {uploadingPhoto ? 'Subiendo…' : '📷 Tomar foto de la entrega'}
                     <input
                       type="file"
-                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif"
                       capture="environment"
                       className="hidden"
                       disabled={uploadingPhoto}
@@ -1341,7 +1346,7 @@ export default function ActiveOrders() {
                     {uploadingPhoto ? 'Subiendo…' : '🖼️ Elegir de la galería'}
                     <input
                       type="file"
-                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif"
                       className="hidden"
                       disabled={uploadingPhoto}
                       onChange={(e) => {
