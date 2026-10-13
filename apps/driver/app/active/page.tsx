@@ -1067,7 +1067,7 @@ export default function ActiveOrders() {
                 onClick={() => copyAddress('pickup', order.pickupAddress)}
                 className="group mt-0.5 flex items-start gap-1 text-left text-sm text-surface-500"
               >
-                <span className="flex-1">{order.pickupAddress}</span>
+                <span className="min-w-0 flex-1 break-words">{order.pickupAddress}</span>
                 {copied === 'pickup' ? (
                   <Check className="h-4 w-4 shrink-0 text-kiwi-500" />
                 ) : (
@@ -1120,11 +1120,11 @@ export default function ActiveOrders() {
                 <Home className="h-5 w-5" />
               </motion.div>
             </div>
-            <div className="flex-1">
+            <div className="min-w-0 flex-1">
               <p className="text-xs font-semibold uppercase tracking-wide text-gold-600">
                 {order.status === 'in_transit_to_delivery' ? 'Ir a entregar a' : 'Entregar en'}
               </p>
-              <p className="text-base font-semibold text-surface-800 dark:text-surface-100">
+              <p className="break-words text-base font-semibold text-surface-800 dark:text-surface-100">
                 {order.deliveryAddress}
               </p>
               <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-surface-500">
@@ -1175,26 +1175,31 @@ export default function ActiveOrders() {
         </div>
         {/* Contacto cliente */}
         {customer.phone && (
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-4 grid grid-cols-2 gap-3"
-          >
-            <a
-              href={`tel:${customer.phone.replace(/\s/g, '')}`}
-              className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark text-sm font-semibold text-surface-700 dark:text-surface-200"
+          <div className="mb-4">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-surface-500 dark:text-surface-400">
+              Contacto del cliente{customer.name ? ` · ${customer.name}` : ''}
+            </p>
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="grid grid-cols-2 gap-3"
             >
-              <Phone className="h-4 w-4 text-kiwi-500" /> Llamar
-            </a>
-            <a
-              href={toWaLink(customer.phone)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark text-sm font-semibold text-surface-700 dark:text-surface-200"
-            >
-              <MessageCircle className="h-4 w-4 text-kiwi-500" /> WhatsApp
-            </a>
-          </motion.div>
+              <a
+                href={`tel:${customer.phone.replace(/\s/g, '')}`}
+                className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark text-sm font-semibold text-surface-700 dark:text-surface-200"
+              >
+                <Phone className="h-4 w-4 text-kiwi-500" /> Llamar
+              </a>
+              <a
+                href={toWaLink(customer.phone)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark text-sm font-semibold text-surface-700 dark:text-surface-200"
+              >
+                <MessageCircle className="h-4 w-4 text-kiwi-500" /> WhatsApp
+              </a>
+            </motion.div>
+          </div>
         )}
         {/* Paquete / flete */}
         {order.kind === 'freight' && (
