@@ -40,6 +40,7 @@ import {
   KiwiLoader,
   TapButton,
   AnimatedCounter,
+  playNotificationSound,
 } from '@kiwi/ui';
 
 // Estados considerados "activos" para el repartidor
@@ -335,11 +336,47 @@ export default function ActiveOrders() {
   };
 
   // Cuenta regresiva de aceptación: tick de 1s solo si hay oferta pendiente.
+  // Recogidas rápidas con readyAt futuro usan el mismo tick.
   useEffect(() => {
-    if (!orders.some((o) => o.status === 'pending_acceptance')) return;
+    const needsTick =
+      orders.some((o) => o.status === 'pending_acceptance') ||
+      orders.some((o) => {
+        const t = new Date(String((o as any).readyAt ?? '')).getTime();
+        return (
+          Number.isFinite(t) &&
+          t > Date.now() &&
+          (o.status === 'assigned' || o.status === 'in_transit_to_pickup')
+        );
+      });
+    if (!needsTick) return;
     const t = setInterval(() => setNowMs(Date.now()), 1000);
     return () => clearInterval(t);
   }, [orders]);
+
+  // readyAt alcanzado → sonido + vibración una vez por pedido (ir a recoger).
+  const readyNotifiedRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    for (const o of orders) {
+      const t = new Date(String((o as any).readyAt ?? '')).getTime();
+      if (
+        !Number.isFinite(t) ||
+        t > Date.now() ||
+        (o.status !== 'assigned' && o.status !== 'in_transit_to_pickup') ||
+        readyNotifiedRef.current.has(o.id)
+      ) {
+        continue;
+      }
+      readyNotifiedRef.current.add(o.id);
+      playNotificationSound('order_update');
+      try {
+        if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+          navigator.vibrate([200, 100, 200]);
+        }
+      } catch {
+        // sin vibración: el sonido y el banner alcanzan
+      }
+    }
+  }, [orders, nowMs]);
 
   const advanceStatus = async (order: Order) => {
     const flow = NEXT_STATUS[order.status];
@@ -698,7 +735,6 @@ export default function ActiveOrders() {
             height={340}
           />
         </div>
-
         <AnimatePresence>
           {notice && (
             <motion.div
@@ -718,7 +754,6 @@ export default function ActiveOrders() {
             </motion.div>
           )}
         </AnimatePresence>
-
         {/* Banner offline / caché */}
         {showOfflineBanner && (
           <div className="mb-4 flex items-center gap-3 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 p-3">
@@ -730,7 +765,6 @@ export default function ActiveOrders() {
             </p>
           </div>
         )}
-
         {/* Aceptación: el comercio te eligió, confirmá antes de que vuelva a concurso */}
         {order.status === 'pending_acceptance' &&
           (() => {
@@ -785,8 +819,49 @@ export default function ActiveOrders() {
               </div>
             );
           })()}
-
-        {/* Cola de entregas: todos los activos en orden, se toca para cambiar */}
+        {/* Recogida rápida: cuenta atrás hasta que la comida está lista */}
+        {(order.status === 'assigned' || order.status === 'in_transit_to_pickup') &&
+          (() => {
+            const readyMs = new Date(String((order as any).readyAt ?? '')).getTime();
+            if (!Number.isFinite(readyMs)) return null;
+            const remaining = Math.max(0, readyMs - nowMs);
+            const mm = String(Math.floor(remaining / 60000)).padStart(2, '0');
+            const ss = String(Math.floor((remaining % 60000) / 1000)).padStart(2, '0');
+            const ready = remaining <= 0;
+            const hh = new Date(readyMs).toLocaleTimeString('es-CR', {
+              hour: '2-digit',
+              minute: '2-digit',
+            });
+            return (
+              <div
+                className={`mb-4 rounded-3xl border p-5 shadow-soft dark:shadow-dark ${
+                  ready
+                    ? 'bg-kiwi-700 text-white border-kiwi-700'
+                    : 'bg-white dark:bg-surface-800 border-surface-200/60 dark:border-white/[0.06]'
+                }`}
+              >
+                <p
+                  className={`flex items-center gap-2 text-base font-semibold ${
+                    ready ? 'text-white' : 'text-surface-800 dark:text-surface-100'
+                  }`}
+                >
+                  <Timer className="h-5 w-5" />
+                  {ready ? '¡Ir a recoger!' : `La comida sale ${hh}`}
+                </p>
+                {ready ? (
+                  <p className="mt-1 text-sm text-white/90">
+                    Pasá por {(order as any).merchant?.businessName || 'el comercio'} a retirar el
+                    pedido.
+                  </p>
+                ) : (
+                  <p className="mt-2 font-mono text-3xl font-bold text-kiwi-700 dark:text-kiwi-300">
+                    {mm}:{ss}
+                  </p>
+                )}
+              </div>
+            );
+          })()}
+        {/* Cola de entregas: todos los activos en orden, se toca para cambiar */}{' '}
         {orders.length > 1 && (
           <div className="mb-4 overflow-hidden rounded-3xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark">
             <p className="px-4 pt-3 text-xs font-semibold uppercase tracking-wide text-surface-400">
@@ -844,7 +919,6 @@ export default function ActiveOrders() {
             </div>
           </div>
         )}
-
         {/* HERO: estado + ganancia + progreso */}
         <AnimatePresence mode="wait">
           <motion.div
@@ -960,7 +1034,6 @@ export default function ActiveOrders() {
             </div>
           </motion.div>
         </AnimatePresence>
-
         {/* TIMELINE: recoger -> entregar */}
         <div className="mb-4 rounded-3xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-5">
           {/* Recoger */}
@@ -1094,7 +1167,6 @@ export default function ActiveOrders() {
             </div>
           </div>
         </div>
-
         {/* Contacto cliente */}
         {customer.phone && (
           <motion.div
@@ -1118,7 +1190,6 @@ export default function ActiveOrders() {
             </a>
           </motion.div>
         )}
-
         {/* Paquete / flete */}
         {order.kind === 'freight' && (
           <div className="mb-4 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4">
@@ -1136,7 +1207,6 @@ export default function ActiveOrders() {
             </div>
           </div>
         )}
-
         {/* Qué llevar (colapsable) */}
         {Array.isArray((order as any).items) && (order as any).items.length > 0 && (
           <div className="mb-4 overflow-hidden rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark">
@@ -1190,7 +1260,6 @@ export default function ActiveOrders() {
             </AnimatePresence>
           </div>
         )}
-
         {/* Notas */}
         {notes && (
           <div className="mb-4 rounded-2xl bg-gold-50 dark:bg-gold-900/20 border border-gold-200 dark:border-gold-800 p-4">
@@ -1200,7 +1269,6 @@ export default function ActiveOrders() {
             <p className="text-sm text-surface-700 dark:text-surface-200">{notes}</p>
           </div>
         )}
-
         {/* Evidencia 1+1: foto del comercio al recoger, foto tuya al entregar */}
         <div className="mb-4 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4">
           <p className="mb-2 text-sm font-semibold text-surface-800 dark:text-surface-100">
@@ -1264,7 +1332,6 @@ export default function ActiveOrders() {
             </div>
           )}
         </div>
-
         {/* Rechazar: solo asignado sin recoger. Vuelve a concurso y avisa
             al comercio para que reasigne. Doble toque para confirmar. */}
         {order.status === 'assigned' && (

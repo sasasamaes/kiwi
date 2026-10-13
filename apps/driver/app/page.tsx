@@ -41,7 +41,18 @@ import {
   Circle,
   CheckCircle2,
   CircleOff,
+  Clock,
 } from 'lucide-react';
+
+/** Etiqueta de recogida rápida: "Recoger 18:20" o "en 14 min". Null si no trae readyAt. */
+function readyLabel(readyAt: unknown): string | null {
+  if (!readyAt) return null;
+  const t = new Date(String(readyAt)).getTime();
+  if (!Number.isFinite(t)) return null;
+  const mins = Math.max(0, Math.round((t - Date.now()) / 60000));
+  const hh = new Date(t).toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' });
+  return mins <= 0 ? `Recoger ${hh}` : `Recoger ${hh} · en ${mins} min`;
+}
 
 /** Mensaje exacto según el paso que falló (permiso vs token vs servidor). */
 function pushErrorMessage(reason?: string): string {
@@ -923,6 +934,14 @@ export default function Home() {
                         </motion.span>
                         <span className="text-xs text-surface-400">•</span>
                         <span className="text-xs text-surface-400">Nuevo</span>
+                        {(() => {
+                          const label = readyLabel((order as any).readyAt);
+                          return label ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-gold-100 dark:bg-gold-900/50 px-3 py-1 text-xs font-semibold text-gold-700 dark:text-gold-300">
+                              <Clock className="h-3 w-3" /> {label}
+                            </span>
+                          ) : null;
+                        })()}
                       </div>
                       <span className="text-sm font-semibold text-surface-700 dark:text-surface-200">
                         ₡{Number(order.totalAmount || order.basePrice || 0).toLocaleString()}

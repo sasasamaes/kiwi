@@ -203,6 +203,21 @@ export class OrdersService {
       }
     }
 
+    // Recogida rápida: minutos relativos (chips 15/20/30 del botón flotante)
+    // → readyAt absoluto. Solo inmediatos sin fecha programada.
+    const READY_IN_MINUTES = [15, 20, 30] as const;
+    let readyAt: Date | null = null;
+    if (data.readyInMinutes != null && data.readyInMinutes !== '') {
+      const mins = Number(data.readyInMinutes);
+      if (!Number.isInteger(mins) || !(READY_IN_MINUTES as readonly number[]).includes(mins)) {
+        throw new BadRequestException('readyInMinutes inválido: usa 15, 20 o 30');
+      }
+      if (orderType !== 'immediate' || scheduledDate) {
+        throw new BadRequestException('readyInMinutes es solo para pedidos inmediatos');
+      }
+      readyAt = new Date(Date.now() + mins * 60 * 1000);
+    }
+
     // Sanitizar crudos que se persisten tal cual: un NaN/Infinity/garbage
     // tumba el create con 500 de Prisma en vez de un 400 claro.
     const finiteOrUndef = (v: unknown): number | undefined => {
@@ -637,6 +652,7 @@ export class OrdersService {
           orderType,
           scheduledDate,
           scheduledTime: data.scheduledTime,
+          ...(readyAt ? { readyAt } : {}),
           pickupAddress: data.pickupAddress,
           pickupLat: data.pickupLat,
           pickupLng: data.pickupLng,

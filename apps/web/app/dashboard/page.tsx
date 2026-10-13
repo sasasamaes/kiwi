@@ -32,6 +32,7 @@ import {
 } from '@kiwi/ui';
 import { MerchantNav } from '../../components/MerchantNav';
 import { MerchantLogoEditor } from '../../components/MerchantLogoEditor';
+import { QuickPickupSheet } from '../../components/QuickPickupSheet';
 
 /**
  * Nombre del cliente: campo estructurado (pedidos nuevos) o parseado de
@@ -73,6 +74,7 @@ export default function Dashboard() {
   const [announceBody, setAnnounceBody] = useState('');
   const [announcing, setAnnouncing] = useState(false);
   const [announceResult, setAnnounceResult] = useState<string | null>(null);
+  const [quickOpen, setQuickOpen] = useState(false);
 
   // Push notifications
   const { requestPermission } = usePushNotifications({
@@ -724,6 +726,19 @@ export default function Dashboard() {
           </div>
         </ScrollReveal>
       </main>
+
+      {/* Pedido rápido: la comida sale en minutos, el repartidor va a recoger */}
+      <motion.button
+        onClick={() => setQuickOpen(true)}
+        aria-label="Pedido rápido: pedir repartidor"
+        title="Pedido rápido"
+        className="fixed bottom-6 right-6 z-40 flex h-16 w-16 items-center justify-center rounded-full bg-kiwi-700 text-white shadow-2xl hover:bg-kiwi-800"
+        whileHover={{ scale: 1.08 }}
+        whileTap={{ scale: 0.92 }}
+      >
+        <Clock className="h-7 w-7" />
+      </motion.button>
+      <QuickPickupSheet open={quickOpen} onClose={() => setQuickOpen(false)} />
     </div>
   );
 }

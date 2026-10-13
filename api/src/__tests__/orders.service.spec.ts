@@ -247,6 +247,57 @@ describe('OrdersService', () => {
       ).rejects.toThrow('ya pasó');
     });
 
+    it('readyInMinutes fija readyAt = ahora + N (solo 15/20/30)', async () => {
+      prisma.merchantProfile.findUnique.mockResolvedValue({
+        id: 'merchant-1',
+        userId: 'user-1',
+        businessName: 'Pizzería',
+      });
+      prisma.order.create.mockImplementation(async ({ data }: any) => ({
+        id: 'order-1',
+        status: 'pending',
+        ...data,
+      }));
+      const before = Date.now();
+      const order: any = await service.create('user-1', {
+        pickupAddress: 'Nicoya Centro',
+        deliveryAddress: 'Barrio Los Ángeles',
+        deliveryZone: 'centro',
+        distanceKm: 1,
+        readyInMinutes: 20,
+      });
+      const ms = new Date(order.readyAt).getTime() - before;
+      expect(ms).toBeGreaterThanOrEqual(20 * 60 * 1000 - 5000);
+      expect(ms).toBeLessThanOrEqual(20 * 60 * 1000 + 5000);
+      expect(order.status).toBe('pending');
+    });
+
+    it('readyInMinutes rechaza valores fuera de la allowlist y programados', async () => {
+      prisma.merchantProfile.findUnique.mockResolvedValue({
+        id: 'merchant-1',
+        userId: 'user-1',
+        businessName: 'Pizzería',
+      });
+      await expect(
+        service.create('user-1', {
+          pickupAddress: 'A',
+          deliveryAddress: 'B',
+          readyInMinutes: 10,
+        }),
+      ).rejects.toThrow('readyInMinutes inválido');
+      await expect(
+        service.create('user-1', {
+          pickupAddress: 'A',
+          deliveryAddress: 'B',
+          orderType: 'scheduled',
+          scheduledDate: '2099-01-01',
+          scheduledTime: '12:00',
+          readyInMinutes: 15,
+        }),
+      ).rejects.toThrow('solo para pedidos inmediatos');
+      expect(prisma.order.create).not.toHaveBeenCalled();
+    });
+
     it('should price by deliveryZone catalog (server is source of truth)', async () => {
       prisma.merchantProfile.findUnique.mockResolvedValue({
         id: 'merchant-1',

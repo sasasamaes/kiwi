@@ -564,6 +564,10 @@ model Order {
   scheduledDate DateTime? @map("scheduled_date")
   scheduledTime String?   @map("scheduled_time")
 
+  // Recogida rápida (botón flotante del comercio): hora estimada en que la
+  // comida está lista y el repartidor debe ir a recoger. Solo inmediatos.
+  readyAt DateTime? @map("ready_at")
+
   // Addresses
   pickupAddress   String   @map("pickup_address")
   pickupLat       Decimal? @map("pickup_lat") @db.Decimal(10, 8)

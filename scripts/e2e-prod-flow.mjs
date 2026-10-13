@@ -169,6 +169,7 @@ async function main() {
       distanceKm: 1.5,
       orderType: 'immediate',
       specialInstructions: 'Pedido de prueba E2E automatizado',
+      readyInMinutes: 20,
     },
   });
   const orderId = newOrder.data?.id;
@@ -178,6 +179,10 @@ async function main() {
     `status=${newOrder.data?.status}, basePrice=${newOrder.data?.basePrice}`);
 
   ok('new order starts pending', newOrder.data?.status === 'pending');
+  ok('readyAt set ~20 min out', (() => {
+    const ms = newOrder.data?.readyAt ? new Date(newOrder.data.readyAt).getTime() - Date.now() : NaN;
+    return Number.isFinite(ms) && ms > 15 * 60 * 1000 && ms <= 20 * 60 * 1000;
+  })(), `readyAt=${newOrder.data?.readyAt}`);
   ok('pricing Nicoya flat (1.5km dentro de zona → ₡2000)', Number(newOrder.data?.basePrice) === 2000, `basePrice=${newOrder.data?.basePrice}`);
 
   const myOrders = await req('GET', '/orders/my', { token: merchantToken });
