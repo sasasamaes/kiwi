@@ -301,6 +301,8 @@ export { AddressInput } from './AddressInput';
 export type { AddressInputProps } from './AddressInput';
 export { DeliveryZoneSelect } from './DeliveryZoneSelect';
 export { ZonePicker } from './ZonePicker';
+export { parseMapLink } from './map-link';
+export type { GeoPoint } from './map-link';
 export { DeliveryZonesMap } from './DeliveryZonesMap';
 export {
   SchedulePicker,
