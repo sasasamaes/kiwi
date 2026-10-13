@@ -14,6 +14,7 @@ interface AdminUser {
   phone?: string;
   role: string;
   status: string;
+  loginLocked?: boolean;
   createdAt: string;
   merchantProfile?: {
     id?: string;
@@ -53,6 +54,7 @@ export default function UsersPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [pwSaving, setPwSaving] = useState(false);
   const [pwMessage, setPwMessage] = useState<{ ok: boolean; text: string } | null>(null);
+  const [unlocking, setUnlocking] = useState(false);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -114,6 +116,25 @@ export default function UsersPage() {
       setPwMessage({ ok: false, text: e?.message || 'No se pudo cambiar la contraseña' });
     } finally {
       setPwSaving(false);
+    }
+  };
+
+  const unlockLogin = async (u: AdminUser) => {
+    setUnlocking(true);
+    setPwMessage(null);
+    try {
+      const res = await api.unlockUserLogin(u.id);
+      const patch = (x: AdminUser) => (x.id === u.id ? { ...x, loginLocked: false } : x);
+      setUsers((prev) => prev.map(patch));
+      setSelectedUser((prev) => (prev?.id === u.id ? patch(prev) : prev));
+      setPwMessage({
+        ok: true,
+        text: res?.wasLocked ? 'Cuenta desbloqueada' : 'No estaba bloqueada',
+      });
+    } catch (e: any) {
+      setPwMessage({ ok: false, text: e?.message || 'No se pudo desbloquear' });
+    } finally {
+      setUnlocking(false);
     }
   };
 
@@ -554,6 +575,39 @@ export default function UsersPage() {
                       </div>
                     </div>
                   )}
+
+                  <div className="p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50">
+                    <div className="flex items-center justify-between gap-2">
+                      <div>
+                        <p className="text-sm font-semibold text-surface-800 dark:text-surface-200">
+                          Bloqueo de login
+                        </p>
+                        <p className="text-xs text-surface-500 dark:text-surface-400">
+                          {selectedUser.loginLocked
+                            ? 'Bloqueada por intentos fallidos.'
+                            : 'Sin bloqueos activos.'}
+                        </p>
+                      </div>
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-medium ${
+                          selectedUser.loginLocked
+                            ? 'bg-red-100 text-red-700'
+                            : 'bg-green-100 text-green-700'
+                        }`}
+                      >
+                        {selectedUser.loginLocked ? 'Bloqueada' : 'OK'}
+                      </span>
+                    </div>
+                    {selectedUser.loginLocked && (
+                      <button
+                        onClick={() => unlockLogin(selectedUser)}
+                        disabled={unlocking}
+                        className="mt-3 w-full py-2 px-4 text-sm font-medium rounded-lg bg-amber-500 text-white hover:opacity-90 transition-opacity disabled:opacity-50"
+                      >
+                        {unlocking ? 'Desbloqueando…' : '🔓 Desbloquear login'}
+                      </button>
+                    )}
+                  </div>
 
                   <div className="p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50">
                     <p className="text-sm font-semibold text-surface-800 dark:text-surface-200 mb-1">

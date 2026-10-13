@@ -103,4 +103,40 @@ describe('UsersService admin', () => {
       expect(res).not.toHaveProperty('passwordHash');
     });
   });
+
+  describe('unlockLogin', () => {
+    it('404 si no existe; resetea contadores y reporta wasLocked', async () => {
+      prisma.user.findUnique.mockResolvedValue(null);
+      await expect(service.unlockLogin('ghost')).rejects.toThrow(NotFoundException);
+
+      prisma.user.findUnique
+        .mockResolvedValueOnce({
+          id: 'u1',
+          email: 'a@x.com',
+          failedLoginAttempts: 5,
+          loginLockedUntil: new Date(Date.now() + 600_000),
+        })
+        .mockResolvedValueOnce({
+          id: 'u1',
+          email: 'a@x.com',
+          failedLoginAttempts: 0,
+          loginLockedUntil: null,
+        });
+      prisma.user.findMany.mockResolvedValue([]);
+      const res = await service.unlockLogin('u1');
+      expect(res.wasLocked).toBe(true);
+      expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { id: 'u1' },
+        data: { failedLoginAttempts: 0, loginLockedUntil: null },
+      });
+      expect(res.user.loginLocked).toBe(false);
+    });
+
+    it('wasLocked false si no había bloqueo', async () => {
+      prisma.user.findUnique.mockResolvedValue({ id: 'u1', loginLockedUntil: null });
+      prisma.user.findMany.mockResolvedValue([]);
+      const res = await service.unlockLogin('u1');
+      expect(res.wasLocked).toBe(false);
+    });
+  });
 });

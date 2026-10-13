@@ -92,4 +92,13 @@ export class UsersController {
   async setPassword(@Param('id') id: string, @Body('password') password: string) {
     return this.usersService.setPassword(id, password);
   }
+
+  @Put(':id/unlock')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Clear login throttle for a user (admin support)' })
+  async unlockLogin(@Param('id') id: string) {
+    return this.usersService.unlockLogin(id);
+  }
 }

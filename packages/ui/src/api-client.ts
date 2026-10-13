@@ -327,6 +327,11 @@ class ApiClient {
     });
   }
 
+  /** Limpia el throttle de login de un usuario (admin). */
+  async unlockUserLogin(id: string) {
+    return this.request<any>(`/users/${id}/unlock`, { method: 'PUT' });
+  }
+
   /** Activa/apaga cobro con tarjeta/SINPE de un comercio (tras KYC de Onvo). */
   async setMerchantCardPayments(merchantId: string, enabled: boolean) {
     return this.request<any>(`/merchants/${merchantId}/card-payments`, {

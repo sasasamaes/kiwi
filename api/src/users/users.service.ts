@@ -125,6 +125,26 @@ export class UsersService {
   }
 
   /**
+   * Admin desbloquea el throttle de login (intentos fallidos). La clave
+   * correcta igual siempre entra; esto limpia el 429 para quien sigue
+   * errando (típico: olvidó la clave → mejor aún, usar recupero por email).
+   */
+  async unlockLogin(targetUserId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: targetUserId } });
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+    const wasLocked =
+      (user as any).loginLockedUntil != null &&
+      new Date((user as any).loginLockedUntil).getTime() > Date.now();
+    await this.prisma.user.update({
+      where: { id: targetUserId },
+      data: { failedLoginAttempts: 0, loginLockedUntil: null },
+    });
+    return { user: await this.findById(targetUserId), wasLocked };
+  }
+
+  /**
    * Admin fija la contraseña de un usuario (soporte: "olvidé mi clave").
    * Resetea el throttle de login y sube tokenVersion para revocar sesiones
    * y WS vivos del dueño anterior de la clave.
@@ -217,6 +237,11 @@ export class UsersService {
 
   private sanitizeUser(user: any) {
     const { passwordHash, ...sanitized } = user;
-    return sanitized;
+    return {
+      ...sanitized,
+      loginLocked:
+        sanitized.loginLockedUntil != null &&
+        new Date(sanitized.loginLockedUntil).getTime() > Date.now(),
+    };
   }
 }
