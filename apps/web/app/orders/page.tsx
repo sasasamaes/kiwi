@@ -584,6 +584,45 @@ export default function OrdersPage() {
                             </div>
                           )}
 
+                          {/* Evidencia histórica: las fotos siguen visibles después
+                              de entregado (el bloque de arriba solo existe en
+                              assigned/in_transit_to_pickup). */}
+                          {(order.pickupProofPhotoUrl || (order as any).deliveryProofPhotoUrl) &&
+                            order.status !== 'assigned' &&
+                            order.status !== 'in_transit_to_pickup' && (
+                              <div className="rounded-xl bg-surface-50 dark:bg-surface-800 p-3">
+                                <p className="mb-2 text-xs font-semibold text-surface-600 dark:text-surface-300">
+                                  📷 Evidencia del pedido
+                                </p>
+                                <div className="grid grid-cols-2 gap-2">
+                                  {order.pickupProofPhotoUrl && (
+                                    <div>
+                                      <img
+                                        src={order.pickupProofPhotoUrl}
+                                        alt="Foto al entregar al repartidor"
+                                        className="rounded-xl w-full object-cover"
+                                      />
+                                      <p className="mt-1 text-[11px] text-surface-500">
+                                        Entrega al repartidor
+                                      </p>
+                                    </div>
+                                  )}
+                                  {(order as any).deliveryProofPhotoUrl && (
+                                    <div>
+                                      <img
+                                        src={(order as any).deliveryProofPhotoUrl}
+                                        alt="Foto de entrega al cliente"
+                                        className="rounded-xl w-full object-cover"
+                                      />
+                                      <p className="mt-1 text-[11px] text-surface-500">
+                                        Entrega al cliente
+                                      </p>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
                           {/* Sin repartidor: reintentar el concurso o cancelar */}
                           {order.status === 'no_driver' && (
                             <div className="rounded-xl bg-red-50 dark:bg-red-900/20 p-3">
