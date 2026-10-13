@@ -675,7 +675,13 @@ export default function ActiveOrders() {
   // % real del pedido (el admin la puede cambiar; el backend la guarda).
   const feePct = Math.round(Number((order as any).commissionRate ?? 0.15) * 100);
   const distanceKm = Number(order.distanceKm ?? 0);
-  const customer = parseCustomer(order.specialInstructions);
+  // Contacto del cliente: primero los campos del pedido (siempre vienen para
+  // el asignado), fallback al parseo de instrucciones viejas ("Cliente: …").
+  const parsedCustomer = parseCustomer(order.specialInstructions);
+  const customer = {
+    name: (order as any).customerName?.trim() || parsedCustomer.name,
+    phone: (order as any).customerPhone?.trim() || parsedCustomer.phone,
+  };
   const merchantPhone =
     typeof (order as any).merchant?.user?.phone === 'string'
       ? (order as any).merchant.user.phone
@@ -1314,6 +1320,23 @@ export default function ActiveOrders() {
                       type="file"
                       accept="image/jpeg,image/png,image/webp,image/gif"
                       capture="environment"
+                      className="hidden"
+                      disabled={uploadingPhoto}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        e.target.value = '';
+                        if (!file) return;
+                        void uploadDeliveryPhoto(order, file);
+                      }}
+                    />
+                  </label>
+                  {/* Fallback: en algunos Android el intent de cámara con
+                      capture no abre nada. La galería siempre funciona. */}
+                  <label className="mt-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-surface-200 dark:border-surface-700 px-4 py-2.5 text-sm font-semibold text-surface-600 dark:text-surface-300">
+                    {uploadingPhoto ? 'Subiendo…' : '🖼️ Elegir de la galería'}
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
                       className="hidden"
                       disabled={uploadingPhoto}
                       onChange={(e) => {
