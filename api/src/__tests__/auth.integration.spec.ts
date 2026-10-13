@@ -137,7 +137,7 @@ describe('Auth Integration: Registration & Login Flow', () => {
     });
 
     it('Step 3: Login with correct credentials → JWT with role', async () => {
-      prisma.user.findUnique.mockResolvedValue({
+      prisma.user.findFirst.mockResolvedValue({
         id: 'user-merchant-1',
         email: 'luis@kiwi.app',
         passwordHash: '$2a$10$realhash',
@@ -170,7 +170,7 @@ describe('Auth Integration: Registration & Login Flow', () => {
     });
 
     it('Step 4: Login as driver → different role in JWT', async () => {
-      prisma.user.findUnique.mockResolvedValue({
+      prisma.user.findFirst.mockResolvedValue({
         id: 'user-driver-1',
         email: 'juan@kiwi.app',
         passwordHash: '$2a$10$realhash',
@@ -234,7 +234,7 @@ describe('Auth Integration: Registration & Login Flow', () => {
     });
 
     it('Should reject login with wrong email', async () => {
-      prisma.user.findUnique.mockResolvedValue(null);
+      prisma.user.findFirst.mockResolvedValue(null);
 
       await expect(
         service.login({
@@ -245,7 +245,7 @@ describe('Auth Integration: Registration & Login Flow', () => {
     });
 
     it('Should reject login with wrong password', async () => {
-      prisma.user.findUnique.mockResolvedValue({
+      prisma.user.findFirst.mockResolvedValue({
         id: 'user-1',
         email: 'luis@kiwi.app',
         passwordHash: '$2a$10$correcthash',

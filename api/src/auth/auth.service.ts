@@ -234,10 +234,10 @@ export class AuthService {
     const { email, password } = loginDto;
     const emailKey = email.trim().toLowerCase();
 
-    // Find user (por la forma normalizada: el unique de Postgres
-    // distingue mayúsculas y el registro ya guarda minúsculas).
-    const user = await this.prisma.user.findUnique({
-      where: { email: emailKey },
+    // Find user. Insensible a mayúsculas: cuentas viejas guardaron el email
+    // en mayúsculas y Postgres unique sí distingue (findUnique fallaría).
+    const user = await this.prisma.user.findFirst({
+      where: { email: { equals: emailKey, mode: 'insensitive' } },
       include: {
         merchantProfile: true,
         driverProfile: true,
@@ -271,6 +271,16 @@ export class AuthService {
         });
       } catch {
         // best-effort: el login igual procede
+      }
+      // Auto-reparación: si la fila traía el email en mayúsculas, normalizar
+      // para que el unique quede canónico (best-effort, no bloquea).
+      if ((user as any).email !== emailKey) {
+        try {
+          await this.prisma.user.update({ where: { id: user.id }, data: { email: emailKey } });
+          (user as any).email = emailKey;
+        } catch {
+          // p.ej. ya existe otra fila en minúsculas: el login igual procede
+        }
       }
 
       // Generate tokens
@@ -493,7 +503,9 @@ export class AuthService {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailKey)) {
       throw new BadRequestException('Email inválido');
     }
-    const user = await this.prisma.user.findUnique({ where: { email: emailKey } });
+    const user = await this.prisma.user.findFirst({
+      where: { email: { equals: emailKey, mode: 'insensitive' } },
+    });
     if (user && (user as any).status === 'active' && (user as any).email) {
       await this.prisma.passwordResetToken.updateMany({
         where: { userId: user.id, usedAt: null },

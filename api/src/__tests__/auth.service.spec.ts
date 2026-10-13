@@ -132,7 +132,7 @@ describe('AuthService', () => {
 
   describe('login', () => {
     it('should login successfully with correct credentials', async () => {
-      prisma.user.findUnique.mockResolvedValue({
+      prisma.user.findFirst.mockResolvedValue({
         id: 'user-1',
         email: 'test@kiwi.app',
         passwordHash: '$2a$10$abcdefghijklmnopqrstuuABCDEFGHIJKLMNOPQRSTUVWXYZ12',
@@ -153,8 +153,32 @@ describe('AuthService', () => {
       expect(result.accessToken).toBe('mock-token');
     });
 
+    it('login con email guardado en mayúsculas entra y normaliza la fila', async () => {
+      prisma.user.findFirst.mockResolvedValue({
+        id: 'user-1',
+        email: 'TWENTYSNICOYA@GMAIL.COM',
+        passwordHash: '$2a$10$hash',
+        role: 'merchant',
+        status: 'active',
+      });
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+
+      const result = await service.login({
+        email: 'TwentySNicoya@Gmail.com',
+        password: 'cualquiera123',
+      });
+
+      expect(result.accessToken).toBe('mock-token');
+      expect(result.user.email).toBe('twentysnicoya@gmail.com');
+      expect(prisma.user.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { email: { equals: 'twentysnicoya@gmail.com', mode: 'insensitive' } },
+        }),
+      );
+    });
+
     it('should throw UnauthorizedException for invalid email', async () => {
-      prisma.user.findUnique.mockResolvedValue(null);
+      prisma.user.findFirst.mockResolvedValue(null);
 
       await expect(
         service.login({
@@ -165,7 +189,7 @@ describe('AuthService', () => {
     });
 
     it('should throw UnauthorizedException for wrong password', async () => {
-      prisma.user.findUnique.mockResolvedValue({
+      prisma.user.findFirst.mockResolvedValue({
         id: 'user-1',
         email: 'test@kiwi.app',
         passwordHash: '$2a$10$incorrecthash',
@@ -194,7 +218,7 @@ describe('AuthService', () => {
     };
 
     function mockVictim() {
-      prisma.user.findUnique.mockResolvedValue(badUser);
+      prisma.user.findFirst.mockResolvedValue(badUser);
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
     }
 
@@ -245,7 +269,7 @@ describe('AuthService', () => {
       );
 
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-      prisma.user.findUnique.mockResolvedValue({ ...badUser, email: 'v@x.com' });
+      prisma.user.findFirst.mockResolvedValue({ ...badUser, email: 'v@x.com' });
 
       const result = await service.login({ email: 'v@x.com', password: 'good12345' });
       expect(result.accessToken).toBe('mock-token');
@@ -273,11 +297,11 @@ describe('AuthService', () => {
 
     it('email inválido → 400 sin tocar DB', async () => {
       await expect(service.requestPasswordReset('no-es-email')).rejects.toThrow('Email inválido');
-      expect(prisma.user.findUnique).not.toHaveBeenCalled();
+      expect(prisma.user.findFirst).not.toHaveBeenCalled();
     });
 
     it('cuenta inexistente responde igual sin crear token ni mandar mail', async () => {
-      prisma.user.findUnique.mockResolvedValue(null);
+      prisma.user.findFirst.mockResolvedValue(null);
       await expect(service.requestPasswordReset('ghost@kiwi.app')).resolves.toEqual({
         sent: true,
       });
@@ -286,7 +310,7 @@ describe('AuthService', () => {
     });
 
     it('cuenta activa invalida anteriores, crea token hasheado y manda el link', async () => {
-      prisma.user.findUnique.mockResolvedValue({
+      prisma.user.findFirst.mockResolvedValue({
         id: 'u1',
         email: 'a@x.com',
         status: 'active',
@@ -431,7 +455,7 @@ describe('AuthService', () => {
     });
 
     it('login incluye refreshToken opaco (no el hash)', async () => {
-      prisma.user.findUnique.mockResolvedValue({
+      prisma.user.findFirst.mockResolvedValue({
         ...liveUser,
         passwordHash: '$2a$10$hash',
         merchantProfile: { id: 'mp-1' },
