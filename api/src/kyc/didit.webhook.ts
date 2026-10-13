@@ -57,20 +57,32 @@ export interface DiditWebhookCheck {
 }
 
 /**
- * Verifica firma + frescura. El timestamp válido es el SIGNED del body
- * (`parsed.timestamp`) — nunca el header X-Timestamp (no firmado, replayable).
+ * Verifica firma + frescura.
+ *
+ * Intenta X-Signature-V2 (HMAC del canónico ordenado, recomendado: sobrevive
+ * re-encodeo del middleware) y cae a X-Signature (HMAC de los bytes crudos,
+ * solo si el stack los preservó). En ambos casos la frescura sale del
+ * `timestamp` FIRMADO del body — nunca del header X-Timestamp sin firmar.
  */
 export function verifyDiditWebhook(
   secret: string,
   parsedBody: any,
   signatureHeader: string,
+  rawBody?: string | Buffer,
 ): DiditWebhookCheck {
   if (!secret) return { ok: false, reason: 'missing_secret' };
   if (!parsedBody || typeof parsedBody !== 'object') {
     return { ok: false, reason: 'bad_body' };
   }
-  const expected = hmacHex(secret, canonicalJson(parsedBody));
-  if (!signaturesEqual(signatureHeader || '', expected)) {
+  const expectedV2 = hmacHex(secret, canonicalJson(parsedBody));
+  let signatureOk = signaturesEqual(signatureHeader || '', expectedV2);
+  if (!signatureOk && rawBody !== undefined) {
+    // Fallback X-Signature: HMAC de los bytes crudos exactos.
+    const raw = typeof rawBody === 'string' ? rawBody : rawBody.toString('utf8');
+    const expectedRaw = hmacHex(secret, raw);
+    signatureOk = signaturesEqual(signatureHeader || '', expectedRaw);
+  }
+  if (!signatureOk) {
     return { ok: false, reason: 'bad_signature' };
   }
   const ts = Number((parsedBody as any).timestamp);
@@ -80,23 +92,24 @@ export function verifyDiditWebhook(
   return { ok: true };
 }
 
-/** Mapeo Didit (case-sensitive) → KYCStatus nuestro. */
+/** Mapeo Didit → KYCStatus nuestro (insensible a mayúsculas/espacios). */
 export function mapDiditStatus(diditStatus: unknown): string | null {
-  switch (diditStatus) {
-    case 'Approved':
+  const norm = typeof diditStatus === 'string' ? diditStatus.trim().toLowerCase() : '';
+  switch (norm) {
+    case 'approved':
       return 'approved';
-    case 'Declined':
+    case 'declined':
       return 'rejected';
-    case 'In Review':
+    case 'in review':
       return 'under_review';
-    case 'Not Started':
-    case 'In Progress':
-    case 'Awaiting User':
-    case 'Resubmitted':
-    case 'Abandoned':
+    case 'not started':
+    case 'in progress':
+    case 'awaiting user':
+    case 'resubmitted':
+    case 'abandoned':
       return 'pending';
-    case 'Expired':
-    case 'Kyc Expired':
+    case 'expired':
+    case 'kyc expired':
       return 'expired';
     default:
       return null;

@@ -1,5 +1,5 @@
 // Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { FieldCipher } from '../security/field-cipher';
 import { DiditProvider } from './didit.provider';
@@ -7,6 +7,7 @@ import { mapDiditStatus, verifyDiditWebhook } from './didit.webhook';
 
 @Injectable()
 export class KYCService {
+  private readonly logger = new Logger(KYCService.name);
   /** Identity numbers: encrypted at rest (AES-256-GCM), masked for display. */
   private static readonly ENCRYPTED_FIELDS = ['idNumber', 'licenseNumber', 'taxId'] as const;
 
@@ -566,14 +567,39 @@ export class KYCService {
     });
   }
 
+  /** Re-sincroniza una sesión Didit conocida (usado por `data.updated`). */
+  private async refreshSessionByDiditId(sessionId: string) {
+    if (!sessionId) return { ok: true, ignored: 'no-session' };
+    const verification = await this.prisma.kYCVerification.findUnique({
+      where: { diditSessionId: sessionId },
+    });
+    if (!verification) {
+      this.logger.log(`Webhook Didit data.updated sin sesión local: ${sessionId}`);
+      return { ok: true, ignored: 'unknown-session' };
+    }
+    const out: any = await this.refreshDiditSession(verification.userId);
+    return { ok: true, refreshed: true, status: out?.status ?? null };
+  }
   /**
    * Webhook Didit (público, firmado). Orden: firma → frescura → idempotencia
-   * → dispatch. Rápido: aplica el payload verificado sin fetches extra.
+   * → dispatch. Rápido: aplica el payload verificado sin fetches extra, salvo
+   * `data.updated` que re-sincroniza vía pull acotado.
+   *
+   * Familias (destination.subscribed_events, valores exactos):
+   * status.updated, data.updated, user.status.updated, user.data.updated,
+   * business.status.updated, business.data.updated, activity.created,
+   * transaction.created, transaction.status.updated.
    */
-  async handleDiditWebhook(signature: string, parsedBody: any) {
+  async handleDiditWebhook(signature: string, parsedBody: any, rawBody?: string | Buffer) {
     const secret = (process.env.DIDIT_WEBHOOK_SECRET || '').trim();
-    const check = verifyDiditWebhook(secret, parsedBody, signature || '');
+    const check = verifyDiditWebhook(secret, parsedBody, signature || '', rawBody);
     if (!check.ok) {
+      // Sin PII del body: solo identificadores para correlacionar en logs.
+      this.logger.warn(
+        `Webhook Didit inválido: ${check.reason} ` +
+          `event=${String((parsedBody as any)?.event_id || '?')} ` +
+          `type=${String((parsedBody as any)?.webhook_type || '?')}`,
+      );
       const err: any = new Error(`Webhook Didit inválido: ${check.reason}`);
       err.status = 401;
       throw err;
@@ -592,10 +618,37 @@ export class KYCService {
       throw e;
     }
 
-    if ((parsedBody as any)?.webhook_type !== 'status.updated') {
-      return { ok: true, ignored: (parsedBody as any)?.webhook_type };
+    const webhookType = String((parsedBody as any)?.webhook_type || '');
+    if (webhookType !== 'status.updated') {
+      // Didit manda la decisión manual del dashboard con otros tipos de
+      // evento: si el body trae sesión + decisión, se procesa igual (misma
+      // firma, frescura e idempotencia ya verificadas). Solo se ignora lo
+      // que no trae decisión.
+      // Solo sesiones de verificación (session_id) aplican decisiones.
+      // Los eventos business/entity se registran sin cambios locales.
+      const carriesDecision =
+        typeof (parsedBody as any)?.session_id === 'string' &&
+        ((parsedBody as any)?.status !== undefined || (parsedBody as any)?.decision !== undefined);
+      if (!carriesDecision) {
+        if (webhookType === 'data.updated') {
+          // Datos re-editados en Didit: re-sincronizar vía pull acotado.
+          return this.refreshSessionByDiditId(String((parsedBody as any)?.session_id || ''));
+        }
+        // Entidades (user.*/business.*), actividad y transacciones: sin
+        // espejo local todavía — ack + log para visibilidad.
+        this.logger.log(
+          `Webhook Didit ${webhookType || '(sin tipo)'} registrado sin cambios locales event=${eventId}`,
+        );
+        return { ok: true, ignored: (parsedBody as any)?.webhook_type };
+      }
+      this.logger.log(
+        `Webhook Didit no estándar procesado como decisión: type=${webhookType} event=${eventId}`,
+      );
     }
-    const sessionId = String((parsedBody as any)?.session_id || '');
+    // KYB: las sesiones business traen business_session_id (+ session_kind).
+    const sessionId = String(
+      (parsedBody as any)?.session_id || (parsedBody as any)?.business_session_id || '',
+    );
     const status = (parsedBody as any)?.status;
     if (!sessionId) return { ok: true, ignored: 'no-session' };
 

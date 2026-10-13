@@ -68,10 +68,19 @@ export class KYCController {
   @Post('webhook/didit')
   @HttpCode(200)
   @ApiOperation({ summary: 'Didit webhook (signed, public)' })
-  async diditWebhook(@Request() req, @Headers('x-signature-v2') signature: string) {
-    // El body ya viene parseado; la firma V2 se verifica sobre el canónico
+  async diditWebhook(
+    @Request() req,
+    @Headers('x-signature-v2') signatureV2: string,
+    @Headers('x-signature') signature: string,
+  ) {
+    // V2 (canónico) primero; X-Signature (bytes crudos) de fallback. El body
+    // ya viene parseado; la firma V2 se verifica sobre el canónico
     // re-serializado (sobrevive re-encodeo del middleware).
-    return this.kycService.handleDiditWebhook(signature || '', req.body);
+    return this.kycService.handleDiditWebhook(
+      signatureV2 || signature || '',
+      req.body,
+      (req as any).rawBody,
+    );
   }
 
   // ============================================
