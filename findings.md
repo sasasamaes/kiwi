@@ -23,3 +23,10 @@
 - Server magic-bytes + 5MB validation remains the source of truth.
 - Driver cannot see merchant phone (only pickup address) — left as-is; flag if drivers need a call-commerce path.
 - Proof-photo overwrite has no status guard — left as-is to keep the fix minimal.
+
+## 2026-10-10 — verificación final
+
+- API: 38 suites / 399 tests PASS (incluye `driver-merchant-flow.spec.ts` 4/4).
+- UI (packages/ui, vitest): 5 archivos / 42 tests PASS.
+- tsc --noEmit: api, ui, web, driver, client — todos exit 0.
+- Hallazgo: el árbol tiene cambios sin commitear (schema `max_selections` + migración 20261010000010 + `menu.service.ts` + `orders.service.ts` tope por grupo + UI de menú) que dejaban 6 suites en rojo hasta regenerar Prisma Client. Se regeneró localmente, sin commits. Si vas a deployar, corré migración Prisma en la DB.

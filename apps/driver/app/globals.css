@@ -214,3 +214,17 @@ body {
 .mb-safe {
   margin-bottom: env(safe-area-inset-bottom, 0px);
 }
+
+/* Sin scroll horizontal a nivel página (blobs decorativos, animaciones).
+   clip no rompe position: sticky (a diferencia de hidden); los carruseles
+   internos con overflow-x-auto siguen funcionando. */
+html,
+body {
+  overflow-x: hidden;
+}
+@supports (overflow: clip) {
+  html,
+  body {
+    overflow-x: clip;
+  }
+}

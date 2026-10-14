@@ -79,7 +79,7 @@ export function AvatarEditor({ avatarUrl, onChange }: AvatarEditorProps) {
         className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-kiwi-100 dark:bg-kiwi-400/10 overflow-hidden"
       >
         {isHttpUrl(avatarUrl || '') ? (
-          // eslint-disable-next-line @next/next/no-img-element
+          // NOTE: <img> intencional — avatar dinámico de Cloudinary.
           <img src={avatarUrl as string} alt="Tu foto" className="h-14 w-14 object-cover" />
         ) : isEmojiImage(avatarUrl || '') ? (
           <span className="text-3xl leading-none">{avatarUrl}</span>

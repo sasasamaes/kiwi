@@ -178,6 +178,12 @@ export default function DriverKYCPage() {
             kycData={kycStatus === 'pending' ? undefined : { status: kycStatus }}
             onSubmit={handleSubmit}
             loading={loading}
+            onRefreshStatus={async () => {
+              const r = await api.refreshDiditSession();
+              const s = (r as any)?.status as typeof kycStatus | undefined;
+              if (s) setKycStatus(s);
+              return s;
+            }}
           />
           {submitError && (
             <p className="mt-3 text-center text-sm text-red-600 dark:text-red-400">{submitError}</p>

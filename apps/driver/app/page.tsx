@@ -111,14 +111,17 @@ export default function Home() {
   // disponibles, pero este guard evita que un evento viejo te pinte
   // pedidos cuando pausaste.
   const isOnlineRef = useRef(isOnline);
-  isOnlineRef.current = isOnline;
-
   // Espejos para leer visibilidad dentro de callbacks de socket sin
   // cierres viejos (availableOrders/newOrderAlert del primer render).
   const availableRef = useRef<Order[]>([]);
-  availableRef.current = availableOrders;
   const alertRef = useRef<any>(null);
-  alertRef.current = newOrderAlert;
+  // Sincronizados en efecto (no durante el render): escribir refs en el
+  // render rompe en StrictMode/concurrent al descartar renders.
+  useEffect(() => {
+    isOnlineRef.current = isOnline;
+    availableRef.current = availableOrders;
+    alertRef.current = newOrderAlert;
+  }, [isOnline, availableOrders, newOrderAlert]);
 
   // Saca un pedido de Disponibles + popup cuando deja de estar vigente.
   const removeFromAvailable = useCallback((data: any) => {
@@ -178,8 +181,10 @@ export default function Home() {
     onOrderTaken: (data) => {
       // El primero que lo acepta lo toma: sale de Disponibles en vivo y se
       // dice QUIÉN lo agarró (no un genérico "ya no disponible").
+      // silent = asignación directa del comercio: solo desaparecer, sin
+      // sonido ni banner para la flota (el aviso fue solo al elegido).
       const wasVisible = removeFromAvailable({ ...data, status: data?.status ?? 'assigned' });
-      if (wasVisible) {
+      if (wasVisible && !data?.silent) {
         const winner = data?.driverName;
         playNotificationSound('order_update');
         addNotification({
@@ -478,7 +483,7 @@ export default function Home() {
                 whileTap={{ scale: 0.9 }}
               >
                 {isHttpUrl((user as any)?.driverProfile?.photoUrl) ? (
-                  // eslint-disable-next-line @next/next/no-img-element
+                  // NOTE: <img> intencional — foto dinámica de Cloudinary.
                   <img
                     src={(user as any).driverProfile.photoUrl}
                     alt="Mi foto"
@@ -953,11 +958,11 @@ export default function Home() {
                         <div className="flex h-6 w-6 items-center justify-center rounded-full bg-kiwi-100 text-kiwi-700">
                           <MapPin className="h-3 w-3" />
                         </div>
-                        <div>
-                          <p className="text-sm font-medium text-surface-800 dark:text-surface-200">
+                        <div className="min-w-0 flex-1">
+                          <p className="break-words text-sm font-medium text-surface-800 dark:text-surface-200">
                             {(order as any).merchant?.businessName || order.pickupAddress}
                           </p>
-                          <p className="text-xs text-surface-400">
+                          <p className="break-words text-xs text-surface-400">
                             {(order as any).merchant?.businessName
                               ? `${order.pickupAddress} · Origen`
                               : 'Origen'}
@@ -968,8 +973,8 @@ export default function Home() {
                         <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gold-100 text-gold-600">
                           <HomeIcon className="h-3 w-3" />
                         </div>
-                        <div>
-                          <p className="text-sm font-medium text-surface-800 dark:text-surface-200">
+                        <div className="min-w-0 flex-1">
+                          <p className="break-words text-sm font-medium text-surface-800 dark:text-surface-200">
                             {order.deliveryAddress}
                           </p>
                           <p className="text-xs text-surface-400">

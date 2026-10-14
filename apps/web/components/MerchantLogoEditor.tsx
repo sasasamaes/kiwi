@@ -91,7 +91,7 @@ export function MerchantLogoEditor({ logoUrl, businessName, onChange }: Merchant
         className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-kiwi-100 dark:bg-kiwi-900/50 text-2xl font-bold text-kiwi-700 dark:text-kiwi-300 overflow-hidden disabled:opacity-60"
       >
         {isHttpUrl(logoUrl || '') ? (
-          // eslint-disable-next-line @next/next/no-img-element
+          // NOTE: <img> intencional — logo dinámico de Cloudinary.
           <img
             src={logoUrl as string}
             alt={businessName || 'Logo'}

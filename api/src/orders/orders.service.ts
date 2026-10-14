@@ -2163,15 +2163,19 @@ export class OrdersService {
       });
     }
 
-    // Sacar el pedido de los Disponibles del resto: el primero que lo toma
-    // lo saca del concurso para todos (los perdedores lo ven desaparecer en
-    // vivo sin tener que reintentar Aceptar).
+    // Sacar el pedido de los Disponibles del resto — EN SILENCIO: fue una
+    // asignación directa del comercio a un repartidor, no un concurso. La
+    // flota solo lo ve desaparecer (sin sonido ni banner); el ruido de
+    // "X ya lo tomó" queda para el concurso real (acceptOrderAsDriver).
+    // Si el elegido no acepta en la ventana, el sweeper lo devuelve a
+    // pending y ahí sí se avisa a todos.
     this.eventsGateway.sendToRole('driver', 'order:taken', {
       id: updatedOrder.id,
       orderId: updatedOrder.id,
       status: (updatedOrder as any).status ?? 'assigned',
       driverName: driverProfile.fullName,
-      message: `${driverProfile.fullName} ya tomó este pedido`,
+      silent: true,
+      message: `${driverProfile.fullName} fue asignado a este pedido`,
     });
 
     return updatedOrder;

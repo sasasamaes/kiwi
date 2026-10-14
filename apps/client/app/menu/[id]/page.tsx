@@ -144,6 +144,8 @@ export default function MenuPage() {
   // null = sin cuenta o sin cargar (el botón igual se muestra e invita).
   const [following, setFollowing] = useState<boolean | null>(null);
   const [followBusy, setFollowBusy] = useState(false);
+  // Efectivo: con cuánto paga (opcional; si viene debe cubrir el total).
+  const [cashTendered, setCashTendered] = useState('');
 
   // Delivery info
   const [deliveryInfo, setDeliveryInfo] = useState<DeliveryInfo>({
@@ -340,7 +342,6 @@ export default function MenuPage() {
     setZoneAuto(false);
     setProfilePrefilled(false);
     setPendingOrderId(null);
-    checkoutKeyRef.current = null;
     setOrderSuccess(null);
     setShowCheckout(false);
     setPaymentPending(false);
@@ -534,8 +535,6 @@ export default function MenuPage() {
   // Si el carrito trae algo de mañana, el pedido entero es programado para
   // mañana (un pedido = una fecha de entrega).
   const cartHasTomorrow = cart.some((c) => (c as any).offeredTomorrow);
-  // Efectivo: con cuánto paga (opcional; si viene debe cubrir el total).
-  const [cashTendered, setCashTendered] = useState('');
 
   // Validate checkout
   // Cocina casera cerrada hoy igual acepta preventa futura (ej. lunes pido
@@ -558,7 +557,60 @@ export default function MenuPage() {
   // llega tarde al segundo tap; el ref no. La key se reusa en reintentos
   // para que el backend devuelva el mismo pedido.
   const checkingOutRef = useRef(false);
-  const checkoutKeyRef = useRef<string | null>(null);
+  // Key de idempotencia ligada al comercio: el backend deduplica por
+  // merchantId + idempotencyKey, así que reusar la key al cambiar de
+  // comercio no aplica. Se limpia al completar un pedido (nunca se reusa
+  // para uno nuevo del mismo comercio).
+  const checkoutKeyRef = useRef<{ merchantId: string; key: string } | null>(null);
+  // Reintenta SOLO el pago de un pedido ya creado (el modal se descartó).
+  const retryPendingPayment = useCallback(async () => {
+    if (!pendingOrderId) return;
+    setCheckingOut(true);
+    try {
+      if (paymentMethod === 'sinpe' || paymentMethod === 'card') {
+        const retryPayload = {
+          orderId: pendingOrderId,
+          method: (paymentMethod === 'sinpe' ? 'onvopay_sinpe' : 'onvopay_card') as
+            'onvopay_sinpe' | 'onvopay_card',
+          amount: totalWithDelivery,
+          customerPhone: phoneDigits,
+        };
+        const paymentResult = payWithAuthedEndpoint
+          ? await api.createPayment(retryPayload)
+          : await api.createGuestPayment(retryPayload);
+        if (paymentResult.checkoutUrl && safeNavigateToUrl(paymentResult.checkoutUrl)) return;
+        setPaymentIntent(paymentResult);
+        setPaymentPending(true);
+      } else if (paymentMethod === 'crypto_usdc' || paymentMethod === 'crypto_usdt') {
+        const coin = paymentMethod === 'crypto_usdc' ? 'USDC' : 'USDT';
+        const retryCrypto = {
+          orderId: pendingOrderId,
+          method: 'crypto' as const,
+          amount: totalWithDelivery,
+          cryptoCoin: coin as 'USDC' | 'USDT',
+        };
+        const paymentResult = payWithAuthedEndpoint
+          ? await api.createPayment(retryCrypto)
+          : await api.createGuestPayment(retryCrypto);
+        setPaymentIntent(paymentResult);
+        setPaymentPending(true);
+      } else {
+        setPlacedTotal(totalWithDelivery);
+        setCart([]);
+        setShowCheckout(false);
+        setPendingOrderId(null);
+        checkoutKeyRef.current = null;
+        setOrderSuccess(pendingOrderId);
+      }
+    } catch (err) {
+      setCheckoutError(
+        err instanceof Error ? err.message : 'No se pudo reintentar el pago. Intentá de nuevo.',
+      );
+    } finally {
+      setCheckingOut(false);
+    }
+  }, [pendingOrderId, paymentMethod, totalWithDelivery, phoneDigits, payWithAuthedEndpoint]);
+
   // Checkout handler
   const handleCheckout = useCallback(async () => {
     if (cart.length === 0 || !merchant || !canCheckout) return;
@@ -571,11 +623,14 @@ export default function MenuPage() {
     }
     if (checkingOutRef.current) return;
     checkingOutRef.current = true;
-    if (!checkoutKeyRef.current) {
-      checkoutKeyRef.current =
-        typeof crypto !== 'undefined' && 'randomUUID' in crypto
-          ? crypto.randomUUID()
-          : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    if (!checkoutKeyRef.current || checkoutKeyRef.current.merchantId !== merchant.id) {
+      checkoutKeyRef.current = {
+        merchantId: merchant.id,
+        key:
+          typeof crypto !== 'undefined' && 'randomUUID' in crypto
+            ? crypto.randomUUID()
+            : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      };
     }
 
     setCheckingOut(true);
@@ -605,10 +660,14 @@ export default function MenuPage() {
 
       const order =
         api.getToken() && userRole === 'customer'
-          ? await api.createCustomerOrder(orderData, { idempotencyKey: checkoutKeyRef.current! })
+          ? await api.createCustomerOrder(orderData, {
+              idempotencyKey: checkoutKeyRef.current!.key,
+            })
           : api.getToken() && userRole === 'merchant'
-            ? await api.createOrder(orderData, { idempotencyKey: checkoutKeyRef.current! })
-            : await api.createGuestOrder(orderData, { idempotencyKey: checkoutKeyRef.current! });
+            ? await api.createOrder(orderData, { idempotencyKey: checkoutKeyRef.current!.key })
+            : await api.createGuestOrder(orderData, {
+                idempotencyKey: checkoutKeyRef.current!.key,
+              });
       setPendingOrderId(order.id);
 
       // Logueado: guarda estos datos en tu perfil para futuras compras
@@ -699,54 +758,6 @@ export default function MenuPage() {
     payWithAuthedEndpoint,
   ]);
 
-  // Reintenta SOLO el pago de un pedido ya creado (el modal se descartó).
-  const retryPendingPayment = useCallback(async () => {
-    if (!pendingOrderId) return;
-    setCheckingOut(true);
-    try {
-      if (paymentMethod === 'sinpe' || paymentMethod === 'card') {
-        const retryPayload = {
-          orderId: pendingOrderId,
-          method: (paymentMethod === 'sinpe' ? 'onvopay_sinpe' : 'onvopay_card') as
-            'onvopay_sinpe' | 'onvopay_card',
-          amount: totalWithDelivery,
-          customerPhone: phoneDigits,
-        };
-        const paymentResult = payWithAuthedEndpoint
-          ? await api.createPayment(retryPayload)
-          : await api.createGuestPayment(retryPayload);
-        if (paymentResult.checkoutUrl && safeNavigateToUrl(paymentResult.checkoutUrl)) return;
-        setPaymentIntent(paymentResult);
-        setPaymentPending(true);
-      } else if (paymentMethod === 'crypto_usdc' || paymentMethod === 'crypto_usdt') {
-        const coin = paymentMethod === 'crypto_usdc' ? 'USDC' : 'USDT';
-        const retryCrypto = {
-          orderId: pendingOrderId,
-          method: 'crypto' as const,
-          amount: totalWithDelivery,
-          cryptoCoin: coin as 'USDC' | 'USDT',
-        };
-        const paymentResult = payWithAuthedEndpoint
-          ? await api.createPayment(retryCrypto)
-          : await api.createGuestPayment(retryCrypto);
-        setPaymentIntent(paymentResult);
-        setPaymentPending(true);
-      } else {
-        setPlacedTotal(totalWithDelivery);
-        setCart([]);
-        setShowCheckout(false);
-        setPendingOrderId(null);
-        setOrderSuccess(pendingOrderId);
-      }
-    } catch (err) {
-      setCheckoutError(
-        err instanceof Error ? err.message : 'No se pudo reintentar el pago. Intentá de nuevo.',
-      );
-    } finally {
-      setCheckingOut(false);
-    }
-  }, [pendingOrderId, paymentMethod, totalWithDelivery, phoneDigits, payWithAuthedEndpoint]);
-
   // Payment success handler
   const handlePaymentSuccess = useCallback(
     (paymentId: string) => {
@@ -759,6 +770,10 @@ export default function MenuPage() {
       setShowCheckout(false);
       const realOrderId = pendingOrderIdRef.current;
       setPendingOrderId(null);
+      // Pedido completo: liberar la key para que el próximo pedido del
+      // mismo comercio genere una nueva (si no, el backend lo deduplica
+      // como si fuera un reintento y devuelve el pedido anterior).
+      checkoutKeyRef.current = null;
       setOrderSuccess(realOrderId || paymentId);
     },
     [totalWithDelivery],
@@ -1193,7 +1208,7 @@ export default function MenuPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between">
                           <div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex shrink-0 items-center gap-2">
                               <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">
                                 {item.name}
                               </h3>
@@ -1588,8 +1603,8 @@ export default function MenuPage() {
                   </h3>
                   <div className="space-y-2">
                     {cart.map((item) => (
-                      <div key={item.lineId} className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
+                      <div key={item.lineId} className="flex items-center justify-between gap-2">
+                        <div className="flex min-w-0 flex-1 items-center gap-3">
                           {isHttpUrl(item.image) ? (
                             // NOTE: <img> intencional — avatares dinámicos de Cloudinary
                             <img
@@ -1602,8 +1617,8 @@ export default function MenuPage() {
                           ) : (
                             <Utensils className="text-xl h-6 w-6" />
                           )}
-                          <div>
-                            <p className="text-sm font-medium text-surface-800 dark:text-surface-200">
+                          <div className="min-w-0">
+                            <p className="break-words text-sm font-medium text-surface-800 dark:text-surface-200">
                               {item.name}
                             </p>
                             {item.selectedOptions.length > 0 && (

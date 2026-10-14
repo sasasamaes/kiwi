@@ -447,12 +447,12 @@ function CheckoutContent() {
           {cart.map((item, index) => (
             <div
               key={item.id || index}
-              className="flex justify-between py-2 border-b border-surface-100 dark:border-surface-700 last:border-0"
+              className="flex justify-between gap-2 py-2 border-b border-surface-100 dark:border-surface-700 last:border-0"
             >
-              <span className="text-surface-700 dark:text-surface-300">
+              <span className="min-w-0 flex-1 break-words text-surface-700 dark:text-surface-300">
                 {item.quantity}x {item.name}
               </span>
-              <span className="font-medium text-surface-800 dark:text-surface-100">
+              <span className="shrink-0 font-medium text-surface-800 dark:text-surface-100">
                 ₡{(item.price * item.quantity).toLocaleString()}
               </span>
             </div>

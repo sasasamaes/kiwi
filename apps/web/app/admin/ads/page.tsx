@@ -11,7 +11,9 @@ export default function AdminAdsPage() {
   const load = async () => {
     try {
       setCampaigns(await api.adminListCampaigns());
-    } catch {}
+    } catch {
+      // Ignorado a propósito: si falla la carga, la lista queda vacía.
+    }
   };
   useEffect(() => {
     void load();

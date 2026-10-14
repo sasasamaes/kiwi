@@ -473,4 +473,43 @@ describe('Assignment contest (Task 6): 10 criterios', () => {
     );
     expect(res.status).toBe('assigned');
   });
+
+  it('11. asignación directa avisa solo al elegido; la flota solo saca el pedido en silencio', async () => {
+    prisma.driverProfile.findUnique.mockResolvedValue({
+      id: 'dp-1',
+      fullName: 'Juan',
+      userId: 'user-d',
+      status: 'available',
+    });
+    prisma.order.findFirst.mockResolvedValue({ id: 'order-1', merchantId: 'mp-1' });
+    prisma.order.findUnique
+      .mockResolvedValueOnce({ id: 'order-1', orderType: 'immediate' })
+      .mockResolvedValueOnce({
+        id: 'order-1',
+        status: 'pending_acceptance',
+        merchant: { userId: 'merchant-user-1' },
+        driver: { userId: 'user-d', fullName: 'Juan' },
+      });
+    prisma.order.updateMany.mockResolvedValue({ count: 1 });
+
+    await service.assignDriver('order-1', 'dp-1', 'merchant-user-1');
+
+    // Al elegido: oferta + asignación dirigidas a su userId.
+    expect(mockEventsGateway.sendToUser).toHaveBeenCalledWith(
+      'user-d',
+      'order:assignmentOffered',
+      expect.anything(),
+    );
+    expect(mockEventsGateway.sendToUser).toHaveBeenCalledWith(
+      'user-d',
+      'order:assigned',
+      expect.anything(),
+    );
+    // A la flota: solo remoción silenciosa, sin ruido de "ya lo tomó".
+    expect(mockEventsGateway.sendToRole).toHaveBeenCalledWith(
+      'driver',
+      'order:taken',
+      expect.objectContaining({ orderId: 'order-1', silent: true }),
+    );
+  });
 });

@@ -22,7 +22,9 @@ export default function MerchantAdsPage() {
       const [c, b] = await Promise.all([api.getMyCampaigns(), api.getMyBroadcasts()]);
       setCampaigns(c);
       setBroadcasts(b);
-    } catch {}
+    } catch {
+      // Ignorado a propósito: si falla la carga, la lista queda vacía.
+    }
   };
   useEffect(() => {
     void load();

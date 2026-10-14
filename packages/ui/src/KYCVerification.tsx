@@ -11,6 +11,40 @@ import { FileDropZone } from './FileDropZone';
 export type KYCStatus =
   'pending' | 'documents_submitted' | 'under_review' | 'approved' | 'rejected' | 'expired';
 
+/** Pull manual del estado en Didit (por si el webhook se perdió). */
+function RefreshStatusButton({
+  onRefreshStatus,
+}: {
+  onRefreshStatus: () => Promise<string | undefined>;
+}) {
+  const [refreshing, setRefreshing] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
+  return (
+    <div className="mt-4">
+      <button
+        type="button"
+        disabled={refreshing}
+        onClick={async () => {
+          setRefreshing(true);
+          setNote(null);
+          try {
+            const s = await onRefreshStatus();
+            setNote(s === 'approved' ? 'Verificación aprobada' : 'Sigue en revisión');
+          } catch {
+            setNote('No se pudo actualizar');
+          } finally {
+            setRefreshing(false);
+          }
+        }}
+        className="px-4 py-2 text-sm font-medium rounded-xl bg-white border border-gold-300 text-gold-700 hover:bg-gold-100 transition-colors disabled:opacity-50"
+      >
+        {refreshing ? 'Actualizando…' : 'Actualizar estado'}
+      </button>
+      {note && <p className="mt-2 text-xs text-surface-500">{note}</p>}
+    </div>
+  );
+}
+
 export interface KYCData {
   status: KYCStatus;
   idType?: string;
@@ -33,6 +67,8 @@ interface KYCVerificationProps {
   kycData?: KYCData;
   onSubmit: (data: any) => void;
   loading?: boolean;
+  /** Pull manual a Didit (el webhook a veces no llega). Sin esto no se muestra. */
+  onRefreshStatus?: () => Promise<string | undefined>;
 }
 
 const statusConfig: Record<
@@ -82,6 +118,7 @@ export function KYCVerification({
   kycData,
   onSubmit,
   loading = false,
+  onRefreshStatus,
 }: KYCVerificationProps) {
   const [step, setStep] = useState(0);
   // Consentimiento explícito para el tratamiento de documentos de identidad
@@ -205,6 +242,7 @@ export function KYCVerification({
         <h3 className="text-lg font-display font-semibold text-gold-700 mb-2">{config.label}</h3>
         <p className="text-sm text-gold-600">{config.description}</p>
         <p className="text-xs text-surface-400 mt-4">Tiempo estimado: 24-48 horas</p>
+        {onRefreshStatus && <RefreshStatusButton onRefreshStatus={onRefreshStatus} />}
       </motion.div>
     );
   }
