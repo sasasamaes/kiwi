@@ -76,6 +76,17 @@ describe('MarketplaceService', () => {
     });
   });
 
+  it('returns nulls (no 400) when there is no connected account', async () => {
+    onvo.getConnectedAccount.mockClear();
+    prisma.merchantProfile.findUnique.mockResolvedValueOnce({
+      id: 'm1',
+      onvoConnectedAccountId: null,
+    });
+    const out = await (await svc()).refreshStatus('m1');
+    expect(out).toEqual({ accountId: null, status: null });
+    expect(onvo.getConnectedAccount).not.toHaveBeenCalled();
+  });
+
   it('404s the link regen into refresh when onboarding already completed', async () => {
     prisma.merchantProfile.findUnique.mockResolvedValueOnce({
       id: 'm1',

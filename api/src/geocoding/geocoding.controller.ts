@@ -2,8 +2,12 @@
 import { Controller, Get, Query, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { GeocodingService } from './geocoding.service';
+import { Public } from '../auth/decorators/public.decorator';
 
 @ApiTags('Geocoding')
+// Público a propósito: el menú QR (apps/client) es anónimo y usa la búsqueda
+// de direcciones en el checkout guest. Son lookups de solo lectura (Nominatim/OSRM).
+@Public()
 @Controller('geocoding')
 export class GeocodingController {
   constructor(private readonly geocodingService: GeocodingService) {}

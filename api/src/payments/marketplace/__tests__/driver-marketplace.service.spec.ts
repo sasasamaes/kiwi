@@ -54,6 +54,17 @@ describe('DriverMarketplaceService', () => {
     });
   });
 
+  it('returns nulls (no 400) when the driver has no connected account', async () => {
+    onvo.getConnectedAccount.mockClear();
+    prisma.driverProfile.findUnique.mockResolvedValueOnce({
+      id: 'd1',
+      onvoConnectedAccountId: null,
+    });
+    const out = await (await svc()).refreshStatus('d1');
+    expect(out).toEqual({ accountId: null, status: null });
+    expect(onvo.getConnectedAccount).not.toHaveBeenCalled();
+  });
+
   it('lists seller intents through the primary key with the seller header', async () => {
     prisma.driverProfile.findUnique.mockResolvedValueOnce({
       id: 'd1',

@@ -35,7 +35,9 @@ export class DriverMarketplaceService {
 
   async refreshStatus(driverId: string) {
     const driver = await this.prisma.driverProfile.findUnique({ where: { id: driverId } });
-    if (!driver?.onvoConnectedAccountId) throw new BadRequestException('Sin cuenta conectada');
+    // Sin cuenta conectada no es un error: el cliente tipa
+    // getDriverMarketplaceStatus() como { accountId|null, status|null }.
+    if (!driver?.onvoConnectedAccountId) return { accountId: null, status: null };
     const acc = await this.onvo.getConnectedAccount(driver.onvoConnectedAccountId);
     await this.prisma.driverProfile.update({
       where: { id: driverId },

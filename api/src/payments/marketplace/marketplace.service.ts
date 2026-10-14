@@ -35,7 +35,9 @@ export class MarketplaceService {
 
   async refreshStatus(merchantId: string) {
     const merchant = await this.prisma.merchantProfile.findUnique({ where: { id: merchantId } });
-    if (!merchant?.onvoConnectedAccountId) throw new BadRequestException('Sin cuenta conectada');
+    // Sin cuenta conectada no es un error: el cliente tipa
+    // getMarketplaceStatus() como { accountId|null, status|null }.
+    if (!merchant?.onvoConnectedAccountId) return { accountId: null, status: null };
     const acc = await this.onvo.getConnectedAccount(merchant.onvoConnectedAccountId);
     const data: any = { onvoOnboardingStatus: acc.status };
     if (acc.status === 'active') data.cardPaymentsEnabled = true;
