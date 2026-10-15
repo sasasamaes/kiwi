@@ -70,7 +70,7 @@ jobs:
         run: test -f api/dist/main.js && echo "✅ API build OK" || echo "❌ API build failed"
 
   mobile:
-    name: Mobile (mobile-ui + driver-mobile)
+    name: Mobile (mobile-ui + mobile-core + driver-mobile + client-mobile)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -84,11 +84,23 @@ jobs:
       - name: Test mobile-ui
         run: npm --workspace @kiwi/mobile-ui run test
 
+      - name: Type-check mobile-core
+        run: npm --workspace @kiwi/mobile-core run type-check
+
+      - name: Test mobile-core
+        run: npm --workspace @kiwi/mobile-core run test
+
       - name: Type-check driver-mobile
         run: npm --workspace @kiwi/driver-mobile run type-check
 
       - name: Test driver-mobile
         run: npm --workspace @kiwi/driver-mobile run test
+
+      - name: Type-check client-mobile
+        run: npm --workspace @kiwi/client-mobile run type-check
+
+      - name: Test client-mobile
+        run: npm --workspace @kiwi/client-mobile run test
 
   migrations:
     name: Migrations up-to-date (schema ↔ DB)
