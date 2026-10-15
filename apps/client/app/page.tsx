@@ -329,6 +329,22 @@ export default function ClientHome() {
       </motion.header>
 
       <main className="mx-auto max-w-lg lg:max-w-5xl px-4 py-6">
+        {/* Mercadito Zona Azul */}
+        <Link
+          href="/zona-azul"
+          className="mb-6 flex items-center gap-3 rounded-2xl border border-kiwi-200/70 dark:border-kiwi-400/20 bg-gradient-to-r from-kiwi-50 to-gold-50 dark:from-kiwi-400/10 dark:to-gold-400/5 p-4 shadow-soft"
+        >
+          <span className="text-3xl">🧀</span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-display font-bold text-surface-900 dark:text-surface-100">
+              Mercadito Zona Azul
+            </span>
+            <span className="block text-xs text-surface-500 dark:text-surface-400">
+              Cuajadas y productos de Nicoya · Zona Azul
+            </span>
+          </span>
+          <span className="text-kiwi-700 dark:text-kiwi-300">→</span>
+        </Link>
         {/* Banners patrocinados */}{' '}
         {banners.length > 0 && (
           <div className="mb-6 flex gap-3 overflow-x-auto pb-2 -mx-4 px-4">
