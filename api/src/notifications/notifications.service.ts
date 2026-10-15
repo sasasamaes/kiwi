@@ -602,6 +602,22 @@ export class NotificationsService {
     });
   }
 
+  /** Pedido nuevo → al comercio (push directo + inbox). El KDS lo escucha por socket. */
+  async notifyMerchantNewOrder(
+    orderId: string,
+    merchantUserId: string,
+    info: { total?: number; orderType?: string } = {},
+  ) {
+    const short = orderId.slice(0, 8).toUpperCase();
+    const kind = info.orderType === 'scheduled' ? 'programado' : 'nuevo';
+    const money = info.total != null ? ` · ₡${Number(info.total).toLocaleString('es-CR')}` : '';
+    return this.sendToUser(merchantUserId, {
+      title: '🔔 Nuevo pedido',
+      body: `Pedido ${kind} #${short}${money}`,
+      data: { orderId, type: 'new_order' },
+    });
+  }
+
   /** Te asignaron un pedido: tenés N minutos para aceptar. */
   async notifyAssignmentOffered(orderId: string, driverUserId: string, minutes: number) {
     return this.sendToUser(driverUserId, {

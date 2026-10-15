@@ -103,6 +103,7 @@ describe('OrdersService', () => {
             notifyOrderAccepted: jest.fn().mockResolvedValue({}),
             notifyOrderStatusUpdate: jest.fn().mockResolvedValue({}),
             notifyOrderRejected: jest.fn().mockResolvedValue({}),
+            notifyMerchantNewOrder: jest.fn().mockResolvedValue({}),
             notifyAssignmentOffered: jest.fn().mockResolvedValue({}),
             notifyContestStarted: jest.fn().mockResolvedValue({}),
             notifyNoDriverAvailable: jest.fn().mockResolvedValue({}),
@@ -151,6 +152,40 @@ describe('OrdersService', () => {
       expect(result.id).toBe('order-1');
       expect(result.status).toBe('pending');
       expect(prisma.order.create).toHaveBeenCalled();
+    });
+
+    it('notifica al comercio con order:new (socket 1:1) al crear el pedido', async () => {
+      prisma.merchantProfile.findUnique.mockResolvedValue({
+        id: 'merchant-1',
+        userId: 'user-1',
+        businessName: 'Bowl & Café',
+        latitude: 10.0,
+        longitude: -85.0,
+      });
+      prisma.menuItem.findMany.mockResolvedValue([
+        { id: 'item-1', name: 'Bowl', price: 4500, merchantId: 'merchant-1' },
+      ]);
+      prisma.order.create.mockResolvedValue({
+        id: 'order-1',
+        merchantId: 'merchant-1',
+        status: 'pending',
+        totalAmount: 4500,
+        orderType: 'immediate',
+      });
+      prisma.orderItem.create.mockResolvedValue({});
+      mockEventsGateway.sendToUser.mockClear();
+
+      await service.create('user-1', {
+        pickupAddress: 'Nicoya',
+        deliveryAddress: 'Barrio Los Ángeles',
+        items: [{ menuItemId: 'item-1', quantity: 1 }],
+      });
+
+      expect(mockEventsGateway.sendToUser).toHaveBeenCalledWith(
+        'user-1',
+        'order:new',
+        expect.objectContaining({ orderId: 'order-1' }),
+      );
     });
 
     it('should throw NotFoundException if merchant not found', async () => {

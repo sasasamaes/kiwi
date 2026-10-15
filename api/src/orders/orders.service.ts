@@ -743,6 +743,28 @@ export class OrdersService {
       await this.ensureCashPayment(order.id, Number(order.totalAmount));
     }
 
+    // El comercio recibe el pedido nuevo en vivo (socket 1:1 a `user:{id}` +
+    // push). Antes solo lo veía por polling/refresh: los eventos de pedido
+    // nuevo iban únicamente a `role:driver`. Cubre inmediatos, programados y
+    // asignación directa.
+    this.eventsGateway.sendToUser(merchantId, 'order:new', {
+      id: order.id,
+      orderId: order.id,
+      status: order.status,
+      orderType: order.orderType,
+      pickupAddress: order.pickupAddress,
+      deliveryAddress: order.deliveryAddress,
+      deliveryZone: (order as any).deliveryZone ?? null,
+      totalAmount: Number(order.totalAmount),
+      createdAt: order.createdAt,
+    });
+    void this.notificationsService
+      .notifyMerchantNewOrder?.(order.id, merchantId, {
+        total: Number(order.totalAmount),
+        orderType: order.orderType,
+      })
+      ?.catch?.(() => undefined);
+
     // Asignación directa: avisar SOLO al elegido (socket 1:1 + push 1:1).
     // Nada de broadcast: el resto de la flota no debe enterarse.
     if (directDriver) {
@@ -948,6 +970,15 @@ export class OrdersService {
         payment: true,
         ratings: true,
         items: true,
+        // Propuestas de repartidores (pedidos programados): el comercio las ve
+        // para elegir. Se ocultan a driver/cliente por proyección por rol.
+        proposals: {
+          include: {
+            driver: {
+              select: { id: true, fullName: true, level: true, rating: true, vehicleType: true },
+            },
+          },
+        },
       },
     });
 
@@ -985,6 +1016,7 @@ export class OrdersService {
         : m;
       if (o.payment) o.payment = { status: o.payment.status, method: o.payment.method };
       o.ratings = [];
+      o.proposals = undefined; // proyección por rol: solo el comercio ve propuestas
       return order;
     }
     // Vista cliente: pública en ambos lados, pago mínimo, sin ratings.
@@ -1013,6 +1045,7 @@ export class OrdersService {
         : d;
       if (o.payment) o.payment = { status: o.payment.status, method: o.payment.method };
       o.ratings = [];
+      o.proposals = undefined; // proyección por rol: solo el comercio ve propuestas
       return order;
     }
 

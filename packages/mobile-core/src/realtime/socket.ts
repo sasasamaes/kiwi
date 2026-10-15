@@ -27,9 +27,12 @@ export function createRealtime(
       });
       socket.on('connect', () => h.onConnect?.());
       socket.on('disconnect', () => h.onDisconnect?.());
-      socket.on('order:create', h.onNewOrder);
+      // Outbound events emitted by the API gateway (NOT the inbound client
+      // events order:create/order:statusUpdate). Mirrors packages/ui/socket-client.
+      socket.on('order:new', h.onNewOrder);
       socket.on('order:taken', h.onOrderTaken);
-      socket.on('order:statusUpdate', h.onStatusChanged);
+      socket.on('order:statusChanged', h.onStatusChanged);
+      socket.on('order:accepted', h.onStatusChanged);
     },
     disconnect() {
       socket?.disconnect();

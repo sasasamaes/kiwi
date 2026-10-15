@@ -214,10 +214,19 @@ describe('OrdersService targeting de order:new', () => {
       pickupLng: -85.4527,
     });
 
-    expect(gateway.sendToUser).toHaveBeenCalledTimes(2);
-    expect(gateway.sendToUser.mock.calls[0][0]).toBe('user-a');
-    expect(gateway.sendToUser.mock.calls[0][1]).toBe('order:new');
-    expect(gateway.sendToUser.mock.calls[0][2]).toMatchObject({
+    // El comercio también recibe el pedido nuevo (socket 1:1) además de los drivers.
+    expect(gateway.sendToUser).toHaveBeenCalledWith(
+      'm1',
+      'order:new',
+      expect.objectContaining({ orderId: 'order-9' }),
+    );
+    const driverCalls = gateway.sendToUser.mock.calls.filter(
+      (c: any[]) => c[1] === 'order:new' && c[0] !== 'm1',
+    );
+    expect(driverCalls).toHaveLength(2);
+    expect(driverCalls[0][0]).toBe('user-a');
+    expect(driverCalls[0][1]).toBe('order:new');
+    expect(driverCalls[0][2]).toMatchObject({
       id: 'order-9',
       distanceToPickupKm: 0.4,
     });
@@ -248,7 +257,16 @@ describe('OrdersService targeting de order:new', () => {
     expect(notifications.notifyNewOrderTopic).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'order-9' }),
     );
-    expect(gateway.sendToUser).not.toHaveBeenCalled();
+    // El comercio sí recibe order:new; los drivers NO (fue broadcast por rol).
+    expect(gateway.sendToUser).toHaveBeenCalledWith(
+      'm1',
+      'order:new',
+      expect.objectContaining({ orderId: 'order-9' }),
+    );
+    const driverCalls = gateway.sendToUser.mock.calls.filter(
+      (c: any[]) => c[1] === 'order:new' && c[0] !== 'm1',
+    );
+    expect(driverCalls).toHaveLength(0);
   });
 
   it('pedido sin coords de pickup: broadcast directo (no llama al selector)', async () => {

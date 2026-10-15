@@ -16,18 +16,21 @@ function fakeSocket() {
   };
 }
 
-test('routes order:create and order:taken to handlers', async () => {
+test('routes the API outbound order events to handlers', async () => {
   const sock = fakeSocket();
   const ioFactory = () => sock as any;
   const got: any = {};
   const rt = createRealtime(ioFactory, 'ws://x', async () => 'tok', {
     onNewOrder: (o) => (got.new = o),
     onOrderTaken: (o) => (got.taken = o),
-    onStatusChanged: () => {},
+    onStatusChanged: (o) => (got.status = o),
   });
   rt.connect();
-  sock.fire('order:create', { id: 'o1' });
+  sock.fire('order:new', { id: 'o1' });
   sock.fire('order:taken', { id: 'o1', silent: true });
+  sock.fire('order:statusChanged', { id: 'o1', status: 'assigned' });
+  sock.fire('order:accepted', { orderId: 'o1', status: 'accepted' });
   expect(got.new).toEqual({ id: 'o1' });
   expect(got.taken).toEqual({ id: 'o1', silent: true });
+  expect(got.status).toEqual({ orderId: 'o1', status: 'accepted' }); // last wins, both routed
 });
