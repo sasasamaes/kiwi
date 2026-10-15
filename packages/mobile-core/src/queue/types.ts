@@ -1,4 +1,4 @@
-export type OpKind = 'accept' | 'reject' | 'status';
+export type OpKind = 'accept' | 'reject' | 'status' | 'create';
 
 export interface Op {
   id: string;

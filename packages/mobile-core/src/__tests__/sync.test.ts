@@ -40,6 +40,25 @@ test('a 400 conflict drops the op and reports it', async () => {
   expect(conflicts).toHaveLength(1);
 });
 
+test('drains a create op through api.create with its payload', async () => {
+  const e = mkEngine();
+  const payload = { body: { merchantId: 'm1' }, authed: true, idempotencyKey: 'k1' };
+  await e.enqueue('create', 'c1', payload);
+  const calls: any[] = [];
+  const api = {
+    accept: async () => {},
+    reject: async () => {},
+    updateStatus: async () => {},
+    create: async (p: any) => {
+      calls.push(p);
+    },
+  } as any;
+  const done = await drainQueue(e, api, () => {});
+  expect(calls).toEqual([payload]);
+  expect(done).toBe(1);
+  expect(await e.size()).toBe(0);
+});
+
 test('a network error keeps the op for a later retry', async () => {
   const e = mkEngine();
   await e.enqueue('accept', 'o1');

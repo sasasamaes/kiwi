@@ -10,7 +10,16 @@ type OrdersApi = {
   accept(id: string): Promise<any>;
   reject(id: string): Promise<any>;
   updateStatus(id: string, s: any): Promise<any>;
+  // Optional, additive: handles `kind: 'create'` ops (offline order creation).
+  create?(payload: CreateOpPayload): Promise<any>;
 };
+
+export interface CreateOpPayload {
+  body: any;
+  authed: boolean;
+  idempotencyKey: string;
+  [key: string]: any;
+}
 
 type Conflict = { op: Op; status: number; body: any };
 
@@ -27,7 +36,10 @@ export async function drainQueue(
     const op = await engine.peek();
     if (!op) break;
     try {
-      if (op.kind === 'accept') await api.accept(op.orderId);
+      if (op.kind === 'create') {
+        if (!api.create) throw new Error('drainQueue: `create` op requires api.create');
+        await api.create(op.payload);
+      } else if (op.kind === 'accept') await api.accept(op.orderId);
       else if (op.kind === 'reject') await api.reject(op.orderId);
       else await api.updateStatus(op.orderId, op.payload.status);
       await engine.complete(op.id);
