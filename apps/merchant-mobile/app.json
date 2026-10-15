@@ -1,0 +1,44 @@
+{
+  "expo": {
+    "name": "Kiwi Negocios",
+    "slug": "kiwi-negocios",
+    "scheme": "kwinegocios",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Kiwi usa la cámara para la foto de retiro.",
+          "photosPermission": "Kiwi accede a tus fotos para la evidencia de retiro."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#22c55e"
+        }
+      ]
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "express.kiwicr.negocios",
+      "adaptiveIcon": {
+        "backgroundColor": "#0b1326",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}
