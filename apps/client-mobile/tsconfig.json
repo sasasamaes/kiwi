@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "strict": true,
+    "jsx": "react-jsx",
+    "module": "preserve",
+    "target": "ESNext",
+    "lib": ["DOM", "ESNext"],
+    "customConditions": ["react-native"],
+    "noEmit": true
+  },
+  "include": ["app", "src", "nativewind-env.d.ts"],
+  "exclude": ["node_modules"]
+}

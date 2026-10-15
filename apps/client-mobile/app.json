@@ -1,0 +1,59 @@
+{
+  "expo": {
+    "name": "Kiwi Clientes",
+    "slug": "kiwi-clientes",
+    "scheme": "kiwicliente",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-sqlite",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Kiwi usa la cámara para escanear el QR del comercio."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Kiwi usa la cámara para tomar una foto.",
+          "photosPermission": "Kiwi accede a tus fotos para que puedas adjuntar una imagen."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#22c55e"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Kiwi usa tu ubicación para mostrarte comercios cercanos y seguir tu pedido.",
+          "isIosBackgroundLocationEnabled": false,
+          "isAndroidBackgroundLocationEnabled": false
+        }
+      ]
+    ],
+    "ios": {
+      "supportsTablet": false
+    },
+    "android": {
+      "package": "express.kiwicr.cliente",
+      "adaptiveIcon": {
+        "backgroundColor": "#0b1326",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}
