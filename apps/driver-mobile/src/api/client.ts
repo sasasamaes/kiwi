@@ -1,4 +1,4 @@
-import { createHttp } from './http';
+import { createHttp } from '@kiwi/mobile-core';
 import { secureStorage } from './storage';
 import { authApi } from './auth';
 

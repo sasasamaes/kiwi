@@ -1,4 +1,4 @@
-import { createRealtime } from '../socket';
+import { createRealtime } from '../realtime/socket';
 
 function fakeSocket() {
   const listeners: Record<string, Function> = {};

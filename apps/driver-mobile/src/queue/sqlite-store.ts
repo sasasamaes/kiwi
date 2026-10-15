@@ -1,5 +1,5 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
-import type { Op, QueueStore } from './types';
+import type { Op, QueueStore } from '@kiwi/mobile-core';
 
 export function createSqliteStore(db: SQLiteDatabase): QueueStore {
   return {

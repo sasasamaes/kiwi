@@ -1,6 +1,6 @@
-import { createMemoryStore } from '../memory-store';
-import { createQueueEngine } from '../engine';
-import { drainQueue } from '../sync';
+import { createMemoryStore } from '../queue/memory-store';
+import { createQueueEngine } from '../queue/engine';
+import { drainQueue } from '../queue/sync';
 
 const mkEngine = () => createQueueEngine(createMemoryStore(), () => Date.now());
 

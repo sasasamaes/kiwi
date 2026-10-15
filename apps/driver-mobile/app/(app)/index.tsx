@@ -7,7 +7,7 @@ import { ordersApi } from '../../src/api/orders';
 import { http } from '../../src/api/client';
 import { secureStorage } from '../../src/api/storage';
 import { useSession } from '../../src/session/useSession';
-import { createRealtime } from '../../src/realtime/socket';
+import { createRealtime } from '@kiwi/mobile-core';
 import { io } from 'socket.io-client';
 
 const api = ordersApi(http);

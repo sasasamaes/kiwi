@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@kiwi/i18n": "*",
+    "@kiwi/mobile-core": "*",
     "@kiwi/mobile-ui": "*",
     "@kiwi/types": "*",
     "@react-native-community/netinfo": "12.0.1",

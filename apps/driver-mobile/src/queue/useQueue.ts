@@ -1,7 +1,6 @@
 import * as SQLite from 'expo-sqlite';
 import { createSqliteStore, OPS_SCHEMA } from './sqlite-store';
-import { createQueueEngine } from './engine';
-import { drainQueue } from './sync';
+import { createQueueEngine, drainQueue } from '@kiwi/mobile-core';
 import { ordersApi } from '../api/orders';
 import { http } from '../api/client';
 

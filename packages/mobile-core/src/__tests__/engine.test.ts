@@ -1,5 +1,5 @@
-import { createMemoryStore } from '../memory-store';
-import { createQueueEngine } from '../engine';
+import { createMemoryStore } from '../queue/memory-store';
+import { createQueueEngine } from '../queue/engine';
 
 const clock = () => 1000;
 

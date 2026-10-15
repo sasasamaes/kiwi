@@ -1,4 +1,4 @@
-import type { Http } from './http';
+import type { Http } from '@kiwi/mobile-core';
 
 export function authApi(http: Http) {
   return {

@@ -1,4 +1,4 @@
-import type { Http } from './http';
+import type { Http } from '@kiwi/mobile-core';
 
 export type DriverOrderStatus =
   'in_transit_to_pickup' | 'picked_up' | 'in_transit_to_delivery' | 'delivered';
