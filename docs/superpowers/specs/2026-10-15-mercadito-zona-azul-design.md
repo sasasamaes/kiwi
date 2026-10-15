@@ -88,3 +88,21 @@ la proveedora.
 1. Correr el script (el dueño) contra prod → crea el item.
 2. Setear `NEXT_PUBLIC_ZONA_AZUL_MERCHANT_ID` en Vercel (apps/client) con el id impreso.
 3. Deploy del cliente.
+
+### Runbook (comandos exactos)
+
+```bash
+# 1) Alta de productos (imprime el merchantId)
+API_URL=https://api.kiwicr.express/api \
+E2E_MERCHANT_EMAIL=sasasamaes13@gmail.com E2E_PASSWORD='<tu-clave>' \
+node scripts/seed-mercadito-zona-azul.mjs
+
+# 2) En Vercel → proyecto del cliente (kiwi-client) → Settings → Environment Variables:
+#    NEXT_PUBLIC_ZONA_AZUL_MERCHANT_ID = <merchantId impreso>
+
+# 3) Deploy
+cd apps/client && vercel --prod
+```
+
+> Sin la env `NEXT_PUBLIC_ZONA_AZUL_MERCHANT_ID`, `/zona-azul` muestra "Próximamente"
+> y el home no rompe.
