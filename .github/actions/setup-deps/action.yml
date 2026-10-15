@@ -23,7 +23,9 @@ runs:
           apps/web/node_modules
           apps/client/node_modules
           apps/driver/node_modules
+          apps/driver-mobile/node_modules
           packages/ui/node_modules
+          packages/mobile-ui/node_modules
           packages/i18n/node_modules
         key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
 
