@@ -1,0 +1,219 @@
+import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Screen, Button, tokens } from '@kiwi/mobile-ui';
+import { driversApi } from '../../src/api/drivers';
+import { proposalsApi } from '../../src/api/proposals';
+import { ordersApi } from '../../src/api/orders';
+import { http } from '../../src/api/client';
+import { BottomNav } from '../../src/ui/BottomNav';
+
+const drivers = driversApi(http);
+const proposals = proposalsApi(http);
+const orders = ordersApi(http);
+
+function DriverRow({
+  driverId,
+  name,
+  vehicle,
+  rating,
+  status,
+  onAssign,
+  busy,
+}: {
+  driverId: string;
+  name: string;
+  vehicle?: string;
+  rating?: number;
+  status?: string;
+  onAssign?: (driverId: string) => void;
+  busy?: boolean;
+}) {
+  return (
+    <View
+      style={{
+        backgroundColor: tokens.color.surface,
+        borderRadius: tokens.radius.lg,
+        padding: tokens.space[4],
+        marginBottom: tokens.space[3],
+      }}
+    >
+      <Text style={{ color: tokens.color.ink, fontWeight: '700' }}>{name}</Text>
+      <Text style={{ color: tokens.color.muted, fontSize: 12, marginTop: 2 }}>
+        {[vehicle, rating != null ? `${rating}★` : null, status].filter(Boolean).join(' · ')}
+      </Text>
+      {onAssign && (
+        <View style={{ marginTop: tokens.space[3] }}>
+          <Button label="Asignar" loading={busy} onPress={() => onAssign(driverId)} />
+        </View>
+      )}
+    </View>
+  );
+}
+
+export default function Drivers() {
+  const { orderId } = useLocalSearchParams<{ orderId?: string }>();
+  const qc = useQueryClient();
+
+  const available = useQuery({
+    queryKey: ['drivers', 'available'],
+    queryFn: () => drivers.available(),
+  });
+  const favorites = useQuery({
+    queryKey: ['drivers', 'favorites'],
+    queryFn: () => drivers.favorites(),
+  });
+
+  // Backend limitation: there is no merchant-reachable proposals list route.
+  // We read from the order detail; if it returns nothing we render gracefully.
+  const orderProposals = useQuery({
+    queryKey: ['order', orderId, 'proposals'],
+    queryFn: () => proposals.list(orderId as string),
+    enabled: !!orderId,
+  });
+
+  const assign = useMutation({
+    mutationFn: (driverId: string) => orders.assign(orderId as string, driverId),
+    onSuccess: () => {
+      Alert.alert('Repartidor asignado');
+      void qc.invalidateQueries({ queryKey: ['order', orderId] });
+    },
+    onError: (e: any) => Alert.alert('No se pudo asignar', e?.message ?? ''),
+  });
+
+  const toggleFavorite = useMutation({
+    mutationFn: async ({ driverId, isFav }: { driverId: string; isFav: boolean }) =>
+      isFav ? drivers.removeFavorite(driverId) : drivers.addFavorite(driverId),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['drivers', 'favorites'] }),
+    onError: (e: any) => Alert.alert('No se pudo actualizar favorito', e?.message ?? ''),
+  });
+
+  const favoriteIds = new Set((favorites.data ?? []).map((f: any) => f.driverId ?? f.driver?.id));
+
+  const assignTo = (driverId: string) => {
+    if (!orderId) {
+      Alert.alert('Elegí un pedido', 'Abrí una comanda y solicitá el repartidor desde ahí.');
+      return;
+    }
+    assign.mutate(driverId);
+  };
+
+  return (
+    <Screen>
+      <Text
+        style={{
+          color: tokens.color.ink,
+          fontSize: 20,
+          fontWeight: '700',
+          marginBottom: tokens.space[3],
+        }}
+      >
+        Repartidores
+      </Text>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: tokens.space[6] }}>
+        {!orderId && (
+          <Text style={{ color: tokens.color.amber, fontSize: 12, marginBottom: tokens.space[3] }}>
+            Abrí una comanda para asignar un repartidor a ese pedido.
+          </Text>
+        )}
+
+        <Text style={{ color: tokens.color.muted, fontWeight: '700', marginBottom: 8 }}>
+          Disponibles · {(available.data ?? []).length}
+        </Text>
+        {(available.data ?? []).map((d: any) => (
+          <Pressable
+            key={d.id}
+            onLongPress={() =>
+              toggleFavorite.mutate({ driverId: d.id, isFav: favoriteIds.has(d.id) })
+            }
+          >
+            <DriverRow
+              driverId={d.id}
+              name={`${favoriteIds.has(d.id) ? '★ ' : ''}${d.fullName ?? d.user?.phone ?? 'Repartidor'}`}
+              vehicle={d.vehicleType}
+              rating={d.rating}
+              status={d.status}
+              onAssign={orderId ? assignTo : undefined}
+              busy={assign.isPending}
+            />
+          </Pressable>
+        ))}
+        {available.isSuccess && (available.data ?? []).length === 0 && (
+          <Text style={{ color: tokens.color.muted, fontSize: 12, marginBottom: tokens.space[4] }}>
+            Sin repartidores conectados.
+          </Text>
+        )}
+
+        <Text
+          style={{
+            color: tokens.color.muted,
+            fontWeight: '700',
+            marginTop: tokens.space[4],
+            marginBottom: 8,
+          }}
+        >
+          Favoritos · {(favorites.data ?? []).length}
+        </Text>
+        {(favorites.data ?? []).map((f: any) => {
+          const d = f.driver ?? f;
+          return (
+            <Pressable
+              key={f.id ?? d.id}
+              onLongPress={() => toggleFavorite.mutate({ driverId: d.id, isFav: true })}
+            >
+              <DriverRow
+                driverId={d.id}
+                name={d.fullName ?? 'Repartidor'}
+                vehicle={d.vehicleType}
+                rating={d.rating}
+                status={d.status}
+                onAssign={orderId ? assignTo : undefined}
+                busy={assign.isPending}
+              />
+            </Pressable>
+          );
+        })}
+        {favorites.isSuccess && (favorites.data ?? []).length === 0 && (
+          <Text style={{ color: tokens.color.muted, fontSize: 12 }}>Sin favoritos todavía.</Text>
+        )}
+
+        {orderId && (
+          <>
+            <Text
+              style={{
+                color: tokens.color.muted,
+                fontWeight: '700',
+                marginTop: tokens.space[4],
+                marginBottom: 8,
+              }}
+            >
+              Propuestas · {(orderProposals.data ?? []).length}
+            </Text>
+            {(orderProposals.data ?? []).length === 0 ? (
+              <Text style={{ color: tokens.color.muted, fontSize: 12 }}>
+                Sin propuestas. El backend aún no expone la lista de propuestas al comercio.
+              </Text>
+            ) : (
+              (orderProposals.data ?? []).map((p: any) => (
+                <DriverRow
+                  key={p.id}
+                  driverId={p.driver?.id ?? p.driverId}
+                  name={p.driver?.fullName ?? 'Propuesta'}
+                  vehicle={p.driver?.vehicleType}
+                  rating={p.driver?.rating}
+                  onAssign={(driverId) => assignTo(driverId)}
+                  busy={assign.isPending}
+                />
+              ))
+            )}
+          </>
+        )}
+
+        <Text style={{ color: tokens.color.muted, fontSize: 11, marginTop: tokens.space[4] }}>
+          Mantené presionado un repartidor para marcarlo/quitarlo de favoritos.
+        </Text>
+      </ScrollView>
+      <BottomNav active="drivers" />
+    </Screen>
+  );
+}

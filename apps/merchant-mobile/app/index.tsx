@@ -11,7 +11,7 @@ export default function Index() {
     void hydrate();
   }, [hydrate]);
   useEffect(() => {
-    if (hydrated) router.replace(user ? '/(app)' : '/(auth)/login');
+    if (hydrated) router.replace(user ? '/(app)/comandas' : '/(auth)/login');
   }, [hydrated, user, router]);
   return (
     <View

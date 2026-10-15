@@ -52,7 +52,7 @@ export default function Login() {
             setBusy(true);
             try {
               await signIn(email.trim(), password);
-              router.replace('/(app)');
+              router.replace('/(app)/comandas');
             } catch {
               Alert.alert('No se pudo iniciar sesión');
             } finally {
