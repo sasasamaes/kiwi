@@ -124,6 +124,18 @@ export class KYCService {
     const rows = await this.prisma.kYCVerification.findMany({
       where,
       orderBy: { createdAt: 'desc' },
+      // El panel admin (apps/web/app/admin/kyc) renderiza kyc.user.role/email:
+      // sin este include la relación llega undefined y el .map revienta.
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            phone: true,
+            role: true,
+          },
+        },
+      },
     });
     return rows.map((r) => this.decryptIdentityFields(r, { mask: true }));
   }

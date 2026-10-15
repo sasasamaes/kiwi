@@ -89,6 +89,24 @@ describe('KYCService — cifrado de números de identidad en reposo', () => {
     expect(rows[0].idNumber).toBe('••••7890');
   });
 
+  it('listas admin incluyen la relación user (regresión: el panel admin leía kyc.user.role)', async () => {
+    prisma.kYCVerification.findMany.mockResolvedValue([
+      {
+        id: 'v-1',
+        status: 'pending',
+        user: { id: 'u-1', email: 'a@b.c', phone: '8888', role: 'driver' },
+      },
+    ]);
+
+    const rows = await service.getAllVerifications();
+    expect(prisma.kYCVerification.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        include: { user: expect.objectContaining({ select: expect.anything() }) },
+      }),
+    );
+    expect(rows[0].user.role).toBe('driver');
+  });
+
   it('production sin KYC_FIELD_ENCRYPTION_KEY no arranca', () => {
     process.env.NODE_ENV = 'production';
     delete process.env.KYC_FIELD_ENCRYPTION_KEY;

@@ -301,6 +301,9 @@ export default function KYCPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {verifications.map((kyc, index) => {
             const statusConfig = getStatusConfig(kyc.status);
+            // La relación user puede faltar (usuario borrado / API vieja):
+            // nunca leer .role sobre undefined o el .map tumba la página.
+            const u = (kyc as any).user ?? { role: 'merchant', email: '—', phone: '' };
 
             return (
               <motion.div
@@ -313,26 +316,26 @@ export default function KYCPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
-                onClick={() => setSelectedKYC(kyc)}
+                onClick={() => setSelectedKYC({ ...kyc, user: u } as any)}
                 whileHover={{ y: -4 }}
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <div
                       className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-semibold ${
-                        kyc.user.role === 'driver'
+                        u.role === 'driver'
                           ? 'bg-kiwi-100 dark:bg-kiwi-900/30 text-kiwi-700 dark:text-kiwi-400'
                           : 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
                       }`}
                     >
-                      {kyc.user.role === 'driver' ? <Bike className="h-6 w-6" /> : '🏪'}
+                      {u.role === 'driver' ? <Bike className="h-6 w-6" /> : '🏪'}
                     </div>
                     <div>
                       <p className="font-semibold text-surface-800 dark:text-surface-100">
-                        {kyc.user.email}
+                        {u.email}
                       </p>
                       <p className="text-sm text-surface-500 dark:text-surface-400">
-                        {kyc.user.phone || 'Sin teléfono'}
+                        {u.phone || 'Sin teléfono'}
                       </p>
                     </div>
                   </div>
