@@ -14,13 +14,21 @@ type Deps = {
   fetchImpl?: typeof fetch;
 };
 
+export type RequestOpts = { headers?: Record<string, string> };
+
 export function createHttp(deps: Deps) {
   const f = deps.fetchImpl ?? fetch;
 
-  async function send(method: string, path: string, body?: any, isForm = false) {
+  async function send(
+    method: string,
+    path: string,
+    body?: any,
+    isForm = false,
+    opts?: RequestOpts,
+  ) {
     const run = async () => {
       const token = await deps.getAccessToken();
-      const headers: Record<string, string> = {};
+      const headers: Record<string, string> = { ...(opts?.headers ?? {}) };
       if (token) headers.Authorization = `Bearer ${token}`;
       if (!isForm && body !== undefined) headers['Content-Type'] = 'application/json';
       return f(deps.baseUrl + path, {
@@ -43,8 +51,12 @@ export function createHttp(deps: Deps) {
 
   return {
     get: <T>(p: string) => send('GET', p) as Promise<T>,
-    post: <T>(p: string, b?: any) => send('POST', p, b) as Promise<T>,
-    put: <T>(p: string, b?: any) => send('PUT', p, b) as Promise<T>,
+    post: <T>(p: string, b?: any, opts?: RequestOpts) =>
+      send('POST', p, b, false, opts) as Promise<T>,
+    put: <T>(p: string, b?: any, opts?: RequestOpts) =>
+      send('PUT', p, b, false, opts) as Promise<T>,
+    delete: <T>(p: string, opts?: RequestOpts) =>
+      send('DELETE', p, undefined, false, opts) as Promise<T>,
     postMultipart: <T>(p: string, form: FormData) => send('POST', p, form, true) as Promise<T>,
   };
 }

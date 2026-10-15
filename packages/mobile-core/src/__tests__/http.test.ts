@@ -59,3 +59,37 @@ test('throws HttpError with status on 400', async () => {
     status: 400,
   });
 });
+
+test('merges extra opts.headers into every request', async () => {
+  const calls: any[] = [];
+  const fetchImpl = async (_url: string, init: any) => {
+    calls.push(init);
+    return json(200, { ok: true });
+  };
+  const http = createHttp({
+    baseUrl: 'http://api.test/api',
+    getAccessToken: async () => 'tok',
+    refresh: async () => null,
+    fetchImpl: fetchImpl as any,
+  });
+  await http.post('/orders/guest', { merchantId: 'm1' }, { headers: { 'Idempotency-Key': 'k1' } });
+  expect(calls[0].headers['Idempotency-Key']).toBe('k1');
+  expect(calls[0].headers.Authorization).toBe('Bearer tok');
+});
+
+test('delete sends a DELETE request', async () => {
+  const calls: any[] = [];
+  const fetchImpl = async (url: string, init: any) => {
+    calls.push({ url, init });
+    return json(200, { ok: true });
+  };
+  const http = createHttp({
+    baseUrl: 'http://api.test/api',
+    getAccessToken: async () => 'tok',
+    refresh: async () => null,
+    fetchImpl: fetchImpl as any,
+  });
+  await http.delete('/follows/m1');
+  expect(calls[0].init.method).toBe('DELETE');
+  expect(calls[0].url).toBe('http://api.test/api/follows/m1');
+});
