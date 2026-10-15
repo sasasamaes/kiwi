@@ -1098,3 +1098,23 @@ model OrderEvent {
   @@index([orderId, createdAt])
   @@map("order_events")
 }
+
+// Zonas/barrios de entrega editables desde el admin (fuente de verdad del
+// precio). `geometry` (GeoJSON Polygon/MultiPolygon) habilita el cobro por
+// cercanía; sin geometría la zona es solo punto de referencia (referenceOnly).
+model DeliveryZone {
+  id            String   @id @default(uuid())
+  label         String
+  latitude      Decimal? @db.Decimal(10, 8)
+  longitude     Decimal? @db.Decimal(10, 8)
+  price         Decimal  @db.Decimal(10, 2)
+  geometry      Json?
+  referenceOnly Boolean  @default(true) @map("reference_only")
+  active        Boolean  @default(true)
+  sortOrder     Int      @default(0) @map("sort_order")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@index([active])
+  @@map("delivery_zones")
+}
