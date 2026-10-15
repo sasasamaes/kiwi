@@ -479,21 +479,25 @@ export function MenuItemForm({
             <label className="mb-2 block text-sm font-medium text-surface-600 dark:text-surface-400">
               Categoría *
             </label>
-            <select
+            <input
+              list="menu-item-categories"
               value={formData.category}
               onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              placeholder="Ej: Bowls — o escribí una nueva"
               className={`w-full rounded-xl border bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 focus:ring-2 focus:ring-kiwi-600/20 transition-all ${
                 errors.category
                   ? 'border-red-500 focus:border-red-500'
                   : 'border-surface-200 dark:border-surface-700 focus:border-kiwi-600'
               }`}
-            >
+            />
+            <datalist id="menu-item-categories">
               {categories.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
+                <option key={cat} value={cat} />
               ))}
-            </select>
+            </datalist>
+            <p className="mt-1 text-xs text-surface-400">
+              Elegí una existente o escribí una nueva (ej. "Mercadito Zona Azul").
+            </p>
             {errors.category && <p className="mt-1 text-sm text-red-500">{errors.category}</p>}
           </div>
         </div>
