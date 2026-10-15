@@ -1,10 +1,6 @@
-import { Text } from 'react-native';
-import { Screen, tokens } from '@kiwi/mobile-ui';
+import { Redirect } from 'expo-router';
 
+// Guest-first: the app opens straight into discovery. No login gate.
 export default function Index() {
-  return (
-    <Screen>
-      <Text style={{ color: tokens.color.ink }}>Kiwi Clientes</Text>
-    </Screen>
-  );
+  return <Redirect href="/(public)/comercios" />;
 }

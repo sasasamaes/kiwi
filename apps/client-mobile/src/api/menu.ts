@@ -15,8 +15,11 @@ export function menuApi(http: Http) {
     discover: (params: DiscoverParams = {}) =>
       http.get<any[]>(`/merchants/discover${queryString(params)}`),
     publicProfile: (id: string) => http.get<any>(`/menu/merchant/${id}`),
+    // The endpoint returns `{ items, categories }` (grouped feed), not a bare array.
     items: (id: string, category?: string) =>
-      http.get<any[]>(`/menu/merchant/${id}/items${queryString({ category })}`),
+      http.get<{ items: any[]; categories: string[] }>(
+        `/menu/merchant/${id}/items${queryString({ category })}`,
+      ),
     tomorrow: (city?: string) => http.get<any[]>(`/menu/tomorrow${queryString({ city })}`),
   };
 }
