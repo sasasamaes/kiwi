@@ -7,7 +7,27 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
-    "plugins": ["expo-router", "expo-secure-store", "expo-sqlite"],
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-sqlite",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Kiwi usa la cámara para la foto de evidencia de entrega.",
+          "photosPermission": "Kiwi accede a tus fotos para adjuntar la evidencia de entrega."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Kiwi usa tu ubicación para mostrarte pedidos cercanos.",
+          "locationAlwaysAndWhenInUsePermission": "Kiwi comparte tu ubicación mientras estás en línea para asignarte pedidos, incluso con la app en segundo plano.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true
+        }
+      ]
+    ],
     "ios": {
       "supportsTablet": false
     },
