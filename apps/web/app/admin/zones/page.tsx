@@ -266,118 +266,120 @@ export default function AdminZonesPage() {
       </div>
 
       {showForm && (
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mt-6 rounded-2xl border border-surface-200/60 dark:border-white/10 bg-white dark:bg-surface-800 p-5"
-        >
-          <h2 className="mb-4 font-display font-bold text-surface-900 dark:text-white">
-            {form.id ? 'Editar zona' : 'Nueva zona'}
-          </h2>
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/40 p-4">
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mx-auto my-8 w-full max-w-2xl rounded-2xl border border-surface-200/60 dark:border-white/10 bg-white dark:bg-surface-800 p-5"
+          >
+            <h2 className="mb-4 font-display font-bold text-surface-900 dark:text-white">
+              {form.id ? 'Editar zona' : 'Nueva zona'}
+            </h2>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="text-sm">
-              <span className="text-surface-500">Nombre *</span>
-              <input
-                value={form.label}
-                onChange={(e) => setForm({ ...form, label: e.target.value })}
-                placeholder="Ej: Barrio Los Ángeles"
-                className="mt-1 w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 px-3 py-2"
-              />
-            </label>
-            <label className="text-sm">
-              <span className="text-surface-500">Precio (₡) *</span>
-              <input
-                type="number"
-                value={form.price}
-                onChange={(e) => setForm({ ...form, price: Number(e.target.value) })}
-                className="mt-1 w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 px-3 py-2"
-              />
-            </label>
-            <label className="text-sm">
-              <span className="text-surface-500">Latitud (referencia)</span>
-              <input
-                value={form.latitude}
-                onChange={(e) => setForm({ ...form, latitude: e.target.value })}
-                placeholder="10.1467"
-                className="mt-1 w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 px-3 py-2"
-              />
-            </label>
-            <label className="text-sm">
-              <span className="text-surface-500">Longitud (referencia)</span>
-              <input
-                value={form.longitude}
-                onChange={(e) => setForm({ ...form, longitude: e.target.value })}
-                placeholder="-85.4520"
-                className="mt-1 w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 px-3 py-2"
-              />
-            </label>
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={form.active}
-                onChange={(e) => setForm({ ...form, active: e.target.checked })}
-              />
-              <span className="text-surface-600 dark:text-surface-300">Activa</span>
-            </label>
-            <label className="text-sm">
-              <span className="text-surface-500">Orden</span>
-              <input
-                type="number"
-                value={form.sortOrder}
-                onChange={(e) => setForm({ ...form, sortOrder: Number(e.target.value) })}
-                className="mt-1 w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 px-3 py-2"
-              />
-            </label>
-          </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="text-sm">
+                <span className="text-surface-500">Nombre *</span>
+                <input
+                  value={form.label}
+                  onChange={(e) => setForm({ ...form, label: e.target.value })}
+                  placeholder="Ej: Barrio Los Ángeles"
+                  className="mt-1 w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 px-3 py-2"
+                />
+              </label>
+              <label className="text-sm">
+                <span className="text-surface-500">Precio (₡) *</span>
+                <input
+                  type="number"
+                  value={form.price}
+                  onChange={(e) => setForm({ ...form, price: Number(e.target.value) })}
+                  className="mt-1 w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 px-3 py-2"
+                />
+              </label>
+              <label className="text-sm">
+                <span className="text-surface-500">Latitud (referencia)</span>
+                <input
+                  value={form.latitude}
+                  onChange={(e) => setForm({ ...form, latitude: e.target.value })}
+                  placeholder="10.1467"
+                  className="mt-1 w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 px-3 py-2"
+                />
+              </label>
+              <label className="text-sm">
+                <span className="text-surface-500">Longitud (referencia)</span>
+                <input
+                  value={form.longitude}
+                  onChange={(e) => setForm({ ...form, longitude: e.target.value })}
+                  placeholder="-85.4520"
+                  className="mt-1 w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 px-3 py-2"
+                />
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={form.active}
+                  onChange={(e) => setForm({ ...form, active: e.target.checked })}
+                />
+                <span className="text-surface-600 dark:text-surface-300">Activa</span>
+              </label>
+              <label className="text-sm">
+                <span className="text-surface-500">Orden</span>
+                <input
+                  type="number"
+                  value={form.sortOrder}
+                  onChange={(e) => setForm({ ...form, sortOrder: Number(e.target.value) })}
+                  className="mt-1 w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 px-3 py-2"
+                />
+              </label>
+            </div>
 
-          <div className="mt-4">
-            <p className="mb-2 text-sm text-surface-500">
-              Polígono (opcional) — tocá el mapa para agregar vértices ( {vertices.length} punto
-              {vertices.length === 1 ? '' : 's'} )
-            </p>
-            <div
-              ref={mapRef}
-              className="h-72 w-full overflow-hidden rounded-xl border border-surface-200 dark:border-surface-700"
-            />
-            <div className="mt-2 flex gap-2">
+            <div className="mt-4">
+              <p className="mb-2 text-sm text-surface-500">
+                Polígono (opcional) — tocá el mapa para agregar vértices ( {vertices.length} punto
+                {vertices.length === 1 ? '' : 's'} )
+              </p>
+              <div
+                ref={mapRef}
+                className="h-72 w-full overflow-hidden rounded-xl border border-surface-200 dark:border-surface-700"
+              />
+              <div className="mt-2 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setVertices([])}
+                  className="inline-flex items-center gap-1 rounded-lg border border-surface-200 dark:border-surface-700 px-3 py-1.5 text-xs"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" /> Reiniciar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setVertices((v) => v.slice(0, -1))}
+                  disabled={!vertices.length}
+                  className="rounded-lg border border-surface-200 dark:border-surface-700 px-3 py-1.5 text-xs disabled:opacity-40"
+                >
+                  Quitar último
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-5 flex gap-2">
               <button
-                type="button"
-                onClick={() => setVertices([])}
-                className="inline-flex items-center gap-1 rounded-lg border border-surface-200 dark:border-surface-700 px-3 py-1.5 text-xs"
+                onClick={save}
+                disabled={saving}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-kiwi-700 px-4 py-2 text-sm font-semibold text-white hover:bg-kiwi-800 disabled:opacity-50"
               >
-                <RotateCcw className="h-3.5 w-3.5" /> Reiniciar
+                <Check className="h-4 w-4" /> {saving ? 'Guardando…' : 'Guardar'}
               </button>
               <button
-                type="button"
-                onClick={() => setVertices((v) => v.slice(0, -1))}
-                disabled={!vertices.length}
-                className="rounded-lg border border-surface-200 dark:border-surface-700 px-3 py-1.5 text-xs disabled:opacity-40"
+                onClick={() => {
+                  setShowForm(false);
+                  destroyMap();
+                }}
+                className="rounded-xl border border-surface-200 dark:border-surface-700 px-4 py-2 text-sm"
               >
-                Quitar último
+                Cancelar
               </button>
             </div>
-          </div>
-
-          <div className="mt-5 flex gap-2">
-            <button
-              onClick={save}
-              disabled={saving}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-kiwi-700 px-4 py-2 text-sm font-semibold text-white hover:bg-kiwi-800 disabled:opacity-50"
-            >
-              <Check className="h-4 w-4" /> {saving ? 'Guardando…' : 'Guardar'}
-            </button>
-            <button
-              onClick={() => {
-                setShowForm(false);
-                destroyMap();
-              }}
-              className="rounded-xl border border-surface-200 dark:border-surface-700 px-4 py-2 text-sm"
-            >
-              Cancelar
-            </button>
-          </div>
-        </motion.div>
+          </motion.div>
+        </div>
       )}
     </div>
   );

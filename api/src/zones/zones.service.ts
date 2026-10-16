@@ -76,8 +76,11 @@ export class ZonesService {
     return this.load(true);
   }
 
-  listAll(): Promise<PriceZone[]> {
-    return this.load(false);
+  /** Admin: filas completas (incluye `active`, `sortOrder`, geometry cruda). */
+  listAll(): Promise<any[]> {
+    return (this.prisma as any).deliveryZone.findMany({
+      orderBy: [{ sortOrder: 'asc' }, { label: 'asc' }],
+    });
   }
 
   private invalidate(): void {
