@@ -360,6 +360,8 @@ class ApiClient {
     };
     inviteUrl: string;
     emailSent: boolean;
+    /** Motivo corto cuando el correo no salió (nodemailer o not-configured). */
+    emailError?: string;
   }> {
     return this.request<any>('/invitations', { method: 'POST', body: data });
   }
@@ -388,6 +390,8 @@ class ApiClient {
     invitation: any;
     inviteUrl: string;
     waSent: boolean;
+    /** Motivo corto cuando no salió. */
+    waError?: string;
   }> {
     return this.request<any>(`/invitations/${id}/whatsapp`, { method: 'POST' });
   }
@@ -490,8 +494,16 @@ class ApiClient {
     subject: string;
     body: string;
     userIds?: string[];
-  }): Promise<{ sent: number; failed: number; logId: string }> {
+  }): Promise<{ sent: number; failed: number; logId: string; error?: string }> {
     return this.request<any>('/marketing/send', { method: 'POST', body: data });
+  }
+
+  /** Diagnóstico de SMTP y Kapso (admin). */
+  async getChannelsStatus(): Promise<{
+    smtp: { configured: boolean; verified: boolean; error?: string };
+    whatsapp: { configured: boolean; infoTemplate: string | null };
+  }> {
+    return this.request<any>('/marketing/channels-status');
   }
 
   async getBroadcastHistory(take = 30): Promise<{

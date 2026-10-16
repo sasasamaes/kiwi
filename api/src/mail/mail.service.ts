@@ -4,6 +4,17 @@ import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 
 /**
+ * Resultado de un envío: `sent` + motivo legible cuando falla. El motivo se
+ * muestra en el panel del admin (antes todo fallo decía "SMTP sin
+ * configurar", aunque el problema fuera auth, puerto o timeout).
+ */
+export interface SendResult {
+  sent: boolean;
+  /** 'not-configured' | mensaje del servidor SMTP (corto, sin credenciales). */
+  reason?: string;
+}
+
+/**
  * Envío de emails transaccionales por SMTP (recupero de contraseña).
  *
  * Sin SMTP_HOST/SMTP_USER configurados el servicio queda deshabilitado y
@@ -35,6 +46,36 @@ export class MailService {
 
   isConfigured(): boolean {
     return this.transporter !== null;
+  }
+
+  /**
+   * Chequeo real contra el servidor (admin): responde si hay config y si el
+   * login/conexión pasa. `verify()` no manda ningún correo.
+   */
+  async checkSmtp(): Promise<{ configured: boolean; verified: boolean; error?: string }> {
+    if (!this.transporter) {
+      return {
+        configured: false,
+        verified: false,
+        error: 'Faltan SMTP_HOST o SMTP_USER en el entorno del API',
+      };
+    }
+    try {
+      await this.transporter.verify();
+      return { configured: true, verified: true };
+    } catch (error) {
+      const message = (error as Error)?.message ?? 'falló la verificación';
+      this.logger.error(`SMTP verify falló: ${message}`);
+      return { configured: true, verified: false, error: message.slice(0, 300) };
+    }
+  }
+
+  /** Acorta el error de nodemailer (códigos + primera línea, sin el dump). */
+  private shortError(error: unknown): string {
+    const err = error as any;
+    const code = err?.code ? `[${err.code}] ` : '';
+    const first = String(err?.message ?? error ?? 'error desconocido').split('\n')[0];
+    return `${code}${first}`.slice(0, 300);
   }
 
   async sendPasswordReset(to: string, resetUrl: string): Promise<boolean> {
@@ -74,10 +115,10 @@ export class MailService {
     role: 'merchant' | 'driver' | 'customer',
     inviteUrl: string,
     name?: string,
-  ): Promise<boolean> {
+  ): Promise<SendResult> {
     if (!this.transporter) {
       this.logger.warn(`Invitación ${role} para ${to} no enviada: SMTP sin configurar`);
-      return false;
+      return { sent: false, reason: 'not-configured' };
     }
     const from = this.configService.get<string>('SMTP_USER');
     const greeting = name?.trim() ? `Hola ${name.trim()},` : 'Hola,';
@@ -122,10 +163,11 @@ export class MailService {
           `<p><a href="${inviteUrl}">Crear mi cuenta</a> (vale 30 días).</p>` +
           `<p>Si no te interesa, ignorá este mensaje.</p>`,
       });
-      return true;
+      return { sent: true };
     } catch (error) {
-      this.logger.error(`No se pudo enviar la invitación a ${to}: ${(error as Error)?.message}`);
-      return false;
+      const reason = this.shortError(error);
+      this.logger.error(`No se pudo enviar la invitación a ${to}: ${reason}`);
+      return { sent: false, reason };
     }
   }
 
@@ -134,10 +176,10 @@ export class MailService {
    * repartidores o clientes). El cuerpo llega en texto plano y se manda una
    * versión html mínima. Fail-soft sin SMTP, igual que el resto.
    */
-  async sendMarketing(to: string, subject: string, body: string): Promise<boolean> {
+  async sendMarketing(to: string, subject: string, body: string): Promise<SendResult> {
     if (!this.transporter) {
       this.logger.warn(`Marketing para ${to} no enviado: SMTP sin configurar`);
-      return false;
+      return { sent: false, reason: 'not-configured' };
     }
     const from = this.configService.get<string>('SMTP_USER');
     const htmlBody = String(body ?? '')
@@ -152,10 +194,11 @@ export class MailService {
         text: body,
         html: `${htmlBody}<p style="color:#888;font-size:12px">Recibís este correo porque tenés cuenta en Kiwi o nos dejaste tu contacto. Si no querés más avisos, respondé "baja".</p>`,
       });
-      return true;
+      return { sent: true };
     } catch (error) {
-      this.logger.error(`No se pudo enviar marketing a ${to}: ${(error as Error)?.message}`);
-      return false;
+      const reason = this.shortError(error);
+      this.logger.error(`No se pudo enviar marketing a ${to}: ${reason}`);
+      return { sent: false, reason };
     }
   }
 }

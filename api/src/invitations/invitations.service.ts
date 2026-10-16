@@ -112,19 +112,25 @@ export class InvitationsService {
         });
 
     const inviteUrl = this.buildInviteUrl(role, email, raw);
-    const emailSent = await this.mailService.sendInvitation(email, role, inviteUrl, name);
+    const { sent: emailSent, reason: emailError } = await this.mailService.sendInvitation(
+      email,
+      role,
+      inviteUrl,
+      name,
+    );
     if (emailSent) {
       await (this.prisma as any).invitation.update({
         where: { id: row.id },
         data: { sentAt: new Date() },
       });
     } else {
-      this.logger.warn(`Invitación ${row.id} creada pero el correo no salió (SMTP sin configurar)`);
+      this.logger.warn(`Invitación ${row.id} creada pero el correo no salió: ${emailError}`);
     }
     return {
       invitation: this.sanitize({ ...row, sentAt: emailSent ? new Date() : row.sentAt }),
       inviteUrl,
       emailSent,
+      emailError: emailSent ? undefined : (emailError ?? 'unknown'),
     };
   }
 
@@ -167,7 +173,7 @@ export class InvitationsService {
       data: { tokenHash: hash, expiresAt },
     });
     const inviteUrl = this.buildInviteUrl(row.role, row.email, raw);
-    const emailSent = await this.mailService.sendInvitation(
+    const { sent: emailSent, reason: emailError } = await this.mailService.sendInvitation(
       row.email,
       row.role,
       inviteUrl,
@@ -183,6 +189,7 @@ export class InvitationsService {
       invitation: this.sanitize(finalRow),
       inviteUrl,
       emailSent,
+      emailError: emailSent ? undefined : (emailError ?? 'unknown'),
     };
   }
 
@@ -209,7 +216,7 @@ export class InvitationsService {
     const template =
       this.whatsapp.templateFor(`KAPSO_TEMPLATE_INVITE_${String(row.role).toUpperCase()}`) ??
       this.whatsapp.templateFor('KAPSO_TEMPLATE_INVITE');
-    const waSent = template
+    const { sent: waSent, reason: waError } = template
       ? await this.whatsapp.sendTemplate(to, template, [displayName, inviteUrl])
       : await this.whatsapp.sendText(to, this.whatsappInviteText(row.role, displayName, inviteUrl));
     const finalRow: any = waSent
@@ -218,7 +225,12 @@ export class InvitationsService {
           data: { sentAt: new Date() },
         })
       : await (this.prisma as any).invitation.findUnique({ where: { id } });
-    return { invitation: this.sanitize(finalRow), inviteUrl, waSent };
+    return {
+      invitation: this.sanitize(finalRow),
+      inviteUrl,
+      waSent,
+      waError: waSent ? undefined : (waError ?? 'unknown'),
+    };
   }
 
   /** Rota el token y devuelve el link nuevo (mata el link anterior). */

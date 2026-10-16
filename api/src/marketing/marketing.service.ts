@@ -103,6 +103,7 @@ export class MarketingService {
 
     let sent = 0;
     let failed = 0;
+    let firstError: string | undefined;
     const useEmail = channel === 'email' || channel === 'both';
     const useWa = channel === 'whatsapp' || channel === 'both';
     const waTemplate = this.whatsapp.templateFor('KAPSO_TEMPLATE_INFO');
@@ -115,12 +116,15 @@ export class MarketingService {
           if (useEmail) {
             if (!r.email) ok = false;
             else {
-              const okMail = await this.mailService.sendMarketing(
+              const res = await this.mailService.sendMarketing(
                 r.email,
                 dto.subject,
                 this.render(dto.body, r),
               );
-              if (!okMail) ok = false;
+              if (!res.sent) {
+                ok = false;
+                if (!firstError) firstError = res.reason;
+              }
             }
           }
           if (useWa) {
@@ -128,13 +132,16 @@ export class MarketingService {
             if (!e164) ok = false;
             else {
               const text = `${dto.subject}\n\n${this.render(dto.body, r)}`;
-              const okWa = waTemplate
+              const res = waTemplate
                 ? await this.whatsapp.sendTemplate(e164, waTemplate, [
                     r.name?.trim() || 'hola',
                     r.registerUrl,
                   ])
                 : await this.whatsapp.sendText(e164, text);
-              if (!okWa) ok = false;
+              if (!res.sent) {
+                ok = false;
+                if (!firstError) firstError = res.reason;
+              }
             }
           }
           return ok;
@@ -158,7 +165,7 @@ export class MarketingService {
         sentBy,
       },
     });
-    return { sent, failed, logId: log.id };
+    return { sent, failed, logId: log.id, error: failed && firstError ? firstError : undefined };
   }
 
   async history(take = 30) {

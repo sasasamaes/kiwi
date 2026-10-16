@@ -47,6 +47,10 @@ export default function DifusionPage() {
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
   const [logs, setLogs] = useState<Log[]>([]);
+  const [channels, setChannels] = useState<{
+    smtp: { configured: boolean; verified: boolean; error?: string };
+    whatsapp: { configured: boolean; infoTemplate: string | null };
+  } | null>(null);
 
   useEffect(() => {
     api
@@ -56,6 +60,10 @@ export default function DifusionPage() {
     api
       .getBroadcastHistory(20)
       .then((r) => setLogs(r?.logs ?? []))
+      .catch(() => undefined);
+    api
+      .getChannelsStatus()
+      .then((r) => setChannels(r))
       .catch(() => undefined);
   }, []);
 
@@ -116,7 +124,7 @@ export default function DifusionPage() {
       const r = await api.sendMarketingBroadcast(payload());
       setResult({
         ok: r.failed === 0,
-        text: `Enviados ${r.sent}${r.failed ? `, fallaron ${r.failed} (¿SMTP/Kapso configurados?)` : ''}.`,
+        text: `Enviados ${r.sent}${r.failed ? `, fallaron ${r.failed}${r.error ? `: ${r.error}` : ' (¿SMTP/Kapso configurados?)'}` : ''}.`,
       });
       api
         .getBroadcastHistory(20)
@@ -149,6 +157,33 @@ export default function DifusionPage() {
           }`}
         >
           {result.text}
+        </div>
+      )}
+
+      {/* Estado real de los canales (diagnóstico del API, no adivinanza) */}
+      {channels && (
+        <div className="flex flex-wrap gap-2 text-xs">
+          <span
+            className={`px-3 py-1.5 rounded-full font-medium ${
+              channels.smtp.verified ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'
+            }`}
+            title={channels.smtp.error ?? 'SMTP verificado'}
+          >
+            📧 SMTP: {channels.smtp.verified ? 'verificado ✓' : 'con problema ✗'}
+            {!channels.smtp.verified && channels.smtp.error ? ` — ${channels.smtp.error}` : ''}
+            {!channels.smtp.configured && ' (sin configurar)'}
+          </span>
+          <span
+            className={`px-3 py-1.5 rounded-full font-medium ${
+              channels.whatsapp.configured
+                ? 'bg-green-100 text-green-700'
+                : 'bg-surface-100 text-surface-500'
+            }`}
+          >
+            💬 Kapso: {channels.whatsapp.configured ? 'configurado' : 'sin configurar'}
+            {channels.whatsapp.configured &&
+              ` · plantilla info: ${channels.whatsapp.infoTemplate ?? 'no'}`}
+          </span>
         </div>
       )}
 

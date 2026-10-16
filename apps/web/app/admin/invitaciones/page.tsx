@@ -35,6 +35,10 @@ interface Invitation {
   createdAt: string;
 }
 
+/** Motivo legible cuando el correo no sale: distingue "sin configurar" del error real. */
+const smtpReason = (emailError?: string) =>
+  !emailError || emailError === 'not-configured' ? 'SMTP sin configurar en el API' : emailError;
+
 const statusLabel = (status: string) => {
   switch (status) {
     case 'accepted':
@@ -132,7 +136,7 @@ function InvitacionesInner() {
         ok: res.emailSent,
         text: res.emailSent
           ? `Invitación enviada a ${res.invitation.email}`
-          : `Guardada, pero el correo NO salió (SMTP sin configurar). Copiá el link y mandalo manual.`,
+          : `Guardada, pero el correo NO salió (${smtpReason(res.emailError)}). Copiá el link y mandalo manual.`,
       });
       setEmail('');
       setPhone('');
@@ -170,7 +174,7 @@ function InvitacionesInner() {
         ok: res.emailSent,
         text: res.emailSent
           ? 'Invitación reenviada con un link nuevo (el anterior ya no vale)'
-          : 'Link renovado, pero el correo NO salió (SMTP sin configurar). Copiá el link de abajo.',
+          : `Link renovado, pero el correo NO salió (${smtpReason(res.emailError)}). Copiá el link de abajo.`,
       });
       load(role, statusFilter);
     } catch (e: any) {
@@ -190,7 +194,7 @@ function InvitacionesInner() {
         ok: res.waSent,
         text: res.waSent
           ? 'Invitación enviada por WhatsApp con un link nuevo (el anterior ya no vale)'
-          : 'Link renovado, pero el WhatsApp NO salió (Kapso sin configurar o fuera de ventana). Copiá el link de abajo.',
+          : `El WhatsApp NO salió (${!res.waError || res.waError === 'not-configured' ? 'Kapso sin configurar' : res.waError}). Copiá el link de abajo.`,
       });
       load(role, statusFilter);
     } catch (e: any) {

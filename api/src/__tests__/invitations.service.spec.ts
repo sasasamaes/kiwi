@@ -34,10 +34,10 @@ describe('InvitationsService', () => {
         updateMany: jest.fn().mockResolvedValue({ count: 0 }),
       },
     };
-    mail = { sendInvitation: jest.fn().mockResolvedValue(true) };
+    mail = { sendInvitation: jest.fn().mockResolvedValue({ sent: true }) };
     const whatsapp = {
-      sendText: jest.fn().mockResolvedValue(true),
-      sendTemplate: jest.fn().mockResolvedValue(true),
+      sendText: jest.fn().mockResolvedValue({ sent: true }),
+      sendTemplate: jest.fn().mockResolvedValue({ sent: true }),
       templateFor: jest.fn().mockReturnValue(undefined),
     };
 
@@ -159,13 +159,14 @@ describe('InvitationsService', () => {
     });
 
     it('si el correo no sale, igual guarda la invitación (emailSent false)', async () => {
-      mail.sendInvitation.mockResolvedValue(false);
+      mail.sendInvitation.mockResolvedValue({ sent: false, reason: '[ECONNECTION] timeout' });
       prisma.invitation.create.mockImplementation(({ data }: any) =>
         Promise.resolve({ id: 'inv-3', ...data, sentAt: null, createdAt: new Date() }),
       );
 
       const res = await service.create({ email: 'soda@ejemplo.com', role: 'merchant' });
       expect(res.emailSent).toBe(false);
+      expect(res.emailError).toBe('[ECONNECTION] timeout');
       expect(res.inviteUrl).toContain('invitation=');
     });
   });

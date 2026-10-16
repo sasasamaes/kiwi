@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import type { SendResult } from '../mail/mail.service';
 
 /**
  * WhatsApp por Kapso (Meta Cloud API vía Kapso).
@@ -32,9 +33,9 @@ export class WhatsappService {
     return `https://api.kapso.ai/meta/whatsapp/v24.0/${phoneNumberId}/messages`;
   }
 
-  private async post(payload: Record<string, unknown>): Promise<boolean> {
+  private async post(payload: Record<string, unknown>): Promise<SendResult> {
     const apiKey = this.configService.get<string>('KAPSO_API_KEY');
-    if (!apiKey) return false;
+    if (!apiKey) return { sent: false, reason: 'not-configured' };
     try {
       const res = await fetch(this.endpoint(), {
         method: 'POST',
@@ -43,21 +44,23 @@ export class WhatsappService {
       });
       if (!res.ok) {
         const text = await res.text().catch(() => '');
-        this.logger.warn(`Kapso ${res.status}: ${text.slice(0, 300)}`);
-        return false;
+        const reason = `Kapso ${res.status}: ${text.slice(0, 200)}`;
+        this.logger.warn(reason);
+        return { sent: false, reason };
       }
-      return true;
+      return { sent: true };
     } catch (error) {
-      this.logger.error(`Kapso no respondió: ${(error as Error)?.message}`);
-      return false;
+      const reason = `Kapso no respondió: ${(error as Error)?.message}`;
+      this.logger.error(reason);
+      return { sent: false, reason: reason.slice(0, 300) };
     }
   }
 
   /** Texto libre (ventana de 24h abierta o sandbox). */
-  async sendText(to: string, body: string): Promise<boolean> {
+  async sendText(to: string, body: string): Promise<SendResult> {
     if (!this.isConfigured()) {
       this.logger.warn(`WhatsApp a ${to} no enviado: Kapso sin configurar`);
-      return false;
+      return { sent: false, reason: 'not-configured' };
     }
     return this.post({
       recipient_type: 'individual',
@@ -76,10 +79,10 @@ export class WhatsappService {
     templateName: string,
     params: string[] = [],
     language = 'es',
-  ): Promise<boolean> {
+  ): Promise<SendResult> {
     if (!this.isConfigured()) {
       this.logger.warn(`WhatsApp a ${to} no enviado: Kapso sin configurar`);
-      return false;
+      return { sent: false, reason: 'not-configured' };
     }
     return this.post({
       recipient_type: 'individual',

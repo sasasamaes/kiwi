@@ -22,9 +22,9 @@ describe('MarketingService', () => {
       user: { findMany: jest.fn().mockResolvedValue([]) },
       broadcastLog: { create: jest.fn(), findMany: jest.fn().mockResolvedValue([]) },
     };
-    mail = { sendMarketing: jest.fn().mockResolvedValue(true) };
+    mail = { sendMarketing: jest.fn().mockResolvedValue({ sent: true }) };
     wa = {
-      sendText: jest.fn().mockResolvedValue(true),
+      sendText: jest.fn().mockResolvedValue({ sent: true }),
       sendTemplate: jest.fn(),
       templateFor: jest.fn().mockReturnValue(undefined),
     };
@@ -99,7 +99,7 @@ describe('MarketingService', () => {
   });
 
   it('WhatsApp usa E.164 y cuenta fallos sin SMTP/Kapso', async () => {
-    wa.sendText.mockResolvedValue(false);
+    wa.sendText.mockResolvedValue({ sent: false, reason: 'not-configured' });
     prisma.user.findMany.mockResolvedValue([{ id: 'u1', phone: '72199768', role: 'customer' }]);
     prisma.broadcastLog.create.mockImplementation(({ data }: any) =>
       Promise.resolve({ id: 'log-2', ...data }),
@@ -111,6 +111,21 @@ describe('MarketingService', () => {
       body: 'b',
     });
     expect(wa.sendText).toHaveBeenCalledWith('50672199768', expect.any(String));
-    expect(res).toEqual({ sent: 0, failed: 1, logId: 'log-2' });
+    expect(res).toEqual({ sent: 0, failed: 1, logId: 'log-2', error: 'not-configured' });
+  });
+
+  it('el motivo del fallo viaja en la respuesta (no más "SMTP sin configurar" genérico)', async () => {
+    mail.sendMarketing.mockResolvedValue({ sent: false, reason: '[EAUTH] Invalid login' });
+    prisma.user.findMany.mockResolvedValue([{ id: 'u1', email: 'a@x.com', role: 'merchant' }]);
+    prisma.broadcastLog.create.mockImplementation(({ data }: any) =>
+      Promise.resolve({ id: 'log-3', ...data }),
+    );
+    const res = await service.send({
+      channel: 'email',
+      roles: ['merchant'],
+      subject: 's',
+      body: 'b',
+    });
+    expect(res).toEqual({ sent: 0, failed: 1, logId: 'log-3', error: '[EAUTH] Invalid login' });
   });
 });
