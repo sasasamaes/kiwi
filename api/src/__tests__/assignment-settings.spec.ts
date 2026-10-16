@@ -2,7 +2,8 @@ import { SettingsService } from '../settings/settings.service';
 
 function serviceWith(rows: any[]) {
   const prisma: any = { platformSetting: { findMany: jest.fn().mockResolvedValue(rows) } };
-  return new SettingsService(prisma);
+  const config: any = { get: jest.fn().mockReturnValue(undefined) };
+  return new SettingsService(prisma, config);
 }
 
 it('defaults 5 y 10 sin filas', async () => {

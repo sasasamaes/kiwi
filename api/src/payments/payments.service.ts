@@ -1304,22 +1304,26 @@ export class PaymentsService {
     // Crypto solo se ofrece con wallet receptora configurada (o mock de dev):
     // sin eso, el QR apuntaría a una dirección que no es nuestra.
     const cryptoAvailable = this.stellarProvider.isConfigured();
+    // Tarjeta/SINPE (y los wallets que cuelgan del checkout: Google Pay y
+    // Apple Pay aparecen solos en el checkout de Onvo) exigen llave: sin
+    // llave el checkout fallaría recién al pagar.
+    const onvoAvailable = this.onvopayProvider.isConfigured();
     return [
       {
         id: 'onvopay_sinpe',
         name: 'SINPE Móvil',
         icon: '📱',
-        description: 'Transferencia instantánea',
+        description: 'Aprobás en tu banco',
         type: 'fiat',
-        available: true,
+        available: onvoAvailable,
       },
       {
         id: 'onvopay_card',
         name: 'Tarjeta',
         icon: '💳',
-        description: 'Crédito o débito',
+        description: 'Crédito, débito, Google Pay o Apple Pay',
         type: 'fiat',
-        available: true,
+        available: onvoAvailable,
       },
       {
         id: 'crypto_usdc',

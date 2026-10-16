@@ -1744,9 +1744,13 @@ class ApiClient {
   }
 
   async getPaymentAvailability() {
-    return this.request<{ sinpe: boolean; card: boolean; cash: boolean; crypto: boolean }>(
-      '/settings/payments',
-    );
+    return this.request<{
+      sinpe: boolean;
+      card: boolean;
+      cash: boolean;
+      crypto: boolean;
+      onvoConfigured?: boolean;
+    }>('/settings/payments');
   }
 
   /**

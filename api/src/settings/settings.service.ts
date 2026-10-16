@@ -1,5 +1,6 @@
 // Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 import { Injectable, BadRequestException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 
 export interface PlatformSettings {
@@ -110,7 +111,10 @@ const KNOWN_KEYS = [
 
 @Injectable()
 export class SettingsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private config: ConfigService,
+  ) {}
 
   // Caché en memoria: getAll se llama en cada POST /orders y checkout.
   // TTL 45s + single-flight; se invalida en saveAll. La tasa queda
@@ -218,14 +222,21 @@ export class SettingsService {
     this.inflight = null;
   }
 
-  /** Métodos habilitados (público: lo usan los checkouts para ocultar). */
+  /**
+   * Métodos habilitados (público: lo usan los checkouts para ocultar).
+   * Tarjeta/SINPE exigen llave de Onvo ADEMÁS del toggle: sin llave el
+   * checkout fallaría recién al pagar. El toggle del admin sigue mandando
+   * para apagar un método aunque haya llaves.
+   */
   async getPaymentAvailability() {
     const all = await this.getAll();
+    const onvoConfigured = Boolean(this.config.get<string>('ONVO_SECRET_KEY'));
     return {
-      sinpe: !!all.payments.sinpeEnabled,
-      card: !!all.payments.cardEnabled,
+      sinpe: !!all.payments.sinpeEnabled && onvoConfigured,
+      card: !!all.payments.cardEnabled && onvoConfigured,
       cash: !!all.payments.cashEnabled,
       crypto: !!all.payments.cryptoEnabled,
+      onvoConfigured,
     };
   }
 

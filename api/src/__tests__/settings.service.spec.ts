@@ -1,21 +1,28 @@
 // Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { SettingsService, DEFAULT_SETTINGS } from '../settings/settings.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 describe('SettingsService', () => {
   let service: SettingsService;
   let prisma: any;
+  let configGet: jest.Mock;
 
   beforeEach(async () => {
     prisma = {
       platformSetting: { findMany: jest.fn(), upsert: jest.fn() },
       $transaction: jest.fn(async (arg: any) => Promise.all(arg)),
     };
+    configGet = jest.fn().mockReturnValue('onvo_test_key');
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [SettingsService, { provide: PrismaService, useValue: prisma }],
+      providers: [
+        SettingsService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: ConfigService, useValue: { get: configGet } },
+      ],
     }).compile();
 
     service = module.get<SettingsService>(SettingsService);
@@ -47,7 +54,28 @@ describe('SettingsService', () => {
 
     const res = await service.getPaymentAvailability();
 
-    expect(res).toEqual({ sinpe: true, card: true, cash: false, crypto: true });
+    expect(res).toEqual({
+      sinpe: true,
+      card: true,
+      cash: false,
+      crypto: true,
+      onvoConfigured: true,
+    });
+  });
+
+  it('getPaymentAvailability apaga tarjeta/SINPE sin llave de Onvo', async () => {
+    configGet.mockReturnValue(undefined);
+    prisma.platformSetting.findMany.mockResolvedValue([]);
+
+    const res = await service.getPaymentAvailability();
+
+    expect(res).toEqual({
+      sinpe: false,
+      card: false,
+      cash: true,
+      crypto: true,
+      onvoConfigured: false,
+    });
   });
 
   it('saveAll persiste por sección y rechaza claves raras', async () => {

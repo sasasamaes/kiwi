@@ -84,6 +84,11 @@ export class OnvoPayProvider {
     }
   }
 
+  /** Hay llave secreta: se pueden crear checkouts/intents reales. */
+  isConfigured(): boolean {
+    return Boolean(this.secretKey && this.secretKey.trim().length > 0);
+  }
+
   /**
    * Create a payment intent with OnvoPay
    * @see https://docs.onvopay.com/en/payments/payment-intents

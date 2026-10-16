@@ -615,8 +615,8 @@ function CheckoutContent() {
             {(
               [
                 { id: 'cash', label: 'Efectivo', desc: 'Pagar al repartidor' },
-                { id: 'sinpe', label: 'SINPE', desc: 'Transferencia' },
-                { id: 'card', label: 'Tarjeta', desc: 'Crédito/Débito' },
+                { id: 'sinpe', label: 'SINPE', desc: 'Aprobás en tu banco' },
+                { id: 'card', label: 'Tarjeta', desc: 'Tarjeta, Google Pay o Apple Pay' },
                 { id: 'crypto_usdc', label: 'USDC', desc: 'Cripto' },
                 { id: 'crypto_usdt', label: 'USDT', desc: 'Cripto' },
               ] as const
@@ -769,12 +769,14 @@ function CheckoutContent() {
             )}{' '}
             {paymentMethod === 'sinpe' && (
               <span>
-                <Smartphone className="h-3 w-3 inline" /> Recibirás un link de pago por SINPE
+                <Smartphone className="h-3 w-3 inline" /> Te llevamos al pago seguro: elegí SINPE y
+                aprobá en tu banco
               </span>
             )}
             {paymentMethod === 'card' && (
               <span>
-                <CreditCard className="h-3 w-3 inline" /> Serás redirigido al pago seguro
+                <CreditCard className="h-3 w-3 inline" /> Pago seguro: tarjeta, Google Pay o Apple
+                Pay (en iPhone/Mac)
               </span>
             )}
             {paymentMethod === 'crypto_usdc' && (

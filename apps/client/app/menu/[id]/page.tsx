@@ -1823,13 +1823,13 @@ export default function MenuPage() {
                         id: 'sinpe' as const,
                         icon: Smartphone,
                         label: 'SINPE',
-                        desc: 'Transferencia',
+                        desc: 'Aprobás en tu banco',
                       },
                       {
                         id: 'card' as const,
                         icon: CreditCard,
                         label: 'Tarjeta',
-                        desc: 'Crédito/Débito',
+                        desc: 'Tarjeta, G Pay o  Pay',
                       },
                       {
                         id: 'cash' as const,
@@ -1987,11 +1987,11 @@ export default function MenuPage() {
                         onChange={(e) =>
                           setDeliveryInfo({ ...deliveryInfo, phone: e.target.value })
                         }
-                        placeholder="Número SINPE (8888-1234)"
+                        placeholder="Tu número (te contactamos acá)"
                         className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20 transition-all"
                       />
                       <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">
-                        Se enviará un cobro SINPE a este número
+                        Te llevamos al pago seguro: elegí SINPE y aprobá en la app de tu banco.
                       </p>
                     </motion.div>
                   )}
@@ -2048,8 +2048,8 @@ export default function MenuPage() {
                       className="mt-3 rounded-xl bg-blue-50 dark:bg-blue-900/30 p-3"
                     >
                       <p className="text-sm text-blue-700 dark:text-blue-400">
-                        <CreditCard className="h-4 w-4 inline" /> Se te redirigirá a OnvoPay para
-                        completar el pago seguro
+                        <CreditCard className="h-4 w-4 inline" /> Pago seguro: tarjeta, Google Pay o
+                        Apple Pay (en iPhone/Mac con Wallet).
                       </p>
                     </motion.div>
                   )}
