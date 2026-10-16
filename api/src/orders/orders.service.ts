@@ -508,6 +508,20 @@ export class OrdersService {
       zoneBase = Number(zone.price);
     }
 
+    // Sin barrio elegido pero con coordenadas: resolver la zona por polígono
+    // (cobro automático por ubicación). Si solo cae en referencia (sin polígono)
+    // NO se cobra automático: queda como sugerencia.
+    if (!deliveryZone && data.deliveryLat != null && data.deliveryLng != null) {
+      const resolved = await this.zonesService.resolvePriceAt(
+        Number(data.deliveryLat),
+        Number(data.deliveryLng),
+      );
+      if (resolved && resolved.source === 'polygon') {
+        deliveryZone = resolved.zone.id;
+        zoneBase = Number(resolved.zone.price);
+      }
+    }
+
     // Colones enteros: SINPE/efectivo no aceptan fracciones y las sumas
     // (retiros, analytics) arrastrarían decimales. Todo se redondea ANTES
     // de persistir: viaje, productos, comisión y payout derivan enteros.

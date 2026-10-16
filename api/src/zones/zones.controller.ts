@@ -1,5 +1,16 @@
 // Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
-import { Body, Controller, Delete, Get, Param, Post, Put, UseGuards } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ZonesService } from './zones.service';
 import { CreateZoneDto, UpdateZoneDto } from './dto/zone.dto';
@@ -19,6 +30,24 @@ export class ZonesController {
   @ApiOperation({ summary: 'Zonas de entrega activas' })
   list() {
     return this.zones.list();
+  }
+
+  /** Resolver zona+precio para un punto (polígono más específico, o referencia). */
+  @Public()
+  @Get('resolve')
+  @ApiOperation({ summary: 'Zona/precio de envío para una coordenada' })
+  async resolve(@Query('lat') lat: string, @Query('lng') lng: string) {
+    const latitude = Number(lat);
+    const longitude = Number(lng);
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+      throw new BadRequestException('Coordenadas inválidas');
+    }
+    const r = await this.zones.resolvePriceAt(latitude, longitude);
+    if (!r) return { zone: null, source: null };
+    return {
+      zone: { id: r.zone.id, label: r.zone.label, price: r.zone.price },
+      source: r.source,
+    };
   }
 
   @Get('all')

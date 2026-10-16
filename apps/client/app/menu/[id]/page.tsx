@@ -38,6 +38,7 @@ import {
   useSocket,
   AddressInput,
   ZonePicker,
+  useDeliveryZones,
   OnvoPayCheckout,
   CryptoCheckout,
   CryptoRateNote,
@@ -59,7 +60,7 @@ import {
   formatOpeningHours,
 } from '@kiwi/ui';
 import type { ScheduleValue } from '@kiwi/ui';
-import { findDeliveryZone, findNearestZone } from '@kiwi/types';
+import { findDeliveryZone } from '@kiwi/types';
 
 interface CartItem extends MenuItem {
   quantity: number;
@@ -124,6 +125,8 @@ export default function MenuPage() {
   /** Clave que reinicia la animación de rebote del carrito (TapButton onSuccess). */
   const [cartBounceKey, setCartBounceKey] = useState(0);
   const prefersReducedMotion = useReducedMotion();
+  // Zonas desde la DB (editables en el admin); el precio mostrado sale de acá.
+  const deliveryZones = useDeliveryZones();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -357,6 +360,25 @@ export default function MenuPage() {
     setFollowBusy(false);
   }, [merchantId]);
 
+  // Ubicación del cliente → resolver zona en la DB (polígono) y autoseleccionar
+  // su precio. No pisa una elección manual del barrio.
+  useEffect(() => {
+    if (!deliveryCoords) return;
+    let alive = true;
+    api
+      .resolveDeliveryZone(deliveryCoords.lat, deliveryCoords.lng)
+      .then((r) => {
+        if (!alive || !r.zone) return;
+        const zone = r.zone;
+        setDeliveryInfo((prev) => (prev.zone ? prev : { ...prev, zone: zone.id }));
+        setZoneAuto(true);
+      })
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, [deliveryCoords]);
+
   // Cart functions
   const addLine = useCallback((item: MenuItem, selected: SelectedOption[]) => {
     const lineId = lineIdFor(item.id, selected);
@@ -508,7 +530,10 @@ export default function MenuPage() {
   const servicePct =
     ((merchant as any)?.isHomeCook ? feeRates.homeCookPct : feeRates.standardPct) / 100;
   const serviceFee = Math.round(cartTotal * servicePct);
-  const zoneTrip = findDeliveryZone(deliveryInfo.zone)?.price ?? null;
+  const zoneTrip =
+    deliveryZones.find((z) => z.id === deliveryInfo.zone)?.price ??
+    findDeliveryZone(deliveryInfo.zone)?.price ??
+    null;
   const deliveryFee = zoneTrip ?? 500;
   const totalWithDelivery = cartTotal + serviceFee + deliveryFee;
 
@@ -1678,22 +1703,7 @@ export default function MenuPage() {
                     value={deliveryInfo.address}
                     onChange={(address, coordinates) => {
                       setDeliveryInfo((prev) => ({ ...prev, address }));
-                      if (coordinates) {
-                        setDeliveryCoords(coordinates);
-                        // GPS con barrio confiable: se autoselecciona con su
-                        // precio (cambiable si el GPS se equivoca).
-                        try {
-                          const near = findNearestZone(coordinates.lat, coordinates.lng);
-                          if (near?.confident) {
-                            setDeliveryInfo((prev) =>
-                              prev.zone ? prev : { ...prev, zone: near.zone.id },
-                            );
-                            setZoneAuto(true);
-                          }
-                        } catch {
-                          // sin zona: el picker manual sigue disponible
-                        }
-                      }
+                      if (coordinates) setDeliveryCoords(coordinates);
                     }}
                     placeholder="Buscar dirección en Nicoya..."
                     nicoyaOnly={true}

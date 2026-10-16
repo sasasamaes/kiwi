@@ -522,6 +522,17 @@ class ApiClient {
     return this.request<any[]>(`/delivery-zones`).catch(() => []);
   }
 
+  /** Resuelve zona+precio para una coordenada (polígono o referencia). */
+  async resolveDeliveryZone(lat: number, lng: number) {
+    return this.request<{
+      zone: { id: string; label: string; price: number } | null;
+      source: 'polygon' | 'reference' | null;
+    }>(`/delivery-zones/resolve?lat=${lat}&lng=${lng}`).catch(() => ({
+      zone: null,
+      source: null as null,
+    }));
+  }
+
   // ── Zonas (admin) ────────────────────────────────────────────────
   async adminListZones() {
     return this.request<any[]>(`/delivery-zones/all`);
