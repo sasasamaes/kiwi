@@ -97,5 +97,11 @@ export function ZonesOverviewMap({ zones, height = 440 }: { zones: ZoneLike[]; h
     layerRef.current = layer;
   }, [zones, ready]);
 
-  return <div ref={ref} style={{ height }} className="w-full overflow-hidden rounded-2xl" />;
+  return (
+    <div
+      ref={ref}
+      style={{ height }}
+      className="relative z-0 isolate w-full overflow-hidden rounded-2xl"
+    />
+  );
 }
