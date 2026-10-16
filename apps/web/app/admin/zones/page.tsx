@@ -49,6 +49,13 @@ export default function AdminZonesPage() {
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [vertices, setVertices] = useState<Ring>([]); // [[lng,lat]]
   const [showForm, setShowForm] = useState(false);
+  // Modo de edición del mapa: mover el punto de entrega o dibujar el polígono.
+  const [mode, setMode] = useState<'point' | 'polygon'>('point');
+  const modeRef = useRef<'point' | 'polygon'>('point');
+  useEffect(() => {
+    modeRef.current = mode;
+  }, [mode]);
+  const pointMarkerRef = useRef<any>(null);
 
   const mapRef = useRef<HTMLDivElement>(null);
   const mapObj = useRef<any>(null);
@@ -78,12 +85,25 @@ export default function AdminZonesPage() {
       const L = (await import('leaflet')).default ?? (await import('leaflet'));
       LRef.current = L;
       if (cancelled || !mapRef.current) return;
-      const map = L.map(mapRef.current).setView(NICoya, 13);
+      const lat0 = Number(form.latitude) || NICoya[0];
+      const lng0 = Number(form.longitude) || NICoya[1];
+      const map = L.map(mapRef.current).setView(
+        [lat0, lng0],
+        Number.isFinite(Number(form.latitude)) ? 14 : 13,
+      );
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap',
       }).addTo(map);
       map.on('click', (e: any) => {
-        setVertices((prev) => [...prev, [e.latlng.lng, e.latlng.lat]]);
+        if (modeRef.current === 'point') {
+          setForm((f) => ({
+            ...f,
+            latitude: e.latlng.lat.toFixed(6),
+            longitude: e.latlng.lng.toFixed(6),
+          }));
+        } else {
+          setVertices((prev) => [...prev, [e.latlng.lng, e.latlng.lat]]);
+        }
       });
       mapObj.current = map;
     })();
@@ -108,8 +128,30 @@ export default function AdminZonesPage() {
     if (ll.length >= 2) L.polyline(ll, { color: '#22c55e' }).addTo(layer);
     if (ll.length >= 3) L.polygon(ll, { color: '#16a34a', fillOpacity: 0.25 }).addTo(layer);
     layerRef.current = layer;
-  }, [vertices, showForm]);
 
+    // Punto de entrega (referencia) según lat/long, arrastrable para corregir.
+    if (pointMarkerRef.current) {
+      pointMarkerRef.current.remove();
+      pointMarkerRef.current = null;
+    }
+    const lat = Number(form.latitude);
+    const lng = Number(form.longitude);
+    if (
+      form.latitude !== '' &&
+      form.longitude !== '' &&
+      Number.isFinite(lat) &&
+      Number.isFinite(lng)
+    ) {
+      const marker = L.marker([lat, lng], { draggable: true })
+        .addTo(map)
+        .bindTooltip('Punto de entrega');
+      marker.on('dragend', () => {
+        const p = marker.getLatLng();
+        setForm((f) => ({ ...f, latitude: p.lat.toFixed(6), longitude: p.lng.toFixed(6) }));
+      });
+      pointMarkerRef.current = marker;
+    }
+  }, [vertices, showForm, form.latitude, form.longitude]);
   const destroyMap = () => {
     mapObj.current?.remove?.();
     mapObj.current = null;
@@ -333,9 +375,36 @@ export default function AdminZonesPage() {
             </div>
 
             <div className="mt-4">
-              <p className="mb-2 text-sm text-surface-500">
-                Polígono (opcional) — tocá el mapa para agregar vértices ( {vertices.length} punto
-                {vertices.length === 1 ? '' : 's'} )
+              <div className="mb-2 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setMode('point')}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
+                    mode === 'point'
+                      ? 'bg-kiwi-700 text-white'
+                      : 'border border-surface-200 dark:border-surface-700'
+                  }`}
+                >
+                  📍 Punto de entrega
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMode('polygon')}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
+                    mode === 'polygon'
+                      ? 'bg-kiwi-700 text-white'
+                      : 'border border-surface-200 dark:border-surface-700'
+                  }`}
+                >
+                  ▦ Polígono ({vertices.length})
+                </button>
+              </div>
+              <p className="mb-2 text-xs text-surface-500">
+                {mode === 'point'
+                  ? 'Tocá el mapa para ubicar el punto de entrega (o arrastrá el marcador).'
+                  : `Tocá el mapa para agregar vértices del polígono (${vertices.length} punto${
+                      vertices.length === 1 ? '' : 's'
+                    }).`}
               </p>
               <div
                 ref={mapRef}
