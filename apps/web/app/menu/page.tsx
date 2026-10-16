@@ -66,7 +66,13 @@ export default function MenuManagementPage() {
 
   // Kioskos/puestos dentro del comercio (mercadito con varios productores).
   const [kiosks, setKiosks] = useState<
-    Array<{ id: string; name: string; description: string | null; active: boolean }>
+    Array<{
+      id: string;
+      name: string;
+      description: string | null;
+      imageUrl: string | null;
+      active: boolean;
+    }>
   >([]);
   const [showKioskManager, setShowKioskManager] = useState(false);
   const [newKioskName, setNewKioskName] = useState('');
@@ -75,6 +81,7 @@ export default function MenuManagementPage() {
     id: string;
     name: string;
     description: string | null;
+    imageUrl: string | null;
   } | null>(null);
   const [savingKiosk, setSavingKiosk] = useState(false);
   const [kioskError, setKioskError] = useState<string | null>(null);
@@ -204,6 +211,7 @@ export default function MenuManagementPage() {
       await api.updateKiosk(editingKiosk.id, {
         name: editingKiosk.name.trim(),
         description: editingKiosk.description?.trim() || null,
+        imageUrl: editingKiosk.imageUrl?.trim() || null,
       });
       setEditingKiosk(null);
       await fetchKiosks();
@@ -1112,6 +1120,18 @@ export default function MenuManagementPage() {
                                       rows={2}
                                       className="rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-2 text-sm text-surface-800 dark:text-surface-100 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20"
                                     />
+                                    <input
+                                      type="url"
+                                      value={editingKiosk.imageUrl ?? ''}
+                                      onChange={(e) =>
+                                        setEditingKiosk({
+                                          ...editingKiosk,
+                                          imageUrl: e.target.value,
+                                        })
+                                      }
+                                      placeholder="Foto del puesto (URL https, opcional)"
+                                      className="rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-2 text-sm text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20"
+                                    />
                                     <div className="flex gap-2">
                                       <AnimatedButton
                                         variant="gradient"
@@ -1153,6 +1173,7 @@ export default function MenuManagementPage() {
                                           id: k.id,
                                           name: k.name,
                                           description: k.description,
+                                          imageUrl: k.imageUrl,
                                         })
                                       }
                                       className="p-1.5 text-surface-400 hover:text-kiwi-600"

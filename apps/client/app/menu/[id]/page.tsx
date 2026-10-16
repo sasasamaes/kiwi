@@ -593,16 +593,21 @@ export default function MenuPage() {
 
   // Secciones por kiosko (mercadito con varios puestos): cada kiosko con su
   // historia y sus productos; el pedido junta todo y le llega al comercio.
-  // Sin kioskos, la lista queda plana como siempre.
+  // Aparecen solos al crearlos en el panel, incluso antes de tener
+  // productos (con aviso de "pronto"). Sin kioskos, lista plana como siempre.
   const kioskById = new Map(kiosks.map((k) => [k.id, k]));
   const todaySections = (() => {
-    const groups = new Map<string | null, MenuItem[]>();
+    const byKiosk = new Map<string, MenuItem[]>();
+    const loose: MenuItem[] = [];
     for (const item of todayItems) {
       const kid = ((item as any).kioskId as string | null) ?? null;
-      const key = kid && kioskById.has(kid) ? kid : null;
-      const arr = groups.get(key);
-      if (arr) arr.push(item);
-      else groups.set(key, [item]);
+      if (kid && kioskById.has(kid)) {
+        const arr = byKiosk.get(kid);
+        if (arr) arr.push(item);
+        else byKiosk.set(kid, [item]);
+      } else {
+        loose.push(item);
+      }
     }
     const out: Array<{
       kiosk: {
@@ -613,38 +618,40 @@ export default function MenuPage() {
       } | null;
       items: MenuItem[];
     }> = [];
-    for (const [key, items] of groups) {
-      out.push({ kiosk: key ? (kioskById.get(key) ?? null) : null, items });
-    }
-    // Kioskos en su orden, sueltos al final.
-    out.sort((a, b) => {
-      if (!a.kiosk && !b.kiosk) return 0;
-      if (!a.kiosk) return 1;
-      if (!b.kiosk) return -1;
-      return (
-        kiosks.findIndex((k) => k.id === a.kiosk!.id) -
-        kiosks.findIndex((k) => k.id === b.kiosk!.id)
-      );
-    });
+    for (const k of kiosks) out.push({ kiosk: k, items: byKiosk.get(k.id) ?? [] });
+    if (loose.length) out.push({ kiosk: null, items: loose });
     return out;
   })();
-  const showKioskSections = todaySections.some((s) => s.kiosk);
+  const showKioskSections = kiosks.length > 0;
+  const scrollToKiosk = (id: string) => {
+    document.getElementById(`kiosko-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   // Filas planas para la lista: cabecera de kiosko + sus productos. Sin
-  // kioskos, filas de productos como siempre (cero cambio visual).
+  // kioskos, filas de productos como siempre (cero cambio visual). Un kiosko
+  // sin productos visibles muestra aviso de "pronto" (ya existe en el panel).
   const todayRows: Array<
     | {
         kind: 'kiosk';
         kiosk: { id: string; name: string; description: string | null; imageUrl: string | null };
       }
+    | { kind: 'kiosk-empty'; kiosk: { id: string; name: string } }
     | { kind: 'item'; item: MenuItem }
   > = [];
   if (!showKioskSections) {
     for (const item of todayItems) todayRows.push({ kind: 'item', item });
   } else {
     for (const s of todaySections) {
-      if (s.kiosk) todayRows.push({ kind: 'kiosk', kiosk: s.kiosk });
-      for (const item of s.items) todayRows.push({ kind: 'item', item });
+      if (!s.kiosk) {
+        for (const item of s.items) todayRows.push({ kind: 'item', item });
+        continue;
+      }
+      todayRows.push({ kind: 'kiosk', kiosk: s.kiosk });
+      if (s.items.length === 0) {
+        todayRows.push({ kind: 'kiosk-empty', kiosk: s.kiosk });
+      } else {
+        for (const item of s.items) todayRows.push({ kind: 'item', item });
+      }
     }
   }
   // Si el carrito trae algo de mañana, el pedido entero es programado para
@@ -1286,6 +1293,46 @@ export default function MenuPage() {
         </motion.div>
       )}
 
+      {/* Tira de kioskos: vidriera de puestos (aparecen solos al crearlos).
+          Toca uno para ir a su sección. */}
+      {kiosks.length > 0 && (
+        <div className="mx-auto max-w-lg px-4 mb-4">
+          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+            {kiosks.map((k) => {
+              const count = todaySections.find((s) => s.kiosk?.id === k.id)?.items.length ?? 0;
+              return (
+                <button
+                  key={k.id}
+                  type="button"
+                  onClick={() => scrollToKiosk(k.id)}
+                  className="flex min-w-[140px] max-w-[160px] flex-col items-center gap-1.5 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] p-3 shadow-soft dark:shadow-dark active:scale-95 transition-transform"
+                >
+                  <span className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-xl bg-purple-50 dark:bg-purple-900/30 text-3xl">
+                    {k.imageUrl ? (
+                      <img src={k.imageUrl} alt={k.name} className="h-full w-full object-cover" />
+                    ) : (
+                      '🏪'
+                    )}
+                  </span>
+                  <span className="w-full truncate text-center text-sm font-semibold text-surface-800 dark:text-surface-100">
+                    {k.name}
+                  </span>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                      count > 0
+                        ? 'bg-kiwi-100 dark:bg-kiwi-900/50 text-kiwi-700 dark:text-kiwi-400'
+                        : 'bg-surface-100 dark:bg-surface-700 text-surface-500 dark:text-surface-400'
+                    }`}
+                  >
+                    {count > 0 ? (count === 1 ? '1 producto' : `${count} productos`) : 'Pronto'}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Menu Items */}
       <motion.div
         className="mx-auto max-w-lg px-4"
@@ -1314,19 +1361,54 @@ export default function MenuPage() {
           <div className="space-y-4">
             {todayRows.map((row, rowIndex) => {
               if (row.kind === 'kiosk') {
+                const count =
+                  todaySections.find((s) => s.kiosk?.id === row.kiosk.id)?.items.length ?? 0;
                 return (
-                  <div key={`kiosko-${row.kiosk.id}`} className="pt-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">🏪</span>
-                      <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-                        {row.kiosk.name}
-                      </h3>
+                  <div
+                    key={`kiosko-${row.kiosk.id}`}
+                    id={`kiosko-${row.kiosk.id}`}
+                    className="pt-2 scroll-mt-28"
+                  >
+                    <div className="flex items-center gap-3 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] p-3 shadow-soft dark:shadow-dark">
+                      <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-purple-50 dark:bg-purple-900/30 text-2xl">
+                        {row.kiosk.imageUrl ? (
+                          // NOTE: <img> intencional — avatares dinámicos
+                          <img
+                            src={row.kiosk.imageUrl}
+                            alt={row.kiosk.name}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          '🏪'
+                        )}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-display font-semibold text-surface-800 dark:text-surface-100">
+                          {row.kiosk.name}
+                        </p>
+                        {row.kiosk.description ? (
+                          <p className="text-xs text-surface-500 dark:text-surface-400 line-clamp-2">
+                            {row.kiosk.description}
+                          </p>
+                        ) : (
+                          <p className="text-xs text-surface-400">
+                            {count === 1 ? '1 producto' : `${count} productos`}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                    {row.kiosk.description && (
-                      <p className="mt-1 text-sm text-surface-500 dark:text-surface-400 line-clamp-3">
-                        {row.kiosk.description}
-                      </p>
-                    )}
+                  </div>
+                );
+              }
+              if (row.kind === 'kiosk-empty') {
+                return (
+                  <div
+                    key={`kiosko-vacio-${row.kiosk.id}`}
+                    className="rounded-2xl border border-dashed border-surface-300 dark:border-surface-600 px-4 py-3 text-center"
+                  >
+                    <p className="text-xs text-surface-500 dark:text-surface-400">
+                      🤫 {row.kiosk.name} está preparando sus productos — volvé pronto.
+                    </p>
                   </div>
                 );
               }
