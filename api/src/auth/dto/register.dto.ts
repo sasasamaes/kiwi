@@ -137,4 +137,12 @@ export class RegisterDto {
   @IsOptional()
   @IsBoolean()
   acceptedTerms?: boolean;
+
+  // Token del link de invitación (llega como ?invitation= en el correo del
+  // admin). Opcional: el registro público sigue funcionando sin invitación.
+  @ApiPropertyOptional({ description: 'Token del link de invitación (opcional)' })
+  @EmptyToUndefined()
+  @IsOptional()
+  @IsString()
+  invitationToken?: string;
 }

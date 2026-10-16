@@ -7,11 +7,13 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { UsersModule } from '../users/users.module';
+import { InvitationsModule } from '../invitations/invitations.module';
 import { DEV_FALLBACK_SECRET } from './dev-fallback-secret';
 
 @Module({
   imports: [
     UsersModule,
+    InvitationsModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],

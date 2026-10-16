@@ -84,6 +84,32 @@ model PasswordResetToken {
   @@map("password_reset_tokens")
 }
 
+// Invitación de venta en campo (admin): el vendedor anota email (+ teléfono
+// opcional) negocio por negocio y el admin manda el correo de invitación a
+// Kiwi Comercio (merchant) o a Kiwi Repartidores (driver). El link lleva un
+// token crudo; en DB solo vive su hash sha256 (igual que el recupero).
+// Expira a los 30 días. Al registrarse con ese email+rol se marca accepted.
+model Invitation {
+  id        String   @id @default(uuid())
+  email     String
+  phone     String?
+  // Nombre del negocio (merchant) o de la persona (driver). Solo etiqueta
+  // para el vendedor; no se usa en el registro.
+  name      String?
+  role      String // merchant | driver
+  tokenHash String   @unique @map("token_hash")
+  status    String   @default("pending") // pending | accepted | revoked
+  expiresAt DateTime @map("expires_at")
+  createdBy String?  @map("created_by") // userId del admin/vendedor
+  sentAt    DateTime? @map("sent_at")
+  acceptedAt DateTime? @map("accepted_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([role, status, createdAt])
+  @@index([email, role])
+  @@map("invitations")
+}
+
 enum Role {
   merchant
   driver

@@ -17,6 +17,8 @@ export interface AuthFormProps {
   onForgotPassword?: () => void;
   loading?: boolean;
   error?: string;
+  /** Pre-llena el email (links de invitación del admin: ?email=). */
+  initialEmail?: string;
 }
 
 export interface AuthFormData {
@@ -38,9 +40,10 @@ export function AuthForm({
   onForgotPassword,
   loading = false,
   error,
+  initialEmail = '',
 }: AuthFormProps) {
   const [formData, setFormData] = useState<AuthFormData>({
-    email: '',
+    email: initialEmail,
     password: '',
     fullName: '',
     phone: '',

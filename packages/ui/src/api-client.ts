@@ -220,6 +220,8 @@ class ApiClient {
     deliveryZone?: string;
     latitude?: number;
     longitude?: number;
+    /** Token del link de invitación del admin (opcional). */
+    invitationToken?: string;
   }) {
     const result = await this.request<any>('/auth/register', {
       method: 'POST',
@@ -330,6 +332,69 @@ class ApiClient {
   /** Limpia el throttle de login de un usuario (admin). */
   async unlockUserLogin(id: string) {
     return this.request<any>(`/users/${id}/unlock`, { method: 'PUT' });
+  }
+
+  // ============================================
+  // ✉️ INVITACIONES (venta en campo, admin)
+  // ============================================
+
+  async createInvitation(data: {
+    email: string;
+    phone?: string;
+    name?: string;
+    role: 'merchant' | 'driver';
+  }): Promise<{
+    invitation: {
+      id: string;
+      email: string;
+      phone: string | null;
+      name: string | null;
+      role: string;
+      status: string;
+      expiresAt: string;
+      sentAt: string | null;
+      acceptedAt: string | null;
+      createdAt: string;
+    };
+    inviteUrl: string;
+    emailSent: boolean;
+  }> {
+    return this.request<any>('/invitations', { method: 'POST', body: data });
+  }
+
+  async listInvitations(params?: {
+    role?: 'merchant' | 'driver';
+    status?: 'pending' | 'accepted' | 'revoked';
+    take?: number;
+    skip?: number;
+  }) {
+    const q = new URLSearchParams();
+    if (params?.role) q.append('role', params.role);
+    if (params?.status) q.append('status', params.status);
+    if (params?.take != null) q.append('take', String(params.take));
+    if (params?.skip != null) q.append('skip', String(params.skip));
+    const qs = q.toString();
+    return this.request<{ invitations: any[]; total: number }>(`/invitations${qs ? `?${qs}` : ''}`);
+  }
+
+  async resendInvitation(id: string) {
+    return this.request<any>(`/invitations/${id}/resend`, { method: 'POST' });
+  }
+
+  async revokeInvitation(id: string) {
+    return this.request<any>(`/invitations/${id}`, { method: 'DELETE' });
+  }
+
+  /** Valida el token del link (público): el registro muestra el banner que toca. */
+  async validateInvitation(
+    token: string,
+    email?: string,
+    role?: string,
+  ): Promise<{ valid: boolean; email?: string; role?: string; name?: string | null }> {
+    const q = new URLSearchParams({ token });
+    if (email) q.append('email', email);
+    if (role) q.append('role', role);
+    return this.request<any>(`/invitations/validate?${q.toString()}`);
   }
 
   /** Activa/apaga cobro con tarjeta/SINPE de un comercio (tras KYC de Onvo). */

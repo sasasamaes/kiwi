@@ -63,4 +63,60 @@ export class MailService {
       return false;
     }
   }
+
+  /**
+   * Invitación de venta en campo (admin): correo a un comercio para sumarse a
+   * Kiwi Comercio, o a una persona para repartir con Kiwi Repartidores.
+   * Devuelve false (fail-soft) sin SMTP, igual que el recupero.
+   */
+  async sendInvitation(
+    to: string,
+    role: 'merchant' | 'driver',
+    inviteUrl: string,
+    name?: string,
+  ): Promise<boolean> {
+    if (!this.transporter) {
+      this.logger.warn(`Invitación ${role} para ${to} no enviada: SMTP sin configurar`);
+      return false;
+    }
+    const from = this.configService.get<string>('SMTP_USER');
+    const greeting = name?.trim() ? `Hola ${name.trim()},` : 'Hola,';
+    const { subject, headline, body } =
+      role === 'merchant'
+        ? {
+            subject: 'Sumá tu comercio a Kiwi 🥝',
+            headline: 'Te invitamos a vender con Kiwi Comercio',
+            body:
+              'Publicá tu menú, recibí pedidos por la app y coordiná ' +
+              'repartidores sin llamadas ni enredos. El registro toma unos minutos.',
+          }
+        : {
+            subject: 'Repartí con Kiwi 🛵',
+            headline: 'Te invitamos a repartir con Kiwi',
+            body:
+              'Aceptá pedidos desde tu teléfono, manejá tus horarios y ' +
+              'recibí tus ganancias por SINPE o transferencia. El registro toma unos minutos.',
+          };
+    try {
+      await this.transporter.sendMail({
+        from: `"Kiwi" <${from}>`,
+        to,
+        subject,
+        text:
+          `${greeting}\n\n${headline}.\n\n${body}\n\n` +
+          `Creá tu cuenta con este link (vale 30 días):\n${inviteUrl}\n\n` +
+          `Si no te interesa, ignorá este mensaje.`,
+        html:
+          `<p>${greeting}</p>` +
+          `<p><b>${headline}.</b></p>` +
+          `<p>${body}</p>` +
+          `<p><a href="${inviteUrl}">Crear mi cuenta</a> (vale 30 días).</p>` +
+          `<p>Si no te interesa, ignorá este mensaje.</p>`,
+      });
+      return true;
+    } catch (error) {
+      this.logger.error(`No se pudo enviar la invitación a ${to}: ${(error as Error)?.message}`);
+      return false;
+    }
+  }
 }

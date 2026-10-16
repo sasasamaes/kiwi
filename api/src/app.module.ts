@@ -30,6 +30,7 @@ import { CustomersModule } from './customers/customers.module';
 import { FeatureFlagsModule } from './feature-flags/feature-flags.module';
 import { MailModule } from './mail/mail.module';
 import { ZonesModule } from './zones/zones.module';
+import { InvitationsModule } from './invitations/invitations.module';
 
 @Module({
   imports: [
@@ -76,6 +77,7 @@ import { ZonesModule } from './zones/zones.module';
     SettingsModule,
     AdsModule,
     CustomersModule,
+    InvitationsModule,
   ],
 })
 export class AppModule {}

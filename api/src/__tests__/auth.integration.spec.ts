@@ -5,6 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { MailService } from '../mail/mail.service';
+import { InvitationsService } from '../invitations/invitations.service';
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 
@@ -58,6 +59,13 @@ describe('Auth Integration: Registration & Login Flow', () => {
         { provide: JwtService, useValue: jwtService },
         { provide: ConfigService, useValue: { get: jest.fn().mockReturnValue('7d') } },
         { provide: MailService, useValue: { sendPasswordReset: jest.fn() } },
+        {
+          provide: InvitationsService,
+          useValue: {
+            assertValidForRegister: jest.fn().mockResolvedValue(undefined),
+            consumeOnRegister: jest.fn().mockResolvedValue(undefined),
+          },
+        },
       ],
     }).compile();
 

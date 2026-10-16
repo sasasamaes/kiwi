@@ -15,6 +15,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { MailService } from '../mail/mail.service';
+import { InvitationsService } from '../invitations/invitations.service';
 import { findDeliveryZone } from '../orders/delivery-zones';
 import { normalizeCRPhone } from '../common/phone';
 import { isMerchantCategory, tagMerchantCategory } from '../merchants/merchant-category';
@@ -40,6 +41,7 @@ export class AuthService {
     private jwtService: JwtService,
     private configService: ConfigService,
     private mailService: MailService,
+    private invitationsService: InvitationsService,
   ) {
     // Periodic cleanup so entries for abandoned accounts don't accumulate.
     setInterval(
@@ -124,6 +126,17 @@ export class AuthService {
     // Normalizado a 8888-8888 para que +506 7219 9768 y 72199768 no creen
     // dos cuentas distintas del mismo número.
     const phoneNorm = normalizeCRPhone(phone?.trim() || '') ?? undefined;
+
+    // Token de invitación (link del correo del admin): se valida ANTES de
+    // crear la cuenta para no dejar una cuenta creada con un 400 después.
+    const invitationToken =
+      typeof (registerDto as any).invitationToken === 'string' &&
+      (registerDto as any).invitationToken.trim()
+        ? (registerDto as any).invitationToken.trim()
+        : undefined;
+    if (invitationToken) {
+      await this.invitationsService.assertValidForRegister(invitationToken, emailNorm, role);
+    }
 
     // Email único global; teléfono único POR ROL (la misma persona puede
     // tener cuenta cliente + comercio + repartidor con el mismo número).
@@ -223,6 +236,18 @@ export class AuthService {
 
     // Generate tokens
     const tokens = await this.generateTokens(user as any);
+
+    // Si vino por invitación, marcarla aceptada. Es cosmético del panel del
+    // admin: si falla, la cuenta ya quedó creada y el login funciona igual.
+    try {
+      await this.invitationsService.consumeOnRegister({
+        token: invitationToken,
+        email: emailNorm,
+        role,
+      });
+    } catch {
+      // best-effort: no bloquear un registro válido por el estado del panel
+    }
 
     return {
       user: this.sanitizeUser(user),

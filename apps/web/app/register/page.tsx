@@ -1,17 +1,58 @@
 // Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { AuthForm, useAuth } from '@kiwi/ui';
+import { AuthForm, useAuth, api } from '@kiwi/ui';
 
-export default function RegisterPage() {
+/** Banner del link de invitación (?email=&invitation=). Nulo = sin invitación. */
+function InvitationBanner({ state }: { state: 'valid' | 'invalid' | null }) {
+  if (!state) return null;
+  return (
+    <div
+      role="status"
+      className={`mb-4 rounded-2xl border px-4 py-3 text-sm ${
+        state === 'valid'
+          ? 'border-kiwi-200 bg-kiwi-50 text-kiwi-700'
+          : 'border-amber-300 bg-amber-50 text-amber-800'
+      }`}
+    >
+      {state === 'valid'
+        ? '🥝 Te invitaron a sumar tu comercio a Kiwi — completá el registro con este correo.'
+        : 'Ese link de invitación venció o no es válido. Podés registrarte igual.'}
+    </div>
+  );
+}
+
+function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { register } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Link del correo del admin: /register?email=…&invitation=…
+  const invitedEmail = searchParams.get('email') ?? '';
+  const invitationToken = searchParams.get('invitation') ?? '';
+  const [inviteState, setInviteState] = useState<'valid' | 'invalid' | null>(null);
+
+  useEffect(() => {
+    if (!invitationToken) return;
+    let alive = true;
+    api
+      .validateInvitation(invitationToken, invitedEmail || undefined, 'merchant')
+      .then((r) => {
+        if (alive) setInviteState(r?.valid ? 'valid' : 'invalid');
+      })
+      .catch(() => {
+        if (alive) setInviteState(null);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [invitationToken, invitedEmail]);
 
   const handleSubmit = async (data: any) => {
     setLoading(true);
@@ -27,6 +68,7 @@ export default function RegisterPage() {
       };
       if (data.phone?.trim()) payload.phone = data.phone.trim();
       if (data.businessName?.trim()) payload.businessName = data.businessName.trim();
+      if (invitationToken) payload.invitationToken = invitationToken;
       await register(payload);
       router.push('/dashboard');
     } catch (err: any) {
@@ -36,6 +78,23 @@ export default function RegisterPage() {
     }
   };
 
+  return (
+    <>
+      <InvitationBanner state={inviteState} />
+      <AuthForm
+        type="register"
+        role="merchant"
+        initialEmail={invitedEmail}
+        onSubmit={handleSubmit}
+        onToggle={() => router.push('/login')}
+        loading={loading}
+        error={error || undefined}
+      />
+    </>
+  );
+}
+
+export default function RegisterPage() {
   return (
     <div className="min-h-[100dvh] bg-gradient-to-br from-kiwi-50 via-white to-kiwi-100 dark:from-surface-950 dark:via-surface-900 dark:to-surface-950 flex flex-col">
       {/* Background decorations */}
@@ -69,14 +128,11 @@ export default function RegisterPage() {
 
       {/* Main Content */}
       <main id="main-content" className="relative z-10 flex-1 flex items-center justify-center p-4">
-        <AuthForm
-          type="register"
-          role="merchant"
-          onSubmit={handleSubmit}
-          onToggle={() => router.push('/login')}
-          loading={loading}
-          error={error || undefined}
-        />
+        <div className="w-full max-w-md mx-auto">
+          <Suspense fallback={null}>
+            <RegisterForm />
+          </Suspense>
+        </div>
       </main>
 
       {/* Footer */}

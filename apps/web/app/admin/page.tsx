@@ -21,6 +21,7 @@ import {
   BadgeCheck,
   Star,
   X,
+  Mail,
 } from 'lucide-react';
 import { api, StaggerContainer, StaggerItem } from '@kiwi/ui';
 
@@ -848,6 +849,18 @@ export default function AdminDashboard() {
                 <Coins className="h-6 w-6" />
               </span>
               <span className="text-sm font-medium">Ver Pagos</span>
+            </motion.button>
+          </Link>
+          <Link href="/admin/invitaciones">
+            <motion.button
+              className="w-full p-4 rounded-xl bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/50 transition-colors"
+              whileHover={{ y: -2 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <span className="mb-2 flex justify-center">
+                <Mail className="h-7 w-7" />
+              </span>
+              <span className="text-sm font-medium">Invitar comercios / repartidores</span>
             </motion.button>
           </Link>
         </div>
