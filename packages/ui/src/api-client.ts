@@ -522,6 +522,20 @@ class ApiClient {
     return this.request<any[]>(`/delivery-zones`).catch(() => []);
   }
 
+  // ── Zonas (admin) ────────────────────────────────────────────────
+  async adminListZones() {
+    return this.request<any[]>(`/delivery-zones/all`);
+  }
+  async adminCreateZone(body: any) {
+    return this.request<any>(`/delivery-zones`, { method: 'POST', body });
+  }
+  async adminUpdateZone(id: string, body: any) {
+    return this.request<any>(`/delivery-zones/${id}`, { method: 'PUT', body });
+  }
+  async adminDeactivateZone(id: string) {
+    return this.request<any>(`/delivery-zones/${id}`, { method: 'DELETE' });
+  }
+
   /** Vitrina de mañana: qué comercios venden mañana (para la preventa). */
   async getTomorrowPreview(city = 'nicoya'): Promise<{
     items: Array<{

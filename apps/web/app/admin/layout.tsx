@@ -18,6 +18,7 @@ import {
   LogOut,
   Calculator,
   Link2,
+  MapPinned,
 } from 'lucide-react';
 import { ThemeToggle, useAuth, KiwiLogo, KiwiSlice } from '@kiwi/ui';
 
@@ -32,6 +33,7 @@ const menuItems = [
   { href: '/admin/payments/crypto', icon: Link2, label: 'Cripto pendientes' },
   { href: '/admin/simulador', icon: Calculator, label: 'Simulador' },
   { href: '/admin/reportes', icon: BarChart3, label: 'Real vs Proyección' },
+  { href: '/admin/zones', icon: MapPinned, label: 'Zonas' },
   { href: '/admin/settings', icon: Settings, label: 'Configuración' },
 ];
 
