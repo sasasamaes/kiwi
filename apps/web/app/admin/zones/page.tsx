@@ -120,11 +120,22 @@ export default function AdminZonesPage() {
     if (layerRef.current) layerRef.current.remove();
     const ll = vertices.map(([lng, lat]) => [lat, lng]);
     const layer = L.layerGroup().addTo(map);
-    ll.forEach((p: number[], i: number) =>
-      L.circleMarker(p, { radius: 5, color: '#15803d', fillColor: '#22c55e', fillOpacity: 1 })
-        .bindTooltip(String(i + 1))
-        .addTo(layer),
-    );
+    const vertexIcon = (n: number) =>
+      L.divIcon({
+        html: `<div style="width:20px;height:20px;border-radius:999px;background:#22c55e;color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);cursor:grab;">${n}</div>`,
+        className: 'zone-vertex',
+        iconSize: [20, 20],
+        iconAnchor: [10, 10],
+      });
+    // Vértices arrastrables: seleccionás un punto y lo movés para corregir.
+    ll.forEach((p: number[], i: number) => {
+      const marker = L.marker(p, { icon: vertexIcon(i + 1), draggable: true }).addTo(layer);
+      marker.bindTooltip(`Vértice ${i + 1} — arrastrá para mover`);
+      marker.on('dragend', () => {
+        const np = marker.getLatLng();
+        setVertices((prev) => prev.map((v, idx) => (idx === i ? [np.lng, np.lat] : v)));
+      });
+    });
     if (ll.length >= 2) L.polyline(ll, { color: '#22c55e' }).addTo(layer);
     if (ll.length >= 3) L.polygon(ll, { color: '#16a34a', fillOpacity: 0.25 }).addTo(layer);
     layerRef.current = layer;
@@ -402,9 +413,9 @@ export default function AdminZonesPage() {
               <p className="mb-2 text-xs text-surface-500">
                 {mode === 'point'
                   ? 'Tocá el mapa para ubicar el punto de entrega (o arrastrá el marcador).'
-                  : `Tocá el mapa para agregar vértices del polígono (${vertices.length} punto${
+                  : `Tocá el mapa para agregar vértices (${vertices.length} punto${
                       vertices.length === 1 ? '' : 's'
-                    }).`}
+                    }); arrastrá un vértice para moverlo.`}
               </p>
               <div
                 ref={mapRef}
