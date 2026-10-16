@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Pencil, Ban, RotateCcw, Check } from 'lucide-react';
 import { api, useAuth } from '@kiwi/ui';
+import { ZonesOverviewMap } from './ZonesOverviewMap';
 
 type Ring = number[][]; // [[lng,lat], …]
 
@@ -291,6 +292,44 @@ export default function AdminZonesPage() {
       </div>
 
       {msg && <p className="mb-3 text-sm text-kiwi-700 dark:text-kiwi-300">{msg}</p>}
+
+      {/* Mapa general: todas las zonas con su precio */}
+      <div className="mb-6 rounded-2xl border border-surface-200/60 dark:border-white/10 p-3">
+        <div className="mb-2 flex flex-wrap items-center gap-x-4 gap-y-1 px-1 text-xs text-surface-500 dark:text-surface-400">
+          <span className="font-medium text-surface-700 dark:text-surface-200">
+            Todas las zonas
+          </span>
+          <span className="flex items-center gap-1">
+            <i
+              className="inline-block h-2.5 w-2.5 rounded-full"
+              style={{ background: '#15803d' }}
+            />{' '}
+            ≤ ₡1000
+          </span>
+          <span className="flex items-center gap-1">
+            <i
+              className="inline-block h-2.5 w-2.5 rounded-full"
+              style={{ background: '#22c55e' }}
+            />{' '}
+            ≤ ₡2000
+          </span>
+          <span className="flex items-center gap-1">
+            <i
+              className="inline-block h-2.5 w-2.5 rounded-full"
+              style={{ background: '#f59e0b' }}
+            />{' '}
+            ≤ ₡4000
+          </span>
+          <span className="flex items-center gap-1">
+            <i
+              className="inline-block h-2.5 w-2.5 rounded-full"
+              style={{ background: '#dc2626' }}
+            />{' '}
+            &gt; ₡4000
+          </span>
+        </div>
+        <ZonesOverviewMap zones={zones} />
+      </div>
 
       <div className="overflow-hidden rounded-2xl border border-surface-200/60 dark:border-white/10">
         <table className="w-full text-sm">
