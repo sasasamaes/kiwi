@@ -1,18 +1,37 @@
 // Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useAuth, KiwiLogo, api, ZonePicker } from '@kiwi/ui';
+import { useAuth, KiwiLogo, api, ZonePicker, useInviteReferral } from '@kiwi/ui';
 import { findNearestZone } from '@kiwi/types';
 
 export default function RegisterPage() {
+  return (
+    <Suspense fallback={null}>
+      <ClientRegisterForm />
+    </Suspense>
+  );
+}
+
+function ClientRegisterForm() {
   const router = useRouter();
   const { register } = useAuth();
+  // Link del correo del admin (?email=&invitation=) + referido (?referral=).
+  const {
+    invitedEmail,
+    invitationToken,
+    inviteState,
+    referral,
+    setReferral,
+    referralOffer,
+    referralValid,
+    referralChecking,
+  } = useInviteReferral('customer');
   const [form, setForm] = useState({
     fullName: '',
-    email: '',
+    email: invitedEmail,
     password: '',
     phone: '',
     citySlug: 'nicoya',
@@ -27,6 +46,11 @@ export default function RegisterPage() {
   const [locDenied, setLocDenied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // El email del link de invitación llega después del primer render.
+  useEffect(() => {
+    if (invitedEmail) setForm((f) => (f.email ? f : { ...f, email: invitedEmail }));
+  }, [invitedEmail]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,6 +72,8 @@ export default function RegisterPage() {
         defaultAddress: form.defaultAddress.trim() || undefined,
         deliveryZone: form.deliveryZone || undefined,
         ...(gps ? { latitude: gps.lat, longitude: gps.lng } : {}),
+        ...(invitationToken ? { invitationToken } : {}),
+        ...(referral.trim() ? { referralCode: referral.trim() } : {}),
         role: 'customer',
       });
       // Opt-out de ofertas si no quiere (default ON en el server).
@@ -133,6 +159,20 @@ export default function RegisterPage() {
         <p className="text-sm text-center text-surface-500 mb-6">
           Guardá tu dirección y pedí en 1 tap
         </p>
+        {inviteState && (
+          <div
+            role="status"
+            className={`mb-4 rounded-2xl border px-4 py-3 text-sm ${
+              inviteState === 'valid'
+                ? 'border-kiwi-200 bg-kiwi-50 text-kiwi-700'
+                : 'border-amber-300 bg-amber-50 text-amber-800'
+            }`}
+          >
+            {inviteState === 'valid'
+              ? '🥝 Te invitaron a pedir con Kiwi — completá el registro con este correo.'
+              : 'Ese link de invitación venció o no es válido. Podés registrarte igual.'}
+          </div>
+        )}
         <form
           onSubmit={submit}
           className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-6 space-y-3"
@@ -207,6 +247,38 @@ export default function RegisterPage() {
             <p className="text-xs text-kiwi-700 dark:text-kiwi-300">
               📍 Elegimos tu barrio por tu ubicación (podés cambiarlo).
             </p>
+          )}
+          <input
+            value={referral}
+            onChange={(e) =>
+              setReferral(
+                e.target.value
+                  .toUpperCase()
+                  .replace(/[^A-Z0-9]/g, '')
+                  .slice(0, 20),
+              )
+            }
+            placeholder="Código de referido (opcional)"
+            autoComplete="off"
+            className="w-full rounded-xl bg-surface-100 dark:bg-surface-800 px-4 py-3 text-sm outline-none uppercase"
+          />
+          {referral.trim() !== '' && (
+            <div className="text-xs" role="status">
+              {referralChecking ? (
+                <span className="text-surface-500">Verificando código…</span>
+              ) : referralValid && referralOffer ? (
+                <span className="font-medium text-kiwi-700 dark:text-kiwi-300">
+                  🎟️ {referralOffer.title}
+                  {referralOffer.detail ? ` — ${referralOffer.detail}` : ''}
+                </span>
+              ) : referralValid ? (
+                <span className="font-medium text-kiwi-700 dark:text-kiwi-300">
+                  🎟️ Código válido
+                </span>
+              ) : (
+                <span className="text-amber-600">Ese código no existe o venció.</span>
+              )}
+            </div>
           )}
           <label className="flex items-start gap-2 text-xs text-surface-500">
             <input

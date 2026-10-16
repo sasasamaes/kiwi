@@ -71,7 +71,7 @@ export class MailService {
    */
   async sendInvitation(
     to: string,
-    role: 'merchant' | 'driver',
+    role: 'merchant' | 'driver' | 'customer',
     inviteUrl: string,
     name?: string,
   ): Promise<boolean> {
@@ -81,7 +81,7 @@ export class MailService {
     }
     const from = this.configService.get<string>('SMTP_USER');
     const greeting = name?.trim() ? `Hola ${name.trim()},` : 'Hola,';
-    const { subject, headline, body } =
+    const copy =
       role === 'merchant'
         ? {
             subject: 'Sumá tu comercio a Kiwi 🥝',
@@ -90,13 +90,22 @@ export class MailService {
               'Publicá tu menú, recibí pedidos por la app y coordiná ' +
               'repartidores sin llamadas ni enredos. El registro toma unos minutos.',
           }
-        : {
-            subject: 'Repartí con Kiwi 🛵',
-            headline: 'Te invitamos a repartir con Kiwi',
-            body:
-              'Aceptá pedidos desde tu teléfono, manejá tus horarios y ' +
-              'recibí tus ganancias por SINPE o transferencia. El registro toma unos minutos.',
-          };
+        : role === 'driver'
+          ? {
+              subject: 'Repartí con Kiwi 🛵',
+              headline: 'Te invitamos a repartir con Kiwi',
+              body:
+                'Aceptá pedidos desde tu teléfono, manejá tus horarios y ' +
+                'recibí tus ganancias por SINPE o transferencia. El registro toma unos minutos.',
+            }
+          : {
+              subject: 'Pedí tu comida con Kiwi 🥝',
+              headline: 'Te invitamos a pedir con Kiwi',
+              body:
+                'Los mejores comercios de tu ciudad en una sola app: pedí en ' +
+                '1 tap y seguí tu pedido en vivo. El registro toma un minuto.',
+            };
+    const { subject, headline, body } = copy;
     try {
       await this.transporter.sendMail({
         from: `"Kiwi" <${from}>`,
@@ -116,6 +125,36 @@ export class MailService {
       return true;
     } catch (error) {
       this.logger.error(`No se pudo enviar la invitación a ${to}: ${(error as Error)?.message}`);
+      return false;
+    }
+  }
+
+  /**
+   * Correo informativo/marketing del equipo de ventas (difusión a comercios,
+   * repartidores o clientes). El cuerpo llega en texto plano y se manda una
+   * versión html mínima. Fail-soft sin SMTP, igual que el resto.
+   */
+  async sendMarketing(to: string, subject: string, body: string): Promise<boolean> {
+    if (!this.transporter) {
+      this.logger.warn(`Marketing para ${to} no enviado: SMTP sin configurar`);
+      return false;
+    }
+    const from = this.configService.get<string>('SMTP_USER');
+    const htmlBody = String(body ?? '')
+      .split(/\n{2,}/)
+      .map((p) => `<p>${p.replace(/\n/g, '<br>')}</p>`)
+      .join('');
+    try {
+      await this.transporter.sendMail({
+        from: `"Kiwi" <${from}>`,
+        to,
+        subject,
+        text: body,
+        html: `${htmlBody}<p style="color:#888;font-size:12px">Recibís este correo porque tenés cuenta en Kiwi o nos dejaste tu contacto. Si no querés más avisos, respondé "baja".</p>`,
+      });
+      return true;
+    } catch (error) {
+      this.logger.error(`No se pudo enviar marketing a ${to}: ${(error as Error)?.message}`);
       return false;
     }
   }

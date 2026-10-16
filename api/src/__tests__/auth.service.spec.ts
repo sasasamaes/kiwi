@@ -6,6 +6,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { MailService } from '../mail/mail.service';
 import { InvitationsService } from '../invitations/invitations.service';
+import { ReferralsService } from '../referrals/referrals.service';
 import { ConflictException, HttpException, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 
@@ -61,6 +62,10 @@ describe('AuthService', () => {
             assertValidForRegister: jest.fn().mockResolvedValue(undefined),
             consumeOnRegister: jest.fn().mockResolvedValue(undefined),
           },
+        },
+        {
+          provide: ReferralsService,
+          useValue: { assertValidForRegister: jest.fn().mockResolvedValue(undefined) },
         },
       ],
     }).compile();

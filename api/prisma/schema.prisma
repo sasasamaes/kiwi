@@ -33,6 +33,10 @@ model User {
   failedLoginAttempts Int       @default(0) @map("failed_login_attempts")
   loginLockedUntil    DateTime? @map("login_locked_until")
 
+  // Código de referido con el que se registró (KIKO, WICHO, …). Opcional,
+  // se guarda en mayúsculas para contar usos por código en el admin.
+  referredByCode String? @map("referred_by_code")
+
   // Relations
   merchantProfile  MerchantProfile?
   driverProfile    DriverProfile?
@@ -47,6 +51,7 @@ model User {
   merchantFollows  MerchantFollow[]
 
   @@index([phone])
+  @@index([referredByCode])
   @@map("users")
 }
 
@@ -108,6 +113,64 @@ model Invitation {
   @@index([role, status, createdAt])
   @@index([email, role])
   @@map("invitations")
+}
+
+// Códigos de referido (KIKO, WICHO, …): el que se registra puede anotar uno
+// y ver la oferta que le toca según su app. `offers` es
+// { customer?: {title, detail}, driver?: {…}, merchant?: {…} } — cada rol con
+// su oferta y el admin los edita sin migraciones.
+model ReferralCode {
+  id        String   @id @default(uuid())
+  code      String   @unique
+  active    Boolean  @default(true)
+  offers    Json     @default("{}")
+  createdBy String?  @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("referral_codes")
+}
+
+// Registro de cada envío masivo/informativo del equipo de ventas (email y/o
+// WhatsApp): qué se mandó, a cuántos y quién lo disparó. Auditoría mínima.
+model BroadcastLog {
+  id        String   @id @default(uuid())
+  channel   String // email | whatsapp | both
+  audience  String // merchant | driver | customer | mixed | custom
+  subject   String?
+  preview   String? // primeros 200 caracteres del cuerpo
+  count     Int      @default(0)
+  failed    Int      @default(0)
+  sentBy    String?  @map("sent_by")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@map("broadcast_logs")
+}
+
+// Visita de venta en campo: presentación que se hizo en cada negocio, con
+// qué se habló y cuándo volver (seguimiento). El vendedor la carga desde el
+// teléfono o el admin; si deja invitación queda el link a ella.
+model SalesVisit {
+  id           String    @id @default(uuid())
+  businessName String    @map("business_name")
+  contactName  String?   @map("contact_name")
+  email        String?
+  phone        String?
+  address      String?
+  citySlug     String    @default("nicoya") @map("city_slug")
+  // pending | interested | invited | registered | not_interested
+  outcome      String    @default("pending")
+  notes        String?
+  followUpAt   DateTime? @map("follow_up_at")
+  invitationId String?   @map("invitation_id")
+  createdBy    String?   @map("created_by")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  @@index([outcome, followUpAt])
+  @@index([businessName])
+  @@map("sales_visits")
 }
 
 enum Role {

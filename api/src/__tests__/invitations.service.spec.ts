@@ -6,6 +6,7 @@ import { ConfigService } from '@nestjs/config';
 import { InvitationsService } from '../invitations/invitations.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
+import { WhatsappService } from '../whatsapp/whatsapp.service';
 
 const hashOf = (raw: string) => createHash('sha256').update(raw).digest('hex');
 const rawFromUrl = (url: string) => new URL(url).searchParams.get('invitation') ?? '';
@@ -34,18 +35,25 @@ describe('InvitationsService', () => {
       },
     };
     mail = { sendInvitation: jest.fn().mockResolvedValue(true) };
+    const whatsapp = {
+      sendText: jest.fn().mockResolvedValue(true),
+      sendTemplate: jest.fn().mockResolvedValue(true),
+      templateFor: jest.fn().mockReturnValue(undefined),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         InvitationsService,
         { provide: PrismaService, useValue: prisma },
         { provide: MailService, useValue: mail },
+        { provide: WhatsappService, useValue: whatsapp },
         {
           provide: ConfigService,
           useValue: {
             get: jest.fn((key: string) => {
               if (key === 'WEB_URL') return 'https://web.kiwi.test';
               if (key === 'DRIVER_URL') return 'https://driver.kiwi.test';
+              if (key === 'CLIENT_URL') return 'https://client.kiwi.test';
               return undefined;
             }),
           },
@@ -104,6 +112,22 @@ describe('InvitationsService', () => {
       expect(mail.sendInvitation).toHaveBeenCalledWith(
         'repa@ejemplo.com',
         'driver',
+        res.inviteUrl,
+        undefined,
+      );
+    });
+
+    it('el link de cliente apunta a la app cliente', async () => {
+      prisma.invitation.create.mockImplementation(({ data }: any) =>
+        Promise.resolve({ id: 'inv-c', ...data, sentAt: null, createdAt: new Date() }),
+      );
+      prisma.invitation.update.mockResolvedValue({ id: 'inv-c', sentAt: new Date() });
+
+      const res = await service.create({ email: 'cli@ejemplo.com', role: 'customer' });
+      expect(res.inviteUrl.startsWith('https://client.kiwi.test/register?')).toBe(true);
+      expect(mail.sendInvitation).toHaveBeenCalledWith(
+        'cli@ejemplo.com',
+        'customer',
         res.inviteUrl,
         undefined,
       );
@@ -175,6 +199,48 @@ describe('InvitationsService', () => {
 
       prisma.invitation.findUnique.mockResolvedValue({ id: 'x', status: 'accepted' });
       await expect(service.resend('x')).rejects.toBeInstanceOf(BadRequestException);
+    });
+  });
+
+  describe('sendWhatsapp', () => {
+    it('manda por WhatsApp con link nuevo al teléfono anotado', async () => {
+      const row = {
+        id: 'inv-wa',
+        email: 'soda@ejemplo.com',
+        phone: '7219-9768',
+        name: 'Soda',
+        role: 'merchant',
+        status: 'pending',
+        tokenHash: 'old',
+        expiresAt: new Date(Date.now() + 10000),
+      };
+      prisma.invitation.findUnique.mockResolvedValue(row);
+      prisma.invitation.update.mockImplementation(({ data }: any) =>
+        Promise.resolve({ ...row, ...data }),
+      );
+
+      const res = await service.sendWhatsapp('inv-wa');
+      expect(res.waSent).toBe(true);
+      expect(res.inviteUrl).toContain('invitation=');
+      // Rota el token igual que reenviar.
+      expect(prisma.invitation.update).toHaveBeenCalledWith({
+        where: { id: 'inv-wa' },
+        data: expect.objectContaining({ tokenHash: expect.any(String) }),
+      });
+    });
+
+    it('exige teléfono y estado pendiente', async () => {
+      prisma.invitation.findUnique.mockResolvedValue({
+        id: 'x',
+        status: 'pending',
+        phone: null,
+        email: 'a@x.com',
+        role: 'merchant',
+      });
+      await expect(service.sendWhatsapp('x')).rejects.toBeInstanceOf(BadRequestException);
+
+      prisma.invitation.findUnique.mockResolvedValue(null);
+      await expect(service.sendWhatsapp('nope')).rejects.toBeInstanceOf(NotFoundException);
     });
   });
 

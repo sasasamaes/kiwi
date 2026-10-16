@@ -19,6 +19,13 @@ export interface AuthFormProps {
   error?: string;
   /** Pre-llena el email (links de invitación del admin: ?email=). */
   initialEmail?: string;
+  /** Código de referido (controlado por la página, con ?referral=). */
+  referral?: string;
+  onReferralChange?: (code: string) => void;
+  /** Oferta del código para esta app (la página la valida con debounce). */
+  referralOffer?: { title: string; detail: string } | null;
+  referralValid?: boolean | null;
+  referralChecking?: boolean;
 }
 
 export interface AuthFormData {
@@ -28,6 +35,8 @@ export interface AuthFormData {
   phone?: string;
   businessName?: string;
   vehicleType?: string;
+  /** Código de referido tipeado (opcional). */
+  referralCode?: string;
   /** Consentimiento explícito (solo registro; obligatorio para enviar). */
   acceptedTerms?: boolean;
 }
@@ -41,6 +50,11 @@ export function AuthForm({
   loading = false,
   error,
   initialEmail = '',
+  referral = '',
+  onReferralChange,
+  referralOffer,
+  referralValid,
+  referralChecking = false,
 }: AuthFormProps) {
   const [formData, setFormData] = useState<AuthFormData>({
     email: initialEmail,
@@ -60,7 +74,7 @@ export function AuthForm({
       setConsentError(true);
       return;
     }
-    onSubmit({ ...formData, acceptedTerms });
+    onSubmit({ ...formData, acceptedTerms, referralCode: referral.trim() || undefined });
   };
 
   const updateField = (field: keyof AuthFormData, value: string) => {
@@ -314,6 +328,52 @@ export function AuthForm({
               </button>
             </div>
           </div>
+
+          {/* Código de referido (registro): KIKO, WICHO, … Muestra la oferta
+              de ESTA app mientras se tipea (la página la valida). */}
+          {type === 'register' && onReferralChange && (
+            <div>
+              <label
+                htmlFor="auth-referral"
+                className="block text-sm font-medium text-surface-700 mb-2"
+              >
+                Código de referido <span className="font-normal text-surface-400">(opcional)</span>
+              </label>
+              <motion.input
+                id="auth-referral"
+                type="text"
+                value={referral}
+                onChange={(e) =>
+                  onReferralChange(
+                    e.target.value
+                      .toUpperCase()
+                      .replace(/[^A-Z0-9]/g, '')
+                      .slice(0, 20),
+                  )
+                }
+                className="w-full px-4 py-3 rounded-xl bg-white/50 border border-surface-200 text-surface-800 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-kiwi-600 focus:border-transparent transition-all uppercase"
+                placeholder="KIKO"
+                autoComplete="off"
+                whileFocus={{ scale: 1.02 }}
+              />
+              {referral.trim() !== '' && (
+                <div className="mt-2 text-xs" role="status">
+                  {referralChecking ? (
+                    <span className="text-surface-400">Verificando código…</span>
+                  ) : referralValid && referralOffer ? (
+                    <span className="font-medium text-kiwi-700">
+                      🎟️ {referralOffer.title}
+                      {referralOffer.detail ? ` — ${referralOffer.detail}` : ''}
+                    </span>
+                  ) : referralValid ? (
+                    <span className="font-medium text-kiwi-700">🎟️ Código válido</span>
+                  ) : (
+                    <span className="text-amber-600">Ese código no existe o venció.</span>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Consentimiento (registro): Ley 8968 exige consentimiento informado
               explícito para tratar datos personales. Casilla sin pre-marcar. */}

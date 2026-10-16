@@ -31,6 +31,10 @@ import { FeatureFlagsModule } from './feature-flags/feature-flags.module';
 import { MailModule } from './mail/mail.module';
 import { ZonesModule } from './zones/zones.module';
 import { InvitationsModule } from './invitations/invitations.module';
+import { ReferralsModule } from './referrals/referrals.module';
+import { WhatsappModule } from './whatsapp/whatsapp.module';
+import { MarketingModule } from './marketing/marketing.module';
+import { VisitsModule } from './visits/visits.module';
 
 @Module({
   imports: [
@@ -78,6 +82,10 @@ import { InvitationsModule } from './invitations/invitations.module';
     AdsModule,
     CustomersModule,
     InvitationsModule,
+    ReferralsModule,
+    WhatsappModule,
+    MarketingModule,
+    VisitsModule,
   ],
 })
 export class AppModule {}

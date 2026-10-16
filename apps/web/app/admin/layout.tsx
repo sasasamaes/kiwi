@@ -20,6 +20,9 @@ import {
   Link2,
   MapPinned,
   Mail,
+  Megaphone,
+  TicketPercent,
+  MapPin,
 } from 'lucide-react';
 import { ThemeToggle, useAuth, KiwiLogo, KiwiSlice } from '@kiwi/ui';
 
@@ -27,6 +30,9 @@ const menuItems = [
   { href: '/admin', icon: BarChart3, label: 'Dashboard', exact: true },
   { href: '/admin/users', icon: Users, label: 'Usuarios' },
   { href: '/admin/invitaciones', icon: Mail, label: 'Invitaciones' },
+  { href: '/admin/visitas', icon: MapPin, label: 'Visitas' },
+  { href: '/admin/difusion', icon: Megaphone, label: 'Difusión' },
+  { href: '/admin/referidos', icon: TicketPercent, label: 'Referidos' },
   { href: '/admin/orders', icon: Package, label: 'Pedidos' },
   { href: '/admin/credits', icon: Wallet, label: 'Crédito prepago' },
   { href: '/admin/ratings', icon: Star, label: 'Comentarios' },

@@ -222,6 +222,8 @@ class ApiClient {
     longitude?: number;
     /** Token del link de invitación del admin (opcional). */
     invitationToken?: string;
+    /** Código de referido (KIKO, WICHO, …; opcional). */
+    referralCode?: string;
   }) {
     const result = await this.request<any>('/auth/register', {
       method: 'POST',
@@ -342,7 +344,7 @@ class ApiClient {
     email: string;
     phone?: string;
     name?: string;
-    role: 'merchant' | 'driver';
+    role: 'merchant' | 'driver' | 'customer';
   }): Promise<{
     invitation: {
       id: string;
@@ -363,7 +365,7 @@ class ApiClient {
   }
 
   async listInvitations(params?: {
-    role?: 'merchant' | 'driver';
+    role?: 'merchant' | 'driver' | 'customer';
     status?: 'pending' | 'accepted' | 'revoked';
     take?: number;
     skip?: number;
@@ -381,6 +383,15 @@ class ApiClient {
     return this.request<any>(`/invitations/${id}/resend`, { method: 'POST' });
   }
 
+  /** Manda la invitación por WhatsApp (Kapso) con link nuevo. */
+  async sendInvitationWhatsapp(id: string): Promise<{
+    invitation: any;
+    inviteUrl: string;
+    waSent: boolean;
+  }> {
+    return this.request<any>(`/invitations/${id}/whatsapp`, { method: 'POST' });
+  }
+
   async revokeInvitation(id: string) {
     return this.request<any>(`/invitations/${id}`, { method: 'DELETE' });
   }
@@ -395,6 +406,150 @@ class ApiClient {
     if (email) q.append('email', email);
     if (role) q.append('role', role);
     return this.request<any>(`/invitations/validate?${q.toString()}`);
+  }
+
+  // ============================================
+  // 🎟️ REFERIDOS (admin + validación pública)
+  // ============================================
+
+  /** Oferta del código para ESA app (público, para mostrar al tipear). */
+  async validateReferral(
+    code: string,
+    role: 'merchant' | 'driver' | 'customer',
+  ): Promise<{ valid: boolean; code?: string; offer?: { title: string; detail: string } | null }> {
+    const q = new URLSearchParams({ code, role });
+    return this.request<any>(`/referrals/validate?${q.toString()}`);
+  }
+
+  async listReferrals(): Promise<{
+    referrals: Array<{
+      id: string;
+      code: string;
+      active: boolean;
+      offers: Record<string, { title: string; detail: string }>;
+      uses: number;
+      createdAt: string;
+    }>;
+  }> {
+    return this.request<any>('/referrals');
+  }
+
+  async createReferral(data: {
+    code: string;
+    offers?: Record<string, { title?: string; detail?: string }>;
+    active?: boolean;
+  }) {
+    return this.request<any>('/referrals', { method: 'POST', body: data });
+  }
+
+  async updateReferral(
+    id: string,
+    data: { offers?: Record<string, { title?: string; detail?: string }>; active?: boolean },
+  ) {
+    return this.request<any>(`/referrals/${id}`, { method: 'PUT', body: data });
+  }
+
+  async setReferralActive(id: string, active: boolean) {
+    return this.request<any>(`/referrals/${id}/active`, { method: 'PUT', body: { active } });
+  }
+
+  // ============================================
+  // 📣 DIFUSIÓN (marketing ventas, admin)
+  // ============================================
+
+  async getMarketingTemplates(): Promise<{
+    templates: Array<{
+      id: string;
+      role: string;
+      label: string;
+      subject: string;
+      body: string;
+      registerUrl: string;
+    }>;
+  }> {
+    return this.request<any>('/marketing/templates');
+  }
+
+  async previewBroadcast(data: {
+    channel: string;
+    roles: string[];
+    extraEmails?: string[];
+    extraPhones?: string[];
+    subject: string;
+    body: string;
+    userIds?: string[];
+  }): Promise<{ count: number }> {
+    return this.request<any>('/marketing/preview', { method: 'POST', body: data });
+  }
+
+  async sendMarketingBroadcast(data: {
+    channel: 'email' | 'whatsapp' | 'both';
+    roles: string[];
+    extraEmails?: string[];
+    extraPhones?: string[];
+    subject: string;
+    body: string;
+    userIds?: string[];
+  }): Promise<{ sent: number; failed: number; logId: string }> {
+    return this.request<any>('/marketing/send', { method: 'POST', body: data });
+  }
+
+  async getBroadcastHistory(take = 30): Promise<{
+    logs: Array<{
+      id: string;
+      channel: string;
+      audience: string;
+      subject: string | null;
+      preview: string | null;
+      count: number;
+      failed: number;
+      createdAt: string;
+    }>;
+  }> {
+    return this.request<any>(`/marketing/history?take=${take}`);
+  }
+
+  // ============================================
+  // 🧭 VISITAS DE VENTA (admin)
+  // ============================================
+
+  async createVisit(data: {
+    businessName: string;
+    contactName?: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+    outcome?: string;
+    notes?: string;
+    followUpAt?: string;
+    invitationId?: string;
+  }) {
+    return this.request<any>('/visits', { method: 'POST', body: data });
+  }
+
+  async listVisits(params?: {
+    outcome?: string;
+    search?: string;
+    followUp?: string;
+    take?: number;
+    skip?: number;
+  }) {
+    const q = new URLSearchParams();
+    if (params?.outcome) q.append('outcome', params.outcome);
+    if (params?.search) q.append('search', params.search);
+    if (params?.followUp) q.append('followUp', params.followUp);
+    if (params?.take != null) q.append('take', String(params.take));
+    if (params?.skip != null) q.append('skip', String(params.skip));
+    const qs = q.toString();
+    return this.request<{ visits: any[]; total: number }>(`/visits${qs ? `?${qs}` : ''}`);
+  }
+
+  async updateVisit(id: string, data: any) {
+    return this.request<any>(`/visits/${id}`, { method: 'PUT', body: data });
+  }
+
+  async deleteVisit(id: string) {
+    return this.request<any>(`/visits/${id}`, { method: 'DELETE' });
   }
 
   /** Activa/apaga cobro con tarjeta/SINPE de un comercio (tras KYC de Onvo). */

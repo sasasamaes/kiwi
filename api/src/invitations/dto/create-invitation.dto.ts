@@ -41,9 +41,9 @@ export class CreateInvitationDto {
   @MaxLength(120)
   name?: string;
 
-  @ApiProperty({ enum: ['merchant', 'driver'] })
-  @IsEnum(['merchant', 'driver'], {
-    message: 'role debe ser "merchant" (comercio) o "driver" (repartidor)',
+  @ApiProperty({ enum: ['merchant', 'driver', 'customer'] })
+  @IsEnum(['merchant', 'driver', 'customer'], {
+    message: 'role debe ser "merchant" (comercio), "driver" (repartidor) o "customer" (cliente)',
   })
   role: string;
 }

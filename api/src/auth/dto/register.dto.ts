@@ -145,4 +145,12 @@ export class RegisterDto {
   @IsOptional()
   @IsString()
   invitationToken?: string;
+
+  // Código de referido (KIKO, WICHO, …). Opcional: se valida y se guarda en
+  // mayúsculas para contar usos por código.
+  @ApiPropertyOptional({ example: 'KIKO', description: 'Código de referido (opcional)' })
+  @EmptyToUndefined()
+  @IsOptional()
+  @IsString()
+  referralCode?: string;
 }

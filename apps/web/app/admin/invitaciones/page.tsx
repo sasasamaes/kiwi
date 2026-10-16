@@ -1,12 +1,25 @@
 // Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Store, Bike, Send, Copy, Check, RefreshCw, X, Mail, Loader2 } from 'lucide-react';
+import {
+  Store,
+  Bike,
+  Users,
+  Send,
+  Copy,
+  Check,
+  RefreshCw,
+  X,
+  Mail,
+  Loader2,
+  MessageCircle,
+} from 'lucide-react';
 import { api } from '@kiwi/ui';
 
-type Role = 'merchant' | 'driver';
+type Role = 'merchant' | 'driver' | 'customer';
 type StatusFilter = 'pending' | 'accepted' | 'all';
 
 interface Invitation {
@@ -34,19 +47,44 @@ const statusLabel = (status: string) => {
 };
 
 export default function InvitacionesPage() {
-  const [role, setRole] = useState<Role>('merchant');
+  return (
+    <Suspense fallback={null}>
+      <InvitacionesInner />
+    </Suspense>
+  );
+}
+
+/** Lee ?email=&phone=&name=&role= (atajo desde Visitas) una sola vez. */
+function usePrefill() {
+  const searchParams = useSearchParams();
+  const roleParam = searchParams.get('role');
+  return {
+    role: (roleParam === 'driver' || roleParam === 'customer' ? roleParam : 'merchant') as Role,
+    email: searchParams.get('email') ?? '',
+    phone: searchParams.get('phone') ?? '',
+    name: searchParams.get('name') ?? '',
+  };
+}
+
+function InvitacionesInner() {
+  const prefill = usePrefill();
+  const [role, setRole] = useState<Role>(prefill.role);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('pending');
   const [items, setItems] = useState<Invitation[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [name, setName] = useState('');
+  const [email, setEmail] = useState(prefill.email);
+  const [phone, setPhone] = useState(prefill.phone);
+  const [name, setName] = useState(prefill.name);
   const [sending, setSending] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
-  const [lastLink, setLastLink] = useState<{ url: string; emailSent: boolean } | null>(null);
+  const [lastLink, setLastLink] = useState<{
+    url: string;
+    sent: boolean;
+    channel: 'email' | 'whatsapp';
+  } | null>(null);
   const [copied, setCopied] = useState(false);
   const [acting, setActing] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
@@ -89,7 +127,7 @@ export default function InvitacionesPage() {
         name: name.trim() || undefined,
         role,
       });
-      setLastLink({ url: res.inviteUrl, emailSent: res.emailSent });
+      setLastLink({ url: res.inviteUrl, sent: res.emailSent, channel: 'email' });
       setNotice({
         ok: res.emailSent,
         text: res.emailSent
@@ -127,7 +165,7 @@ export default function InvitacionesPage() {
     setNotice(null);
     try {
       const res = await api.resendInvitation(id);
-      setLastLink({ url: res.inviteUrl, emailSent: res.emailSent });
+      setLastLink({ url: res.inviteUrl, sent: res.emailSent, channel: 'email' });
       setNotice({
         ok: res.emailSent,
         text: res.emailSent
@@ -137,6 +175,26 @@ export default function InvitacionesPage() {
       load(role, statusFilter);
     } catch (e: any) {
       setNotice({ ok: false, text: e?.message || 'No se pudo reenviar' });
+    } finally {
+      setActing(null);
+    }
+  };
+
+  const handleWhatsapp = async (id: string) => {
+    setActing(id);
+    setNotice(null);
+    try {
+      const res = await api.sendInvitationWhatsapp(id);
+      setLastLink({ url: res.inviteUrl, sent: res.waSent, channel: 'whatsapp' });
+      setNotice({
+        ok: res.waSent,
+        text: res.waSent
+          ? 'Invitación enviada por WhatsApp con un link nuevo (el anterior ya no vale)'
+          : 'Link renovado, pero el WhatsApp NO salió (Kapso sin configurar o fuera de ventana). Copiá el link de abajo.',
+      });
+      load(role, statusFilter);
+    } catch (e: any) {
+      setNotice({ ok: false, text: e?.message || 'No se pudo enviar por WhatsApp' });
     } finally {
       setActing(null);
     }
@@ -157,6 +215,7 @@ export default function InvitacionesPage() {
   };
 
   const isMerchant = role === 'merchant';
+  const isDriver = role === 'driver';
 
   return (
     <div className="space-y-6">
@@ -176,6 +235,7 @@ export default function InvitacionesPage() {
           [
             { value: 'merchant', label: 'Kiwi Comercio', Icon: Store },
             { value: 'driver', label: 'Kiwi Repartidores', Icon: Bike },
+            { value: 'customer', label: 'Clientes', Icon: Users },
           ] as const
         ).map((tab) => (
           <motion.button
@@ -218,8 +278,10 @@ export default function InvitacionesPage() {
           animate={{ opacity: 1, y: 0 }}
         >
           <p className="text-sm font-medium text-kiwi-700 dark:text-kiwi-300 mb-2">
-            {lastLink.emailSent
-              ? 'Link enviado por correo (también lo podés copiar):'
+            {lastLink.sent
+              ? lastLink.channel === 'whatsapp'
+                ? 'Link enviado por WhatsApp (también lo podés copiar):'
+                : 'Link enviado por correo (también lo podés copiar):'
               : 'Copiá este link y mandalo manual:'}
           </p>
           <div className="flex items-center gap-2">
@@ -245,7 +307,11 @@ export default function InvitacionesPage() {
       >
         <h3 className="flex items-center gap-2 text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-1">
           <Send className="h-5 w-5" />
-          {isMerchant ? 'Invitar un comercio' : 'Invitar un repartidor'}
+          {isMerchant
+            ? 'Invitar un comercio'
+            : isDriver
+              ? 'Invitar un repartidor'
+              : 'Invitar un cliente'}
         </h3>
         <p className="text-xs text-surface-500 dark:text-surface-400 mb-4">
           Pedí el correo en el local. El teléfono es opcional (solo para contactarlo después).
@@ -421,6 +487,17 @@ export default function InvitacionesPage() {
                                 />
                                 Reenviar
                               </button>
+                              {inv.phone && (
+                                <button
+                                  onClick={() => handleWhatsapp(inv.id)}
+                                  disabled={acting === inv.id}
+                                  title={`Enviar por WhatsApp al ${inv.phone}`}
+                                  className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition-colors disabled:opacity-50"
+                                >
+                                  <MessageCircle className="h-3.5 w-3.5" />
+                                  WhatsApp
+                                </button>
+                              )}
                               <button
                                 onClick={() => handleRevoke(inv.id)}
                                 disabled={acting === inv.id}

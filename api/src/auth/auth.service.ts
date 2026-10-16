@@ -16,6 +16,7 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { MailService } from '../mail/mail.service';
 import { InvitationsService } from '../invitations/invitations.service';
+import { ReferralsService } from '../referrals/referrals.service';
 import { findDeliveryZone } from '../orders/delivery-zones';
 import { normalizeCRPhone } from '../common/phone';
 import { isMerchantCategory, tagMerchantCategory } from '../merchants/merchant-category';
@@ -42,6 +43,7 @@ export class AuthService {
     private configService: ConfigService,
     private mailService: MailService,
     private invitationsService: InvitationsService,
+    private referralsService: ReferralsService,
   ) {
     // Periodic cleanup so entries for abandoned accounts don't accumulate.
     setInterval(
@@ -138,6 +140,12 @@ export class AuthService {
       await this.invitationsService.assertValidForRegister(invitationToken, emailNorm, role);
     }
 
+    // Código de referido: se valida ANTES (nada de cuenta creada con 400).
+    const referralCode = await this.referralsService.assertValidForRegister(
+      (registerDto as any).referralCode,
+      role,
+    );
+
     // Email único global; teléfono único POR ROL (la misma persona puede
     // tener cuenta cliente + comercio + repartidor con el mismo número).
     const existingEmail = emailNorm
@@ -225,6 +233,7 @@ export class AuthService {
         passwordHash,
         role: role as any,
         status: 'active',
+        ...(referralCode ? { referredByCode: referralCode } : {}),
         ...profileData,
       },
       include: {

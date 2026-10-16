@@ -66,6 +66,15 @@ export class InvitationsController {
     return this.invitationsService.resend(id);
   }
 
+  @Post(':id/whatsapp')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Enviar invitación por WhatsApp con link nuevo (admin)' })
+  async sendWhatsapp(@Param('id') id: string) {
+    return this.invitationsService.sendWhatsapp(id);
+  }
+
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')

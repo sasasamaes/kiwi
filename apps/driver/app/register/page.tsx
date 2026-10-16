@@ -1,11 +1,11 @@
 // Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { AuthForm, useAuth, api } from '@kiwi/ui';
+import { AuthForm, useAuth, useInviteReferral } from '@kiwi/ui';
 
 /** Banner del link de invitación (?email=&invitation=). Nulo = sin invitación. */
 function InvitationBanner({ state }: { state: 'valid' | 'invalid' | null }) {
@@ -28,31 +28,21 @@ function InvitationBanner({ state }: { state: 'valid' | 'invalid' | null }) {
 
 function DriverRegisterForm() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { register } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Link del correo del admin: /register?email=…&invitation=…
-  const invitedEmail = searchParams.get('email') ?? '';
-  const invitationToken = searchParams.get('invitation') ?? '';
-  const [inviteState, setInviteState] = useState<'valid' | 'invalid' | null>(null);
-
-  useEffect(() => {
-    if (!invitationToken) return;
-    let alive = true;
-    api
-      .validateInvitation(invitationToken, invitedEmail || undefined, 'driver')
-      .then((r) => {
-        if (alive) setInviteState(r?.valid ? 'valid' : 'invalid');
-      })
-      .catch(() => {
-        if (alive) setInviteState(null);
-      });
-    return () => {
-      alive = false;
-    };
-  }, [invitationToken, invitedEmail]);
+  // Link del correo del admin (?email=&invitation=) + referido (?referral=).
+  const {
+    invitedEmail,
+    invitationToken,
+    inviteState,
+    referral,
+    setReferral,
+    referralOffer,
+    referralValid,
+    referralChecking,
+  } = useInviteReferral('driver');
 
   const handleSubmit = async (data: any) => {
     setLoading(true);
@@ -68,6 +58,7 @@ function DriverRegisterForm() {
       };
       if (data.phone?.trim()) payload.phone = data.phone.trim();
       if (invitationToken) payload.invitationToken = invitationToken;
+      if (data.referralCode) payload.referralCode = data.referralCode;
       await register(payload);
       router.push('/');
     } catch (err: any) {
@@ -84,6 +75,11 @@ function DriverRegisterForm() {
         type="register"
         role="driver"
         initialEmail={invitedEmail}
+        referral={referral}
+        onReferralChange={setReferral}
+        referralOffer={referralOffer}
+        referralValid={referralValid}
+        referralChecking={referralChecking}
         onSubmit={handleSubmit}
         onToggle={() => router.push('/login')}
         loading={loading}
