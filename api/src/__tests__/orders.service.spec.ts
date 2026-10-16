@@ -23,6 +23,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { OrdersService } from '../orders/orders.service';
+import { ZonesService } from '../zones/zones.service';
 import { SettingsService } from '../settings/settings.service';
 import { EventsGateway } from '../events/events.gateway';
 import { DriversService } from '../drivers/drivers.service';
@@ -80,6 +81,17 @@ describe('OrdersService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         OrdersService,
+        {
+          provide: ZonesService,
+          useValue: {
+            list: jest.fn().mockResolvedValue([]),
+            listAll: jest.fn().mockResolvedValue([]),
+            create: jest.fn(),
+            update: jest.fn(),
+            deactivate: jest.fn(),
+            resolvePriceAt: jest.fn().mockResolvedValue(null),
+          },
+        },
         { provide: PrismaService, useValue: prisma },
         { provide: EventsGateway, useValue: mockEventsGateway },
         { provide: DriversService, useValue: { getLocation: jest.fn() } },

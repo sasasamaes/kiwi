@@ -2,6 +2,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
 import { OrdersService } from '../orders/orders.service';
+import { ZonesService } from '../zones/zones.service';
 import { EventsGateway } from '../events/events.gateway';
 import { DriversService } from '../drivers/drivers.service';
 import { GeocodingService } from '../geocoding/geocoding.service';
@@ -182,6 +183,17 @@ describe('OrdersService targeting de order:new', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         OrdersService,
+        {
+          provide: ZonesService,
+          useValue: {
+            list: jest.fn().mockResolvedValue([]),
+            listAll: jest.fn().mockResolvedValue([]),
+            create: jest.fn(),
+            update: jest.fn(),
+            deactivate: jest.fn(),
+            resolvePriceAt: jest.fn().mockResolvedValue(null),
+          },
+        },
         { provide: PrismaService, useValue: prisma },
         { provide: EventsGateway, useValue: gateway },
         { provide: DriversService, useValue: { getLocation: jest.fn() } },

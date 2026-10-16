@@ -16,7 +16,13 @@ import { GeocodingService } from '../geocoding/geocoding.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { ProximityService, haversineKm } from './proximity.service';
 import { SettingsService } from '../settings/settings.service';
-import { findDeliveryZone, findNearestZone, detectDeliveryZoneFromText } from './delivery-zones';
+import {
+  findDeliveryZone,
+  findNearestZone,
+  detectDeliveryZoneFromText,
+  NICOYA_DELIVERY_ZONES,
+} from './delivery-zones';
+import { ZonesService } from '../zones/zones.service';
 import { parseScheduledCR, toCRDateKey } from '../common/costa-rica-time';
 import { offeredToday } from '../merchants/opening-hours';
 import { normalizeCRPhone } from '../common/phone';
@@ -70,6 +76,7 @@ export class OrdersService {
     private proximity: ProximityService,
     private notificationsService: NotificationsService,
     private settingsService: SettingsService,
+    private zonesService: ZonesService,
     @Optional()
     @Inject(ImageUploadService)
     private readonly imageUpload?: ImageUploadService,
@@ -483,12 +490,22 @@ export class OrdersService {
     let deliveryZone: string | null = null;
     let zoneBase: number | null = null;
     if (data.deliveryZone != null && String(data.deliveryZone).trim() !== '') {
-      const zone = findDeliveryZone(data.deliveryZone);
+      // Fuente de verdad: zonas en la DB (editables desde el admin). Si la DB
+      // todavía no tiene zonas (seed pendiente), fallback al catálogo en código.
+      const dbZones = await this.zonesService.list();
+      const source: Array<{ id: string; label: string; price: number }> = dbZones.length
+        ? dbZones
+        : NICOYA_DELIVERY_ZONES;
+      const wanted = String(data.deliveryZone).trim();
+      const wantedLower = wanted.toLowerCase();
+      const zone =
+        source.find((z) => z.id === wanted) ??
+        source.find((z) => z.label.trim().toLowerCase() === wantedLower);
       if (!zone) {
         throw new BadRequestException('Barrio de entrega inválido');
       }
       deliveryZone = zone.id;
-      zoneBase = zone.price;
+      zoneBase = Number(zone.price);
     }
 
     // Colones enteros: SINPE/efectivo no aceptan fracciones y las sumas

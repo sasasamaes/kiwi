@@ -10,6 +10,7 @@ import { ProximityModule } from './proximity.module';
 import { SettingsModule } from '../settings/settings.module';
 import { ImageUploadService } from '../menu/image-upload.service';
 import { AssignmentSweeper } from './assignment-sweeper.service';
+import { ZonesModule } from '../zones/zones.module';
 
 @Module({
   // NotificationsService llega vía NotificationsForwardModule (@Global).
@@ -20,6 +21,7 @@ import { AssignmentSweeper } from './assignment-sweeper.service';
     GeocodingModule,
     ProximityModule,
     SettingsModule,
+    ZonesModule,
   ],
   providers: [OrdersService, ImageUploadService, AssignmentSweeper],
   controllers: [OrdersController],
