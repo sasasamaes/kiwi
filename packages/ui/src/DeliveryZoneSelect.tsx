@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 'use client';
 
-import { NICOYA_DELIVERY_ZONES } from '@kiwi/types';
+import { useDeliveryZones } from './useDeliveryZones';
 
 interface DeliveryZoneSelectProps {
   value: string;
@@ -20,7 +20,7 @@ export function DeliveryZoneSelect({
   onChange,
   id = 'delivery-zone',
 }: DeliveryZoneSelectProps) {
-  const zones = [...NICOYA_DELIVERY_ZONES].sort((a, b) => a.label.localeCompare(b.label, 'es-CR'));
+  const zones = [...useDeliveryZones()].sort((a, b) => a.label.localeCompare(b.label, 'es-CR'));
   return (
     <div>
       <label htmlFor={id} className="block text-sm text-surface-500 mb-1">

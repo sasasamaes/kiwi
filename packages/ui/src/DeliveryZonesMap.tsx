@@ -4,7 +4,7 @@
 import 'leaflet/dist/leaflet.css';
 import { useEffect, useRef, useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
-import { NICOYA_DELIVERY_ZONES } from '@kiwi/types';
+import { useDeliveryZones } from './useDeliveryZones';
 
 interface DeliveryZonesMapProps {
   selectedId?: string;
@@ -47,6 +47,7 @@ export function DeliveryZonesMap({
   const [ready, setReady] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
+  const zones = useDeliveryZones();
 
   useEffect(() => {
     if (typeof window === 'undefined' || !mapRef.current || mapInstanceRef.current) return;
@@ -108,7 +109,7 @@ export function DeliveryZonesMap({
     markersRef.current.forEach((m) => m.remove());
     markersRef.current = [];
 
-    for (const z of NICOYA_DELIVERY_ZONES) {
+    for (const z of zones) {
       if (!Number.isFinite(z.latitude) || !Number.isFinite(z.longitude)) continue;
       const color = tierColor(z.price);
       const selected = z.id === selectedId;
@@ -138,12 +139,12 @@ export function DeliveryZonesMap({
 
     // Si el comercio ya eligió zona en el select, llevar el mapa hasta ella.
     if (selectedId) {
-      const sel = NICOYA_DELIVERY_ZONES.find((z) => z.id === selectedId);
+      const sel = zones.find((z) => z.id === selectedId);
       if (sel && Number.isFinite(sel.latitude) && Number.isFinite(sel.longitude)) {
         mapInstanceRef.current.setView([sel.latitude, sel.longitude], 13, { animate: true });
       }
     }
-  }, [ready, selectedId]);
+  }, [ready, selectedId, zones]);
 
   if (mapError) {
     return (

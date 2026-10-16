@@ -517,6 +517,11 @@ class ApiClient {
     return this.request<any>(`/menu/merchant/${merchantId}/items${params}`);
   }
 
+  /** Zonas de entrega (DB, editables desde el admin). [] si falla → fallback. */
+  async getDeliveryZones() {
+    return this.request<any[]>(`/delivery-zones`).catch(() => []);
+  }
+
   /** Vitrina de mañana: qué comercios venden mañana (para la preventa). */
   async getTomorrowPreview(city = 'nicoya'): Promise<{
     items: Array<{

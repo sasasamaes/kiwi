@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, Check, X } from 'lucide-react';
-import { NICOYA_DELIVERY_ZONES } from '@kiwi/types';
+import { useDeliveryZones } from './useDeliveryZones';
 
 interface ZonePickerProps {
   value: string;
@@ -18,7 +18,7 @@ interface ZonePickerProps {
  */
 export function ZonePicker({ value, onChange }: ZonePickerProps) {
   const [open, setOpen] = useState(false);
-  const zones = [...NICOYA_DELIVERY_ZONES].sort((a, b) => a.label.localeCompare(b.label, 'es-CR'));
+  const zones = [...useDeliveryZones()].sort((a, b) => a.label.localeCompare(b.label, 'es-CR'));
   const selected = zones.find((z) => z.id === value);
 
   const pick = (id: string) => {
