@@ -49,6 +49,7 @@ export default function AdminZonesPage() {
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [vertices, setVertices] = useState<Ring>([]); // [[lng,lat]]
   const [showForm, setShowForm] = useState(false);
+  const [initKey, setInitKey] = useState(0);
   // Modo de edición del mapa: mover el punto de entrega o dibujar el polígono.
   const [mode, setMode] = useState<'point' | 'polygon'>('point');
   const modeRef = useRef<'point' | 'polygon'>('point');
@@ -56,6 +57,7 @@ export default function AdminZonesPage() {
     modeRef.current = mode;
   }, [mode]);
   const pointMarkerRef = useRef<any>(null);
+  const [mapReady, setMapReady] = useState(false);
 
   const mapRef = useRef<HTMLDivElement>(null);
   const mapObj = useRef<any>(null);
@@ -106,11 +108,12 @@ export default function AdminZonesPage() {
         }
       });
       mapObj.current = map;
+      setMapReady(true);
     })();
     return () => {
       cancelled = true;
     };
-  }, [showForm]);
+  }, [showForm, initKey]);
 
   // Redibuja polígono + marcadores cuando cambian los vértices.
   useEffect(() => {
@@ -162,12 +165,38 @@ export default function AdminZonesPage() {
       });
       pointMarkerRef.current = marker;
     }
-  }, [vertices, showForm, form.latitude, form.longitude]);
+  }, [vertices, showForm, form.latitude, form.longitude, mapReady]);
+
+  // Al abrir el editor (mapa listo): encuadrar el polígono o centrar en el punto.
+  useEffect(() => {
+    const L = LRef.current;
+    const map = mapObj.current;
+    if (!mapReady || !L || !map) return;
+    if (vertices.length >= 2) {
+      const bounds = L.latLngBounds(vertices.map(([lng, lat]) => [lat, lng]));
+      map.fitBounds(bounds, { padding: [30, 30], maxZoom: 16 });
+    } else {
+      const lat = Number(form.latitude);
+      const lng = Number(form.longitude);
+      if (
+        Number.isFinite(lat) &&
+        Number.isFinite(lng) &&
+        form.latitude !== '' &&
+        form.longitude !== ''
+      ) {
+        map.setView([lat, lng], 15);
+      }
+    }
+    // Solo al quedar listo el mapa (evita re-centrar mientras editás).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapReady]);
+
   const destroyMap = () => {
     mapObj.current?.remove?.();
     mapObj.current = null;
     layerRef.current = null;
     LRef.current = null;
+    setMapReady(false);
   };
 
   const openCreate = () => {
@@ -175,6 +204,7 @@ export default function AdminZonesPage() {
     setVertices([]);
     setMsg(null);
     setShowForm(true);
+    setInitKey((k) => k + 1);
   };
 
   const openEdit = (z: Zone) => {
@@ -191,6 +221,7 @@ export default function AdminZonesPage() {
     setVertices(firstRing(z.geometry) ?? []);
     setMsg(null);
     setShowForm(true);
+    setInitKey((k) => k + 1);
   };
 
   const save = async () => {
