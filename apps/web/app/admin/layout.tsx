@@ -89,7 +89,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <div className="min-h-[100dvh] bg-bg-light dark:bg-surface-950 flex">
       {/* Sidebar */}
       <motion.aside
-        className={`fixed left-0 top-0 h-full bg-white dark:bg-surface-900 border-r border-surface-200 dark:border-surface-700 z-50 ${
+        className={`fixed left-0 top-0 h-full flex flex-col bg-white dark:bg-surface-900 border-r border-surface-200 dark:border-surface-700 z-50 ${
           sidebarOpen ? 'w-64' : 'w-20'
         } transition-all duration-300`}
         initial={{ x: -100 }}
@@ -118,7 +118,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
 
         {/* Navigation */}
-        <nav className="p-4">
+        <nav className="flex-1 overflow-y-auto p-4">
           <ul className="space-y-2">
             {menuItems.map((item) => {
               const ItemIcon = item.icon as any;
@@ -155,15 +155,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </ul>
         </nav>
 
-        {/* Toggle Button */}
-        <button
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="absolute bottom-4 left-1/2 -translate-x-1/2 p-2 rounded-full bg-surface-100 dark:bg-surface-800 hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors"
-        >
-          <motion.span animate={{ rotate: sidebarOpen ? 0 : 180 }} className="text-xl">
-            ←
-          </motion.span>
-        </button>
+        {/* Toggle Button: en flujo normal al pie (el absoluto pisaba el último item) */}
+        <div className="border-t border-surface-200 dark:border-surface-700 p-3 flex justify-center">
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            aria-label={sidebarOpen ? 'Contraer menú' : 'Expandir menú'}
+            className="p-2 rounded-full bg-surface-100 dark:bg-surface-800 hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors"
+          >
+            <motion.span animate={{ rotate: sidebarOpen ? 0 : 180 }} className="text-xl block">
+              ←
+            </motion.span>
+          </button>
+        </div>
       </motion.aside>
 
       {/* Main Content */}

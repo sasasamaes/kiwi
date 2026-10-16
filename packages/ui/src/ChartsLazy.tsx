@@ -28,6 +28,8 @@ import { motion } from 'framer-motion';
 
 const COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
 
+import { fmtDayShort, fmtDayLong } from './chartDates';
+
 interface ChartProps {
   data: any[];
   height?: number;
@@ -49,10 +51,8 @@ export function LineChartComponent({ data, height = 300, className = '' }: Chart
             dataKey="date"
             stroke="#71717a"
             fontSize={12}
-            tickFormatter={(value) => {
-              const date = new Date(Number(value));
-              return date.toLocaleDateString('es-CR', { day: '2-digit', month: 'short' });
-            }}
+            minTickGap={24}
+            tickFormatter={(value) => fmtDayShort(value)}
           />
           <YAxis stroke="#71717a" fontSize={12} />
           <Tooltip
@@ -62,14 +62,7 @@ export function LineChartComponent({ data, height = 300, className = '' }: Chart
               borderRadius: '12px',
               color: '#fafafa',
             }}
-            labelFormatter={(value) => {
-              const date = new Date(Number(value));
-              return date.toLocaleDateString('es-CR', {
-                weekday: 'long',
-                day: 'numeric',
-                month: 'long',
-              });
-            }}
+            labelFormatter={(value) => fmtDayLong(value)}
           />
           <Line
             type="monotone"
@@ -106,10 +99,8 @@ export function AreaChartComponent({ data, height = 300, className = '' }: Chart
             dataKey="date"
             stroke="#71717a"
             fontSize={12}
-            tickFormatter={(value) => {
-              const date = new Date(Number(value));
-              return date.toLocaleDateString('es-CR', { day: '2-digit', month: 'short' });
-            }}
+            minTickGap={24}
+            tickFormatter={(value) => fmtDayShort(value)}
           />
           <YAxis
             stroke="#71717a"
@@ -124,14 +115,7 @@ export function AreaChartComponent({ data, height = 300, className = '' }: Chart
               color: '#fafafa',
             }}
             formatter={(value) => [`₡${Number(value ?? 0).toLocaleString()}`, 'Ingresos']}
-            labelFormatter={(value) => {
-              const date = new Date(Number(value));
-              return date.toLocaleDateString('es-CR', {
-                weekday: 'long',
-                day: 'numeric',
-                month: 'long',
-              });
-            }}
+            labelFormatter={(value) => fmtDayLong(value)}
           />
           <Area
             type="monotone"
@@ -197,6 +181,9 @@ export function PieChartComponent({
     percent,
     name,
   }: any) => {
+    // Las porciones chicas (<6%) no llevan etiqueta: el texto blanco se sale
+    // del segmento y se monta sobre el resto (el valor igual está en el tooltip).
+    if (!Number.isFinite(percent) || percent < 0.06) return null;
     const RADIAN = Math.PI / 180;
     const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
@@ -243,6 +230,7 @@ export function PieChartComponent({
           <Legend
             verticalAlign="bottom"
             height={36}
+            wrapperStyle={{ paddingTop: 8, lineHeight: '24px' }}
             formatter={(value) => (
               <span className="text-surface-600 dark:text-surface-400">{value}</span>
             )}
@@ -280,10 +268,8 @@ export function MultiLineChartComponent({
             dataKey="date"
             stroke="#71717a"
             fontSize={12}
-            tickFormatter={(value) => {
-              const date = new Date(Number(value));
-              return date.toLocaleDateString('es-CR', { day: '2-digit', month: 'short' });
-            }}
+            minTickGap={24}
+            tickFormatter={(value) => fmtDayShort(value)}
           />
           <YAxis stroke="#71717a" fontSize={12} />
           <Tooltip

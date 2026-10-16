@@ -176,7 +176,7 @@ export default function PaymentsPage() {
             Por método
           </h3>
           {methodChart.length > 0 ? (
-            <PieChartComponent data={methodChart} height={200} />
+            <PieChartComponent data={methodChart} height={250} />
           ) : (
             <p className="py-10 text-center text-sm text-surface-400">Sin datos</p>
           )}
