@@ -16,6 +16,7 @@ import {
   Pencil,
   Trash2,
   X,
+  Store,
 } from 'lucide-react';
 import {
   AnimatedButton,
@@ -63,6 +64,21 @@ export default function MenuManagementPage() {
   const [newCategoryName, setNewCategoryName] = useState('');
   const [duplicatingItem, setDuplicatingItem] = useState<string | null>(null);
 
+  // Kioskos/puestos dentro del comercio (mercadito con varios productores).
+  const [kiosks, setKiosks] = useState<
+    Array<{ id: string; name: string; description: string | null; active: boolean }>
+  >([]);
+  const [showKioskManager, setShowKioskManager] = useState(false);
+  const [newKioskName, setNewKioskName] = useState('');
+  const [newKioskDesc, setNewKioskDesc] = useState('');
+  const [editingKiosk, setEditingKiosk] = useState<{
+    id: string;
+    name: string;
+    description: string | null;
+  } | null>(null);
+  const [savingKiosk, setSavingKiosk] = useState(false);
+  const [kioskError, setKioskError] = useState<string | null>(null);
+
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/login');
@@ -80,11 +96,20 @@ export default function MenuManagementPage() {
     }
   }, []);
 
+  const fetchKiosks = useCallback(async () => {
+    try {
+      setKiosks(await api.getMyKiosks());
+    } catch (error) {
+      console.error('Failed to fetch kiosks:', error);
+    }
+  }, []);
+
   useEffect(() => {
     if (user) {
       fetchMenuItems();
+      fetchKiosks();
     }
-  }, [user, fetchMenuItems]);
+  }, [user, fetchMenuItems, fetchKiosks]);
 
   const handleCreate = async (data: any) => {
     await api.createMenuItem(data);
@@ -152,6 +177,62 @@ export default function MenuManagementPage() {
     }
   };
 
+  const handleCreateKiosk = async () => {
+    if (!newKioskName.trim()) return;
+    setSavingKiosk(true);
+    setKioskError(null);
+    try {
+      await api.createKiosk({
+        name: newKioskName.trim(),
+        description: newKioskDesc.trim() || undefined,
+      });
+      setNewKioskName('');
+      setNewKioskDesc('');
+      await fetchKiosks();
+    } catch (e: any) {
+      setKioskError(e?.message || 'No se pudo crear el kiosko');
+    } finally {
+      setSavingKiosk(false);
+    }
+  };
+
+  const handleSaveKioskEdit = async () => {
+    if (!editingKiosk || !editingKiosk.name.trim()) return;
+    setSavingKiosk(true);
+    setKioskError(null);
+    try {
+      await api.updateKiosk(editingKiosk.id, {
+        name: editingKiosk.name.trim(),
+        description: editingKiosk.description?.trim() || null,
+      });
+      setEditingKiosk(null);
+      await fetchKiosks();
+    } catch (e: any) {
+      setKioskError(e?.message || 'No se pudo guardar');
+    } finally {
+      setSavingKiosk(false);
+    }
+  };
+
+  const handleDeleteKiosk = async (id: string) => {
+    if (!window.confirm('¿Borrar este kiosko? Sus productos quedan sin kiosko.')) return;
+    try {
+      await api.deleteKiosk(id);
+      await fetchKiosks();
+      await fetchMenuItems();
+    } catch (e: any) {
+      setKioskError(e?.message || 'No se pudo borrar');
+    }
+  };
+
+  const handleToggleKiosk = async (k: { id: string; active: boolean }) => {
+    try {
+      await api.updateKiosk(k.id, { active: !k.active });
+      await fetchKiosks();
+    } catch (e: any) {
+      setKioskError(e?.message || 'No se pudo cambiar');
+    }
+  };
   const handleDuplicate = async (item: MenuItem) => {
     setDuplicatingItem(item.id);
     try {
@@ -163,6 +244,7 @@ export default function MenuManagementPage() {
         image: item.image,
         isPopular: item.isPopular,
         isAvailable: item.isAvailable,
+        kioskId: (item as any).kioskId ?? undefined,
         // Clonar también días y modificadores; sin esto un duplicado los pierde.
         availableDays: (item as any).availableDays ?? [],
         variants: (item.variantGroups ?? []).map((g) => ({
@@ -315,6 +397,14 @@ export default function MenuManagementPage() {
               >
                 📂
               </motion.button>
+              <motion.button
+                className="p-2 rounded-xl bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400 hover:bg-surface-200 dark:hover:bg-surface-600 transition-colors"
+                onClick={() => setShowKioskManager(!showKioskManager)}
+                title="Kioskos del mercadito"
+                whileTap={{ scale: 0.95 }}
+              >
+                <Store className="h-5 w-5" />
+              </motion.button>
             </div>
           </div>
         </div>
@@ -464,6 +554,7 @@ export default function MenuManagementPage() {
                         image: editingItem.image,
                         isPopular: editingItem.isPopular,
                         isAvailable: editingItem.isAvailable,
+                        kioskId: (editingItem as any).kioskId ?? null,
                         // CRÍTICO: sin esto, guardar una edición borraba todos
                         // los modificadores (el update es replace-all).
                         variants: editingItem.variantGroups ?? [],
@@ -474,6 +565,7 @@ export default function MenuManagementPage() {
                 onCancel={closeForm}
                 isEditing={!!editingItem}
                 categories={getAllCategories().filter((c) => c !== 'Todos')}
+                kiosks={kiosks.map((k) => ({ id: k.id, name: k.name }))}
               />
             </motion.div>
           )}
@@ -825,6 +917,11 @@ export default function MenuManagementPage() {
                         <div className="flex items-center justify-between mt-3">
                           <span className="text-xs text-surface-500 dark:text-surface-400">
                             {item.category}
+                            {(item as any).kiosk?.name && (
+                              <span className="ml-2 rounded-full bg-purple-100 dark:bg-purple-900/40 px-2 py-0.5 font-medium text-purple-700 dark:text-purple-300">
+                                🏪 {(item as any).kiosk.name}
+                              </span>
+                            )}
                           </span>
 
                           {/* Actions */}
@@ -919,6 +1016,168 @@ export default function MenuManagementPage() {
                                 <Trash2 className="h-4 w-4 inline" /> Eliminar
                               </AnimatedButton>
                             </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    {/* Kiosk Manager */}
+                    <AnimatePresence>
+                      {showKioskManager && (
+                        <motion.div
+                          className="mb-6 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-6"
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">
+                              🏪 Kioskos del mercadito
+                            </h3>
+                            <motion.button
+                              onClick={() => setShowKioskManager(false)}
+                              className="text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                            >
+                              ✕
+                            </motion.button>
+                          </div>
+                          <p className="text-xs text-surface-500 dark:text-surface-400 mb-4">
+                            Cada puesto con su historia (cómo hacen el producto día a día). El
+                            cliente pide de varios kioskos y todo te llega en un solo pedido.
+                          </p>
+                          <div className="grid gap-2 sm:grid-cols-[1fr_2fr_auto] mb-4">
+                            <input
+                              type="text"
+                              value={newKioskName}
+                              onChange={(e) => setNewKioskName(e.target.value)}
+                              placeholder="Nombre (ej. Kiosko Doña Ana)"
+                              maxLength={80}
+                              className="rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-2 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20 transition-all"
+                            />
+                            <input
+                              type="text"
+                              value={newKioskDesc}
+                              onChange={(e) => setNewKioskDesc(e.target.value)}
+                              placeholder="Historia (ej. Cuajada artesanal con leche de Nicoya…)"
+                              maxLength={500}
+                              className="rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-2 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20 transition-all"
+                              onKeyPress={(e) => e.key === 'Enter' && handleCreateKiosk()}
+                            />
+                            <AnimatedButton
+                              variant="gradient"
+                              size="sm"
+                              onClick={handleCreateKiosk}
+                              disabled={!newKioskName.trim() || savingKiosk}
+                            >
+                              ➕
+                            </AnimatedButton>
+                          </div>
+                          {kioskError && <p className="mb-3 text-sm text-red-500">{kioskError}</p>}
+                          <div className="space-y-2">
+                            {kiosks.length === 0 && (
+                              <p className="text-sm text-surface-400">Sin kioskos todavía.</p>
+                            )}
+                            {kiosks.map((k) => (
+                              <div
+                                key={k.id}
+                                className={`rounded-xl border px-4 py-3 ${
+                                  k.active
+                                    ? 'border-surface-200 dark:border-surface-700'
+                                    : 'border-surface-200 dark:border-surface-700 opacity-60'
+                                }`}
+                              >
+                                {editingKiosk?.id === k.id ? (
+                                  <div className="grid gap-2">
+                                    <input
+                                      type="text"
+                                      value={editingKiosk.name}
+                                      onChange={(e) =>
+                                        setEditingKiosk({ ...editingKiosk, name: e.target.value })
+                                      }
+                                      maxLength={80}
+                                      className="rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-2 text-surface-800 dark:text-surface-100 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20"
+                                    />
+                                    <textarea
+                                      value={editingKiosk.description ?? ''}
+                                      onChange={(e) =>
+                                        setEditingKiosk({
+                                          ...editingKiosk,
+                                          description: e.target.value,
+                                        })
+                                      }
+                                      placeholder="Historia del puesto…"
+                                      maxLength={2000}
+                                      rows={2}
+                                      className="rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-2 text-sm text-surface-800 dark:text-surface-100 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20"
+                                    />
+                                    <div className="flex gap-2">
+                                      <AnimatedButton
+                                        variant="gradient"
+                                        size="sm"
+                                        onClick={handleSaveKioskEdit}
+                                        disabled={savingKiosk}
+                                      >
+                                        Guardar
+                                      </AnimatedButton>
+                                      <AnimatedButton
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setEditingKiosk(null)}
+                                      >
+                                        Cancelar
+                                      </AnimatedButton>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-3">
+                                    <div className="min-w-0 flex-1">
+                                      <p className="font-medium text-surface-800 dark:text-surface-100">
+                                        🏪 {k.name}
+                                        {!k.active && (
+                                          <span className="ml-2 text-xs text-surface-400">
+                                            (pausado)
+                                          </span>
+                                        )}
+                                      </p>
+                                      {k.description && (
+                                        <p className="truncate text-xs text-surface-500 dark:text-surface-400">
+                                          {k.description}
+                                        </p>
+                                      )}
+                                    </div>
+                                    <button
+                                      onClick={() =>
+                                        setEditingKiosk({
+                                          id: k.id,
+                                          name: k.name,
+                                          description: k.description,
+                                        })
+                                      }
+                                      className="p-1.5 text-surface-400 hover:text-kiwi-600"
+                                      title="Editar"
+                                    >
+                                      <Pencil className="h-4 w-4" />
+                                    </button>
+                                    <button
+                                      onClick={() => handleToggleKiosk(k)}
+                                      className="px-2 py-1 text-xs font-medium text-surface-500 hover:text-kiwi-700"
+                                      title={k.active ? 'Pausar' : 'Activar'}
+                                    >
+                                      {k.active ? 'Pausar' : 'Activar'}
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteKiosk(k.id)}
+                                      className="p-1.5 text-surface-400 hover:text-red-500"
+                                      title="Borrar (los productos quedan)"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
                           </div>
                         </motion.div>
                       )}

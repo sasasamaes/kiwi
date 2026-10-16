@@ -317,6 +317,7 @@ export class OrdersService {
       quantity: number;
       notes?: string;
       selectedVariants: Array<{ group: string; option: string; priceDelta: number }>;
+      kioskName?: string;
     }> = [];
     let productsTotal = 0;
     if (kind === 'food' && incomingItems.length > 0) {
@@ -326,6 +327,7 @@ export class OrdersService {
       const menuItems = menuIds.length
         ? await this.prisma.menuItem.findMany({
             where: { id: { in: menuIds }, merchantId: merchantProfile.id },
+            include: { kiosk: { select: { name: true } } },
           })
         : [];
       const menuById = new Map(menuItems.map((m) => [m.id, m]));
@@ -461,6 +463,8 @@ export class OrdersService {
             quantity,
             notes: item.notes || undefined,
             selectedVariants,
+            // Snapshot del kiosko dueño (lista de compras del comercio).
+            kioskName: (menuItem as any).kiosk?.name ?? undefined,
           });
         } else {
           const name = String(item?.name ?? '').trim();
@@ -783,6 +787,7 @@ export class OrdersService {
                     quantity: item.quantity,
                     notes: item.notes || undefined,
                     selectedVariants: item.selectedVariants,
+                    kioskName: item.kioskName || undefined,
                   })),
                 },
               }
@@ -1413,7 +1418,7 @@ export class OrdersService {
         include: {
           merchant: { select: { businessName: true } },
           driver: { select: { fullName: true } },
-          items: { select: { name: true, quantity: true } },
+          items: { select: { name: true, quantity: true, kioskName: true } },
         },
       }),
       this.prisma.order.aggregate({
@@ -1713,7 +1718,15 @@ export class OrdersService {
         },
       },
       include: {
-        items: { select: { name: true, quantity: true, notes: true, selectedVariants: true } },
+        items: {
+          select: {
+            name: true,
+            quantity: true,
+            notes: true,
+            selectedVariants: true,
+            kioskName: true,
+          },
+        },
         driver: { select: { id: true, fullName: true, vehicleType: true } },
         payment: { select: { status: true, method: true } },
       },

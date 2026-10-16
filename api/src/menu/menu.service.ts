@@ -97,11 +97,19 @@ export class MenuService {
       where,
       orderBy: [{ sortOrder: 'asc' }, { isPopular: 'desc' }, { name: 'asc' }],
       include: {
+        kiosk: { select: { id: true, name: true } },
         variantGroups: {
           orderBy: { sortOrder: 'asc' },
           include: { options: { orderBy: { sortOrder: 'asc' } } },
         },
       },
+    });
+
+    // Kioskos activos del comercio (secciones del menú con su historia).
+    const kiosks = await (this.prisma as any).merchantKiosk.findMany({
+      where: { merchantId, active: true },
+      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+      select: { id: true, name: true, description: true, imageUrl: true, sortOrder: true },
     });
 
     // Días disponibles: lo que no se ofrece hoy no se muestra (menú del día,
@@ -128,12 +136,20 @@ export class MenuService {
         offeredTomorrow:
           !offeredToday((item as any).availableDays ?? []) &&
           ((item as any).availableDays ?? []).includes(tomorrow),
+        kiosk: (item as any).kiosk ?? null,
         variantGroups: (item as any).variantGroups.map((g: any) => ({
           ...g,
           options: g.options.map((o: any) => ({ ...o, priceDelta: Number(o.priceDelta) })),
         })),
       })),
       categories: ['Todos', ...categories],
+      kiosks: kiosks.map((k: any) => ({
+        id: k.id,
+        name: k.name,
+        description: k.description,
+        imageUrl: k.imageUrl,
+        sortOrder: k.sortOrder,
+      })),
     };
   }
 
@@ -213,6 +229,7 @@ export class MenuService {
       where: { merchantId: merchant.id },
       orderBy: [{ category: 'asc' }, { sortOrder: 'asc' }, { name: 'asc' }],
       include: {
+        kiosk: { select: { id: true, name: true } },
         variantGroups: {
           orderBy: { sortOrder: 'asc' },
           include: { options: { orderBy: { sortOrder: 'asc' } } },
@@ -228,6 +245,131 @@ export class MenuService {
         options: g.options.map((o: any) => ({ ...o, priceDelta: Number(o.priceDelta) })),
       })),
     }));
+  }
+
+  /**
+   * Kioskos del comercio dueño (panel). Incluye inactivos para poder
+   * reactivarlos; la app cliente solo ve activos.
+   */
+  async listMyKiosks(userId: string) {
+    const merchant = await this.prisma.merchantProfile.findUnique({ where: { userId } });
+    if (!merchant) throw new NotFoundException('Perfil de comerciante no encontrado');
+    return (this.prisma as any).merchantKiosk.findMany({
+      where: { merchantId: merchant.id },
+      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+    });
+  }
+
+  private static normalizeKioskInput(data: any): {
+    name?: string;
+    description?: null | string;
+    imageUrl?: null | string;
+    active?: boolean;
+    sortOrder?: number;
+  } {
+    const out: Record<string, any> = {};
+    if (data.name !== undefined) {
+      const name = typeof data.name === 'string' ? data.name.trim() : '';
+      if (!name || name.length > 80) {
+        throw new BadRequestException('Nombre del kiosko requerido (máx 80 caracteres)');
+      }
+      out.name = name;
+    }
+    if (data.description !== undefined) {
+      if (data.description != null && typeof data.description !== 'string') {
+        throw new BadRequestException('Historia inválida');
+      }
+      const d = data.description?.trim() || null;
+      if (d && d.length > 2000) throw new BadRequestException('Historia muy larga (máx 2000)');
+      out.description = d;
+    }
+    if (data.imageUrl !== undefined) {
+      if (data.imageUrl != null && typeof data.imageUrl !== 'string') {
+        throw new BadRequestException('Imagen inválida');
+      }
+      const u = data.imageUrl?.trim() || null;
+      if (u && (u.length > 256 || !/^https:\/\//.test(u))) {
+        throw new BadRequestException('Imagen inválida (URL https corta)');
+      }
+      out.imageUrl = u;
+    }
+    if (data.active !== undefined) out.active = Boolean(data.active);
+    if (data.sortOrder !== undefined) {
+      const n = Math.floor(Number(data.sortOrder));
+      if (!Number.isFinite(n) || n < 0 || n > 9999) {
+        throw new BadRequestException('Orden inválido');
+      }
+      out.sortOrder = n;
+    }
+    return out;
+  }
+
+  async createKiosk(userId: string, data: any) {
+    const merchant = await this.prisma.merchantProfile.findUnique({ where: { userId } });
+    if (!merchant) throw new NotFoundException('Perfil de comerciante no encontrado');
+    const input = MenuService.normalizeKioskInput(data);
+    if (!input.name) throw new BadRequestException('Nombre del kiosko requerido');
+    const count = await (this.prisma as any).merchantKiosk.count({
+      where: { merchantId: merchant.id },
+    });
+    if (count >= 30) throw new BadRequestException('Máximo 30 kioskos por comercio');
+    const last = await (this.prisma as any).merchantKiosk.findFirst({
+      where: { merchantId: merchant.id },
+      orderBy: { sortOrder: 'desc' },
+    });
+    return (this.prisma as any).merchantKiosk.create({
+      data: {
+        merchantId: merchant.id,
+        name: input.name,
+        description: input.description ?? null,
+        imageUrl: input.imageUrl ?? null,
+        active: input.active ?? true,
+        sortOrder: input.sortOrder ?? (last?.sortOrder ?? -1) + 1,
+      },
+    });
+  }
+
+  async updateKiosk(userId: string, kioskId: string, data: any) {
+    const merchant = await this.prisma.merchantProfile.findUnique({ where: { userId } });
+    if (!merchant) throw new NotFoundException('Perfil de comerciante no encontrado');
+    const kiosk: any = await (this.prisma as any).merchantKiosk.findUnique({
+      where: { id: kioskId },
+    });
+    if (!kiosk || kiosk.merchantId !== merchant.id) {
+      throw new ForbiddenException('No puedes editar este kiosko');
+    }
+    const input = MenuService.normalizeKioskInput(data);
+    if (Object.keys(input).length === 0) throw new BadRequestException('Nada que actualizar');
+    return (this.prisma as any).merchantKiosk.update({ where: { id: kioskId }, data: input });
+  }
+
+  async deleteKiosk(userId: string, kioskId: string) {
+    const merchant = await this.prisma.merchantProfile.findUnique({ where: { userId } });
+    if (!merchant) throw new NotFoundException('Perfil de comerciante no encontrado');
+    const kiosk: any = await (this.prisma as any).merchantKiosk.findUnique({
+      where: { id: kioskId },
+    });
+    if (!kiosk || kiosk.merchantId !== merchant.id) {
+      throw new ForbiddenException('No puedes borrar este kiosko');
+    }
+    // Los productos quedan (kioskId → null por SetNull).
+    await (this.prisma as any).merchantKiosk.delete({ where: { id: kioskId } });
+    return { deleted: true };
+  }
+
+  /**
+   * Valida que el kiosko exista y sea del comercio. ''/null = sin kiosko
+   * (directo del comercio). Otros dueños → 403 (no enumerar por error).
+   */
+  private async resolveKioskId(merchantId: string, kioskId: unknown): Promise<string | null> {
+    if (kioskId === undefined || kioskId === null || String(kioskId).trim() === '') return null;
+    const kiosk: any = await (this.prisma as any).merchantKiosk.findUnique({
+      where: { id: String(kioskId) },
+    });
+    if (!kiosk || kiosk.merchantId !== merchantId) {
+      throw new ForbiddenException('Kiosko inválido');
+    }
+    return kiosk.id;
   }
 
   /**
@@ -412,6 +554,7 @@ export class MenuService {
 
     const input = MenuService.normalizeItemInput(data, { requireAll: true });
     const variants = MenuService.normalizeVariants(data);
+    const kioskId = await this.resolveKioskId(merchant.id, (data as any).kioskId);
 
     // Get next sort order
     const lastItem = await this.prisma.menuItem.findFirst({
@@ -427,6 +570,7 @@ export class MenuService {
         price: input.price,
         image: input.image,
         category: input.category,
+        kioskId,
         isPopular: input.isPopular || false,
         isAvailable: input.isAvailable ?? true,
         sortOrder: (lastItem?.sortOrder || 0) + 1,
@@ -476,6 +620,9 @@ export class MenuService {
 
     const input = MenuService.normalizeItemInput(data, { requireAll: false });
     const variants = MenuService.normalizeVariants(data);
+    if ((data as any).kioskId !== undefined) {
+      input.kioskId = await this.resolveKioskId(merchant.id, (data as any).kioskId);
+    }
     if (Object.keys(input).length === 0 && variants === undefined) {
       throw new BadRequestException('Nada que actualizar');
     }

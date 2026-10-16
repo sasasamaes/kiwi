@@ -30,9 +30,34 @@ describe('MenuService', () => {
   });
 
   beforeEach(async () => {
+    const tx: any = {
+      menuItemVariantGroup: {
+        deleteMany: jest.fn(),
+        createMany: jest.fn(),
+        findMany: jest.fn().mockResolvedValue([]),
+      },
+      menuItemVariantOption: { createMany: jest.fn() },
+      menuItem: { update: jest.fn().mockImplementation(async ({ data }: any) => data) },
+    };
     prisma = {
       merchantProfile: { findUnique: jest.fn() },
-      menuItem: { findMany: jest.fn(), findFirst: jest.fn(), create: jest.fn() },
+      menuItem: {
+        findMany: jest.fn(),
+        findFirst: jest.fn(),
+        findUnique: jest.fn(),
+        create: jest.fn(),
+        update: jest.fn(),
+      },
+      $transaction: jest.fn(async (fn: any) => fn(tx)),
+      merchantKiosk: {
+        findMany: jest.fn().mockResolvedValue([]),
+        findFirst: jest.fn(),
+        findUnique: jest.fn(),
+        count: jest.fn().mockResolvedValue(0),
+        create: jest.fn(),
+        update: jest.fn(),
+        delete: jest.fn(),
+      },
     };
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -98,6 +123,67 @@ describe('MenuService', () => {
           where: expect.objectContaining({ availableDays: { has: expect.any(Number) } }),
         }),
       );
+    });
+  });
+
+  describe('kioskos', () => {
+    it('el menú público trae kioskos activos y el kiosko de cada item', async () => {
+      prisma.menuItem.findMany.mockResolvedValue([
+        row({ id: 'a', kioskId: 'k1', kiosk: { id: 'k1', name: 'Kiosko Ana' } }),
+        row({ id: 'b', kioskId: null, kiosk: null }),
+      ]);
+      prisma.merchantKiosk.findMany.mockResolvedValue([
+        { id: 'k1', name: 'Kiosko Ana', description: 'Historia', imageUrl: null, sortOrder: 0 },
+      ]);
+      const res = await service.getMenuItems('merchant-1');
+      expect(res.kiosks).toEqual([
+        { id: 'k1', name: 'Kiosko Ana', description: 'Historia', imageUrl: null, sortOrder: 0 },
+      ]);
+      expect(res.items.find((i: any) => i.id === 'a').kiosk).toEqual({
+        id: 'k1',
+        name: 'Kiosko Ana',
+      });
+    });
+
+    it('crear kiosko valida nombre y topea en 30', async () => {
+      await expect(service.createKiosk('u1', { name: '' })).rejects.toThrow('requerido');
+      prisma.merchantKiosk.count.mockResolvedValue(30);
+      await expect(service.createKiosk('u1', { name: 'Otro' })).rejects.toThrow('Máximo 30');
+    });
+
+    it('asignar item a kiosko ajeno se rechaza', async () => {
+      prisma.merchantKiosk.findUnique.mockResolvedValue({ id: 'k9', merchantId: 'otro' });
+      await expect(
+        service.createMenuItem('u1', {
+          name: 'X',
+          category: 'C',
+          price: 100,
+          kioskId: 'k9',
+        }),
+      ).rejects.toThrow('Kiosko inválido');
+    });
+
+    it('crear y editar item acepta kiosko propio', async () => {
+      prisma.merchantKiosk.findUnique.mockResolvedValue({ id: 'k1', merchantId: 'merchant-1' });
+      prisma.menuItem.findFirst.mockResolvedValue(null);
+      prisma.menuItem.create.mockImplementation(async ({ data }: any) => ({ id: 'n', ...data }));
+      const created: any = await service.createMenuItem('u1', {
+        name: 'Cuajada',
+        category: 'Mercadito',
+        price: 2000,
+        kioskId: 'k1',
+      });
+      expect(created.kioskId).toBe('k1');
+
+      prisma.menuItem.findUnique.mockResolvedValue({ id: 'n', merchantId: 'merchant-1' });
+      const updated: any = await service.updateMenuItem('u1', 'n', { kioskId: null });
+      expect(updated.kioskId).toBeNull();
+    });
+
+    it('borrar kiosko ajeno se rechaza', async () => {
+      prisma.merchantKiosk.findUnique.mockResolvedValue({ id: 'k9', merchantId: 'otro' });
+      await expect(service.deleteKiosk('u1', 'k9')).rejects.toThrow('No puedes borrar');
+      expect(prisma.merchantKiosk.delete).not.toHaveBeenCalled();
     });
   });
 });

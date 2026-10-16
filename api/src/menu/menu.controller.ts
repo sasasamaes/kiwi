@@ -134,4 +134,44 @@ export class MenuController {
   async deleteMenuItem(@CurrentUser() user: any, @Param('itemId') itemId: string) {
     return this.menuService.deleteMenuItem(user.sub, itemId);
   }
+
+  // ============================================
+  // 🏪 KIOSKOS (puestos dentro del comercio)
+  // ============================================
+
+  @Get('my/kiosks')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('merchant')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Listar mis kioskos (panel del comercio)' })
+  async listMyKiosks(@CurrentUser() user: any) {
+    return this.menuService.listMyKiosks(user.sub);
+  }
+
+  @Post('my/kiosks')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('merchant')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Crear kiosko' })
+  async createKiosk(@CurrentUser() user: any, @Body() data: any) {
+    return this.menuService.createKiosk(user.sub, data);
+  }
+
+  @Put('my/kiosks/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('merchant')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Editar kiosko' })
+  async updateKiosk(@CurrentUser() user: any, @Param('id') id: string, @Body() data: any) {
+    return this.menuService.updateKiosk(user.sub, id, data);
+  }
+
+  @Delete('my/kiosks/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('merchant')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Borrar kiosko (los productos quedan)' })
+  async deleteKiosk(@CurrentUser() user: any, @Param('id') id: string) {
+    return this.menuService.deleteKiosk(user.sub, id);
+  }
 }

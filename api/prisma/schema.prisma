@@ -292,6 +292,7 @@ model MerchantProfile {
   city            City                @relation(fields: [citySlug], references: [slug])
   orders          Order[]
   menuItems       MenuItem[]
+  kiosks          MerchantKiosk[]
   favoriteDrivers FavoriteDriver[]
   followers       MerchantFollow[]
   ratings         Rating[]
@@ -1009,10 +1010,35 @@ enum WithdrawalMethod {
   bank_transfer
 }
 
+// Kioskos/puestos dentro de un comercio (ej. mercadito con varios
+// productores, cada uno con su historia). El pedido del cliente junta
+// productos de varios kioskos pero llega a UN comercio, que compra y reparte.
+// Borrar un kiosko no borra sus productos (kioskId → null).
+model MerchantKiosk {
+  id          String   @id @default(uuid())
+  merchantId  String   @map("merchant_id")
+  name        String
+  // Historia del puesto (la entrevista: cómo hacen el producto día a día).
+  description String?
+  imageUrl    String?  @map("image_url")
+  active      Boolean  @default(true)
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  merchant MerchantProfile @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  items    MenuItem[]
+
+  @@index([merchantId, active])
+  @@map("merchant_kiosks")
+}
+
 // Menu Items
 model MenuItem {
   id          String   @id @default(uuid())
   merchantId  String   @map("merchant_id")
+  // Kiosko dueño del producto (null = directo del comercio).
+  kioskId     String?  @map("kiosk_id")
   name        String
   description String?
   price       Decimal  @db.Decimal(10, 2)
@@ -1038,10 +1064,12 @@ model MenuItem {
 
   // Relations
   merchant      MerchantProfile        @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  kiosk         MerchantKiosk?         @relation(fields: [kioskId], references: [id], onDelete: SetNull)
   orderItems    OrderItem[]
   variantGroups MenuItemVariantGroup[]
 
   @@index([merchantId, category])
+  @@index([kioskId])
   @@map("menu_items")
 }
 
@@ -1090,6 +1118,9 @@ model OrderItem {
   // Snapshot of chosen variants [{group, option, priceDelta}]; price
   // already includes deltas, so totals never depend on live menu data.
   selectedVariants Json?    @map("selected_variants")
+  // Snapshot del kiosko dueño del producto (para la lista de compras del
+  // comercio). Null = directo del comercio o producto personalizado.
+  kioskName      String?   @map("kiosk_name")
   createdAt        DateTime @default(now()) @map("created_at")
 
   // Relations

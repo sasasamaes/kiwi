@@ -77,6 +77,8 @@ interface MenuItemFormData {
   dailyQty: number | null;
   /** Nota de entrega programada ("Se entrega el jueves a las 2:00 p. m."). */
   fulfillNote: string;
+  /** Kiosko dueño (null = directo del comercio). */
+  kioskId: string | null;
 }
 
 const WEEKDAYS = [
@@ -132,6 +134,8 @@ interface MenuItemFormProps {
   onCancel: () => void;
   isEditing?: boolean;
   categories?: string[];
+  /** Kioskos del comercio para asignar el producto (opcional). */
+  kiosks?: Array<{ id: string; name: string }>;
 }
 
 export function MenuItemForm({
@@ -140,6 +144,7 @@ export function MenuItemForm({
   onCancel,
   isEditing = false,
   categories = DEFAULT_CATEGORIES,
+  kiosks = [],
 }: MenuItemFormProps) {
   const [formData, setFormData] = useState<MenuItemFormData>({
     name: initialData?.name || '',
@@ -154,6 +159,7 @@ export function MenuItemForm({
     stockQty: toStockQty(initialData, 'stockQty'),
     dailyQty: toStockQty(initialData, 'dailyQty'),
     fulfillNote: String((initialData as any)?.fulfillNote ?? ''),
+    kioskId: (initialData as any)?.kioskId || null,
   });
 
   const [loading, setLoading] = useState(false);
@@ -178,6 +184,7 @@ export function MenuItemForm({
         stockQty: toStockQty(initialData, 'stockQty'),
         dailyQty: toStockQty(initialData, 'dailyQty'),
         fulfillNote: String((initialData as any)?.fulfillNote ?? ''),
+        kioskId: (initialData as any)?.kioskId || null,
       });
     }
   }, [initialData, categories]);
@@ -501,6 +508,30 @@ export function MenuItemForm({
             {errors.category && <p className="mt-1 text-sm text-red-500">{errors.category}</p>}
           </div>
         </div>
+
+        {/* Kiosko dueño (solo si el comercio tiene kioskos cargados) */}
+        {kiosks.length > 0 && (
+          <div>
+            <label className="mb-2 block text-sm font-medium text-surface-600 dark:text-surface-400">
+              Kiosko
+            </label>
+            <select
+              value={formData.kioskId || ''}
+              onChange={(e) => setFormData({ ...formData, kioskId: e.target.value || null })}
+              className="w-full rounded-xl border bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 focus:ring-2 focus:ring-kiwi-600/20 transition-all border-surface-200 dark:border-surface-700 focus:border-kiwi-600"
+            >
+              <option value="">Sin kiosko (directo del comercio)</option>
+              {kiosks.map((k) => (
+                <option key={k.id} value={k.id}>
+                  🏪 {k.name}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-surface-400">
+              De qué puesto sale este producto (el pedido igual llega todo junto).
+            </p>
+          </div>
+        )}
 
         {/* Días disponibles (menú del día / "solo jueves") */}
         <div>

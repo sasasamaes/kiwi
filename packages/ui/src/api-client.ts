@@ -872,6 +872,41 @@ class ApiClient {
     });
   }
 
+  // ============================================
+  // 🏪 KIOSKOS (puestos dentro del comercio)
+  // ============================================
+
+  async getMyKiosks(): Promise<
+    Array<{
+      id: string;
+      name: string;
+      description: string | null;
+      imageUrl: string | null;
+      active: boolean;
+      sortOrder: number;
+    }>
+  > {
+    return this.request<any>('/menu/my/kiosks');
+  }
+
+  async createKiosk(data: {
+    name: string;
+    description?: string;
+    imageUrl?: string;
+    active?: boolean;
+    sortOrder?: number;
+  }) {
+    return this.request<any>('/menu/my/kiosks', { method: 'POST', body: data });
+  }
+
+  async updateKiosk(id: string, data: any) {
+    return this.request<any>(`/menu/my/kiosks/${id}`, { method: 'PUT', body: data });
+  }
+
+  async deleteKiosk(id: string) {
+    return this.request<any>(`/menu/my/kiosks/${id}`, { method: 'DELETE' });
+  }
+
   /**
    * Sube la imagen de un producto (multipart). Devuelve { url } https lista
    * para <img>. El backend valida magic bytes + tamaño; sin credenciales de
@@ -2533,6 +2568,9 @@ export interface MenuItem {
   offeredTomorrow?: boolean;
   /** Nota de entrega programada ("Se entrega el jueves a las 2:00 p. m."). */
   fulfillNote?: string | null;
+  /** Kiosko dueño del producto (null = directo del comercio). */
+  kioskId?: string | null;
+  kiosk?: { id: string; name: string } | null;
 }
 
 export interface MerchantPublicProfile {

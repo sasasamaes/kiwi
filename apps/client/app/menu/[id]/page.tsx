@@ -124,6 +124,9 @@ export default function MenuPage() {
   const [merchant, setMerchant] = useState<MerchantPublicProfile | null>(null);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [categories, setCategories] = useState<string[]>(['Todos']);
+  const [kiosks, setKiosks] = useState<
+    Array<{ id: string; name: string; description: string | null; imageUrl: string | null }>
+  >([]);
   const [selectedCategory, setSelectedCategory] = useState('Todos');
   /** Clave que reinicia la animación de rebote del carrito (TapButton onSuccess). */
   const [cartBounceKey, setCartBounceKey] = useState(0);
@@ -295,6 +298,7 @@ export default function MenuPage() {
       setMerchant(merchantData);
       setMenuItems(menuData.items);
       setCategories(menuData.categories);
+      setKiosks(Array.isArray(menuData.kiosks) ? menuData.kiosks : []);
       events.menu.viewed(merchantId);
     } catch (err) {
       console.error('Failed to fetch menu:', err);
@@ -586,6 +590,63 @@ export default function MenuPage() {
   const tomorrowItems =
     selectedCategory === 'Todos' ? menuItems.filter((i) => (i as any).offeredTomorrow) : [];
   const todayItems = visibleItems.filter((i) => !(i as any).offeredTomorrow);
+
+  // Secciones por kiosko (mercadito con varios puestos): cada kiosko con su
+  // historia y sus productos; el pedido junta todo y le llega al comercio.
+  // Sin kioskos, la lista queda plana como siempre.
+  const kioskById = new Map(kiosks.map((k) => [k.id, k]));
+  const todaySections = (() => {
+    const groups = new Map<string | null, MenuItem[]>();
+    for (const item of todayItems) {
+      const kid = ((item as any).kioskId as string | null) ?? null;
+      const key = kid && kioskById.has(kid) ? kid : null;
+      const arr = groups.get(key);
+      if (arr) arr.push(item);
+      else groups.set(key, [item]);
+    }
+    const out: Array<{
+      kiosk: {
+        id: string;
+        name: string;
+        description: string | null;
+        imageUrl: string | null;
+      } | null;
+      items: MenuItem[];
+    }> = [];
+    for (const [key, items] of groups) {
+      out.push({ kiosk: key ? (kioskById.get(key) ?? null) : null, items });
+    }
+    // Kioskos en su orden, sueltos al final.
+    out.sort((a, b) => {
+      if (!a.kiosk && !b.kiosk) return 0;
+      if (!a.kiosk) return 1;
+      if (!b.kiosk) return -1;
+      return (
+        kiosks.findIndex((k) => k.id === a.kiosk!.id) -
+        kiosks.findIndex((k) => k.id === b.kiosk!.id)
+      );
+    });
+    return out;
+  })();
+  const showKioskSections = todaySections.some((s) => s.kiosk);
+
+  // Filas planas para la lista: cabecera de kiosko + sus productos. Sin
+  // kioskos, filas de productos como siempre (cero cambio visual).
+  const todayRows: Array<
+    | {
+        kind: 'kiosk';
+        kiosk: { id: string; name: string; description: string | null; imageUrl: string | null };
+      }
+    | { kind: 'item'; item: MenuItem }
+  > = [];
+  if (!showKioskSections) {
+    for (const item of todayItems) todayRows.push({ kind: 'item', item });
+  } else {
+    for (const s of todaySections) {
+      if (s.kiosk) todayRows.push({ kind: 'kiosk', kiosk: s.kiosk });
+      for (const item of s.items) todayRows.push({ kind: 'item', item });
+    }
+  }
   // Si el carrito trae algo de mañana, el pedido entero es programado para
   // mañana (un pedido = una fecha de entrega).
   const cartHasTomorrow = cart.some((c) => (c as any).offeredTomorrow);
@@ -1251,7 +1312,26 @@ export default function MenuPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {todayItems.map((item, itemIndex) => {
+            {todayRows.map((row, rowIndex) => {
+              if (row.kind === 'kiosk') {
+                return (
+                  <div key={`kiosko-${row.kiosk.id}`} className="pt-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">🏪</span>
+                      <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">
+                        {row.kiosk.name}
+                      </h3>
+                    </div>
+                    {row.kiosk.description && (
+                      <p className="mt-1 text-sm text-surface-500 dark:text-surface-400 line-clamp-3">
+                        {row.kiosk.description}
+                      </p>
+                    )}
+                  </div>
+                );
+              }
+              const item = row.item;
+              const itemIndex = rowIndex;
               const quantity = getItemQuantity(item.id);
               return (
                 <ScrollReveal key={item.id} index={itemIndex} as="div">
@@ -1283,6 +1363,11 @@ export default function MenuPage() {
                               {item.isPopular && (
                                 <span className="px-2 py-0.5 rounded-full bg-gold-100 dark:bg-gold-900/50 text-xs font-medium text-gold-700 dark:text-gold-400">
                                   🔥 Popular
+                                </span>
+                              )}
+                              {(item as any).kiosk?.name && (
+                                <span className="px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/40 text-xs font-medium text-purple-700 dark:text-purple-300">
+                                  🏪 {(item as any).kiosk.name}
                                 </span>
                               )}
                               {(item.variantGroups ?? []).some((g) => g.options.length > 0) && (
@@ -1409,6 +1494,11 @@ export default function MenuPage() {
                           <span className="px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-900/50 text-xs font-medium text-orange-700 dark:text-orange-300">
                             📅 Mañana
                           </span>
+                          {(item as any).kiosk?.name && (
+                            <span className="px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/40 text-xs font-medium text-purple-700 dark:text-purple-300">
+                              🏪 {(item as any).kiosk.name}
+                            </span>
+                          )}
                         </div>
                         {(item as any).fulfillNote && (
                           <p className="text-xs font-medium text-orange-700 dark:text-orange-300 mt-1">

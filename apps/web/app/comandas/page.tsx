@@ -266,6 +266,11 @@ export default function ComandasPage() {
                             <span className="text-surface-800 dark:text-surface-100">
                               {it.name}
                             </span>
+                            {it.kioskName && (
+                              <span className="ml-2 rounded-full bg-purple-100 dark:bg-purple-900/40 px-2 py-0.5 text-[11px] font-medium text-purple-700 dark:text-purple-300">
+                                🏪 {it.kioskName}
+                              </span>
+                            )}
                             {Array.isArray(it.selectedVariants) &&
                               it.selectedVariants.length > 0 && (
                                 <p className="text-xs text-surface-500">

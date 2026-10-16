@@ -174,6 +174,40 @@ describe('OrdersService', () => {
       expect(prisma.order.create).toHaveBeenCalled();
     });
 
+    it('snapshottea el kiosko en la línea del pedido (lista de compras)', async () => {
+      prisma.merchantProfile.findUnique.mockResolvedValue({
+        id: 'merchant-1',
+        userId: 'user-1',
+        businessName: 'Mercadito',
+      });
+      prisma.menuItem.findMany.mockResolvedValue([
+        {
+          id: 'item-k',
+          name: 'Cuajada',
+          price: 2000,
+          merchantId: 'merchant-1',
+          kiosk: { name: 'Kiosko Ana' },
+        },
+      ]);
+      prisma.order.create.mockResolvedValue({ id: 'order-9' });
+
+      await service.create('user-1', {
+        pickupAddress: 'Mercadito',
+        deliveryAddress: 'Centro',
+        items: [{ menuItemId: 'item-k', quantity: 2 }],
+      });
+
+      expect(prisma.order.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            items: {
+              create: [expect.objectContaining({ menuItemId: 'item-k', kioskName: 'Kiosko Ana' })],
+            },
+          }),
+        }),
+      );
+    });
+
     it('notifica al comercio con order:new (socket 1:1) al crear el pedido', async () => {
       prisma.merchantProfile.findUnique.mockResolvedValue({
         id: 'merchant-1',
