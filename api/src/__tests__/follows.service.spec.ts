@@ -18,6 +18,7 @@ function prismaMock() {
     notification: { create: jest.fn(), count: jest.fn() },
     deviceToken: { findMany: jest.fn().mockResolvedValue([]) },
     topicPreference: { findMany: jest.fn().mockResolvedValue([]) },
+    pushAnnouncement: { count: jest.fn(), create: jest.fn() },
   };
 }
 
@@ -114,7 +115,20 @@ describe('MerchantsService.announceToFollowers', () => {
       ],
     }).compile();
     service = module.get<MerchantsService>(MerchantsService);
-    prisma.merchantProfile.findUnique.mockResolvedValue({ id: 'm1', businessName: 'Casa' });
+    prisma.merchantProfile.findUnique.mockResolvedValue({
+      id: 'm1',
+      businessName: 'Casa',
+      pushCredits: 0,
+    });
+    prisma.merchantProfile.update = jest
+      .fn()
+      .mockImplementation(({ data }: any) =>
+        Promise.resolve({ id: 'm1', pushCredits: 0, ...data }),
+      );
+    prisma.pushAnnouncement.count.mockResolvedValue(0);
+    prisma.pushAnnouncement.create.mockImplementation(({ data }: any) =>
+      Promise.resolve({ id: 'pa-1', ...data }),
+    );
   });
 
   it('valida título y cuerpo', async () => {
@@ -137,10 +151,53 @@ describe('MerchantsService.announceToFollowers', () => {
       title: 'Mañana hay rollos',
       body: 'Se entregan el jueves a las 2:00 p. m.',
     });
-    expect(res).toEqual({ reached: 4 });
+    expect(res).toEqual({ reached: 4, free: true });
     expect(notifications.notifyFollowers).toHaveBeenCalledWith(
       'm1',
       expect.objectContaining({ data: { kind: 'announce' } }),
     );
+    expect(prisma.pushAnnouncement.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ merchantId: 'm1', reached: 4, free: true }),
+    });
+  });
+
+  it('con cupo gratis agotado consume un crédito extra', async () => {
+    prisma.notification.count.mockResolvedValue(0);
+    prisma.pushAnnouncement.count.mockResolvedValue(4);
+    prisma.merchantProfile.findUnique.mockResolvedValue({
+      id: 'm1',
+      businessName: 'Casa',
+      pushCredits: 2,
+    });
+    const res = await service.announceToFollowers('u1', {
+      title: 'Oferta',
+      body: 'Solo hoy',
+    });
+    expect(res).toEqual({ reached: 4, free: false });
+    expect(prisma.merchantProfile.update).toHaveBeenCalledWith({
+      where: { id: 'm1' },
+      data: { pushCredits: { decrement: 1 } },
+    });
+  });
+
+  it('sin cupo ni créditos pide hablar con Kiwi (402)', async () => {
+    prisma.notification.count.mockResolvedValue(0);
+    prisma.pushAnnouncement.count.mockResolvedValue(4);
+    await expect(
+      service.announceToFollowers('u1', { title: 'Oferta', body: 'Solo hoy' }),
+    ).rejects.toThrow('Ya usaste tus 4 avisos gratis');
+    expect(notifications.notifyFollowers).not.toHaveBeenCalled();
+  });
+
+  it('quota reporta usados, total y extras', async () => {
+    prisma.pushAnnouncement.count.mockResolvedValue(2);
+    prisma.merchantProfile.findUnique.mockResolvedValue({
+      id: 'm1',
+      businessName: 'Casa',
+      pushCredits: 1,
+    });
+    const q = await service.announceQuota('u1');
+    expect(q).toEqual(expect.objectContaining({ freeUsed: 2, freeTotal: 4, extraCredits: 1 }));
+    expect(new Date(q.weekEndsAt).getTime()).toBeGreaterThan(Date.now());
   });
 });

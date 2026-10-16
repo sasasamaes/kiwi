@@ -68,8 +68,13 @@ export default function Dashboard() {
   const [unreadCount, setUnreadCount] = useState(0);
   // Crédito prepago: solo cubre envíos. Se recarga por semana con Kiwi.
   const [creditBalance, setCreditBalance] = useState<number | null>(null);
-  // Avisos a seguidores (venta por fecha o stock). Máx 3/día (lo aplica el API).
+  // Avisos a seguidores (venta por fecha o stock). 4 gratis/semana + extras.
   const [followersCount, setFollowersCount] = useState<number | null>(null);
+  const [announceQuota, setAnnounceQuota] = useState<{
+    freeUsed: number;
+    freeTotal: number;
+    extraCredits: number;
+  } | null>(null);
   const [announceTitle, setAnnounceTitle] = useState('');
   const [announceBody, setAnnounceBody] = useState('');
   const [announcing, setAnnouncing] = useState(false);
@@ -155,6 +160,17 @@ export default function Dashboard() {
         setAnnounceTitle('');
         setAnnounceBody('');
       }
+      // Refrescar el cupo (gratis consumido o extra usado).
+      try {
+        const q = await api.getAnnounceQuota();
+        setAnnounceQuota({
+          freeUsed: Number(q?.freeUsed ?? 0),
+          freeTotal: Number(q?.freeTotal ?? 4),
+          extraCredits: Number(q?.extraCredits ?? 0),
+        });
+      } catch {
+        // el resultado del envío ya se mostró; el cupo se actualiza al entrar
+      }
     } catch (e: any) {
       setAnnounceResult(e?.message || 'No se pudo enviar el aviso');
     } finally {
@@ -196,6 +212,17 @@ export default function Dashboard() {
         setFollowersCount(Number(f?.count ?? 0));
       } catch {
         setFollowersCount(null);
+      }
+      // Cupo de avisos de la semana (gratis + extras comprados)
+      try {
+        const q = await api.getAnnounceQuota();
+        setAnnounceQuota({
+          freeUsed: Number(q?.freeUsed ?? 0),
+          freeTotal: Number(q?.freeTotal ?? 4),
+          extraCredits: Number(q?.extraCredits ?? 0),
+        });
+      } catch {
+        setAnnounceQuota(null);
       }
       // Request push notification permission
       requestPermission();
@@ -308,7 +335,7 @@ export default function Dashboard() {
             </ul>
           </motion.div>
         )}
-        {/* Avisar a seguidores (venta por fecha o stock, máx 3/día) */}
+        {/* Avisar a seguidores (4 gratis/semana + extras) */}
         <motion.div
           className="mb-8 rounded-2xl border border-orange-500/30 bg-white dark:bg-surface-800 p-5 shadow-soft"
           initial={{ opacity: 0, y: 20 }}
@@ -324,7 +351,18 @@ export default function Dashboard() {
             </span>
           </div>
           <p className="mt-1 text-xs text-surface-500 dark:text-surface-400">
-            Ej. «Mañana vendo rollos de canela» o «Ya hay comida del día». Les llega push + campana.
+            Ej. «Mañana vendo rollos de canela» o «Ya hay comida del día». Les llega push + campana.{' '}
+            {announceQuota && (
+              <span className="font-semibold">
+                {Math.max(announceQuota.freeTotal - announceQuota.freeUsed, 0)} de{' '}
+                {announceQuota.freeTotal} gratis esta semana
+                {announceQuota.extraCredits > 0 &&
+                  ` (+${announceQuota.extraCredits} extra${announceQuota.extraCredits === 1 ? '' : 's'})`}
+                {announceQuota.freeUsed >= announceQuota.freeTotal &&
+                  announceQuota.extraCredits <= 0 &&
+                  ' — pedí más avisos al equipo Kiwi'}
+              </span>
+            )}
           </p>
           <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_2fr_auto]">
             <input

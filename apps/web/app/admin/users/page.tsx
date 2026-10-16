@@ -22,6 +22,7 @@ interface AdminUser {
     kycStatus: string;
     cardPaymentsEnabled?: boolean;
     isHomeCook?: boolean;
+    pushCredits?: number;
     _count?: { orders: number };
   } | null;
   driverProfile?: {
@@ -55,6 +56,8 @@ export default function UsersPage() {
   const [pwSaving, setPwSaving] = useState(false);
   const [pwMessage, setPwMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [unlocking, setUnlocking] = useState(false);
+  const [pushAmount, setPushAmount] = useState('4');
+  const [grantingPush, setGrantingPush] = useState(false);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -94,6 +97,33 @@ export default function UsersPage() {
     setNewPassword('');
     setConfirmPassword('');
     setPwMessage(null);
+    setPushAmount('4');
+  };
+
+  const grantPushCredits = async (u: AdminUser) => {
+    const merchantId = u.merchantProfile?.id;
+    if (!merchantId) return;
+    const amount = Math.floor(Number(pushAmount));
+    if (!Number.isFinite(amount) || amount < 1 || amount > 100) {
+      setPwMessage({ ok: false, text: 'Cantidad inválida (1-100)' });
+      return;
+    }
+    setGrantingPush(true);
+    setPwMessage(null);
+    try {
+      const res = await api.grantMerchantPushCredits(merchantId, amount);
+      const patch = (x: AdminUser) =>
+        x.id === u.id && x.merchantProfile
+          ? { ...x, merchantProfile: { ...x.merchantProfile, pushCredits: res.pushCredits } }
+          : x;
+      setUsers((prev) => prev.map(patch));
+      setSelectedUser((prev) => (prev?.id === u.id ? patch(prev) : prev));
+      setPwMessage({ ok: true, text: `Avisos extra otorgados (quedan ${res.pushCredits})` });
+    } catch (e: any) {
+      setPwMessage({ ok: false, text: e?.message || 'No se pudieron otorgar' });
+    } finally {
+      setGrantingPush(false);
+    }
   };
 
   const changePassword = async (u: AdminUser) => {
@@ -572,6 +602,37 @@ export default function UsersPage() {
                             }`}
                           />
                         </button>
+                      </div>
+                      <div className="mt-3 pt-3 border-t border-kiwi-200/50 dark:border-kiwi-800/30">
+                        <div className="flex justify-between items-center gap-2">
+                          <div>
+                            <p className="text-sm font-semibold text-surface-800 dark:text-surface-200">
+                              📣 Avisos push extra
+                            </p>
+                            <p className="text-xs text-surface-500">
+                              Más allá de los 4 gratis/semana. Quedan{' '}
+                              <b>{selectedUser.merchantProfile?.pushCredits ?? 0}</b>.
+                            </p>
+                          </div>
+                        </div>
+                        <div className="mt-2 flex gap-2">
+                          <input
+                            type="number"
+                            min={1}
+                            max={100}
+                            value={pushAmount}
+                            onChange={(e) => setPushAmount(e.target.value)}
+                            aria-label="Cantidad de avisos extra"
+                            className="w-20 px-3 py-2 text-sm rounded-lg border border-surface-200 dark:border-surface-600 bg-white dark:bg-surface-800 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
+                          />
+                          <button
+                            onClick={() => grantPushCredits(selectedUser)}
+                            disabled={grantingPush}
+                            className="flex-1 py-2 px-4 text-sm font-medium rounded-lg bg-kiwi-700 text-white hover:bg-kiwi-800 transition-colors disabled:opacity-50"
+                          >
+                            {grantingPush ? 'Otorgando…' : 'Otorgar avisos'}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   )}

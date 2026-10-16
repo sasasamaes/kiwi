@@ -132,9 +132,18 @@ export class MerchantsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('merchant')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Avisar a mis seguidores (venta por fecha o stock, máx 3/día)' })
+  @ApiOperation({ summary: 'Avisar a mis seguidores (4 gratis/semana, máx 3/día)' })
   async announce(@CurrentUser() user: any, @Body() body: { title?: string; body?: string }) {
     return this.merchantsService.announceToFollowers(user.sub, body ?? {});
+  }
+
+  @Get('me/announce-quota')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('merchant')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Cupo de avisos de la semana (gratis + extras)' })
+  async announceQuota(@CurrentUser() user: any) {
+    return this.merchantsService.announceQuota(user.sub);
   }
 
   @Get('me/favorites')
@@ -198,9 +207,18 @@ export class MerchantsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Marcar/desmarcar como cocina casera (emprendedores)' })
-  async setHomeCook(@Param('id') id: string, @Body() body: { enabled: boolean }) {
+  @ApiOperation({ summary: 'Marcar/desmarcar cocina casera (emprendedores)' })
+  async setHomeCook(@Param('id') id: string, @Body() body: { enabled?: boolean }) {
     return this.merchantsService.setHomeCook(id, body?.enabled === true);
+  }
+
+  @Put(':id/push-credits')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Otorgar avisos push extra a un comercio (comprados o por acuerdo)' })
+  async grantPushCredits(@Param('id') id: string, @Body() body: { amount?: number }) {
+    return this.merchantsService.grantPushCredits(id, Number(body?.amount));
   }
 
   /**

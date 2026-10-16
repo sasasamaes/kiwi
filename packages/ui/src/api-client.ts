@@ -731,6 +731,32 @@ class ApiClient {
     return this.request<{ count: number }>('/merchants/me/followers').catch(() => ({ count: 0 }));
   }
 
+  /** Cupo de avisos push de la semana (4 gratis + extras). */
+  async getAnnounceQuota(): Promise<{
+    freeUsed: number;
+    freeTotal: number;
+    extraCredits: number;
+    weekEndsAt: string;
+  }> {
+    return this.request<any>('/merchants/me/announce-quota').catch(() => ({
+      freeUsed: 0,
+      freeTotal: 4,
+      extraCredits: 0,
+      weekEndsAt: new Date().toISOString(),
+    }));
+  }
+
+  /** Otorga avisos push extra a un comercio (admin). */
+  async grantMerchantPushCredits(
+    merchantId: string,
+    amount: number,
+  ): Promise<{ pushCredits: number }> {
+    return this.request<any>(`/merchants/${merchantId}/push-credits`, {
+      method: 'PUT',
+      body: { amount },
+    });
+  }
+
   /** Avisar a mis seguidores (venta por fecha o stock, máx 3/día). */
   async announceToFollowers(data: { title: string; body: string }): Promise<{ reached: number }> {
     return this.request<{ reached: number }>('/merchants/me/announce', {

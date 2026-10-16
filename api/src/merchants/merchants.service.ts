@@ -4,10 +4,24 @@ import {
   NotFoundException,
   ForbiddenException,
   BadRequestException,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { isMerchantCategory } from './merchant-category';
+
+/** Avisos push gratis a seguidores por semana (lunes a domingo, hora CR). */
+export const FREE_PUSH_PER_WEEK = 4;
+
+/** Lunes 00:00 CR de la semana en curso (CR = UTC-6, sin horario de verano). */
+export function weekStartCR(now = Date.now()): Date {
+  const cr = new Date(now - 6 * 3_600_000);
+  const daysSinceMonday = (cr.getUTCDay() + 6) % 7;
+  return new Date(
+    Date.UTC(cr.getUTCFullYear(), cr.getUTCMonth(), cr.getUTCDate() - daysSinceMonday, 6, 0, 0),
+  );
+}
 
 @Injectable()
 export class MerchantsService {
@@ -77,13 +91,38 @@ export class MerchantsService {
   }
 
   /**
+   * Cupo de avisos del comercio: 4 gratis/semana + extras otorgados por el
+   * admin (comprados o por acuerdo). Lo consume announceToFollowers.
+   */
+  async announceQuota(userId: string): Promise<{
+    freeUsed: number;
+    freeTotal: number;
+    extraCredits: number;
+    weekEndsAt: Date;
+  }> {
+    const merchant = await this.prisma.merchantProfile.findUnique({ where: { userId } });
+    if (!merchant) throw new NotFoundException('Perfil de comercio no encontrado');
+    const start = weekStartCR();
+    const freeUsed = await (this.prisma as any).pushAnnouncement.count({
+      where: { merchantId: merchant.id, free: true, createdAt: { gte: start } },
+    });
+    return {
+      freeUsed,
+      freeTotal: FREE_PUSH_PER_WEEK,
+      extraCredits: (merchant as any).pushCredits ?? 0,
+      weekEndsAt: new Date(start.getTime() + 7 * 24 * 3_600_000),
+    };
+  }
+
+  /**
    * Aviso a seguidores ("mañana vendo rollos", "ya hay comida del día").
-   * Tope 3/día por comercio (antispam): el log son las filas inbox enviadas.
+   * Tope 3/día por comercio (antispam) + 4 gratis/semana: lo extra consume
+   * pushCredits (los otorga el admin) o 402 para hablar con Kiwi.
    */
   async announceToFollowers(
     userId: string,
     input: { title?: unknown; body?: unknown },
-  ): Promise<{ reached: number }> {
+  ): Promise<{ reached: number; free: boolean }> {
     const merchant = await this.prisma.merchantProfile.findUnique({ where: { userId } });
     if (!merchant) throw new NotFoundException('Perfil de comercio no encontrado');
 
@@ -107,11 +146,52 @@ export class MerchantsService {
     if (recent >= 3) {
       throw new BadRequestException('Límite de 3 avisos por día — volvé mañana');
     }
-    return this.notifications.notifyFollowers(merchant.id, {
+    // Cupo semanal: gratis primero, extra (comprado) después, 402 si no hay.
+    const start = weekStartCR();
+    const freeUsed = await (this.prisma as any).pushAnnouncement.count({
+      where: { merchantId: merchant.id, free: true, createdAt: { gte: start } },
+    });
+    let free = true;
+    if (freeUsed >= FREE_PUSH_PER_WEEK) {
+      if (((merchant as any).pushCredits ?? 0) > 0) {
+        await this.prisma.merchantProfile.update({
+          where: { id: merchant.id },
+          data: { pushCredits: { decrement: 1 } },
+        });
+        free = false;
+      } else {
+        throw new HttpException(
+          'Ya usaste tus 4 avisos gratis de esta semana. Pedile más avisos al equipo Kiwi.',
+          HttpStatus.PAYMENT_REQUIRED,
+        );
+      }
+    }
+    const { reached } = await this.notifications.notifyFollowers(merchant.id, {
       title: `🧡 ${merchant.businessName}: ${title}`,
       body,
       data: { kind: 'announce' },
     });
+    await (this.prisma as any).pushAnnouncement.create({
+      data: { merchantId: merchant.id, title, body, reached, free, createdBy: userId },
+    });
+    return { reached, free };
+  }
+
+  /** Otorga avisos push extra a un comercio (admin: comprados o por acuerdo). */
+  async grantPushCredits(merchantId: string, amount: number): Promise<{ pushCredits: number }> {
+    const n = Math.floor(Number(amount));
+    if (!Number.isFinite(n) || n < 1 || n > 100) {
+      throw new BadRequestException('Cantidad inválida (1-100)');
+    }
+    const merchant = await this.prisma.merchantProfile.findUnique({
+      where: { id: merchantId },
+    });
+    if (!merchant) throw new NotFoundException('Comercio no encontrado');
+    const updated: any = await this.prisma.merchantProfile.update({
+      where: { id: merchantId },
+      data: { pushCredits: { increment: n } },
+    });
+    return { pushCredits: updated.pushCredits ?? 0 };
   }
 
   /** Cobro con tarjeta/SINPE (admin, tras KYC de Onvo). */
