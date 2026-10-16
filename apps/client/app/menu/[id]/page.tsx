@@ -2026,14 +2026,16 @@ export default function MenuPage() {
                         ₡{cartTotal.toLocaleString()}
                       </span>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-surface-500 dark:text-surface-400">
-                        Servicio Kiwi ({Math.round(servicePct * 100)}%)
-                      </span>
-                      <span className="text-surface-800 dark:text-surface-200">
-                        ₡{serviceFee.toLocaleString()}
-                      </span>
-                    </div>
+                    {serviceFee > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-surface-500 dark:text-surface-400">
+                          Servicio Kiwi ({Math.round(servicePct * 100)}%)
+                        </span>
+                        <span className="text-surface-800 dark:text-surface-200">
+                          ₡{serviceFee.toLocaleString()}
+                        </span>
+                      </div>
+                    )}
                     <div className="flex justify-between text-sm">
                       <span className="text-surface-500 dark:text-surface-400">Envío</span>
                       <span

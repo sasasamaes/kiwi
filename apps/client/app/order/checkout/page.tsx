@@ -14,6 +14,7 @@ import {
   DeliveryZoneSelect,
   ConsentCheckbox,
   ConsentLink,
+  useDeliveryZones,
   api,
   useAuth,
   events,
@@ -189,7 +190,12 @@ function CheckoutContent() {
   }, []);
   const servicePct = (isHomeCook ? feeRates.homeCookPct : feeRates.standardPct) / 100;
   const serviceFee = Math.round(subtotal * servicePct);
-  const zoneTrip = findDeliveryZone(deliveryZone)?.price ?? null;
+  // Precio del barrio desde la DB (editables en el admin); fallback al catálogo.
+  const deliveryZones = useDeliveryZones();
+  const zoneTrip =
+    deliveryZones.find((z) => z.id === deliveryZone)?.price ??
+    findDeliveryZone(deliveryZone)?.price ??
+    null;
   // Igual que el modal del menú y que el servidor: el envío es SIEMPRE el
   // precio del barrio (el servidor no tiene regla de gratis +₡5000).
   const deliveryFee = zoneTrip ?? 500;
@@ -464,14 +470,16 @@ function CheckoutContent() {
                 ₡{subtotal.toLocaleString()}
               </span>
             </div>
-            <div className="flex justify-between text-sm mt-1">
-              <span className="text-surface-500">
-                Servicio Kiwi ({Math.round(servicePct * 100)}%)
-              </span>
-              <span className="text-surface-700 dark:text-surface-300">
-                ₡{serviceFee.toLocaleString()}
-              </span>
-            </div>
+            {serviceFee > 0 && (
+              <div className="flex justify-between text-sm mt-1">
+                <span className="text-surface-500">
+                  Servicio Kiwi ({Math.round(servicePct * 100)}%)
+                </span>
+                <span className="text-surface-700 dark:text-surface-300">
+                  ₡{serviceFee.toLocaleString()}
+                </span>
+              </div>
+            )}
             <div className="flex justify-between text-sm mt-1">
               <span className="text-surface-500">Envío</span>
               <span
