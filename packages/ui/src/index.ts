@@ -317,6 +317,8 @@ export {
   scheduleFields,
 } from './SchedulePicker';
 export type { ScheduleValue } from './SchedulePicker';
+export { isPreorderItem, nextDateKeyCR, preorderDeliveryLabel } from './preorder';
+export type { PreorderItemInput } from './preorder';
 export { formatOpeningHours } from './merchant-hours';
 export type { FormattedHours } from './merchant-hours';
 

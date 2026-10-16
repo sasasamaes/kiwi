@@ -58,6 +58,9 @@ import {
   tomorrowKeyCR,
   weekdayNameES,
   formatOpeningHours,
+  isPreorderItem,
+  nextDateKeyCR,
+  preorderDeliveryLabel,
 } from '@kiwi/ui';
 import type { ScheduleValue } from '@kiwi/ui';
 import { findDeliveryZone } from '@kiwi/types';
@@ -406,6 +409,19 @@ export default function MenuPage() {
       // solo elige la hora en el checkout).
       if ((item as any).offeredTomorrow) {
         setSchedule((prev) => ({ ...prev, mode: 'scheduled', date: tomorrowKeyCR() }));
+      } else if (merchant?.isOpen === false) {
+        // Item por fecha (ej. solo jueves) con el local cerrado: presetear la
+        // próxima fecha para que el programado quede a un paso (solo la hora).
+        // Solo si el cliente no eligió nada (no pisar su elección).
+        const days = ((item as any).availableDays ?? []).filter(
+          (d: any) => Number.isInteger(Number(d)) && Number(d) >= 0 && Number(d) <= 6,
+        );
+        const key = nextDateKeyCR(days.map(Number));
+        if (key) {
+          setSchedule((prev) =>
+            prev.mode === 'now' ? { ...prev, mode: 'scheduled', date: key } : prev,
+          );
+        }
       }
       const groups = item.variantGroups ?? [];
       const hasOptions = groups.some((g) => g.options.length > 0);
@@ -425,7 +441,7 @@ export default function MenuPage() {
       }
       addLine(item, []);
     },
-    [addLine],
+    [addLine, merchant?.isOpen],
   );
 
   const togglePick = useCallback(
@@ -569,6 +585,16 @@ export default function MenuPage() {
   // Si el carrito trae algo de mañana, el pedido entero es programado para
   // mañana (un pedido = una fecha de entrega).
   const cartHasTomorrow = cart.some((c) => (c as any).offeredTomorrow);
+
+  // Venta por fecha/stock (solo-jueves, nota de entrega, solo-mañana): si hay
+  // items de preventa con stock, el "Cerrado" por horario no aplica — el
+  // cliente pide igual y ve el día de entrega.
+  const preorderItems = menuItems.filter((i) => isPreorderItem(i as any));
+  const acceptsPreorder = preorderItems.length > 0;
+  const preorderLabel =
+    merchant?.isOpen === false && acceptsPreorder
+      ? preorderDeliveryLabel(preorderItems as any[], tomorrowKey, weekdayNameES)
+      : null;
 
   // Validate checkout
   // Cocina casera cerrada hoy igual acepta preventa futura (ej. lunes pido
@@ -1054,10 +1080,12 @@ export default function MenuPage() {
                   className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                     merchant.isOpen
                       ? 'bg-kiwi-100 dark:bg-kiwi-900/50 text-kiwi-700 dark:text-kiwi-400'
-                      : 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-400'
+                      : preorderLabel
+                        ? 'bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300'
+                        : 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-400'
                   }`}
                 >
-                  {merchant.isOpen ? 'Abierto' : 'Cerrado'}
+                  {merchant.isOpen ? 'Abierto' : preorderLabel ? `📅 ${preorderLabel}` : 'Cerrado'}
                 </span>
                 {merchant.isHomeCook && (
                   <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300">
@@ -1182,7 +1210,9 @@ export default function MenuPage() {
                 haptic
                 className="inline-flex min-h-[44px] items-center rounded-full bg-white px-5 py-2 text-sm font-semibold text-kiwi-800"
                 onClick={() => addToCart(builderItem)}
-                disabled={!merchant?.isOpen}
+                disabled={
+                  !(merchant?.isOpen || (builderItem && isPreorderItem(builderItem as any)))
+                }
               >
                 Armar el mío +
               </TapButton>
@@ -1305,7 +1335,9 @@ export default function MenuPage() {
                               className="flex h-10 w-10 items-center justify-center rounded-full bg-kiwi-700 text-white"
                               onClick={() => addToCart(item)}
                               disabled={
-                                !merchant.isOpen ||
+                                // Cerrado + preventa: el item por fecha/stock sí se puede
+                                // pedir (programado); el resto sigue bloqueado.
+                                !(merchant.isOpen || isPreorderItem(item as any)) ||
                                 ((item as any).stockQty != null &&
                                   quantity >= (item as any).stockQty)
                               }
@@ -1680,8 +1712,9 @@ export default function MenuPage() {
                   </div>
                 </div>
 
-                {/* Preventa (solo cocinas caseras): pedir hoy, recibir el día que toca */}
-                {(merchant.isHomeCook || tomorrowItems.length > 0) && (
+                {/* Preventa (cocinas caseras o venta por fecha/stock): pedir hoy,
+                    recibir el día que toca. Sin esto el cerrado no podría pagar. */}
+                {(merchant.isHomeCook || tomorrowItems.length > 0 || acceptsPreorder) && (
                   <div>
                     <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-3">
                       📅 ¿Para cuándo?
@@ -1692,7 +1725,8 @@ export default function MenuPage() {
                       hint={
                         cartHasTomorrow
                           ? `Tu pedido incluye productos de mañana: sale programado para mañana ${weekdayNameES(tomorrowKey)}. Elegí la hora.`
-                          : 'Acepta pedidos aunque hoy esté cerrada: programá para su día de venta.'
+                          : (preorderLabel ??
+                            'Acepta pedidos aunque hoy esté cerrada: programá para su día de venta.')
                       }
                     />
                   </div>
@@ -2176,8 +2210,8 @@ export default function MenuPage() {
         )}
       </AnimatePresence>
 
-      {/* Closed Store Banner */}
-      {!merchant.isOpen && (
+      {/* Closed Store Banner: no aplica si vende por fecha/stock (preventa) */}
+      {!merchant.isOpen && !acceptsPreorder && (
         <motion.div
           className="pb-safe fixed bottom-0 left-0 right-0 bg-red-500/90 text-white p-4 text-center backdrop-blur-xl"
           initial={{ y: 100 }}
