@@ -35,6 +35,7 @@ import { ReferralsModule } from './referrals/referrals.module';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { MarketingModule } from './marketing/marketing.module';
 import { VisitsModule } from './visits/visits.module';
+import { CoverageModule } from './service-area/coverage.module';
 
 @Module({
   imports: [
@@ -86,6 +87,7 @@ import { VisitsModule } from './visits/visits.module';
     WhatsappModule,
     MarketingModule,
     VisitsModule,
+    CoverageModule,
   ],
 })
 export class AppModule {}

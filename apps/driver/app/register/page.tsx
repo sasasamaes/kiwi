@@ -5,7 +5,7 @@ import { Suspense, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { AuthForm, useAuth, useInviteReferral } from '@kiwi/ui';
+import { AuthForm, useAuth, useInviteReferral, WaitlistNotice } from '@kiwi/ui';
 
 /** Banner del link de invitación (?email=&invitation=). Nulo = sin invitación. */
 function InvitationBanner({ state }: { state: 'valid' | 'invalid' | null }) {
@@ -31,6 +31,7 @@ function DriverRegisterForm() {
   const { register } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [waitlist, setWaitlist] = useState<{ city: string; message: string } | null>(null);
 
   // Link del correo del admin (?email=&invitation=) + referido (?referral=).
   const {
@@ -59,7 +60,11 @@ function DriverRegisterForm() {
       if (data.phone?.trim()) payload.phone = data.phone.trim();
       if (invitationToken) payload.invitationToken = invitationToken;
       if (data.referralCode) payload.referralCode = data.referralCode;
-      await register(payload);
+      const res = await register(payload);
+      if (res?.outsideCoverage) {
+        setWaitlist(res.outsideCoverage);
+        return;
+      }
       router.push('/');
     } catch (err: any) {
       setError(err.message || 'Error al crear la cuenta. Intenta de nuevo.');
@@ -67,6 +72,17 @@ function DriverRegisterForm() {
       setLoading(false);
     }
   };
+
+  if (waitlist) {
+    return (
+      <WaitlistNotice
+        city={waitlist.city}
+        message={waitlist.message}
+        actionLabel="Ir a la app"
+        onContinue={() => router.push('/')}
+      />
+    );
+  }
 
   return (
     <>

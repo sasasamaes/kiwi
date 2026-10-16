@@ -7,6 +7,7 @@ import { ConfigService } from '@nestjs/config';
 import { MailService } from '../mail/mail.service';
 import { InvitationsService } from '../invitations/invitations.service';
 import { ReferralsService } from '../referrals/referrals.service';
+import { CoverageService } from '../service-area/coverage.service';
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 
@@ -70,6 +71,10 @@ describe('Auth Integration: Registration & Login Flow', () => {
         {
           provide: ReferralsService,
           useValue: { assertValidForRegister: jest.fn().mockResolvedValue(undefined) },
+        },
+        {
+          provide: CoverageService,
+          useValue: { recordInterest: jest.fn().mockResolvedValue(undefined) },
         },
       ],
     }).compile();

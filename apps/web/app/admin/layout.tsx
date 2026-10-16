@@ -23,6 +23,7 @@ import {
   Megaphone,
   TicketPercent,
   MapPin,
+  Globe,
 } from 'lucide-react';
 import { ThemeToggle, useAuth, KiwiLogo, KiwiSlice } from '@kiwi/ui';
 
@@ -42,6 +43,7 @@ const menuItems = [
   { href: '/admin/simulador', icon: Calculator, label: 'Simulador' },
   { href: '/admin/reportes', icon: BarChart3, label: 'Real vs Proyección' },
   { href: '/admin/zones', icon: MapPinned, label: 'Zonas' },
+  { href: '/admin/cobertura', icon: Globe, label: 'Cobertura' },
   { href: '/admin/settings', icon: Settings, label: 'Configuración' },
 ];
 

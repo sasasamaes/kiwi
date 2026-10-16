@@ -7,6 +7,7 @@ import { ConfigService } from '@nestjs/config';
 import { MailService } from '../mail/mail.service';
 import { InvitationsService } from '../invitations/invitations.service';
 import { ReferralsService } from '../referrals/referrals.service';
+import { CoverageService } from '../service-area/coverage.service';
 import { ConflictException, HttpException, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 
@@ -19,6 +20,7 @@ describe('AuthService', () => {
   let service: AuthService;
   let prisma: any;
   let jwtService: any;
+  let coverageMock: { recordInterest: jest.Mock };
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -30,6 +32,7 @@ describe('AuthService', () => {
         create: jest.fn(),
         update: jest.fn(),
       },
+      city: { findUnique: jest.fn().mockResolvedValue(null) },
       refreshToken: {
         create: jest.fn().mockResolvedValue({ id: 'rt-1' }),
         findUnique: jest.fn(),
@@ -49,6 +52,8 @@ describe('AuthService', () => {
       sign: jest.fn().mockReturnValue('mock-token'),
     };
 
+    coverageMock = { recordInterest: jest.fn().mockResolvedValue(undefined) };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
@@ -66,6 +71,10 @@ describe('AuthService', () => {
         {
           provide: ReferralsService,
           useValue: { assertValidForRegister: jest.fn().mockResolvedValue(undefined) },
+        },
+        {
+          provide: CoverageService,
+          useValue: coverageMock,
         },
       ],
     }).compile();
@@ -98,6 +107,33 @@ describe('AuthService', () => {
       expect(result.user.email).toBe('test@kiwi.app');
       expect(result.accessToken).toBe('mock-token');
       expect(prisma.user.create).toHaveBeenCalled();
+      expect(result.outsideCoverage).toBeNull();
+    });
+
+    it('registro en ciudad inactiva crea la cuenta en lista de espera', async () => {
+      prisma.user.findFirst.mockResolvedValue(null);
+      prisma.city.findUnique.mockResolvedValue({ slug: 'liberia', name: 'Liberia', active: false });
+      prisma.user.create.mockResolvedValue({
+        id: 'user-2',
+        email: 'lib@x.com',
+        phone: '8888-0000',
+        role: 'customer',
+        status: 'active',
+      });
+
+      const result = await service.register({
+        email: 'lib@x.com',
+        password: 'password123',
+        role: 'customer',
+        citySlug: 'liberia',
+      } as any);
+
+      expect(result.user.email).toBe('lib@x.com');
+      expect(result.outsideCoverage).toEqual(expect.objectContaining({ city: 'Liberia' }));
+      expect(String(result.outsideCoverage?.message)).toContain('Todavía no operamos');
+      expect(coverageMock.recordInterest).toHaveBeenCalledWith(
+        expect.objectContaining({ city: 'Liberia', source: 'register-customer' }),
+      );
     });
 
     it('should throw ConflictException if user already exists', async () => {

@@ -17,6 +17,7 @@ import { LoginDto } from './dto/login.dto';
 import { MailService } from '../mail/mail.service';
 import { InvitationsService } from '../invitations/invitations.service';
 import { ReferralsService } from '../referrals/referrals.service';
+import { CoverageService } from '../service-area/coverage.service';
 import { findDeliveryZone } from '../orders/delivery-zones';
 import { normalizeCRPhone } from '../common/phone';
 import { isMerchantCategory, tagMerchantCategory } from '../merchants/merchant-category';
@@ -44,6 +45,7 @@ export class AuthService {
     private mailService: MailService,
     private invitationsService: InvitationsService,
     private referralsService: ReferralsService,
+    private coverage: CoverageService,
   ) {
     // Periodic cleanup so entries for abandoned accounts don't accumulate.
     setInterval(
@@ -173,15 +175,24 @@ export class AuthService {
     // Hash password
     const passwordHash = await bcrypt.hash(password, 10);
 
-    // Ciudad operativa: default nicoya; si viene otra, validar que exista y esté activa.
-    // Si no existe, caer a nicoya para no bloquear el registro.
-    let citySlugNorm = (citySlug || 'nicoya').trim().toLowerCase();
+    // Ciudad operativa: solo ciudades ACTIVAS (hoy Nicoya). Si piden otra
+    // (Liberia, San José…), la cuenta se crea igual pero queda en lista de
+    // espera: se anota el interés y el registro avisa "te avisamos al llegar".
+    const requestedSlug = (citySlug || 'nicoya').trim().toLowerCase() || 'nicoya';
+    let citySlugNorm = 'nicoya';
+    let coveredCityName: string | null = null;
     try {
-      const city = await this.prisma.city.findUnique({ where: { slug: citySlugNorm } });
-      if (!city) citySlugNorm = 'nicoya';
+      const city: any = await this.prisma.city.findUnique({ where: { slug: requestedSlug } });
+      if (city && city.active) {
+        citySlugNorm = requestedSlug;
+        coveredCityName = city.name;
+      } else if (city) {
+        coveredCityName = city.name;
+      }
     } catch {
       citySlugNorm = 'nicoya';
     }
+    const covered = citySlugNorm === requestedSlug;
 
     // Create user with profile
     const profileData =
@@ -258,9 +269,28 @@ export class AuthService {
       // best-effort: no bloquear un registro válido por el estado del panel
     }
 
+    // Fuera de cobertura (ciudad inactiva o desconocida): la cuenta queda
+    // creada, pero se anota en la lista de espera y el cliente ve el aviso.
+    let outsideCoverage: { city: string; message: string } | null = null;
+    if (!covered) {
+      const cityLabel =
+        coveredCityName ?? CoverageService.normalizeCity(requestedSlug) ?? requestedSlug;
+      await this.coverage.recordInterest({
+        email: emailNorm,
+        phone: phoneNorm,
+        city: cityLabel,
+        source: `register-${role}` as any,
+      });
+      outsideCoverage = {
+        city: cityLabel,
+        message: `Todavía no operamos en ${cityLabel}: te avisamos a ${emailNorm} cuando lleguemos.`,
+      };
+    }
+
     return {
       user: this.sanitizeUser(user),
       ...tokens,
+      outsideCoverage,
     };
   }
 

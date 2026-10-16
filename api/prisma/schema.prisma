@@ -190,6 +190,29 @@ model PushAnnouncement {
   @@map("push_announcements")
 }
 
+// Lista de espera por cobertura: gente que quiere usar Kiwi donde aún no
+// operamos (registro fuera de zona o pedido bloqueado). Cuando se abre una
+// ciudad, el admin les avisa por correo (notified). Sin FK a City a propósito:
+// la ciudad pedida puede no existir todavía como fila operativa.
+model CoverageInterest {
+  id        String   @id @default(uuid())
+  email     String?
+  phone     String?
+  // Ciudad pedida en texto ("Liberia", "San Jose"...). Normalizada simple.
+  city      String
+  zone      String?
+  latitude  Decimal? @db.Decimal(10, 8)
+  longitude Decimal? @db.Decimal(11, 8)
+  // register-customer | register-merchant | register-driver | order-blocked
+  source    String
+  notified  Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([city, notified, createdAt])
+  @@index([email, city])
+  @@map("coverage_interests")
+}
+
 enum Role {
   merchant
   driver

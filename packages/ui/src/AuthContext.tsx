@@ -13,7 +13,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<User>;
-  register: (data: any) => Promise<void>;
+  register: (data: any) => Promise<any>;
   logout: () => void;
   updateUser: (data: Partial<User>) => void;
   isAuthenticated: boolean;
@@ -69,6 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(result.user);
     void analytics.init();
     void analytics.identify(result.user.id, { role: result.user.role });
+    return result;
   };
 
   const logout = () => {

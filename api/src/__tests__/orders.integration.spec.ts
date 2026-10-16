@@ -23,6 +23,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { OrdersService } from '../orders/orders.service';
 import { ZonesService } from '../zones/zones.service';
+import { CoverageService } from '../service-area/coverage.service';
 import { SettingsService } from '../settings/settings.service';
 import { EventsGateway } from '../events/events.gateway';
 import { DriversService } from '../drivers/drivers.service';
@@ -152,6 +153,10 @@ describe('Orders Integration: Full Lifecycle', () => {
           provide: SettingsService,
           useValue: { getDriverCommissionPct: jest.fn().mockResolvedValue(15) },
         },
+        {
+          provide: CoverageService,
+          useValue: { recordInterest: jest.fn().mockResolvedValue(undefined) },
+        },
       ],
     }).compile();
 
@@ -177,8 +182,8 @@ describe('Orders Integration: Full Lifecycle', () => {
         pickupLat: 10.0,
         pickupLng: -85.0,
         deliveryAddress: 'Barrio Los Ángeles, 200m sur',
-        deliveryLat: 10.005,
-        deliveryLng: -84.998,
+        deliveryLat: 10.15,
+        deliveryLng: -85.455,
         distanceKm: 2.5,
         basePrice: 1500,
         commission: 225,
@@ -200,8 +205,8 @@ describe('Orders Integration: Full Lifecycle', () => {
         pickupLat: 10.0,
         pickupLng: -85.0,
         deliveryAddress: 'Barrio Los Ángeles, 200m sur',
-        deliveryLat: 10.005,
-        deliveryLng: -84.998,
+        deliveryLat: 10.15,
+        deliveryLng: -85.455,
         distanceKm: 2.5,
         items: [{ menuItemId: 'item-1', quantity: 1 }],
         specialInstructions: 'Sin cebolla',

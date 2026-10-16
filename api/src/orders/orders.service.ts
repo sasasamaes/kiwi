@@ -23,6 +23,7 @@ import {
   NICOYA_DELIVERY_ZONES,
 } from './delivery-zones';
 import { ZonesService } from '../zones/zones.service';
+import { CoverageService } from '../service-area/coverage.service';
 import { parseScheduledCR, toCRDateKey } from '../common/costa-rica-time';
 import { offeredToday } from '../merchants/opening-hours';
 import { normalizeCRPhone } from '../common/phone';
@@ -77,10 +78,30 @@ export class OrdersService {
     private notificationsService: NotificationsService,
     private settingsService: SettingsService,
     private zonesService: ZonesService,
+    private coverage: CoverageService,
     @Optional()
     @Inject(ImageUploadService)
     private readonly imageUpload?: ImageUploadService,
   ) {}
+
+  /**
+   * Contacto para la lista de espera (best-effort): email/tel del pedido o,
+   * si es cliente logueado, de su cuenta. Nunca revienta el flujo.
+   */
+  private async coverageContact(data: any): Promise<{ email?: string; phone?: string }> {
+    const email = String(data?.customerEmail ?? data?.email ?? '').trim() || undefined;
+    const phone = String(data?.customerPhone ?? data?.phone ?? '').trim() || undefined;
+    if ((email && phone) || !data?.customerId) return { email, phone };
+    try {
+      const u: any = await this.prisma.user.findUnique({
+        where: { id: data.customerId },
+        select: { email: true, phone: true },
+      });
+      return { email: email ?? u?.email ?? undefined, phone: phone ?? u?.phone ?? undefined };
+    } catch {
+      return { email, phone };
+    }
+  }
 
   /**
    * Pedido invitado (link público del menú, sin cuenta): mismo pipeline con
@@ -519,6 +540,34 @@ export class OrdersService {
       if (resolved && resolved.source === 'polygon') {
         deliveryZone = resolved.zone.id;
         zoneBase = Number(resolved.zone.price);
+      }
+    }
+
+    // Cobertura: solo Nicoya y alrededores (25 km). Si hay coords de entrega
+    // y caen fuera, se rechaza amable y se anota el interés (lista de espera
+    // para decidir dónde abrir). Sin coords no se puede verificar: pasa y el
+    // comercio lo valida en la dirección.
+    {
+      const dLat = Number((data as any).deliveryLat);
+      const dLng = Number((data as any).deliveryLng);
+      if (
+        Number.isFinite(dLat) &&
+        Number.isFinite(dLng) &&
+        !CoverageService.inServiceArea(dLat, dLng)
+      ) {
+        const contact = await this.coverageContact(data);
+        await this.coverage.recordInterest({
+          email: contact.email,
+          phone: contact.phone,
+          city: 'Fuera de cobertura',
+          zone: deliveryZone ?? undefined,
+          latitude: dLat,
+          longitude: dLng,
+          source: 'order-blocked',
+        });
+        throw new BadRequestException(
+          'Todavía no llegamos a tu zona. Te avisamos por correo cuando operemos ahí.',
+        );
       }
     }
 

@@ -21,6 +21,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { OrdersService } from '../orders/orders.service';
 import { ZonesService } from '../zones/zones.service';
+import { CoverageService } from '../service-area/coverage.service';
 import { AssignmentSweeper } from '../orders/assignment-sweeper.service';
 import { SettingsService } from '../settings/settings.service';
 import { EventsGateway } from '../events/events.gateway';
@@ -112,6 +113,10 @@ describe('Assignment contest (Task 6): 10 criterios', () => {
         { provide: NotificationsService, useValue: notifications },
         { provide: SettingsService, useValue: settings },
         { provide: ImageUploadService, useValue: { uploadProofImage: jest.fn() } },
+        {
+          provide: CoverageService,
+          useValue: { recordInterest: jest.fn().mockResolvedValue(undefined) },
+        },
       ],
     }).compile();
 

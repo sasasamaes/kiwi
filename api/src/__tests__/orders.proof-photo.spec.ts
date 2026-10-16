@@ -23,6 +23,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { OrdersService } from '../orders/orders.service';
 import { ZonesService } from '../zones/zones.service';
+import { CoverageService } from '../service-area/coverage.service';
 import { SettingsService } from '../settings/settings.service';
 import { EventsGateway } from '../events/events.gateway';
 import { DriversService } from '../drivers/drivers.service';
@@ -97,6 +98,10 @@ describe('OrdersService proof photo (Task 2)', () => {
         },
         { provide: SettingsService, useValue: { getDriverCommissionPct: jest.fn() } },
         { provide: ImageUploadService, useValue: imageUpload },
+        {
+          provide: CoverageService,
+          useValue: { recordInterest: jest.fn().mockResolvedValue(undefined) },
+        },
       ],
     }).compile();
 

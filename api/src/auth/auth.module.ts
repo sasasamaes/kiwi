@@ -9,6 +9,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { UsersModule } from '../users/users.module';
 import { InvitationsModule } from '../invitations/invitations.module';
 import { ReferralsModule } from '../referrals/referrals.module';
+import { CoverageModule } from '../service-area/coverage.module';
 import { DEV_FALLBACK_SECRET } from './dev-fallback-secret';
 
 @Module({
@@ -16,6 +17,7 @@ import { DEV_FALLBACK_SECRET } from './dev-fallback-secret';
     UsersModule,
     InvitationsModule,
     ReferralsModule,
+    CoverageModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],

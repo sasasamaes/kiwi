@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
 import { OrdersService } from '../orders/orders.service';
 import { ZonesService } from '../zones/zones.service';
+import { CoverageService } from '../service-area/coverage.service';
 import { EventsGateway } from '../events/events.gateway';
 import { DriversService } from '../drivers/drivers.service';
 import { GeocodingService } from '../geocoding/geocoding.service';
@@ -203,6 +204,10 @@ describe('OrdersService targeting de order:new', () => {
         {
           provide: SettingsService,
           useValue: { getDriverCommissionPct: jest.fn().mockResolvedValue(15) },
+        },
+        {
+          provide: CoverageService,
+          useValue: { recordInterest: jest.fn().mockResolvedValue(undefined) },
         },
       ],
     }).compile();

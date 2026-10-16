@@ -218,6 +218,7 @@ export { buildNotificationKey, shouldNotify } from './notification-dedupe';
 export { AuthProvider, useAuth } from './AuthContext';
 export { useInviteReferral } from './useInviteReferral';
 export type { InviteState, ReferralOffer } from './useInviteReferral';
+export { WaitlistNotice } from './WaitlistNotice';
 
 // ============================================
 //   i18n (Internationalization)

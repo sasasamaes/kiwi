@@ -24,6 +24,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { OrdersService } from '../orders/orders.service';
 import { ZonesService } from '../zones/zones.service';
+import { CoverageService } from '../service-area/coverage.service';
 import { SettingsService } from '../settings/settings.service';
 import { EventsGateway } from '../events/events.gateway';
 import { DriversService } from '../drivers/drivers.service';
@@ -33,6 +34,7 @@ import { ProximityService } from '../orders/proximity.service';
 describe('OrdersService', () => {
   let service: OrdersService;
   let prisma: any;
+  let coverageMock: { recordInterest: jest.Mock };
   let settingsStub: { getDriverCommissionPct: jest.Mock; getHomeCookCommissionPct: jest.Mock };
 
   beforeEach(async () => {
@@ -78,6 +80,8 @@ describe('OrdersService', () => {
       getHomeCookCommissionPct: jest.fn().mockResolvedValue(5),
     };
 
+    coverageMock = { recordInterest: jest.fn().mockResolvedValue(undefined) };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         OrdersService,
@@ -122,6 +126,10 @@ describe('OrdersService', () => {
           },
         },
         { provide: SettingsService, useValue: settingsStub },
+        {
+          provide: CoverageService,
+          useValue: coverageMock,
+        },
       ],
     }).compile();
 
@@ -494,6 +502,47 @@ describe('OrdersService', () => {
 
       // Server measures ~0.75 km between coords (not the claimed 2.5).
       expect(order.basePrice).toBe(800);
+    });
+  });
+
+  describe('Cobertura operativa (solo Nicoya y alrededores)', () => {
+    const merchant = { id: 'merchant-1', userId: 'user-1', businessName: 'Soda Nicoya' };
+
+    beforeEach(() => {
+      prisma.merchantProfile.findUnique.mockResolvedValue(merchant);
+      prisma.order.create.mockImplementation(async ({ data }: any) => ({ id: 'order-1', ...data }));
+    });
+
+    it('bloquea entrega en San José y anota el interés', async () => {
+      await expect(
+        service.create('user-1', {
+          pickupAddress: 'Soda Nicoya',
+          pickupLat: 10.1467,
+          pickupLng: -85.452,
+          deliveryAddress: 'San José centro',
+          deliveryLat: 9.9281,
+          deliveryLng: -84.0907,
+          distanceKm: 200,
+          customerEmail: 'sj@x.com',
+        }),
+      ).rejects.toThrow('Todavía no llegamos a tu zona');
+      expect(prisma.order.create).not.toHaveBeenCalled();
+      expect(coverageMock.recordInterest).toHaveBeenCalledWith(
+        expect.objectContaining({ source: 'order-blocked' }),
+      );
+    });
+
+    it('permite entrega dentro del área (Nicoya)', async () => {
+      const order: any = await service.create('user-1', {
+        pickupAddress: 'Parque de Nicoya',
+        pickupLat: 10.1467,
+        pickupLng: -85.452,
+        deliveryAddress: 'Barrio San Martín',
+        deliveryLat: 10.15,
+        deliveryLng: -85.455,
+        distanceKm: 1.2,
+      });
+      expect(order.basePrice).toBe(2000);
     });
   });
 

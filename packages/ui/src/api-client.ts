@@ -564,6 +564,27 @@ class ApiClient {
     return this.request<any>(`/visits/${id}`, { method: 'DELETE' });
   }
 
+  // ============================================
+  // 🗺️ COBERTURA / LISTA DE ESPERA (admin)
+  // ============================================
+
+  async getCoverageSummary(): Promise<{
+    cities: Array<{ slug: string; name: string; active: boolean }>;
+    demand: Array<{
+      city: string;
+      total: number;
+      notified: number;
+      pending: number;
+      emails: string[];
+    }>;
+  }> {
+    return this.request<any>('/coverage/summary');
+  }
+
+  async notifyCoverageCity(city: string): Promise<{ sent: number; failed: number }> {
+    return this.request<any>('/coverage/notify', { method: 'POST', body: { city } });
+  }
+
   /** Activa/apaga cobro con tarjeta/SINPE de un comercio (tras KYC de Onvo). */
   async setMerchantCardPayments(merchantId: string, enabled: boolean) {
     return this.request<any>(`/merchants/${merchantId}/card-payments`, {
