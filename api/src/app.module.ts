@@ -29,6 +29,7 @@ import { AdsModule } from './ads/ads.module';
 import { CustomersModule } from './customers/customers.module';
 import { FeatureFlagsModule } from './feature-flags/feature-flags.module';
 import { MailModule } from './mail/mail.module';
+import { ZonesModule } from './zones/zones.module';
 
 @Module({
   imports: [
@@ -55,6 +56,7 @@ import { MailModule } from './mail/mail.module';
     MerchantsModule,
     DriversModule,
     OrdersModule,
+    ZonesModule,
     RatingsModule,
     ContactModule,
     MenuModule,
