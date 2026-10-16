@@ -9,6 +9,13 @@ import { useDeliveryZones } from './useDeliveryZones';
 interface ZonePickerProps {
   value: string;
   onChange: (zoneId: string) => void;
+  /**
+   * Etiqueta de la zona detectada por GPS cuando su id todavía no está en
+   * la lista (los ids de la DB son UUIDs y la lista puede venir del
+   * catálogo local si el fetch falló): en vez del placeholder engañoso se
+   * muestra lo detectado.
+   */
+  detectedLabel?: string | null;
 }
 
 /**
@@ -16,10 +23,11 @@ interface ZonePickerProps {
  * Botón compacto + hoja modal con la lista alfabética (es-CR).
  * El precio es informativo: el servidor revalida la zona al cobrar.
  */
-export function ZonePicker({ value, onChange }: ZonePickerProps) {
+export function ZonePicker({ value, onChange, detectedLabel }: ZonePickerProps) {
   const [open, setOpen] = useState(false);
   const zones = [...useDeliveryZones()].sort((a, b) => a.label.localeCompare(b.label, 'es-CR'));
   const selected = zones.find((z) => z.id === value);
+  const detected = !selected && value ? detectedLabel || 'Barrio detectado' : null;
 
   const pick = (id: string) => {
     onChange(id);
@@ -41,9 +49,9 @@ export function ZonePicker({ value, onChange }: ZonePickerProps) {
             Barrio de entrega
           </span>
           <span
-            className={`block text-sm truncate ${selected ? 'font-medium' : 'text-surface-400'}`}
+            className={`block text-sm truncate ${selected || detected ? 'font-medium' : 'text-surface-400'}`}
           >
-            {selected ? selected.label : 'Elegí tu barrio…'}
+            {selected ? selected.label : (detected ?? 'Elegí tu barrio…')}
           </span>
         </span>
         {selected && (

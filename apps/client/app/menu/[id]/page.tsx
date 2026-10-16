@@ -138,6 +138,8 @@ export default function MenuPage() {
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [deliveryCoords, setDeliveryCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [zoneAuto, setZoneAuto] = useState(false);
+  /** Etiqueta de la zona resuelta por GPS (el id puede no estar en la lista local). */
+  const [resolvedZone, setResolvedZone] = useState<{ id: string; label: string } | null>(null);
   const [profilePrefilled, setProfilePrefilled] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState<string | null>(null);
   // Producto en el picker de variantes (null = picker cerrado).
@@ -351,6 +353,7 @@ export default function MenuPage() {
     setDeliveryInfo({ address: '', phone: '', name: '', instructions: '', zone: '' });
     setDeliveryCoords(null);
     setZoneAuto(false);
+    setResolvedZone(null);
     setProfilePrefilled(false);
     setPendingOrderId(null);
     setOrderSuccess(null);
@@ -373,6 +376,7 @@ export default function MenuPage() {
       .then((r) => {
         if (!alive || !r.zone) return;
         const zone = r.zone;
+        setResolvedZone({ id: zone.id, label: zone.label });
         setDeliveryInfo((prev) => (prev.zone ? prev : { ...prev, zone: zone.id }));
         setZoneAuto(true);
       })
@@ -1749,8 +1753,14 @@ export default function MenuPage() {
                   <div className="mt-3">
                     <ZonePicker
                       value={deliveryInfo.zone}
+                      detectedLabel={
+                        resolvedZone && resolvedZone.id === deliveryInfo.zone
+                          ? resolvedZone.label
+                          : null
+                      }
                       onChange={(zone) => {
                         setZoneAuto(false);
+                        setResolvedZone(null);
                         setDeliveryInfo((prev) => ({ ...prev, zone }));
                       }}
                     />

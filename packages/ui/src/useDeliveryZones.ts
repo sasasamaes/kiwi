@@ -24,6 +24,10 @@ function normalize(list: any[]): DeliveryZone[] {
  * Zonas de entrega desde la DB (editables desde el admin). Si el fetch falla o
  * viene vacío, cae al catálogo en código (`NICOYA_DELIVERY_ZONES`) para no
  * romper los selectores. El precio definitivo lo revalida el servidor.
+ *
+ * OJO: los ids de la DB son UUIDs y los del catálogo son slugs. Si el fetch
+ * falla, un id resuelto por GPS no matchea la lista (el ZonePicker muestra
+ * la etiqueta detectada en ese caso). Por eso hay UN reintento a los 3s.
  */
 export function useDeliveryZones(): DeliveryZone[] {
   const [zones, setZones] = useState<DeliveryZone[]>(cache ?? NICOYA_DELIVERY_ZONES);
@@ -31,16 +35,27 @@ export function useDeliveryZones(): DeliveryZone[] {
   useEffect(() => {
     if (cache) return;
     let alive = true;
-    api
-      .getDeliveryZones()
-      .then((list) => {
-        if (!alive || !Array.isArray(list) || list.length === 0) return;
-        cache = normalize(list);
-        setZones(cache);
-      })
-      .catch(() => undefined);
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const load = (retry: boolean) => {
+      api
+        .getDeliveryZones()
+        .then((list) => {
+          if (!alive) return;
+          if (Array.isArray(list) && list.length > 0) {
+            cache = normalize(list);
+            setZones(cache);
+          } else if (retry) {
+            timer = setTimeout(() => alive && load(false), 3000);
+          }
+        })
+        .catch(() => {
+          if (alive && retry) timer = setTimeout(() => alive && load(false), 3000);
+        });
+    };
+    load(true);
     return () => {
       alive = false;
+      if (timer) clearTimeout(timer);
     };
   }, []);
 
