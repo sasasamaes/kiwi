@@ -25,6 +25,8 @@ describe('isOpenNow', () => {
   it('sin horarios → abierto', () => {
     expect(isOpenNow(null)).toBe(true);
     expect(isOpenNow(undefined)).toBe(true);
+    // Objeto vacío = comercio "por pedido" (sin días configurados) → abierto.
+    expect(isOpenNow({})).toBe(true);
   });
 
   it('día ausente → cerrado (emprendedora "solo jueves")', () => {

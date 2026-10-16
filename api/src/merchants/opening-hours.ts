@@ -11,11 +11,14 @@ import { crWeekday, crTimeHHMM } from '../common/costa-rica-time';
 
 /**
  * ¿Abierto ahora? Formato { monday: { open: '08:00', close: '17:00' }, … }.
- * Sin horarios → abierto. Día ausente/nulo → cerrado (así "solo jueves"
- * cierra el resto de la semana).
+ * Sin horarios (null o sin días) → abierto: comercio "por pedido" (ej. pedidos
+ * con día de entrega). Día ausente/nulo → cerrado (así "solo jueves" cierra
+ * el resto de la semana).
  */
 export function isOpenNow(openingHours: any, date = new Date()): boolean {
-  if (!openingHours) return true;
+  if (!openingHours || typeof openingHours !== 'object' || Object.keys(openingHours).length === 0) {
+    return true;
+  }
   try {
     const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
     const todayHours = openingHours[dayNames[crWeekday(date)]];
