@@ -16,11 +16,17 @@ describe('isPreorderItem', () => {
     expect(isPreorderItem({ availableDays: [4], stockQty: 5 })).toBe(true);
   });
 
+  it('marca preventa si controla stock del día aunque sea todos los días', () => {
+    expect(isPreorderItem({ availableDays: [], stockQty: 20, dailyQty: 50 })).toBe(true);
+    expect(isPreorderItem({ stockQty: 3 })).toBe(true);
+  });
+
   it('no marca: menú de todos los días ni items agotados', () => {
     expect(isPreorderItem({ availableDays: [] })).toBe(false);
     expect(isPreorderItem({})).toBe(false);
     expect(isPreorderItem({ offeredTomorrow: true, stockQty: 0 })).toBe(false);
     expect(isPreorderItem({ availableDays: [4], stockQty: 0 })).toBe(false);
+    expect(isPreorderItem({ availableDays: [], stockQty: 0, dailyQty: 50 })).toBe(false);
   });
 });
 
@@ -35,9 +41,12 @@ describe('preorderDeliveryLabel', () => {
     expect(preorderDeliveryLabel([{ availableDays: [4] }], '2026-10-17', wd)).toContain('Entrega');
   });
 
-  it('null sin preventa', () => {
+  it('null sin preventa; si es por stock de todos los días, propone mañana', () => {
     expect(preorderDeliveryLabel([{ availableDays: [] }], '2026-10-17', wd)).toBeNull();
     expect(preorderDeliveryLabel([], '2026-10-17', wd)).toBeNull();
+    expect(
+      preorderDeliveryLabel([{ availableDays: [], stockQty: 20 }], '2026-10-17', wd),
+    ).toContain('mañana');
   });
 });
 

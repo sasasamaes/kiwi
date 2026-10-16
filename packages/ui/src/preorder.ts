@@ -16,6 +16,7 @@ export interface PreorderItemInput {
   fulfillNote?: string | null;
   availableDays?: number[] | null;
   stockQty?: number | null;
+  dailyQty?: number | null;
 }
 
 const cleanDays = (days: unknown): number[] => {
@@ -38,7 +39,11 @@ export function isPreorderItem(item: PreorderItemInput): boolean {
   if (item.offeredTomorrow) return true;
   if (typeof item.fulfillNote === 'string' && item.fulfillNote.trim()) return true;
   // Días restringidos = vende por fecha. Vacío = todos los días (normal).
-  return cleanDays(item.availableDays).length > 0;
+  if (cleanDays(item.availableDays).length > 0) return true;
+  // Vende por stock: controla stock del día aunque el menú sea todos los
+  // días (ej. "hasta agotar stock del día"). Sin control de stock ni fecha,
+  // el Cerrado por horario sigue valiendo.
+  return item.stockQty != null || item.dailyQty != null;
 }
 
 /** YYYY-MM-DD de hoy en hora CR. */
@@ -82,6 +87,8 @@ export function preorderDeliveryLabel(
   const days = new Set<number>();
   for (const i of orderable) for (const d of cleanDays(i.availableDays)) days.add(d);
   const key = nextDateKeyCR([...days]);
+  // Sin días restringidos (vende por stock todos los días): lo próximo es
+  // mañana. Con días, el próximo día de venta.
   if (key) return `Entrega ${weekdayName(key)}`;
-  return 'Preventa disponible';
+  return `Entrega mañana ${weekdayName(tomorrowKey)}`;
 }
