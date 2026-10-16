@@ -189,17 +189,18 @@ function CheckoutContent() {
       .catch(() => undefined);
   }, []);
   const servicePct = (isHomeCook ? feeRates.homeCookPct : feeRates.standardPct) / 100;
-  const serviceFee = Math.round(subtotal * servicePct);
+  // Kiwi ya no le cobra "servicio" al cliente (lo paga el comercio por factura).
+  const serviceFee = 0;
   // Precio del barrio desde la DB (editables en el admin); fallback al catálogo.
   const deliveryZones = useDeliveryZones();
   const zoneTrip =
     deliveryZones.find((z) => z.id === deliveryZone)?.price ??
     findDeliveryZone(deliveryZone)?.price ??
     null;
-  // Igual que el modal del menú y que el servidor: el envío es SIEMPRE el
-  // precio del barrio (el servidor no tiene regla de gratis +₡5000).
-  const deliveryFee = zoneTrip ?? 500;
-  const total = subtotal + serviceFee + deliveryFee;
+  // El envío se cobra con +15% de Kiwi; el repartidor recibe el viaje base.
+  const tripPct = feeRates.standardPct / 100;
+  const deliveryFee = Math.round((zoneTrip ?? 500) * (1 + tripPct));
+  const total = subtotal + deliveryFee;
   const phoneDigits = phoneNumber.replace(/\D/g, '');
 
   const canPlaceOrder =

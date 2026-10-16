@@ -97,6 +97,14 @@ function NewOrderInner({
   const [paymentFailed, setPaymentFailed] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
   const [orderNotice, setOrderNotice] = useState<string | null>(null);
+  // % que Kiwi suma sobre el viaje (el comercio lo paga; el repartidor recibe el viaje base).
+  const [tripPct, setTripPct] = useState(0.15);
+  useEffect(() => {
+    api
+      .getPlatformFees()
+      .then((f) => setTripPct((Number(f?.standardPct) || 15) / 100))
+      .catch(() => undefined);
+  }, []);
 
   const [kind, setKind] = useState<'food' | 'freight'>(presetKind);
   // Si el tipo llega preseleccionado por la URL y la URL cambia (nav entre los
@@ -509,8 +517,9 @@ function NewOrderInner({
   const zoneLabel = findDeliveryZone(deliveryZone)?.label ?? null;
   const weightSurcharge = kind === 'freight' && weightKg > 5 ? Math.ceil(weightKg - 5) * 500 : 0;
   const trip = baseTrip + weightSurcharge;
-  // El comercio NO paga comisión: paga productos + viaje.
-  const total = subtotal + trip;
+  // El comercio (dashboard) paga productos + envío + 15% de Kiwi sobre el viaje.
+  const tripFee = Math.round(trip * tripPct);
+  const total = subtotal + trip + tripFee;
   const etaMin = routeKm != null ? Math.max(5, Math.round((routeKm / 25) * 60)) : null;
 
   // Encomienda: la descripción es opcional — solo pide los datos de entrega.

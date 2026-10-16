@@ -529,13 +529,17 @@ export default function MenuPage() {
   }, []);
   const servicePct =
     ((merchant as any)?.isHomeCook ? feeRates.homeCookPct : feeRates.standardPct) / 100;
-  const serviceFee = Math.round(cartTotal * servicePct);
+  // Kiwi ya no le cobra "servicio" al cliente: la comisión de productos la paga
+  // el comercio (por factura, en pedidos de la app).
+  const serviceFee = 0;
+  // El envío se cobra con +15% de Kiwi; el repartidor recibe el viaje base.
+  const tripPct = feeRates.standardPct / 100;
   const zoneTrip =
     deliveryZones.find((z) => z.id === deliveryInfo.zone)?.price ??
     findDeliveryZone(deliveryInfo.zone)?.price ??
     null;
-  const deliveryFee = zoneTrip ?? 500;
-  const totalWithDelivery = cartTotal + serviceFee + deliveryFee;
+  const deliveryFee = Math.round((zoneTrip ?? 500) * (1 + tripPct));
+  const totalWithDelivery = cartTotal + deliveryFee;
 
   /** Solo dígitos para validar y para el email invitado. */
   const phoneDigits = deliveryInfo.phone.replace(/\D/g, '');

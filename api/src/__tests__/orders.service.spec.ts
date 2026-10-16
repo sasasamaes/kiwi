@@ -365,13 +365,14 @@ describe('OrdersService', () => {
         payWithCredit: true,
       });
 
-      // Viaje ₡7000 sin productos: sin cargo extra; corte 15% aparte (₡1050)
+      // Viaje ₡7000 sin productos: Kiwi +15% sobre el viaje (₡1050); el
+      // repartidor recibe el viaje base completo (100%).
       expect(order.deliveryZone).toBe('hojancha');
       expect(order.basePrice).toBe(7000);
-      expect(order.driverPayout).toBe(5950);
+      expect(order.driverPayout).toBe(7000);
       expect(order.commission).toBe(1050);
       expect(order.commissionRate).toBe(0.15);
-      expect(order.totalAmount).toBe(7000);
+      expect(order.totalAmount).toBe(8050);
     });
 
     it('el medio de pago no cambia el cargo: sin productos no hay cargo extra', async () => {
@@ -393,11 +394,11 @@ describe('OrdersService', () => {
         distanceKm: 1,
       });
 
-      // Viaje ₡7000 sin productos: sin cargo extra, corte 15% aparte (₡1050)
+      // Viaje ₡7000 sin productos: Kiwi +15% (₡1050); repartidor 100%.
       expect(order.commission).toBe(1050);
       expect(order.commissionRate).toBe(0.15);
-      expect(order.totalAmount).toBe(7000);
-      expect(order.driverPayout).toBe(5950);
+      expect(order.totalAmount).toBe(8050);
+      expect(order.driverPayout).toBe(7000);
     });
 
     it('la tasa del admin manda: 20% configured → cargo y corte con 20%', async () => {
@@ -422,8 +423,8 @@ describe('OrdersService', () => {
 
       expect(order.commissionRate).toBe(0.2);
       expect(order.commission).toBe(1400);
-      expect(order.driverPayout).toBe(5600);
-      expect(order.totalAmount).toBe(7000);
+      expect(order.driverPayout).toBe(7000);
+      expect(order.totalAmount).toBe(8400);
     });
 
     it('should reject unknown deliveryZone', async () => {
@@ -465,9 +466,9 @@ describe('OrdersService', () => {
       });
 
       expect(order.basePrice).toBe(2000);
-      expect(order.totalAmount).toBe(2000);
+      expect(order.totalAmount).toBe(2300); // 2000 + 15% Kiwi
       expect(order.commission).toBe(300);
-      expect(order.driverPayout).toBe(1700);
+      expect(order.driverPayout).toBe(2000);
     });
 
     it('charges flat ₡2000 without coords when distance is within the zone', async () => {
@@ -574,7 +575,7 @@ describe('OrdersService', () => {
       }));
     });
 
-    it('flete en zona: 2000, driver recibe 1700 (15%)', async () => {
+    it('flete en zona: 2000 + 15% Kiwi, driver recibe el viaje completo', async () => {
       const order: any = await service.create('user-1', {
         pickupAddress: 'Parque Nicoya',
         pickupLat: 10.1467,
@@ -589,9 +590,9 @@ describe('OrdersService', () => {
         packageSize: 'M',
       });
       expect(order.basePrice).toBe(2000);
-      expect(order.commission).toBe(300);
-      expect(order.driverPayout).toBe(1700);
-      expect(order.totalAmount).toBe(2000);
+      expect(order.commission).toBe(300); // 15% sobre el viaje
+      expect(order.driverPayout).toBe(2000); // 100% del viaje base
+      expect(order.totalAmount).toBe(2300); // 2000 + 15%
     });
 
     it('encomienda por peso: 12kg suma ₡3500 por 7kg extra', async () => {
@@ -608,11 +609,11 @@ describe('OrdersService', () => {
         packageDescription: 'Caja pesada',
         weightKg: 12,
       });
-      // 2000 viaje + 7*500 peso = 5500; comisión 15% = 825; driver = 4675
+      // 2000 viaje + 7*500 peso = 5500; Kiwi 15% = 825; driver = 5500
       expect(order.basePrice).toBe(5500);
       expect(order.commission).toBe(825);
-      expect(order.driverPayout).toBe(4675);
-      expect(order.totalAmount).toBe(5500);
+      expect(order.driverPayout).toBe(5500);
+      expect(order.totalAmount).toBe(6325);
     });
 
     it('rechaza weightKg inválido', async () => {
@@ -654,12 +655,13 @@ describe('OrdersService', () => {
         payWithCredit: true,
         productsTotal: 5000,
       });
-      // Productos 5000 + cargo 15% (750) + viaje 2000. Corte del viaje 300.
+      // Comercio (dashboard): paga productos + envío+15%. Sin cargo de servicio
+      // sobre productos (eso es solo en pedidos de cliente).
       expect(order.basePrice).toBe(2000);
-      expect(order.commission).toBe(750 + 300);
+      expect(order.commission).toBe(300); // 15% sobre el viaje
       expect(order.commissionRate).toBe(0.15);
-      expect(order.driverPayout).toBe(1700);
-      expect(order.totalAmount).toBe(5000 + 750 + 2000);
+      expect(order.driverPayout).toBe(2000);
+      expect(order.totalAmount).toBe(5000 + 2000 + 300);
     });
 
     it('rechaza kind invalido y productsTotal negativo', async () => {
@@ -799,10 +801,10 @@ describe('OrdersService', () => {
 
       expect(settingsStub.getHomeCookCommissionPct).toHaveBeenCalled();
       expect(order.commissionRate).toBe(0.05);
-      // Cargo 5% de 5000 (250) + corte 15% del viaje 2000 (300).
-      expect(order.commission).toBe(250 + 300);
-      expect(order.driverPayout).toBe(1700);
-      expect(order.totalAmount).toBe(5000 + 250 + 2000);
+      // Comercio: sin cargo de servicio sobre productos; Kiwi solo el 15% del viaje.
+      expect(order.commission).toBe(300);
+      expect(order.driverPayout).toBe(2000);
+      expect(order.totalAmount).toBe(5000 + 2000 + 300);
     });
 
     it('rechaza cuando el stock del día no alcanza', async () => {
@@ -938,15 +940,15 @@ describe('OrdersService', () => {
         cashTendered: 10000,
       });
 
-      // Total 5000 + 750 (15%) + 2000 = 7750 ≤ 10000.
-      expect(order.totalAmount).toBe(7750);
+      // Total 5000 + envío 2000 + 15% del viaje (300) = 7300 ≤ 10000.
+      expect(order.totalAmount).toBe(7300);
       expect(prisma.order.create).toHaveBeenCalledWith(
         expect.objectContaining({ data: expect.objectContaining({ cashTendered: 10000 }) }),
       );
       expect(prisma.payment.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { orderId: 'o-cash' },
-          create: expect.objectContaining({ method: 'cash', amount: 7750, status: 'pending' }),
+          create: expect.objectContaining({ method: 'cash', amount: 7300, status: 'pending' }),
         }),
       );
     });

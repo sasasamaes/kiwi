@@ -550,11 +550,17 @@ export class OrdersService {
         : this.settingsService.getDriverCommissionPct(),
     ]);
     const commissionRate = servicePct / 100;
-    const serviceFee = Math.round(productsTotal * commissionRate);
-    const tripCut = Math.round(tripPrice * (standardPct / 100));
-    const commission = serviceFee + tripCut;
-    const driverPayout = tripPrice - tripCut;
-    const totalAmount = productsTotal + serviceFee + tripPrice;
+    // Kiwi cobra un % EXTRA sobre el viaje (se le suma al envío). El repartidor
+    // recibe el viaje base COMPLETO (100%) — no se le descuenta nada.
+    const tripFee = Math.round(tripPrice * (standardPct / 100));
+    // Comisión de Kiwi sobre la FACTURA (productos): SOLO en pedidos del cliente
+    // (app). El comercio que pide desde el dashboard paga solo el envío.
+    const isClientOrder = (data as any)?.origin === 'client_app';
+    const serviceFee = isClientOrder ? Math.round(productsTotal * commissionRate) : 0;
+    const commission = serviceFee + tripFee;
+    const driverPayout = tripPrice;
+    // Total que paga quien ordena: productos + envío (+15% de Kiwi sobre el viaje).
+    const totalAmount = productsTotal + tripPrice + tripFee;
     // Efectivo: con cuánto paga el cliente (para llevar el vuelto listo).
     // Opcional; si viene debe cubrir el total. Se guarda en el pedido.
     let cashTendered: number | null = null;
