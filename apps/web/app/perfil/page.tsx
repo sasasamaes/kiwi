@@ -59,6 +59,10 @@ export default function PerfilPage() {
   const [listed, setListed] = useState(true);
   const [listedBusy, setListedBusy] = useState(false);
   const [listedError, setListedError] = useState<string | null>(null);
+  const [cashEnabled, setCashEnabled] = useState(true);
+  const [sinpeEnabled, setSinpeEnabled] = useState(true);
+  const [payBusy, setPayBusy] = useState(false);
+  const [payError, setPayError] = useState<string | null>(null);
   const [mpError, setMpError] = useState<string | null>(null);
   const [mpInfo, setMpInfo] = useState<string | null>(null);
   const [mpPayments, setMpPayments] = useState<Array<{
@@ -114,6 +118,8 @@ export default function PerfilPage() {
           },
         });
         setListed((profile as any)?.isListed !== false);
+        setCashEnabled((profile as any)?.cashEnabled !== false);
+        setSinpeEnabled((profile as any)?.sinpeEnabled !== false);
       } catch {
         if (!cancelled) setFormError('No se pudo cargar el perfil.');
       } finally {
@@ -230,6 +236,23 @@ export default function PerfilPage() {
       setListedError('No se pudo cambiar la visibilidad. Intentá de nuevo.');
     } finally {
       setListedBusy(false);
+    }
+  };
+
+  const togglePaymentMethod = async (field: 'cash' | 'sinpe', next: boolean) => {
+    const setter = field === 'cash' ? setCashEnabled : setSinpeEnabled;
+    setter(next);
+    setPayError(null);
+    setPayBusy(true);
+    try {
+      await api.setMerchantPaymentMethods(
+        field === 'cash' ? { cashEnabled: next } : { sinpeEnabled: next },
+      );
+    } catch {
+      setter(!next);
+      setPayError('No se pudo guardar el método de pago. Intentá de nuevo.');
+    } finally {
+      setPayBusy(false);
     }
   };
 
@@ -545,6 +568,70 @@ export default function PerfilPage() {
             </div>
             {listedError && <p className="mt-2 text-sm text-red-600">{listedError}</p>}
           </div>
+        </div>
+
+        <div className="mt-6 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] p-5 shadow-soft dark:shadow-dark">
+          <p className="text-xs font-bold uppercase tracking-wider text-surface-400 mb-4">
+            Métodos de pago
+          </p>
+
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium text-surface-800 dark:text-surface-100">Efectivo</p>
+              <p className="text-xs text-surface-500 dark:text-surface-400">
+                El cliente paga al recibir.
+              </p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={cashEnabled}
+              onClick={() => void togglePaymentMethod('cash', !cashEnabled)}
+              disabled={payBusy}
+              className={`relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-60 ${
+                cashEnabled ? 'bg-kiwi-600' : 'bg-surface-300 dark:bg-surface-600'
+              }`}
+            >
+              <span
+                className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-all ${
+                  cashEnabled ? 'left-[22px]' : 'left-0.5'
+                }`}
+              />
+            </button>
+          </div>
+
+          <div className="mt-3 flex items-center justify-between gap-3 border-t border-surface-100 dark:border-white/5 pt-3">
+            <div>
+              <p className="text-sm font-medium text-surface-800 dark:text-surface-100">
+                SINPE Móvil
+              </p>
+              <p className="text-xs text-surface-500 dark:text-surface-400">
+                {mpStatus?.status === 'active'
+                  ? 'Cobro vía Onvo.'
+                  : 'Requiere activación Onvo (KYC).'}
+              </p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={sinpeEnabled && mpStatus?.status === 'active'}
+              onClick={() => void togglePaymentMethod('sinpe', !sinpeEnabled)}
+              disabled={payBusy || mpStatus?.status !== 'active'}
+              className={`relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-60 ${
+                sinpeEnabled && mpStatus?.status === 'active'
+                  ? 'bg-kiwi-600'
+                  : 'bg-surface-300 dark:bg-surface-600'
+              }`}
+            >
+              <span
+                className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-all ${
+                  sinpeEnabled && mpStatus?.status === 'active' ? 'left-[22px]' : 'left-0.5'
+                }`}
+              />
+            </button>
+          </div>
+
+          {payError && <p className="mt-2 text-sm text-red-600">{payError}</p>}
         </div>
 
         <div className="mt-6 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] p-5 shadow-soft dark:shadow-dark">

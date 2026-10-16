@@ -35,6 +35,8 @@ export class MenuService {
         openingHours: true,
         createdAt: true,
         cardPaymentsEnabled: true,
+        cashEnabled: true,
+        sinpeEnabled: true,
         category: true,
         isHomeCook: true,
         socials: true,

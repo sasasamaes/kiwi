@@ -126,6 +126,22 @@ export class MerchantsService {
     });
   }
 
+  /** Métodos de pago que el comercio prende/apaga en su perfil. */
+  async setPaymentMethods(userId: string, data: { cashEnabled?: boolean; sinpeEnabled?: boolean }) {
+    const merchant = await this.prisma.merchantProfile.findUnique({ where: { userId } });
+    if (!merchant) {
+      throw new NotFoundException('Perfil de comercio no encontrado');
+    }
+    return this.prisma.merchantProfile.update({
+      where: { userId },
+      data: {
+        ...(data.cashEnabled !== undefined ? { cashEnabled: !!data.cashEnabled } : {}),
+        ...(data.sinpeEnabled !== undefined ? { sinpeEnabled: !!data.sinpeEnabled } : {}),
+      },
+      select: { cashEnabled: true, sinpeEnabled: true, cardPaymentsEnabled: true },
+    });
+  }
+
   async findByUserId(userId: string) {
     const merchant = await this.prisma.merchantProfile.findUnique({
       where: { userId },

@@ -691,6 +691,14 @@ class ApiClient {
     });
   }
 
+  /** Métodos de pago del comercio (efectivo, SINPE). */
+  async setMerchantPaymentMethods(body: { cashEnabled?: boolean; sinpeEnabled?: boolean }) {
+    return this.request<any>('/merchants/me/payment-methods', {
+      method: 'PUT',
+      body,
+    });
+  }
+
   async getFavoriteDrivers() {
     return this.request<any>('/merchants/me/favorites');
   }

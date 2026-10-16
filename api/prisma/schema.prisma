@@ -131,6 +131,12 @@ model MerchantProfile {
   // cuando el comercio pasa el KYC de Onvo. Sin esto solo efectivo (y crypto).
   cardPaymentsEnabled Boolean @default(false) @map("card_payments_enabled")
 
+  // Métodos que el propio comercio puede prender/apagar en su perfil.
+  // cashEnabled: efectivo (independiente de Onvo).
+  // sinpeEnabled: SINPE Móvil vía Onvo (solo aplica si cardPaymentsEnabled/Onvo activo).
+  cashEnabled  Boolean @default(true) @map("cash_enabled")
+  sinpeEnabled Boolean @default(true) @map("sinpe_enabled")
+
   // Onvo marketplace: cuenta conectada del comercio para split automático.
   // onboardingStatus: pending_onboarding | awaiting_approval | active | ...
   onvoConnectedAccountId String? @map("onvo_connected_account_id")

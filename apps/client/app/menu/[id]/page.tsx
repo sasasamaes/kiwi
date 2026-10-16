@@ -174,20 +174,25 @@ export default function MenuPage() {
   // Tarjeta/SINPE solo si el comercio pasó el KYC de Onvo (flag del admin).
   // Sin eso el backend rechaza el cobro: se muestran inactivos en gris.
   const cardAllowed = (merchant as any)?.cardPaymentsEnabled === true;
+  // Toggles del propio comercio (perfil): efectivo y SINPE.
+  const cashAllowed = (merchant as any)?.cashEnabled !== false;
+  const sinpeAllowed = cardAllowed && (merchant as any)?.sinpeEnabled !== false;
   const payWithAuthedEndpoint =
     !!api.getToken() && (userRole === 'customer' || userRole === 'merchant');
 
-  // Cuadro habilitado = flag de plataforma + (SINPE/tarjeta exigen KYC Onvo).
-  // Si el método elegido se apaga (o nada está activo), Pedir se desactiva:
-  // una selección vieja en un cuadro gris no debe dejar pedir.
+  // Cuadro habilitado = flag de plataforma + toggles del comercio
+  // (SINPE/tarjeta además exigen KYC Onvo). Si el método elegido se apaga,
+  // Pedir se desactiva: una selección vieja no debe dejar pedir.
   const isPayMethodEnabled = useCallback(
     (id: PaymentMethod): boolean => {
       if (id === 'crypto_usdc' || id === 'crypto_usdt') return payAvailability.crypto;
       if (!(payAvailability as Record<string, boolean>)[id]) return false;
-      if ((id === 'sinpe' || id === 'card') && !cardAllowed) return false;
+      if (id === 'cash' && !cashAllowed) return false;
+      if (id === 'sinpe' && !sinpeAllowed) return false;
+      if (id === 'card' && !cardAllowed) return false;
       return true;
     },
-    [payAvailability, cardAllowed],
+    [payAvailability, cardAllowed, cashAllowed, sinpeAllowed],
   );
 
   // Si el método elegido deja de estar disponible (flag del comercio o

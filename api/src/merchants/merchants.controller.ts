@@ -103,6 +103,21 @@ export class MerchantsController {
     return this.merchantsService.setListed(merchant.id, body?.listed !== false);
   }
 
+  @Put('me/payment-methods')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('merchant')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Prender/apagar métodos de pago (efectivo, SINPE) — comercio' })
+  async setPaymentMethods(
+    @CurrentUser() user: any,
+    @Body() body: { cashEnabled?: boolean; sinpeEnabled?: boolean },
+  ) {
+    return this.merchantsService.setPaymentMethods(user.sub, {
+      cashEnabled: body?.cashEnabled,
+      sinpeEnabled: body?.sinpeEnabled,
+    });
+  }
+
   @Get('me/followers')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('merchant')
