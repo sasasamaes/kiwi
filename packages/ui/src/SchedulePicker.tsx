@@ -41,10 +41,13 @@ export function weekdayNameES(dateKey: string): string {
   return d.toLocaleDateString('es-CR', { weekday: 'long', timeZone: 'America/Costa_Rica' });
 }
 
-/** ¿La preventa tiene fecha+hora válidas y futuras? (el server revalida). */
+/** ¿La preventa tiene fecha válida (y hora válida si se pide)? (el server revalida). */
 export function isValidSchedule(v: ScheduleValue): boolean {
   if (v.mode === 'now') return true;
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(v.date) || !/^\d{2}:\d{2}$/.test(v.time)) return false;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(v.date)) return false;
+  // Sin hora solo importa el día (entrega ese día, sin hora pactada).
+  if (!v.time) return v.date >= todayCR();
+  if (!/^\d{2}:\d{2}$/.test(v.time)) return false;
   const target = new Date(`${v.date}T${v.time}:00-06:00`).getTime();
   return Number.isFinite(target) && target > Date.now() - 2 * 60 * 1000;
 }
@@ -55,7 +58,11 @@ export function scheduleFields(v: ScheduleValue): {
   scheduledTime?: string;
 } {
   if (v.mode === 'scheduled' && isValidSchedule(v)) {
-    return { orderType: 'scheduled', scheduledDate: v.date, scheduledTime: v.time };
+    return {
+      orderType: 'scheduled',
+      scheduledDate: v.date,
+      ...(v.time ? { scheduledTime: v.time } : {}),
+    };
   }
   return { orderType: 'immediate' };
 }
@@ -75,6 +82,8 @@ interface SchedulePickerProps {
    * [] = conflicto (los productos no comparten día).
    */
   allowedWeekdays?: number[] | null;
+  /** Solo día de entrega, sin hora (la entrega se coordina ese día). */
+  hideTime?: boolean;
 }
 
 /** Próximas fechas YYYY-MM-DD (hora CR) para los chips de día. */
@@ -96,6 +105,7 @@ export function SchedulePicker({
   nowDisabled,
   nowDisabledReason,
   allowedWeekdays,
+  hideTime,
 }: SchedulePickerProps) {
   const restricted = allowedWeekdays !== undefined && allowedWeekdays !== null;
   const conflict = restricted && allowedWeekdays.length === 0;
@@ -189,20 +199,22 @@ export function SchedulePicker({
                   className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-2.5 text-sm text-surface-800 dark:text-surface-100"
                 />
               </label>
-              <label className="block">
-                <span className="mb-1 block text-xs font-medium text-surface-500 dark:text-surface-400">
-                  Hora
-                </span>
-                <input
-                  type="time"
-                  value={value.time}
-                  onChange={(e) => onChange({ ...value, time: e.target.value })}
-                  className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-2.5 text-sm text-surface-800 dark:text-surface-100"
-                />
-              </label>
+              {!hideTime && (
+                <label className="block">
+                  <span className="mb-1 block text-xs font-medium text-surface-500 dark:text-surface-400">
+                    Hora
+                  </span>
+                  <input
+                    type="time"
+                    value={value.time}
+                    onChange={(e) => onChange({ ...value, time: e.target.value })}
+                    className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-2.5 text-sm text-surface-800 dark:text-surface-100"
+                  />
+                </label>
+              )}
             </div>
           )}
-          {restricted && !conflict && (
+          {restricted && !conflict && !hideTime && (
             <label className="block">
               <span className="mb-1 block text-xs font-medium text-surface-500 dark:text-surface-400">
                 Hora

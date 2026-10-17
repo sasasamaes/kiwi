@@ -423,15 +423,14 @@ export default function MenuPage() {
   // otro camino y el programado quedaba sin setear ("no puedo pedir").
   const presetScheduleForItem = useCallback(
     (item: MenuItem) => {
-      // Item de mañana: la preventa queda preset para mañana (el cliente
-      // solo elige la hora en el checkout).
+      // Item de mañana: la preventa queda preset para mañana.
       if ((item as any).offeredTomorrow) {
         setSchedule((prev) => ({ ...prev, mode: 'scheduled', date: tomorrowKeyCR() }));
         return;
       }
       if (merchant?.isOpen !== false) return;
       // Item por fecha (ej. solo jueves) con el local cerrado: presetear la
-      // próxima fecha para que el programado quede a un paso (solo la hora).
+      // próxima fecha para que el programado quede listo solo.
       // Solo si el cliente no eligió nada (no pisar su elección).
       const days = ((item as any).availableDays ?? []).filter(
         (d: any) => Number.isInteger(Number(d)) && Number(d) >= 0 && Number(d) <= 6,
@@ -745,7 +744,7 @@ export default function MenuPage() {
                 : schedule.mode === 'scheduled' && !scheduledDayAllowed
                   ? 'Ese día no hay entrega de estos productos: elegí un día marcado'
                   : !isValidSchedule(schedule)
-                    ? 'Elegí día y hora de entrega'
+                    ? 'Elegí el día de entrega'
                     : !cashCovers
                       ? 'El monto en efectivo no cubre el total'
                       : null;
@@ -1971,10 +1970,11 @@ export default function MenuPage() {
                       nowDisabled={!nowPossible}
                       nowDisabledReason={scheduleReason ?? undefined}
                       allowedWeekdays={scheduledAllowedDays}
+                      hideTime
                       hint={
                         nowPossible
                           ? cartHasTomorrow
-                            ? `Tu pedido incluye productos de mañana: sale programado para mañana ${weekdayNameES(tomorrowKey)}. Elegí la hora.`
+                            ? `Tu pedido incluye productos de mañana: sale programado para mañana ${weekdayNameES(tomorrowKey)}.`
                             : (preorderLabel ??
                               'Acepta pedidos aunque hoy esté cerrada: programá para su día de venta.')
                           : undefined

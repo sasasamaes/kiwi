@@ -588,6 +588,7 @@ function CheckoutContent() {
             <SchedulePicker
               value={schedule}
               onChange={setSchedule}
+              hideTime
               hint="Cocina casera: podés pedir hoy aunque esté cerrada, programando su día de venta."
             />
           </motion.div>
