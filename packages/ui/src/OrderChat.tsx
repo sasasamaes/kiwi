@@ -2,7 +2,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Send } from 'lucide-react';
+import { Send, MessageCircle } from 'lucide-react';
 import { api } from './api-client';
 import { socketClient } from './socket-client';
 import { useAuth } from './AuthContext';
@@ -123,8 +123,8 @@ export function OrderChat({ orderId }: { orderId: string }) {
 
   return (
     <div className="rounded-2xl border border-surface-200/60 dark:border-white/[0.06] bg-surface-50 dark:bg-surface-900/50 p-3">
-      <p className="mb-2 text-xs font-semibold text-surface-500 dark:text-surface-400">
-        💬 Chat del pedido
+      <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-surface-500 dark:text-surface-400">
+        <MessageCircle className="h-3.5 w-3.5" aria-hidden /> Chat del pedido
       </p>
       {counterpartMissing && (
         <p className="mb-2 text-xs text-surface-500 dark:text-surface-400">

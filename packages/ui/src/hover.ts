@@ -16,12 +16,12 @@
 export const HOVER_MEDIA = '@media (hover: hover) and (pointer: fine)';
 
 /**
- * Card flotante (menu items, órdenes, comercios): lift sutil + sombra kiwi.
+ * Card flotante (menu items, órdenes, comercios): lift sutil + sombra neutra.
  */
 export const hoverCard =
   'transition-[transform,box-shadow] duration-200 ease-out ' +
   '[@media(hover:hover)]:hover:-translate-y-0.5 ' +
-  '[@media(hover:hover)]:hover:shadow-[0_8px_24px_-8px_rgba(34,197,94,0.25)]';
+  '[@media(hover:hover)]:hover:shadow-[0_10px_28px_-12px_rgba(13,51,69,0.22)]';
 
 /**
  * Fila/lista interactiva (items de pedido, historial): fondo que responde,

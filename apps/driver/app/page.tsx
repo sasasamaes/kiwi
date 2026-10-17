@@ -477,11 +477,7 @@ export default function Home() {
                 />
               </div>
               <ThemeToggle />
-              <motion.div
-                className="h-8 w-8 rounded-full bg-kiwi-gradient text-white flex items-center justify-center text-sm font-semibold ring-2 ring-white dark:ring-surface-800 shadow-sm overflow-hidden"
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-              >
+              <div className="h-8 w-8 rounded-full bg-kiwi-gradient text-white flex items-center justify-center text-sm font-semibold ring-2 ring-white dark:ring-surface-800 shadow-sm overflow-hidden">
                 {isHttpUrl((user as any)?.driverProfile?.photoUrl) ? (
                   // NOTE: <img> intencional — foto dinámica de Cloudinary.
                   <img
@@ -496,7 +492,7 @@ export default function Home() {
                 ) : (
                   user?.driverProfile?.fullName?.charAt(0) || 'D'
                 )}
-              </motion.div>
+              </div>
             </div>
           </div>
         </div>
@@ -607,7 +603,7 @@ export default function Home() {
         {/* Status Toggle */}
         <motion.div
           className={`mb-6 rounded-3xl p-6 text-white overflow-hidden relative transition-colors ${
-            isOnline ? 'bg-kiwi-gradient glow-kiwi-lg' : 'bg-surface-800 dark:bg-surface-800'
+            isOnline ? 'bg-kiwi-gradient shadow-card' : 'bg-surface-800 dark:bg-surface-800'
           }`}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -690,10 +686,11 @@ export default function Home() {
                   {tabs.map((tab) => (
                     <motion.button
                       key={tab.id}
-                      className={`flex-1 rounded-xl py-2 px-3 text-xs font-medium transition-colors ${
+                      aria-pressed={activeTab === tab.id}
+                      className={`flex-1 rounded-xl py-2 px-3 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 ${
                         activeTab === tab.id
-                          ? 'bg-white text-kiwi-700'
-                          : 'bg-white/20 text-white/80 hover:bg-white/30'
+                          ? 'bg-white text-kiwi-800'
+                          : 'bg-white/20 text-white/85 [@media(hover:hover)]:hover:bg-white/30 [@media(hover:hover)]:hover:text-white'
                       }`}
                       onClick={() => setActiveTab(tab.id)}
                       whileTap={{ scale: 0.95 }}
@@ -727,19 +724,13 @@ export default function Home() {
         {/* Today's Stats */}
         <StaggerContainer className="mb-6 grid grid-cols-2 gap-3">
           <StaggerItem>
-            <motion.div
-              className="rounded-xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4 text-center tactile"
-              whileHover={{ y: -2 }}
-            >
+            <motion.div className="rounded-xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-card dark:shadow-dark p-4 text-center">
               <AnimatedCounter value={stats.trips} className="text-2xl font-bold text-kiwi-700" />
               <p className="text-xs text-surface-500 dark:text-surface-400">Viajes</p>
             </motion.div>
           </StaggerItem>
           <StaggerItem>
-            <motion.div
-              className="rounded-xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4 text-center tactile"
-              whileHover={{ y: -2 }}
-            >
+            <motion.div className="rounded-xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-card dark:shadow-dark p-4 text-center">
               <div className="flex items-center justify-center gap-1">
                 <Star className="h-5 w-5 fill-gold-400 text-gold-400" />
                 <AnimatedCounter
@@ -752,10 +743,7 @@ export default function Home() {
             </motion.div>
           </StaggerItem>
           <StaggerItem>
-            <motion.div
-              className="rounded-xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4 text-center tactile"
-              whileHover={{ y: -2 }}
-            >
+            <motion.div className="rounded-xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-card dark:shadow-dark p-4 text-center">
               <span className="text-2xl font-bold text-kiwi-700">
                 ₡{Math.round(stats.earnings).toLocaleString()}
               </span>
@@ -763,10 +751,7 @@ export default function Home() {
             </motion.div>
           </StaggerItem>
           <StaggerItem>
-            <motion.div
-              className="rounded-xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4 text-center tactile"
-              whileHover={{ y: -2 }}
-            >
+            <motion.div className="rounded-xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-card dark:shadow-dark p-4 text-center">
               <span className="text-2xl font-bold text-gold-600">{availableOrders.length}</span>
               <p className="text-xs text-surface-500 dark:text-surface-400">Disponibles</p>
             </motion.div>
@@ -797,10 +782,7 @@ export default function Home() {
 
                 return (
                   <StaggerItem key={order.id}>
-                    <motion.div
-                      className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4 glow-kiwi"
-                      whileHover={{ y: -2 }}
-                    >
+                    <motion.div className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-card dark:shadow-dark p-4">
                       <div className="mb-3 flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <motion.span
@@ -928,8 +910,7 @@ export default function Home() {
               {filteredOrders.map((order, index) => (
                 <StaggerItem key={order.id}>
                   <motion.div
-                    className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4 tactile"
-                    whileHover={{ y: -4, boxShadow: '0 12px 32px -8px rgba(34, 197, 94, 0.25)' }}
+                    className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-card dark:shadow-dark p-4 transition-[transform,box-shadow,border-color] duration-200 ease-out [@media(hover:hover)]:hover:-translate-y-0.5 [@media(hover:hover)]:hover:shadow-[0_10px_28px_-12px_rgba(13,51,69,0.22)] active:scale-[0.99]"
                     whileTap={{ scale: 0.98 }}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -1041,11 +1022,10 @@ export default function Home() {
 
         {/* Progress Card */}
         <motion.div
-          className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft dark:shadow-dark"
+          className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-card dark:shadow-dark"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
-          whileHover={{ y: -2 }}
         >
           <h3 className="mb-3 text-sm font-semibold text-surface-600 dark:text-surface-300">
             Tu Nivel

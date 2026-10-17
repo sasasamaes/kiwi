@@ -25,6 +25,10 @@ import {
   Instagram,
   Facebook,
   MessageCircle,
+  Store,
+  Flame,
+  Play,
+  BookOpenText,
 } from 'lucide-react';
 import {
   AnimatedButton,
@@ -130,6 +134,8 @@ export default function MenuPage() {
     Array<{ id: string; name: string; description: string | null; imageUrl: string | null }>
   >([]);
   const [selectedCategory, setSelectedCategory] = useState('Todos');
+  /** Kiosko seleccionado en la tira: muestra su ficha (historia, productos, video). */
+  const [selectedKioskId, setSelectedKioskId] = useState<string | null>(null);
   /** Clave que reinicia la animación de rebote del carrito (TapButton onSuccess). */
   const [cartBounceKey, setCartBounceKey] = useState(0);
   const prefersReducedMotion = useReducedMotion();
@@ -708,6 +714,21 @@ export default function MenuPage() {
   const showKioskSections = kiosks.length > 0;
   const scrollToKiosk = (id: string) => {
     document.getElementById(`kiosko-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+  const scrollToItem = (id: string) => {
+    document.getElementById(`item-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+  const selectedKiosk = selectedKioskId
+    ? (kiosks.find((k) => k.id === selectedKioskId) ?? null)
+    : null;
+  const selectedKioskItems =
+    selectedKioskId != null
+      ? (todaySections.find((s) => s.kiosk?.id === selectedKioskId)?.items ?? [])
+      : [];
+  /** YouTube (watch/share/embed) -> embed; el resto (mp4) -> <video>. */
+  const kioskVideoEmbed = (url: string): string | null => {
+    const m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{6,})/);
+    return m ? `https://www.youtube.com/embed/${m[1]}` : null;
   };
 
   // Filas planas para la lista: cabecera de kiosko + sus productos. Sin
@@ -1437,18 +1458,24 @@ export default function MenuPage() {
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
             {kiosks.map((k) => {
               const count = todaySections.find((s) => s.kiosk?.id === k.id)?.items.length ?? 0;
+              const selected = selectedKioskId === k.id;
               return (
                 <button
                   key={k.id}
                   type="button"
-                  onClick={() => scrollToKiosk(k.id)}
-                  className="flex min-w-[140px] max-w-[160px] flex-col items-center gap-1.5 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] p-3 shadow-soft dark:shadow-dark active:scale-95 transition-transform"
+                  aria-pressed={selected}
+                  onClick={() => setSelectedKioskId(selected ? null : k.id)}
+                  className={`flex min-w-[140px] max-w-[160px] flex-col items-center gap-1.5 rounded-2xl bg-white dark:bg-surface-800 border p-3 shadow-card dark:shadow-dark transition-[transform,box-shadow,border-color] duration-200 ease-out active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-600/40 ${
+                    selected
+                      ? 'border-kiwi-600 ring-2 ring-kiwi-600/25'
+                      : 'border-surface-200/60 dark:border-white/[0.06] [@media(hover:hover)]:hover:-translate-y-0.5 [@media(hover:hover)]:hover:border-zona-200'
+                  }`}
                 >
-                  <span className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-xl bg-purple-50 dark:bg-purple-900/30 text-3xl">
+                  <span className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-xl bg-arena-100 dark:bg-surface-700 text-surface-400">
                     {k.imageUrl ? (
                       <img src={k.imageUrl} alt={k.name} className="h-full w-full object-cover" />
                     ) : (
-                      '🏪'
+                      <Store className="h-6 w-6" aria-hidden />
                     )}
                   </span>
                   <span className="w-full truncate text-center text-sm font-semibold text-surface-800 dark:text-surface-100">
@@ -1457,7 +1484,7 @@ export default function MenuPage() {
                   <span
                     className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
                       count > 0
-                        ? 'bg-kiwi-100 dark:bg-kiwi-900/50 text-kiwi-700 dark:text-kiwi-400'
+                        ? 'bg-kiwi-100 dark:bg-kiwi-900/50 text-kiwi-700 dark:text-kiwi-300'
                         : 'bg-surface-100 dark:bg-surface-700 text-surface-500 dark:text-surface-400'
                     }`}
                   >
@@ -1469,6 +1496,116 @@ export default function MenuPage() {
           </div>
         </div>
       )}
+
+      {/* Ficha del kiosko elegido: historia, productos y video */}
+      <AnimatePresence>
+        {selectedKiosk && (
+          <motion.div
+            key={selectedKiosk.id}
+            className="mx-auto max-w-lg px-4 mb-4"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+          >
+            <div className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] p-4 shadow-card dark:shadow-dark">
+              <div className="flex items-start gap-3">
+                <span className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-arena-100 dark:bg-surface-700 text-surface-400">
+                  {selectedKiosk.imageUrl ? (
+                    <img
+                      src={selectedKiosk.imageUrl}
+                      alt={selectedKiosk.name}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <Store className="h-7 w-7" aria-hidden />
+                  )}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="font-display font-semibold text-surface-800 dark:text-surface-100">
+                    {selectedKiosk.name}
+                  </p>
+                  <p className="text-xs text-surface-500 dark:text-surface-400">
+                    {selectedKioskItems.length === 1
+                      ? '1 producto hoy'
+                      : `${selectedKioskItems.length} productos hoy`}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedKioskId(null)}
+                  aria-label="Cerrar ficha del puesto"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-surface-500 transition-colors hover:bg-surface-100 hover:text-surface-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-600/40 active:scale-95 dark:text-surface-400 dark:hover:bg-surface-700 dark:hover:text-surface-200"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="mt-3">
+                <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-surface-500 dark:text-surface-400">
+                  <BookOpenText className="h-3.5 w-3.5" aria-hidden /> Su historia
+                </p>
+                <p className="mt-1 text-sm leading-relaxed text-surface-600 dark:text-surface-300">
+                  {selectedKiosk.description || 'Este puesto todavía no contó su historia.'}
+                </p>
+              </div>
+
+              {(() => {
+                const videoUrl = (selectedKiosk as any).videoUrl as string | undefined;
+                if (!videoUrl) return null;
+                const embed = kioskVideoEmbed(videoUrl);
+                return (
+                  <div className="mt-3 overflow-hidden rounded-xl bg-black">
+                    {embed ? (
+                      <iframe
+                        src={embed}
+                        title={`Video de ${selectedKiosk.name}`}
+                        className="aspect-video w-full"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    ) : (
+                      <video src={videoUrl} controls playsInline className="aspect-video w-full">
+                        Tu navegador no puede reproducir este video.
+                      </video>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {selectedKioskItems.length > 0 && (
+                <div className="mt-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-surface-500 dark:text-surface-400">
+                    Lo que ofrece hoy
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {selectedKioskItems.map((it) => (
+                      <button
+                        key={it.id}
+                        type="button"
+                        onClick={() => scrollToItem(it.id)}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 px-3 py-1.5 text-xs font-medium text-surface-700 dark:text-surface-200 transition-colors [@media(hover:hover)]:hover:border-kiwi-600 [@media(hover:hover)]:hover:text-kiwi-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-600/40 active:scale-95 dark:[@media(hover:hover)]:hover:text-kiwi-300"
+                      >
+                        {it.name}
+                        <span className="font-bold text-kiwi-700 dark:text-kiwi-300">
+                          ₡{Number(it.price).toLocaleString()}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => scrollToKiosk(selectedKiosk.id)}
+                    className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-kiwi-700 dark:text-kiwi-300 transition-colors [@media(hover:hover)]:hover:text-kiwi-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-600/40 rounded"
+                  >
+                    Ver productos abajo <Play className="h-3 w-3" aria-hidden />
+                  </button>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Menu Items */}
       <motion.div
@@ -1507,7 +1644,7 @@ export default function MenuPage() {
                     className="pt-2 scroll-mt-28"
                   >
                     <div className="flex items-center gap-3 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] p-3 shadow-soft dark:shadow-dark">
-                      <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-purple-50 dark:bg-purple-900/30 text-2xl">
+                      <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-arena-100 dark:bg-surface-700 text-surface-400">
                         {row.kiosk.imageUrl ? (
                           // NOTE: <img> intencional — avatares dinámicos
                           <img
@@ -1516,7 +1653,7 @@ export default function MenuPage() {
                             className="h-full w-full object-cover"
                           />
                         ) : (
-                          '🏪'
+                          <Store className="h-5 w-5" aria-hidden />
                         )}
                       </span>
                       <div className="min-w-0 flex-1">
@@ -1544,7 +1681,7 @@ export default function MenuPage() {
                     className="rounded-2xl border border-dashed border-surface-300 dark:border-surface-600 px-4 py-3 text-center"
                   >
                     <p className="text-xs text-surface-500 dark:text-surface-400">
-                      🤫 {row.kiosk.name} está preparando sus productos — volvé pronto.
+                      {row.kiosk.name} está preparando sus productos — volvé pronto.
                     </p>
                   </div>
                 );
@@ -1555,7 +1692,8 @@ export default function MenuPage() {
               return (
                 <ScrollReveal key={item.id} index={itemIndex} as="div">
                   <motion.div
-                    className={`rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] p-4 shadow-soft dark:shadow-dark ${hoverCard}`}
+                    id={`item-${item.id}`}
+                    className={`rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] p-4 shadow-card dark:shadow-dark scroll-mt-32 ${hoverCard}`}
                   >
                     <div className="flex gap-4">
                       <div className="flex h-20 w-20 items-center justify-center rounded-xl bg-kiwi-50 dark:bg-surface-700 text-3xl flex-shrink-0 overflow-hidden">
@@ -1580,13 +1718,14 @@ export default function MenuPage() {
                                 {item.name}
                               </h3>
                               {item.isPopular && (
-                                <span className="px-2 py-0.5 rounded-full bg-gold-100 dark:bg-gold-900/50 text-xs font-medium text-gold-700 dark:text-gold-400">
-                                  🔥 Popular
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gold-100 dark:bg-gold-900/50 text-xs font-medium text-gold-700 dark:text-gold-300">
+                                  <Flame className="h-3 w-3" aria-hidden /> Popular
                                 </span>
                               )}
                               {(item as any).kiosk?.name && (
-                                <span className="px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/40 text-xs font-medium text-purple-700 dark:text-purple-300">
-                                  🏪 {(item as any).kiosk.name}
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-kiwi-50 dark:bg-kiwi-900/40 text-xs font-medium text-kiwi-700 dark:text-kiwi-300">
+                                  <Store className="h-3 w-3" aria-hidden />{' '}
+                                  {(item as any).kiosk.name}
                                 </span>
                               )}
                               {(item.variantGroups ?? []).some((g) => g.options.length > 0) && (
@@ -1714,8 +1853,8 @@ export default function MenuPage() {
                             📅 Mañana
                           </span>
                           {(item as any).kiosk?.name && (
-                            <span className="px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/40 text-xs font-medium text-purple-700 dark:text-purple-300">
-                              🏪 {(item as any).kiosk.name}
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-kiwi-50 dark:bg-kiwi-900/40 text-xs font-medium text-kiwi-700 dark:text-kiwi-300">
+                              <Store className="h-3 w-3" aria-hidden /> {(item as any).kiosk.name}
                             </span>
                           )}
                         </div>

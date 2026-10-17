@@ -84,7 +84,7 @@ export function KiwiMark({ size = 96, floating = true, className = '' }: KiwiMar
       <motion.div
         animate={{ y: [0, -6, 0], rotate: [-3, 3, -3] }}
         transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-        className="inline-block drop-shadow-[0_16px_24px_rgba(34,197,94,0.35)]"
+        className="inline-block drop-shadow-[0_12px_20px_rgba(13,51,69,0.25)]"
         style={{ willChange: 'transform' }}
       >
         <KiwiSlice size={size} />

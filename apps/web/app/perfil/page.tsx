@@ -301,6 +301,18 @@ export default function PerfilPage() {
           if (!isHHMM(h.open) || !isHHMM(h.close)) {
             throw new Error(`Horario inválido el ${d.label.toLowerCase()} (HH:MM).`);
           }
+          // Tope operativo Kiwi (8:00–20:00): sin repartidores fuera de ese
+          // rango, el horario del local no puede excederlo.
+          if (h.open < '08:00' || h.close > '20:00') {
+            throw new Error(
+              `El ${d.label.toLowerCase()} excede el horario Kiwi (8:00–20:00): ${h.open}–${h.close}.`,
+            );
+          }
+          if (h.close <= h.open) {
+            throw new Error(
+              `El cierre debe ser después de la apertura el ${d.label.toLowerCase()}.`,
+            );
+          }
           openingHours[d.key] = { open: h.open, close: h.close };
         }
       }
@@ -622,7 +634,8 @@ export default function PerfilPage() {
           </p>
           <div>
             <p className="mb-1.5 text-sm font-medium text-surface-600 dark:text-surface-400">
-              Define si aparecés “Abierto”
+              Define si aparecés “Abierto”. Kiwi reparte de 8:00 a 20:00: fuera de ese horario no
+              hay repartidores aunque marques abierto.
             </p>
             <div className="space-y-2">
               {DAYS.map((d) => {
@@ -639,6 +652,8 @@ export default function PerfilPage() {
                       <>
                         <input
                           type="time"
+                          min="08:00"
+                          max="20:00"
                           value={h.open}
                           onChange={(e) => setDay(d.key, { open: e.target.value })}
                           className="flex-1 min-w-0 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-2 py-1.5 text-sm"
@@ -646,6 +661,8 @@ export default function PerfilPage() {
                         <span className="text-surface-500 dark:text-surface-400 text-sm">–</span>
                         <input
                           type="time"
+                          min="08:00"
+                          max="20:00"
                           value={h.close}
                           onChange={(e) => setDay(d.key, { close: e.target.value })}
                           className="flex-1 min-w-0 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-2 py-1.5 text-sm"

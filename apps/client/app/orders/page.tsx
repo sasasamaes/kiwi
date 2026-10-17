@@ -15,6 +15,7 @@ import {
   Check,
   X,
   Smartphone,
+  MessageCircle,
 } from 'lucide-react';
 import { api, useAuth, Skeleton, hoverCard, ScrollToTop, ThemeToggle } from '@kiwi/ui';
 import { BottomNav } from '../components/BottomNav';
@@ -298,7 +299,7 @@ export default function OrderHistoryPage() {
                 : 'No hay pedidos en esta categoría'}
             </p>
             <Link href="/">
-              <button className="px-6 py-3 rounded-xl bg-kiwi-gradient text-white font-medium shadow-kiwi-lg">
+              <button className="px-6 py-3 rounded-xl bg-kiwi-gradient text-white font-medium shadow-card transition-transform active:scale-[0.98]">
                 <Smartphone className="h-4 w-4 inline" /> Escanear QR
               </button>
             </Link>
@@ -395,6 +396,18 @@ export default function OrderHistoryPage() {
                                 .map((item) => `${item.quantity}x ${item.name}`)
                                 .join(', ')}
                             </p>
+                          </div>
+                        )}
+
+                        {/* Seguir y chatear: el tracking tiene el chat en vivo */}
+                        {order.status !== 'delivered' && order.status !== 'cancelled' && (
+                          <div className="mt-3 flex justify-end">
+                            <Link
+                              href={`/tracking/${order.id}`}
+                              className="inline-flex items-center gap-1.5 rounded-lg bg-kiwi-50 dark:bg-kiwi-900/20 px-3 py-1.5 text-xs font-semibold text-kiwi-700 dark:text-kiwi-300 transition-colors [@media(hover:hover)]:hover:bg-kiwi-100 dark:[@media(hover:hover)]:hover:bg-kiwi-900/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-600/40 active:scale-95"
+                            >
+                              <MessageCircle className="h-3.5 w-3.5" /> Seguir y chatear
+                            </Link>
                           </div>
                         )}
 

@@ -509,8 +509,8 @@ export default function DriversPage() {
                   return (
                     <ScrollReveal key={driver.id} index={driverIndex} as="div">
                       <motion.div
-                        className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft cursor-pointer"
-                        whileHover={{ y: -2, boxShadow: '0 8px 24px 0 rgb(0 0 0 / 0.08)' }}
+                        className="rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-card cursor-pointer tactile"
+                        whileTap={{ scale: 0.99 }}
                         onClick={() => setDetailDriver(driver)}
                       >
                         <div className="flex items-center gap-4">
@@ -569,7 +569,7 @@ export default function DriversPage() {
                                   toggleFavorite(driver);
                                 }}
                                 title={isFav ? 'Quitar de favoritos' : 'Marcar favorito'}
-                                className="flex h-11 w-11 items-center justify-center rounded-lg text-surface-500 dark:text-surface-400 hover:text-gold-500 transition-colors"
+                                className="flex h-11 w-11 items-center justify-center rounded-full text-surface-500 dark:text-surface-400 transition-colors hover:bg-surface-100 hover:text-gold-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-500/50 active:scale-95 dark:hover:bg-surface-700 dark:hover:text-gold-400"
                               >
                                 <Star
                                   className={`h-5 w-5 ${isFav ? 'fill-gold-500 text-gold-500' : ''}`}
@@ -582,7 +582,7 @@ export default function DriversPage() {
                                     openChat(driver);
                                   }}
                                   title="Chatear"
-                                  className="flex h-11 w-11 items-center justify-center rounded-lg text-surface-500 dark:text-surface-400 hover:text-kiwi-500 transition-colors"
+                                  className="flex h-11 w-11 items-center justify-center rounded-full text-surface-500 dark:text-surface-400 transition-colors hover:bg-surface-100 hover:text-kiwi-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-600/40 active:scale-95 dark:hover:bg-surface-700 dark:hover:text-kiwi-300"
                                 >
                                   <MessageCircle className="h-5 w-5" />
                                 </button>
@@ -712,7 +712,7 @@ function FilterPill({
       className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
         active
           ? 'bg-kiwi-700 text-white'
-          : 'bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-300 hover:bg-surface-200'
+          : 'bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-300 [@media(hover:hover)]:hover:bg-surface-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-600/40'
       }`}
       onClick={onClick}
       whileTap={{ scale: 0.95 }}
@@ -920,14 +920,14 @@ function DriverDetailModal({
           <button
             onClick={onToggleFav}
             title={isFav ? 'Quitar de favoritos' : 'Marcar favorito'}
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-surface-200 dark:border-surface-700 text-surface-500 dark:text-surface-400 hover:text-gold-500 transition-colors"
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-surface-200 dark:border-surface-700 text-surface-500 dark:text-surface-400 transition-colors hover:bg-surface-100 hover:text-gold-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-500/50 active:scale-95 dark:hover:bg-surface-700 dark:hover:text-gold-400"
           >
             <Star className={`h-5 w-5 ${isFav ? 'fill-gold-500 text-gold-500' : ''}`} />
           </button>
           {hasSharedOrder && (
             <button
               onClick={onChat}
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-surface-200 dark:border-surface-700 text-surface-500 dark:text-surface-400 hover:text-kiwi-500 transition-colors"
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-surface-200 dark:border-surface-700 text-surface-500 dark:text-surface-400 transition-colors hover:bg-surface-100 hover:text-kiwi-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-600/40 active:scale-95 dark:hover:bg-surface-700 dark:hover:text-kiwi-300"
               title="Chatear"
             >
               <MessageCircle className="h-5 w-5" />
@@ -991,10 +991,11 @@ function AssignModal({
                 <button
                   key={o.id}
                   onClick={() => setOrderId(o.id)}
-                  className={`w-full text-left rounded-xl p-3 border transition-all ${
+                  aria-pressed={orderId === o.id}
+                  className={`w-full text-left rounded-xl p-3 border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-600/40 ${
                     orderId === o.id
                       ? 'border-kiwi-600 bg-kiwi-50 dark:bg-kiwi-900/20'
-                      : 'border-surface-200 dark:border-surface-700'
+                      : 'border-surface-200 dark:border-surface-700 [@media(hover:hover)]:hover:border-surface-300 [@media(hover:hover)]:hover:bg-surface-50 dark:[@media(hover:hover)]:hover:bg-surface-700/40'
                   }`}
                 >
                   <p className="text-sm font-medium text-surface-800 dark:text-surface-200 truncate">

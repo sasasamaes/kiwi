@@ -42,7 +42,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     const variants = {
       primary: cn(
         'bg-kiwi-700 text-white',
-        'hover:bg-kiwi-800 hover:shadow-kiwi',
+        'hover:bg-kiwi-800 hover:shadow-card',
         'focus-visible:ring-kiwi-600',
         'shadow-soft-md',
         'rounded-xl',
@@ -75,7 +75,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       ),
       gradient: cn(
         'bg-kiwi-gradient text-white',
-        'hover:shadow-kiwi-lg',
+        'hover:shadow-card',
         'focus-visible:ring-kiwi-600',
         'rounded-xl',
       ),

@@ -113,10 +113,10 @@ export const buttonVariants: Variants = {
 
 export const buttonGlow: Variants = {
   idle: {
-    boxShadow: '0 0 0 0 rgba(34, 197, 94, 0)',
+    boxShadow: '0 0 0 0 rgba(42, 134, 173, 0)',
   },
   hover: {
-    boxShadow: '0 0 30px 10px rgba(34, 197, 94, 0.3)',
+    boxShadow: '0 0 30px 10px rgba(42, 134, 173, 0.25)',
     transition: {
       duration: 0.3,
     },

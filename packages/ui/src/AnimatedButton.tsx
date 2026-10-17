@@ -11,12 +11,12 @@ import { cn } from './utils';
  * Mantener aquí evita que las variantes se diverjan entre componentes.
  */
 export const buttonVariantClasses = {
-  primary: 'bg-kiwi-700 text-white hover:bg-kiwi-800 shadow-kiwi',
+  primary: 'bg-kiwi-700 text-white hover:bg-kiwi-800 shadow-card',
   secondary: 'bg-surface-100 text-surface-700 hover:bg-surface-200 border border-surface-200',
   ghost: 'text-surface-600 hover:bg-surface-100',
   danger: 'bg-red-500 text-white hover:bg-red-600',
   glass: 'glass-strong text-surface-700 border border-white/30',
-  gradient: 'bg-kiwi-gradient text-white shadow-kiwi-lg',
+  gradient: 'bg-kiwi-gradient text-white shadow-card',
 } as const;
 
 export type ButtonVariant = keyof typeof buttonVariantClasses;

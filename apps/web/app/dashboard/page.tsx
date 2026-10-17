@@ -400,18 +400,14 @@ export default function Dashboard() {
           <StaggerItem>
             <Link href="/orders/new?kind=freight">
               <motion.div
-                className="rounded-2xl bg-white/70 dark:bg-surface-800/70 backdrop-blur-xl border border-white/30 dark:border-surface-700/30 shadow-soft-md dark:shadow-dark p-4 cursor-pointer group"
-                whileHover={{ y: -4, boxShadow: '0 12px 32px -8px rgba(251, 191, 36, 0.25)' }}
+                className="rounded-2xl bg-white/70 dark:bg-surface-800/70 backdrop-blur-xl border border-white/30 dark:border-surface-700/30 shadow-card dark:shadow-dark p-4 cursor-pointer transition-[transform,box-shadow,border-color] duration-200 ease-out [@media(hover:hover)]:hover:-translate-y-0.5 [@media(hover:hover)]:hover:shadow-[0_10px_28px_-12px_rgba(13,51,69,0.22)] [@media(hover:hover)]:hover:border-zona-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-600/40 active:scale-[0.99]"
+
                 whileTap={{ scale: 0.98 }}
               >
                 <div className="flex items-center gap-4">
-                  <motion.div
-                    className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gold-100 dark:bg-gold-900/50 text-gold-600 dark:text-gold-400 transition-colors group-hover:bg-gold-500 group-hover:text-white"
-                    whileHover={{ rotate: -90 }}
-                    transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-                  >
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gold-100 dark:bg-gold-900/50 text-gold-600 dark:text-gold-400 transition-colors group-hover:bg-gold-500 group-hover:text-white">
                     <Package className="h-6 w-6" />
-                  </motion.div>
+                  </div>
                   <div>
                     <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">
                       Encomienda
@@ -428,18 +424,14 @@ export default function Dashboard() {
           <StaggerItem>
             <Link href="/orders/new?kind=food">
               <motion.div
-                className="rounded-2xl bg-white/70 dark:bg-surface-800/70 backdrop-blur-xl border border-white/30 dark:border-surface-700/30 shadow-soft-md dark:shadow-dark p-4 cursor-pointer group"
-                whileHover={{ y: -4, boxShadow: '0 12px 32px -8px rgba(34, 197, 94, 0.25)' }}
+                className="rounded-2xl bg-white/70 dark:bg-surface-800/70 backdrop-blur-xl border border-white/30 dark:border-surface-700/30 shadow-card dark:shadow-dark p-4 cursor-pointer transition-[transform,box-shadow,border-color] duration-200 ease-out [@media(hover:hover)]:hover:-translate-y-0.5 [@media(hover:hover)]:hover:shadow-[0_10px_28px_-12px_rgba(13,51,69,0.22)] [@media(hover:hover)]:hover:border-zona-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-600/40 active:scale-[0.99]"
+
                 whileTap={{ scale: 0.98 }}
               >
                 <div className="flex items-center gap-4">
-                  <motion.div
-                    className="flex h-14 w-14 items-center justify-center rounded-2xl bg-kiwi-100 dark:bg-kiwi-900/50 text-kiwi-700 dark:text-kiwi-400 transition-colors group-hover:bg-kiwi-700 group-hover:text-white"
-                    whileHover={{ rotate: 90 }}
-                    transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-                  >
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-kiwi-100 dark:bg-kiwi-900/50 text-kiwi-700 dark:text-kiwi-400 transition-colors group-hover:bg-kiwi-700 group-hover:text-white">
                     <Plus className="h-6 w-6" />
-                  </motion.div>
+                  </div>
                   <div>
                     <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">
                       Pedido Menú
@@ -456,18 +448,14 @@ export default function Dashboard() {
           <StaggerItem>
             <Link href="/menu">
               <motion.div
-                className="rounded-2xl bg-white/70 dark:bg-surface-800/70 backdrop-blur-xl border border-white/30 dark:border-surface-700/30 shadow-soft-md dark:shadow-dark p-4 cursor-pointer group"
-                whileHover={{ y: -4, boxShadow: '0 12px 32px -8px rgba(251, 191, 36, 0.25)' }}
+                className="rounded-2xl bg-white/70 dark:bg-surface-800/70 backdrop-blur-xl border border-white/30 dark:border-surface-700/30 shadow-card dark:shadow-dark p-4 cursor-pointer transition-[transform,box-shadow,border-color] duration-200 ease-out [@media(hover:hover)]:hover:-translate-y-0.5 [@media(hover:hover)]:hover:shadow-[0_10px_28px_-12px_rgba(13,51,69,0.22)] [@media(hover:hover)]:hover:border-zona-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-600/40 active:scale-[0.99]"
+
                 whileTap={{ scale: 0.98 }}
               >
                 <div className="flex items-center gap-4">
-                  <motion.div
-                    className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gold-100 text-gold-600 transition-colors group-hover:bg-gold-500 group-hover:text-white"
-                    whileHover={{ rotate: -90 }}
-                    transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-                  >
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gold-100 text-gold-600 transition-colors group-hover:bg-gold-500 group-hover:text-white">
                     <Utensils className="h-6 w-6" />
-                  </motion.div>
+                  </div>
                   <div>
                     <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">
                       Mi Menú
@@ -485,18 +473,14 @@ export default function Dashboard() {
             {' '}
             <Link href="/drivers">
               <motion.div
-                className="rounded-2xl bg-white/70 dark:bg-surface-800/70 backdrop-blur-xl border border-white/30 dark:border-surface-700/30 shadow-soft-md dark:shadow-dark p-4 cursor-pointer group"
-                whileHover={{ y: -4, boxShadow: '0 12px 32px -8px rgba(139, 101, 61, 0.15)' }}
+                className="rounded-2xl bg-white/70 dark:bg-surface-800/70 backdrop-blur-xl border border-white/30 dark:border-surface-700/30 shadow-card dark:shadow-dark p-4 cursor-pointer transition-[transform,box-shadow,border-color] duration-200 ease-out [@media(hover:hover)]:hover:-translate-y-0.5 [@media(hover:hover)]:hover:shadow-[0_10px_28px_-12px_rgba(13,51,69,0.22)] [@media(hover:hover)]:hover:border-zona-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-600/40 active:scale-[0.99]"
+
                 whileTap={{ scale: 0.98 }}
               >
                 <div className="flex items-center gap-4">
-                  <motion.div
-                    className="flex h-14 w-14 items-center justify-center rounded-2xl bg-bark-100 dark:bg-bark-900/50 text-bark-600 dark:text-bark-400 transition-colors group-hover:bg-bark-500 group-hover:text-white"
-                    whileHover={{ scale: 1.1 }}
-                    transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-                  >
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-arena-200 dark:bg-surface-700 text-sol dark:text-gold-400">
                     <Bike className="h-6 w-6" />
-                  </motion.div>
+                  </div>
                   <div>
                     <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">
                       Repartidores
@@ -511,18 +495,14 @@ export default function Dashboard() {
           <StaggerItem>
             <Link href="/orders/scheduled">
               <motion.div
-                className="rounded-2xl bg-white/70 dark:bg-surface-800/70 backdrop-blur-xl border border-white/30 dark:border-surface-700/30 shadow-soft-md dark:shadow-dark p-4 cursor-pointer group"
-                whileHover={{ y: -4, boxShadow: '0 12px 32px -8px rgba(251, 191, 36, 0.25)' }}
+                className="rounded-2xl bg-white/70 dark:bg-surface-800/70 backdrop-blur-xl border border-white/30 dark:border-surface-700/30 shadow-card dark:shadow-dark p-4 cursor-pointer transition-[transform,box-shadow,border-color] duration-200 ease-out [@media(hover:hover)]:hover:-translate-y-0.5 [@media(hover:hover)]:hover:shadow-[0_10px_28px_-12px_rgba(13,51,69,0.22)] [@media(hover:hover)]:hover:border-zona-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-600/40 active:scale-[0.99]"
+
                 whileTap={{ scale: 0.98 }}
               >
                 <div className="flex items-center gap-4">
-                  <motion.div
-                    className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gold-100 dark:bg-gold-900/50 text-gold-600 dark:text-gold-400 transition-colors group-hover:bg-gold-500 group-hover:text-white"
-                    whileHover={{ scale: 1.1 }}
-                    transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-                  >
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gold-100 dark:bg-gold-900/50 text-gold-600 dark:text-gold-400 transition-colors group-hover:bg-gold-500 group-hover:text-white">
                     <Calendar className="h-6 w-6" />
-                  </motion.div>
+                  </div>
                   <div>
                     <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">
                       Programados
@@ -537,18 +517,14 @@ export default function Dashboard() {
           <StaggerItem>
             <Link href="/analytics">
               <motion.div
-                className="rounded-2xl bg-white/70 dark:bg-surface-800/70 backdrop-blur-xl border border-white/30 dark:border-surface-700/30 shadow-soft-md dark:shadow-dark p-4 cursor-pointer group"
-                whileHover={{ y: -4, boxShadow: '0 12px 32px -8px rgba(139, 101, 61, 0.15)' }}
+                className="rounded-2xl bg-white/70 dark:bg-surface-800/70 backdrop-blur-xl border border-white/30 dark:border-surface-700/30 shadow-card dark:shadow-dark p-4 cursor-pointer transition-[transform,box-shadow,border-color] duration-200 ease-out [@media(hover:hover)]:hover:-translate-y-0.5 [@media(hover:hover)]:hover:shadow-[0_10px_28px_-12px_rgba(13,51,69,0.22)] [@media(hover:hover)]:hover:border-zona-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-600/40 active:scale-[0.99]"
+
                 whileTap={{ scale: 0.98 }}
               >
                 <div className="flex items-center gap-4">
-                  <motion.div
-                    className="flex h-14 w-14 items-center justify-center rounded-2xl bg-bark-100 dark:bg-bark-900/50 text-bark-600 dark:text-bark-400 transition-colors group-hover:bg-bark-500 group-hover:text-white"
-                    whileHover={{ scale: 1.1 }}
-                    transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-                  >
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-arena-200 dark:bg-surface-700 text-sol dark:text-gold-400">
                     <BarChart3 className="h-6 w-6" />
-                  </motion.div>
+                  </div>
                   <div>
                     <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">
                       Analytics
