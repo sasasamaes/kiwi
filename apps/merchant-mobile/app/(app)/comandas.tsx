@@ -10,6 +10,7 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { Screen, StatusBadge, tokens } from '@kiwi/mobile-ui';
+import { useTranslation } from '@kiwi/i18n';
 import { ordersApi } from '../../src/api/orders';
 import { http } from '../../src/api/client';
 import { useBoard } from '../../src/comanda/boardStore';
@@ -19,23 +20,28 @@ import { BottomNav } from '../../src/ui/BottomNav';
 
 const api = ordersApi(http);
 
-const COLUMNS: { key: Column; label: string }[] = [
-  { key: 'new', label: 'Nuevas' },
-  { key: 'preparing', label: 'En preparación' },
-  { key: 'ready', label: 'Listas' },
-];
-
-function elapsed(createdAt: string | number | undefined) {
+function elapsed(
+  createdAt: string | number | undefined,
+  nowLabel: string,
+  minutesAgo: (m: number) => string,
+) {
   if (createdAt == null) return '';
   const mins = Math.max(0, Math.floor((Date.now() - new Date(createdAt).getTime()) / 60000));
-  return mins < 1 ? 'ahora' : `hace ${mins} min`;
+  return mins < 1 ? nowLabel : minutesAgo(mins);
 }
 
 export default function Comandas() {
+  const { t, translate } = useTranslation();
   const router = useRouter();
   const { width } = useWindowDimensions();
   const orders = useBoard((s) => s.orders);
   const lastCreatedId = useBoard((s) => s.lastCreatedId);
+
+  const COLUMNS: { key: Column; label: string }[] = [
+    { key: 'new', label: t.merchantBoard.new },
+    { key: 'preparing', label: t.merchantBoard.preparing },
+    { key: 'ready', label: t.merchantBoard.ready },
+  ];
 
   const { data, refetch, isRefetching } = useQuery({
     queryKey: ['orders', 'incoming'],
@@ -67,7 +73,7 @@ export default function Comandas() {
           marginBottom: tokens.space[3],
         }}
       >
-        Comandas
+        {t.merchantBoard.title}
       </Text>
       <ScrollView
         horizontal
@@ -108,15 +114,32 @@ export default function Comandas() {
                       #{String(o.id).slice(0, 6).toUpperCase()}
                     </Text>
                     <Text style={{ color: tokens.color.muted, fontSize: 12 }}>
-                      {elapsed(o.createdAt)}
+                      {elapsed(o.createdAt, t.merchantBoard.now, (m) =>
+                        translate('merchantBoard.minutesAgo', { count: m }),
+                      )}
                     </Text>
                   </View>
                   <View style={{ marginTop: 6 }}>
-                    <StatusBadge status={o.status} />
+                    <StatusBadge
+                      status={o.status}
+                      labels={{
+                        pending: t.order.pending,
+                        confirmed: t.order.confirmed,
+                        preparing: t.order.preparing,
+                        ready: t.order.ready,
+                        picked_up: t.order.pickedUp,
+                        delivered: t.order.delivered,
+                        cancelled: t.order.cancelled,
+                      }}
+                    />
                   </View>
                   <Text style={{ color: tokens.color.ink, marginTop: 8, fontWeight: '600' }}>
-                    {o.orderType === 'scheduled' ? 'Programado' : 'Envío'}
-                    {o.driver?.fullName ? ` · ${o.driver.fullName}` : ''}
+                    {o.orderType === 'scheduled'
+                      ? t.merchantBoard.scheduled
+                      : t.merchantBoard.shipping}
+                    {o.driver?.fullName
+                      ? translate('merchantBoard.driverLabel', { name: o.driver.fullName })
+                      : ''}
                   </Text>
                   {(o.items ?? []).map((it: any, i: number) => (
                     <Text key={i} style={{ color: tokens.color.ink, marginTop: 4, fontSize: 13 }}>
@@ -128,15 +151,21 @@ export default function Comandas() {
                     </Text>
                   ))}
                   <Text style={{ color: tokens.color.muted, fontSize: 12, marginTop: 8 }}>
-                    Retiro: {o.pickupAddress ?? '—'}
+                    {translate('merchantBoard.pickup', {
+                      address: o.pickupAddress ?? t.merchantBoard.unknownAddress,
+                    })}
                   </Text>
                   <Text style={{ color: tokens.color.muted, fontSize: 12 }}>
-                    Entrega: {o.deliveryAddress ?? '—'}
+                    {translate('merchantBoard.delivery', {
+                      address: o.deliveryAddress ?? t.merchantBoard.unknownAddress,
+                    })}
                   </Text>
                 </Pressable>
               ))}
               {items.length === 0 && (
-                <Text style={{ color: tokens.color.muted, fontSize: 12 }}>Sin comandas</Text>
+                <Text style={{ color: tokens.color.muted, fontSize: 12 }}>
+                  {t.merchantBoard.empty}
+                </Text>
               )}
             </View>
           );

@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Button, Screen, tokens } from '@kiwi/mobile-ui';
+import { useTranslation } from '@kiwi/i18n';
 import { Field, Header, ui } from '../../src/components/ui';
 import { useSession } from '../../src/session/useSession';
 
 export default function Register() {
+  const { t } = useTranslation();
   const router = useRouter();
   const register = useSession((s) => s.register);
   const signIn = useSession((s) => s.signIn);
@@ -30,7 +32,7 @@ export default function Register() {
       await signIn(email.trim(), password).catch(() => undefined);
       router.replace('/(account)/orders');
     } catch {
-      setError('No pudimos crear tu cuenta. Probá con otro email.');
+      setError(t.auth.registerFailed);
     } finally {
       setBusy(false);
     }
@@ -38,16 +40,16 @@ export default function Register() {
 
   return (
     <Screen>
-      <Header title="Crear cuenta" />
+      <Header title={t.auth.createAccount} />
       <View style={{ marginTop: tokens.space[6] }}>
         <Field
-          label="Nombre"
+          label={t.auth.fullName}
           value={fullName}
           onChangeText={setFullName}
-          placeholder="Nombre completo"
+          placeholder={t.auth.fullName}
         />
         <Field
-          label="Email"
+          label={t.auth.email}
           value={email}
           onChangeText={setEmail}
           placeholder="tu@email.com"
@@ -55,14 +57,14 @@ export default function Register() {
           autoCapitalize="none"
         />
         <Field
-          label="Teléfono"
+          label={t.auth.phone}
           value={phone}
           onChangeText={setPhone}
           placeholder="8888-1234"
           keyboardType="phone-pad"
         />
         <Field
-          label="Contraseña"
+          label={t.auth.password}
           value={password}
           onChangeText={setPassword}
           placeholder="••••••••"
@@ -70,11 +72,11 @@ export default function Register() {
         />
         {!!error && <Text style={{ color: tokens.color.danger }}>{error}</Text>}
         <View style={{ marginTop: 12 }}>
-          <Button label="Crear cuenta" loading={busy} onPress={() => void submit()} />
+          <Button label={t.auth.createAccount} loading={busy} onPress={() => void submit()} />
         </View>
         <Pressable onPress={() => router.replace('/(auth)/login')} style={{ marginTop: 16 }}>
           <Text style={[ui.muted, { textAlign: 'center' }]}>
-            ¿Ya tenés cuenta? <Text style={{ color: tokens.color.lime }}>Ingresá</Text>
+            {t.auth.hasAccount} <Text style={{ color: tokens.color.lime }}>{t.auth.loginHere}</Text>
           </Text>
         </Pressable>
       </View>

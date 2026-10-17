@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Button, Screen, tokens } from '@kiwi/mobile-ui';
+import { useTranslation } from '@kiwi/i18n';
 import { Field, Header, ui } from '../../src/components/ui';
 import { useSession } from '../../src/session/useSession';
 
 export default function Login() {
+  const { t } = useTranslation();
   const router = useRouter();
   const signIn = useSession((s) => s.signIn);
   const [email, setEmail] = useState('');
@@ -20,7 +22,7 @@ export default function Login() {
       await signIn(email.trim(), password);
       router.replace('/(account)/orders');
     } catch {
-      setError('No pudimos iniciar sesión. Revisá tus datos.');
+      setError(t.auth.loginFailed);
     } finally {
       setBusy(false);
     }
@@ -28,10 +30,10 @@ export default function Login() {
 
   return (
     <Screen>
-      <Header title="Ingresar" />
+      <Header title={t.auth.login} />
       <View style={{ marginTop: tokens.space[6] }}>
         <Field
-          label="Email"
+          label={t.auth.email}
           value={email}
           onChangeText={setEmail}
           placeholder="tu@email.com"
@@ -39,7 +41,7 @@ export default function Login() {
           autoCapitalize="none"
         />
         <Field
-          label="Contraseña"
+          label={t.auth.password}
           value={password}
           onChangeText={setPassword}
           placeholder="••••••••"
@@ -47,15 +49,16 @@ export default function Login() {
         />
         {!!error && <Text style={{ color: tokens.color.danger }}>{error}</Text>}
         <View style={{ marginTop: 12 }}>
-          <Button label="Iniciar sesión" loading={busy} onPress={() => void submit()} />
+          <Button label={t.auth.login} loading={busy} onPress={() => void submit()} />
         </View>
         <Pressable onPress={() => router.push('/(auth)/register')} style={{ marginTop: 16 }}>
           <Text style={[ui.muted, { textAlign: 'center' }]}>
-            ¿No tenés cuenta? <Text style={{ color: tokens.color.lime }}>Registrate</Text>
+            {t.auth.noAccount}{' '}
+            <Text style={{ color: tokens.color.lime }}>{t.auth.registerHere}</Text>
           </Text>
         </Pressable>
         <Pressable onPress={() => router.replace('/(public)/comercios')} style={{ marginTop: 12 }}>
-          <Text style={[ui.muted, { textAlign: 'center' }]}>Seguir como invitado</Text>
+          <Text style={[ui.muted, { textAlign: 'center' }]}>{t.auth.continueAsGuest}</Text>
         </Pressable>
       </View>
     </Screen>

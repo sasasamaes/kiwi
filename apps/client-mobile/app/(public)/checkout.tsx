@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 import { Button, Price, Screen, tokens } from '@kiwi/mobile-ui';
+import { useTranslation } from '@kiwi/i18n';
 import { ordersApi } from '../../src/api/orders';
 import { paymentsApi } from '../../src/api/payments';
 import { geocodingApi } from '../../src/api/geocoding';
@@ -32,6 +33,7 @@ type PaymentMethod = 'cash' | 'sinpe' | 'card' | 'crypto';
 const genKey = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 
 export default function Checkout() {
+  const { t } = useTranslation();
   const router = useRouter();
   const params = useLocalSearchParams<{
     merchantId: string;
@@ -92,7 +94,7 @@ export default function Checkout() {
     try {
       const perm = await Location.requestForegroundPermissionsAsync();
       if (!perm.granted) {
-        setError('Necesitamos permiso de ubicación.');
+        setError(t.checkout.locationPermission);
         return;
       }
       const pos = await Location.getCurrentPositionAsync({});
@@ -106,7 +108,7 @@ export default function Checkout() {
       if (rev?.displayName) setAddress(rev.displayName);
       if (near?.zone?.id) setZone(String(near.zone.id));
     } catch {
-      setError('No pudimos obtener tu ubicación.');
+      setError(t.checkout.locationFailed);
     } finally {
       setLocating(false);
     }
@@ -126,10 +128,10 @@ export default function Checkout() {
     setError(null);
     try {
       const deliveryAddress =
-        mode === 'pickup' ? params.pickupAddress || 'Retiro en tienda' : address;
+        mode === 'pickup' ? params.pickupAddress || t.checkout.pickupFallback : address;
       const body = {
         merchantId,
-        pickupAddress: params.pickupAddress || 'Nicoya Centro',
+        pickupAddress: params.pickupAddress || t.checkout.defaultPickup,
         deliveryAddress,
         deliveryZone: zone || undefined,
         ...scheduleFields(schedule),
@@ -160,12 +162,12 @@ export default function Checkout() {
         }
         orderId = result.order?.id;
       } catch (e: any) {
-        setError(e?.body?.message ?? e?.message ?? 'No se pudo crear el pedido.');
+        setError(e?.body?.message ?? e?.message ?? t.checkout.createFailed);
         return;
       }
 
       if (!orderId) {
-        setError('El pedido no devolvió un identificador.');
+        setError(t.checkout.noOrderId);
         return;
       }
 
@@ -203,18 +205,25 @@ export default function Checkout() {
   if (lines.length === 0) {
     return (
       <Screen>
-        <Header title="Checkout" />
-        <Text style={ui.muted}>Tu carrito está vacío.</Text>
+        <Header title={t.checkout.title} />
+        <Text style={ui.muted}>{t.checkout.cartEmpty}</Text>
       </Screen>
     );
   }
 
+  const paymentOptions: [PaymentMethod, string][] = [
+    ['cash', t.checkout.cash],
+    ['sinpe', t.checkout.sinpe],
+    ['card', t.checkout.card],
+    ['crypto', t.checkout.crypto],
+  ];
+
   return (
     <Screen>
-      <Header title="Checkout" />
+      <Header title={t.checkout.title} />
       <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
         <Card style={{ marginBottom: 14 }}>
-          <Text style={ui.sectionTitle}>{params.merchantName || 'Tu pedido'}</Text>
+          <Text style={ui.sectionTitle}>{params.merchantName || t.checkout.yourOrder}</Text>
           {lines.map((l) => (
             <View key={l.lineId} style={styles.line}>
               <Text style={{ color: tokens.color.ink, flex: 1 }}>
@@ -224,36 +233,34 @@ export default function Checkout() {
             </View>
           ))}
           <View style={[styles.line, { marginTop: 8 }]}>
-            <Text style={[ui.muted, { flex: 1 }]}>Subtotal productos</Text>
+            <Text style={[ui.muted, { flex: 1 }]}>{t.checkout.subtotalProducts}</Text>
             <Price amount={subtotal} />
           </View>
-          <Text style={[ui.muted, { marginTop: 4 }]}>
-            Kiwi suma el servicio y el envío al confirmar el pedido.
-          </Text>
+          <Text style={[ui.muted, { marginTop: 4 }]}>{t.checkout.serviceNote}</Text>
         </Card>
 
-        <Text style={ui.sectionTitle}>Entrega</Text>
+        <Text style={ui.sectionTitle}>{t.checkout.deliveryTitle}</Text>
         <View style={styles.pillRow}>
           <Pill
-            label="A domicilio"
+            label={t.checkout.homeDelivery}
             active={mode === 'delivery'}
             onPress={() => setMode('delivery')}
           />
           <Pill
-            label="Retiro en tienda"
+            label={t.checkout.storePickup}
             active={mode === 'pickup'}
             onPress={() => setMode('pickup')}
           />
         </View>
 
         <Field
-          label="Tu nombre"
+          label={t.checkout.yourName}
           value={name}
           onChangeText={setName}
-          placeholder="Nombre completo"
+          placeholder={t.auth.fullName}
         />
         <Field
-          label="Teléfono"
+          label={t.checkout.phone}
           value={phone}
           onChangeText={setPhone}
           placeholder="8888-1234"
@@ -262,19 +269,19 @@ export default function Checkout() {
 
         {mode === 'delivery' && (
           <>
-            <Field label="Dirección de entrega" value={address} onChangeText={setAddress} />
+            <Field label={t.checkout.deliveryAddress} value={address} onChangeText={setAddress} />
             <Button
-              label={locating ? 'Buscando…' : 'Usar mi ubicación'}
+              label={locating ? t.checkout.locating : t.checkout.useMyLocation}
               variant="secondary"
               loading={locating}
               onPress={() => void useMyLocation()}
             />
             <View style={{ height: 10 }} />
             <Field
-              label="Buscar dirección"
+              label={t.checkout.searchAddress}
               value={addrQuery}
               onChangeText={setAddrQuery}
-              placeholder="Barrio, calle, referencia…"
+              placeholder={t.checkout.addressHint}
             />
             {searchQuery.isFetching && <ActivityIndicator color={tokens.color.kiwi} />}
             {results.map((r) => (
@@ -284,21 +291,21 @@ export default function Checkout() {
                 </Card>
               </Pressable>
             ))}
-            <Field label="Zona (opcional)" value={zone} onChangeText={setZone} />
+            <Field label={t.checkout.zoneOptional} value={zone} onChangeText={setZone} />
           </>
         )}
 
-        <Field label="Instrucciones (opcional)" value={notes} onChangeText={setNotes} multiline />
+        <Field label={t.checkout.notesOptional} value={notes} onChangeText={setNotes} multiline />
 
-        <Text style={[ui.sectionTitle, { marginTop: 8 }]}>¿Para cuándo?</Text>
+        <Text style={[ui.sectionTitle, { marginTop: 8 }]}>{t.checkout.whenTitle}</Text>
         <View style={styles.pillRow}>
           <Pill
-            label="⚡ Ahora"
+            label={t.checkout.now}
             active={schedule.mode === 'now'}
             onPress={() => setSchedule({ ...schedule, mode: 'now' })}
           />
           <Pill
-            label="📅 Programar"
+            label={t.checkout.scheduled}
             active={schedule.mode === 'scheduled'}
             onPress={() => setSchedule({ ...schedule, mode: 'scheduled' })}
           />
@@ -307,7 +314,7 @@ export default function Checkout() {
           <View style={ui.row}>
             <View style={{ flex: 1, marginRight: 8 }}>
               <Field
-                label="Día (YYYY-MM-DD)"
+                label={t.checkout.dayLabel}
                 value={schedule.date}
                 onChangeText={(v) => setSchedule({ ...schedule, date: v })}
                 placeholder={todayCR()}
@@ -315,7 +322,7 @@ export default function Checkout() {
             </View>
             <View style={{ flex: 1 }}>
               <Field
-                label="Hora (HH:MM)"
+                label={t.checkout.timeLabel}
                 value={schedule.time}
                 onChangeText={(v) => setSchedule({ ...schedule, time: v })}
                 placeholder="12:30"
@@ -323,26 +330,17 @@ export default function Checkout() {
             </View>
           </View>
         )}
-        {isHomeCook && (
-          <Text style={ui.muted}>Cocina casera: podés programar la entrega de mañana.</Text>
-        )}
+        {isHomeCook && <Text style={ui.muted}>{t.checkout.homeCookNote}</Text>}
 
-        <Text style={[ui.sectionTitle, { marginTop: 8 }]}>Método de pago</Text>
+        <Text style={[ui.sectionTitle, { marginTop: 8 }]}>{t.checkout.paymentTitle}</Text>
         <View style={styles.pillRow}>
-          {(
-            [
-              ['cash', 'Efectivo'],
-              ['sinpe', 'SINPE'],
-              ['card', 'Tarjeta'],
-              ['crypto', 'USDC'],
-            ] as [PaymentMethod, string][]
-          ).map(([id, label]) => (
+          {paymentOptions.map(([id, label]) => (
             <Pill key={id} label={label} active={method === id} onPress={() => setMethod(id)} />
           ))}
         </View>
         {method === 'cash' && (
           <Field
-            label="¿Con cuánto pagás? (opcional)"
+            label={t.checkout.cashQuestion}
             value={cashTendered}
             onChangeText={setCashTendered}
             placeholder={String(subtotal)}
@@ -355,12 +353,12 @@ export default function Checkout() {
 
       <View style={styles.bar}>
         <View>
-          <Text style={ui.muted}>Subtotal</Text>
+          <Text style={ui.muted}>{t.checkout.subtotal}</Text>
           <Price amount={subtotal} />
         </View>
         <View style={{ flex: 1, marginLeft: 16 }}>
           <Button
-            label={busy ? 'Procesando…' : 'Ordenar'}
+            label={busy ? t.checkout.processing : t.checkout.pay}
             loading={busy}
             disabled={!canPlace}
             onPress={() => void place()}

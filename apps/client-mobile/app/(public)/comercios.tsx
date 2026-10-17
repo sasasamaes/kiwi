@@ -3,6 +3,7 @@ import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { Screen, tokens } from '@kiwi/mobile-ui';
+import { useTranslation } from '@kiwi/i18n';
 import { menuApi } from '../../src/api/menu';
 import { http } from '../../src/api/http';
 import { useSession } from '../../src/session/useSession';
@@ -11,6 +12,7 @@ import { Card, Field, Pill, ui } from '../../src/components/ui';
 const api = menuApi(http);
 
 export default function Comercios() {
+  const { t } = useTranslation();
   const router = useRouter();
   const user = useSession((s) => s.user);
   const [q, setQ] = useState('');
@@ -25,8 +27,8 @@ export default function Comercios() {
   const categories = useMemo(() => {
     const set = new Set<string>();
     for (const m of merchants) if (m?.category) set.add(String(m.category));
-    return ['Todos', ...set];
-  }, [merchants]);
+    return [t.customer.all, ...set];
+  }, [merchants, t]);
 
   return (
     <Screen>
@@ -35,7 +37,7 @@ export default function Comercios() {
         <View style={ui.row}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="escanear qr"
+            accessibilityLabel={t.customer.scanQr}
             onPress={() => router.push('/(public)/scan')}
           >
             <Text style={{ fontSize: 20, marginRight: 16 }}>📷</Text>
@@ -45,17 +47,17 @@ export default function Comercios() {
             onPress={() => router.push(user ? '/(account)/orders' : '/(auth)/login')}
           >
             <Text style={{ color: tokens.color.lime, fontWeight: '600' }}>
-              {user ? 'Mis pedidos' : 'Ingresar'}
+              {user ? t.customer.myOrders : t.customer.login}
             </Text>
           </Pressable>
         </View>
       </View>
 
       <Field
-        label="Buscar comercios"
+        label={t.customer.searchMerchants}
         value={q}
         onChangeText={setQ}
-        placeholder="Nombre o antojo…"
+        placeholder={t.customer.searchHint}
       />
 
       <View style={styles.pillRow}>
@@ -63,8 +65,8 @@ export default function Comercios() {
           <Pill
             key={c}
             label={c}
-            active={(category ?? 'Todos') === c}
-            onPress={() => setCategory(c === 'Todos' ? null : c)}
+            active={(category ?? t.customer.all) === c}
+            onPress={() => setCategory(c === t.customer.all ? null : c)}
           />
         ))}
       </View>
@@ -79,7 +81,7 @@ export default function Comercios() {
           onRefresh={() => void refetch()}
           contentContainerStyle={{ paddingBottom: 24 }}
           ListEmptyComponent={
-            <Text style={[ui.muted, { marginTop: 24 }]}>No encontramos comercios.</Text>
+            <Text style={[ui.muted, { marginTop: 24 }]}>{t.customer.noMerchants}</Text>
           }
           renderItem={({ item }) => (
             <Pressable
@@ -96,7 +98,9 @@ export default function Comercios() {
                     {item.businessName}
                   </Text>
                   {item.isOpen === false && (
-                    <Text style={ui.muted}>{item.isHomeCook ? 'Preventa' : 'Cerrado'}</Text>
+                    <Text style={ui.muted}>
+                      {item.isHomeCook ? t.customer.presale : t.customer.closed}
+                    </Text>
                   )}
                 </View>
                 {!!item.description && (

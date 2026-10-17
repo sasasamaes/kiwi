@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { TextInput, Text, View, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Screen, Button, tokens } from '@kiwi/mobile-ui';
+import { useTranslation } from '@kiwi/i18n';
 import { useSession } from '../../src/session/useSession';
 
 export default function Login() {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
@@ -14,7 +16,7 @@ export default function Login() {
     <Screen>
       <View style={{ gap: tokens.space[4], marginTop: tokens.space[8] }}>
         <Text style={{ color: tokens.color.ink, fontSize: 24, fontWeight: '700' }}>
-          Kiwi Repartidores
+          {t.driverAuth.loginTitle}
         </Text>
         <TextInput
           placeholder="tu@email.com"
@@ -46,7 +48,7 @@ export default function Login() {
           }}
         />
         <Button
-          label="Iniciar Sesión"
+          label={t.auth.login}
           loading={busy}
           onPress={async () => {
             setBusy(true);
@@ -54,7 +56,7 @@ export default function Login() {
               await signIn(email.trim(), password);
               router.replace('/(app)');
             } catch {
-              Alert.alert('No se pudo iniciar sesión');
+              Alert.alert(t.driverAuth.loginFailed);
             } finally {
               setBusy(false);
             }

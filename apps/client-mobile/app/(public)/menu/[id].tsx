@@ -3,6 +3,7 @@ import { ActivityIndicator, Modal, Pressable, ScrollView, Text, View } from 'rea
 import { useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Button, Price, QtyStepper, Screen, tokens } from '@kiwi/mobile-ui';
+import { useTranslation } from '@kiwi/i18n';
 import { menuApi } from '../../../src/api/menu';
 import { http } from '../../../src/api/http';
 import { unitPriceFor, type SelectedOption } from '../../../src/cart/math';
@@ -46,9 +47,10 @@ function lineIdFor(itemId: string, selected: SelectedOption[]): string {
 }
 
 export default function Menu() {
+  const { t, translate } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const [category, setCategory] = useState<string>('Todos');
+  const [category, setCategory] = useState<string>(t.customer.all);
   const [picking, setPicking] = useState<MenuItem | null>(null);
   const [picks, setPicks] = useState<Record<string, string[]>>({});
   const [pickError, setPickError] = useState<string | null>(null);
@@ -74,17 +76,18 @@ export default function Menu() {
 
   const categories: string[] = useMemo(() => {
     const raw = itemsQuery.data?.categories;
-    return Array.isArray(raw) && raw.length > 0 ? raw : ['Todos'];
-  }, [itemsQuery.data]);
+    return Array.isArray(raw) && raw.length > 0 ? raw : [t.customer.all];
+  }, [itemsQuery.data, t]);
 
+  const allLabel = t.customer.all;
   const visible = useMemo(() => {
     const today = items.filter((i) => !i.offeredTomorrow);
-    return category === 'Todos' ? today : today.filter((i) => i.category === category);
-  }, [items, category]);
+    return category === allLabel ? today : today.filter((i) => i.category === category);
+  }, [items, category, allLabel]);
 
   const tomorrow = useMemo(
-    () => (category === 'Todos' ? items.filter((i) => i.offeredTomorrow) : []),
-    [items, category],
+    () => (category === allLabel ? items.filter((i) => i.offeredTomorrow) : []),
+    [items, category, allLabel],
   );
 
   const subtotal = useMemo(
@@ -143,7 +146,7 @@ export default function Menu() {
     const groups = picking.variantGroups ?? [];
     const missing = groups.find((g) => g.required && (picks[g.id] ?? []).length === 0);
     if (missing) {
-      setPickError(`Elegí una opción de "${missing.name}"`);
+      setPickError(translate('menu.chooseOption', { name: missing.name }));
       return;
     }
     const selected: SelectedOption[] = [];
@@ -170,7 +173,7 @@ export default function Menu() {
 
   return (
     <Screen>
-      <Header title={profileQuery.data?.businessName ?? 'Menú'} />
+      <Header title={profileQuery.data?.businessName ?? t.menu.defaultTitle} />
 
       <ScrollView contentContainerStyle={{ paddingBottom: 140 }}>
         {!!profileQuery.data?.description && (
@@ -183,7 +186,7 @@ export default function Menu() {
               <Text style={{ color: tokens.color.ink, fontSize: 16, fontWeight: '700' }}>
                 🥣 {builder.name}
               </Text>
-              <Text style={[ui.muted, { marginTop: 4 }]}>Armá tu bowl eligiendo tus toppings.</Text>
+              <Text style={[ui.muted, { marginTop: 4 }]}>{t.menu.buildBowl}</Text>
             </Card>
           </Pressable>
         )}
@@ -200,21 +203,29 @@ export default function Menu() {
             item={item}
             inCart={countInCart(item.id)}
             onAdd={() => onAdd(item)}
+            addLabel={translate('customer.addItem', { name: item.name })}
+            hintInCart={translate('menu.inCart', { count: countInCart(item.id) })}
+            hintPresale={t.menu.presaleTomorrow}
+            stockLeft={translate('menu.leftInStock', { count: item.stockQty ?? 0 })}
+            maxLabel={(max: number) => translate('menu.maxSelections', { count: max })}
           />
         ))}
 
         {tomorrow.length > 0 && (
           <>
-            <Text style={[ui.sectionTitle, { marginTop: 20 }]}>Mañana en preventa</Text>
-            <Text style={[ui.muted, { marginBottom: 8 }]}>
-              Pedí hoy y programá la entrega para mañana.
-            </Text>
+            <Text style={[ui.sectionTitle, { marginTop: 20 }]}>{t.menu.tomorrowPresale}</Text>
+            <Text style={[ui.muted, { marginBottom: 8 }]}>{t.menu.tomorrowHint}</Text>
             {tomorrow.map((item) => (
               <ItemRow
                 key={item.id}
                 item={item}
                 inCart={countInCart(item.id)}
                 onAdd={() => onAdd(item)}
+                addLabel={translate('customer.addItem', { name: item.name })}
+                hintInCart={translate('menu.inCart', { count: countInCart(item.id) })}
+                hintPresale={t.menu.presaleTomorrow}
+                stockLeft={translate('menu.leftInStock', { count: item.stockQty ?? 0 })}
+                maxLabel={(max: number) => translate('menu.maxSelections', { count: max })}
               />
             ))}
           </>
@@ -222,7 +233,7 @@ export default function Menu() {
 
         {lines.length > 0 && (
           <Card style={{ marginTop: 20 }}>
-            <Text style={ui.sectionTitle}>Tu pedido</Text>
+            <Text style={ui.sectionTitle}>{t.menu.yourOrder}</Text>
             {lines.map((line) => (
               <View key={line.lineId} style={styles.cartLine}>
                 <View style={{ flex: 1 }}>
@@ -247,12 +258,12 @@ export default function Menu() {
       {lines.length > 0 && (
         <View style={styles.cartBar}>
           <View>
-            <Text style={ui.muted}>Total</Text>
+            <Text style={ui.muted}>{t.order.total}</Text>
             <Price amount={subtotal} />
           </View>
           <View style={{ flex: 1, marginLeft: 16 }}>
             <Button
-              label="Ir al checkout"
+              label={t.menu.goCheckout}
               onPress={() =>
                 router.push({
                   pathname: '/(public)/checkout',
@@ -283,7 +294,9 @@ export default function Menu() {
                 <View key={g.id} style={{ marginBottom: 16 }}>
                   <Text style={{ color: tokens.color.ink, fontWeight: '700' }}>
                     {g.name}
-                    {typeof g.maxSelections === 'number' ? ` (máx ${g.maxSelections})` : ''}
+                    {typeof g.maxSelections === 'number'
+                      ? ` ${translate('menu.maxSelections', { count: g.maxSelections })}`
+                      : ''}
                   </Text>
                   {g.options.map((o) => {
                     const active = (picks[g.id] ?? []).includes(o.id);
@@ -316,9 +329,9 @@ export default function Menu() {
             {!!pickError && (
               <Text style={{ color: tokens.color.danger, marginBottom: 8 }}>{pickError}</Text>
             )}
-            <Button label="Agregar" onPress={confirmPick} />
+            <Button label={t.menu.add} onPress={confirmPick} />
             <Pressable onPress={() => setPicking(null)} style={{ marginTop: 12 }}>
-              <Text style={[ui.muted, { textAlign: 'center' }]}>Cancelar</Text>
+              <Text style={[ui.muted, { textAlign: 'center' }]}>{t.app.cancel}</Text>
             </Pressable>
           </View>
         </View>
@@ -327,7 +340,24 @@ export default function Menu() {
   );
 }
 
-function ItemRow({ item, inCart, onAdd }: { item: MenuItem; inCart: number; onAdd: () => void }) {
+function ItemRow({
+  item,
+  inCart,
+  onAdd,
+  addLabel,
+  hintInCart,
+  hintPresale,
+  stockLeft,
+}: {
+  item: MenuItem;
+  inCart: number;
+  onAdd: () => void;
+  addLabel: string;
+  hintInCart: string;
+  hintPresale: string;
+  stockLeft: string;
+  maxLabel: (max: number) => string;
+}) {
   const hasOptions = (item.variantGroups ?? []).some((g) => g.options.length > 0);
   const soldOut = typeof item.stockQty === 'number' && item.stockQty <= 0;
   const atStock = typeof item.stockQty === 'number' && inCart >= item.stockQty;
@@ -347,16 +377,16 @@ function ItemRow({ item, inCart, onAdd }: { item: MenuItem; inCart: number; onAd
           <View style={[ui.row, { marginTop: 6 }]}>
             <Price amount={Number(item.price)} />
             {typeof item.stockQty === 'number' && item.stockQty > 0 && item.stockQty <= 10 && (
-              <Text style={[ui.muted, { marginLeft: 10 }]}>Quedan {item.stockQty}</Text>
+              <Text style={[ui.muted, { marginLeft: 10 }]}>{stockLeft}</Text>
             )}
           </View>
-          {!!chosenLabelHint(item, inCart) && (
-            <Text style={ui.muted}>{chosenLabelHint(item, inCart)}</Text>
+          {!!chosenLabelHint(item, inCart, hintInCart, hintPresale) && (
+            <Text style={ui.muted}>{chosenLabelHint(item, inCart, hintInCart, hintPresale)}</Text>
           )}
         </View>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`agregar ${item.name}`}
+          accessibilityLabel={addLabel}
           disabled={soldOut || atStock}
           onPress={onAdd}
           style={[styles.addBtn, soldOut || atStock ? { opacity: 0.4 } : null]}
@@ -370,9 +400,14 @@ function ItemRow({ item, inCart, onAdd }: { item: MenuItem; inCart: number; onAd
   );
 }
 
-function chosenLabelHint(item: MenuItem, inCart: number): string {
-  if (item.offeredTomorrow) return 'Preventa · mañana';
-  if (inCart > 0) return `${inCart} en el carrito`;
+function chosenLabelHint(
+  item: MenuItem,
+  inCart: number,
+  hintInCart: string,
+  hintPresale: string,
+): string {
+  if (item.offeredTomorrow) return hintPresale;
+  if (inCart > 0) return hintInCart;
   return '';
 }
 

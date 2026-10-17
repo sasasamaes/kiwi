@@ -5,6 +5,46 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { locales, defaultLocale, Locale, TranslationKeys } from './index';
 import { getNestedValue, interpolate } from './utils';
 
+/**
+ * Storage adapter so the provider works on web (localStorage)
+ * and on React Native / Expo (e.g. expo-secure-store).
+ *
+ * Web default is used automatically when no storage is provided
+ * and `window.localStorage` exists. On native, pass a storage
+ * backed by SecureStore/AsyncStorage, or omit for in-memory only.
+ */
+export interface LocaleStorage {
+  getLocale: () => Promise<Locale | null> | Locale | null;
+  setLocale: (locale: Locale) => Promise<void> | void;
+}
+
+function webStorage(): LocaleStorage | null {
+  if (typeof window === 'undefined' || !('localStorage' in window)) return null;
+  return {
+    getLocale: () => {
+      try {
+        const saved = window.localStorage.getItem('kiwi-locale') as Locale | null;
+        return saved && locales[saved] ? saved : null;
+      } catch {
+        return null;
+      }
+    },
+    setLocale: (locale: Locale) => {
+      try {
+        window.localStorage.setItem('kiwi-locale', locale);
+      } catch {
+        // storage unavailable (private mode, etc.) — locale still works in memory
+      }
+    },
+  };
+}
+
+function detectBrowserLocale(): Locale | null {
+  if (typeof navigator === 'undefined' || !navigator.language) return null;
+  const browserLang = navigator.language.split('-')[0] as Locale;
+  return locales[browserLang] ? browserLang : null;
+}
+
 interface LanguageContextType {
   locale: Locale;
   setLocale: (locale: Locale) => void;
@@ -14,27 +54,59 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
-export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>(defaultLocale);
+interface LanguageProviderProps {
+  children: ReactNode;
+  /** Force an initial locale (useful on native where detection is custom). */
+  initialLocale?: Locale;
+  /** Custom storage (SecureStore/AsyncStorage on native). Defaults to localStorage on web. */
+  storage?: LocaleStorage;
+  /** Custom device-locale detection (e.g. expo-localization). Defaults to navigator on web. */
+  detectLocale?: () => Locale | null;
+}
+
+export function LanguageProvider({
+  children,
+  initialLocale,
+  storage,
+  detectLocale,
+}: LanguageProviderProps) {
+  const [locale, setLocaleState] = useState<Locale>(initialLocale ?? defaultLocale);
 
   useEffect(() => {
-    // Load saved locale from localStorage
-    const savedLocale = localStorage.getItem('kiwi-locale') as Locale;
-    if (savedLocale && locales[savedLocale]) {
-      setLocaleState(savedLocale);
-    } else {
-      // Detect browser language
-      const browserLang = navigator.language.split('-')[0] as Locale;
-      if (locales[browserLang]) {
-        setLocaleState(browserLang);
+    let cancelled = false;
+    const resolve = async () => {
+      const store = storage ?? webStorage();
+      if (store) {
+        try {
+          const saved = await store.getLocale();
+          if (!cancelled && saved && locales[saved]) {
+            setLocaleState(saved);
+            return;
+          }
+        } catch {
+          // fall through to detection
+        }
       }
-    }
+      const detected = detectLocale ? detectLocale() : detectBrowserLocale();
+      if (!cancelled && detected && locales[detected] && detected !== initialLocale) {
+        setLocaleState(detected);
+      }
+    };
+    if (!initialLocale) void resolve();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const setLocale = (newLocale: Locale) => {
     setLocaleState(newLocale);
-    localStorage.setItem('kiwi-locale', newLocale);
-    document.documentElement.lang = newLocale;
+    const store = storage ?? webStorage();
+    try {
+      void store?.setLocale(newLocale);
+    } catch {
+      // in-memory fallback
+    }
+    if (typeof document !== 'undefined' && document.documentElement) {
+      document.documentElement.lang = newLocale;
+    }
   };
 
   const value: LanguageContextType = {

@@ -3,6 +3,7 @@ import { FlatList, Switch, Text, View } from 'react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { Screen, Button, StatusBadge, tokens } from '@kiwi/mobile-ui';
+import { useTranslation } from '@kiwi/i18n';
 import { ordersApi } from '../../src/api/orders';
 import { http } from '../../src/api/client';
 import { secureStorage } from '../../src/api/storage';
@@ -14,6 +15,7 @@ const api = ordersApi(http);
 const WS = (process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:4100/api').replace('/api', '');
 
 export default function Home() {
+  const { t } = useTranslation();
   const router = useRouter();
   const qc = useQueryClient();
   const { online, setOnline } = useSession((s) => s);
@@ -56,7 +58,7 @@ export default function Home() {
         }}
       >
         <Text style={{ color: tokens.color.ink, fontWeight: '700', fontSize: 18 }}>
-          {online ? 'En línea' : 'Desconectado'}
+          {online ? t.driverHome.online : t.driverHome.offline}
         </Text>
         <Switch value={online} onValueChange={setOnline} />
       </View>
@@ -72,19 +74,29 @@ export default function Home() {
               marginBottom: tokens.space[3],
             }}
           >
-            <StatusBadge status={item.status ?? 'pending'} />
+            <StatusBadge
+              status={item.status ?? 'pending'}
+              labels={{
+                pending: t.order.pending,
+                assigned: t.order.assigned,
+                picked_up: t.order.pickedUp,
+                delivered: t.order.delivered,
+                cancelled: t.order.cancelled,
+                no_driver: t.order.noDriver,
+              }}
+            />
             <Text style={{ color: tokens.color.ink, marginTop: 8, fontWeight: '600' }}>
               {item.merchant?.businessName ?? item.pickupAddress}
             </Text>
             <Text style={{ color: tokens.color.muted, fontSize: 12 }}>{item.deliveryAddress}</Text>
             <View style={{ marginTop: tokens.space[3] }}>
-              <Button label="Aceptar" onPress={() => accept(item.id)} />
+              <Button label={t.driverHome.accept} onPress={() => accept(item.id)} />
             </View>
           </View>
         )}
         ListEmptyComponent={
           <Text style={{ color: tokens.color.muted }}>
-            {online ? 'Sin pedidos disponibles' : 'Conectate para recibir pedidos'}
+            {online ? t.driverHome.noOrders : t.driverHome.connectHint}
           </Text>
         }
       />

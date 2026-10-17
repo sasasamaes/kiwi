@@ -1,7 +1,7 @@
 import { Text, View } from 'react-native';
 import { tokens } from '../theme';
 
-const LABELS: Record<string, string> = {
+const DEFAULT_LABELS: Record<string, string> = {
   pending: 'Pendiente',
   assigned: 'Asignado',
   in_transit_to_pickup: 'En camino a retiro',
@@ -11,7 +11,13 @@ const LABELS: Record<string, string> = {
   cancelled: 'Cancelado',
   no_driver: 'Sin repartidor',
 };
-export function StatusBadge({ status }: { status: string }) {
+export function StatusBadge({
+  status,
+  labels,
+}: {
+  status: string;
+  labels?: Record<string, string>;
+}) {
   return (
     <View
       style={{
@@ -23,7 +29,7 @@ export function StatusBadge({ status }: { status: string }) {
       }}
     >
       <Text style={{ color: tokens.color.lime, fontSize: 12, fontWeight: '600' }}>
-        {LABELS[status] ?? status}
+        {(labels ?? DEFAULT_LABELS)[status] ?? status}
       </Text>
     </View>
   );

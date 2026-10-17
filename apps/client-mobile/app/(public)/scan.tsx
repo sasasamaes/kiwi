@@ -3,6 +3,7 @@ import { Text, View } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useRouter } from 'expo-router';
 import { Button, Screen, tokens } from '@kiwi/mobile-ui';
+import { useTranslation } from '@kiwi/i18n';
 import { ui } from '../../src/components/ui';
 
 // Merchant QRs encode `<base>/menu/<merchantId>`; also accept a bare id.
@@ -15,6 +16,7 @@ export function parseMerchantId(data: string): string | null {
 }
 
 export default function Scan() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [permission, requestPermission] = useCameraPermissions();
   const [error, setError] = useState<string | null>(null);
@@ -23,7 +25,7 @@ export default function Scan() {
   if (!permission) {
     return (
       <Screen>
-        <Text style={ui.muted}>Preparando cámara…</Text>
+        <Text style={ui.muted}>{t.scan.preparing}</Text>
       </Screen>
     );
   }
@@ -33,11 +35,11 @@ export default function Scan() {
       <Screen>
         <View style={{ gap: tokens.space[4], marginTop: tokens.space[8] }}>
           <Text style={{ color: tokens.color.ink, fontSize: 18, fontWeight: '700' }}>
-            Escaneá el QR del comercio
+            {t.scan.title}
           </Text>
-          <Text style={ui.muted}>Necesitamos permiso de cámara para leer el código.</Text>
-          <Button label="Permitir cámara" onPress={() => void requestPermission()} />
-          <Button label="Volver" variant="secondary" onPress={() => router.back()} />
+          <Text style={ui.muted}>{t.scan.needPermission}</Text>
+          <Button label={t.scan.allowCamera} onPress={() => void requestPermission()} />
+          <Button label={t.app.back} variant="secondary" onPress={() => router.back()} />
         </View>
       </Screen>
     );
@@ -53,7 +55,7 @@ export default function Scan() {
           if (handled.current) return;
           const id = parseMerchantId(String(data ?? ''));
           if (!id) {
-            setError('Ese QR no es de un comercio Kiwi.');
+            setError(t.scan.invalidQr);
             return;
           }
           handled.current = true;
@@ -61,7 +63,7 @@ export default function Scan() {
         }}
       />
       <View style={styles.overlay} pointerEvents="none">
-        <Text style={styles.overlayText}>{error ?? 'Apuntá la cámara al QR del comercio'}</Text>
+        <Text style={styles.overlayText}>{error ?? t.scan.hint}</Text>
       </View>
     </View>
   );

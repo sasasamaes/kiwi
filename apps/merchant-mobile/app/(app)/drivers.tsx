@@ -2,6 +2,7 @@ import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Screen, Button, tokens } from '@kiwi/mobile-ui';
+import { useTranslation } from '@kiwi/i18n';
 import { driversApi } from '../../src/api/drivers';
 import { proposalsApi } from '../../src/api/proposals';
 import { ordersApi } from '../../src/api/orders';
@@ -20,6 +21,7 @@ function DriverRow({
   status,
   onAssign,
   busy,
+  assignLabel,
 }: {
   driverId: string;
   name: string;
@@ -28,6 +30,7 @@ function DriverRow({
   status?: string;
   onAssign?: (driverId: string) => void;
   busy?: boolean;
+  assignLabel: string;
 }) {
   return (
     <View
@@ -44,7 +47,7 @@ function DriverRow({
       </Text>
       {onAssign && (
         <View style={{ marginTop: tokens.space[3] }}>
-          <Button label="Asignar" loading={busy} onPress={() => onAssign(driverId)} />
+          <Button label={assignLabel} loading={busy} onPress={() => onAssign(driverId)} />
         </View>
       )}
     </View>
@@ -52,6 +55,7 @@ function DriverRow({
 }
 
 export default function Drivers() {
+  const { t, translate } = useTranslation();
   const { orderId } = useLocalSearchParams<{ orderId?: string }>();
   const qc = useQueryClient();
 
@@ -75,24 +79,24 @@ export default function Drivers() {
   const assign = useMutation({
     mutationFn: (driverId: string) => orders.assign(orderId as string, driverId),
     onSuccess: () => {
-      Alert.alert('Repartidor asignado');
+      Alert.alert(t.merchantDrivers.assigned);
       void qc.invalidateQueries({ queryKey: ['order', orderId] });
     },
-    onError: (e: any) => Alert.alert('No se pudo asignar', e?.message ?? ''),
+    onError: (e: any) => Alert.alert(t.merchantDrivers.assignFailed, e?.message ?? ''),
   });
 
   const toggleFavorite = useMutation({
     mutationFn: async ({ driverId, isFav }: { driverId: string; isFav: boolean }) =>
       isFav ? drivers.removeFavorite(driverId) : drivers.addFavorite(driverId),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ['drivers', 'favorites'] }),
-    onError: (e: any) => Alert.alert('No se pudo actualizar favorito', e?.message ?? ''),
+    onError: (e: any) => Alert.alert(t.merchantDrivers.favoriteFailed, e?.message ?? ''),
   });
 
   const favoriteIds = new Set((favorites.data ?? []).map((f: any) => f.driverId ?? f.driver?.id));
 
   const assignTo = (driverId: string) => {
     if (!orderId) {
-      Alert.alert('Elegí un pedido', 'Abrí una comanda y solicitá el repartidor desde ahí.');
+      Alert.alert(t.merchantDrivers.chooseOrder, t.merchantDrivers.chooseOrderHint);
       return;
     }
     assign.mutate(driverId);
@@ -108,17 +112,17 @@ export default function Drivers() {
           marginBottom: tokens.space[3],
         }}
       >
-        Repartidores
+        {t.merchantDrivers.title}
       </Text>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: tokens.space[6] }}>
         {!orderId && (
           <Text style={{ color: tokens.color.amber, fontSize: 12, marginBottom: tokens.space[3] }}>
-            Abrí una comanda para asignar un repartidor a ese pedido.
+            {t.merchantDrivers.assignHint}
           </Text>
         )}
 
         <Text style={{ color: tokens.color.muted, fontWeight: '700', marginBottom: 8 }}>
-          Disponibles · {(available.data ?? []).length}
+          {translate('merchantDrivers.available', { count: (available.data ?? []).length })}
         </Text>
         {(available.data ?? []).map((d: any) => (
           <Pressable
@@ -129,18 +133,19 @@ export default function Drivers() {
           >
             <DriverRow
               driverId={d.id}
-              name={`${favoriteIds.has(d.id) ? '★ ' : ''}${d.fullName ?? d.user?.phone ?? 'Repartidor'}`}
+              name={`${favoriteIds.has(d.id) ? '★ ' : ''}${d.fullName ?? d.user?.phone ?? t.merchantDrivers.fallbackName}`}
               vehicle={d.vehicleType}
               rating={d.rating}
               status={d.status}
               onAssign={orderId ? assignTo : undefined}
               busy={assign.isPending}
+              assignLabel={t.merchantDrivers.assign}
             />
           </Pressable>
         ))}
         {available.isSuccess && (available.data ?? []).length === 0 && (
           <Text style={{ color: tokens.color.muted, fontSize: 12, marginBottom: tokens.space[4] }}>
-            Sin repartidores conectados.
+            {t.merchantDrivers.noneConnected}
           </Text>
         )}
 
@@ -152,7 +157,7 @@ export default function Drivers() {
             marginBottom: 8,
           }}
         >
-          Favoritos · {(favorites.data ?? []).length}
+          {translate('merchantDrivers.favorites', { count: (favorites.data ?? []).length })}
         </Text>
         {(favorites.data ?? []).map((f: any) => {
           const d = f.driver ?? f;
@@ -163,18 +168,21 @@ export default function Drivers() {
             >
               <DriverRow
                 driverId={d.id}
-                name={d.fullName ?? 'Repartidor'}
+                name={d.fullName ?? t.merchantDrivers.fallbackName}
                 vehicle={d.vehicleType}
                 rating={d.rating}
                 status={d.status}
                 onAssign={orderId ? assignTo : undefined}
                 busy={assign.isPending}
+                assignLabel={t.merchantDrivers.assign}
               />
             </Pressable>
           );
         })}
         {favorites.isSuccess && (favorites.data ?? []).length === 0 && (
-          <Text style={{ color: tokens.color.muted, fontSize: 12 }}>Sin favoritos todavía.</Text>
+          <Text style={{ color: tokens.color.muted, fontSize: 12 }}>
+            {t.merchantDrivers.noneFavYet}
+          </Text>
         )}
 
         {orderId && (
@@ -187,22 +195,25 @@ export default function Drivers() {
                 marginBottom: 8,
               }}
             >
-              Propuestas · {(orderProposals.data ?? []).length}
+              {translate('merchantDrivers.proposals', {
+                count: (orderProposals.data ?? []).length,
+              })}
             </Text>
             {(orderProposals.data ?? []).length === 0 ? (
               <Text style={{ color: tokens.color.muted, fontSize: 12 }}>
-                Sin propuestas. El backend aún no expone la lista de propuestas al comercio.
+                {t.merchantDrivers.noProposals}
               </Text>
             ) : (
               (orderProposals.data ?? []).map((p: any) => (
                 <DriverRow
                   key={p.id}
                   driverId={p.driver?.id ?? p.driverId}
-                  name={p.driver?.fullName ?? 'Propuesta'}
+                  name={p.driver?.fullName ?? t.merchantDrivers.proposalFallback}
                   vehicle={p.driver?.vehicleType}
                   rating={p.driver?.rating}
                   onAssign={(driverId) => assignTo(driverId)}
                   busy={assign.isPending}
+                  assignLabel={t.merchantDrivers.assign}
                 />
               ))
             )}
@@ -210,7 +221,7 @@ export default function Drivers() {
         )}
 
         <Text style={{ color: tokens.color.muted, fontSize: 11, marginTop: tokens.space[4] }}>
-          Mantené presionado un repartidor para marcarlo/quitarlo de favoritos.
+          {t.merchantDrivers.longPressHint}
         </Text>
       </ScrollView>
       <BottomNav active="drivers" />

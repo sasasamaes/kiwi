@@ -21,5 +21,7 @@ export { es, en };
 // Re-export everything
 export * from './LanguageContext';
 export * from './LanguageSwitcher';
+export * from './useTranslation';
+export { getNestedValue, interpolate } from './utils';
 
 export default { es, en, locales, defaultLocale };
