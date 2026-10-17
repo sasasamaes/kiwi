@@ -4,7 +4,9 @@ import {
   Get,
   Put,
   Post,
+  Delete,
   Body,
+  Param,
   UseGuards,
   UseInterceptors,
   UploadedFile,
@@ -75,5 +77,54 @@ export class CustomersController {
   @ApiOperation({ summary: 'Whether customer avatar upload is configured' })
   async avatarStatus() {
     return { enabled: this.imageUpload.isConfigured() };
+  }
+
+  // ============================================
+  // 📍 Libreta de direcciones
+  // ============================================
+
+  @Get('me/addresses')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('customer')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Mis lugares guardados' })
+  async listAddresses(@CurrentUser() user: any) {
+    return this.customers.listAddresses(user.sub);
+  }
+
+  @Post('me/addresses')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('customer')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Guardar un lugar (Casa, Casa de mamá…)' })
+  async createAddress(@CurrentUser() user: any, @Body() body: any) {
+    return this.customers.createAddress(user.sub, body ?? {});
+  }
+
+  @Put('me/addresses/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('customer')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Editar un lugar guardado' })
+  async updateAddress(@CurrentUser() user: any, @Param('id') id: string, @Body() body: any) {
+    return this.customers.updateAddress(user.sub, id, body ?? {});
+  }
+
+  @Delete('me/addresses/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('customer')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Borrar un lugar guardado' })
+  async deleteAddress(@CurrentUser() user: any, @Param('id') id: string) {
+    return this.customers.deleteAddress(user.sub, id);
+  }
+
+  @Post('me/addresses/:id/default')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('customer')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Marcar lugar como predeterminado' })
+  async setDefaultAddress(@CurrentUser() user: any, @Param('id') id: string) {
+    return this.customers.setDefaultAddress(user.sub, id);
   }
 }

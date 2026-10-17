@@ -1212,6 +1212,46 @@ class ApiClient {
     return this.request<{ enabled: boolean }>('/customers/me/avatar-status');
   }
 
+  // ============================================
+  // 📍 LIBRETA DE DIRECCIONES (cliente)
+  // ============================================
+
+  async getMyAddresses(): Promise<
+    Array<{
+      id: string;
+      label: string;
+      address: string;
+      latitude: number | string | null;
+      longitude: number | string | null;
+      deliveryZone: string | null;
+      isDefault: boolean;
+    }>
+  > {
+    return this.request<any[]>('/customers/me/addresses').catch(() => []);
+  }
+
+  async createAddress(data: {
+    label: string;
+    address: string;
+    latitude?: number;
+    longitude?: number;
+    deliveryZone?: string;
+  }) {
+    return this.request<any>('/customers/me/addresses', { method: 'POST', body: data });
+  }
+
+  async updateAddress(id: string, data: any) {
+    return this.request<any>(`/customers/me/addresses/${id}`, { method: 'PUT', body: data });
+  }
+
+  async deleteAddress(id: string) {
+    return this.request<any>(`/customers/me/addresses/${id}`, { method: 'DELETE' });
+  }
+
+  async setDefaultAddress(id: string) {
+    return this.request<any>(`/customers/me/addresses/${id}/default`, { method: 'POST' });
+  }
+
   async updateDriverStatus(status: 'offline' | 'available' | 'busy') {
     return this.request<any>('/drivers/me/status', {
       method: 'PUT',

@@ -262,6 +262,66 @@ export default function MenuPage() {
   // Socket for real-time order updates
   useSocket();
 
+  // Mis lugares guardados (Casa, Casa de mamá…): elegir uno llena
+  // dirección, GPS y barrio de una vez.
+  const [places, setPlaces] = useState<
+    Array<{
+      id: string;
+      label: string;
+      address: string;
+      latitude: number | string | null;
+      longitude: number | string | null;
+      deliveryZone: string | null;
+      isDefault: boolean;
+    }>
+  >([]);
+  const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!showCheckout) return;
+    if (!api.getToken() || (userRole !== undefined && userRole !== 'customer')) return;
+    let alive = true;
+    api
+      .getMyAddresses()
+      .then((list) => {
+        if (alive && Array.isArray(list)) setPlaces(list);
+      })
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, [showCheckout, userRole]);
+
+  const applyPlace = (p: (typeof places)[number]) => {
+    setSelectedPlaceId(p.id);
+    setDeliveryInfo((prev) => ({
+      ...prev,
+      address: p.address || prev.address,
+      zone: p.deliveryZone || prev.zone,
+    }));
+    const lat = Number(p.latitude);
+    const lng = Number(p.longitude);
+    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+      setDeliveryCoords({ lat, lng });
+      // Re-resolver con las coords guardadas: actualiza el id si las zonas
+      // cambiaron (el servidor revalida igual al cobrar).
+      api
+        .resolveDeliveryZone(lat, lng)
+        .then((r) => {
+          if (!r.zone) return;
+          setResolvedZone({
+            id: r.zone.id,
+            label: r.zone.label,
+            price: Number(r.zone.price),
+            source: r.source,
+          });
+          setDeliveryInfo((prev) => ({ ...prev, zone: r.zone.id }));
+          setZoneAuto(true);
+        })
+        .catch(() => undefined);
+    }
+  };
+
   // Logueado: el checkout se autorrellena con tu perfil (nombre,
   // dirección, barrio, teléfono) y lo que cambies se guarda para la próxima.
   useEffect(() => {
@@ -1989,10 +2049,35 @@ export default function MenuPage() {
                   <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-3">
                     <MapPin className="h-4 w-4 inline" /> Dirección de entrega
                   </h3>
+                  {places.length > 0 && (
+                    <div className="flex gap-2 overflow-x-auto pb-2 mb-1 scrollbar-hide">
+                      {places.map((p) => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => applyPlace(p)}
+                          className={`shrink-0 rounded-xl border px-3 py-2 text-left transition-all ${
+                            selectedPlaceId === p.id
+                              ? 'border-kiwi-600 bg-kiwi-50 dark:bg-kiwi-900/30 ring-1 ring-kiwi-600'
+                              : 'border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900'
+                          }`}
+                        >
+                          <span className="block text-xs font-bold text-surface-800 dark:text-surface-100">
+                            📍 {p.label}
+                            {p.isDefault ? ' · Principal' : ''}
+                          </span>
+                          <span className="block max-w-[160px] truncate text-[11px] text-surface-500">
+                            {p.address}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   <AddressInput
                     value={deliveryInfo.address}
                     onChange={(address, coordinates) => {
                       setDeliveryInfo((prev) => ({ ...prev, address }));
+                      setSelectedPlaceId(null);
                       if (coordinates) setDeliveryCoords(coordinates);
                     }}
                     placeholder="Buscar dirección en Nicoya..."

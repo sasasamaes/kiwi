@@ -41,6 +41,7 @@ model User {
   merchantProfile  MerchantProfile?
   driverProfile    DriverProfile?
   customerProfile  CustomerProfile?
+  customerAddresses CustomerAddress[]
   kycVerification  KYCVerification?
   notifications    Notification[]
   deviceTokens     DeviceToken[]
@@ -306,6 +307,27 @@ model MerchantProfile {
   @@map("merchant_profiles")
 }
 
+// Libreta de direcciones del cliente (estilo Rappi): varios lugares
+// guardados ("Casa", "Casa de mamá"…) para elegir dónde entregar sin
+// escribir todo cada vez. El perfil conserva UNA dirección default.
+model CustomerAddress {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  label        String
+  address      String
+  latitude     Decimal? @db.Decimal(10, 8)
+  longitude    Decimal? @db.Decimal(11, 8)
+  deliveryZone String?  @map("delivery_zone")
+  isDefault    Boolean  @default(false) @map("is_default")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("customer_addresses")
+}
+
 // Perfil público del cliente final (rol customer). Minimización Ley 8968:
 // solo nombre + dirección de entrega + ciudad/zona para segmentar ofertas.
 model CustomerProfile {
@@ -328,7 +350,6 @@ model CustomerProfile {
   @@index([citySlug])
   @@map("customer_profiles")
 }
-
 // Catálogo de ciudades operativas. Nicoya activa hoy; Liberia y otras se
 // activan sin migraciones (solo insert + catálogo de zonas en código).
 model City {

@@ -46,6 +46,27 @@ export default function ProfilePage() {
   const [gps, setGps] = useState<{ lat: number; lng: number } | null>(null);
   const [gpsZoneAuto, setGpsZoneAuto] = useState(false);
   const [locating, setLocating] = useState(false);
+  // Libreta de lugares (Casa, Casa de mamá…).
+  const [places, setPlaces] = useState<
+    Array<{
+      id: string;
+      label: string;
+      address: string;
+      latitude: number | string | null;
+      longitude: number | string | null;
+      deliveryZone: string | null;
+      isDefault: boolean;
+    }>
+  >([]);
+  const [showPlaceForm, setShowPlaceForm] = useState(false);
+  const [placeLabel, setPlaceLabel] = useState('');
+  const [placeAddress, setPlaceAddress] = useState('');
+  const [placeZone, setPlaceZone] = useState('');
+  const [placeGps, setPlaceGps] = useState<{ lat: number; lng: number } | null>(null);
+  const [placeLocating, setPlaceLocating] = useState(false);
+  const [placeSaving, setPlaceSaving] = useState(false);
+  const [placeError, setPlaceError] = useState<string | null>(null);
+  const [placeActing, setPlaceActing] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && !user) return;
@@ -71,6 +92,12 @@ export default function ProfilePage() {
       .getMyFollows()
       .then((list) => {
         if (!cancelled) setFollows(Array.isArray(list) ? list : []);
+      })
+      .catch(() => undefined);
+    api
+      .getMyAddresses()
+      .then((list) => {
+        if (!cancelled) setPlaces(Array.isArray(list) ? list : []);
       })
       .catch(() => undefined);
     return () => {
@@ -148,6 +175,89 @@ export default function ProfilePage() {
       () => setLocating(false),
       { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 },
     );
+  };
+
+  const reloadPlaces = async () => {
+    try {
+      const list = await api.getMyAddresses();
+      setPlaces(Array.isArray(list) ? list : []);
+    } catch {
+      // best-effort
+    }
+  };
+
+  const usePlaceGps = () => {
+    if (!('geolocation' in navigator)) return;
+    setPlaceLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setPlaceGps(coords);
+        setPlaceLocating(false);
+        try {
+          const near = findNearestZone(coords.lat, coords.lng);
+          if (near?.confident) setPlaceZone(near.zone.id);
+        } catch {
+          // sin zona: el picker manual sigue disponible
+        }
+      },
+      () => setPlaceLocating(false),
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 },
+    );
+  };
+
+  const savePlace = async () => {
+    if (!placeLabel.trim() || !placeAddress.trim()) {
+      setPlaceError('Poné nombre y dirección del lugar');
+      return;
+    }
+    setPlaceSaving(true);
+    setPlaceError(null);
+    try {
+      await api.createAddress({
+        label: placeLabel.trim(),
+        address: placeAddress.trim(),
+        ...(placeGps ? { latitude: placeGps.lat, longitude: placeGps.lng } : {}),
+        ...(placeZone ? { deliveryZone: placeZone } : {}),
+      });
+      setPlaceLabel('');
+      setPlaceAddress('');
+      setPlaceZone('');
+      setPlaceGps(null);
+      setShowPlaceForm(false);
+      await reloadPlaces();
+    } catch (e: any) {
+      setPlaceError(e?.message || 'No se pudo guardar el lugar');
+    } finally {
+      setPlaceSaving(false);
+    }
+  };
+
+  const removePlace = async (id: string) => {
+    if (!window.confirm('¿Borrar este lugar?')) return;
+    setPlaceActing(id);
+    try {
+      await api.deleteAddress(id);
+      await reloadPlaces();
+    } catch {
+      // best-effort
+    } finally {
+      setPlaceActing(null);
+    }
+  };
+
+  const defaultPlace = async (id: string) => {
+    setPlaceActing(id);
+    try {
+      await api.setDefaultAddress(id);
+      await reloadPlaces();
+      const p = await api.getCustomerProfile().catch(() => null);
+      if (p) setProfile(p);
+    } catch {
+      // best-effort
+    } finally {
+      setPlaceActing(null);
+    }
   };
 
   const saveProfile = async () => {
@@ -350,6 +460,109 @@ export default function ProfilePage() {
               className="h-5 w-5 accent-kiwi-600"
             />
           </label>
+        </div>
+
+        {/* Mis lugares (Casa, Casa de mamá…): para elegir dónde entregar */}
+        <div className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-5 mb-3">
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-sm font-semibold text-surface-700 dark:text-surface-200">
+              📍 Mis lugares
+            </p>
+            <button
+              onClick={() => setShowPlaceForm((v) => !v)}
+              className="rounded-full bg-surface-100 dark:bg-surface-700 px-3 py-1.5 text-xs font-semibold text-surface-600 dark:text-surface-300"
+            >
+              {showPlaceForm ? 'Cerrar' : '+ Agregar'}
+            </button>
+          </div>
+          <p className="text-xs text-surface-500 dark:text-surface-400 mb-3">
+            Guardá tus direcciones (casa, trabajo, casa de mamá…) y elegí dónde entregar en cada
+            pedido.
+          </p>
+          {showPlaceForm && (
+            <div className="space-y-2 mb-3 rounded-xl bg-surface-50 dark:bg-surface-900 p-3">
+              <input
+                value={placeLabel}
+                onChange={(e) => setPlaceLabel(e.target.value)}
+                placeholder="Nombre (ej. Casa de mamá)"
+                maxLength={40}
+                className="w-full rounded-xl bg-white dark:bg-surface-800 px-4 py-3 text-sm outline-none"
+              />
+              <input
+                value={placeAddress}
+                onChange={(e) => setPlaceAddress(e.target.value)}
+                placeholder="Dirección"
+                maxLength={200}
+                className="w-full rounded-xl bg-white dark:bg-surface-800 px-4 py-3 text-sm outline-none"
+              />
+              <button
+                type="button"
+                onClick={usePlaceGps}
+                disabled={placeLocating}
+                className="w-full rounded-xl bg-surface-100 dark:bg-surface-800 px-4 py-3 text-sm font-semibold disabled:opacity-60"
+              >
+                {placeLocating
+                  ? 'Ubicando…'
+                  : placeGps
+                    ? '✓ Ubicación lista'
+                    : '📍 Usar mi ubicación GPS'}
+              </button>
+              <ZonePicker value={placeZone} onChange={setPlaceZone} />
+              {placeError && <p className="text-xs text-red-600">{placeError}</p>}
+              <button
+                onClick={() => void savePlace()}
+                disabled={placeSaving}
+                className="w-full rounded-xl bg-kiwi-600 px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
+              >
+                {placeSaving ? 'Guardando…' : 'Guardar lugar'}
+              </button>
+            </div>
+          )}
+          {places.length === 0 ? (
+            <p className="text-xs text-surface-400">Todavía no guardaste lugares.</p>
+          ) : (
+            <div className="space-y-2">
+              {places.map((p) => (
+                <div
+                  key={p.id}
+                  className="flex items-center gap-3 rounded-xl bg-surface-50 dark:bg-surface-900 px-3 py-2.5"
+                >
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-kiwi-100 dark:bg-kiwi-900/40 text-sm font-bold text-kiwi-700 dark:text-kiwi-300">
+                    {p.label.slice(0, 1).toUpperCase()}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-surface-800 dark:text-surface-100">
+                      {p.label}
+                      {p.isDefault && (
+                        <span className="ml-2 rounded-full bg-kiwi-600/10 px-2 py-0.5 text-[10px] text-kiwi-700 dark:text-kiwi-300">
+                          Principal
+                        </span>
+                      )}
+                    </p>
+                    <p className="truncate text-xs text-surface-500">{p.address}</p>
+                  </div>
+                  {!p.isDefault && (
+                    <button
+                      onClick={() => void defaultPlace(p.id)}
+                      disabled={placeActing === p.id}
+                      className="shrink-0 rounded-lg px-2 py-1.5 text-xs font-semibold text-kiwi-700 dark:text-kiwi-300 disabled:opacity-50"
+                      title="Marcar como principal"
+                    >
+                      Principal
+                    </button>
+                  )}
+                  <button
+                    onClick={() => void removePlace(p.id)}
+                    disabled={placeActing === p.id}
+                    className="shrink-0 rounded-lg px-2 py-1.5 text-xs font-semibold text-red-500 disabled:opacity-50"
+                    title="Borrar"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {follows.length > 0 && (
