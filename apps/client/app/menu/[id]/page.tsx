@@ -1971,14 +1971,7 @@ export default function MenuPage() {
                       nowDisabledReason={scheduleReason ?? undefined}
                       allowedWeekdays={scheduledAllowedDays}
                       hideTime
-                      hint={
-                        nowPossible
-                          ? cartHasTomorrow
-                            ? `Tu pedido incluye productos de mañana: sale programado para mañana ${weekdayNameES(tomorrowKey)}.`
-                            : (preorderLabel ??
-                              'Acepta pedidos aunque hoy esté cerrada: programá para su día de venta.')
-                          : undefined
-                      }
+                      hint={undefined}
                     />
                   </div>
                 )}
