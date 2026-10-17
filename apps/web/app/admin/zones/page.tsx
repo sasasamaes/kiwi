@@ -3,7 +3,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Pencil, Ban, RotateCcw, Check } from 'lucide-react';
+import { Plus, Pencil, Ban, RotateCcw, Check, Sparkles } from 'lucide-react';
 import { api, useAuth } from '@kiwi/ui';
 import { ZonesOverviewMap } from './ZonesOverviewMap';
 
@@ -32,13 +32,52 @@ const EMPTY_FORM = {
 };
 
 const NICoya: [number, number] = [10.1467, -85.452];
-
 /** Primer anillo del polígono (o primer polígono del multipolígono) → vértices. */
 function firstRing(g: Zone['geometry']): Ring | null {
   if (!g) return null;
   if (g.type === 'Polygon') return g.coordinates?.[0] ?? null;
   if (g.type === 'MultiPolygon') return g.coordinates?.[0]?.[0] ?? null;
   return null;
+}
+
+/** Haversine en km (para dimensionar el polígono generado). */
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const t = (d: number) => (d * Math.PI) / 180;
+  const h =
+    Math.sin(t(lat2 - lat1) / 2) ** 2 +
+    Math.cos(t(lat1)) * Math.cos(t(lat2)) * Math.sin(t(lng2 - lng1) / 2) ** 2;
+  return 2 * 6371 * Math.asin(Math.sqrt(h));
+}
+
+const hasPoint = (z: Zone) =>
+  Number.isFinite(Number(z.latitude)) && Number.isFinite(Number(z.longitude));
+
+/**
+ * Anillo aproximado alrededor del punto de la zona (octágono): para
+ * pre-marcar en vez de dibujar desde cero. El radio se ajusta al vecino más
+ * cercano (45% de la distancia, tope 1 km, piso 250 m) para no traslapar de
+ * entrada. Anillo ABIERTO (save() lo cierra). null = sin punto.
+ */
+function autoRingFor(zone: Zone, zones: Zone[], sides = 8): Ring | null {
+  if (!hasPoint(zone)) return null;
+  const lat = Number(zone.latitude);
+  const lng = Number(zone.longitude);
+  let nearest = Infinity;
+  for (const z of zones) {
+    if (z.id === zone.id || !hasPoint(z)) continue;
+    nearest = Math.min(nearest, haversineKm(lat, lng, Number(z.latitude), Number(z.longitude)));
+  }
+  const radiusKm = Number.isFinite(nearest)
+    ? Math.min(1.0, Math.max(0.25, (nearest / 2) * 0.9))
+    : 0.5;
+  const pts: Ring = [];
+  for (let i = 0; i < sides; i++) {
+    const bearing = (i / sides) * 2 * Math.PI;
+    const dLat = (radiusKm / 111.32) * Math.cos(bearing);
+    const dLng = (radiusKm / (111.32 * Math.cos((lat * Math.PI) / 180))) * Math.sin(bearing);
+    pts.push([lng + dLng, lat + dLat]);
+  }
+  return pts;
 }
 
 export default function AdminZonesPage() {
@@ -265,6 +304,56 @@ export default function AdminZonesPage() {
     }
   };
 
+  // Pre-marca el polígono de UNA zona (con punto pero sin geometría): abre el
+  // editor con el anillo generado para corregir vértices y guardar.
+  const autofillRow = (z: Zone) => {
+    const ring = autoRingFor(z, zones);
+    if (!ring) {
+      setMsg(`"${z.label}" no tiene punto: editala y marcá su ubicación primero`);
+      return;
+    }
+    openEdit(z);
+    setVertices(ring);
+  };
+
+  // Genera y GUARDA los polígonos de todas las zonas sin geometría (con
+  // punto). Después se corrigen en el mapa: es punto de partida, no final.
+  const [bulkSaving, setBulkSaving] = useState(false);
+  const missingCount = zones.filter((z) => !z.geometry && hasPoint(z)).length;
+
+  const bulkAutofill = async () => {
+    const missing = zones.filter((z) => !z.geometry && hasPoint(z));
+    if (missing.length === 0) return;
+    if (
+      !window.confirm(
+        `Generar ${missing.length} polígono(s) aproximados y guardarlos? Revisalos en el mapa y corregí los vértices después.`,
+      )
+    )
+      return;
+    setBulkSaving(true);
+    setMsg(null);
+    let ok = 0;
+    for (const z of missing) {
+      const ring = autoRingFor(z, zones);
+      if (!ring) continue;
+      try {
+        await api.adminUpdateZone(z.id, {
+          geometry: { type: 'Polygon', coordinates: [[...ring, ring[0]]] },
+        });
+        ok++;
+      } catch {
+        // sigue con las demás; el mapa muestra cuáles faltan
+      }
+    }
+    setBulkSaving(false);
+    await load();
+    setMsg(
+      ok === missing.length
+        ? `${ok} polígonos generados ✓ Revisalos en el mapa y corregí vértices.`
+        : `${ok}/${missing.length} generados (algunos fallaron, reintentá).`,
+    );
+  };
+
   if (!authLoading && user?.role !== 'admin') {
     return <div className="p-6 text-sm text-surface-500">Solo administradores.</div>;
   }
@@ -290,6 +379,16 @@ export default function AdminZonesPage() {
           <Plus className="h-4 w-4" /> Nueva zona
         </button>
       </div>
+      {missingCount > 0 && (
+        <button
+          onClick={() => void bulkAutofill()}
+          disabled={bulkSaving}
+          className="mb-4 inline-flex items-center gap-1.5 rounded-xl bg-purple-600 px-3 py-2 text-sm font-semibold text-white hover:bg-purple-700 disabled:opacity-50"
+        >
+          <Sparkles className="h-4 w-4" />
+          {bulkSaving ? 'Generando…' : `✨ Generar ${missingCount} polígono(s) faltante(s)`}
+        </button>
+      )}
 
       {msg && <p className="mb-3 text-sm text-kiwi-700 dark:text-kiwi-300">{msg}</p>}
 
@@ -359,7 +458,21 @@ export default function AdminZonesPage() {
                   <td className="px-4 py-3 text-right font-mono">
                     ₡{Number(z.price).toLocaleString()}
                   </td>
-                  <td className="px-4 py-3 text-center">{hasPolygon(z) ? '✓' : '—'}</td>
+                  <td className="px-4 py-3 text-center">
+                    {hasPolygon(z) ? (
+                      '✓'
+                    ) : hasPoint(z) ? (
+                      <button
+                        onClick={() => autofillRow(z)}
+                        title="Pre-marcar polígono para corregir"
+                        className="inline-flex items-center gap-1 text-purple-700 dark:text-purple-300"
+                      >
+                        <Sparkles className="h-3.5 w-3.5" /> Auto
+                      </button>
+                    ) : (
+                      '—'
+                    )}
+                  </td>{' '}
                   <td className="px-4 py-3 text-center">
                     <span className={z.active ? 'text-kiwi-600' : 'text-surface-400'}>
                       {z.active ? 'Activa' : 'Inactiva'}
