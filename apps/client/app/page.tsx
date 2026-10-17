@@ -16,6 +16,7 @@ import {
   useAuth,
   isEmojiImage,
   isHttpUrl,
+  hoverCard,
 } from '@kiwi/ui';
 import {
   Camera,
@@ -41,6 +42,13 @@ import {
   Salad,
   Beer,
   CookingPot,
+  Package,
+  Sprout,
+  ChevronRight,
+  RotateCcw,
+  CalendarDays,
+  Heart,
+  PackageSearch,
 } from 'lucide-react';
 import { BottomNav } from './components/BottomNav';
 import { PushOptInCard } from './components/PushOptInCard';
@@ -121,6 +129,41 @@ export default function ClientHome() {
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [locating, setLocating] = useState(false);
   const [locDenied, setLocDenied] = useState(false);
+  // Baymard: el re-pedido es el hábito #1 — rail "Pedir de nuevo" con el último entregado.
+  const [lastDelivered, setLastDelivered] = useState<{
+    id: string;
+    businessName: string;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!user) {
+      setLastDelivered(null);
+      return;
+    }
+    let cancelled = false;
+    api
+      .getMyOrders()
+      .then((orders: any[]) => {
+        if (cancelled || !Array.isArray(orders)) return;
+        const done = orders
+          .filter((o) => o?.status === 'delivered')
+          .sort(
+            (a, b) =>
+              new Date(b.deliveredAt || b.createdAt).getTime() -
+              new Date(a.deliveredAt || a.createdAt).getTime(),
+          )[0];
+        if (done?.merchant?.id || done?.merchantId) {
+          setLastDelivered({
+            id: done.merchant?.id ?? done.merchantId,
+            businessName: done.merchant?.businessName || 'tu pedido favorito',
+          });
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   const handleScan = useCallback(
     (merchantId: string, url: string) => {
@@ -324,10 +367,11 @@ export default function ClientHome() {
                 <button
                   key={c.id || 'todos'}
                   onClick={() => setCategory(c.id)}
-                  className={`flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-sm transition-colors ${
+                  aria-pressed={active}
+                  className={`flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-600/50 active:scale-95 ${
                     active
-                      ? 'bg-kiwi-700 text-white font-semibold'
-                      : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-300 hover:bg-surface-200 dark:hover:bg-surface-700'
+                      ? 'bg-kiwi-700 text-white font-semibold shadow-card'
+                      : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-300 [@media(hover:hover)]:hover:bg-surface-200 dark:[@media(hover:hover)]:hover:bg-surface-700'
                   }`}
                 >
                   <Icon className="h-4 w-4" />
@@ -340,38 +384,73 @@ export default function ClientHome() {
       </motion.header>
 
       <main className="mx-auto max-w-lg lg:max-w-5xl px-4 py-6">
-        {/* Encomiendas: un repartidor lleva tu paquete, sin comercio */}
-        <Link
-          href="/encomienda"
-          className="mb-4 flex items-center gap-3 rounded-2xl border border-surface-200/70 bg-white p-4 shadow-soft dark:border-surface-700 dark:bg-surface-900"
-        >
-          <span className="text-3xl">📦</span>
-          <span className="min-w-0 flex-1">
-            <span className="block font-display font-bold text-surface-900 dark:text-surface-100">
-              Enviar una encomienda
+        {/* Atajos: icono con tinte por acción, jerarquía serif, chevron */}
+        <div className="mb-4 grid gap-3">
+          <Link
+            href="/encomienda"
+            className={`flex items-center gap-3 rounded-2xl border border-surface-200/60 bg-white p-4 shadow-card dark:border-white/[0.06] dark:bg-surface-800 ${hoverCard} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-600/40 active:scale-[0.99]`}
+          >
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-kiwi-100 text-kiwi-700 dark:bg-kiwi-400/10 dark:text-kiwi-300">
+              <Package className="h-6 w-6" aria-hidden />
             </span>
-            <span className="block text-xs text-surface-500 dark:text-surface-400">
-              Un repartidor recoge y lleva tu paquete
+            <span className="min-w-0 flex-1">
+              <span className="block font-display text-[17px] font-bold leading-snug text-surface-900 dark:text-surface-100">
+                Enviar una encomienda
+              </span>
+              <span className="block text-xs text-surface-500 dark:text-surface-400">
+                Un repartidor recoge y lleva tu paquete
+              </span>
             </span>
-          </span>
-          <span className="text-kiwi-700 dark:text-kiwi-300">→</span>
-        </Link>
-        {/* Mercadito Zona Azul */}
-        <Link
-          href="/zona-azul"
-          className="mb-6 flex items-center gap-3 rounded-2xl border border-kiwi-200/70 dark:border-kiwi-400/20 bg-gradient-to-r from-kiwi-50 to-gold-50 dark:from-kiwi-400/10 dark:to-gold-400/5 p-4 shadow-soft"
-        >
-          <span className="text-3xl">🧀</span>
-          <span className="min-w-0 flex-1">
-            <span className="block font-display font-bold text-surface-900 dark:text-surface-100">
-              Mercadito Zona Azul
+            <ChevronRight
+              className="h-5 w-5 shrink-0 text-kiwi-700 dark:text-kiwi-300"
+              aria-hidden
+            />
+          </Link>
+          <Link
+            href="/zona-azul"
+            className={`flex items-center gap-3 rounded-2xl border border-gold-500/25 bg-gradient-to-r from-gold-50 via-white to-white p-4 shadow-card dark:border-gold-400/20 dark:from-gold-400/10 dark:via-surface-800 dark:to-surface-800 ${hoverCard} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-500/40 active:scale-[0.99]`}
+          >
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gold-100 text-gold-700 dark:bg-gold-400/10 dark:text-gold-300">
+              <Sprout className="h-6 w-6" aria-hidden />
             </span>
-            <span className="block text-xs text-surface-500 dark:text-surface-400">
-              Cuajadas y productos de Nicoya · Zona Azul
+            <span className="min-w-0 flex-1">
+              <span className="block font-display text-[17px] font-bold leading-snug text-surface-900 dark:text-surface-100">
+                Mercadito Zona Azul
+              </span>
+              <span className="block text-xs text-surface-500 dark:text-surface-400">
+                Cuajadas y productos de Nicoya · Zona Azul
+              </span>
             </span>
-          </span>
-          <span className="text-kiwi-700 dark:text-kiwi-300">→</span>
-        </Link>
+            <ChevronRight
+              className="h-5 w-5 shrink-0 text-gold-700 dark:text-gold-300"
+              aria-hidden
+            />
+          </Link>
+        </div>
+        {/* Pedir de nuevo: el hábito más común, al frente */}
+        {lastDelivered && (
+          <button
+            onClick={() => router.push(`/menu/${lastDelivered.id}`)}
+            className={`mb-6 flex w-full items-center gap-3 rounded-2xl border border-kiwi-600/25 bg-kiwi-50/60 p-4 text-left shadow-card dark:border-kiwi-400/20 dark:bg-kiwi-400/[0.07] ${hoverCard} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-600/40 active:scale-[0.99]`}
+          >
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-kiwi-700 text-white">
+              <RotateCcw className="h-6 w-6" aria-hidden />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[11px] font-bold uppercase tracking-[0.14em] text-kiwi-700 dark:text-kiwi-300">
+                Pedir de nuevo
+              </span>
+              <span className="block truncate font-display text-[17px] font-bold leading-snug text-surface-900 dark:text-surface-100">
+                {lastDelivered.businessName}
+              </span>
+            </span>
+            <ChevronRight
+              className="h-5 w-5 shrink-0 text-kiwi-700 dark:text-kiwi-300"
+              aria-hidden
+            />
+          </button>
+        )}
+        {lastDelivered === null && <div className="mb-6" aria-hidden />}
         {/* Banners patrocinados */}{' '}
         {banners.length > 0 && (
           <div className="mb-6 flex gap-3 overflow-x-auto pb-2 -mx-4 px-4">
@@ -401,8 +480,12 @@ export default function ClientHome() {
         {/* Vitrina de mañana: lo que se vende mañana se aparta hoy */}
         {tomorrow.length > 0 && (
           <div className="mb-6">
-            <p className="font-display font-bold text-surface-800 dark:text-surface-100 mb-1">
-              📅 Mañana venden esto
+            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-orange-700 dark:text-orange-300">
+              Preventa
+            </p>
+            <p className="font-display text-[19px] font-bold tracking-tight text-surface-900 dark:text-surface-100 mb-1 flex items-center gap-2">
+              <CalendarDays className="h-5 w-5 text-orange-600 dark:text-orange-300" aria-hidden />
+              Mañana venden esto
             </p>
             <p className="text-xs text-surface-500 dark:text-surface-400 mb-3">
               Apartá hoy en preventa — hasta agotar stock.
@@ -436,8 +519,8 @@ export default function ClientHome() {
                         {t.businessName}
                       </p>
                       {t.isHomeCook && (
-                        <p className="text-[10px] text-orange-600 dark:text-orange-300">
-                          🧡 Cocina casera
+                        <p className="inline-flex items-center gap-1 text-[10px] font-semibold text-orange-700 dark:text-orange-300">
+                          <CookingPot className="h-3 w-3" aria-hidden /> Cocina casera
                         </p>
                       )}
                     </div>
@@ -509,8 +592,13 @@ export default function ClientHome() {
             transition={{ delay: 0.1, duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] }}
           >
             <motion.div
-              className="rounded-2xl bg-kiwi-gradient p-6 text-white glow-kiwi-lg cursor-pointer overflow-hidden relative tactile"
-              whileHover={{ scale: 1.02 }}
+              role="button"
+              tabIndex={0}
+              aria-label="Escanear código QR del restaurante"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') startScanner();
+              }}
+              className="rounded-2xl bg-kiwi-gradient p-6 text-white shadow-card cursor-pointer overflow-hidden relative transition-transform duration-200 ease-out active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
               whileTap={{ scale: 0.98 }}
               onClick={startScanner}
             >
@@ -539,8 +627,12 @@ export default function ClientHome() {
         {/* Feed real de comercios */}
         <PushOptInCard />
         <ScrollReveal index={0}>
-          <h2 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-4 flex items-center gap-2">
-            <MapPin className="h-5 w-5" /> Restaurantes en Nicoya
+          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-kiwi-700 dark:text-kiwi-300">
+            Nicoya · Zona Azul
+          </p>
+          <h2 className="font-display text-[22px] font-bold tracking-tight text-surface-900 dark:text-surface-100 mb-4 flex items-center gap-2">
+            <MapPin className="h-5 w-5 text-kiwi-700 dark:text-kiwi-300" aria-hidden />
+            Restaurantes cerca tuyo
           </h2>
           {loading ? (
             <div className="space-y-3">
@@ -556,8 +648,8 @@ export default function ClientHome() {
             </div>
           ) : items.length === 0 ? (
             <div className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-6 text-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-kiwi-100 dark:bg-kiwi-900/30 mx-auto mb-3">
-                <Camera className="h-8 w-8 text-kiwi-700 dark:text-kiwi-400" />
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-kiwi-100 dark:bg-kiwi-400/10 mx-auto mb-3">
+                <PackageSearch className="h-8 w-8 text-kiwi-700 dark:text-kiwi-300" aria-hidden />
               </div>
               <p className="font-medium text-surface-800 dark:text-surface-200">
                 {feedError ? 'No se pudo cargar la lista' : 'Todavía no hay comercios por aquí'}
@@ -582,10 +674,10 @@ export default function ClientHome() {
                 <button
                   key={it.id}
                   onClick={() => openMerchant(it)}
-                  className="w-full text-left rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] p-4 shadow-soft dark:shadow-dark transition-all duration-200 hover:border-kiwi-600/40 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99]"
+                  className={`w-full text-left rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] p-4 shadow-card dark:shadow-dark ${hoverCard} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-600/40 active:scale-[0.99]`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-kiwi-100 dark:bg-kiwi-400/10 font-display font-bold text-kiwi-700 dark:text-kiwi-300 overflow-hidden">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-kiwi-100 text-xl dark:bg-kiwi-400/10 font-display font-bold text-kiwi-700 dark:text-kiwi-300 overflow-hidden">
                       {isHttpUrl(it.logoUrl) ? (
                         // NOTE: <img> intencional — logos dinámicos de Cloudinary.
                         <img
@@ -610,8 +702,8 @@ export default function ClientHome() {
                           </span>
                         )}
                         {it.isHomeCook && (
-                          <span className="text-[10px] font-semibold bg-orange-500/20 text-orange-700 dark:text-orange-300 rounded-full px-2 py-0.5 shrink-0">
-                            🧡 Casera
+                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-orange-500/15 text-orange-700 dark:text-orange-300 rounded-full px-2 py-0.5 shrink-0">
+                            <CookingPot className="h-3 w-3" aria-hidden /> Casera
                           </span>
                         )}
                       </div>
@@ -628,7 +720,13 @@ export default function ClientHome() {
                             <MapPin className="h-3.5 w-3.5" />a {it.distanceKm} km
                           </span>
                         )}
-                        <span className={it.isOpen ? 'text-kiwi-600' : 'text-red-500'}>
+                        <span
+                          className={`inline-flex items-center gap-1 font-semibold ${it.isOpen ? 'text-kiwi-700 dark:text-kiwi-300' : 'text-surface-400'}`}
+                        >
+                          <span
+                            aria-hidden
+                            className={`h-1.5 w-1.5 rounded-full ${it.isOpen ? 'bg-kiwi-600' : 'bg-surface-300'}`}
+                          />
                           {it.isOpen ? 'Abierto' : 'Cerrado'}
                         </span>
                       </div>
@@ -723,7 +821,7 @@ export default function ClientHome() {
                   rel="noopener noreferrer"
                   className="flex items-center justify-center gap-2 rounded-xl border border-orange-500/40 bg-orange-500/10 px-4 py-3 text-sm font-semibold text-orange-700 dark:text-orange-300"
                 >
-                  <CookingPot className="h-4 w-4" /> 🧡 Cocino en casa, quiero vender
+                  <CookingPot className="h-4 w-4" /> Cocino en casa, quiero vender
                 </a>
               </div>
             </div>

@@ -3,6 +3,21 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
+import {
+  Package,
+  MapPin,
+  User,
+  Phone,
+  Navigation,
+  Box,
+  Scale,
+  Banknote,
+  ChevronRight,
+  Check,
+  CheckCircle2,
+  ClipboardList,
+} from 'lucide-react';
 import {
   api,
   useAuth,
@@ -12,6 +27,7 @@ import {
   useDeliveryZones,
 } from '@kiwi/ui';
 import { findDeliveryZone } from '@kiwi/types';
+import { BottomNav } from '../components/BottomNav';
 
 const KG_INCLUDED = 5;
 const KG_EXTRA_PRICE = 500;
@@ -23,6 +39,12 @@ function weightSurcharge(kg: number): number {
 }
 
 const money = (n: number) => '₡' + Math.round(n).toLocaleString('es-CR');
+
+const SIZES = [
+  { id: 'S', label: 'Pequeño', hint: 'Sobre o caja chica' },
+  { id: 'M', label: 'Mediano', hint: 'Caja de zapatos' },
+  { id: 'L', label: 'Grande', hint: 'Ocupa media moto' },
+] as const;
 
 export default function EncomiendaPage() {
   const { user, loading: authLoading } = useAuth();
@@ -90,23 +112,24 @@ export default function EncomiendaPage() {
     deliveryZones.find((z) => z.id === deliveryZone)?.price ??
     findDeliveryZone(deliveryZone)?.price ??
     null;
-  const tripBase = (zoneTrip ?? 500) + weightSurcharge(weightKg);
+  const extraKg = weightSurcharge(weightKg);
+  const tripBase = (zoneTrip ?? 500) + extraKg;
   // El envío lleva el % de Kiwi encima; el repartidor recibe el viaje base.
-  const total = Math.round(tripBase * (1 + feePct / 100));
+  const kiwiFee = Math.round(tripBase * (feePct / 100));
+  const total = tripBase + kiwiFee;
   const senderDigits = senderPhone.replace(/\D/g, '');
   const recipientDigits = recipientPhone.replace(/\D/g, '');
 
-  const canSubmit =
-    senderName.trim().length > 0 &&
-    senderDigits.length >= 8 &&
-    pickupAddress.trim().length > 0 &&
+  const step1Done =
+    senderName.trim().length > 0 && senderDigits.length >= 8 && pickupAddress.trim().length > 0;
+  const step2Done =
     deliveryZone.trim().length > 0 &&
     deliveryAddress.trim().length > 0 &&
     recipientName.trim().length > 0 &&
-    recipientDigits.length >= 8 &&
-    packageDescription.trim().length > 0 &&
-    weightValid &&
-    acceptedTerms;
+    recipientDigits.length >= 8;
+  const step3Done = packageDescription.trim().length > 0 && weightValid;
+
+  const canSubmit = step1Done && step2Done && step3Done && acceptedTerms;
 
   async function submit() {
     if (!canSubmit || placingRef.current) {
@@ -145,69 +168,164 @@ export default function EncomiendaPage() {
 
   if (placed) {
     return (
-      <main className="mx-auto flex min-h-[100dvh] max-w-lg flex-col items-center justify-center gap-4 px-6 text-center">
-        <span className="text-5xl">📦</span>
-        <h1 className="font-display text-2xl font-bold text-surface-900 dark:text-surface-100">
-          ¡Encomienda pedida!
-        </h1>
-        <p className="text-sm text-surface-600 dark:text-surface-300">
-          Buscamos un repartidor cerca de {pickupAddress.trim() || 'la recogida'}. Pagás{' '}
-          {money(total)} en efectivo al repartidor al entregar.
+      <main className="mx-auto flex min-h-[100dvh] max-w-lg flex-col px-6 pb-28 pt-16 text-center">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex h-20 w-20 items-center justify-center rounded-full bg-kiwi-100 text-kiwi-700 dark:bg-kiwi-400/10 dark:text-kiwi-300 mx-auto"
+        >
+          <CheckCircle2 className="h-10 w-10" aria-hidden />
+        </motion.div>
+        <p className="mt-5 text-[11px] font-bold uppercase tracking-[0.16em] text-kiwi-700 dark:text-kiwi-300">
+          Pedido creado
         </p>
-        <Link href="/orders" className="rounded-xl bg-kiwi-600 px-5 py-3 font-semibold text-white">
-          Ver mis pedidos
-        </Link>
+        <h1 className="mt-1 font-display text-3xl font-bold tracking-tight text-surface-900 dark:text-surface-100">
+          Buscando tu repartidor
+        </h1>
+        <p className="mt-2 text-sm leading-relaxed text-surface-600 dark:text-surface-300">
+          Avisamos a los repartidores cerca de {pickupAddress.trim() || 'la recogida'}. Pagás{' '}
+          <span className="font-bold tabular-nums text-surface-900 dark:text-surface-100">
+            {money(total)}
+          </span>{' '}
+          en efectivo al entregar.
+        </p>
+        <div className="mt-6 flex flex-col gap-2">
+          {placed.id ? (
+            <Link
+              href={`/tracking/${placed.id}`}
+              className="rounded-full bg-kiwi-700 py-3.5 font-semibold text-white shadow-card transition-transform active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-600/50"
+            >
+              Seguir mi encomienda
+            </Link>
+          ) : null}
+          <Link
+            href="/orders"
+            className="inline-flex items-center justify-center gap-2 rounded-full border border-surface-200 dark:border-surface-700 py-3.5 font-semibold text-surface-700 dark:text-surface-200 transition-colors [@media(hover:hover)]:hover:bg-surface-50 dark:[@media(hover:hover)]:hover:bg-surface-800"
+          >
+            <ClipboardList className="h-4 w-4" aria-hidden /> Ver mis pedidos
+          </Link>
+        </div>
+        <BottomNav />
       </main>
     );
   }
 
   const field =
-    'w-full rounded-xl border border-surface-200 bg-white px-3 py-2.5 text-sm text-surface-900 outline-none focus:border-kiwi-500 dark:border-surface-700 dark:bg-surface-900 dark:text-surface-100';
-  const label = 'mb-1 block text-sm font-medium text-surface-600 dark:text-surface-300';
+    'w-full rounded-xl border border-surface-200 bg-surface-50 px-3.5 py-3 text-[15px] text-surface-900 outline-none transition-colors placeholder:text-surface-400 focus:border-kiwi-600 focus:bg-white dark:border-surface-700 dark:bg-surface-800 dark:text-surface-100 dark:focus:bg-surface-900';
+  const label = 'mb-1.5 block text-[13px] font-semibold text-surface-600 dark:text-surface-300';
+
+  const steps = [
+    { n: 1, label: 'Recogida', done: step1Done, icon: Navigation },
+    { n: 2, label: 'Entrega', done: step2Done, icon: MapPin },
+    { n: 3, label: 'Paquete', done: step3Done, icon: Box },
+  ];
 
   return (
-    <main className="min-h-[100dvh] bg-gradient-to-b from-kiwi-50 via-white to-gold-50 dark:from-surface-950 dark:via-surface-900 dark:to-surface-950">
-      <div className="mx-auto w-full max-w-lg px-4 pb-32 pt-6">
-        <header className="mb-6">
-          <Link href="/" className="text-sm text-kiwi-700 dark:text-kiwi-300">
-            ← Inicio
+    <main className="min-h-[100dvh] bg-bg-light pb-40 dark:bg-surface-950">
+      <div className="mx-auto w-full max-w-lg px-4 pt-6">
+        {/* Hero */}
+        <header className="mb-5">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1 text-sm font-medium text-surface-500 transition-colors [@media(hover:hover)]:hover:text-surface-800 dark:text-surface-400 dark:[@media(hover:hover)]:hover:text-surface-200"
+          >
+            <ChevronRight className="h-4 w-4 rotate-180" aria-hidden /> Inicio
           </Link>
-          <h1 className="mt-2 font-display text-2xl font-bold text-surface-900 dark:text-surface-100">
-            📦 Pedir una encomienda
-          </h1>
-          <p className="text-sm text-surface-500 dark:text-surface-400">
-            Un repartidor de Kiwi recoge y lleva tu paquete. Sin comercio de por medio.
+          <div className="mt-3 flex items-center gap-3">
+            <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-kiwi-700 text-white shadow-card">
+              <Package className="h-7 w-7" aria-hidden />
+            </span>
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-kiwi-700 dark:text-kiwi-300">
+                Sin comercio de por medio
+              </p>
+              <h1 className="font-display text-[26px] font-bold leading-tight tracking-tight text-surface-900 dark:text-surface-100">
+                Pedir una encomienda
+              </h1>
+            </div>
+          </div>
+          <p className="mt-2 text-sm leading-relaxed text-surface-500 dark:text-surface-400">
+            Un repartidor de Kiwi recoge y lleva tu paquete.
           </p>
         </header>
 
-        <section className="space-y-4">
-          <div>
-            <p className="mb-2 font-display text-sm font-bold text-surface-900 dark:text-surface-100">
-              1. Recogida
-            </p>
-            <div className="space-y-3">
+        {/* Stepper */}
+        <ol className="mb-5 flex items-center gap-1" aria-label="Progreso del pedido">
+          {steps.map((st, i) => (
+            <li key={st.n} className="flex flex-1 items-center gap-1 last:flex-none">
+              <div className="flex flex-1 flex-col items-center gap-1">
+                <span
+                  className={`flex h-8 w-8 items-center justify-center rounded-full text-[13px] font-bold transition-colors ${
+                    st.done
+                      ? 'bg-kiwi-700 text-white'
+                      : 'bg-surface-100 text-surface-500 dark:bg-surface-800 dark:text-surface-400'
+                  }`}
+                  aria-current={undefined}
+                >
+                  {st.done ? <Check className="h-4 w-4" aria-hidden /> : st.n}
+                </span>
+                <span
+                  className={`text-[11px] font-semibold ${st.done ? 'text-kiwi-700 dark:text-kiwi-300' : 'text-surface-400'}`}
+                >
+                  {st.label}
+                </span>
+              </div>
+              {i < steps.length - 1 && (
+                <span
+                  aria-hidden
+                  className={`mb-5 h-0.5 flex-1 rounded-full ${steps[i + 1].done || st.done ? 'bg-kiwi-600' : 'bg-surface-200 dark:bg-surface-700'}`}
+                />
+              )}
+            </li>
+          ))}
+        </ol>
+
+        <div className="space-y-4">
+          {/* 1. Recogida */}
+          <section className="rounded-2xl border border-surface-200/60 bg-white p-4 shadow-card dark:border-white/[0.06] dark:bg-surface-800">
+            <h2 className="flex items-center gap-2 font-display text-[17px] font-bold text-surface-900 dark:text-surface-100">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-kiwi-100 text-kiwi-700 dark:bg-kiwi-400/10 dark:text-kiwi-300">
+                <Navigation className="h-4 w-4" aria-hidden />
+              </span>
+              ¿Dónde recogemos?
+            </h2>
+            <div className="mt-3 space-y-3">
               <div>
                 <label className={label} htmlFor="sender-name">
                   Tu nombre
                 </label>
-                <input
-                  id="sender-name"
-                  className={field}
-                  value={senderName}
-                  onChange={(e) => setSenderName(e.target.value)}
-                />
+                <div className="relative">
+                  <User
+                    className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400"
+                    aria-hidden
+                  />
+                  <input
+                    id="sender-name"
+                    className={`${field} pl-10`}
+                    value={senderName}
+                    onChange={(e) => setSenderName(e.target.value)}
+                    autoComplete="name"
+                  />
+                </div>
               </div>
               <div>
                 <label className={label} htmlFor="sender-phone">
                   Tu teléfono
                 </label>
-                <input
-                  id="sender-phone"
-                  inputMode="tel"
-                  className={field}
-                  value={senderPhone}
-                  onChange={(e) => setSenderPhone(e.target.value)}
-                />
+                <div className="relative">
+                  <Phone
+                    className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400"
+                    aria-hidden
+                  />
+                  <input
+                    id="sender-phone"
+                    inputMode="tel"
+                    className={`${field} pl-10 tabular-nums`}
+                    value={senderPhone}
+                    onChange={(e) => setSenderPhone(e.target.value)}
+                    autoComplete="tel"
+                  />
+                </div>
               </div>
               <div>
                 <label className={label} htmlFor="pickup">
@@ -222,13 +340,17 @@ export default function EncomiendaPage() {
                 />
               </div>
             </div>
-          </div>
+          </section>
 
-          <div>
-            <p className="mb-2 font-display text-sm font-bold text-surface-900 dark:text-surface-100">
-              2. Entrega
-            </p>
-            <div className="space-y-3">
+          {/* 2. Entrega */}
+          <section className="rounded-2xl border border-surface-200/60 bg-white p-4 shadow-card dark:border-white/[0.06] dark:bg-surface-800">
+            <h2 className="flex items-center gap-2 font-display text-[17px] font-bold text-surface-900 dark:text-surface-100">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-kiwi-100 text-kiwi-700 dark:bg-kiwi-400/10 dark:text-kiwi-300">
+                <MapPin className="h-4 w-4" aria-hidden />
+              </span>
+              ¿A dónde va?
+            </h2>
+            <div className="mt-3 space-y-3">
               <DeliveryZoneSelect value={deliveryZone} onChange={setDeliveryZone} />
               <div>
                 <label className={label} htmlFor="delivery">
@@ -239,42 +361,49 @@ export default function EncomiendaPage() {
                   className={field}
                   value={deliveryAddress}
                   onChange={(e) => setDeliveryAddress(e.target.value)}
+                  placeholder="Casa, local, punto de referencia…"
                 />
               </div>
-              <div>
-                <label className={label} htmlFor="recipient-name">
-                  Nombre de quien recibe
-                </label>
-                <input
-                  id="recipient-name"
-                  className={field}
-                  value={recipientName}
-                  onChange={(e) => setRecipientName(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className={label} htmlFor="recipient-phone">
-                  Teléfono de quien recibe
-                </label>
-                <input
-                  id="recipient-phone"
-                  inputMode="tel"
-                  className={field}
-                  value={recipientPhone}
-                  onChange={(e) => setRecipientPhone(e.target.value)}
-                />
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label className={label} htmlFor="recipient-name">
+                    Quien recibe
+                  </label>
+                  <input
+                    id="recipient-name"
+                    className={field}
+                    value={recipientName}
+                    onChange={(e) => setRecipientName(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className={label} htmlFor="recipient-phone">
+                    Teléfono
+                  </label>
+                  <input
+                    id="recipient-phone"
+                    inputMode="tel"
+                    className={`${field} tabular-nums`}
+                    value={recipientPhone}
+                    onChange={(e) => setRecipientPhone(e.target.value)}
+                  />
+                </div>
               </div>
             </div>
-          </div>
+          </section>
 
-          <div>
-            <p className="mb-2 font-display text-sm font-bold text-surface-900 dark:text-surface-100">
-              3. El paquete
-            </p>
-            <div className="space-y-3">
+          {/* 3. Paquete */}
+          <section className="rounded-2xl border border-surface-200/60 bg-white p-4 shadow-card dark:border-white/[0.06] dark:bg-surface-800">
+            <h2 className="flex items-center gap-2 font-display text-[17px] font-bold text-surface-900 dark:text-surface-100">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-kiwi-100 text-kiwi-700 dark:bg-kiwi-400/10 dark:text-kiwi-300">
+                <Box className="h-4 w-4" aria-hidden />
+              </span>
+              ¿Qué llevamos?
+            </h2>
+            <div className="mt-3 space-y-3">
               <div>
                 <label className={label} htmlFor="package">
-                  ¿Qué se envía?
+                  Descripción del paquete
                 </label>
                 <input
                   id="package"
@@ -284,109 +413,157 @@ export default function EncomiendaPage() {
                   placeholder="Ej: caja con documentos"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className={label} htmlFor="size">
-                    Tamaño
-                  </label>
-                  <select
-                    id="size"
-                    className={field}
-                    value={packageSize}
-                    onChange={(e) => setPackageSize(e.target.value as 'S' | 'M' | 'L' | '')}
-                  >
-                    <option value="">Sin especificar</option>
-                    <option value="S">Pequeño</option>
-                    <option value="M">Mediano</option>
-                    <option value="L">Grande</option>
-                  </select>
+              <div>
+                <span className={label} id="size-label">
+                  Tamaño
+                </span>
+                <div className="grid grid-cols-3 gap-2" role="group" aria-labelledby="size-label">
+                  {SIZES.map((sz) => (
+                    <button
+                      key={sz.id}
+                      type="button"
+                      aria-pressed={packageSize === sz.id}
+                      onClick={() => setPackageSize(packageSize === sz.id ? '' : sz.id)}
+                      className={`rounded-xl border px-2 py-2.5 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-600/50 active:scale-95 ${
+                        packageSize === sz.id
+                          ? 'border-kiwi-600 bg-kiwi-50 dark:bg-kiwi-400/10'
+                          : 'border-surface-200 dark:border-surface-700 [@media(hover:hover)]:hover:border-surface-300'
+                      }`}
+                    >
+                      <span
+                        className={`block text-sm font-bold ${packageSize === sz.id ? 'text-kiwi-700 dark:text-kiwi-300' : 'text-surface-800 dark:text-surface-100'}`}
+                      >
+                        {sz.label}
+                      </span>
+                      <span className="block text-[10px] leading-tight text-surface-400">
+                        {sz.hint}
+                      </span>
+                    </button>
+                  ))}
                 </div>
-                <div>
-                  <label className={label} htmlFor="weight">
-                    Peso (kg)
-                  </label>
+              </div>
+              <div>
+                <label className={label} htmlFor="weight">
+                  Peso aproximado (kg)
+                </label>
+                <div className="relative">
+                  <Scale
+                    className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400"
+                    aria-hidden
+                  />
                   <input
                     id="weight"
                     inputMode="decimal"
-                    className={field}
+                    className={`${field} pl-10 tabular-nums`}
                     value={weightInput}
                     onChange={(e) => setWeightInput(e.target.value)}
                     placeholder="Opcional"
                   />
                 </div>
+                {!weightValid ? (
+                  <p className="mt-1 text-xs font-medium text-red-600">
+                    El peso debe estar entre 0 y 500 kg.
+                  </p>
+                ) : (
+                  <p className="mt-1 text-xs text-surface-500 dark:text-surface-400">
+                    Los primeros {KG_INCLUDED} kg van incluidos. Cada kg extra suma{' '}
+                    {money(KG_EXTRA_PRICE)}.
+                  </p>
+                )}
               </div>
-              {!weightValid && (
-                <p className="text-xs text-red-600">El peso debe estar entre 0 y 500 kg.</p>
-              )}
-              <p className="text-xs text-surface-500 dark:text-surface-400">
-                Los primeros {KG_INCLUDED} kg van incluidos. Cada kg extra suma{' '}
-                {money(KG_EXTRA_PRICE)}.
-              </p>
               <div>
                 <label className={label} htmlFor="notes">
-                  Indicaciones (opcional)
+                  Indicaciones <span className="font-normal text-surface-400">(opcional)</span>
                 </label>
                 <textarea
                   id="notes"
                   rows={2}
-                  className={field}
+                  className={`${field} resize-none`}
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                 />
               </div>
             </div>
-          </div>
-        </section>
+          </section>
 
-        <section className="mt-6 rounded-2xl border border-surface-200 bg-white p-4 dark:border-surface-700 dark:bg-surface-900">
-          <div className="flex items-center justify-between text-sm text-surface-600 dark:text-surface-300">
-            <span>Envío</span>
-            <span>{zoneTrip == null ? 'Elegí el barrio' : money(total)}</span>
-          </div>
-          <div className="mt-2 flex items-center justify-between text-sm text-surface-500 dark:text-surface-400">
-            <span>Pago</span>
-            <span>Efectivo al repartidor</span>
-          </div>
-        </section>
-
-        <ConsentCheckbox
-          checked={acceptedTerms}
-          onChange={(checked) => {
-            setAcceptedTerms(checked);
-            if (checked) setConsentError(false);
-          }}
-          error={consentError && !acceptedTerms}
-          className="mt-4"
-        >
-          Acepto los <ConsentLink href="/terms">términos</ConsentLink>, la{' '}
-          <ConsentLink href="/privacy">política de privacidad</ConsentLink> y la{' '}
-          <ConsentLink href="/refunds">política de reembolsos</ConsentLink>. Autorizo a Kiwi a usar
-          mis datos y los de quien recibe para hacer esta entrega, compartiéndolos con el repartidor
-          asignado.
-        </ConsentCheckbox>
-
-        {error && (
-          <p
-            role="alert"
-            className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300"
+          {/* Resumen */}
+          <section
+            className="rounded-2xl bg-kiwi-800 p-4 text-white shadow-card dark:bg-kiwi-900"
+            aria-label="Resumen del envío"
           >
-            {error}
-          </p>
-        )}
+            <div className="space-y-1.5 text-sm">
+              <div className="flex items-center justify-between text-white/80">
+                <span>Viaje base{zoneTrip == null ? '' : ' (barrio)'}</span>
+                <span className="tabular-nums">{money((zoneTrip ?? 500) + extraKg)}</span>
+              </div>
+              {extraKg > 0 && (
+                <div className="flex items-center justify-between text-white/80">
+                  <span>Extra por peso</span>
+                  <span className="tabular-nums">{money(extraKg)}</span>
+                </div>
+              )}
+              <div className="flex items-center justify-between text-white/80">
+                <span>Servicio Kiwi ({feePct}%)</span>
+                <span className="tabular-nums">{money(kiwiFee)}</span>
+              </div>
+              <div className="flex items-center justify-between border-t border-white/15 pt-2">
+                <span className="flex items-center gap-1.5 font-semibold">
+                  <Banknote className="h-4 w-4" aria-hidden /> Total en efectivo
+                </span>
+                <span className="font-display text-xl font-bold tabular-nums">
+                  {zoneTrip == null ? money(total) : money(total)}
+                </span>
+              </div>
+              {zoneTrip == null && (
+                <p className="text-xs text-white/70">Elegí el barrio para el precio exacto.</p>
+              )}
+            </div>
+          </section>
+
+          <ConsentCheckbox
+            checked={acceptedTerms}
+            onChange={(checked) => {
+              setAcceptedTerms(checked);
+              if (checked) setConsentError(false);
+            }}
+            error={consentError && !acceptedTerms}
+          >
+            Acepto los <ConsentLink href="/terms">términos</ConsentLink>, la{' '}
+            <ConsentLink href="/privacy">política de privacidad</ConsentLink> y la{' '}
+            <ConsentLink href="/refunds">política de reembolsos</ConsentLink>. Autorizo a Kiwi a
+            usar mis datos y los de quien recibe para hacer esta entrega, compartiéndolos con el
+            repartidor asignado.
+          </ConsentCheckbox>
+
+          {error && (
+            <p
+              role="alert"
+              className="rounded-xl bg-red-50 p-3 text-sm font-medium text-red-700 dark:bg-red-950/40 dark:text-red-300"
+            >
+              {error}
+            </p>
+          )}
+        </div>
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 border-t border-surface-200 bg-white/95 px-4 py-3 backdrop-blur dark:border-surface-700 dark:bg-surface-900/95">
+      <div className="pb-safe fixed inset-x-0 bottom-0 border-t border-surface-200 bg-white/95 px-4 py-3 backdrop-blur dark:border-surface-700 dark:bg-surface-900/95">
         <div className="mx-auto max-w-lg">
           <button
             type="button"
             onClick={submit}
             disabled={loading || !canSubmit}
-            className="w-full rounded-xl bg-kiwi-600 py-3.5 font-semibold text-white disabled:opacity-50"
+            className="w-full rounded-full bg-kiwi-700 py-4 font-display text-[17px] font-bold text-white shadow-card transition-all active:scale-[0.98] disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-600/50 focus-visible:ring-offset-2"
           >
             {loading ? 'Pidiendo repartidor…' : `Pedir encomienda · ${money(total)}`}
           </button>
+          {!canSubmit && !loading && (
+            <p className="mt-1.5 text-center text-[11px] text-surface-400">
+              Completá recogida, entrega, paquete y términos para pedir.
+            </p>
+          )}
         </div>
       </div>
+      <BottomNav />
     </main>
   );
 }

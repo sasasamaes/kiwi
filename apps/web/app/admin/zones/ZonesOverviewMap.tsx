@@ -18,9 +18,31 @@ export interface MerchantLike {
   id: string;
   businessName: string;
   address?: string | null;
+  description?: string | null;
+  logoUrl?: string | null;
+  category?: string | null;
+  isHomeCook?: boolean | null;
+  isOpen?: boolean | null;
+  rating?: number | null;
+  totalRatings?: number | null;
   latitude?: number | null;
   longitude?: number | null;
 }
+
+const CATEGORY_ES: Record<string, string> = {
+  restaurante: 'Restaurante',
+  soda: 'Soda',
+  cafeteria: 'Cafetería',
+  panaderia: 'Panadería',
+  verduleria: 'Verdulería',
+  carniceria: 'Carnicería',
+  marisqueria: 'Marisquería',
+  heladeria: 'Heladería',
+  bar: 'Bar',
+  supermercado: 'Supermercado',
+  farmacia: 'Farmacia',
+  otro: 'Otro',
+};
 
 export interface DriverLike {
   id: string;
@@ -170,13 +192,46 @@ export function ZonesOverviewMap({
       }
     }
 
-    // Negocios con la marca Kiwi.
+    // Negocios con la marca Kiwi (ficha: tipo, estado, rating).
     for (const m of merchants) {
       const lat = Number(m.latitude);
       const lng = Number(m.longitude);
       if (!sane(lat, lng)) continue;
+      const kindTxt = m.isHomeCook
+        ? 'Comida casera'
+        : (m.category && CATEGORY_ES[m.category]) || m.category || 'Comercio';
+      const openTxt = m.isOpen == null ? null : m.isOpen ? 'Abierto ahora' : 'Cerrado ahora';
+      const openColor = m.isOpen ? '#15803d' : '#71717a';
+      const logo = m.logoUrl
+        ? `<img src="${esc(m.logoUrl)}" alt="" style="width:36px;height:36px;border-radius:10px;object-fit:cover;flex:none;background:#fbf8f2">`
+        : `<img src="/kiwi.svg" alt="Kiwi" style="width:36px;height:36px;border-radius:10px;flex:none;background:#fbf8f2">`;
+      const ratingTxt =
+        m.rating != null && Number.isFinite(Number(m.rating))
+          ? `★ ${Number(m.rating).toFixed(1)}${m.totalRatings != null ? ` (${Number(m.totalRatings)})` : ''}`
+          : null;
+      const desc =
+        m.description && String(m.description).trim()
+          ? esc(String(m.description).trim().slice(0, 110)) +
+            (String(m.description).trim().length > 110 ? '…' : '')
+          : null;
       L.marker([lat, lng], { icon: kiwiIcon(L, { size: 28 }) })
-        .bindPopup(`<b>${m.businessName}</b>${m.address ? `<br>${m.address}` : ''}`)
+        .bindPopup(
+          `<div style="display:flex;gap:8px;align-items:center;min-width:210px;max-width:260px">` +
+            logo +
+            `<div style="min-width:0"><b style="font-size:13px">${esc(m.businessName)}</b>` +
+            `<div style="margin-top:2px"><span style="display:inline-block;font-size:10px;font-weight:700;background:#eef7fb;color:#195a77;border-radius:9999px;padding:1px 8px">${esc(kindTxt)}</span>` +
+            (openTxt
+              ? ` <span style="font-size:11px;font-weight:600;color:${openColor}">● ${esc(openTxt)}</span>`
+              : '') +
+            `</div></div></div>` +
+            (m.address
+              ? `<div style="margin-top:6px;font-size:12px;color:#3f3f46">${esc(m.address)}</div>`
+              : '') +
+            (desc ? `<div style="margin-top:4px;font-size:11px;color:#71717a">${desc}</div>` : '') +
+            (ratingTxt
+              ? `<div style="margin-top:4px;font-size:11px;font-weight:600;color:#b45309">${esc(ratingTxt)}</div>`
+              : ''),
+        )
         .bindTooltip(m.businessName)
         .addTo(layer);
       points.push([lat, lng]);

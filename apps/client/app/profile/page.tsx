@@ -4,7 +4,18 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { MapPin, Bell, ClipboardList, LogOut, Pencil, X, Check, Phone } from 'lucide-react';
+import {
+  MapPin,
+  Bell,
+  ClipboardList,
+  LogOut,
+  Pencil,
+  X,
+  Check,
+  Phone,
+  Heart,
+  Navigation,
+} from 'lucide-react';
 import { api, useAuth, KiwiLogo, ZonePicker } from '@kiwi/ui';
 import { BottomNav } from '../components/BottomNav';
 import { AvatarEditor } from '../components/AvatarEditor';
@@ -406,9 +417,10 @@ export default function ProfilePage() {
                 type="button"
                 onClick={useGpsLocation}
                 disabled={locating}
-                className="w-full rounded-xl bg-surface-100 dark:bg-surface-800 px-4 py-3 text-sm font-semibold disabled:opacity-60"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-surface-100 dark:bg-surface-800 px-4 py-3 text-sm font-semibold disabled:opacity-60"
               >
-                {locating ? 'Ubicando…' : gps ? '✓ Ubicación lista' : '📍 Usar mi ubicación GPS'}
+                <Navigation className="h-4 w-4" aria-hidden />
+                {locating ? 'Ubicando…' : gps ? 'Ubicación lista' : 'Usar mi ubicación GPS'}
               </button>
               <ZonePicker
                 value={form.deliveryZone}
@@ -422,12 +434,17 @@ export default function ProfilePage() {
                 }}
               />
               {gpsZoneAuto && form.deliveryZone && (
-                <p className="text-xs text-kiwi-700 dark:text-kiwi-300">
-                  📍 Barrio por tu ubicación (podés cambiarlo).
+                <p className="flex items-center gap-1 text-xs text-kiwi-700 dark:text-kiwi-300">
+                  <MapPin className="h-3 w-3" aria-hidden /> Barrio por tu ubicación (podés
+                  cambiarlo).
                 </p>
               )}
               {formError && <p className="text-xs text-red-600">{formError}</p>}
-              {savedTick && <p className="text-xs text-kiwi-700 dark:text-kiwi-300">✓ Guardado</p>}
+              {savedTick && (
+                <p className="flex items-center gap-1 text-xs text-kiwi-700 dark:text-kiwi-300">
+                  <Check className="h-3 w-3" aria-hidden /> Guardado
+                </p>
+              )}
               <div className="flex gap-2">
                 <button
                   onClick={() => void saveProfile()}
@@ -447,7 +464,9 @@ export default function ProfilePage() {
             </div>
           )}
           {savedTick && !editing && (
-            <p className="text-xs text-kiwi-700 dark:text-kiwi-300">✓ Datos actualizados</p>
+            <p className="flex items-center gap-1 text-xs text-kiwi-700 dark:text-kiwi-300">
+              <Check className="h-3 w-3" aria-hidden /> Datos actualizados
+            </p>
           )}
           <label className="flex items-center justify-between gap-3 cursor-pointer">
             <span className="flex items-center gap-3">
@@ -463,7 +482,10 @@ export default function ProfilePage() {
           </label>
           <label className="flex items-center justify-between gap-3 cursor-pointer">
             <span className="flex items-center gap-3">
-              <span className="text-surface-500 dark:text-surface-400 shrink-0">🧡</span>
+              <Heart
+                className="h-4 w-4 text-surface-500 dark:text-surface-400 shrink-0"
+                aria-hidden
+              />
               Avisos de comercios que sigo
             </span>
             <input
@@ -478,8 +500,8 @@ export default function ProfilePage() {
         {/* Mis lugares (Casa, Casa de mamá…): para elegir dónde entregar */}
         <div className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-5 mb-3">
           <div className="flex items-center justify-between mb-1">
-            <p className="text-sm font-semibold text-surface-700 dark:text-surface-200">
-              📍 Mis lugares
+            <p className="flex items-center gap-1.5 text-sm font-semibold text-surface-700 dark:text-surface-200">
+              <MapPin className="h-4 w-4" aria-hidden /> Mis lugares
             </p>
             <button
               onClick={() => setShowPlaceForm((v) => !v)}
@@ -512,13 +534,14 @@ export default function ProfilePage() {
                 type="button"
                 onClick={usePlaceGps}
                 disabled={placeLocating}
-                className="w-full rounded-xl bg-surface-100 dark:bg-surface-800 px-4 py-3 text-sm font-semibold disabled:opacity-60"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-surface-100 dark:bg-surface-800 px-4 py-3 text-sm font-semibold disabled:opacity-60"
               >
+                <Navigation className="h-4 w-4" aria-hidden />
                 {placeLocating
                   ? 'Ubicando…'
                   : placeGps
-                    ? '✓ Ubicación lista'
-                    : '📍 Usar mi ubicación GPS'}
+                    ? 'Ubicación lista'
+                    : 'Usar mi ubicación GPS'}
               </button>
               <ZonePicker
                 value={placeZone}
@@ -591,8 +614,8 @@ export default function ProfilePage() {
 
         {follows.length > 0 && (
           <div className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-5 mb-3">
-            <p className="text-sm font-semibold text-surface-700 dark:text-surface-200 mb-3">
-              🧡 Comercios que sigo
+            <p className="flex items-center gap-1.5 text-sm font-semibold text-surface-700 dark:text-surface-200 mb-3">
+              <Heart className="h-4 w-4" aria-hidden /> Comercios que sigo
             </p>
             <div className="space-y-2">
               {follows.map((f) => (

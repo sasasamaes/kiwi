@@ -97,18 +97,20 @@ export function BottomNav() {
               href={item.href}
               aria-label={item.label}
               aria-current={active ? 'page' : undefined}
-              className="flex flex-col items-center gap-1 px-4 py-2"
+              className="flex flex-col items-center gap-1 rounded-2xl px-5 py-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-600/50 active:scale-95"
             >
               <motion.span
-                className={`flex flex-col items-center gap-1 ${
+                className={`flex flex-col items-center gap-1 rounded-2xl px-3 py-1 ${
                   active
-                    ? 'text-kiwi-700 dark:text-kiwi-400'
+                    ? 'bg-kiwi-100 text-kiwi-800 dark:bg-kiwi-400/10 dark:text-kiwi-300'
                     : 'text-surface-500 dark:text-surface-400'
                 }`}
                 whileTap={{ scale: 0.9 }}
               >
-                <Icon className="h-6 w-6" />
-                <span className="text-xs font-medium">{item.label}</span>
+                <Icon className="h-6 w-6" aria-hidden />
+                <span className={`text-xs ${active ? 'font-bold' : 'font-medium'}`}>
+                  {item.label}
+                </span>
               </motion.span>
             </Link>
           );
