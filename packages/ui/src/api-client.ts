@@ -665,6 +665,16 @@ class ApiClient {
     return this.request<any>('/ads/events', { method: 'POST', body: data });
   }
 
+  /** Encomienda de cliente registrado a un repartidor (sin comercio). */
+  async createEncomienda(data: any, opts?: { idempotencyKey?: string }) {
+    const idempotencyKey = opts?.idempotencyKey || (data as any)?.idempotencyKey;
+    return this.request<any>('/orders/encomienda', {
+      method: 'POST',
+      body: idempotencyKey ? { ...data, idempotencyKey } : data,
+      headers: idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined,
+    });
+  }
+
   async createCustomerOrder(data: any, opts?: { idempotencyKey?: string }) {
     const idempotencyKey = opts?.idempotencyKey || (data as any)?.idempotencyKey;
     return this.request<any>('/orders/mine', {

@@ -79,6 +79,25 @@ export class OrdersController {
     return this.ordersService.createGuestOrder(dto?.merchantId, dto, user.sub);
   }
 
+  @Post('encomienda')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('customer')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Pedir una encomienda a un repartidor (cliente registrado, sin comercio)',
+  })
+  async createEncomienda(
+    @CurrentUser() user: any,
+    @Body() createOrderDto: any,
+    @Headers('idempotency-key') idempotencyKey?: string,
+  ) {
+    const dto =
+      idempotencyKey && !createOrderDto?.idempotencyKey
+        ? { ...createOrderDto, idempotencyKey }
+        : createOrderDto;
+    return this.ordersService.createEncomiendaOrder(user.sub, dto);
+  }
+
   @Get('my')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()

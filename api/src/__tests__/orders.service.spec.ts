@@ -1598,4 +1598,107 @@ describe('OrdersService', () => {
       ).rejects.toThrow('customerPhone');
     });
   });
+
+  describe('createEncomiendaOrder (cliente pide encomienda a repartidor)', () => {
+    const customer = { id: 'cust-1', role: 'customer', status: 'active' };
+    const base = {
+      customerName: 'Ana',
+      customerPhone: '8888-7777',
+      pickupAddress: 'Mercado de Nicoya',
+      deliveryAddress: 'Barrio San Martín',
+      pickupLat: 10.1467,
+      pickupLng: -85.452,
+      deliveryLat: 10.15,
+      deliveryLng: -85.455,
+      distanceKm: 2,
+      packageDescription: 'Caja con documentos',
+      packageSize: 'S',
+      weightKg: 3,
+    };
+
+    beforeEach(() => {
+      prisma.user = {
+        findUnique: jest.fn().mockResolvedValue(customer),
+        upsert: jest.fn().mockResolvedValue({ id: 'sys-user' }),
+      };
+      prisma.merchantProfile.upsert = jest.fn().mockResolvedValue({ id: 'sys-merchant' });
+      prisma.merchantProfile.findUnique.mockImplementation(async ({ where }: any) =>
+        where.userId === 'sys-user'
+          ? {
+              id: 'sys-merchant',
+              userId: 'sys-user',
+              businessName: 'Kiwi Encomiendas',
+              address: 'Nicoya',
+            }
+          : null,
+      );
+      prisma.order.create.mockImplementation(async ({ data }: any) => ({
+        id: 'order-enc-1',
+        status: 'pending',
+        ...data,
+      }));
+      prisma.order.update = jest.fn().mockImplementation(async ({ data }: any) => ({
+        id: 'order-enc-1',
+        ...data,
+      }));
+    });
+
+    it('crea freight de origen cliente, contra el perfil sistema, en efectivo', async () => {
+      const order: any = await service.createEncomiendaOrder('cust-1', base);
+
+      expect(order.kind).toBe('freight');
+      expect(order.origin).toBe('client_app');
+      expect(order.merchantId).toBe('sys-merchant');
+      expect(order.productsTotal).toBe(0);
+      expect(order.pickupAddress).toBe('Mercado de Nicoya');
+      expect(order.weightKg).toBe(3);
+    });
+
+    it('vincula el pedido a la cuenta del cliente', async () => {
+      const order: any = await service.createEncomiendaOrder('cust-1', base);
+
+      expect(prisma.order.update).toHaveBeenCalledWith({
+        where: { id: 'order-enc-1' },
+        data: { customerId: 'cust-1' },
+      });
+      expect(order.customerId).toBe('cust-1');
+    });
+
+    it('perfil sistema sin login: user inactive, no listado', async () => {
+      await service.createEncomiendaOrder('cust-1', base);
+
+      const upsertArgs = prisma.user.upsert.mock.calls[0][0];
+      expect(upsertArgs.create.status).toBe('inactive');
+      expect(upsertArgs.create.passwordHash).toBeUndefined();
+      const profileArgs = prisma.merchantProfile.upsert.mock.calls[0][0];
+      expect(profileArgs.create.isListed).toBe(false);
+    });
+
+    it('rechaza cuentas que no son cliente activo', async () => {
+      prisma.user.findUnique.mockResolvedValue({ id: 'x', role: 'merchant', status: 'active' });
+
+      await expect(service.createEncomiendaOrder('x', base)).rejects.toThrow(
+        'Cuenta de cliente no válida',
+      );
+    });
+
+    it('exige teléfono y descripción del paquete', async () => {
+      await expect(
+        service.createEncomiendaOrder('cust-1', { ...base, customerPhone: '' }),
+      ).rejects.toThrow('customerPhone');
+      await expect(
+        service.createEncomiendaOrder('cust-1', { ...base, packageDescription: '   ' }),
+      ).rejects.toThrow('packageDescription');
+    });
+
+    it('ignora cartas de productos: freight nunca cobra items', async () => {
+      const order: any = await service.createEncomiendaOrder('cust-1', {
+        ...base,
+        items: [{ menuItemId: 'x', name: 'Hack', price: 1, quantity: 99 }],
+      });
+
+      expect(order.productsTotal).toBe(0);
+      expect(order.items).toBeUndefined();
+    });
+  });
 });

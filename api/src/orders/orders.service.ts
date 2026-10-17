@@ -149,6 +149,92 @@ export class OrdersService {
     });
   }
 
+  /**
+   * Encomienda pedida por un cliente registrado (app cliente). No hay comercio
+   * de por medio: el pedido cuelga de un perfil sistema ("Kiwi Encomiendas")
+   * porque `merchantId` es obligatorio en el modelo. Esa cuenta no tiene login
+   * (status suspended, sin password). Solo efectivo en v1: SINPE/tarjeta
+   * dependen del KYC de Onvo del comercio.
+   */
+  async createEncomiendaOrder(customerId: string, data: any) {
+    const customer = await this.prisma.user.findUnique({
+      where: { id: customerId },
+      select: { id: true, role: true, status: true },
+    });
+    if (!customer || customer.role !== 'customer' || customer.status !== 'active') {
+      throw new ForbiddenException('Cuenta de cliente no válida');
+    }
+
+    const phone = normalizeCRPhone(data?.customerPhone ?? '');
+    if (!phone) {
+      throw new BadRequestException('customerPhone es requerido (formato 8888-8888)');
+    }
+    const senderName = String(data?.customerName ?? '').trim();
+    if (!senderName) {
+      throw new BadRequestException('customerName es requerido');
+    }
+    if (!data?.pickupAddress || !data?.deliveryAddress) {
+      throw new BadRequestException('pickupAddress y deliveryAddress son requeridos');
+    }
+    if (!String(data?.packageDescription ?? '').trim()) {
+      throw new BadRequestException('packageDescription es requerido (qué se envía)');
+    }
+
+    const systemUserId = await this.ensureEncomiendaSystemUser();
+    const order: any = await this.create(systemUserId, {
+      ...data,
+      kind: 'freight',
+      origin: 'client_app',
+      orderType: 'immediate',
+      paymentMethod: 'cash',
+      items: [],
+      customerName: senderName,
+      customerPhone: phone,
+    });
+
+    // create() no persiste customerId (solo el flujo invitado lo vincula y
+    // create() no lo escribe). Se asigna aquí, explícito, para que la
+    // encomienda aparezca en "mis pedidos" del cliente.
+    if (!order.customerId) {
+      await this.prisma.order.update({
+        where: { id: order.id },
+        data: { customerId },
+      });
+      order.customerId = customerId;
+    }
+    return order;
+  }
+
+  private encomiendaSystemUserId: string | null = null;
+
+  /** Perfil sistema para encomiendas de cliente (idempotente, cacheado). */
+  private async ensureEncomiendaSystemUser(): Promise<string> {
+    if (this.encomiendaSystemUserId) return this.encomiendaSystemUserId;
+    const email = 'encomiendas@kiwi.app';
+    const user = await this.prisma.user.upsert({
+      where: { email },
+      update: {},
+      create: { email, role: 'merchant', status: 'inactive' },
+      select: { id: true },
+    });
+    await this.prisma.merchantProfile.upsert({
+      where: { userId: user.id },
+      update: {},
+      create: {
+        userId: user.id,
+        businessName: 'Kiwi Encomiendas',
+        address: 'Nicoya, Guanacaste',
+        citySlug: 'nicoya',
+        isListed: false,
+        cashEnabled: true,
+        sinpeEnabled: false,
+        cardPaymentsEnabled: false,
+      },
+    });
+    this.encomiendaSystemUserId = user.id;
+    return user.id;
+  }
+
   async create(merchantId: string, data: any) {
     // Look up the merchant profile
     const merchantProfile = await this.prisma.merchantProfile.findUnique({

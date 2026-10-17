@@ -335,6 +335,22 @@ export default function ClientHome() {
       </motion.header>
 
       <main className="mx-auto max-w-lg lg:max-w-5xl px-4 py-6">
+        {/* Encomiendas: un repartidor lleva tu paquete, sin comercio */}
+        <Link
+          href="/encomienda"
+          className="mb-4 flex items-center gap-3 rounded-2xl border border-surface-200/70 bg-white p-4 shadow-soft dark:border-surface-700 dark:bg-surface-900"
+        >
+          <span className="text-3xl">📦</span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-display font-bold text-surface-900 dark:text-surface-100">
+              Enviar una encomienda
+            </span>
+            <span className="block text-xs text-surface-500 dark:text-surface-400">
+              Un repartidor recoge y lleva tu paquete
+            </span>
+          </span>
+          <span className="text-kiwi-700 dark:text-kiwi-300">→</span>
+        </Link>
         {/* Mercadito Zona Azul */}
         <Link
           href="/zona-azul"
