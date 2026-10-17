@@ -357,6 +357,11 @@ export default function AdminZonesPage() {
       setMsg('Poné un nombre a la zona');
       return;
     }
+    const hasPt = form.latitude !== '' && form.longitude !== '';
+    if (!hasPt && vertices.length < 3) {
+      setMsg('La zona necesita un punto de entrega o un polígono (3+ vértices)');
+      return;
+    }
     const ring = vertices.length >= 3 ? [...vertices, vertices[0]] : null;
     const body: any = {
       label: form.label.trim(),
@@ -542,7 +547,25 @@ export default function AdminZonesPage() {
                   key={z.id}
                   className="border-t border-surface-100 dark:border-white/5 text-surface-800 dark:text-surface-200"
                 >
-                  <td className="px-4 py-3">{z.label}</td>
+                  <td className="px-4 py-3">
+                    {z.label}
+                    {hasPolygon(z) && !hasPoint(z) && (
+                      <span
+                        title="Solo área: el cliente pone su punto al pedir"
+                        className="ml-2 rounded-full bg-sky-100 px-2 py-0.5 text-[11px] font-semibold text-sky-700 dark:bg-sky-900/40 dark:text-sky-300"
+                      >
+                        Solo área
+                      </span>
+                    )}
+                    {!hasPolygon(z) && hasPoint(z) && (
+                      <span
+                        title="Solo punto: edificio conocido sin área dibujada"
+                        className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
+                      >
+                        Solo punto
+                      </span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-right font-mono">
                     ₡{Number(z.price).toLocaleString()}
                   </td>
@@ -683,7 +706,7 @@ export default function AdminZonesPage() {
               </div>
               <p className="mb-2 text-xs text-surface-500">
                 {mode === 'point'
-                  ? 'Tocá el mapa para ubicar el punto de entrega (o arrastrá el marcador).'
+                  ? 'Edificio conocido (ej. hospital): dejá el punto donde se entregan los express. Barrio/zona: quitá el punto — el cliente pone el suyo al pedir.'
                   : `Tocá el mapa para agregar vértices (${vertices.length} punto${
                       vertices.length === 1 ? '' : 's'
                     }); arrastrá un vértice para moverlo; doble-clic para mover TODO el polígono (y el punto).`}
@@ -707,6 +730,15 @@ export default function AdminZonesPage() {
                   className="rounded-lg border border-surface-200 dark:border-surface-700 px-3 py-1.5 text-xs disabled:opacity-40"
                 >
                   Quitar último
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setForm((f) => ({ ...f, latitude: '', longitude: '' }))}
+                  disabled={form.latitude === '' && form.longitude === ''}
+                  title="Zona tipo barrio: solo área, el cliente pone su punto al pedir"
+                  className="rounded-lg border border-surface-200 dark:border-surface-700 px-3 py-1.5 text-xs disabled:opacity-40"
+                >
+                  Quitar punto
                 </button>
               </div>
             </div>
