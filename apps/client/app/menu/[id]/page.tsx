@@ -415,26 +415,37 @@ export default function MenuPage() {
     });
   }, []);
 
-  const addToCart = useCallback(
+  // Preset de fecha programada al agregar un item que no se entrega hoy.
+  // Va en addToCart Y en confirmPick (variantes): el picker bypass-ea el
+  // otro camino y el programado quedaba sin setear ("no puedo pedir").
+  const presetScheduleForItem = useCallback(
     (item: MenuItem) => {
       // Item de mañana: la preventa queda preset para mañana (el cliente
       // solo elige la hora en el checkout).
       if ((item as any).offeredTomorrow) {
         setSchedule((prev) => ({ ...prev, mode: 'scheduled', date: tomorrowKeyCR() }));
-      } else if (merchant?.isOpen === false) {
-        // Item por fecha (ej. solo jueves) con el local cerrado: presetear la
-        // próxima fecha para que el programado quede a un paso (solo la hora).
-        // Solo si el cliente no eligió nada (no pisar su elección).
-        const days = ((item as any).availableDays ?? []).filter(
-          (d: any) => Number.isInteger(Number(d)) && Number(d) >= 0 && Number(d) <= 6,
-        );
-        const key = nextDateKeyCR(days.map(Number));
-        if (key) {
-          setSchedule((prev) =>
-            prev.mode === 'now' ? { ...prev, mode: 'scheduled', date: key } : prev,
-          );
-        }
+        return;
       }
+      if (merchant?.isOpen !== false) return;
+      // Item por fecha (ej. solo jueves) con el local cerrado: presetear la
+      // próxima fecha para que el programado quede a un paso (solo la hora).
+      // Solo si el cliente no eligió nada (no pisar su elección).
+      const days = ((item as any).availableDays ?? []).filter(
+        (d: any) => Number.isInteger(Number(d)) && Number(d) >= 0 && Number(d) <= 6,
+      );
+      const key = nextDateKeyCR(days.map(Number));
+      if (key) {
+        setSchedule((prev) =>
+          prev.mode === 'now' ? { ...prev, mode: 'scheduled', date: key } : prev,
+        );
+      }
+    },
+    [merchant?.isOpen],
+  );
+
+  const addToCart = useCallback(
+    (item: MenuItem) => {
+      presetScheduleForItem(item);
       const groups = item.variantGroups ?? [];
       const hasOptions = groups.some((g) => g.options.length > 0);
       if (hasOptions) {
@@ -453,7 +464,7 @@ export default function MenuPage() {
       }
       addLine(item, []);
     },
-    [addLine, merchant?.isOpen],
+    [addLine, presetScheduleForItem],
   );
 
   const togglePick = useCallback(
@@ -503,12 +514,10 @@ export default function MenuPage() {
       }
     }
     addLine(picking, selected);
-    if ((picking as any).offeredTomorrow) {
-      setSchedule((prev) => ({ ...prev, mode: 'scheduled', date: tomorrowKeyCR() }));
-    }
+    presetScheduleForItem(picking);
     setPicking(null);
     setPicks({});
-  }, [picking, picks, addLine]);
+  }, [picking, picks, addLine, presetScheduleForItem]);
 
   const removeFromCart = useCallback((lineId: string) => {
     setCart((prev) => {
@@ -678,16 +687,24 @@ export default function MenuPage() {
   const schedulingFuture = schedule.mode === 'scheduled' && isValidSchedule(schedule);
   const cashCovers =
     paymentMethod !== 'cash' || cashTendered === '' || Number(cashTendered) >= totalWithDelivery;
-  const canCheckout =
-    deliveryInfo.address.trim().length > 0 &&
-    deliveryInfo.zone.trim().length > 0 &&
-    phoneDigits.length >= 8 &&
-    deliveryInfo.name.trim().length > 0 &&
-    isValidSchedule(schedule) &&
-    cashCovers &&
-    isPayMethodEnabled(paymentMethod) &&
-    (merchant?.isOpen !== false || schedulingFuture) &&
-    (!cartHasTomorrow || (schedule.mode === 'scheduled' && schedule.date === tomorrowKey));
+  // Motivo real del bloqueo (el botón lo muestra: "completá tus datos" cuando
+  // ya están era la queja). null = se puede pedir.
+  const checkoutBlockReason: string | null = !isPayMethodEnabled(paymentMethod)
+    ? 'Este comercio no tiene métodos de pago activos: no se puede pedir ahora'
+    : !deliveryInfo.name.trim() || !deliveryInfo.address.trim() || phoneDigits.length < 8
+      ? 'Completa nombre, dirección y teléfono para continuar'
+      : !deliveryInfo.zone.trim()
+        ? 'Elegí tu barrio de entrega'
+        : merchant?.isOpen === false && !schedulingFuture
+          ? `Hoy está cerrado: tocá “Programar entrega” y elegí día y hora${preorderLabel ? ` · 📅 ${preorderLabel}` : ''}`
+          : cartHasTomorrow && !(schedule.mode === 'scheduled' && schedule.date === tomorrowKey)
+            ? `Tu pedido incluye productos de mañana: programalo para mañana ${weekdayNameES(tomorrowKey)} y elegí la hora`
+            : !isValidSchedule(schedule)
+              ? 'Elegí día y hora de entrega'
+              : !cashCovers
+                ? 'El monto en efectivo no cubre el total'
+                : null;
+  const canCheckout = checkoutBlockReason === null;
 
   // Anti-duplicados (doble tap con wifi caído = N pedidos): el state
   // llega tarde al segundo tap; el ref no. La key se reusa en reintentos
@@ -2332,14 +2349,11 @@ export default function MenuPage() {
                   )}
                 </AnimatedButton>
 
-                {!canCheckout && isPayMethodEnabled(paymentMethod) && (
-                  <p className="text-xs text-center text-surface-400">
-                    Completa nombre, dirección y teléfono para continuar
-                  </p>
-                )}
-                {!isPayMethodEnabled(paymentMethod) && (
-                  <p className="text-xs text-center font-medium text-red-500">
-                    Este comercio no tiene métodos de pago activos: no se puede pedir ahora
+                {!canCheckout && checkoutBlockReason && (
+                  <p
+                    className={`text-xs text-center mt-3 ${!isPayMethodEnabled(paymentMethod) ? 'font-medium text-red-500' : 'text-surface-400'}`}
+                  >
+                    {checkoutBlockReason}
                   </p>
                 )}
               </div>
