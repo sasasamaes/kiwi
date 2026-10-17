@@ -144,7 +144,12 @@ export default function MenuPage() {
   const [deliveryCoords, setDeliveryCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [zoneAuto, setZoneAuto] = useState(false);
   /** Etiqueta de la zona resuelta por GPS (el id puede no estar en la lista local). */
-  const [resolvedZone, setResolvedZone] = useState<{ id: string; label: string } | null>(null);
+  const [resolvedZone, setResolvedZone] = useState<{
+    id: string;
+    label: string;
+    price: number;
+    source: string | null;
+  } | null>(null);
   const [profilePrefilled, setProfilePrefilled] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState<string | null>(null);
   // Producto en el picker de variantes (null = picker cerrado).
@@ -354,15 +359,12 @@ export default function MenuPage() {
 
   // Otro comercio (navegación cliente entre menús): carrito, zona y pedido
   // pendiente son del anterior — resetear para no cobrarle a quien no es.
-  // zoneManualRef vive acá arriba porque el reset lo usa.
-  const zoneManualRef = useRef(false);
   useEffect(() => {
     setCart([]);
     setDeliveryInfo({ address: '', phone: '', name: '', instructions: '', zone: '' });
     setDeliveryCoords(null);
     setZoneAuto(false);
     setResolvedZone(null);
-    zoneManualRef.current = false;
     setProfilePrefilled(false);
     setPendingOrderId(null);
     setOrderSuccess(null);
@@ -380,14 +382,20 @@ export default function MenuPage() {
   // declarado): evita el toggle incoherente sin pelear con el usuario.
   useEffect(() => {
     if (!deliveryCoords) return;
+    // Ubicación nueva = detectar de nuevo y adoptar (la elección manual era
+    // para el punto anterior; si el GPS se equivoca, el aviso de abajo lo dice).
     let alive = true;
     api
       .resolveDeliveryZone(deliveryCoords.lat, deliveryCoords.lng)
       .then((r) => {
         if (!alive || !r.zone) return;
         const zone = r.zone;
-        setResolvedZone({ id: zone.id, label: zone.label });
-        if (zoneManualRef.current) return;
+        setResolvedZone({
+          id: zone.id,
+          label: zone.label,
+          price: Number(zone.price),
+          source: r.source,
+        });
         setDeliveryInfo((prev) => ({ ...prev, zone: zone.id }));
         setZoneAuto(true);
       })
@@ -1999,18 +2007,26 @@ export default function MenuPage() {
                           : null
                       }
                       onChange={(zone) => {
-                        // Elección manual: el GPS deja de mandar.
-                        zoneManualRef.current = true;
                         setZoneAuto(false);
-                        setResolvedZone(null);
                         setDeliveryInfo((prev) => ({ ...prev, zone }));
                       }}
                     />
-                    {zoneAuto && deliveryInfo.zone && (
-                      <p className="text-xs text-kiwi-700 dark:text-kiwi-300 mt-1.5">
-                        📍 Barrio por tu ubicación (podés cambiarlo).
-                      </p>
-                    )}
+                    {(zoneAuto || (resolvedZone && resolvedZone.id === deliveryInfo.zone)) &&
+                      deliveryInfo.zone && (
+                        <p className="text-xs text-kiwi-700 dark:text-kiwi-300 mt-1.5">
+                          📍 Barrio por tu ubicación (podés cambiarlo).
+                        </p>
+                      )}
+                    {resolvedZone &&
+                      resolvedZone.source === 'polygon' &&
+                      deliveryInfo.zone &&
+                      resolvedZone.id !== deliveryInfo.zone && (
+                        <p className="mt-1.5 rounded-xl bg-amber-50 dark:bg-amber-900/30 px-3 py-2 text-xs font-medium text-amber-700 dark:text-amber-300">
+                          ⚠️ Tu GPS está en {resolvedZone.label} (₡
+                          {resolvedZone.price.toLocaleString()}): se cobrará esa zona aunque elijas
+                          otra.
+                        </p>
+                      )}
                   </div>
                 </div>
 

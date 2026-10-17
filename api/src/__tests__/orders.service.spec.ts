@@ -35,6 +35,7 @@ describe('OrdersService', () => {
   let service: OrdersService;
   let prisma: any;
   let coverageMock: { recordInterest: jest.Mock };
+  let zonesMock: any;
   let settingsStub: { getDriverCommissionPct: jest.Mock; getHomeCookCommissionPct: jest.Mock };
 
   beforeEach(async () => {
@@ -82,19 +83,21 @@ describe('OrdersService', () => {
 
     coverageMock = { recordInterest: jest.fn().mockResolvedValue(undefined) };
 
+    zonesMock = {
+      list: jest.fn().mockResolvedValue([]),
+      listAll: jest.fn().mockResolvedValue([]),
+      create: jest.fn(),
+      update: jest.fn(),
+      deactivate: jest.fn(),
+      resolvePriceAt: jest.fn().mockResolvedValue(null),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         OrdersService,
         {
           provide: ZonesService,
-          useValue: {
-            list: jest.fn().mockResolvedValue([]),
-            listAll: jest.fn().mockResolvedValue([]),
-            create: jest.fn(),
-            update: jest.fn(),
-            deactivate: jest.fn(),
-            resolvePriceAt: jest.fn().mockResolvedValue(null),
-          },
+          useValue: zonesMock,
         },
         { provide: PrismaService, useValue: prisma },
         { provide: EventsGateway, useValue: mockEventsGateway },
@@ -577,6 +580,54 @@ describe('OrdersService', () => {
         distanceKm: 1.2,
       });
       expect(order.basePrice).toBe(2000);
+    });
+
+    it('el polígono del GPS prevalece sobre el barrio elegido (antifraude)', async () => {
+      prisma.merchantProfile.findUnique.mockResolvedValue({
+        id: 'merchant-1',
+        userId: 'user-1',
+        businessName: 'Soda Nicoya',
+      });
+      zonesMock.resolvePriceAt.mockResolvedValue({
+        source: 'polygon',
+        zone: { id: 'zona-cara', label: 'Zona Cara', price: 5000 },
+      });
+      prisma.order.create.mockImplementation(async ({ data }: any) => ({ id: 'o1', ...data }));
+      const order: any = await service.create('user-1', {
+        pickupAddress: 'Soda Nicoya',
+        pickupLat: 10.1467,
+        pickupLng: -85.452,
+        deliveryAddress: 'Zona Cara',
+        deliveryLat: 10.2,
+        deliveryLng: -85.44,
+        deliveryZone: 'centro',
+        distanceKm: 8,
+      });
+      expect(order.deliveryZone).toBe('zona-cara');
+    });
+
+    it('la referencia sin polígono no pisa el barrio elegido', async () => {
+      prisma.merchantProfile.findUnique.mockResolvedValue({
+        id: 'merchant-1',
+        userId: 'user-1',
+        businessName: 'Soda Nicoya',
+      });
+      zonesMock.resolvePriceAt.mockResolvedValue({
+        source: 'reference',
+        zone: { id: 'zona-ref', label: 'Ref', price: 1000 },
+      });
+      prisma.order.create.mockImplementation(async ({ data }: any) => ({ id: 'o2', ...data }));
+      const order: any = await service.create('user-1', {
+        pickupAddress: 'Soda Nicoya',
+        pickupLat: 10.1467,
+        pickupLng: -85.452,
+        deliveryAddress: 'Centro',
+        deliveryLat: 10.15,
+        deliveryLng: -85.455,
+        deliveryZone: 'centro',
+        distanceKm: 1.2,
+      });
+      expect(order.deliveryZone).toBe('centro');
     });
   });
 

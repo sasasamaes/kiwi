@@ -512,6 +512,11 @@ export class OrdersService {
     // válida, esa manda y el servidor pone el precio — el cliente nunca
     // decide el monto. Sin zona, se conserva la lógica anterior por distancia
     // (compatibilidad con clientes viejos y tests).
+    //
+    // ANTIFRAUDE: con coords de entrega, el POLÍGONO del GPS manda sobre la
+    // zona elegida a mano. Si no, bastaba poner GPS en zona cara + barrio
+    // barato para pagar menos por una entrega cara. La referencia (sin
+    // polígono) es solo sugerencia y no pisa nada.
     let deliveryZone: string | null = null;
     let zoneBase: number | null = null;
     if (data.deliveryZone != null && String(data.deliveryZone).trim() !== '') {
@@ -533,15 +538,26 @@ export class OrdersService {
       zoneBase = Number(zone.price);
     }
 
-    // Sin barrio elegido pero con coordenadas: resolver la zona por polígono
-    // (cobro automático por ubicación). Si solo cae en referencia (sin polígono)
-    // NO se cobra automático: queda como sugerencia.
-    if (!deliveryZone && data.deliveryLat != null && data.deliveryLng != null) {
+    // Con coordenadas: resolver la zona por polígono (cobro automático por
+    // ubicación). Si cae en polígono, ESA zona cobra (aunque el cliente haya
+    // elegido otra a mano). Si solo cae en referencia (sin polígono) NO se
+    // cobra automático: queda como sugerencia.
+    const hasDeliveryCoords =
+      data.deliveryLat != null &&
+      data.deliveryLng != null &&
+      Number.isFinite(Number(data.deliveryLat)) &&
+      Number.isFinite(Number(data.deliveryLng));
+    if (hasDeliveryCoords) {
       const resolved = await this.zonesService.resolvePriceAt(
         Number(data.deliveryLat),
         Number(data.deliveryLng),
       );
       if (resolved && resolved.source === 'polygon') {
+        if (deliveryZone !== null && deliveryZone !== resolved.zone.id) {
+          this.logger.warn(
+            `Zona corregida por GPS en pedido (cliente=${deliveryZone} gps=${resolved.zone.id})`,
+          );
+        }
         deliveryZone = resolved.zone.id;
         zoneBase = Number(resolved.zone.price);
       }
