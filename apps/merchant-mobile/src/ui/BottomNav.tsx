@@ -1,16 +1,17 @@
 import { Pressable, Text, View } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { tokens } from '@kiwi/mobile-ui';
-
-const ITEMS: { key: string; label: string; href: Href }[] = [
-  { key: 'comandas', label: 'Comandas', href: '/(app)/comandas' },
-  { key: 'drivers', label: 'Repartidores', href: '/(app)/drivers' },
-  { key: 'notifications', label: 'Avisos', href: '/(app)/notifications' },
-  { key: 'profile', label: 'Perfil', href: '/(app)/profile' },
-];
+import { useTranslation } from '@kiwi/i18n';
 
 export function BottomNav({ active }: { active: string }) {
+  const { t } = useTranslation();
   const router = useRouter();
+  const ITEMS: { key: string; label: string; href: Href }[] = [
+    { key: 'comandas', label: t.merchantBoard.title, href: '/(app)/comandas' },
+    { key: 'drivers', label: t.merchantDrivers.title, href: '/(app)/drivers' },
+    { key: 'notifications', label: t.merchantNotifications.title, href: '/(app)/notifications' },
+    { key: 'profile', label: t.nav.profile, href: '/(app)/profile' },
+  ];
   return (
     <View
       style={{
