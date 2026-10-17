@@ -146,7 +146,11 @@ export class DriversService {
       select: {
         id: true,
         fullName: true,
+        photoUrl: true,
         vehicleType: true,
+        vehiclePlate: true,
+        rating: true,
+        totalTrips: true,
         status: true,
         lastLat: true,
         lastLng: true,
@@ -158,7 +162,11 @@ export class DriversService {
       .map((d) => ({
         id: d.id,
         name: d.fullName,
+        photoUrl: (d as any).photoUrl ?? null,
         vehicle: d.vehicleType,
+        vehiclePlate: (d as any).vehiclePlate ?? null,
+        rating: d.rating != null ? Number(d.rating) : null,
+        totalTrips: (d as any).totalTrips ?? 0,
         status: d.status,
         lat: d.lastLat != null ? Number(d.lastLat) : null,
         lng: d.lastLng != null ? Number(d.lastLng) : null,

@@ -137,6 +137,44 @@ describe('DriversService', () => {
     });
   });
 
+  describe('getLiveDrivers', () => {
+    it('devuelve ficha del repartidor para el popup del mapa (foto, placa, rating)', async () => {
+      prisma.driverProfile.findMany.mockResolvedValue([
+        {
+          id: 'dp-1',
+          fullName: 'Francisco Campos Diaz',
+          photoUrl: null,
+          vehicleType: 'motorized_bike',
+          vehiclePlate: 'M-123',
+          rating: 5.0,
+          totalTrips: 10,
+          status: 'available',
+          lastLat: 10.1467,
+          lastLng: -85.452,
+          lastSeenAt: new Date(),
+        },
+      ]);
+
+      const result = await service.getLiveDrivers();
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        name: 'Francisco Campos Diaz',
+        vehicle: 'motorized_bike',
+        vehiclePlate: 'M-123',
+        rating: 5,
+        totalTrips: 10,
+      });
+    });
+
+    it('filtra filas sin coords válidas', async () => {
+      prisma.driverProfile.findMany.mockResolvedValue([
+        { id: 'dp-x', fullName: 'Sin GPS', lastLat: null, lastLng: null, rating: 5 },
+      ]);
+
+      await expect(service.getLiveDrivers()).resolves.toHaveLength(0);
+    });
+  });
+
   describe('getLocationForUser (row-level GPS guard)', () => {
     it('permite al propio repartidor ver su ubicación', async () => {
       prisma.driverProfile.findUnique.mockResolvedValue({ id: 'dp-1' });

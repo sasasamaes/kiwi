@@ -25,12 +25,43 @@ export interface MerchantLike {
 export interface DriverLike {
   id: string;
   name: string;
+  photoUrl?: string | null;
   vehicle?: string | null;
+  vehiclePlate?: string | null;
+  rating?: number | null;
+  totalTrips?: number | null;
   status?: string | null;
   lat: number;
   lng: number;
   updatedAt?: string | Date | null;
 }
+
+/** Etiquetas en español para el popup (el API manda el enum crudo). */
+const VEHICLE_ES: Record<string, string> = {
+  motorcycle: 'Moto',
+  motorized_bike: 'Bici moto',
+  bicycle: 'Bici',
+  car: 'Carro',
+  walking: 'A pie',
+};
+
+const STATUS_ES: Record<string, string> = {
+  available: 'Disponible',
+  busy: 'Ocupado',
+  offline: 'Offline',
+};
+
+/** Escape mínimo: el nombre/placa van dentro de HTML del popup. */
+function esc(v: unknown): string {
+  return String(v ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+const BIKE_SVG =
+  '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/><path d="M12 17.5V14l-3-3 4-3 2 3h2"/></svg>';
 
 /** Color por tramo de precio (verde barato → rojo caro). */
 function tierColor(price: number): string {
@@ -157,8 +188,41 @@ export function ZonesOverviewMap({
       const age = ageMin(d.updatedAt);
       const stale = age == null || age > 5;
       const ageTxt = age == null ? 'sin hora' : age < 1 ? 'ahora mismo' : `hace ${age} min`;
+      const vehicleTxt = (d.vehicle && VEHICLE_ES[d.vehicle]) || d.vehicle || 'Vehículo';
+      const statusTxt = (d.status && STATUS_ES[d.status]) || d.status || '';
+      const avatar = d.photoUrl
+        ? `<img src="${esc(d.photoUrl)}" alt="" style="width:36px;height:36px;border-radius:9999px;object-fit:cover;flex:none;background:#eef7fb">`
+        : `<img src="/kiwi.svg" alt="Kiwi" style="width:36px;height:36px;border-radius:9999px;flex:none;background:#eef7fb">`;
+      const ratingTxt =
+        d.rating != null && Number.isFinite(Number(d.rating))
+          ? `★ ${Number(d.rating).toFixed(1)}`
+          : null;
       L.marker([d.lat, d.lng], { icon: kiwiIcon(L, { size: 34, pulse: !stale, dimmed: stale }) })
-        .bindPopup(`<b>${d.name}</b>${d.vehicle ? ` · ${d.vehicle}` : ''}<br>GPS: ${ageTxt}`)
+        .bindPopup(
+          `<div style="display:flex;gap:8px;align-items:center;min-width:210px;max-width:260px">` +
+            avatar +
+            `<div style="min-width:0"><b style="font-size:13px">${esc(d.name)}</b>` +
+            (statusTxt
+              ? `<div style="font-size:11px;color:${stale ? '#71717a' : '#195a77'};font-weight:600">${esc(statusTxt)} · GPS ${esc(ageTxt)}</div>`
+              : `<div style="font-size:11px;color:#71717a">GPS ${esc(ageTxt)}</div>`) +
+            `</div></div>` +
+            `<div style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:12px;color:#3f3f46">` +
+            `<span style="display:inline-flex;color:#195a77">${BIKE_SVG}</span>` +
+            `<span>${esc(vehicleTxt)}</span>` +
+            (d.vehiclePlate
+              ? `<span style="font-family:monospace;font-size:11px;font-weight:700;background:#f4f4f5;border-radius:6px;padding:1px 6px">${esc(d.vehiclePlate)}</span>`
+              : '') +
+            `</div>` +
+            (ratingTxt || d.totalTrips != null
+              ? `<div style="margin-top:4px;font-size:11px;color:#71717a">` +
+                (ratingTxt ? esc(ratingTxt) : '') +
+                (ratingTxt && d.totalTrips != null ? ' · ' : '') +
+                (d.totalTrips != null
+                  ? `${Number(d.totalTrips)} viaje${Number(d.totalTrips) === 1 ? '' : 's'}`
+                  : '') +
+                `</div>`
+              : ''),
+        )
         .bindTooltip(`${d.name} · ${ageTxt}`)
         .addTo(layer);
       points.push([d.lat, d.lng]);
