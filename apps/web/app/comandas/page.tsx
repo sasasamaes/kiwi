@@ -1,14 +1,26 @@
 // Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Receipt, Phone, MapPin, Bike, Clock, RefreshCw, Volume2 } from 'lucide-react';
+import {
+  Receipt,
+  Phone,
+  MapPin,
+  Bike,
+  Clock,
+  RefreshCw,
+  Volume2,
+  ShoppingBasket,
+} from 'lucide-react';
 import { api, useAuth, useSocket, playNotificationSound } from '@kiwi/ui';
 import { MerchantNav } from '../../components/MerchantNav';
 
 const NEW_STATUSES = new Set(['pending', 'driver_proposals', 'pending_acceptance']);
+
+/** Ya recogidos por el repartidor: no entran en la lista de compras. */
+const PICKED_STATUSES = new Set(['picked_up', 'in_transit_to_delivery', 'delivered']);
 
 const STATUS_LABEL: Record<string, string> = {
   pending: 'Buscando repartidor',
@@ -146,6 +158,29 @@ export default function ComandasPage() {
 
   const fresh = orders.filter((o) => NEW_STATUSES.has(o.status));
 
+  // Lista de compras por kiosko: todo lo pre-vendido (aún no recogido) sumado
+  // por puesto, para pedirlo en cada kiosko y luego repartirlo.
+  const shopping = useMemo(() => {
+    const byKiosk = new Map<string, Map<string, number>>();
+    for (const o of orders) {
+      if (PICKED_STATUSES.has(o.status)) continue;
+      for (const it of o.items ?? []) {
+        if (!it?.name) continue;
+        const kiosk = it.kioskName || 'Directo del comercio';
+        let products = byKiosk.get(kiosk);
+        if (!products) {
+          products = new Map();
+          byKiosk.set(kiosk, products);
+        }
+        products.set(it.name, (products.get(it.name) ?? 0) + Number(it.quantity ?? 1));
+      }
+    }
+    return [...byKiosk.entries()].map(([kiosk, products]) => {
+      const rows = [...products.entries()].map(([name, qty]) => ({ name, qty }));
+      return { kiosk, rows, total: rows.reduce((s, r) => s + r.qty, 0) };
+    });
+  }, [orders]);
+
   return (
     <>
       <MerchantNav
@@ -193,6 +228,52 @@ export default function ComandasPage() {
           </div>
         ) : (
           <div className="space-y-4">
+            {/* Qué comprar por kiosko (pre-vendido, aún no recogido) */}
+            {shopping.length > 0 && (
+              <motion.section
+                className="rounded-2xl border-2 border-purple-500/40 bg-purple-50 dark:bg-purple-900/20 p-5"
+                initial={{ opacity: 0, y: -12 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <p className="flex items-center gap-2 font-display font-bold text-surface-800 dark:text-surface-100">
+                  <ShoppingBasket className="h-5 w-5 text-purple-700 dark:text-purple-300" />
+                  Qué comprar por kiosko
+                </p>
+                <p className="text-xs text-surface-500 dark:text-surface-400 mt-0.5 mb-3">
+                  Pre-vendido y por recoger: pedilo en cada puesto y luego repartilo.
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {shopping.map((s) => (
+                    <div
+                      key={s.kiosk}
+                      className="rounded-xl bg-white dark:bg-surface-800 p-3 shadow-soft dark:shadow-dark"
+                    >
+                      <p className="text-sm font-semibold text-purple-700 dark:text-purple-300">
+                        🏪 {s.kiosk}
+                      </p>
+                      <ul className="mt-1 space-y-0.5">
+                        {s.rows.map((r) => (
+                          <li
+                            key={r.name}
+                            className="flex items-baseline justify-between gap-2 text-sm"
+                          >
+                            <span className="text-surface-700 dark:text-surface-200 truncate">
+                              {r.name}
+                            </span>
+                            <span className="shrink-0 font-bold text-surface-800 dark:text-surface-100">
+                              ×{r.qty}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                      <p className="mt-1 text-right text-xs font-medium text-surface-400">
+                        {s.total} {s.total === 1 ? 'unidad' : 'unidades'}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </motion.section>
+            )}
             <AnimatePresence initial={false}>
               {orders.map((o) => {
                 const isNew = NEW_STATUSES.has(o.status);
