@@ -762,7 +762,7 @@ function CheckoutContent() {
               Este comercio no tiene métodos de pago activos: no se puede pedir ahora
             </p>
           )}
-          <p className="text-center text-xs text-surface-400 mt-3">
+          <p className="text-center text-xs text-surface-500 dark:text-surface-400 mt-3">
             {paymentMethod === 'cash' && (
               <span>
                 <Coins className="h-3 w-3 inline" /> Pagas al repartidor al recibir tu pedido
@@ -790,7 +790,7 @@ function CheckoutContent() {
               <CryptoRateNote amountCRC={total} coin="USDT" className="mt-2" />
             )}
           </p>
-          <p className="text-center text-xs text-surface-400 mt-2">
+          <p className="text-center text-xs text-surface-500 dark:text-surface-400 mt-2">
             Al ordenar aceptás nuestros{' '}
             <Link href="/terms" className="text-kiwi-700 hover:underline">
               términos

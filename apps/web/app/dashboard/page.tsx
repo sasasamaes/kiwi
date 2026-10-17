@@ -671,7 +671,9 @@ export default function Dashboard() {
                   <Package className="h-12 w-12 text-surface-300" />
                 </motion.div>
                 <p className="text-surface-500 dark:text-surface-400">Aún no hay pedidos</p>
-                <p className="text-xs text-surface-400 mt-1">Crea tu primer pedido para empezar</p>
+                <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">
+                  Crea tu primer pedido para empezar
+                </p>
               </motion.div>
             ) : (
               <div className="space-y-4">
@@ -722,7 +724,7 @@ export default function Dashboard() {
                                 {getClientName(order)}
                               </p>
                               <div className="flex items-center gap-2">
-                                <p className="text-sm text-surface-400 flex items-center gap-1">
+                                <p className="text-sm text-surface-500 dark:text-surface-400 flex items-center gap-1">
                                   {order.driver ? (
                                     <>
                                       <Bike className="h-4 w-4" /> Asignado
@@ -752,7 +754,9 @@ export default function Dashboard() {
                             >
                               {statusInfo.label}
                             </motion.span>
-                            <span className="text-sm text-surface-400">{time}</span>
+                            <span className="text-sm text-surface-500 dark:text-surface-400">
+                              {time}
+                            </span>
                           </div>
                         </motion.div>
                       </Link>

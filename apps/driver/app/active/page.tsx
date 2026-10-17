@@ -876,7 +876,7 @@ export default function ActiveOrders() {
         {/* Cola de entregas: todos los activos en orden, se toca para cambiar */}{' '}
         {orders.length > 1 && (
           <div className="mb-4 overflow-hidden rounded-3xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark">
-            <p className="px-4 pt-3 text-xs font-semibold uppercase tracking-wide text-surface-400">
+            <p className="px-4 pt-3 text-xs font-semibold uppercase tracking-wide text-surface-500 dark:text-surface-400">
               Cola de entregas ({orders.length})
             </p>
             <div className="space-y-1 p-2">
@@ -912,7 +912,9 @@ export default function ActiveOrders() {
                       >
                         {(o as any).merchant?.businessName || 'Comercio'} → {o.deliveryAddress}
                       </span>
-                      <span className={`text-xs ${active ? 'text-white/80' : 'text-surface-400'}`}>
+                      <span
+                        className={`text-xs ${active ? 'text-white/80' : 'text-surface-500 dark:text-surface-400'}`}
+                      >
                         {STEP_META[o.status]?.label ?? o.status}
                         {queuedTransitions[o.id] ? ' · ⏳ sincronizando' : ''}
                         {active ? ' · VIENDO ESTE' : ''}
@@ -1104,7 +1106,7 @@ export default function ActiveOrders() {
                     order.pickupAddress,
                   )
                 }
-                className="mt-2 w-full text-center text-xs text-surface-400 underline-offset-2 hover:underline"
+                className="mt-2 w-full text-center text-xs text-surface-500 dark:text-surface-400 underline-offset-2 hover:underline"
               >
                 Abrir en Google Maps
               </button>
@@ -1144,7 +1146,7 @@ export default function ActiveOrders() {
               </div>
               <button
                 onClick={() => copyAddress('delivery', order.deliveryAddress)}
-                className="mt-1 flex items-center gap-1 text-xs text-surface-400"
+                className="mt-1 flex items-center gap-1 text-xs text-surface-500 dark:text-surface-400"
               >
                 {copied === 'delivery' ? (
                   <span className="flex items-center gap-1 text-kiwi-700">
@@ -1172,7 +1174,7 @@ export default function ActiveOrders() {
                     order.deliveryAddress,
                   )
                 }
-                className="mt-2 w-full text-center text-xs text-surface-400 underline-offset-2 hover:underline"
+                className="mt-2 w-full text-center text-xs text-surface-500 dark:text-surface-400 underline-offset-2 hover:underline"
               >
                 Abrir en Google Maps
               </button>
@@ -1377,7 +1379,7 @@ export default function ActiveOrders() {
             <button
               onClick={rejectOrder}
               disabled={rejecting}
-              className="text-xs font-medium text-surface-400 underline-offset-2 hover:underline disabled:opacity-50"
+              className="text-xs font-medium text-surface-500 dark:text-surface-400 underline-offset-2 hover:underline disabled:opacity-50"
             >
               {rejecting
                 ? 'Rechazando…'
@@ -1398,11 +1400,13 @@ export default function ActiveOrders() {
               className="rounded-3xl glass-strong p-3 shadow-kiwi-lg flex items-center gap-3"
             >
               <div className="pl-2">
-                <p className="text-[11px] text-surface-400">Ganancia</p>
+                <p className="text-[11px] text-surface-500 dark:text-surface-400">Ganancia</p>
                 <p className="font-mono text-lg font-bold text-kiwi-700">
                   ₡{driverPayout.toLocaleString()}
                 </p>
-                <p className="text-[10px] text-surface-400">neta (−{feePct}% Kiwi)</p>
+                <p className="text-[10px] text-surface-500 dark:text-surface-400">
+                  neta (−{feePct}% Kiwi)
+                </p>
               </div>
               <div className="flex-1">
                 {pendingStatus ? (

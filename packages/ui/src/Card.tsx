@@ -38,7 +38,8 @@ function Card({
       className={cn(
         variants[variant],
         paddings[padding],
-        hover && 'transition-all duration-300 hover:shadow-soft-xl hover:-translate-y-1',
+        hover &&
+          'transition-all duration-300 [@media(hover:hover)]:hover:shadow-soft-xl [@media(hover:hover)]:hover:-translate-y-1',
         className,
       )}
       {...props}

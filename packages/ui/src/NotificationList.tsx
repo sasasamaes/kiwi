@@ -112,7 +112,7 @@ export function NotificationList({ onNotificationClick }: NotificationListProps)
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
         >
-          <Loader className="h-8 w-8 text-surface-400" />
+          <Loader className="h-8 w-8 text-surface-500 dark:text-surface-400" />
         </motion.div>
       </div>
     );
@@ -206,7 +206,7 @@ export function NotificationList({ onNotificationClick }: NotificationListProps)
                       >
                         {notification.title}
                       </p>
-                      <span className="text-xs text-surface-400 whitespace-nowrap">
+                      <span className="text-xs text-surface-500 dark:text-surface-400 whitespace-nowrap">
                         {formatTime(notification.createdAt)}
                       </span>
                     </div>

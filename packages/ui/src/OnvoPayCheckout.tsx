@@ -264,7 +264,7 @@ export function CryptoCheckout({
       >
         Ya envié el pago
       </motion.button>
-      <p className="mt-2 text-center text-xs text-surface-400">
+      <p className="mt-2 text-center text-xs text-surface-500 dark:text-surface-400">
         Lo verificamos y te avisamos cuando se confirme en la red.
       </p>
 

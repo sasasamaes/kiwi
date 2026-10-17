@@ -106,7 +106,7 @@ export default function LoginPage() {
         animate={{ opacity: 1 }}
         transition={{ delay: 1 }}
       >
-        <p className="text-xs text-surface-400">
+        <p className="text-xs text-surface-500 dark:text-surface-400">
           Al iniciar sesión, aceptas nuestros{' '}
           <a href="/terms" className="text-kiwi-700 hover:underline">
             Términos

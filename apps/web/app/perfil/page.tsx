@@ -458,7 +458,7 @@ export default function PerfilPage() {
         <p className="text-sm text-surface-500 mb-6">Estos datos los ven los clientes en la app.</p>
 
         <div className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] p-5 shadow-soft dark:shadow-dark">
-          <p className="text-xs font-bold uppercase tracking-wider text-surface-400 mb-4">
+          <p className="text-xs font-bold uppercase tracking-wider text-surface-500 dark:text-surface-400 mb-4">
             Presentación
           </p>
           <div className="space-y-4">
@@ -522,7 +522,7 @@ export default function PerfilPage() {
           </div>
 
           <div className="my-5 border-t border-surface-100 dark:border-surface-700/60" />
-          <p className="text-xs font-bold uppercase tracking-wider text-surface-400 mb-4">
+          <p className="text-xs font-bold uppercase tracking-wider text-surface-500 dark:text-surface-400 mb-4">
             Contacto
           </p>
           <div className="space-y-4">
@@ -555,7 +555,7 @@ export default function PerfilPage() {
           </div>
 
           <div className="my-5 border-t border-surface-100 dark:border-surface-700/60" />
-          <p className="text-xs font-bold uppercase tracking-wider text-surface-400 mb-4">
+          <p className="text-xs font-bold uppercase tracking-wider text-surface-500 dark:text-surface-400 mb-4">
             Ubicación del local
           </p>
           <p className="mb-3 text-sm text-surface-500 dark:text-surface-400">
@@ -585,7 +585,7 @@ export default function PerfilPage() {
           </div>
 
           <div className="my-5 border-t border-surface-100 dark:border-surface-700/60" />
-          <p className="text-xs font-bold uppercase tracking-wider text-surface-400 mb-4">
+          <p className="text-xs font-bold uppercase tracking-wider text-surface-500 dark:text-surface-400 mb-4">
             Redes sociales
           </p>
           <p className="mb-3 text-sm text-surface-500 dark:text-surface-400">
@@ -617,7 +617,7 @@ export default function PerfilPage() {
           </div>
 
           <div className="my-5 border-t border-surface-100 dark:border-surface-700/60" />
-          <p className="text-xs font-bold uppercase tracking-wider text-surface-400 mb-4">
+          <p className="text-xs font-bold uppercase tracking-wider text-surface-500 dark:text-surface-400 mb-4">
             Horario
           </p>
           <div>
@@ -643,7 +643,7 @@ export default function PerfilPage() {
                           onChange={(e) => setDay(d.key, { open: e.target.value })}
                           className="flex-1 min-w-0 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-2 py-1.5 text-sm"
                         />
-                        <span className="text-surface-400 text-sm">–</span>
+                        <span className="text-surface-500 dark:text-surface-400 text-sm">–</span>
                         <input
                           type="time"
                           value={h.close}
@@ -661,7 +661,9 @@ export default function PerfilPage() {
                       </>
                     ) : (
                       <>
-                        <span className="flex-1 text-sm text-surface-400">Cerrado</span>
+                        <span className="flex-1 text-sm text-surface-500 dark:text-surface-400">
+                          Cerrado
+                        </span>
                         <button
                           type="button"
                           onClick={() => setDay(d.key, { open: '08:00', close: '20:00' })}
@@ -718,7 +720,7 @@ export default function PerfilPage() {
         </div>
 
         <div className="mt-6 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] p-5 shadow-soft dark:shadow-dark">
-          <p className="text-xs font-bold uppercase tracking-wider text-surface-400 mb-4">
+          <p className="text-xs font-bold uppercase tracking-wider text-surface-500 dark:text-surface-400 mb-4">
             Métodos de pago
           </p>
 
@@ -782,7 +784,7 @@ export default function PerfilPage() {
         </div>
 
         <div className="mt-6 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] p-5 shadow-soft dark:shadow-dark">
-          <p className="text-xs font-bold uppercase tracking-wider text-surface-400 mb-4">
+          <p className="text-xs font-bold uppercase tracking-wider text-surface-500 dark:text-surface-400 mb-4">
             Cobros con tarjeta
           </p>
           {mpLoading ? (
@@ -839,7 +841,7 @@ export default function PerfilPage() {
           )}
           {mpStatus?.status === 'active' && (
             <div className="mt-5 border-t border-surface-100 dark:border-surface-700/60 pt-4">
-              <p className="text-xs font-bold uppercase tracking-wider text-surface-400 mb-3">
+              <p className="text-xs font-bold uppercase tracking-wider text-surface-500 dark:text-surface-400 mb-3">
                 Cobros liquidados
               </p>
               {mpPaymentsLoading ? (

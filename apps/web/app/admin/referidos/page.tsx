@@ -184,7 +184,10 @@ export default function ReferidosPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="py-8 text-center text-sm text-surface-400">
+                  <td
+                    colSpan={5}
+                    className="py-8 text-center text-sm text-surface-500 dark:text-surface-400"
+                  >
                     Cargando…
                   </td>
                 </tr>
@@ -204,7 +207,9 @@ export default function ReferidosPage() {
                         {(['customer', 'driver', 'merchant'] as const).map((role) => (
                           <p key={role}>
                             <b>{ROLE_LABELS[role]}:</b>{' '}
-                            {r.offers?.[role]?.title || <span className="text-surface-400">—</span>}
+                            {r.offers?.[role]?.title || (
+                              <span className="text-surface-500 dark:text-surface-400">—</span>
+                            )}
                           </p>
                         ))}
                       </div>

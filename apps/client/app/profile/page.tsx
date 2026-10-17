@@ -359,7 +359,7 @@ export default function ProfilePage() {
         <div className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-5 mb-3 space-y-3 text-sm">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
-              <MapPin className="h-4 w-4 text-surface-400 shrink-0" />
+              <MapPin className="h-4 w-4 text-surface-500 dark:text-surface-400 shrink-0" />
               <span className="truncate">
                 {profile?.defaultAddress || 'Sin dirección guardada'}
                 {profile?.citySlug ? ` · ${profile.citySlug}` : ''}
@@ -376,7 +376,7 @@ export default function ProfilePage() {
           </div>
           {(user as any)?.phone && !editing && (
             <div className="flex items-center gap-3">
-              <Phone className="h-4 w-4 text-surface-400 shrink-0" />
+              <Phone className="h-4 w-4 text-surface-500 dark:text-surface-400 shrink-0" />
               <span>{(user as any).phone}</span>
             </div>
           )}
@@ -451,7 +451,7 @@ export default function ProfilePage() {
           )}
           <label className="flex items-center justify-between gap-3 cursor-pointer">
             <span className="flex items-center gap-3">
-              <Bell className="h-4 w-4 text-surface-400 shrink-0" />
+              <Bell className="h-4 w-4 text-surface-500 dark:text-surface-400 shrink-0" />
               Ofertas de comercios
             </span>
             <input
@@ -463,7 +463,7 @@ export default function ProfilePage() {
           </label>
           <label className="flex items-center justify-between gap-3 cursor-pointer">
             <span className="flex items-center gap-3">
-              <span className="text-surface-400 shrink-0">🧡</span>
+              <span className="text-surface-500 dark:text-surface-400 shrink-0">🧡</span>
               Avisos de comercios que sigo
             </span>
             <input
@@ -541,7 +541,9 @@ export default function ProfilePage() {
             </div>
           )}
           {places.length === 0 ? (
-            <p className="text-xs text-surface-400">Todavía no guardaste lugares.</p>
+            <p className="text-xs text-surface-500 dark:text-surface-400">
+              Todavía no guardaste lugares.
+            </p>
           ) : (
             <div className="space-y-2">
               {places.map((p) => (
@@ -612,7 +614,7 @@ export default function ProfilePage() {
                   <button
                     onClick={() => void removeFollow(f.id)}
                     aria-label={`Dejar de seguir a ${f.businessName}`}
-                    className="shrink-0 rounded-full px-2 py-1 text-xs font-semibold text-surface-400 hover:text-red-500"
+                    className="shrink-0 rounded-full px-2 py-1 text-xs font-semibold text-surface-500 dark:text-surface-400 hover:text-red-500"
                   >
                     ✕
                   </button>

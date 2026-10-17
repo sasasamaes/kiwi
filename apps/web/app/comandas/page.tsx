@@ -269,7 +269,7 @@ export default function ComandasPage() {
                           </li>
                         ))}
                       </ul>
-                      <p className="mt-1 text-right text-xs font-medium text-surface-400">
+                      <p className="mt-1 text-right text-xs font-medium text-surface-500 dark:text-surface-400">
                         {s.total} {s.total === 1 ? 'unidad' : 'unidades'}
                       </p>
                     </div>
@@ -293,7 +293,7 @@ export default function ComandasPage() {
                   >
                     <div className="flex items-start justify-between gap-3 mb-3">
                       <div>
-                        <p className="text-xs text-surface-400">
+                        <p className="text-xs text-surface-500 dark:text-surface-400">
                           #{o.id.slice(0, 8).toUpperCase()} · {timeAgo(o.createdAt)}
                         </p>
                         <p className="text-lg font-display font-bold text-surface-800 dark:text-surface-100">
@@ -379,7 +379,7 @@ export default function ComandasPage() {
 
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-surface-600 dark:text-surface-300 mb-3">
                       <span className="flex items-center gap-1.5">
-                        <MapPin className="h-4 w-4 text-surface-400" />
+                        <MapPin className="h-4 w-4 text-surface-500 dark:text-surface-400" />
                         {o.deliveryAddress}
                       </span>
                       {o.customerPhone && (
@@ -392,7 +392,7 @@ export default function ComandasPage() {
                       )}
                       {o.driver?.fullName && (
                         <span className="flex items-center gap-1.5">
-                          <Bike className="h-4 w-4 text-surface-400" />
+                          <Bike className="h-4 w-4 text-surface-500 dark:text-surface-400" />
                           {o.driver.fullName}
                         </span>
                       )}
@@ -404,7 +404,7 @@ export default function ComandasPage() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <span className="flex items-center gap-1.5 text-xs text-surface-400">
+                      <span className="flex items-center gap-1.5 text-xs text-surface-500 dark:text-surface-400">
                         <Clock className="h-3.5 w-3.5" />
                         El repartidor se asigna solo
                       </span>
@@ -448,7 +448,7 @@ export default function ComandasPage() {
         )}
 
         {fresh.length > 0 && (
-          <p className="mt-6 text-center text-xs text-surface-400">
+          <p className="mt-6 text-center text-xs text-surface-500 dark:text-surface-400">
             {fresh.length} por atender · el resto ya va en camino
           </p>
         )}

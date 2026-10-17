@@ -345,7 +345,7 @@ function Playbook() {
                     <li key={t}>{t}</li>
                   ))}
                 </ul>
-                <p className="text-xs text-surface-400 border-t border-surface-100 dark:border-surface-800 pt-2">
+                <p className="text-xs text-surface-500 dark:text-surface-400 border-t border-surface-100 dark:border-surface-800 pt-2">
                   {i.meta}
                 </p>
               </div>
@@ -458,7 +458,7 @@ function Playbook() {
                 “Buenas, soy [Nombre] de Kiwi. Le hago una pregunta rápida: cuando alguien le llama
                 por WhatsApp para pedir, ¿quién toma el pedido y quién lo lleva?”
                 <br />
-                <span className="not-italic text-surface-400">
+                <span className="not-italic text-surface-500 dark:text-surface-400">
                   (escuchar: cuaderno, chofer informal, nadie)
                 </span>
                 <br />
@@ -663,7 +663,7 @@ function Playbook() {
           </blockquote>
         </Section>
 
-        <footer className="pt-4 pb-10 text-center text-xs text-surface-400 border-t border-surface-200 dark:border-surface-800">
+        <footer className="pt-4 pb-10 text-center text-xs text-surface-500 dark:text-surface-400 border-t border-surface-200 dark:border-surface-800">
           KIWI · Nicoya, Costa Rica — Documento interno de ventas. No distribuir.
         </footer>
       </div>

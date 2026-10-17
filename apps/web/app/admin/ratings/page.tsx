@@ -168,7 +168,7 @@ export default function AdminRatings() {
             >
               <div className="mb-1 flex items-center justify-between">
                 <Stars value={r.rating} />
-                <span className="text-xs text-surface-400">
+                <span className="text-xs text-surface-500 dark:text-surface-400">
                   {new Date(r.createdAt).toLocaleDateString('es-CR', {
                     day: 'numeric',
                     month: 'short',

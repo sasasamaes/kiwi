@@ -1,6 +1,6 @@
 // Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 import type { Metadata, Viewport } from 'next';
-import { Geist, Geist_Mono, Inter } from 'next/font/google';
+import { Geist_Mono, Inter, Fraunces } from 'next/font/google';
 import './globals.css';
 import {
   ThemeProvider,
@@ -15,14 +15,15 @@ import {
 } from '@kiwi/ui';
 import { OfflineBanner } from './offline-banner';
 
-const geist = Geist({
-  subsets: ['latin'],
-  variable: '--font-geist',
-});
-
 const geistMono = Geist_Mono({
   subsets: ['latin'],
   variable: '--font-geist-mono',
+});
+
+const fraunces = Fraunces({
+  subsets: ['latin'],
+  variable: '--font-fraunces',
+  display: 'swap',
 });
 
 const inter = Inter({
@@ -36,15 +37,16 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: 'Kiwi - Repartidores para Comerciantes',
-  description: 'Plataforma de repartidores para comerciantes de Nicoya, Costa Rica',
+  title: 'Kiwi · Negocios — Delivery Blue Zone App',
+  description:
+    'Delivery Blue Zone App para comercios de Nicoya: pedidos, repartidores y cobros en un solo panel.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
       lang="es"
-      className={`${geist.variable} ${geistMono.variable} ${inter.variable}`}
+      className={`${fraunces.variable} ${geistMono.variable} ${inter.variable}`}
       suppressHydrationWarning
     >
       <head>

@@ -146,7 +146,7 @@ export default function TestingPage() {
             {pushTesting ? 'Probando…' : 'Probar alerta'}
           </TapButton>
           {pushDebug?.swRegistrations && pushDebug.swRegistrations.length > 0 && (
-            <p className="mt-2 text-[11px] text-surface-400">
+            <p className="mt-2 text-[11px] text-surface-500 dark:text-surface-400">
               SW: {pushDebug.swRegistrations.map((s) => `${s.script}@${s.scope}`).join(' · ')}
             </p>
           )}

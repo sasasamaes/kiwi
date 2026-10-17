@@ -213,7 +213,7 @@ function CreditsInner() {
               <button
                 onClick={() => setReturnState(null)}
                 aria-label="Descartar aviso"
-                className="text-surface-400"
+                className="text-surface-500 dark:text-surface-400"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -223,14 +223,16 @@ function CreditsInner() {
 
         {/* Saldo */}
         <div className="mt-4 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] p-6 text-center shadow-soft dark:shadow-dark">
-          <p className="text-xs font-semibold uppercase tracking-widest text-surface-400">
+          <p className="text-xs font-semibold uppercase tracking-widest text-surface-500 dark:text-surface-400">
             Saldo disponible
           </p>
           <p className="mt-1 font-mono font-bold text-kiwi-700 dark:text-kiwi-400">
             <span className="text-2xl align-middle">₡</span>
             <span className="text-5xl">{Number(balance ?? 0).toLocaleString()}</span>
           </p>
-          <p className="mt-1 text-xs text-surface-400">Cubre solo el viaje de tus envíos</p>
+          <p className="mt-1 text-xs text-surface-500 dark:text-surface-400">
+            Cubre solo el viaje de tus envíos
+          </p>
         </div>
 
         {/* Recarga con tarjeta */}
@@ -286,7 +288,7 @@ function CreditsInner() {
               <p className="text-sm font-medium text-surface-700 dark:text-surface-200">
                 Todavía no hay movimientos.
               </p>
-              <p className="mt-1 text-xs text-surface-400">
+              <p className="mt-1 text-xs text-surface-500 dark:text-surface-400">
                 Tus recargas y gastos de envío aparecen aquí.
               </p>
             </div>
@@ -299,7 +301,7 @@ function CreditsInner() {
                 >
                   <div>
                     <p className="font-medium">{KIND_LABEL[h.kind] ?? h.kind}</p>
-                    <p className="text-xs text-surface-400">
+                    <p className="text-xs text-surface-500 dark:text-surface-400">
                       {h.reason ?? ''} ·{' '}
                       {new Date(h.createdAt).toLocaleDateString('es-CR', {
                         day: 'numeric',

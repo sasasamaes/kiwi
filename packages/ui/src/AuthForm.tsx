@@ -320,7 +320,7 @@ export function AuthForm({
                   ojo colgando fuera del campo. */}
               <button
                 type="button"
-                className="absolute right-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center text-surface-400 transition-colors hover:text-surface-600 active:scale-90"
+                className="absolute right-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center text-surface-500 dark:text-surface-400 transition-colors hover:text-surface-600 active:scale-90"
                 onClick={() => setShowPassword(!showPassword)}
                 aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
               >
@@ -337,7 +337,10 @@ export function AuthForm({
                 htmlFor="auth-referral"
                 className="block text-sm font-medium text-surface-700 mb-2"
               >
-                Código de referido <span className="font-normal text-surface-400">(opcional)</span>
+                Código de referido{' '}
+                <span className="font-normal text-surface-500 dark:text-surface-400">
+                  (opcional)
+                </span>
               </label>
               <motion.input
                 id="auth-referral"
@@ -359,7 +362,9 @@ export function AuthForm({
               {referral.trim() !== '' && (
                 <div className="mt-2 text-xs" role="status">
                   {referralChecking ? (
-                    <span className="text-surface-400">Verificando código…</span>
+                    <span className="text-surface-500 dark:text-surface-400">
+                      Verificando código…
+                    </span>
                   ) : referralValid && referralOffer ? (
                     <span className="font-medium text-kiwi-700">
                       🎟️ {referralOffer.title}

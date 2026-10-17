@@ -241,7 +241,9 @@ export function KYCVerification({
         </motion.div>
         <h3 className="text-lg font-display font-semibold text-gold-700 mb-2">{config.label}</h3>
         <p className="text-sm text-gold-600">{config.description}</p>
-        <p className="text-xs text-surface-400 mt-4">Tiempo estimado: 24-48 horas</p>
+        <p className="text-xs text-surface-500 dark:text-surface-400 mt-4">
+          Tiempo estimado: 24-48 horas
+        </p>
         {onRefreshStatus && <RefreshStatusButton onRefreshStatus={onRefreshStatus} />}
       </motion.div>
     );

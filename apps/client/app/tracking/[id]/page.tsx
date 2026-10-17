@@ -462,7 +462,7 @@ function TrackingContent() {
           />
         </motion.div>
         {!delivery && (
-          <p className="mb-6 -mt-3 text-center text-xs text-surface-400">
+          <p className="mb-6 -mt-3 text-center text-xs text-surface-500 dark:text-surface-400">
             Este pedido no trae GPS de entrega: la dirección escrita vale.
           </p>
         )}
@@ -482,7 +482,7 @@ function TrackingContent() {
           {isConnected ? 'En vivo' : 'Se actualiza solo'}
         </motion.div>
         {!driverLocation && (order as any)?.driverId && (
-          <p className="mb-4 -mt-1 text-center text-xs text-surface-400">
+          <p className="mb-4 -mt-1 text-center text-xs text-surface-500 dark:text-surface-400">
             Conectando con la ubicación del repartidor… si tarda, puede tener el GPS apagado.
           </p>
         )}
@@ -520,7 +520,7 @@ function TrackingContent() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
             >
-              <Clock className="h-4 w-4 text-surface-400" />
+              <Clock className="h-4 w-4 text-surface-500 dark:text-surface-400" />
               <span className="text-sm text-surface-500 dark:text-surface-400">
                 Tiempo estimado:
               </span>
@@ -711,7 +711,7 @@ function TrackingContent() {
                     <p className="text-sm font-medium text-surface-700 dark:text-surface-200">
                       {item.message}
                     </p>
-                    <p className="text-xs text-surface-400">
+                    <p className="text-xs text-surface-500 dark:text-surface-400">
                       {new Date(item.timestamp).toLocaleTimeString('es-CR')}
                     </p>
                   </div>

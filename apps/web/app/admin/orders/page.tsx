@@ -246,7 +246,7 @@ export default function AdminOrders() {
           ))}
         </div>
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-500 dark:text-surface-400" />
           <input
             value={search}
             onChange={(e) => {
@@ -297,7 +297,7 @@ export default function AdminOrders() {
             >
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-mono text-xs text-surface-400">
+                  <span className="font-mono text-xs text-surface-500 dark:text-surface-400">
                     #{o.id.slice(0, 8).toUpperCase()}
                   </span>
                   <span
@@ -309,7 +309,7 @@ export default function AdminOrders() {
                 <p className="mt-1 truncate text-sm font-medium text-surface-800 dark:text-surface-100">
                   {o.merchant?.businessName ?? '—'} → {o.deliveryAddress}
                 </p>
-                <p className="text-xs text-surface-400">
+                <p className="text-xs text-surface-500 dark:text-surface-400">
                   {new Date(o.createdAt).toLocaleString('es-CR', {
                     day: 'numeric',
                     month: 'short',
@@ -375,7 +375,7 @@ export default function AdminOrders() {
             >
               <div className="mb-4 flex items-start justify-between">
                 <div>
-                  <p className="font-mono text-xs text-surface-400">
+                  <p className="font-mono text-xs text-surface-500 dark:text-surface-400">
                     #{selected.id.slice(0, 8).toUpperCase()}
                   </p>
                   <span
@@ -384,7 +384,10 @@ export default function AdminOrders() {
                     {STATUS_LABEL[selected.status] ?? selected.status}
                   </span>
                 </div>
-                <button onClick={() => setSelected(null)} className="text-surface-400">
+                <button
+                  onClick={() => setSelected(null)}
+                  className="text-surface-500 dark:text-surface-400"
+                >
                   <X className="h-5 w-5" />
                 </button>
               </div>
@@ -410,7 +413,7 @@ export default function AdminOrders() {
                   </span>
                 </p>
                 <p className="flex items-center gap-2">
-                  <Bike className="h-4 w-4 shrink-0 text-surface-400" />
+                  <Bike className="h-4 w-4 shrink-0 text-surface-500 dark:text-surface-400" />
                   {selected.driver?.fullName ?? 'Sin repartidor asignado'}
                 </p>
                 <div className="flex items-center gap-2 rounded-xl bg-kiwi-50 dark:bg-kiwi-900/30 px-3 py-2">
@@ -499,7 +502,7 @@ export default function AdminOrders() {
                     </span>
                   </div>
                 </div>
-                <p className="flex items-center gap-2 text-xs text-surface-400">
+                <p className="flex items-center gap-2 text-xs text-surface-500 dark:text-surface-400">
                   <Wallet className="h-3 w-3" />
                   Creado {new Date(selected.createdAt).toLocaleString('es-CR')}
                   {selected.deliveredAt

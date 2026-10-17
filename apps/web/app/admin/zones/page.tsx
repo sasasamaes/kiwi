@@ -537,7 +537,7 @@ export default function AdminZonesPage() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={5} className="py-8 text-center text-surface-400">
+                <td colSpan={5} className="py-8 text-center text-surface-500 dark:text-surface-400">
                   Cargando…
                 </td>
               </tr>
@@ -585,7 +585,11 @@ export default function AdminZonesPage() {
                     )}
                   </td>{' '}
                   <td className="px-4 py-3 text-center">
-                    <span className={z.active ? 'text-kiwi-600' : 'text-surface-400'}>
+                    <span
+                      className={
+                        z.active ? 'text-kiwi-600' : 'text-surface-500 dark:text-surface-400'
+                      }
+                    >
                       {z.active ? 'Activa' : 'Inactiva'}
                     </span>
                   </td>

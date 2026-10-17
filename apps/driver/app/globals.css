@@ -11,7 +11,7 @@
   --kiwi-500: #22c55e;
   --kiwi-600: #16a34a;
   --gold-500: #fbbf24;
-  --bg-gradient: linear-gradient(135deg, #f0fdf4 0%, #fafaf9 50%, #f5f5f4 100%);
+  --bg-gradient: linear-gradient(160deg, #eef7fb 0%, #fbf8f2 55%, #f5efe2 100%);
 }
 
 .dark {

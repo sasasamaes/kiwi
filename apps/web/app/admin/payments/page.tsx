@@ -162,7 +162,9 @@ export default function PaymentsPage() {
           {dailyChart.length > 0 ? (
             <AreaChartComponent data={dailyChart} height={250} />
           ) : (
-            <p className="py-10 text-center text-sm text-surface-400">Sin cobros aún</p>
+            <p className="py-10 text-center text-sm text-surface-500 dark:text-surface-400">
+              Sin cobros aún
+            </p>
           )}
         </motion.div>
 
@@ -178,7 +180,9 @@ export default function PaymentsPage() {
           {methodChart.length > 0 ? (
             <PieChartComponent data={methodChart} height={250} />
           ) : (
-            <p className="py-10 text-center text-sm text-surface-400">Sin datos</p>
+            <p className="py-10 text-center text-sm text-surface-500 dark:text-surface-400">
+              Sin datos
+            </p>
           )}
         </motion.div>
       </div>
@@ -261,13 +265,19 @@ export default function PaymentsPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="py-10 text-center text-sm text-surface-400">
+                  <td
+                    colSpan={7}
+                    className="py-10 text-center text-sm text-surface-500 dark:text-surface-400"
+                  >
                     Cargando…
                   </td>
                 </tr>
               ) : payments.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-10 text-center text-sm text-surface-400">
+                  <td
+                    colSpan={7}
+                    className="py-10 text-center text-sm text-surface-500 dark:text-surface-400"
+                  >
                     Sin pagos con este filtro
                   </td>
                 </tr>
@@ -286,11 +296,13 @@ export default function PaymentsPage() {
                         {p.order?.merchant?.businessName ?? '—'}
                       </td>
                       <td className="py-4 px-6 text-sm">
-                        {p.order?.driver?.fullName ?? <span className="text-surface-400">—</span>}
+                        {p.order?.driver?.fullName ?? (
+                          <span className="text-surface-500 dark:text-surface-400">—</span>
+                        )}
                       </td>
                       <td className="py-4 px-6">
                         <span className="flex items-center gap-1.5 text-sm">
-                          <meta.icon className="h-4 w-4 text-surface-400" />
+                          <meta.icon className="h-4 w-4 text-surface-500 dark:text-surface-400" />
                           {meta.label}
                         </span>
                       </td>
@@ -320,7 +332,7 @@ export default function PaymentsPage() {
       </motion.div>
 
       {pages > 1 && (
-        <p className="text-center text-xs text-surface-400">
+        <p className="text-center text-xs text-surface-500 dark:text-surface-400">
           Página {page + 1} de {pages} ·{' '}
           <button
             onClick={() => setPage((p) => Math.min(pages - 1, p + 1))}

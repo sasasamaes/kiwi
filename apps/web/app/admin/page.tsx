@@ -421,7 +421,7 @@ export default function AdminDashboard() {
             whileHover={{ y: -2 }}
           >
             <div className="flex items-center justify-between mb-2">
-              <Users className="h-6 w-6 text-surface-400" />
+              <Users className="h-6 w-6 text-surface-500 dark:text-surface-400" />
               <span
                 className={`text-xs font-medium ${getGrowthColor(analytics?.growth?.userGrowth || 0)}`}
               >
@@ -552,7 +552,7 @@ export default function AdminDashboard() {
             whileHover={{ y: -2 }}
           >
             <div className="flex items-center justify-between mb-2">
-              <Store className="h-6 w-6 text-surface-400" />
+              <Store className="h-6 w-6 text-surface-500 dark:text-surface-400" />
               <span className="text-xs font-medium text-surface-500 dark:text-surface-400">
                 {analytics?.users?.merchants || 0} registrados
               </span>

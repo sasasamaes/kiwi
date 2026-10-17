@@ -453,7 +453,7 @@ export default function ScheduledOrdersPage() {
                   )}
                 </AnimatedButton>
 
-                <p className="text-xs text-center text-surface-400">
+                <p className="text-xs text-center text-surface-500 dark:text-surface-400">
                   El comerciante verá tu propuesta y te elegirá si eres el mejor fit
                 </p>
               </div>

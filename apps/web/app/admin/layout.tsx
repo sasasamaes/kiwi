@@ -47,6 +47,30 @@ const menuItems = [
   { href: '/admin/settings', icon: Settings, label: 'Configuración' },
 ];
 
+/** Agrupación de la sidebar por jornada operativa (antes 17 ítems planos). */
+const menuGroups: Array<{ title: string; hrefs: string[] }> = [
+  {
+    title: 'Operación',
+    hrefs: ['/admin', '/admin/orders', '/admin/zones', '/admin/cobertura', '/admin/visitas'],
+  },
+  {
+    title: 'Personas',
+    hrefs: ['/admin/users', '/admin/invitaciones', '/admin/kyc', '/admin/ratings'],
+  },
+  {
+    title: 'Finanzas',
+    hrefs: [
+      '/admin/payments',
+      '/admin/payments/crypto',
+      '/admin/credits',
+      '/admin/reportes',
+      '/admin/simulador',
+    ],
+  },
+  { title: 'Crecimiento', hrefs: ['/admin/difusion', '/admin/referidos'] },
+  { title: 'Sistema', hrefs: ['/admin/settings'] },
+];
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -112,7 +136,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   Admin
                 </h1>
                 <p className="text-xs text-surface-500 dark:text-surface-400">
-                  Panel de administración
+                  Delivery Blue Zone · Admin
                 </p>
               </motion.div>
             )}
@@ -121,40 +145,53 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto p-4">
-          <ul className="space-y-2">
-            {menuItems.map((item) => {
-              const ItemIcon = item.icon as any;
-              return (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                      isActive(item.href, item.exact)
-                        ? 'bg-kiwi-50 dark:bg-kiwi-900/30 text-kiwi-700 dark:text-kiwi-400 font-medium'
-                        : 'text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800'
-                    }`}
-                  >
-                    {typeof ItemIcon === 'string' ? (
-                      <span className="text-xl">{ItemIcon}</span>
-                    ) : (
-                      <span className="text-xl">
-                        <ItemIcon className="h-5 w-5" />
-                      </span>
-                    )}
-                    {sidebarOpen && (
-                      <motion.span
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="text-sm"
-                      >
-                        {item.label}
-                      </motion.span>
-                    )}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
+          {menuGroups.map((group) => {
+            const items = group.hrefs
+              .map((h) => menuItems.find((m) => m.href === h))
+              .filter(Boolean) as typeof menuItems;
+            if (items.length === 0) return null;
+            return (
+              <div key={group.title} className="mb-5">
+                {sidebarOpen ? (
+                  <p className="mb-2 px-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-surface-400 dark:text-surface-500">
+                    {group.title}
+                  </p>
+                ) : (
+                  <div className="mx-4 mb-2 h-px bg-surface-200 dark:bg-surface-700" aria-hidden />
+                )}
+                <ul className="space-y-1">
+                  {items.map((item) => {
+                    const ItemIcon = item.icon as any;
+                    const active = isActive(item.href, item.exact);
+                    return (
+                      <li key={item.href}>
+                        <Link
+                          href={item.href}
+                          aria-current={active ? 'page' : undefined}
+                          title={sidebarOpen ? undefined : item.label}
+                          className={`relative flex items-center gap-3 rounded-xl px-4 py-2.5 transition-colors duration-200 ${
+                            active
+                              ? 'bg-zona-50 font-medium text-zona-800 dark:bg-zona-900/40 dark:text-zona-200'
+                              : 'text-surface-600 hover:bg-surface-100 dark:text-surface-400 dark:hover:bg-surface-800'
+                          }`}
+                        >
+                          {active && (
+                            <motion.span
+                              layoutId="admin-nav-indicator"
+                              className="absolute left-0 top-2 bottom-2 w-1 rounded-full bg-zona-600 dark:bg-zona-400"
+                              transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+                            />
+                          )}
+                          <ItemIcon className="h-[18px] w-[18px] shrink-0" aria-hidden />
+                          {sidebarOpen && <span className="truncate text-sm">{item.label}</span>}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            );
+          })}
         </nav>
 
         {/* Toggle Button: en flujo normal al pie (el absoluto pisaba el último item) */}

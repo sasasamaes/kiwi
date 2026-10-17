@@ -407,7 +407,7 @@ export default function DriversPage() {
             {/* Search + status toggle */}
             <div className="mb-4 flex gap-2">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-500 dark:text-surface-400" />
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
@@ -487,7 +487,9 @@ export default function DriversPage() {
             </AnimatePresence>
 
             {loading ? (
-              <p className="text-sm text-surface-400">Cargando repartidores…</p>
+              <p className="text-sm text-surface-500 dark:text-surface-400">
+                Cargando repartidores…
+              </p>
             ) : error ? (
               <div className="rounded-2xl bg-white dark:bg-surface-800 p-8 text-center shadow-soft">
                 <p className="font-medium text-surface-600 dark:text-surface-300">{error}</p>
@@ -567,7 +569,7 @@ export default function DriversPage() {
                                   toggleFavorite(driver);
                                 }}
                                 title={isFav ? 'Quitar de favoritos' : 'Marcar favorito'}
-                                className="flex h-11 w-11 items-center justify-center rounded-lg text-surface-400 hover:text-gold-500 transition-colors"
+                                className="flex h-11 w-11 items-center justify-center rounded-lg text-surface-500 dark:text-surface-400 hover:text-gold-500 transition-colors"
                               >
                                 <Star
                                   className={`h-5 w-5 ${isFav ? 'fill-gold-500 text-gold-500' : ''}`}
@@ -580,7 +582,7 @@ export default function DriversPage() {
                                     openChat(driver);
                                   }}
                                   title="Chatear"
-                                  className="flex h-11 w-11 items-center justify-center rounded-lg text-surface-400 hover:text-kiwi-500 transition-colors"
+                                  className="flex h-11 w-11 items-center justify-center rounded-lg text-surface-500 dark:text-surface-400 hover:text-kiwi-500 transition-colors"
                                 >
                                   <MessageCircle className="h-5 w-5" />
                                 </button>
@@ -624,7 +626,9 @@ export default function DriversPage() {
                     ? 'Aún no tienes favoritos — toca la estrella en un repartidor'
                     : 'Sin resultados con ese filtro'}
                 </p>
-                <p className="text-sm text-surface-400">Prueba con otra búsqueda</p>
+                <p className="text-sm text-surface-500 dark:text-surface-400">
+                  Prueba con otra búsqueda
+                </p>
               </div>
             )}
           </>
@@ -729,7 +733,8 @@ function ContestPanel({
   onCancel: (id: string) => void;
   onRefresh: () => void;
 }) {
-  if (loading) return <p className="text-sm text-surface-400">Cargando concursos…</p>;
+  if (loading)
+    return <p className="text-sm text-surface-500 dark:text-surface-400">Cargando concursos…</p>;
   return (
     <div className="space-y-4">
       <div className="rounded-2xl bg-kiwi-50 dark:bg-kiwi-900/20 border border-kiwi-200 dark:border-kiwi-800 p-4">
@@ -755,7 +760,7 @@ function ContestPanel({
           <p className="font-medium text-surface-600 dark:text-surface-300">
             No hay pedidos en concurso
           </p>
-          <p className="text-sm text-surface-400">
+          <p className="text-sm text-surface-500 dark:text-surface-400">
             Crea uno sin asignar repartidor y aparece aquí en vivo
           </p>
         </div>
@@ -874,7 +879,7 @@ function DriverDetailModal({
           <button
             onClick={onClose}
             aria-label="Cerrar detalle"
-            className="rounded-lg p-1.5 text-surface-400 hover:text-surface-600 transition-colors shrink-0"
+            className="rounded-lg p-1.5 text-surface-500 dark:text-surface-400 hover:text-surface-600 transition-colors shrink-0"
           >
             <X className="h-5 w-5" />
           </button>
@@ -915,14 +920,14 @@ function DriverDetailModal({
           <button
             onClick={onToggleFav}
             title={isFav ? 'Quitar de favoritos' : 'Marcar favorito'}
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-surface-200 dark:border-surface-700 text-surface-400 hover:text-gold-500 transition-colors"
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-surface-200 dark:border-surface-700 text-surface-500 dark:text-surface-400 hover:text-gold-500 transition-colors"
           >
             <Star className={`h-5 w-5 ${isFav ? 'fill-gold-500 text-gold-500' : ''}`} />
           </button>
           {hasSharedOrder && (
             <button
               onClick={onChat}
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-surface-200 dark:border-surface-700 text-surface-400 hover:text-kiwi-500 transition-colors"
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-surface-200 dark:border-surface-700 text-surface-500 dark:text-surface-400 hover:text-kiwi-500 transition-colors"
               title="Chatear"
             >
               <MessageCircle className="h-5 w-5" />
@@ -1068,16 +1073,16 @@ function ChatDrawer({
           </div>
           <button
             onClick={onClose}
-            className="rounded-lg p-2 text-surface-400 hover:text-surface-700"
+            className="rounded-lg p-2 text-surface-500 dark:text-surface-400 hover:text-surface-700"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
         <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
           {loading ? (
-            <p className="text-sm text-surface-400">Cargando mensajes…</p>
+            <p className="text-sm text-surface-500 dark:text-surface-400">Cargando mensajes…</p>
           ) : messages.length === 0 ? (
-            <p className="text-sm text-surface-400 text-center mt-8">
+            <p className="text-sm text-surface-500 dark:text-surface-400 text-center mt-8">
               Sin mensajes todavía. ¡Saluda! 👋
             </p>
           ) : (

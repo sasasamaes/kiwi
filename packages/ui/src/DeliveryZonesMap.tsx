@@ -153,7 +153,7 @@ export function DeliveryZonesMap({
         style={{ height }}
       >
         <div className="px-6 text-center">
-          <AlertTriangle className="mx-auto mb-2 h-8 w-8 text-surface-400" />
+          <AlertTriangle className="mx-auto mb-2 h-8 w-8 text-surface-500 dark:text-surface-400" />
           <p className="mb-3 text-sm text-surface-500">{mapError}</p>
           <button
             className="rounded-xl bg-kiwi-700 px-4 py-2 text-sm font-semibold text-white"

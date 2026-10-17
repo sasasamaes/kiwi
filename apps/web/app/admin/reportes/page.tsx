@@ -467,7 +467,7 @@ export default function ReportesPage() {
           </div>
         </div>
         <div className="ml-auto flex flex-col items-end gap-2">
-          <p className="max-w-xs text-xs text-surface-400">
+          <p className="max-w-xs text-xs text-surface-500 dark:text-surface-400">
             Viaje esperado {fmt(expectedTrip)} × {commissionPct}% ={' '}
             <span className="font-semibold text-kiwi-700">{fmt(proj.perOrder)}</span> por pedido
           </p>
@@ -489,7 +489,7 @@ export default function ReportesPage() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <p className="text-xs text-surface-400">Real mes en curso</p>
+          <p className="text-xs text-surface-500 dark:text-surface-400">Real mes en curso</p>
           <p className="mt-1 text-2xl font-bold text-surface-800 dark:text-surface-100">
             {fmt(currentMonth?.commission ?? 0)}
           </p>
@@ -502,7 +502,10 @@ export default function ReportesPage() {
               {fmt(curNet)}
             </b>
             {curMarginPct != null && (
-              <span className="text-surface-400"> · margen {curMarginPct.toFixed(0)}%</span>
+              <span className="text-surface-500 dark:text-surface-400">
+                {' '}
+                · margen {curMarginPct.toFixed(0)}%
+              </span>
             )}
           </p>
         </motion.div>
@@ -512,7 +515,7 @@ export default function ReportesPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
         >
-          <p className="text-xs text-surface-400">Neta proyectada del mes</p>
+          <p className="text-xs text-surface-500 dark:text-surface-400">Neta proyectada del mes</p>
           <p
             className={`mt-1 text-2xl font-bold ${
               proj.netMonthly >= 0 ? 'text-kiwi-700' : 'text-red-500 dark:text-red-400'
@@ -530,7 +533,9 @@ export default function ReportesPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <p className="text-xs text-surface-400">Desviación neta (mes en curso)</p>
+          <p className="text-xs text-surface-500 dark:text-surface-400">
+            Desviación neta (mes en curso)
+          </p>
           {dev && dev.deltaPct != null && hasRealData ? (
             <>
               <p
@@ -553,7 +558,7 @@ export default function ReportesPage() {
             </>
           ) : (
             <>
-              <p className="mt-1 flex items-center gap-1.5 text-2xl font-bold text-surface-400">
+              <p className="mt-1 flex items-center gap-1.5 text-2xl font-bold text-surface-500 dark:text-surface-400">
                 <Minus className="h-5 w-5" /> —
               </p>
               <p className="text-xs text-surface-500">Sin viajes entregados aún este mes</p>
@@ -566,10 +571,13 @@ export default function ReportesPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
         >
-          <p className="text-xs text-surface-400">Ritmo de viajes (día)</p>
+          <p className="text-xs text-surface-500 dark:text-surface-400">Ritmo de viajes (día)</p>
           <p className="mt-1 text-2xl font-bold text-surface-800 dark:text-surface-100">
             {dev ? dev.realPerDay.toFixed(1) : '—'}
-            <span className="text-base font-medium text-surface-400"> / {ordersPerDay}</span>
+            <span className="text-base font-medium text-surface-500 dark:text-surface-400">
+              {' '}
+              / {ordersPerDay}
+            </span>
           </p>
           <p className="text-xs text-surface-500">
             {dev ? `meta del escenario: ${ordersPerDay}/día` : 'sin datos del mes'}
@@ -577,7 +585,7 @@ export default function ReportesPage() {
         </motion.div>
       </div>
 
-      <p className="-mt-4 text-xs text-surface-400">
+      <p className="-mt-4 text-xs text-surface-500 dark:text-surface-400">
         Costos aplicados: fijos {fmt(costs.fixedMonthlyCost)} · soporte {fmt(costs.supportPerTrip)}
         /viaje · pasarela {costs.gatewayPct}% sobre {costs.digitalPct}% digital del GMV —{' '}
         <button
@@ -673,7 +681,7 @@ export default function ReportesPage() {
             >
               Cancelar
             </button>
-            <p className="text-xs text-surface-400">
+            <p className="text-xs text-surface-500 dark:text-surface-400">
               Se guardan para todo el sistema (también en Configuración → Costos).
             </p>
           </div>
@@ -711,7 +719,7 @@ export default function ReportesPage() {
         <div className="rounded-2xl bg-white p-5 shadow-soft dark:bg-surface-800">
           <p className="mb-3 text-sm font-medium text-surface-600 dark:text-surface-300">
             Ganancia neta real por mes{' '}
-            <span className="text-surface-400">
+            <span className="text-surface-500 dark:text-surface-400">
               — línea punteada: neta proyectada ({fmt(proj.netMonthly)}/mes)
             </span>{' '}
             <span className="text-kiwi-700">◆ escenario fijado</span>
@@ -735,7 +743,7 @@ export default function ReportesPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-surface-200 text-left text-xs text-surface-400 dark:border-surface-700">
+              <tr className="border-b border-surface-200 text-left text-xs text-surface-500 dark:text-surface-400 dark:border-surface-700">
                 <th className="px-4 py-3 font-medium">Mes</th>
                 <th className="px-4 py-3 text-right font-medium">Viajes</th>
                 <th className="px-4 py-3 text-right font-medium">Viajes/día</th>
@@ -795,7 +803,7 @@ export default function ReportesPage() {
                     <td
                       className={`px-4 py-2.5 text-right font-medium ${
                         t == null
-                          ? 'text-surface-400'
+                          ? 'text-surface-500 dark:text-surface-400'
                           : t.delta >= 0
                             ? 'text-kiwi-700 dark:text-kiwi-400'
                             : 'text-red-500 dark:text-red-400'
@@ -835,7 +843,7 @@ export default function ReportesPage() {
                     <td
                       className={`px-4 py-2.5 text-right font-medium ${
                         zero
-                          ? 'text-surface-400'
+                          ? 'text-surface-500 dark:text-surface-400'
                           : delta >= 0
                             ? 'text-kiwi-700'
                             : 'text-red-500 dark:text-red-400'
@@ -863,14 +871,14 @@ export default function ReportesPage() {
           <p className="mb-1 text-sm font-medium text-surface-600 dark:text-surface-300">
             Historial de escenarios
           </p>
-          <p className="mb-3 text-xs text-surface-400">
+          <p className="mb-3 text-xs text-surface-500 dark:text-surface-400">
             Lo que se proyectó al fijar cada mes contra la neta real que después ocurrió. Desviación
             positiva = el mes rindió mejor que lo planeado.
           </p>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-surface-200 text-left text-xs text-surface-400 dark:border-surface-700">
+                <tr className="border-b border-surface-200 text-left text-xs text-surface-500 dark:text-surface-400 dark:border-surface-700">
                   <th className="px-4 py-3 font-medium">Mes fijado</th>
                   <th className="px-4 py-3 font-medium">Escenario</th>
                   <th className="px-4 py-3 text-right font-medium">Tasa</th>
@@ -910,7 +918,7 @@ export default function ReportesPage() {
                       <td
                         className={`px-4 py-2.5 text-right font-semibold ${
                           realNet == null
-                            ? 'text-surface-400'
+                            ? 'text-surface-500 dark:text-surface-400'
                             : realNet >= 0
                               ? 'text-kiwi-700 dark:text-kiwi-400'
                               : 'text-red-500 dark:text-red-400'
@@ -921,7 +929,7 @@ export default function ReportesPage() {
                       <td
                         className={`px-4 py-2.5 text-right font-medium ${
                           d == null
-                            ? 'text-surface-400'
+                            ? 'text-surface-500 dark:text-surface-400'
                             : d >= 0
                               ? 'text-kiwi-700 dark:text-kiwi-400'
                               : 'text-red-500 dark:text-red-400'
@@ -935,7 +943,7 @@ export default function ReportesPage() {
                                 : ''
                             }`}
                       </td>
-                      <td className="px-4 py-2.5 text-right text-xs text-surface-400">
+                      <td className="px-4 py-2.5 text-right text-xs text-surface-500 dark:text-surface-400">
                         {new Date(h.createdAt).toLocaleDateString('es-CR', {
                           day: 'numeric',
                           month: 'short',
@@ -955,14 +963,14 @@ export default function ReportesPage() {
         <p className="mb-1 text-sm font-medium text-surface-600 dark:text-surface-300">
           Desviación por zona
         </p>
-        <p className="mb-3 text-xs text-surface-400">
+        <p className="mb-3 text-xs text-surface-500 dark:text-surface-400">
           Viajes reales del mes en curso contra lo proyectado según el peso del mix real y el
           escenario de {ordersPerDay} pedidos/día
         </p>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-surface-200 text-left text-xs text-surface-400 dark:border-surface-700">
+              <tr className="border-b border-surface-200 text-left text-xs text-surface-500 dark:text-surface-400 dark:border-surface-700">
                 <th className="px-4 py-3 font-medium">Zona</th>
                 <th className="px-4 py-3 text-right font-medium">Peso mix</th>
                 <th className="px-4 py-3 text-right font-medium">Real mes</th>
@@ -989,7 +997,7 @@ export default function ReportesPage() {
                   <td
                     className={`px-4 py-2.5 text-right font-medium ${
                       z.realTrips === 0
-                        ? 'text-surface-400'
+                        ? 'text-surface-500 dark:text-surface-400'
                         : z.delta >= 0
                           ? 'text-kiwi-700'
                           : 'text-red-500 dark:text-red-400'

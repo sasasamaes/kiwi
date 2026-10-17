@@ -141,7 +141,7 @@ export function OrderSearch({
       {/* Search Bar */}
       <div className="relative">
         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-          <span className="text-surface-400">
+          <span className="text-surface-500 dark:text-surface-400">
             <Search className="h-4 w-4" />
           </span>
         </div>
@@ -155,7 +155,7 @@ export function OrderSearch({
         {search && (
           <button
             onClick={() => setSearch('')}
-            className="absolute inset-y-0 right-0 pr-4 flex items-center text-surface-400 hover:text-surface-600"
+            className="absolute inset-y-0 right-0 pr-4 flex items-center text-surface-500 dark:text-surface-400 hover:text-surface-600"
           >
             ✕
           </button>
@@ -248,7 +248,9 @@ export function OrderSearch({
                     onChange={(e) => setDateRange((prev) => ({ ...prev, start: e.target.value }))}
                     className="flex-1 px-3 py-2 bg-surface-100 dark:bg-surface-700 border border-surface-200 dark:border-surface-600 rounded-lg text-sm text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
                   />
-                  <span className="flex items-center text-surface-400">-</span>
+                  <span className="flex items-center text-surface-500 dark:text-surface-400">
+                    -
+                  </span>
                   <input
                     type="date"
                     value={dateRange.end}

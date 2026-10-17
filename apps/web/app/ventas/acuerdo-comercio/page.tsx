@@ -126,7 +126,7 @@ export default function AcuerdoComercioPage() {
             </div>
           </div>
 
-          <p className="text-[11px] text-surface-400 mt-8 border-t pt-3">
+          <p className="text-[11px] text-surface-500 dark:text-surface-400 mt-8 border-t pt-3">
             Documento de inténto de negocio simplificado, no constituye un contrato mercantil
             formal. Cualquier disputa se resuelve de buena fe entre las partes. Vigencia de
             condiciones según la versión publicada por Kiwi en la fecha de firma.

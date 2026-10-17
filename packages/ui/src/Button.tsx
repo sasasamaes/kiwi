@@ -34,7 +34,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       'inline-flex items-center justify-center font-medium transition-all duration-200',
       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
       'disabled:pointer-events-none disabled:opacity-50',
-      'active:scale-[0.98]',
+      'active:scale-[0.97] press',
       fullWidth && 'w-full',
     );
 
@@ -42,7 +42,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     const variants = {
       primary: cn(
         'bg-kiwi-700 text-white',
-        'hover:bg-kiwi-700 hover:shadow-kiwi',
+        'hover:bg-kiwi-800 hover:shadow-kiwi',
         'focus-visible:ring-kiwi-600',
         'shadow-soft-md',
         'rounded-xl',

@@ -23,7 +23,9 @@ export default function DriverLanding() {
           <Link href="/landing" className="flex items-center gap-2" aria-label="Kiwi inicio">
             <KiwiLogo size={28} />
             <span className="font-display text-lg font-bold tracking-tight">
-              <span className="font-medium text-surface-400">Repartidores</span>
+              <span className="font-medium text-surface-500 dark:text-surface-400">
+                Repartidores
+              </span>
             </span>
           </Link>
           <nav className="hidden items-center gap-8 text-sm font-medium text-surface-500 md:flex dark:text-surface-400">
@@ -157,7 +159,7 @@ export default function DriverLanding() {
               return (
                 <motion.div
                   key={i}
-                  className="flex items-center gap-2 text-surface-400 dark:text-surface-500"
+                  className="flex items-center gap-2 text-surface-500 dark:text-surface-400 dark:text-surface-500"
                   whileHover={{ scale: 1.05, color: '#22c55e' }}
                 >
                   <ProofIcon className="h-5 w-5" />
@@ -386,27 +388,27 @@ export default function DriverLanding() {
           <motion.div className="flex items-center gap-2" whileHover={{ scale: 1.05 }}>
             <KiwiLogo size={26} />
           </motion.div>
-          <p className="text-sm text-surface-400">
+          <p className="text-sm text-surface-500 dark:text-surface-400">
             © 2026 Kiwi. Hecho con 💚 en Nicoya, Costa Rica
           </p>
           <div className="flex gap-4 text-sm">
             <motion.a
               href="/terms"
-              className="text-surface-400 transition-colors hover:text-kiwi-500"
+              className="text-surface-500 dark:text-surface-400 transition-colors hover:text-kiwi-500"
               whileHover={{ y: -2 }}
             >
               Términos
             </motion.a>
             <motion.a
               href="/privacy"
-              className="text-surface-400 transition-colors hover:text-kiwi-500"
+              className="text-surface-500 dark:text-surface-400 transition-colors hover:text-kiwi-500"
               whileHover={{ y: -2 }}
             >
               Privacidad
             </motion.a>
             <motion.a
               href="/cookies"
-              className="text-surface-400 transition-colors hover:text-kiwi-500"
+              className="text-surface-500 dark:text-surface-400 transition-colors hover:text-kiwi-500"
               whileHover={{ y: -2 }}
             >
               Cookies

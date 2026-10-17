@@ -557,7 +557,7 @@ export default function MerchantAnalyticsPage() {
                   );
                 })}
               </div>
-              <div className="flex justify-between mt-2 text-xs text-surface-400">
+              <div className="flex justify-between mt-2 text-xs text-surface-500 dark:text-surface-400">
                 <span>7am</span>
                 <span>12pm</span>
                 <span>5pm</span>
@@ -694,7 +694,7 @@ export default function MerchantAnalyticsPage() {
                   </motion.button>
                 </Link>
               ) : (
-                <div className="w-full p-4 rounded-xl bg-surface-100 dark:bg-surface-800 text-surface-400 text-sm font-medium text-center">
+                <div className="w-full p-4 rounded-xl bg-surface-100 dark:bg-surface-800 text-surface-500 dark:text-surface-400 text-sm font-medium text-center">
                   Mi QR
                 </div>
               )}

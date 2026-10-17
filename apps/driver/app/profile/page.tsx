@@ -482,7 +482,7 @@ export default function Profile() {
             {visible ? (
               <Eye className="h-6 w-6 text-kiwi-500" />
             ) : (
-              <EyeOff className="h-6 w-6 text-surface-400" />
+              <EyeOff className="h-6 w-6 text-surface-500 dark:text-surface-400" />
             )}
             <div className="flex-1">
               <p className="font-medium text-surface-800 dark:text-surface-200">
@@ -643,7 +643,7 @@ export default function Profile() {
                 Cobros con tarjeta activos ✓
               </p>
               <div className="mt-5 border-t border-surface-100 dark:border-surface-700/60 pt-4">
-                <p className="text-xs font-bold uppercase tracking-wider text-surface-400 mb-3">
+                <p className="text-xs font-bold uppercase tracking-wider text-surface-500 dark:text-surface-400 mb-3">
                   Cobros liquidados
                 </p>
                 {mpPaymentsLoading ? (

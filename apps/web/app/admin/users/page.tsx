@@ -350,7 +350,10 @@ export default function UsersPage() {
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan={7} className="py-8 text-center text-sm text-surface-400">
+                      <td
+                        colSpan={7}
+                        className="py-8 text-center text-sm text-surface-500 dark:text-surface-400"
+                      >
                         Cargando usuarios…
                       </td>
                     </tr>
@@ -448,7 +451,9 @@ export default function UsersPage() {
           </motion.div>
 
           {!loading && users.length === 0 && !error && (
-            <p className="text-center text-sm text-surface-400">Sin usuarios con ese filtro.</p>
+            <p className="text-center text-sm text-surface-500 dark:text-surface-400">
+              Sin usuarios con ese filtro.
+            </p>
           )}
         </div>
 

@@ -110,7 +110,7 @@ function SyncItem({ item, onCancel }: SyncItemProps) {
       {item.status === 'syncing' && onCancel && (
         <motion.button
           onClick={() => onCancel(item.id)}
-          className="text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
+          className="text-surface-500 dark:text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
           whileTap={{ scale: 0.9 }}
         >
           ✕
@@ -216,7 +216,7 @@ export function SyncProgressBar({
             {showItems && (
               <motion.button
                 onClick={() => setIsExpanded(!isExpanded)}
-                className="text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
+                className="text-surface-500 dark:text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
                 whileTap={{ scale: 0.9 }}
               >
                 <motion.span animate={{ rotate: isExpanded ? 180 : 0 }} className="block">

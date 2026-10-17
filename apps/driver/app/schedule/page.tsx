@@ -360,7 +360,10 @@ export default function Schedule() {
             <span className="flex items-center gap-2 text-sm font-medium text-surface-700 dark:text-surface-300">
               <Zap className="h-4 w-4 text-gold-500" /> Atajos rápidos
             </span>
-            <motion.span animate={{ rotate: showPresets ? 180 : 0 }} className="text-surface-400">
+            <motion.span
+              animate={{ rotate: showPresets ? 180 : 0 }}
+              className="text-surface-500 dark:text-surface-400"
+            >
               <ChevronDown className="h-4 w-4" />
             </motion.span>
           </motion.button>
@@ -384,7 +387,7 @@ export default function Schedule() {
                       <preset.icon className="h-4 w-4 text-kiwi-500" />
                       {preset.name}
                     </span>
-                    <span className="block text-xs text-surface-400 mt-1">
+                    <span className="block text-xs text-surface-500 dark:text-surface-400 mt-1">
                       {preset.hours.length} horas
                     </span>
                   </motion.button>
@@ -547,7 +550,7 @@ export default function Schedule() {
                 </h3>
                 <button
                   onClick={() => setShowCopyModal(false)}
-                  className="text-surface-400 hover:text-surface-600"
+                  className="text-surface-500 dark:text-surface-400 hover:text-surface-600"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -576,7 +579,7 @@ export default function Schedule() {
                         <DayIcon className="h-4 w-4 text-kiwi-500" />
                         {day.short}
                       </span>
-                      <span className="block text-xs text-surface-400 mt-1">
+                      <span className="block text-xs text-surface-500 dark:text-surface-400 mt-1">
                         {index === selectedDay
                           ? 'Origen'
                           : `${(schedule[index] || []).length} horas actuales`}

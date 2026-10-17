@@ -390,7 +390,9 @@ function DailyForecastTab({ lat, lng }: { lat: number; lng: number }) {
                     }}
                   />
                   {hour.hour % 6 === 0 && (
-                    <p className="text-[8px] text-surface-400 mt-1">{hour.hour}</p>
+                    <p className="text-[8px] text-surface-500 dark:text-surface-400 mt-1">
+                      {hour.hour}
+                    </p>
                   )}
                 </div>
               ))}

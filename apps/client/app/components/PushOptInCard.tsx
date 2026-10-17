@@ -103,7 +103,7 @@ export function PushOptInCard() {
         <button
           onClick={dismiss}
           aria-label="Descartar"
-          className="rounded-full p-1 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
+          className="rounded-full p-1 text-surface-500 dark:text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
         >
           <X className="h-4 w-4" />
         </button>

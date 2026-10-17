@@ -228,7 +228,7 @@ export default function SimuladorPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-surface-200 dark:border-surface-700 text-left text-xs text-surface-400">
+                  <tr className="border-b border-surface-200 dark:border-surface-700 text-left text-xs text-surface-500 dark:text-surface-400">
                     <th className="px-4 py-3 font-medium">Zona</th>
                     <th className="px-4 py-3 text-right font-medium">Pedidos</th>
                     <th className="px-4 py-3 text-right font-medium">Peso</th>

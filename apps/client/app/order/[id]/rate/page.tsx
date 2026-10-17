@@ -332,7 +332,9 @@ export default function RateOrderPage() {
                 placeholder="Cuéntanos algo sobre la entrega…"
                 className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 p-3 text-sm text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
               />
-              <p className="mt-1 text-right text-xs text-surface-400">{comment.length}/500</p>
+              <p className="mt-1 text-right text-xs text-surface-500 dark:text-surface-400">
+                {comment.length}/500
+              </p>
             </div>
           </motion.div>
         )}

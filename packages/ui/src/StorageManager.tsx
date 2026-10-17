@@ -168,7 +168,7 @@ export function StorageManager({ className = '', showDetails = false }: StorageM
                   💾 Gestión de Almacenamiento
                 </h3>
                 <motion.button
-                  className="text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
+                  className="text-surface-500 dark:text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
                   onClick={() => setShowPanel(false)}
                   whileTap={{ scale: 0.9 }}
                 >

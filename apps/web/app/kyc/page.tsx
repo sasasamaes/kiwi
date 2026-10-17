@@ -106,21 +106,27 @@ export default function MerchantKYCPage() {
               <span className="text-2xl">🪪</span>
               <div>
                 <p className="font-medium text-surface-700">Identificación Personal</p>
-                <p className="text-xs text-surface-400">Cédula o pasaporte (frente y reverso)</p>
+                <p className="text-xs text-surface-500 dark:text-surface-400">
+                  Cédula o pasaporte (frente y reverso)
+                </p>
               </div>
             </div>
             <div className="flex items-start gap-3 p-4 rounded-xl bg-surface-50">
               <span className="text-2xl">🤳</span>
               <div>
                 <p className="font-medium text-surface-700">Selfie con Documento</p>
-                <p className="text-xs text-surface-400">Rostro visible sosteniendo tu ID</p>
+                <p className="text-xs text-surface-500 dark:text-surface-400">
+                  Rostro visible sosteniendo tu ID
+                </p>
               </div>
             </div>
             <div className="flex items-start gap-3 p-4 rounded-xl bg-surface-50">
               <span className="text-2xl">🏪</span>
               <div>
                 <p className="font-medium text-surface-700">Licencia Comercial</p>
-                <p className="text-xs text-surface-400">Patente municipal o cédula jurídica</p>
+                <p className="text-xs text-surface-500 dark:text-surface-400">
+                  Patente municipal o cédula jurídica
+                </p>
               </div>
             </div>
             <div className="flex items-start gap-3 p-4 rounded-xl bg-surface-50">
@@ -129,7 +135,9 @@ export default function MerchantKYCPage() {
               </span>
               <div>
                 <p className="font-medium text-surface-700">Foto del Local</p>
-                <p className="text-xs text-surface-400">Exterior del negocio con letrero visible</p>
+                <p className="text-xs text-surface-500 dark:text-surface-400">
+                  Exterior del negocio con letrero visible
+                </p>
               </div>
             </div>
           </div>
@@ -156,7 +164,7 @@ export default function MerchantKYCPage() {
                   }
                 }}
               />
-              <div className="my-4 flex items-center gap-3 text-xs text-surface-400">
+              <div className="my-4 flex items-center gap-3 text-xs text-surface-500 dark:text-surface-400">
                 <span className="h-px flex-1 bg-surface-200" />
                 o subí tus documentos
                 <span className="h-px flex-1 bg-surface-200" />
@@ -217,7 +225,7 @@ export default function MerchantKYCPage() {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4 }}
         >
-          <p className="text-sm text-surface-400">
+          <p className="text-sm text-surface-500 dark:text-surface-400">
             ¿Necesitas ayuda?{' '}
             <a href="https://wa.me/50688888888" className="text-kiwi-700 hover:underline">
               Contáctanos por WhatsApp

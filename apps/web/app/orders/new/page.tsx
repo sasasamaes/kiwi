@@ -1087,7 +1087,7 @@ function NewOrderInner({
                     })}
                   </div>
                   {menuFiltered.length === 0 && (
-                    <p className="text-sm text-surface-400 mb-3">
+                    <p className="text-sm text-surface-500 dark:text-surface-400 mb-3">
                       Sin resultados. Agrega un producto personalizado:
                     </p>
                   )}
@@ -1127,7 +1127,7 @@ function NewOrderInner({
                             </span>
                             <button
                               onClick={() => bumpItem(i.id, -1)}
-                              className="text-surface-400 hover:text-red-500"
+                              className="text-surface-500 dark:text-surface-400 hover:text-red-500"
                             >
                               ✕
                             </button>
@@ -1174,7 +1174,7 @@ function NewOrderInner({
                       placeholder="Peso en kg"
                       className="flex-1 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm"
                     />
-                    <span className="text-xs text-surface-400">
+                    <span className="text-xs text-surface-500 dark:text-surface-400">
                       5 kg incluidos · +₡500/kg extra
                     </span>
                   </div>
@@ -1222,7 +1222,7 @@ function NewOrderInner({
                         onSelect={setDeliveryZone}
                         height={300}
                       />
-                      <p className="mt-1 text-[11px] text-surface-400">
+                      <p className="mt-1 text-[11px] text-surface-500 dark:text-surface-400">
                         Tocá un precio para elegir esa zona. Son puntos de referencia, no límites
                         del barrio.
                       </p>
@@ -1310,11 +1310,13 @@ function NewOrderInner({
                 ⭐ Favoritos
               </h3>
               {driversLoading ? (
-                <p className="text-sm text-surface-400">Cargando…</p>
+                <p className="text-sm text-surface-500 dark:text-surface-400">Cargando…</p>
               ) : (
                 <div className="space-y-2 mb-4">
                   {favoriteDrivers.length === 0 && (
-                    <p className="text-xs text-surface-400">Sin favoritos todavía.</p>
+                    <p className="text-xs text-surface-500 dark:text-surface-400">
+                      Sin favoritos todavía.
+                    </p>
                   )}
                   {favoriteDrivers.map((d) => (
                     <DriverRow
@@ -1332,7 +1334,7 @@ function NewOrderInner({
                   {availableDrivers.filter(
                     (d) => d.status === 'available' && !favoriteDrivers.some((f) => f.id === d.id),
                   ).length === 0 && (
-                    <p className="text-xs text-surface-400">
+                    <p className="text-xs text-surface-500 dark:text-surface-400">
                       Nadie disponible ahora. Quedará en concurso.
                     </p>
                   )}

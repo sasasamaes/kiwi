@@ -475,7 +475,7 @@ export default function MenuManagementPage() {
                 </h3>
                 <motion.button
                   onClick={() => setShowCategoryManager(false)}
-                  className="text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
+                  className="text-surface-500 dark:text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                 >
@@ -1051,7 +1051,7 @@ export default function MenuManagementPage() {
                             </h3>
                             <motion.button
                               onClick={() => setShowKioskManager(false)}
-                              className="text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
+                              className="text-surface-500 dark:text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
                               whileHover={{ scale: 1.1 }}
                               whileTap={{ scale: 0.9 }}
                             >
@@ -1092,7 +1092,9 @@ export default function MenuManagementPage() {
                           {kioskError && <p className="mb-3 text-sm text-red-500">{kioskError}</p>}
                           <div className="space-y-2">
                             {kiosks.length === 0 && (
-                              <p className="text-sm text-surface-400">Sin kioskos todavía.</p>
+                              <p className="text-sm text-surface-500 dark:text-surface-400">
+                                Sin kioskos todavía.
+                              </p>
                             )}
                             {kiosks.map((k) => (
                               <div
@@ -1163,7 +1165,7 @@ export default function MenuManagementPage() {
                                       <p className="font-medium text-surface-800 dark:text-surface-100">
                                         🏪 {k.name}
                                         {!k.active && (
-                                          <span className="ml-2 text-xs text-surface-400">
+                                          <span className="ml-2 text-xs text-surface-500 dark:text-surface-400">
                                             (pausado)
                                           </span>
                                         )}
@@ -1183,7 +1185,7 @@ export default function MenuManagementPage() {
                                           imageUrl: k.imageUrl,
                                         })
                                       }
-                                      className="p-1.5 text-surface-400 hover:text-kiwi-600"
+                                      className="p-1.5 text-surface-500 dark:text-surface-400 hover:text-kiwi-600"
                                       title="Editar"
                                     >
                                       <Pencil className="h-4 w-4" />
@@ -1197,7 +1199,7 @@ export default function MenuManagementPage() {
                                     </button>
                                     <button
                                       onClick={() => handleDeleteKiosk(k.id)}
-                                      className="p-1.5 text-surface-400 hover:text-red-500"
+                                      className="p-1.5 text-surface-500 dark:text-surface-400 hover:text-red-500"
                                       title="Borrar (los productos quedan)"
                                     >
                                       <Trash2 className="h-4 w-4" />

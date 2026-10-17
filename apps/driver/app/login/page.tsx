@@ -83,7 +83,7 @@ export default function DriverLoginPage() {
         animate={{ opacity: 1 }}
         transition={{ delay: 1 }}
       >
-        <p className="flex flex-wrap items-center justify-center gap-x-1 gap-y-2 text-xs text-surface-400">
+        <p className="flex flex-wrap items-center justify-center gap-x-1 gap-y-2 text-xs text-surface-500 dark:text-surface-400">
           Al iniciar sesión, aceptas nuestros{' '}
           <a
             href="/terms"

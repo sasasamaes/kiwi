@@ -399,7 +399,9 @@ export default function MerchantTrafficAnalytics() {
                 <p className="text-sm text-surface-500 mb-4">Tráfico libre o ligero observado</p>
                 <div className="space-y-3">
                   {bestByHour.length === 0 && (
-                    <p className="text-sm text-surface-400">Sin datos suficientes todavía.</p>
+                    <p className="text-sm text-surface-500 dark:text-surface-400">
+                      Sin datos suficientes todavía.
+                    </p>
                   )}
                   {bestByHour.map((t) => (
                     <div
@@ -426,7 +428,9 @@ export default function MerchantTrafficAnalytics() {
                 <p className="text-sm text-surface-500 mb-4">Evítalas o avisa retrasos</p>
                 <div className="space-y-3">
                   {worstByHour.length === 0 && (
-                    <p className="text-sm text-surface-400">Sin congestión registrada. 🎉</p>
+                    <p className="text-sm text-surface-500 dark:text-surface-400">
+                      Sin congestión registrada. 🎉
+                    </p>
                   )}
                   {worstByHour.map((t) => (
                     <div
@@ -501,7 +505,9 @@ export default function MerchantTrafficAnalytics() {
             >
               <h2 className="text-lg font-display font-bold mb-6">📈 Entregas por día</h2>
               {dailyOrders.length === 0 ? (
-                <p className="text-sm text-surface-400">Sin entregas en el período.</p>
+                <p className="text-sm text-surface-500 dark:text-surface-400">
+                  Sin entregas en el período.
+                </p>
               ) : (
                 <div className="overflow-x-auto">
                   <div className="flex gap-2 min-w-[600px]">

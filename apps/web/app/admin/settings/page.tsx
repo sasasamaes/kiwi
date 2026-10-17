@@ -224,7 +224,7 @@ export default function SettingsPage() {
                 }
                 className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
               />
-              <p className="mt-1 text-xs text-surface-400">
+              <p className="mt-1 text-xs text-surface-500 dark:text-surface-400">
                 Extra que paga el cliente sobre productos. El corte del viaje al repartidor usa esta
                 misma tasa. Rige para pedidos nuevos (cada pedido guarda su tasa).
               </p>
@@ -248,7 +248,7 @@ export default function SettingsPage() {
                 }
                 className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
               />
-              <p className="mt-1 text-xs text-surface-400">
+              <p className="mt-1 text-xs text-surface-500 dark:text-surface-400">
                 Incentivo a emprendedores (10%). Solo el cargo sobre productos; el corte del viaje
                 al repartidor sigue con la tasa standard. Solo pedidos nuevos.
               </p>
@@ -349,7 +349,7 @@ export default function SettingsPage() {
                 }
                 className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
               />
-              <p className="mt-1 text-xs text-surface-400">
+              <p className="mt-1 text-xs text-surface-500 dark:text-surface-400">
                 Hosting, infraestructura, equipo base.
               </p>
             </div>
@@ -373,7 +373,7 @@ export default function SettingsPage() {
                 }
                 className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
               />
-              <p className="mt-1 text-xs text-surface-400">
+              <p className="mt-1 text-xs text-surface-500 dark:text-surface-400">
                 Chats, llamadas e incidencias por pedido entregado.
               </p>
             </div>
@@ -399,7 +399,7 @@ export default function SettingsPage() {
                 }
                 className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
               />
-              <p className="mt-1 text-xs text-surface-400">
+              <p className="mt-1 text-xs text-surface-500 dark:text-surface-400">
                 Comisión de tarjeta/SINPE web del banco o procesador.
               </p>
             </div>
@@ -424,7 +424,7 @@ export default function SettingsPage() {
                 }
                 className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
               />
-              <p className="mt-1 text-xs text-surface-400">
+              <p className="mt-1 text-xs text-surface-500 dark:text-surface-400">
                 El fee solo aplica a la parte digital del GMV — el efectivo no pasa por la pasarela.
               </p>
             </div>

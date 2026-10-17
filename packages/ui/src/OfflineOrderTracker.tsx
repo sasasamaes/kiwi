@@ -247,7 +247,9 @@ export function OfflineOrderTracker({
               </div>
             ))}
             {order.items.length > 3 && (
-              <p className="text-xs text-surface-400">+{order.items.length - 3} más</p>
+              <p className="text-xs text-surface-500 dark:text-surface-400">
+                +{order.items.length - 3} más
+              </p>
             )}
           </div>
           <div className="flex justify-between pt-2 mt-2 border-t border-surface-200 dark:border-surface-700">
@@ -284,7 +286,7 @@ export function OfflineOrderTracker({
                   <span className="text-surface-600 dark:text-surface-400">
                     {STATUS_CONFIG[entry.status]?.label}
                   </span>
-                  <span className="text-xs text-surface-400 ml-auto">
+                  <span className="text-xs text-surface-500 dark:text-surface-400 ml-auto">
                     {new Date(entry.timestamp).toLocaleTimeString('es-CR', {
                       hour: '2-digit',
                       minute: '2-digit',

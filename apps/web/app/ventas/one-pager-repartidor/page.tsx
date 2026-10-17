@@ -107,7 +107,7 @@ export default function OnePagerDriverPage() {
               })}
             </tbody>
           </table>
-          <p className="text-[11px] text-surface-400 mb-6">
+          <p className="text-[11px] text-surface-500 dark:text-surface-400 mb-6">
             Comisión de plataforma: 15% del viaje. Las encomiendas pagan ₡500 por kilo extra después
             de 5 kg, y ese extra también suma a tu pago.
           </p>
@@ -131,7 +131,7 @@ export default function OnePagerDriverPage() {
             </div>
           </div>
 
-          <p className="text-[11px] text-surface-400 mt-8 border-t pt-3">
+          <p className="text-[11px] text-surface-500 dark:text-surface-400 mt-8 border-t pt-3">
             Los montos son estimados basados en la tarifa vigente por zona y el 15% de comisión; el
             pago real de cada viaje se muestra en la app antes de aceptarlo. La demanda varía por
             horario y temporada. Kiwi · Nicoya, Costa Rica.

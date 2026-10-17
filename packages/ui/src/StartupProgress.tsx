@@ -207,7 +207,7 @@ export function StartupProgress({
                             ? 'text-orange-500'
                             : task.priority === 'normal'
                               ? 'text-blue-500'
-                              : 'text-surface-400'
+                              : 'text-surface-500 dark:text-surface-400'
                       }`}
                     >
                       {task.priority}

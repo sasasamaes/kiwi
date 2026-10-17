@@ -374,7 +374,7 @@ export default function OrdersPage() {
 
         {/* Buscador */}
         <div className="relative mt-3">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-500 dark:text-surface-400" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -430,7 +430,7 @@ export default function OrdersPage() {
                         {STATUS_LABEL[order.status] ?? order.status}
                       </span>
                       <motion.span animate={{ rotate: open ? 180 : 0 }}>
-                        <ChevronDown className="h-4 w-4 text-surface-400" />
+                        <ChevronDown className="h-4 w-4 text-surface-500 dark:text-surface-400" />
                       </motion.span>
                     </div>
                   </button>
@@ -447,7 +447,9 @@ export default function OrdersPage() {
                           {/* Cliente */}
                           <div className="flex items-center justify-between rounded-xl bg-surface-50 dark:bg-surface-800 p-3">
                             <div className="min-w-0">
-                              <p className="text-xs text-surface-400">Cliente</p>
+                              <p className="text-xs text-surface-500 dark:text-surface-400">
+                                Cliente
+                              </p>
                               <p className="truncate text-sm font-semibold">{clientName}</p>
                               {client.phone && (
                                 <p className="text-xs text-surface-500">{client.phone}</p>
@@ -462,7 +464,7 @@ export default function OrdersPage() {
                               </a>
                             )}
                           </div>
-                          <p className="font-mono text-xs text-surface-400">
+                          <p className="font-mono text-xs text-surface-500 dark:text-surface-400">
                             Pedido #{order.id.slice(-4).toUpperCase()}
                           </p>
                           {/* Timeline */}
@@ -474,7 +476,7 @@ export default function OrdersPage() {
                                     className={`flex h-6 w-6 items-center justify-center rounded-full ${
                                       s.done
                                         ? 'bg-kiwi-700 text-white'
-                                        : 'bg-surface-200 dark:bg-surface-700 text-surface-400'
+                                        : 'bg-surface-200 dark:bg-surface-700 text-surface-500 dark:text-surface-400'
                                     }`}
                                   >
                                     {s.done ? (
@@ -490,7 +492,7 @@ export default function OrdersPage() {
                                 <div className="pb-4">
                                   <p className="text-sm font-medium">{s.label}</p>
                                   {s.at && (
-                                    <p className="text-xs text-surface-400">
+                                    <p className="text-xs text-surface-500 dark:text-surface-400">
                                       {new Date(s.at).toLocaleString('es-CR', {
                                         timeZone: 'America/Costa_Rica',
                                         day: 'numeric',

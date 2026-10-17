@@ -1,6 +1,6 @@
 // Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 import type { Metadata, Viewport } from 'next';
-import { Inter } from 'next/font/google';
+import { Inter, Fraunces } from 'next/font/google';
 import './globals.css';
 import {
   ThemeProvider,
@@ -12,6 +12,12 @@ import {
   SkipToContent,
 } from '@kiwi/ui';
 import { UnauthorizedHandler } from './components/UnauthorizedHandler';
+
+const fraunces = Fraunces({
+  subsets: ['latin'],
+  variable: '--font-fraunces',
+  display: 'swap',
+});
 
 const inter = Inter({
   subsets: ['latin'],
@@ -31,15 +37,15 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: 'Kiwi - Menu',
-  description: 'Ordena desde tu restaurante favorito',
-  themeColor: '#22c55e',
+  title: 'Kiwi · Delivery Blue Zone App',
+  description: 'Comida, encomiendas y productos de Nicoya con entrega en la Zona Azul.',
+  themeColor: '#195a77',
   manifest: '/manifest.json',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es" className={`${inter.variable}`} suppressHydrationWarning>
+    <html lang="es" className={`${fraunces.variable} ${inter.variable}`} suppressHydrationWarning>
       <head>
         {/* Aplica la clase de tema antes del primer paint — sin flash blanco. */}
         <ThemeScript />

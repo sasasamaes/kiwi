@@ -1528,7 +1528,7 @@ export default function MenuPage() {
                             {row.kiosk.description}
                           </p>
                         ) : (
-                          <p className="text-xs text-surface-400">
+                          <p className="text-xs text-surface-500 dark:text-surface-400">
                             {count === 1 ? '1 producto' : `${count} productos`}
                           </p>
                         )}
@@ -1815,7 +1815,7 @@ export default function MenuPage() {
                     {g.name}
                     {g.required && <span className="text-red-500"> *</span>}
                     {g.multiple && (
-                      <span className="ml-1 text-xs font-normal text-surface-400">
+                      <span className="ml-1 text-xs font-normal text-surface-500 dark:text-surface-400">
                         {typeof g.maxSelections === 'number'
                           ? `(${(picks[g.id] ?? []).length} de ${g.maxSelections})`
                           : '(varias)'}
@@ -1842,7 +1842,7 @@ export default function MenuPage() {
                               : active
                                 ? 'bg-kiwi-700 text-white'
                                 : capped
-                                  ? 'bg-surface-100 dark:bg-surface-800 text-surface-400 dark:text-surface-500 opacity-50'
+                                  ? 'bg-surface-100 dark:bg-surface-800 text-surface-500 dark:text-surface-400 dark:text-surface-500 opacity-50'
                                   : 'bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-300'
                           }`}
                         >
@@ -1967,7 +1967,7 @@ export default function MenuPage() {
                   </h2>
                   <TapButton
                     onClick={() => setShowCheckout(false)}
-                    className="text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
+                    className="text-surface-500 dark:text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
                   >
                     ✕
                   </TapButton>
@@ -2005,7 +2005,9 @@ export default function MenuPage() {
                                 {item.selectedOptions.map((s) => s.optionName).join(' · ')}
                               </p>
                             )}
-                            <p className="text-xs text-surface-400">x{item.quantity}</p>
+                            <p className="text-xs text-surface-500 dark:text-surface-400">
+                              x{item.quantity}
+                            </p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
@@ -2494,7 +2496,7 @@ export default function MenuPage() {
 
                 {!canCheckout && checkoutBlockReason && (
                   <p
-                    className={`text-xs text-center mt-3 ${!isPayMethodEnabled(paymentMethod) ? 'font-medium text-red-500' : 'text-surface-400'}`}
+                    className={`text-xs text-center mt-3 ${!isPayMethodEnabled(paymentMethod) ? 'font-medium text-red-500' : 'text-surface-500 dark:text-surface-400'}`}
                   >
                     {checkoutBlockReason}
                   </p>

@@ -21,25 +21,59 @@ export const kiwiDesignTokens = {
         //  - Texto kiwi sobre blanco/light: solo kiwi-700 (4.81:1) o más.
         //    kiwi-600 (3.3) reservado a texto ≥18.66px bold / iconos grandes.
         //  - kiwi-500: acentos, bordes, fondos sin texto — nunca texto encima.
+        // Escala primaria "Azul Zona" (océano de Nicoya). Se mantiene el
+        // nombre `kiwi` para no reescribir miles de clases existentes; usar
+        // `zona` en código nuevo.
+        //  - Texto blanco encima: 600+ (700 = 7.3:1).
+        //  - Texto azul sobre claro: 700 o más oscuro.
+        //  - 500: acentos, bordes, fondos sin texto.
         kiwi: {
-          50: '#f0fdf4',
-          100: '#dcfce7',
-          200: '#bbf7d0',
-          300: '#86efac',
-          400: '#4ade80',
-          500: '#22c55e', // Kiwi Leaf — brand signature (decorativo)
-          600: '#16a34a',
-          700: '#15803d', // mínimo AA para texto pequeño sobre claro
-          800: '#166534',
-          900: '#14532d',
-          DEFAULT: '#22c55e',
+          50: '#eef7fb',
+          100: '#d6ecf5',
+          200: '#aed9ea',
+          300: '#7cc0da',
+          400: '#4aa3c6',
+          500: '#2a86ad', // Océano Nicoya — acento
+          600: '#1f6d8f',
+          700: '#195a77', // mínimo AA para texto sobre claro
+          800: '#134a62',
+          900: '#0d3345',
+          DEFAULT: '#2a86ad',
+        },
+        zona: {
+          50: '#eef7fb',
+          100: '#d6ecf5',
+          200: '#aed9ea',
+          300: '#7cc0da',
+          400: '#4aa3c6',
+          500: '#2a86ad',
+          600: '#1f6d8f',
+          700: '#195a77',
+          800: '#134a62',
+          900: '#0d3345',
+          DEFAULT: '#195a77',
+        },
+
+        // ─── Arena (fondo cálido, Guanacaste) ───
+        arena: {
+          50: '#fbf8f2',
+          100: '#f5efe2',
+          200: '#eadfc8',
+          300: '#d9c9a6',
+        },
+
+        // Verde kiwi: acento secundario (éxito, frescura), uso puntual.
+        leaf: {
+          500: '#22c55e',
+          700: '#15803d',
         },
 
         // ─── Secondary Accents ───
-        lime: '#4ade80', // Lime Pulse — hover, focus, secondary badges
+        lime: '#4ade80', // Lime Pulse — hover, focus, secondary badges (verde kiwi)
         emerald: '#10b981', // Deep Emerald — success, data viz
         amber: '#f59e0b', // Sunburst Amber — ratings, urgency, express
         sinpe: '#0284c7', // SINPE Blue — Costa Rica payment accent
+        sol: '#e9a23b', // Sol de Guanacaste — destacados cálidos
 
         // ─── Dark Mode Canvas (Midnight) ───
         canvas: {
@@ -92,7 +126,7 @@ export const kiwiDesignTokens = {
       },
 
       fontFamily: {
-        display: ['var(--font-geist)', 'system-ui', 'sans-serif'],
+        display: ['var(--font-fraunces)', 'Georgia', 'serif'],
         body: ['var(--font-inter)', 'system-ui', 'sans-serif'],
         mono: ['var(--font-geist-mono)', 'ui-monospace', 'monospace'],
         sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
@@ -102,18 +136,21 @@ export const kiwiDesignTokens = {
         // CTAs con texto blanco: el gradiente vive en el rango 700→800 porque
         // white/kiwi-600 solo llega a 3.3:1 (falla AA para texto <18pt) y
         // white/kiwi-700 = 4.81:1 ✓. kiwi-500 queda para acentos sin texto.
-        'kiwi-gradient': 'linear-gradient(135deg, #15803d 0%, #166534 100%)',
-        'kiwi-gradient-dark': 'linear-gradient(135deg, #166534 0%, #14532d 100%)',
-        'surface-gradient': 'linear-gradient(180deg, #fafafa 0%, #f4f4f5 100%)',
+        'kiwi-gradient': 'linear-gradient(135deg, #195a77 0%, #0d3345 100%)',
+        'kiwi-gradient-dark': 'linear-gradient(135deg, #134a62 0%, #0d3345 100%)',
+        'zona-wave':
+          'radial-gradient(120% 80% at 0% 0%, rgba(124,192,218,0.35) 0%, rgba(124,192,218,0) 60%), radial-gradient(90% 70% at 100% 100%, rgba(233,162,59,0.22) 0%, rgba(233,162,59,0) 60%)',
+        'surface-gradient': 'linear-gradient(180deg, #fbf8f2 0%, #f5efe2 100%)',
         'surface-gradient-dark': 'linear-gradient(180deg, #0b1326 0%, #0f172a 100%)',
       },
 
       boxShadow: {
-        kiwi: '0 4px 14px 0 rgba(34, 197, 94, 0.25)',
-        'kiwi-lg': '0 10px 40px -10px rgba(34, 197, 94, 0.35)',
-        'kiwi-xl': '0 20px 60px -15px rgba(34, 197, 94, 0.4)',
-        'kiwi-glow': '0 0 20px -2px rgba(34, 197, 94, 0.35)',
-        'kiwi-glow-lg': '0 8px 20px -4px rgba(34, 197, 94, 0.4)',
+        kiwi: '0 4px 14px 0 rgba(25, 90, 119, 0.22)',
+        'kiwi-lg': '0 10px 40px -10px rgba(25, 90, 119, 0.3)',
+        'kiwi-xl': '0 20px 60px -15px rgba(25, 90, 119, 0.35)',
+        'kiwi-glow': '0 0 20px -2px rgba(42, 134, 173, 0.35)',
+        'kiwi-glow-lg': '0 8px 20px -4px rgba(42, 134, 173, 0.4)',
+        card: '0 1px 2px rgb(13 51 69 / 0.04), 0 8px 24px -12px rgb(13 51 69 / 0.12)',
         glass: '0 10px 30px -10px rgba(0, 0, 0, 0.5)',
         'glass-lg': '0 25px 50px -12px rgba(0, 0, 0, 0.7)',
         soft: '0 2px 8px 0 rgb(0 0 0 / 0.04)',
@@ -130,6 +167,9 @@ export const kiwiDesignTokens = {
         glow: 'glow 2s ease-in-out infinite alternate',
         shimmer: 'shimmer 2s linear infinite',
         'spin-slow': 'spin 3s linear infinite',
+        'fade-up': 'fadeUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) both',
+        'fade-in': 'fadeIn 0.5s ease-out both',
+        'wave-drift': 'waveDrift 14s ease-in-out infinite alternate',
       },
 
       keyframes: {
@@ -146,12 +186,24 @@ export const kiwiDesignTokens = {
           '50%': { transform: 'translateY(-10px)' },
         },
         glow: {
-          '0%': { boxShadow: '0 0 5px rgba(34, 197, 94, 0.2)' },
-          '100%': { boxShadow: '0 0 20px rgba(34, 197, 94, 0.4)' },
+          '0%': { boxShadow: '0 0 5px rgba(42, 134, 173, 0.2)' },
+          '100%': { boxShadow: '0 0 20px rgba(42, 134, 173, 0.4)' },
         },
         shimmer: {
           '0%': { backgroundPosition: '-200% 0' },
           '100%': { backgroundPosition: '200% 0' },
+        },
+        fadeUp: {
+          '0%': { opacity: '0', transform: 'translateY(14px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        fadeIn: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        waveDrift: {
+          '0%': { transform: 'translate3d(-2%, 0, 0) scale(1)' },
+          '100%': { transform: 'translate3d(2%, -2%, 0) scale(1.04)' },
         },
       },
     },

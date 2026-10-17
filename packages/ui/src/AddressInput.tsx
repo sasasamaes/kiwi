@@ -301,7 +301,7 @@ export function AddressInput({
         />
 
         {/* Search icon */}
-        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-400">
+        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-500 dark:text-surface-400">
           {loading ? (
             <motion.div
               className="w-5 h-5 border-2 border-kiwi-600 border-t-transparent rounded-full"

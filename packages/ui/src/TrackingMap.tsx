@@ -217,7 +217,7 @@ export function TrackingMap({
         style={{ height }}
       >
         <div className="text-center px-6">
-          <AlertTriangle className="h-10 w-10 text-surface-400 mx-auto mb-2" />
+          <AlertTriangle className="h-10 w-10 text-surface-500 dark:text-surface-400 mx-auto mb-2" />
           <p className="text-sm text-surface-500 dark:text-surface-400 mb-3">{error}</p>
           <button
             className="rounded-xl bg-kiwi-700 px-4 py-2 text-sm font-semibold text-white"

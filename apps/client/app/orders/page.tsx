@@ -351,18 +351,18 @@ export default function OrderHistoryPage() {
 
                         <div className="space-y-2 mb-3">
                           <div className="flex items-center gap-2 text-sm">
-                            <MapPin className="text-surface-400 h-5 w-5" />
+                            <MapPin className="text-surface-500 dark:text-surface-400 h-5 w-5" />
                             <span className="text-surface-600 dark:text-surface-400 truncate">
                               {order.deliveryAddress}
                             </span>
                           </div>
                           {order.driver && (
                             <div className="flex items-center gap-2 text-sm">
-                              <Bike className="text-surface-400 h-5 w-5" />
+                              <Bike className="text-surface-500 dark:text-surface-400 h-5 w-5" />
                               <span className="text-surface-600 dark:text-surface-400">
                                 {order.driver.fullName}
                               </span>
-                              <span className="text-surface-400">•</span>
+                              <span className="text-surface-500 dark:text-surface-400">•</span>
                               <span className="text-yellow-500">
                                 <Star className="h-4 w-4 inline" /> {order.driver.rating}
                               </span>

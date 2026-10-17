@@ -447,7 +447,10 @@ function InvitacionesInner() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={4} className="py-8 text-center text-sm text-surface-400">
+                  <td
+                    colSpan={4}
+                    className="py-8 text-center text-sm text-surface-500 dark:text-surface-400"
+                  >
                     Cargando…
                   </td>
                 </tr>
@@ -524,7 +527,7 @@ function InvitacionesInner() {
       </motion.div>
 
       {!loading && items.length === 0 && (
-        <p className="text-center text-sm text-surface-400">
+        <p className="text-center text-sm text-surface-500 dark:text-surface-400">
           Sin invitaciones con ese filtro. Cargá la primera arriba.
         </p>
       )}

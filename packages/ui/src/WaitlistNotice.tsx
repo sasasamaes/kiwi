@@ -29,7 +29,7 @@ export function WaitlistNotice({
       <p className="text-4xl mb-3">🗺️</p>
       <h1 className="text-2xl font-display font-bold text-surface-800">¡Cuenta creada!</h1>
       <p className="text-surface-500 mt-2 text-sm">{message}</p>
-      <p className="text-xs text-surface-400 mt-2">
+      <p className="text-xs text-surface-500 dark:text-surface-400 mt-2">
         Sos de {city}: en cuanto operemos ahí te escribimos.
       </p>
       <motion.button

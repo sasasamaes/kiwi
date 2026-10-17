@@ -78,7 +78,7 @@ export function ServiceWorkerUpdater() {
         <button
           onClick={() => setUpdateReady(false)}
           aria-label="Descartar actualización"
-          className="rounded-lg px-2 py-1 text-sm text-surface-400"
+          className="rounded-lg px-2 py-1 text-sm text-surface-500 dark:text-surface-400"
         >
           ✕
         </button>

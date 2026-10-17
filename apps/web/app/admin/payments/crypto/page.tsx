@@ -206,13 +206,19 @@ export default function CryptoReconciliationPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="py-10 text-center text-sm text-surface-400">
+                  <td
+                    colSpan={6}
+                    className="py-10 text-center text-sm text-surface-500 dark:text-surface-400"
+                  >
                     Cargando…
                   </td>
                 </tr>
               ) : payments.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-10 text-center text-sm text-surface-400">
+                  <td
+                    colSpan={6}
+                    className="py-10 text-center text-sm text-surface-500 dark:text-surface-400"
+                  >
                     Sin pagos crypto pendientes 🎉
                   </td>
                 </tr>
@@ -230,13 +236,13 @@ export default function CryptoReconciliationPage() {
                         <span className="font-mono text-xs text-surface-500">
                           #{p.orderId.slice(0, 8).toUpperCase()}
                         </span>
-                        <span className="block text-xs text-surface-400">
+                        <span className="block text-xs text-surface-500 dark:text-surface-400">
                           pedido: {p.order?.status ?? '—'}
                         </span>
                       </td>
                       <td className="py-4 px-6 text-sm">
                         {p.order?.businessName ?? '—'}
-                        <span className="block text-xs text-surface-400">
+                        <span className="block text-xs text-surface-500 dark:text-surface-400">
                           ₡{Number(p.order?.totalAmount ?? 0).toLocaleString()}
                         </span>
                       </td>
@@ -258,7 +264,7 @@ export default function CryptoReconciliationPage() {
                             {p.walletAddress.slice(0, 8)}…{p.walletAddress.slice(-6)}
                           </span>
                         ) : (
-                          <span className="text-xs text-surface-400">—</span>
+                          <span className="text-xs text-surface-500 dark:text-surface-400">—</span>
                         )}
                       </td>
                       <td className="py-4 px-6 text-sm">
@@ -309,7 +315,7 @@ export default function CryptoReconciliationPage() {
       </motion.div>
 
       {pages > 1 && (
-        <p className="text-center text-xs text-surface-400">
+        <p className="text-center text-xs text-surface-500 dark:text-surface-400">
           Página {page + 1} de {pages} ·{' '}
           <button
             type="button"

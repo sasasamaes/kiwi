@@ -76,7 +76,9 @@ export default function ZonaAzulPage() {
 
         <section className="mt-6">
           {loading ? (
-            <p className="py-10 text-center text-sm text-surface-400">Cargando…</p>
+            <p className="py-10 text-center text-sm text-surface-500 dark:text-surface-400">
+              Cargando…
+            </p>
           ) : !MERCHANT_ID ? (
             <div className="rounded-2xl border border-surface-200/70 bg-white/80 p-6 text-center dark:border-white/10 dark:bg-surface-800/70">
               <p className="text-4xl">🧀</p>
@@ -131,7 +133,9 @@ export default function ZonaAzulPage() {
                         Par · 2 unidades
                       </span>
                       {typeof item.stockQty === 'number' && item.stockQty > 0 && (
-                        <span className="text-[10px] text-surface-400">Stock: {item.stockQty}</span>
+                        <span className="text-[10px] text-surface-500 dark:text-surface-400">
+                          Stock: {item.stockQty}
+                        </span>
                       )}
                     </div>
                   </div>

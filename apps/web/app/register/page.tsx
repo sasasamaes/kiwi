@@ -154,7 +154,7 @@ export default function RegisterPage() {
         animate={{ opacity: 1 }}
         transition={{ delay: 1 }}
       >
-        <p className="text-xs text-surface-400">
+        <p className="text-xs text-surface-500 dark:text-surface-400">
           Al registrarte, aceptas nuestros{' '}
           <a href="/terms" className="text-kiwi-700 hover:underline">
             Términos

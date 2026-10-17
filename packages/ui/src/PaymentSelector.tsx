@@ -194,7 +194,7 @@ export function PaymentSelector({
                     animate={{ rotate: 360 }}
                     transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
                   >
-                    <Loader className="h-6 w-6 text-surface-400" />
+                    <Loader className="h-6 w-6 text-surface-500 dark:text-surface-400" />
                   </motion.div>
                 </div>
               ) : cryptoQuote ? (
@@ -305,8 +305,8 @@ export function CryptoQR({ address, amount, coin }: CryptoQRProps) {
       {/* QR Code Placeholder */}
       <div className="mx-auto w-48 h-48 bg-surface-100 dark:bg-surface-700 rounded-xl flex items-center justify-center mb-4">
         <div className="text-center">
-          <Smartphone className="h-16 w-16 text-surface-400" />
-          <p className="text-xs text-surface-400 mt-2">QR Code</p>
+          <Smartphone className="h-16 w-16 text-surface-500 dark:text-surface-400" />
+          <p className="text-xs text-surface-500 dark:text-surface-400 mt-2">QR Code</p>
         </div>
       </div>
 
@@ -340,7 +340,7 @@ export function CryptoQR({ address, amount, coin }: CryptoQRProps) {
         </div>
       </div>
 
-      <div className="text-xs text-surface-400 space-y-1">
+      <div className="text-xs text-surface-500 dark:text-surface-400 space-y-1">
         <p className="flex items-center gap-1">
           <Lock className="h-3 w-3" /> La confirmacion tarda ~1 minuto
         </p>

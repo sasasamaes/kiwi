@@ -113,7 +113,7 @@ export default function CoberturaPage() {
             </span>
           ))}
           {cities.length === 0 && !loading && (
-            <p className="text-sm text-surface-400">Sin ciudades.</p>
+            <p className="text-sm text-surface-500 dark:text-surface-400">Sin ciudades.</p>
           )}
         </div>
       </motion.div>
@@ -148,7 +148,10 @@ export default function CoberturaPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="py-8 text-center text-sm text-surface-400">
+                  <td
+                    colSpan={5}
+                    className="py-8 text-center text-sm text-surface-500 dark:text-surface-400"
+                  >
                     Cargando…
                   </td>
                 </tr>
@@ -161,7 +164,7 @@ export default function CoberturaPage() {
                     <td className="py-4 px-6">
                       <p className="font-medium text-surface-800 dark:text-surface-200">{d.city}</p>
                       {d.emails.length > 0 && (
-                        <p className="text-xs text-surface-400 truncate max-w-xs">
+                        <p className="text-xs text-surface-500 dark:text-surface-400 truncate max-w-xs">
                           {d.emails.join(', ')}
                           {d.pending > d.emails.length ? '…' : ''}
                         </p>
@@ -203,7 +206,7 @@ export default function CoberturaPage() {
       </motion.div>
 
       {!loading && demand.length === 0 && !error && (
-        <p className="text-center text-sm text-surface-400">
+        <p className="text-center text-sm text-surface-500 dark:text-surface-400">
           Nadie en lista de espera todavía. Aparecen acá los registros y pedidos fuera de zona.
         </p>
       )}

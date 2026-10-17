@@ -9,7 +9,7 @@
 
 :root {
   /* Light mode colors */
-  --bg-primary: #fafafa;
+  --bg-primary: #fbf8f2;
   --bg-secondary: #ffffff;
   --bg-tertiary: #f4f4f5;
   --text-primary: #18181b;
@@ -85,13 +85,23 @@ body {
 }
 
 /* Text colors */
-.text-primary { color: var(--text-primary); }
-.text-secondary { color: var(--text-secondary); }
-.text-tertiary { color: var(--text-tertiary); }
+.text-primary {
+  color: var(--text-primary);
+}
+.text-secondary {
+  color: var(--text-secondary);
+}
+.text-tertiary {
+  color: var(--text-tertiary);
+}
 
 /* Border colors */
-.border-light { border-color: var(--border-color); }
-.dark .border-light { border-color: var(--border-color); }
+.border-light {
+  border-color: var(--border-color);
+}
+.dark .border-light {
+  border-color: var(--border-color);
+}
 
 /* ============================================
    COMPONENT STYLES
@@ -201,8 +211,12 @@ body {
 }
 
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 /* ============================================

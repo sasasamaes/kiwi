@@ -785,7 +785,9 @@ export default function Home() {
               <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-300">
                 Mis Pedidos Activos
               </h3>
-              <span className="text-xs text-surface-400">{activeOrders.length} en curso</span>
+              <span className="text-xs text-surface-500 dark:text-surface-400">
+                {activeOrders.length} en curso
+              </span>
             </div>
 
             <StaggerContainer className="space-y-3">
@@ -813,7 +815,9 @@ export default function Home() {
                           <p className="text-sm font-semibold text-surface-700">
                             ₡{Number(order.driverPayout ?? order.totalAmount ?? 0).toLocaleString()}
                           </p>
-                          <p className="text-[11px] text-surface-400">tu ganancia</p>
+                          <p className="text-[11px] text-surface-500 dark:text-surface-400">
+                            tu ganancia
+                          </p>
                         </div>
                       </div>
 
@@ -826,7 +830,7 @@ export default function Home() {
                             <p className="text-sm font-medium text-surface-800">
                               {(order as any).merchant?.businessName || order.pickupAddress}
                             </p>
-                            <p className="text-xs text-surface-400">
+                            <p className="text-xs text-surface-500 dark:text-surface-400">
                               {(order as any).merchant?.businessName
                                 ? `${order.pickupAddress} · Recoger aquí`
                                 : 'Recoger aquí'}
@@ -841,7 +845,9 @@ export default function Home() {
                             <p className="text-sm font-medium text-surface-800">
                               {order.deliveryAddress}
                             </p>
-                            <p className="text-xs text-surface-400">Entregar aquí</p>
+                            <p className="text-xs text-surface-500 dark:text-surface-400">
+                              Entregar aquí
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -876,7 +882,9 @@ export default function Home() {
             <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-300 flex items-center gap-2">
               <Package className="h-4 w-4" /> Pedidos Disponibles
             </h3>
-            <span className="text-xs text-surface-400">{filteredOrders.length} cerca de ti</span>
+            <span className="text-xs text-surface-500 dark:text-surface-400">
+              {filteredOrders.length} cerca de ti
+            </span>
           </div>
 
           {filteredOrders.length === 0 ? (
@@ -899,7 +907,7 @@ export default function Home() {
               <p className="text-surface-500 dark:text-surface-400">
                 {isOnline ? 'No hay pedidos disponibles ahora' : 'Estás en pausa'}
               </p>
-              <p className="text-xs text-surface-400 mt-1">
+              <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">
                 {isOnline
                   ? 'Cuando haya pedidos, aparecerán aquí'
                   : 'Ponte en línea para entrar en la lista y recibir pedidos'}
@@ -937,8 +945,10 @@ export default function Home() {
                         >
                           <Package className="h-3 w-3 inline" /> Delivery
                         </motion.span>
-                        <span className="text-xs text-surface-400">•</span>
-                        <span className="text-xs text-surface-400">Nuevo</span>
+                        <span className="text-xs text-surface-500 dark:text-surface-400">•</span>
+                        <span className="text-xs text-surface-500 dark:text-surface-400">
+                          Nuevo
+                        </span>
                         {(() => {
                           const label = readyLabel((order as any).readyAt);
                           return label ? (
@@ -962,7 +972,7 @@ export default function Home() {
                           <p className="break-words text-sm font-medium text-surface-800 dark:text-surface-200">
                             {(order as any).merchant?.businessName || order.pickupAddress}
                           </p>
-                          <p className="break-words text-xs text-surface-400">
+                          <p className="break-words text-xs text-surface-500 dark:text-surface-400">
                             {(order as any).merchant?.businessName
                               ? `${order.pickupAddress} · Origen`
                               : 'Origen'}
@@ -977,7 +987,7 @@ export default function Home() {
                           <p className="break-words text-sm font-medium text-surface-800 dark:text-surface-200">
                             {order.deliveryAddress}
                           </p>
-                          <p className="text-xs text-surface-400">
+                          <p className="text-xs text-surface-500 dark:text-surface-400">
                             {(order as any).deliveryZone
                               ? String((order as any).deliveryZone)
                               : order.distanceKm
@@ -991,8 +1001,8 @@ export default function Home() {
                           type={(user?.driverProfile?.vehicleType as any) || 'motorcycle'}
                           size="sm"
                         />
-                        <span className="text-xs text-surface-400">•</span>
-                        <span className="text-xs text-surface-400">
+                        <span className="text-xs text-surface-500 dark:text-surface-400">•</span>
+                        <span className="text-xs text-surface-500 dark:text-surface-400">
                           Ganancia:{' '}
                           <span className="font-mono">
                             {order.driverPayout != null
@@ -1131,7 +1141,7 @@ export default function Home() {
                         </span>
                       </div>
                       {!hasPayout && (
-                        <p className="mt-1 text-right text-[11px] text-surface-400">
+                        <p className="mt-1 text-right text-[11px] text-surface-500 dark:text-surface-400">
                           Tu ganancia se confirma al aceptar
                         </p>
                       )}

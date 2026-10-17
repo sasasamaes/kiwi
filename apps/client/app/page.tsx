@@ -252,7 +252,12 @@ export default function ClientHome() {
       >
         <div className="mx-auto max-w-lg lg:max-w-5xl px-4 py-4">
           <div className="flex items-center justify-between mb-3">
-            <KiwiLogo size={30} />
+            <div className="flex min-w-0 flex-col leading-tight">
+              <KiwiLogo size={30} />
+              <span className="mt-1 truncate font-display text-[11px] italic tracking-wide text-surface-500 dark:text-surface-400">
+                Delivery Blue Zone App
+              </span>
+            </div>
             <div className="flex items-center gap-2">
               {user ? (
                 <Link
@@ -265,13 +270,13 @@ export default function ClientHome() {
                 <>
                   <Link
                     href="/login"
-                    className="text-sm font-medium text-surface-600 dark:text-surface-300"
+                    className="whitespace-nowrap text-sm font-medium text-surface-600 dark:text-surface-300"
                   >
                     Entrar
                   </Link>
                   <Link
                     href="/register"
-                    className="text-sm font-semibold text-white bg-kiwi-600 rounded-full px-3 py-1.5"
+                    className="whitespace-nowrap text-sm font-semibold text-white bg-kiwi-700 rounded-full px-3 py-1.5"
                   >
                     Crear cuenta
                   </Link>
@@ -283,7 +288,7 @@ export default function ClientHome() {
           {/* Búsqueda (una sola ciudad por ahora: Nicoya) */}
           <div className="flex gap-2">
             <div className="flex-1 flex items-center gap-2 rounded-full bg-surface-100 dark:bg-surface-800 px-3">
-              <Search className="h-4 w-4 text-surface-400" />
+              <Search className="h-4 w-4 text-surface-500 dark:text-surface-400" />
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
@@ -473,7 +478,7 @@ export default function ClientHome() {
                     onClick={stopScanner}
                     aria-label="Cerrar escáner"
                     whileTap={{ scale: 0.9 }}
-                    className="rounded-full text-surface-400 hover:text-surface-600 dark:hover:text-surface-300 transition-colors"
+                    className="rounded-full text-surface-500 dark:text-surface-400 hover:text-surface-600 dark:hover:text-surface-300 transition-colors"
                   >
                     <X className="h-5 w-5" />
                   </motion.button>

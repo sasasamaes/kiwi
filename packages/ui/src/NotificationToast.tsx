@@ -161,7 +161,7 @@ function NotificationToast() {
               </div>
               <button
                 onClick={() => removeNotification(notification.id)}
-                className="flex-shrink-0 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
+                className="flex-shrink-0 text-surface-500 dark:text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
               >
                 ✕
               </button>

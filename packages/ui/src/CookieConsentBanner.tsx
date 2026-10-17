@@ -103,7 +103,7 @@ export function CookieConsentBanner({ policyHref = '/cookies' }: CookieConsentBa
                       </button>
                       <button
                         onClick={() => setShowDetail(true)}
-                        className="min-h-[44px] rounded-xl px-3 py-2 text-sm text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
+                        className="min-h-[44px] rounded-xl px-3 py-2 text-sm text-surface-500 dark:text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
                       >
                         Personalizar
                       </button>

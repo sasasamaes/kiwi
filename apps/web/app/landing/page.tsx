@@ -140,74 +140,76 @@ export default function LandingPage() {
         </div>
       </motion.nav>
 
-      {/* Hero Section */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-kiwi-50 to-kiwi-100 dark:from-surface-900 dark:to-surface-950" />
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-20 left-10 w-72 h-72 bg-kiwi-300 rounded-full blur-3xl" />
-          <div className="absolute bottom-10 right-10 w-96 h-96 bg-kiwi-400 rounded-full blur-3xl" />
-        </div>
+      {/* Hero — Delivery Blue Zone App */}
+      <section className="relative overflow-hidden bg-arena-50 dark:bg-surface-950">
+        <div
+          aria-hidden
+          className="zona-wave-bg pointer-events-none absolute -inset-10 opacity-90 dark:opacity-40"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-arena-50 dark:from-surface-950 to-transparent"
+        />
 
-        <div className="relative mx-auto max-w-6xl px-4 py-24 md:py-32">
-          <div className="text-center max-w-3xl mx-auto">
-            {/* Marca: entrada con rebote suave + flotación ambiente */}
-            <motion.div
-              className="mb-6 flex justify-center"
-              initial={{ opacity: 0, scale: 0.6, y: 24 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={{ type: 'spring', stiffness: 200, damping: 16 }}
+        <div className="relative mx-auto max-w-6xl px-5 py-24 md:py-32">
+          <div className="mx-auto max-w-3xl text-center">
+            <motion.p
+              className="mb-6 inline-flex items-center gap-2 rounded-full border border-zona-200 bg-white/70 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-zona-700 backdrop-blur dark:border-zona-700/50 dark:bg-surface-900/60 dark:text-zona-300"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
             >
-              <KiwiMark size={104} />
-            </motion.div>
+              <span className="h-1.5 w-1.5 rounded-full bg-sol" aria-hidden />
+              Delivery Blue Zone App
+            </motion.p>
 
             <motion.h1
-              className="text-5xl md:text-7xl font-display font-bold text-surface-800 dark:text-surface-100 mb-6"
-              initial={{ opacity: 0, y: 18 }}
+              className="font-display text-5xl font-semibold leading-[1.02] tracking-tight text-zona-900 dark:text-surface-100 md:text-7xl"
+              initial={{ opacity: 0, y: 22 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15, duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+              transition={{ delay: 0.12, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
             >
-              Delivery{' '}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-kiwi-700 to-kiwi-800">
-                inteligente
-              </span>{' '}
-              en Nicoya
+              Vivir mejor,
+              <br />
+              <em className="font-normal italic text-zona-600 dark:text-zona-300">entregado</em> en
+              Nicoya.
             </motion.h1>
 
             <motion.p
-              className="text-xl text-surface-600 dark:text-surface-400 mb-8 max-w-2xl mx-auto"
+              className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-surface-600 dark:text-surface-300"
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.28, duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+              transition={{ delay: 0.24, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
             >
-              Conectamos comerciantes, repartidores y clientes. Pide delivery, gestiona tu negocio o
-              trabaja cuando quieras.
+              Conectamos comercios locales, repartidores de la zona y clientes. Pedí tu comida,
+              envía una encomienda o hacé crecer tu negocio desde la Zona Azul.
             </motion.p>
 
             <motion.div
-              className="flex flex-col sm:flex-row items-center justify-center gap-4"
+              className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row"
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4, duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+              transition={{ delay: 0.36, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
             >
               <a href="#download">
-                <AnimatedButton size="lg" className="text-lg px-8">
+                <AnimatedButton size="lg" className="px-8 text-base">
                   Empezar ahora
                 </AnimatedButton>
               </a>
               <a href="#how-it-works">
-                <AnimatedButton variant="secondary" size="lg" className="text-lg px-8">
-                  Cómo funciona →
+                <AnimatedButton variant="secondary" size="lg" className="px-8 text-base">
+                  Cómo funciona
                 </AnimatedButton>
               </a>
             </motion.div>
 
             <motion.p
-              className="mt-6 text-sm text-surface-500 dark:text-surface-400"
+              className="mt-8 text-sm text-surface-500 dark:text-surface-400"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 0.55, duration: 0.6 }}
+              transition={{ delay: 0.5, duration: 0.6 }}
             >
-              🆓 Gratis para clientes • Genera dinero como repartidor
+              Gratis para clientes · Ingreso para repartidores y comercios
             </motion.p>
           </div>
         </div>
@@ -550,7 +552,7 @@ export default function LandingPage() {
               </ul>
             </div>
           </div>
-          <div className="mt-8 pt-8 border-t border-surface-200 dark:border-surface-800 text-center text-sm text-surface-400">
+          <div className="mt-8 pt-8 border-t border-surface-200 dark:border-surface-800 text-center text-sm text-surface-500 dark:text-surface-400">
             © 2026 Kiwi —{' '}
             {business.legalEntity.charAt(0).toUpperCase() + business.legalEntity.slice(1)}. Todos
             los derechos reservados. Hecho con 💚 en Nicoya.

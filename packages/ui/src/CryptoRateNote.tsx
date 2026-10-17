@@ -89,7 +89,7 @@ export function CryptoRateNote({ amountCRC, coin = 'USDC', className }: CryptoRa
         </span>
       )}
       {amountCoin && (
-        <span className="block mt-0.5 text-surface-400">
+        <span className="block mt-0.5 text-surface-500 dark:text-surface-400">
           Conversión estimada; el cobro final lo calcula el servidor al procesar el pago.
         </span>
       )}

@@ -125,7 +125,7 @@ export function SchedulePicker({
             value.mode === 'now' && !nowDisabled
               ? 'bg-kiwi-100 dark:bg-kiwi-900/50 ring-2 ring-kiwi-600 text-kiwi-800 dark:text-kiwi-200'
               : nowDisabled
-                ? 'bg-surface-100 dark:bg-surface-700 text-surface-400 dark:text-surface-500 cursor-not-allowed opacity-60'
+                ? 'bg-surface-100 dark:bg-surface-700 text-surface-500 dark:text-surface-400 dark:text-surface-500 cursor-not-allowed opacity-60'
                 : 'bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-300'
           }`}
         >

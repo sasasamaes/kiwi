@@ -338,7 +338,7 @@ export function DriverMap({
         style={{ height }}
       >
         <div className="px-6 text-center">
-          <AlertTriangle className="mx-auto mb-2 h-10 w-10 text-surface-400" />
+          <AlertTriangle className="mx-auto mb-2 h-10 w-10 text-surface-500 dark:text-surface-400" />
           <p className="mb-3 text-sm text-surface-500">{mapError}</p>
           <button
             className="rounded-xl bg-kiwi-700 px-4 py-2 text-sm font-semibold text-white"
@@ -418,7 +418,7 @@ export function DriverMap({
         Abrir en Maps
       </button>
 
-      <p className="absolute bottom-3 left-3 rounded-lg bg-white/80 dark:bg-surface-900/80 px-2 py-0.5 text-[10px] text-surface-400 backdrop-blur">
+      <p className="absolute bottom-3 left-3 rounded-lg bg-white/80 dark:bg-surface-900/80 px-2 py-0.5 text-[10px] text-surface-500 dark:text-surface-400 backdrop-blur">
         {/* Atribución con enlace: requisito de la ODbL al usar tiles OSM. */}
         <a
           href="https://www.openstreetmap.org/copyright"

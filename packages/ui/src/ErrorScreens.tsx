@@ -117,7 +117,7 @@ export function NotFoundState({
       className="flex min-h-[70vh] w-full flex-col items-center justify-center gap-4 px-4 text-center"
     >
       <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-surface-100 dark:bg-surface-800">
-        <SearchX className="h-10 w-10 text-surface-400" />
+        <SearchX className="h-10 w-10 text-surface-500 dark:text-surface-400" />
       </div>
       <h1 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100">
         {title}

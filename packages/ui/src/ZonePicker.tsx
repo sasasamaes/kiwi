@@ -45,11 +45,11 @@ export function ZonePicker({ value, onChange, detectedLabel }: ZonePickerProps) 
           <MapPin className="h-4 w-4 text-kiwi-700 dark:text-kiwi-300" />
         </span>
         <span className="flex-1 min-w-0">
-          <span className="block text-[11px] uppercase tracking-wide text-surface-400">
+          <span className="block text-[11px] uppercase tracking-wide text-surface-500 dark:text-surface-400">
             Barrio de entrega
           </span>
           <span
-            className={`block text-sm truncate ${selected || detected ? 'font-medium' : 'text-surface-400'}`}
+            className={`block text-sm truncate ${selected || detected ? 'font-medium' : 'text-surface-500 dark:text-surface-400'}`}
           >
             {selected ? selected.label : (detected ?? 'Elegí tu barrio…')}
           </span>

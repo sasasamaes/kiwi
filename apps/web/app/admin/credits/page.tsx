@@ -177,7 +177,9 @@ export default function AdminCredits() {
                 >
                   ₡{Number(m.balance).toLocaleString()}
                 </p>
-                <p className="text-xs text-surface-400">Tocar para recargar</p>
+                <p className="text-xs text-surface-500 dark:text-surface-400">
+                  Tocar para recargar
+                </p>
               </div>
             </motion.button>
           ))}
@@ -212,7 +214,10 @@ export default function AdminCredits() {
                     ₡{Number(selected.balance).toLocaleString()}
                   </p>
                 </div>
-                <button onClick={() => setSelected(null)} className="text-surface-400">
+                <button
+                  onClick={() => setSelected(null)}
+                  className="text-surface-500 dark:text-surface-400"
+                >
                   <X className="h-5 w-5" />
                 </button>
               </div>
@@ -262,9 +267,9 @@ export default function AdminCredits() {
                 <History className="h-4 w-4" /> Movimientos
               </p>
               {historyLoading ? (
-                <p className="text-sm text-surface-400">Cargando…</p>
+                <p className="text-sm text-surface-500 dark:text-surface-400">Cargando…</p>
               ) : history.length === 0 ? (
-                <p className="text-sm text-surface-400">Sin movimientos</p>
+                <p className="text-sm text-surface-500 dark:text-surface-400">Sin movimientos</p>
               ) : (
                 <div className="space-y-2">
                   {history.map((h) => (
@@ -274,7 +279,7 @@ export default function AdminCredits() {
                     >
                       <div>
                         <p className="font-medium">{KIND_LABEL[h.kind] ?? h.kind}</p>
-                        <p className="text-xs text-surface-400">
+                        <p className="text-xs text-surface-500 dark:text-surface-400">
                           {h.reason ?? ''} ·{' '}
                           {new Date(h.createdAt).toLocaleDateString('es-CR', {
                             day: 'numeric',

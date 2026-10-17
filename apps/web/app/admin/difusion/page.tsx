@@ -371,7 +371,9 @@ export default function DifusionPage() {
           Historial de envíos
         </h3>
         {logs.length === 0 ? (
-          <p className="text-sm text-surface-400">Todavía no se envió nada.</p>
+          <p className="text-sm text-surface-500 dark:text-surface-400">
+            Todavía no se envió nada.
+          </p>
         ) : (
           <div className="space-y-2">
             {logs.map((l) => (

@@ -346,7 +346,7 @@ export default function WithdrawPage() {
                     Monto a retirar
                   </label>
                   <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-surface-400">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-surface-500 dark:text-surface-400">
                       ₡
                     </span>
                     <input

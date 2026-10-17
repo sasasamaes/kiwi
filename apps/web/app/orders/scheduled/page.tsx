@@ -313,7 +313,7 @@ export default function ScheduledOrdersPage() {
                       setSelectedOrder(null);
                       setProposals([]);
                     }}
-                    className="text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
+                    className="text-surface-500 dark:text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                   >
@@ -447,7 +447,7 @@ export default function ScheduledOrdersPage() {
                                   type={proposal.driver?.vehicleType || 'motorcycle'}
                                   size="sm"
                                 />
-                                <span className="text-xs text-surface-400">
+                                <span className="text-xs text-surface-500 dark:text-surface-400">
                                   {proposal.driver?.totalTrips || 0} viajes
                                 </span>
                                 {(proposal.driver as any)?.vehiclePlate && (
