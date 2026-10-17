@@ -826,6 +826,7 @@ function DriverDetailModal({
   onChat: () => void;
   onClose: () => void;
 }) {
+  const [chatHint, setChatHint] = useState(false);
   const photo = driver.photoUrl as string | undefined;
   return (
     <motion.div
@@ -916,31 +917,49 @@ function DriverDetailModal({
           </a>
         )}
 
-        <div className="mt-4 flex gap-2">
-          <button
-            onClick={onToggleFav}
-            title={isFav ? 'Quitar de favoritos' : 'Marcar favorito'}
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-surface-200 dark:border-surface-700 text-surface-500 dark:text-surface-400 transition-colors hover:bg-surface-100 hover:text-gold-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-500/50 active:scale-95 dark:hover:bg-surface-700 dark:hover:text-gold-400"
-          >
-            <Star className={`h-5 w-5 ${isFav ? 'fill-gold-500 text-gold-500' : ''}`} />
-          </button>
-          {hasSharedOrder && (
+        <div className="mt-4 space-y-2">
+          {driver.status === 'available' ? (
+            <Link
+              href={`/orders/new?driverId=${driver.id}&driverName=${encodeURIComponent(driver.fullName)}`}
+              onClick={onClose}
+              className="flex min-h-[48px] items-center justify-center rounded-xl bg-kiwi-700 px-4 text-sm font-semibold text-white shadow-card transition-colors hover:bg-kiwi-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-600/40 active:scale-[0.98]"
+            >
+              Crear pedido para este repartidor
+            </Link>
+          ) : (
+            <div className="flex min-h-[48px] items-center justify-center rounded-xl bg-surface-100 dark:bg-surface-700 px-4 text-sm font-medium text-surface-500">
+              No disponible ahora
+            </div>
+          )}
+          <div className="flex gap-2">
             <button
-              onClick={onChat}
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-surface-200 dark:border-surface-700 text-surface-500 dark:text-surface-400 transition-colors hover:bg-surface-100 hover:text-kiwi-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-600/40 active:scale-95 dark:hover:bg-surface-700 dark:hover:text-kiwi-300"
-              title="Chatear"
+              onClick={onToggleFav}
+              title={isFav ? 'Quitar de favoritos' : 'Marcar favorito'}
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-surface-200 dark:border-surface-700 text-surface-500 dark:text-surface-400 transition-colors hover:bg-surface-100 hover:text-gold-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-500/50 active:scale-95 dark:hover:bg-surface-700 dark:hover:text-gold-400"
+            >
+              <Star className={`h-5 w-5 ${isFav ? 'fill-gold-500 text-gold-500' : ''}`} />
+            </button>
+            <button
+              onClick={() => {
+                if (hasSharedOrder) onChat();
+                else setChatHint(true);
+              }}
+              title={hasSharedOrder ? 'Chatear' : 'El chat se habilita con un pedido en común'}
+              aria-disabled={!hasSharedOrder}
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-surface-200 dark:border-surface-700 text-surface-500 dark:text-surface-400 transition-colors hover:bg-surface-100 hover:text-kiwi-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-600/40 active:scale-95 disabled:opacity-40 dark:hover:bg-surface-700 dark:hover:text-kiwi-300"
             >
               <MessageCircle className="h-5 w-5" />
             </button>
-          )}
-          {driver.status === 'available' ? (
-            <AnimatedButton variant="primary" className="flex-1" onClick={onAssign}>
-              Asignar pedido
+            <AnimatedButton variant="secondary" className="flex-1" onClick={onAssign}>
+              Asignar existente
             </AnimatedButton>
-          ) : (
-            <div className="flex flex-1 items-center justify-center rounded-xl bg-surface-100 dark:bg-surface-700 px-4 text-sm font-medium text-surface-500">
-              No disponible ahora
-            </div>
+          </div>
+          {!hasSharedOrder && (
+            <p className="text-xs text-surface-500 dark:text-surface-400">
+              {chatHint
+                ? 'El chat vive dentro de cada pedido: creá uno para este repartidor y podrán hablar ahí mismo.'
+                : 'El chat se habilita cuando tengan un pedido en común.'}
+            </p>
           )}
         </div>
       </motion.div>

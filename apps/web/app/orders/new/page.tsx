@@ -63,9 +63,13 @@ interface GeoSuggestion {
 function NewOrderInner({
   presetKind,
   isPreset = false,
+  presetDriverId = null,
+  presetDriverName = null,
 }: {
   presetKind: 'food' | 'freight';
   isPreset?: boolean;
+  presetDriverId?: string | null;
+  presetDriverName?: string | null;
 }) {
   const router = useRouter();
   const { user } = useAuth();
@@ -188,8 +192,11 @@ function NewOrderInner({
 
   const [favoriteDrivers, setFavoriteDrivers] = useState<Driver[]>([]);
   const [availableDrivers, setAvailableDrivers] = useState<Driver[]>([]);
-  const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
+  const [selectedDriverId, setSelectedDriverId] = useState<string | null>(presetDriverId);
   const [driversLoading, setDriversLoading] = useState(false);
+  // Aviso cuando el repartidor preset ya no está disponible (se desmarca).
+  const [driverPresetNote, setDriverPresetNote] = useState<string | null>(null);
+  const presetValidated = useRef(false);
 
   const [routeKm, setRouteKm] = useState<number | null>(null);
   const deliveryDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -234,8 +241,23 @@ function NewOrderInner({
           api.getAvailableDrivers().catch(() => []),
         ]);
         if (!cancelled) {
-          setFavoriteDrivers(toDriverList(favs));
-          setAvailableDrivers(toDriverList(avail));
+          const favList = toDriverList(favs);
+          const availList = toDriverList(avail);
+          setFavoriteDrivers(favList);
+          setAvailableDrivers(availList);
+          // Preset de Repartidores: solo vale si sigue disponible; si no,
+          // se desmarca con aviso en vez de dejar un pedido que el backend
+          // rechazaría al crear.
+          if (presetDriverId && !presetValidated.current) {
+            presetValidated.current = true;
+            const found = [...favList, ...availList].find((d) => d.id === presetDriverId);
+            if (!found || found.status !== 'available') {
+              setSelectedDriverId(null);
+              setDriverPresetNote(
+                `${presetDriverName || 'El repartidor'} ya no está disponible: elegí otro o mandalo a concurso.`,
+              );
+            }
+          }
         }
       } finally {
         if (!cancelled) setDriversLoading(false);
@@ -1301,7 +1323,20 @@ function NewOrderInner({
                   Se avisa a todos los disponibles · el primero que lo acepte se lo lleva
                 </p>
               </button>
-              {selectedDriverId !== null && (
+              {driverPresetNote && (
+                <p className="mb-3 rounded-xl bg-gold-50 dark:bg-gold-900/20 border border-gold-200 dark:border-gold-800 px-3 py-2 text-xs text-gold-800 dark:text-gold-200">
+                  {driverPresetNote}
+                </p>
+              )}
+              {selectedDriverId !== null &&
+                selectedDriverId === presetDriverId &&
+                presetDriverId && (
+                  <p className="mb-3 rounded-xl bg-kiwi-50 dark:bg-kiwi-900/20 border border-kiwi-200 dark:border-kiwi-800 px-3 py-2 text-xs text-kiwi-800 dark:text-kiwi-200">
+                    Pedido para {presetDriverName || 'el repartidor elegido'}: nace asignado, sin
+                    concurso.
+                  </p>
+                )}
+              {selectedDriverId !== null && selectedDriverId !== presetDriverId && (
                 <p className="mb-3 rounded-xl bg-kiwi-50 dark:bg-kiwi-900/20 border border-kiwi-200 dark:border-kiwi-800 px-3 py-2 text-xs text-kiwi-800 dark:text-kiwi-200">
                   Solo se avisará al repartidor elegido. Nadie más recibirá este pedido.
                 </p>
@@ -1644,5 +1679,16 @@ function NewOrderWithKind() {
   const kind = presetParam === 'food' ? 'food' : 'freight';
   // Cuando la entrada ya preseleccionó el tipo (dashboard: Comida/Encomienda,
   // agregados rápidos), el formulario NO vuelve a preguntar.
-  return <NewOrderInner presetKind={kind} isPreset={presetParam !== null} />;
+  // presetDriverId: viene de Repartidores ("Crear pedido para este
+  // repartidor") y preselecciona la asignación directa.
+  const presetDriverId = searchParams.get('driverId');
+  const presetDriverName = searchParams.get('driverName');
+  return (
+    <NewOrderInner
+      presetKind={kind}
+      isPreset={presetParam !== null}
+      presetDriverId={presetDriverId}
+      presetDriverName={presetDriverName}
+    />
+  );
 }
