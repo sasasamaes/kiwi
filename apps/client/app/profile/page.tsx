@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { MapPin, Bell, ClipboardList, LogOut, Pencil, X, Check, Phone } from 'lucide-react';
 import { api, useAuth, KiwiLogo, ZonePicker } from '@kiwi/ui';
-import { findNearestZone } from '@kiwi/types';
 import { BottomNav } from '../components/BottomNav';
 import { AvatarEditor } from '../components/AvatarEditor';
 import { InstallAppButton } from '../components/InstallAppButton';
@@ -46,6 +45,8 @@ export default function ProfilePage() {
   const [gps, setGps] = useState<{ lat: number; lng: number } | null>(null);
   const [gpsZoneAuto, setGpsZoneAuto] = useState(false);
   const [locating, setLocating] = useState(false);
+  /** Zona resuelta por el servidor para el GPS del perfil (id+etiqueta). */
+  const [gpsResolved, setGpsResolved] = useState<{ id: string; label: string } | null>(null);
   // Libreta de lugares (Casa, Casa de mamá…).
   const [places, setPlaces] = useState<
     Array<{
@@ -64,6 +65,8 @@ export default function ProfilePage() {
   const [placeZone, setPlaceZone] = useState('');
   const [placeGps, setPlaceGps] = useState<{ lat: number; lng: number } | null>(null);
   const [placeLocating, setPlaceLocating] = useState(false);
+  /** Zona resuelta por el servidor para el GPS del lugar (id+etiqueta). */
+  const [placeResolved, setPlaceResolved] = useState<{ id: string; label: string } | null>(null);
   const [placeSaving, setPlaceSaving] = useState(false);
   const [placeError, setPlaceError] = useState<string | null>(null);
   const [placeActing, setPlaceActing] = useState<string | null>(null);
@@ -162,15 +165,17 @@ export default function ProfilePage() {
         const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         setGps(coords);
         setLocating(false);
-        try {
-          const near = findNearestZone(coords.lat, coords.lng);
-          if (near?.confident) {
-            setForm((f) => ({ ...f, deliveryZone: near.zone.id }));
+        // Resolver en el servidor (ids UUID de la DB): el catálogo local usa
+        // slugs y el picker no matchea (mostraba "Barrio detectado" genérico).
+        api
+          .resolveDeliveryZone(coords.lat, coords.lng)
+          .then((r) => {
+            if (!r.zone) return;
+            setGpsResolved({ id: r.zone.id, label: r.zone.label });
+            setForm((f) => ({ ...f, deliveryZone: r.zone.id }));
             setGpsZoneAuto(true);
-          }
-        } catch {
-          // sin zona: el picker manual sigue disponible
-        }
+          })
+          .catch(() => undefined);
       },
       () => setLocating(false),
       { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 },
@@ -194,12 +199,15 @@ export default function ProfilePage() {
         const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         setPlaceGps(coords);
         setPlaceLocating(false);
-        try {
-          const near = findNearestZone(coords.lat, coords.lng);
-          if (near?.confident) setPlaceZone(near.zone.id);
-        } catch {
-          // sin zona: el picker manual sigue disponible
-        }
+        // Resolver en el servidor (ver comentario en useGpsLocation).
+        api
+          .resolveDeliveryZone(coords.lat, coords.lng)
+          .then((r) => {
+            if (!r.zone) return;
+            setPlaceResolved({ id: r.zone.id, label: r.zone.label });
+            setPlaceZone(r.zone.id);
+          })
+          .catch(() => undefined);
       },
       () => setPlaceLocating(false),
       { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 },
@@ -224,6 +232,7 @@ export default function ProfilePage() {
       setPlaceAddress('');
       setPlaceZone('');
       setPlaceGps(null);
+      setPlaceResolved(null);
       setShowPlaceForm(false);
       await reloadPlaces();
     } catch (e: any) {
@@ -403,8 +412,12 @@ export default function ProfilePage() {
               </button>
               <ZonePicker
                 value={form.deliveryZone}
+                detectedLabel={
+                  gpsResolved && gpsResolved.id === form.deliveryZone ? gpsResolved.label : null
+                }
                 onChange={(zoneId) => {
                   setGpsZoneAuto(false);
+                  setGpsResolved(null);
                   setForm((f) => ({ ...f, deliveryZone: zoneId }));
                 }}
               />
@@ -507,7 +520,16 @@ export default function ProfilePage() {
                     ? '✓ Ubicación lista'
                     : '📍 Usar mi ubicación GPS'}
               </button>
-              <ZonePicker value={placeZone} onChange={setPlaceZone} />
+              <ZonePicker
+                value={placeZone}
+                detectedLabel={
+                  placeResolved && placeResolved.id === placeZone ? placeResolved.label : null
+                }
+                onChange={(zoneId) => {
+                  setPlaceResolved(null);
+                  setPlaceZone(zoneId);
+                }}
+              />
               {placeError && <p className="text-xs text-red-600">{placeError}</p>}
               <button
                 onClick={() => void savePlace()}
