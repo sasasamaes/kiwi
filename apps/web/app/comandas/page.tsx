@@ -140,26 +140,10 @@ export default function ComandasPage() {
     }
   };
 
-  if (authLoading || loading) {
-    return (
-      <>
-        <MerchantNav />
-        <main className="mx-auto max-w-3xl space-y-3 p-6">
-          {[...Array(3)].map((_, i) => (
-            <div
-              key={i}
-              className="h-36 animate-pulse rounded-2xl bg-surface-200 dark:bg-surface-800"
-            />
-          ))}
-        </main>
-      </>
-    );
-  }
-
-  const fresh = orders.filter((o) => NEW_STATUSES.has(o.status));
-
   // Lista de compras por kiosko: todo lo pre-vendido (aún no recogido) sumado
   // por puesto, para pedirlo en cada kiosko y luego repartirlo.
+  // OJO hooks: esto va ANTES de cualquier early return (si no, React #310:
+  // en loading se llamaba un hook menos que después de cargar).
   const shopping = useMemo(() => {
     const byKiosk = new Map<string, Map<string, number>>();
     for (const o of orders) {
@@ -180,6 +164,24 @@ export default function ComandasPage() {
       return { kiosk, rows, total: rows.reduce((s, r) => s + r.qty, 0) };
     });
   }, [orders]);
+
+  if (authLoading || loading) {
+    return (
+      <>
+        <MerchantNav />
+        <main className="mx-auto max-w-3xl space-y-3 p-6">
+          {[...Array(3)].map((_, i) => (
+            <div
+              key={i}
+              className="h-36 animate-pulse rounded-2xl bg-surface-200 dark:bg-surface-800"
+            />
+          ))}
+        </main>
+      </>
+    );
+  }
+
+  const fresh = orders.filter((o) => NEW_STATUSES.has(o.status));
 
   return (
     <>

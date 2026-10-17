@@ -35,6 +35,8 @@ export interface PushDebug {
   hasNotification: boolean;
   hasServiceWorker: boolean;
   hasPushManager: boolean;
+  /** Brave no soporta FCM (getToken falla con push service error). */
+  isBrave: boolean;
   permission: string;
   standaloneMatch: boolean;
   navigatorStandalone: unknown;
@@ -133,6 +135,7 @@ export function usePushNotifications(options: UsePushNotificationsOptions = {}) 
   }, []);
 
   useEffect(() => {
+    let alive = true;
     // SW legacy con scope '/' duplica cada push en este celu aunque el
     // servidor mande uno solo. Corre siempre, haya o no permiso.
     void cleanupLegacyMessagingSW().then(() => void refreshSwList());
@@ -164,6 +167,7 @@ export function usePushNotifications(options: UsePushNotificationsOptions = {}) 
       hasNotification,
       hasServiceWorker,
       hasPushManager,
+      isBrave: false,
       permission: hasNotification ? Notification.permission : 'n/a',
       standaloneMatch:
         typeof window !== 'undefined'
@@ -176,6 +180,28 @@ export function usePushNotifications(options: UsePushNotificationsOptions = {}) 
     };
     setPushDebug(dbg);
     console.log('[push-debug]', JSON.stringify(dbg));
+    // Brave miente con Notification+SW pero su push service no habla con
+    // FCM: getToken falla con "push service error". Detectarlo y marcar no
+    // soportado de entrada (sin intentar ni ensuciar la consola).
+    try {
+      const maybeBrave = (navigator as any)?.brave;
+      if (maybeBrave?.isBrave) {
+        void maybeBrave
+          .isBrave()
+          .then((is: boolean) => {
+            if (!is || !alive) return;
+            setIsSupported(false);
+            setPushDebug((prev) => (prev ? { ...prev, isBrave: true } : prev));
+            console.log('[push-debug] Brave detectado: push FCM no soportado');
+          })
+          .catch(() => undefined);
+      }
+    } catch {
+      // sin API brave: nada que hacer
+    }
+    return () => {
+      alive = false;
+    };
   }, []);
 
   const isOldIos =
