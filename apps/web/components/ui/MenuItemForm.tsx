@@ -73,10 +73,12 @@ interface MenuItemFormData {
   /** Días 0=dom…6=sáb en que se ofrece. Vacío = todos los días. */
   availableDays: number[];
   /** Stock del día (null = sin límite). dailyQty = lote que se repone solo. */
-  stockQty: number | null;
+  stockQty?: number | null;
   dailyQty: number | null;
   /** Nota de entrega programada ("Se entrega el jueves a las 2:00 p. m."). */
   fulfillNote: string;
+  /** Ajuste relativo (+N/−N) en vez del absoluto: no pisa ventas concurrentes. */
+  stockAdjust?: number;
   /** Kiosko dueño (null = directo del comercio). */
   kioskId: string | null;
 }
@@ -167,6 +169,13 @@ export function MenuItemForm({
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  // Ajuste relativo de stock (+N/−N sobre lo que haya al guardar): no pisa
+  // ventas concurrentes como el número absoluto. Solo en edición con control.
+  const [stockAdjust, setStockAdjust] = useState(0);
+  // Número exacto (modo alternativo al ajuste): pisa el valor tal cual.
+  const [stockExact, setStockExact] = useState(false);
+  const initialStock = toStockQty(initialData, 'stockQty');
+  const adjustMode = isEditing && initialStock != null && !stockExact;
 
   useEffect(() => {
     if (initialData) {
@@ -186,6 +195,8 @@ export function MenuItemForm({
         fulfillNote: String((initialData as any)?.fulfillNote ?? ''),
         kioskId: (initialData as any)?.kioskId || null,
       });
+      setStockAdjust(0);
+      setStockExact(false);
     }
   }, [initialData, categories]);
 
@@ -256,9 +267,16 @@ export function MenuItemForm({
       // hacía que el client app pintara el texto literal "Utensils" como
       // imagen del plato. Sin emoji elegido → null (el client muestra su
       // icono por defecto). URLs de imagen subida se respetan tal cual.
+      // Ajuste relativo de stock: manda stockAdjust y SACA el absoluto
+      // (si no, el número viejo pisaría ventas nuevas al guardar). En modo
+      // número exacto manda el absoluto tal cual (pisa a propósito).
+      const { stockQty: _absoluteStock, ...rest } = formData;
+      void _absoluteStock;
       const payload = {
-        ...formData,
+        ...rest,
         image: formData.image === 'Utensils' ? null : formData.image,
+        ...(adjustMode && stockAdjust !== 0 ? { stockAdjust } : {}),
+        ...(!adjustMode ? { stockQty: formData.stockQty } : {}),
       };
       await onSubmit(payload);
     } catch (error) {
@@ -610,24 +628,75 @@ export function MenuItemForm({
               </p>
             </div>
             <div>
-              <input
-                type="number"
-                min={0}
-                max={999999}
-                value={formData.stockQty ?? ''}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  setFormData((prev) => ({
-                    ...prev,
-                    stockQty: v === '' ? null : Math.max(0, Math.floor(Number(v) || 0)),
-                  }));
-                }}
-                placeholder="Stock actual"
-                className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20 transition-all"
-              />
-              <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">
-                Quedan hoy. Vacío = sin límite.
-              </p>
+              {adjustMode ? (
+                <>
+                  <div className="rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3">
+                    <p className="text-xs text-surface-500 dark:text-surface-400">
+                      Quedan hoy (según el sistema)
+                    </p>
+                    <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
+                      {initialStock}
+                    </p>
+                    <div className="mt-2 flex items-center gap-2">
+                      {[-10, -1, 1, 10].map((n) => (
+                        <button
+                          key={n}
+                          type="button"
+                          onClick={() => setStockAdjust((a) => a + n)}
+                          className={`flex-1 rounded-lg px-2 py-2 text-sm font-bold transition-colors ${
+                            n < 0
+                              ? 'bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100'
+                              : 'bg-kiwi-50 dark:bg-kiwi-900/30 text-kiwi-700 dark:text-kiwi-400 hover:bg-kiwi-100'
+                          }`}
+                        >
+                          {n > 0 ? `+${n}` : n}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="mt-2 text-xs font-medium text-surface-600 dark:text-surface-300">
+                      {stockAdjust === 0 ? (
+                        'Sin cambios. Se suma sobre lo que haya al guardar (no pisa ventas).'
+                      ) : (
+                        <>
+                          Ajuste {stockAdjust > 0 ? `+${stockAdjust}` : stockAdjust} → quedaría en ~
+                          {Math.max(0, (initialStock ?? 0) + stockAdjust)}
+                        </>
+                      )}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStockAdjust(0);
+                      setStockExact(true);
+                    }}
+                    className="mt-1 text-xs text-surface-400 hover:text-kiwi-700"
+                  >
+                    Fijar número exacto
+                  </button>
+                </>
+              ) : (
+                <>
+                  <input
+                    type="number"
+                    min={0}
+                    max={999999}
+                    value={formData.stockQty ?? ''}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setFormData((prev) => ({
+                        ...prev,
+                        stockQty: v === '' ? null : Math.max(0, Math.floor(Number(v) || 0)),
+                      }));
+                    }}
+                    placeholder="Stock actual"
+                    className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20 transition-all"
+                  />
+                  <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">
+                    Quedan hoy. Vacío = sin límite.
+                  </p>
+                </>
+              )}
             </div>
           </div>
         </div>

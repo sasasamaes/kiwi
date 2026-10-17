@@ -186,4 +186,70 @@ describe('MenuService', () => {
       expect(prisma.merchantKiosk.delete).not.toHaveBeenCalled();
     });
   });
+
+  describe('stockAdjust', () => {
+    const txStub = (updateImpl: any) => ({
+      menuItemVariantGroup: {
+        deleteMany: jest.fn(),
+        createMany: jest.fn(),
+        findMany: jest.fn().mockResolvedValue([]),
+      },
+      menuItemVariantOption: { createMany: jest.fn() },
+      menuItem: { update: jest.fn().mockImplementation(updateImpl) },
+    });
+
+    beforeEach(() => {
+      prisma.menuItem.findUnique.mockResolvedValue({
+        id: 'n',
+        merchantId: 'merchant-1',
+        stockQty: 59,
+      });
+    });
+
+    it('suma atómico sobre el vigente e ignora el absoluto', async () => {
+      const calls: any[] = [];
+      prisma.$transaction.mockImplementation(async (fn: any) =>
+        fn(
+          txStub(async ({ data }: any) => {
+            calls.push(data);
+            return { id: 'n', stockQty: 64 };
+          }),
+        ),
+      );
+      await service.updateMenuItem('u1', 'n', { stockQty: 59, stockAdjust: 5 });
+      expect(calls[0]).toEqual(expect.objectContaining({ stockQty: { increment: 5 } }));
+      expect(calls[0].stockQty).not.toBe(59);
+    });
+
+    it('pisa en 0 si queda negativo', async () => {
+      const calls: any[] = [];
+      prisma.$transaction.mockImplementation(async (fn: any) =>
+        fn(
+          txStub(async ({ data }: any) => {
+            calls.push(data);
+            return calls.length === 1 ? { id: 'n', stockQty: -3 } : { id: 'n', stockQty: 0 };
+          }),
+        ),
+      );
+      await service.updateMenuItem('u1', 'n', { stockAdjust: -100 });
+      expect(calls[1]).toEqual(expect.objectContaining({ stockQty: 0 }));
+    });
+
+    it('rechaza sin control de stock y valores inválidos', async () => {
+      prisma.menuItem.findUnique.mockResolvedValue({
+        id: 'n',
+        merchantId: 'merchant-1',
+        stockQty: null,
+      });
+      await expect(service.updateMenuItem('u1', 'n', { stockAdjust: 5 })).rejects.toThrow(
+        'Sin control de stock',
+      );
+      await expect(service.updateMenuItem('u1', 'n', { stockAdjust: 0 })).rejects.toThrow(
+        'stockAdjust inválido',
+      );
+      await expect(service.updateMenuItem('u1', 'n', { stockAdjust: 'x' })).rejects.toThrow(
+        'stockAdjust inválido',
+      );
+    });
+  });
 });

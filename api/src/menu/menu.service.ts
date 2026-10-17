@@ -623,12 +623,29 @@ export class MenuService {
     if ((data as any).kioskId !== undefined) {
       input.kioskId = await this.resolveKioskId(merchant.id, (data as any).kioskId);
     }
-    if (Object.keys(input).length === 0 && variants === undefined) {
+    // Ajuste RELATIVO de stock (+N/−N, atómico): suma sobre lo que haya en
+    // ese instante, así una venta concurrente no se pierde (el absoluto la
+    // pisaría). Si viene adjust, el stockQty absoluto se ignora.
+    let stockAdjust: number | undefined;
+    if ((data as any).stockAdjust !== undefined && (data as any).stockAdjust !== null) {
+      const n = Math.trunc(Number((data as any).stockAdjust));
+      if (!Number.isFinite(n) || n === 0 || Math.abs(n) > 999999) {
+        throw new BadRequestException('stockAdjust inválido (distinto de 0, máx ±999999)');
+      }
+      if ((item as any).stockQty == null) {
+        throw new BadRequestException(
+          'Sin control de stock: primero fijá la cantidad por día (lote)',
+        );
+      }
+      stockAdjust = n;
+      delete (input as any).stockQty;
+    }
+    if (Object.keys(input).length === 0 && variants === undefined && stockAdjust === undefined) {
       throw new BadRequestException('Nada que actualizar');
     }
     // Si el comercio toca el stock a mano, el día vigente es hoy (hora CR):
     // evita que la reposición automática del lote lo pise con el día viejo.
-    if (input.stockQty !== undefined || input.dailyQty !== undefined) {
+    if (input.stockQty !== undefined || input.dailyQty !== undefined || stockAdjust !== undefined) {
       input.stockDay = toCRDateKey(new Date());
     }
 
@@ -668,11 +685,27 @@ export class MenuService {
             }
           }
         }
-        return tx.menuItem.update({
-          where: { id: itemId },
-          data: input,
-          include: { variantGroups: { include: { options: true } } },
-        });
+        return tx.menuItem
+          .update({
+            where: { id: itemId },
+            data: {
+              ...input,
+              // Ajuste atómico sobre el valor vigente (no pisa ventas
+              // concurrentes). Piso en 0: el stock nunca queda negativo.
+              ...(stockAdjust !== undefined ? { stockQty: { increment: stockAdjust } } : {}),
+            },
+            include: { variantGroups: { include: { options: true } } },
+          })
+          .then(async (row: any) => {
+            if (stockAdjust !== undefined && (row.stockQty ?? 0) < 0) {
+              return tx.menuItem.update({
+                where: { id: itemId },
+                data: { stockQty: 0 },
+                include: { variantGroups: { include: { options: true } } },
+              });
+            }
+            return row;
+          });
       })
       .then((updated) => {
         // Reposición 0 → con stock: avisar a seguidores (best-effort, nunca

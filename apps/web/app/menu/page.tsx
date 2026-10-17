@@ -563,6 +563,13 @@ export default function MenuManagementPage() {
                         isPopular: editingItem.isPopular,
                         isAvailable: editingItem.isAvailable,
                         kioskId: (editingItem as any).kioskId ?? null,
+                        // Todo lo programable/inventario: sin esto, guardar una
+                        // edición los BORRABA (el update solo toca lo enviado
+                        // y el form mandaba vacíos).
+                        availableDays: (editingItem as any).availableDays ?? [],
+                        stockQty: (editingItem as any).stockQty ?? null,
+                        dailyQty: (editingItem as any).dailyQty ?? null,
+                        fulfillNote: (editingItem as any).fulfillNote ?? '',
                         // CRÍTICO: sin esto, guardar una edición borraba todos
                         // los modificadores (el update es replace-all).
                         variants: editingItem.variantGroups ?? [],
