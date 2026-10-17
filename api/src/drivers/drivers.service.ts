@@ -134,6 +134,39 @@ export class DriversService {
     });
   }
 
+  /**
+   * Repartidores con GPS reciente para el mapa vivo de operaciones (admin).
+   * Solo pings de los últimos 15 min (el driver reporta cada ~30s mientras
+   * está available); sin ubicación reciente no se plotea.
+   */
+  async getLiveDrivers() {
+    const since = new Date(Date.now() - 15 * 60 * 1000);
+    const rows = await this.prisma.driverProfile.findMany({
+      where: { lastSeenAt: { gte: since } },
+      select: {
+        id: true,
+        fullName: true,
+        vehicleType: true,
+        status: true,
+        lastLat: true,
+        lastLng: true,
+        lastSeenAt: true,
+      },
+      orderBy: { lastSeenAt: 'desc' },
+    });
+    return rows
+      .map((d) => ({
+        id: d.id,
+        name: d.fullName,
+        vehicle: d.vehicleType,
+        status: d.status,
+        lat: d.lastLat != null ? Number(d.lastLat) : null,
+        lng: d.lastLng != null ? Number(d.lastLng) : null,
+        updatedAt: d.lastSeenAt,
+      }))
+      .filter((d) => Number.isFinite(d.lat) && Number.isFinite(d.lng));
+  }
+
   async updateSchedule(userId: string, schedules: any[]) {
     const driver = await this.prisma.driverProfile.findUnique({
       where: { userId },

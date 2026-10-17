@@ -826,6 +826,11 @@ class ApiClient {
     return this.request<any>(`/delivery-zones/${id}`, { method: 'DELETE' });
   }
 
+  /** Repartidores con GPS reciente (mapa vivo admin). */
+  async adminLiveDrivers() {
+    return this.request<any[]>(`/drivers/live`);
+  }
+
   /** Vitrina de mañana: qué comercios venden mañana (para la preventa). */
   async getTomorrowPreview(city = 'nicoya'): Promise<{
     items: Array<{

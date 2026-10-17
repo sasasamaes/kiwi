@@ -179,6 +179,15 @@ export class DriversController {
     return this.driversService.updateSchedule(user.sub, body.schedules);
   }
 
+  @Get('live')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Repartidores con GPS reciente (mapa vivo admin)' })
+  async getLive() {
+    return this.driversService.getLiveDrivers();
+  }
+
   @Get('available')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('merchant', 'admin')

@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { Plus, Pencil, Ban, RotateCcw, Check, Sparkles } from 'lucide-react';
 import { api, useAuth } from '@kiwi/ui';
 import { ZonesOverviewMap } from './ZonesOverviewMap';
+import { kiwiIcon } from './markers';
 
 type Ring = number[][]; // [[lng,lat], …]
 
@@ -90,6 +91,8 @@ function autoRingFor(zone: Zone, zones: Zone[], sides = 8): Ring | null {
 export default function AdminZonesPage() {
   const { user, loading: authLoading } = useAuth();
   const [zones, setZones] = useState<Zone[]>([]);
+  const [merchants, setMerchants] = useState<any[]>([]);
+  const [liveDrivers, setLiveDrivers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -119,6 +122,13 @@ export default function AdminZonesPage() {
     setLoading(true);
     try {
       setZones((await api.adminListZones()) ?? []);
+      // Negocios para la capa del mapa general (una vez por carga).
+      try {
+        const feed = await api.discoverMerchants({ city: 'nicoya', take: 50 });
+        setMerchants(feed?.items ?? []);
+      } catch {
+        /* sin negocios no se cae el mapa */
+      }
     } catch (err: any) {
       setMsg(err?.message || 'No se pudieron cargar las zonas');
     } finally {
@@ -129,6 +139,26 @@ export default function AdminZonesPage() {
   useEffect(() => {
     if (!authLoading && user?.role === 'admin') void load();
   }, [authLoading, user, load]);
+
+  // Repartidores en vivo: polling cada 15s (el driver pingea cada ~30s).
+  useEffect(() => {
+    if (authLoading || user?.role !== 'admin') return;
+    let alive = true;
+    const tick = async () => {
+      try {
+        const live = await api.adminLiveDrivers();
+        if (alive) setLiveDrivers(Array.isArray(live) ? live : []);
+      } catch {
+        /* reintenta en el próximo ciclo */
+      }
+    };
+    void tick();
+    const t = setInterval(tick, 15000);
+    return () => {
+      alive = false;
+      clearInterval(t);
+    };
+  }, [authLoading, user]);
 
   // Mueve TODO el polígono (conservando la forma) para que su centro quede
   // donde se hizo doble-clic, y lleva el punto de referencia al centro nuevo.
@@ -236,8 +266,7 @@ export default function AdminZonesPage() {
     layerRef.current = layer;
 
     // Punto de entrega (referencia) según lat/long, arrastrable para corregir.
-    // Icono propio en div (el default de Leaflet pide un PNG que no existe en
-    // el bundle y se ve roto con el texto "Mark").
+    // Marca Kiwi en vez del pin default de Leaflet.
     if (pointMarkerRef.current) {
       pointMarkerRef.current.remove();
       pointMarkerRef.current = null;
@@ -250,12 +279,7 @@ export default function AdminZonesPage() {
       Number.isFinite(lat) &&
       Number.isFinite(lng)
     ) {
-      const pointIcon = L.divIcon({
-        html: '<div style="width:28px;height:28px;border-radius:999px;background:#fff;border:3px solid #f59e0b;font-size:15px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.4);cursor:grab;">📍</div>',
-        className: 'zone-point',
-        iconSize: [28, 28],
-        iconAnchor: [14, 14],
-      });
+      const pointIcon = kiwiIcon(L, { size: 34 });
       const marker = L.marker([lat, lng], { draggable: true, icon: pointIcon })
         .addTo(map)
         .bindTooltip('Punto de entrega — arrastrá para mover');
@@ -491,7 +515,7 @@ export default function AdminZonesPage() {
             &gt; ₡4000
           </span>
         </div>
-        <ZonesOverviewMap zones={zones} />
+        <ZonesOverviewMap zones={zones} merchants={merchants} drivers={liveDrivers} />
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-surface-200/60 dark:border-white/10">
