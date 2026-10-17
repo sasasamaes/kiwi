@@ -287,6 +287,35 @@ export class NotificationsService {
     };
   }
 
+  /**
+   * Push de chat a UN usuario SIN fila de inbox (la fila la crea el
+   * ChatService por destinatario). Solo FCM data-message; sin tokens o sin
+   * FCM es no-op silencioso.
+   */
+  async pushChatMessage(
+    userId: string,
+    msg: { orderId: string; senderId: string; senderRole: string; text: string; messageId: string },
+  ): Promise<void> {
+    if (!this.fcmAdmin) return;
+    const roleLabel =
+      msg.senderRole === 'merchant'
+        ? 'el comercio'
+        : msg.senderRole === 'driver'
+          ? 'el repartidor'
+          : 'el cliente';
+    await this.sendPushToTokens(userId, {
+      title: `Nuevo mensaje de ${roleLabel}`,
+      body: msg.text.slice(0, 200),
+      data: {
+        type: 'chat',
+        orderId: msg.orderId,
+        senderId: msg.senderId,
+        senderRole: msg.senderRole,
+        messageId: msg.messageId,
+      },
+    });
+  }
+
   async sendToRole(role: string, notification: PushNotification) {
     const users = await this.prisma.user.findMany({
       where: { role: role as any, status: 'active' },

@@ -1160,34 +1160,6 @@ export class OrdersService {
   }
 
   /**
-   * Order-scoped chat history. Reuses findById for participant-only
-   * access: merchant owner, assigned driver, owning customer, or admin.
-   */
-  async getOrderMessages(orderId: string, userId: string, limit = 50, role?: string) {
-    await this.findById(orderId, userId, role);
-
-    const messages = await this.prisma.notification.findMany({
-      where: {
-        type: 'chat',
-        data: { path: ['orderId'], equals: orderId },
-        OR: [{ userId }, { data: { path: ['senderId'], equals: userId } }],
-      },
-      orderBy: { createdAt: 'asc' },
-      take: Math.min(Math.max(limit, 1), 200),
-    });
-
-    return messages.map((m: any) => ({
-      id: m.id,
-      orderId,
-      senderId: m.data?.senderId ?? null,
-      senderRole: m.data?.senderRole ?? null,
-      text: m.body,
-      createdAt: m.createdAt,
-      mine: (m.data?.senderId ?? null) === userId,
-    }));
-  }
-
-  /**
    * Public tracking view (no auth): order IDs are unguessable UUIDs, so the
    * link itself is the credential ("anyone with the link" pattern, same as
    * the public menu). Only share-safe fields are exposed — never phones,

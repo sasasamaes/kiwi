@@ -1144,46 +1144,6 @@ describe('OrdersService', () => {
     });
   });
 
-  describe('getOrderMessages', () => {
-    beforeEach(() => {
-      prisma.notification = { findMany: jest.fn() };
-    });
-
-    const participantOrder = {
-      id: 'order-1',
-      merchant: { userId: 'merchant-1' },
-      driver: { userId: 'driver-1' },
-    };
-
-    it('devuelve historial al participante con flag mine', async () => {
-      prisma.order.findUnique.mockResolvedValue(participantOrder);
-      prisma.notification.findMany.mockResolvedValue([
-        {
-          id: 'm1',
-          body: 'Voy en camino',
-          createdAt: new Date(),
-          data: { orderId: 'order-1', senderId: 'driver-1', senderRole: 'driver' },
-        },
-      ]);
-
-      const messages = await service.getOrderMessages('order-1', 'merchant-1');
-
-      expect(messages).toHaveLength(1);
-      expect(messages[0].text).toBe('Voy en camino');
-      expect(messages[0].mine).toBe(false);
-      expect(prisma.notification.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ where: expect.objectContaining({ type: 'chat' }) }),
-      );
-    });
-
-    it('niega acceso a terceros', async () => {
-      prisma.order.findUnique.mockResolvedValue(participantOrder);
-
-      await expect(service.getOrderMessages('order-1', 'outsider-9')).rejects.toThrow();
-      expect(prisma.notification.findMany).not.toHaveBeenCalled();
-    });
-  });
-
   describe('getPublicTracking', () => {
     it('expone solo campos compartibles (sin PII ni montos)', async () => {
       prisma.order.findUnique.mockResolvedValue({

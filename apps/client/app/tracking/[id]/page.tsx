@@ -14,6 +14,7 @@ import {
   Order,
   isEmojiImage,
   isHttpUrl,
+  OrderChat,
 } from '@kiwi/ui';
 import { ArrowLeft, Clock, Check, Bike, Package, Rocket, PartyPopper, X, Star } from 'lucide-react';
 
@@ -629,6 +630,18 @@ function TrackingContent() {
                 </div>
               </div>
             </div>
+          </motion.div>
+        )}
+
+        {/* Chat con comercio/repartidor (solo clientes con cuenta) */}
+        {typeof window !== 'undefined' && api.getToken() && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="mb-6"
+          >
+            <OrderChat orderId={orderId} />
           </motion.div>
         )}
 

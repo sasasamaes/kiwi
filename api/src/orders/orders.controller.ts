@@ -17,6 +17,7 @@ import { memoryStorage } from 'multer';
 import { Public } from '../auth/decorators/public.decorator';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiConsumes } from '@nestjs/swagger';
 import { OrdersService } from './orders.service';
+import { ChatService } from '../chat/chat.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -25,7 +26,10 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 @ApiTags('Orders')
 @Controller('orders')
 export class OrdersController {
-  constructor(private readonly ordersService: OrdersService) {}
+  constructor(
+    private readonly ordersService: OrdersService,
+    private readonly chatService: ChatService,
+  ) {}
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -243,7 +247,15 @@ export class OrdersController {
     @CurrentUser() user: any,
     @Query('limit') limit?: string,
   ) {
-    return this.ordersService.getOrderMessages(id, user.sub, limit ? Number(limit) : 50, user.role);
+    return this.chatService.getMessages(id, user.sub, limit ? Number(limit) : 50);
+  }
+
+  @Post(':id/messages')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Send order chat message (participants only)' })
+  async sendMessage(@Param('id') id: string, @CurrentUser() user: any, @Body() body: any) {
+    return this.chatService.sendMessage(id, user.sub, user.role, body?.text);
   }
 
   @Put(':id/assign')

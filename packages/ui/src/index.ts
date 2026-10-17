@@ -219,6 +219,8 @@ export { AuthProvider, useAuth } from './AuthContext';
 export { useInviteReferral } from './useInviteReferral';
 export type { InviteState, ReferralOffer } from './useInviteReferral';
 export { WaitlistNotice } from './WaitlistNotice';
+export { OrderChat } from './OrderChat';
+export type { ChatMessage } from './OrderChat';
 
 // ============================================
 //   i18n (Internationalization)

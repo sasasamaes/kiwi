@@ -12,6 +12,7 @@ import { ImageUploadService } from '../menu/image-upload.service';
 import { AssignmentSweeper } from './assignment-sweeper.service';
 import { ZonesModule } from '../zones/zones.module';
 import { CoverageModule } from '../service-area/coverage.module';
+import { ChatModule } from '../chat/chat.module';
 
 @Module({
   // NotificationsService llega vía NotificationsForwardModule (@Global).
@@ -24,6 +25,7 @@ import { CoverageModule } from '../service-area/coverage.module';
     SettingsModule,
     ZonesModule,
     CoverageModule,
+    ChatModule,
   ],
   providers: [OrdersService, ImageUploadService, AssignmentSweeper],
   controllers: [OrdersController],

@@ -1344,6 +1344,13 @@ class ApiClient {
     return this.request<any>(`/orders/${orderId}/messages?limit=${limit}`);
   }
 
+  async sendOrderMessage(orderId: string, text: string) {
+    return this.request<{ message: any; delivered: number }>(`/orders/${orderId}/messages`, {
+      method: 'POST',
+      body: { text },
+    });
+  }
+
   async getPublicTracking(orderId: string) {
     return this.request<any>(`/orders/track/${orderId}`);
   }

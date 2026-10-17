@@ -14,7 +14,7 @@ import {
   Volume2,
   ShoppingBasket,
 } from 'lucide-react';
-import { api, useAuth, useSocket, playNotificationSound } from '@kiwi/ui';
+import { api, useAuth, useSocket, playNotificationSound, OrderChat } from '@kiwi/ui';
 import { MerchantNav } from '../../components/MerchantNav';
 
 const NEW_STATUSES = new Set(['pending', 'driver_proposals', 'pending_acceptance']);
@@ -54,6 +54,7 @@ export default function ComandasPage() {
   const [flashId, setFlashId] = useState<string | null>(null);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
+  const [chatOpenId, setChatOpenId] = useState<string | null>(null);
   const knownIds = useRef<Set<string>>(new Set());
   const firstLoad = useRef(true);
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -409,6 +410,16 @@ export default function ComandasPage() {
                       </span>
                       <span className="flex-1" />
                       <button
+                        onClick={() => setChatOpenId((v) => (v === o.id ? null : o.id))}
+                        className={`rounded-xl px-3 py-2 text-xs font-semibold transition-colors ${
+                          chatOpenId === o.id
+                            ? 'bg-kiwi-100 dark:bg-kiwi-900/40 text-kiwi-700 dark:text-kiwi-300'
+                            : 'text-surface-500 hover:bg-surface-100 dark:hover:bg-surface-800'
+                        }`}
+                      >
+                        💬 Chat
+                      </button>
+                      <button
                         onClick={() => void cancelOrder(o.id)}
                         disabled={cancellingId === o.id}
                         className={`rounded-xl px-3 py-2 text-xs font-semibold transition-colors disabled:opacity-50 ${
@@ -424,6 +435,11 @@ export default function ComandasPage() {
                             : 'Cancelar'}
                       </button>
                     </div>
+                    {chatOpenId === o.id && (
+                      <div className="mt-3">
+                        <OrderChat orderId={o.id} />
+                      </div>
+                    )}
                   </motion.article>
                 );
               })}

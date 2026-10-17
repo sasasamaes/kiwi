@@ -22,6 +22,7 @@ describe('EventsGateway payload restrictions', () => {
           findUnique: jest.fn(),
         },
       } as any,
+      { sendMessage: jest.fn() } as any,
     );
     (gateway as any).server = { to: jest.fn().mockReturnValue({ emit: emitMock }) };
     client = { id: 'sock1', join: jest.fn(), emit: jest.fn() };

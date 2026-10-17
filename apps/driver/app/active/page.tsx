@@ -41,6 +41,7 @@ import {
   TapButton,
   AnimatedCounter,
   playNotificationSound,
+  OrderChat,
 } from '@kiwi/ui';
 
 // Estados considerados "activos" para el repartidor
@@ -1206,6 +1207,10 @@ export default function ActiveOrders() {
             </motion.div>
           </div>
         )}
+        {/* Chat del pedido (comercio + cliente con cuenta) */}
+        <div className="mb-4">
+          <OrderChat orderId={order.id} />
+        </div>
         {/* Paquete / flete */}
         {order.kind === 'freight' && (
           <div className="mb-4 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4">

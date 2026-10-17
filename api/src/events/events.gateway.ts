@@ -11,6 +11,7 @@ import {
 import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
+import { ChatService } from '../chat/chat.service';
 
 @WebSocketGateway({
   cors: {
@@ -52,6 +53,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(
     private jwtService: JwtService,
     private prisma: PrismaService,
+    private chat: ChatService,
   ) {}
 
   async handleConnection(client: Socket) {
@@ -441,29 +443,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (!userData) {
       return { error: 'Unauthorized' };
     }
-
-    const text = String(data?.text ?? '')
-      .trim()
-      .slice(0, 1000);
-    if (!data?.orderId || !text) {
-      return { error: 'orderId y text son requeridos' };
-    }
-
-    const order = await this.prisma.order.findUnique({
-      where: { id: data.orderId },
-      include: { merchant: true, driver: true },
-    });
-    if (!order) {
-      return { error: 'Order not found' };
-    }
-
-    const merchantUserId = order.merchant?.userId;
-    const driverUserId = order.driver?.userId;
     const senderId = userData.userId;
-    // Solo los participantes de la orden pueden chatear en ella.
-    if (senderId !== merchantUserId && senderId !== driverUserId) {
-      return { error: 'Unauthorized' };
-    }
     // Liveness: un socket abierto antes del logout/baja no escribe más.
     try {
       const live = await this.prisma.user.findUnique({
@@ -477,32 +457,22 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     } catch {
       return { error: 'Unauthorized' };
     }
-    if (!merchantUserId || !driverUserId) {
-      return { error: 'El pedido aún no tiene repartidor asignado' };
+    try {
+      const { message } = await this.chat.sendMessage(
+        data?.orderId,
+        senderId,
+        userData.role,
+        data?.text,
+        (userId, payload) => this.server.to(`user:${userId}`).emit('chat:message', payload),
+      );
+      return { success: true, message };
+    } catch (error: any) {
+      const status = error?.status ?? 500;
+      if (status === 404) return { error: 'Order not found' };
+      if (status === 403) return { error: 'Unauthorized' };
+      if (status === 400) return { error: error?.message ?? 'Mensaje inválido' };
+      return { error: 'No se pudo enviar' };
     }
-    const recipientId = senderId === merchantUserId ? driverUserId : merchantUserId;
-
-    const message = await this.prisma.notification.create({
-      data: {
-        userId: recipientId,
-        title: 'Nuevo mensaje',
-        body: text,
-        type: 'chat',
-        data: { orderId: order.id, senderId, senderRole: userData.role },
-      },
-    });
-
-    const payload = {
-      id: message.id,
-      orderId: order.id,
-      senderId,
-      senderRole: userData.role,
-      text,
-      createdAt: message.createdAt,
-    };
-    this.server.to(`user:${recipientId}`).emit('chat:message', payload);
-
-    return { success: true, message: payload };
   }
 
   // ============================================
