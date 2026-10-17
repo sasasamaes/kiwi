@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Store, Check } from 'lucide-react';
 import { api, useAuth } from '@kiwi/ui';
@@ -78,9 +78,16 @@ export default function PerfilPage() {
     phone: '',
     category: 'restaurante',
     logoUrl: '' as string | null,
+    latitude: '' as number | string,
+    longitude: '' as number | string,
     hours: {} as Record<string, DayHours>,
     socials: { instagram: '', facebook: '', tiktok: '', whatsapp: '' },
   });
+  // Mini-mapa de ubicación del local (client-only).
+  const mapDivRef = useRef<HTMLDivElement>(null);
+  const mapObj = useRef<any>(null);
+  const markerObj = useRef<any>(null);
+  const LRef = useRef<any>(null);
 
   useEffect(() => {
     if (!authLoading && !user) router.push('/login');
@@ -109,6 +116,8 @@ export default function PerfilPage() {
           phone: (me as any)?.phone || '',
           category: (profile as any)?.category || 'restaurante',
           logoUrl: (profile as any)?.logoUrl || null,
+          latitude: (profile as any)?.latitude ?? '',
+          longitude: (profile as any)?.longitude ?? '',
           hours,
           socials: {
             instagram: (profile as any)?.socials?.instagram || '',
@@ -130,6 +139,104 @@ export default function PerfilPage() {
       cancelled = true;
     };
   }, [user]);
+
+  // Mini-mapa: init una vez cargado el perfil; el punto se redibuja con el form.
+  useEffect(() => {
+    if (loading || mapObj.current || !mapDivRef.current) return;
+    let cancelled = false;
+    (async () => {
+      const mod: any = await import('leaflet');
+      if (cancelled || mapObj.current || !mapDivRef.current) return;
+      const L = mod.default ?? mod;
+      LRef.current = L;
+      const lat = Number(form.latitude);
+      const lng = Number(form.longitude);
+      const hasPt =
+        form.latitude !== '' &&
+        form.longitude !== '' &&
+        Number.isFinite(lat) &&
+        Number.isFinite(lng);
+      const map = L.map(mapDivRef.current).setView(
+        hasPt ? [lat, lng] : [10.1467, -85.452],
+        hasPt ? 16 : 13,
+      );
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap',
+      }).addTo(map);
+      map.on('click', (e: any) => {
+        setForm((f) => ({
+          ...f,
+          latitude: e.latlng.lat.toFixed(6),
+          longitude: e.latlng.lng.toFixed(6),
+        }));
+      });
+      mapObj.current = map;
+      drawMarker();
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
+
+  // Redibuja el kiwi cuando cambia el punto (incluye al quitarlo).
+  useEffect(() => {
+    if (mapObj.current) drawMarker();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.latitude, form.longitude]);
+
+  const drawMarker = () => {
+    const L = LRef.current;
+    const map = mapObj.current;
+    if (!L || !map) return;
+    if (markerObj.current) {
+      markerObj.current.remove();
+      markerObj.current = null;
+    }
+    const lat = Number(form.latitude);
+    const lng = Number(form.longitude);
+    if (
+      form.latitude === '' ||
+      form.longitude === '' ||
+      !Number.isFinite(lat) ||
+      !Number.isFinite(lng)
+    ) {
+      return;
+    }
+    const icon = L.divIcon({
+      html: '<img src="/kiwi.svg" alt="Mi local" style="width:34px;height:34px;display:block;border-radius:999px;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35);background:#fff;"/>',
+      className: 'merchant-point',
+      iconSize: [34, 34],
+      iconAnchor: [17, 17],
+    });
+    const marker = L.marker([lat, lng], { draggable: true, icon })
+      .addTo(map)
+      .bindTooltip('Mi local — arrastrá para mover');
+    marker.on('dragend', () => {
+      const p = marker.getLatLng();
+      setForm((f) => ({ ...f, latitude: p.lat.toFixed(6), longitude: p.lng.toFixed(6) }));
+    });
+    markerObj.current = marker;
+  };
+
+  const useMyLocation = () => {
+    if (!navigator.geolocation) {
+      setFormError('Tu dispositivo no da ubicación.');
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setForm((f) => ({
+          ...f,
+          latitude: pos.coords.latitude.toFixed(6),
+          longitude: pos.coords.longitude.toFixed(6),
+        }));
+        setFormError(null);
+      },
+      () => setFormError('No se pudo obtener tu ubicación. Tocá el mapa.'),
+      { enableHighAccuracy: true, timeout: 10_000 },
+    );
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -197,12 +304,22 @@ export default function PerfilPage() {
           openingHours[d.key] = { open: h.open, close: h.close };
         }
       }
+      const latRaw = form.latitude === '' ? null : Number(form.latitude);
+      const lngRaw = form.longitude === '' ? null : Number(form.longitude);
+      if ((latRaw == null) !== (lngRaw == null)) {
+        throw new Error('Ubicación incompleta: tocá el mapa o quitá el punto.');
+      }
+      if (latRaw != null && (!Number.isFinite(latRaw) || !Number.isFinite(lngRaw as number))) {
+        throw new Error('Ubicación inválida.');
+      }
       const [updated] = await Promise.all([
         api.updateMerchantProfile({
           businessName: form.businessName.trim(),
           description: form.description.trim() || null,
           address: form.address.trim() || undefined,
           category: form.category,
+          latitude: latRaw,
+          longitude: lngRaw,
           openingHours,
           logoUrl: form.logoUrl || null,
           socials: {
@@ -435,6 +552,36 @@ export default function PerfilPage() {
                 />
               </div>
             </div>
+          </div>
+
+          <div className="my-5 border-t border-surface-100 dark:border-surface-700/60" />
+          <p className="text-xs font-bold uppercase tracking-wider text-surface-400 mb-4">
+            Ubicación del local
+          </p>
+          <p className="mb-3 text-sm text-surface-500 dark:text-surface-400">
+            Tocá el mapa para marcar dónde llegan a recoger. Ese punto se ve en el mapa general de
+            operaciones.
+          </p>
+          <div
+            ref={mapDivRef}
+            className="h-64 w-full overflow-hidden rounded-xl border border-surface-200 dark:border-surface-700"
+          />
+          <div className="mt-2 flex gap-2">
+            <button
+              type="button"
+              onClick={useMyLocation}
+              className="rounded-lg border border-surface-200 dark:border-surface-700 px-3 py-1.5 text-xs font-medium"
+            >
+              Usar mi ubicación
+            </button>
+            <button
+              type="button"
+              onClick={() => setForm((f) => ({ ...f, latitude: '', longitude: '' }))}
+              disabled={form.latitude === '' && form.longitude === ''}
+              className="rounded-lg border border-surface-200 dark:border-surface-700 px-3 py-1.5 text-xs font-medium disabled:opacity-40"
+            >
+              Quitar punto
+            </button>
           </div>
 
           <div className="my-5 border-t border-surface-100 dark:border-surface-700/60" />
