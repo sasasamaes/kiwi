@@ -184,6 +184,8 @@ export default function AdminZonesPage() {
     layerRef.current = layer;
 
     // Punto de entrega (referencia) según lat/long, arrastrable para corregir.
+    // Icono propio en div (el default de Leaflet pide un PNG que no existe en
+    // el bundle y se ve roto con el texto "Mark").
     if (pointMarkerRef.current) {
       pointMarkerRef.current.remove();
       pointMarkerRef.current = null;
@@ -196,9 +198,15 @@ export default function AdminZonesPage() {
       Number.isFinite(lat) &&
       Number.isFinite(lng)
     ) {
-      const marker = L.marker([lat, lng], { draggable: true })
+      const pointIcon = L.divIcon({
+        html: '<div style="width:28px;height:28px;border-radius:999px;background:#fff;border:3px solid #f59e0b;font-size:15px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.4);cursor:grab;">📍</div>',
+        className: 'zone-point',
+        iconSize: [28, 28],
+        iconAnchor: [14, 14],
+      });
+      const marker = L.marker([lat, lng], { draggable: true, icon: pointIcon })
         .addTo(map)
-        .bindTooltip('Punto de entrega');
+        .bindTooltip('Punto de entrega — arrastrá para mover');
       marker.on('dragend', () => {
         const p = marker.getLatLng();
         setForm((f) => ({ ...f, latitude: p.lat.toFixed(6), longitude: p.lng.toFixed(6) }));
