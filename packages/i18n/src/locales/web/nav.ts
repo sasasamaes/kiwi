@@ -1,0 +1,123 @@
+// Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
+/**
+ * 🥝 KIWI web - Navegación comercio + admin (ES tico / EN)
+ * Lo escribe el coordinador; los grupos de páginas viven en sus archivos.
+ */
+
+export const navEs = {
+  links: {
+    dashboard: 'Dashboard',
+    comandas: 'Comandas',
+    orders: 'Pedidos',
+    menu: 'Menú',
+    drivers: 'Repartidores',
+    analytics: 'Analytics',
+    profile: 'Perfil',
+  },
+  live: 'En vivo',
+  offline: 'Desconectado',
+  notifications: 'Notificaciones',
+  fallbackBusiness: 'Mi Negocio',
+  businessLogoAlt: 'Logo del comercio',
+  logout: 'Cerrar sesión',
+  theme: 'Tema',
+  openMenu: 'Abrir menú',
+  closeMenu: 'Cerrar menú',
+  currentPage: 'Kiwi',
+} as const;
+
+export const navEn = {
+  links: {
+    dashboard: 'Dashboard',
+    comandas: 'Orders board',
+    orders: 'Orders',
+    menu: 'Menu',
+    drivers: 'Drivers',
+    analytics: 'Analytics',
+    profile: 'Profile',
+  },
+  live: 'Live',
+  offline: 'Offline',
+  notifications: 'Notifications',
+  fallbackBusiness: 'My Business',
+  businessLogoAlt: 'Business logo',
+  logout: 'Log out',
+  theme: 'Theme',
+  openMenu: 'Open menu',
+  closeMenu: 'Close menu',
+  currentPage: 'Kiwi',
+} as const;
+
+export const adminNavEs = {
+  title: 'Admin',
+  subtitle: 'Delivery Blue Zone · Admin',
+  groups: {
+    ops: 'Operación',
+    people: 'Personas',
+    finance: 'Finanzas',
+    growth: 'Crecimiento',
+    system: 'Sistema',
+  },
+  items: {
+    dashboard: 'Dashboard',
+    users: 'Usuarios',
+    invitaciones: 'Invitaciones',
+    visitas: 'Visitas',
+    difusion: 'Difusión',
+    referidos: 'Referidos',
+    orders: 'Pedidos',
+    credits: 'Crédito prepago',
+    ratings: 'Comentarios',
+    kyc: 'Verificaciones KYC',
+    payments: 'Pagos',
+    crypto: 'Cripto pendientes',
+    simulador: 'Simulador',
+    reportes: 'Real vs Proyección',
+    zones: 'Zonas',
+    cobertura: 'Cobertura',
+    settings: 'Configuración',
+  },
+  collapse: 'Contraer menú',
+  expand: 'Expandir menú',
+  restricted: 'Acceso restringido',
+  restrictedHint: 'Solo usuarios con rol admin.',
+  roleLabel: 'Super Admin',
+  logout: 'Cerrar sesión',
+} as const;
+
+export const adminNavEn = {
+  title: 'Admin',
+  subtitle: 'Delivery Blue Zone · Admin',
+  groups: {
+    ops: 'Operations',
+    people: 'People',
+    finance: 'Finance',
+    growth: 'Growth',
+    system: 'System',
+  },
+  items: {
+    dashboard: 'Dashboard',
+    users: 'Users',
+    invitaciones: 'Invitations',
+    visitas: 'Visits',
+    difusion: 'Broadcasts',
+    referidos: 'Referrals',
+    orders: 'Orders',
+    credits: 'Prepaid credit',
+    ratings: 'Reviews',
+    kyc: 'KYC reviews',
+    payments: 'Payments',
+    crypto: 'Pending crypto',
+    simulador: 'Simulator',
+    reportes: 'Actual vs Projection',
+    zones: 'Zones',
+    cobertura: 'Coverage',
+    settings: 'Settings',
+  },
+  collapse: 'Collapse menu',
+  expand: 'Expand menu',
+  restricted: 'Restricted access',
+  restrictedHint: 'Admin role users only.',
+  roleLabel: 'Super Admin',
+  logout: 'Log out',
+} as const;
