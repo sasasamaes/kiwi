@@ -61,6 +61,8 @@ import {
   isPreorderItem,
   nextDateKeyCR,
   preorderDeliveryLabel,
+  cartAllowedWeekdays,
+  weekdayOfDateKey,
 } from '@kiwi/ui';
 import type { ScheduleValue } from '@kiwi/ui';
 import { findDeliveryZone } from '@kiwi/types';
@@ -700,6 +702,15 @@ export default function MenuPage() {
         : 'Incluye productos de otro día: elegí el día que toca'
     : null;
 
+  // Días en que se puede programar TODO el carrito (intersección de sus
+  // productos; null = sin restricción, [] = no comparten día).
+  const scheduledAllowedDays = cartAllowedWeekdays(cart as any[]);
+  const scheduledDayAllowed =
+    scheduledAllowedDays === null ||
+    scheduledAllowedDays.length === 0 ||
+    (schedule.date !== '' &&
+      weekdayOfDateKey(schedule.date) !== null &&
+      scheduledAllowedDays.includes(weekdayOfDateKey(schedule.date) as number));
   // Si "ahora" no vale (cerrado o solo preventa), forzar programado para no
   // dejar el toggle en un estado incoherente. Guard: no pelea con el usuario.
   // Va acá (no arriba con los otros effects) porque usa nowPossible.
@@ -729,11 +740,15 @@ export default function MenuPage() {
             ? `Tu pedido incluye productos de mañana: programalo para mañana ${weekdayNameES(tomorrowKey)} y elegí la hora`
             : cartHasFutureOnly && schedule.mode !== 'scheduled'
               ? 'Tu pedido incluye productos de otro día: programá la entrega'
-              : !isValidSchedule(schedule)
-                ? 'Elegí día y hora de entrega'
-                : !cashCovers
-                  ? 'El monto en efectivo no cubre el total'
-                  : null;
+              : scheduledAllowedDays !== null && scheduledAllowedDays.length === 0
+                ? 'Estos productos no comparten día de entrega: hacé un pedido por cada día'
+                : schedule.mode === 'scheduled' && !scheduledDayAllowed
+                  ? 'Ese día no hay entrega de estos productos: elegí un día marcado'
+                  : !isValidSchedule(schedule)
+                    ? 'Elegí día y hora de entrega'
+                    : !cashCovers
+                      ? 'El monto en efectivo no cubre el total'
+                      : null;
   const canCheckout = checkoutBlockReason === null;
   // Anti-duplicados (doble tap con wifi caído = N pedidos): el state
   // llega tarde al segundo tap; el ref no. La key se reusa en reintentos
@@ -1955,6 +1970,7 @@ export default function MenuPage() {
                       onChange={setSchedule}
                       nowDisabled={!nowPossible}
                       nowDisabledReason={scheduleReason ?? undefined}
+                      allowedWeekdays={scheduledAllowedDays}
                       hint={
                         nowPossible
                           ? cartHasTomorrow

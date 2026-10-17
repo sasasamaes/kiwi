@@ -71,8 +71,7 @@ export function nextDateKeyCR(days: number[], fromTime = Date.now()): string | n
 /**
  * Etiqueta del día de entrega para el badge ("Entrega mañana jueves",
  * la fulfillNote tal cual, o "Entrega {día}"). null = no hay preventa.
- */
-export function preorderDeliveryLabel(
+ */ export function preorderDeliveryLabel(
   items: PreorderItemInput[],
   tomorrowKey: string,
   weekdayName: (dateKey: string) => string,
@@ -91,4 +90,31 @@ export function preorderDeliveryLabel(
   // mañana. Con días, el próximo día de venta.
   if (key) return `Entrega ${weekdayName(key)}`;
   return `Entrega mañana ${weekdayName(tomorrowKey)}`;
+}
+
+/** Día de semana (0=dom…6=sáb) de una fecha YYYY-MM-DD en hora CR. */
+export function weekdayOfDateKey(dateKey: string): number | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) return null;
+  const d = new Date(`${dateKey}T12:00:00-06:00`);
+  return Number.isNaN(d.getTime()) ? null : d.getDay();
+}
+
+export interface SchedulableItem {
+  availableDays?: number[] | null;
+}
+
+/**
+ * Días de semana en que se puede programar TODO el carrito: intersección de
+ * los días de cada producto (vacío = todos los días, no restringe).
+ * - null = sin restricción (carrito sin productos por fecha).
+ * - [] = conflicto (no comparten día: hay que pedir por separado).
+ */
+export function cartAllowedWeekdays(items: SchedulableItem[]): number[] | null {
+  let acc: number[] | null = null;
+  for (const item of items) {
+    const days = cleanDays(item.availableDays);
+    if (days.length === 0) continue;
+    acc = acc === null ? days : acc.filter((d) => days.includes(d));
+  }
+  return acc;
 }

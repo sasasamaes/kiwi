@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 import { describe, it, expect } from 'vitest';
 import { isPreorderItem, nextDateKeyCR, preorderDeliveryLabel } from './preorder';
+import { cartAllowedWeekdays, weekdayOfDateKey } from './preorder';
 
 const wd = (key: string) =>
   new Date(`${key}T12:00:00-06:00`).toLocaleDateString('es-CR', {
@@ -49,7 +50,6 @@ describe('preorderDeliveryLabel', () => {
     ).toContain('mañana');
   });
 });
-
 describe('nextDateKeyCR', () => {
   it('encuentra el próximo día de la lista (hora CR fija)', () => {
     // Miércoles 2026-10-14 18:00 UTC = 12:00 CR.
@@ -58,5 +58,24 @@ describe('nextDateKeyCR', () => {
     expect(nextDateKeyCR([4], wed)).toBe('2026-10-15');
     // Hoy incluido → hoy mismo.
     expect(nextDateKeyCR([3, 4], wed)).toBe('2026-10-14');
+  });
+});
+
+describe('weekdayOfDateKey', () => {
+  it('devuelve 0=dom…6=sáb y null con basura', () => {
+    expect(weekdayOfDateKey('2026-10-17')).toBe(6); // sábado
+    expect(weekdayOfDateKey('2026-10-15')).toBe(4); // jueves
+    expect(weekdayOfDateKey('no-fecha')).toBeNull();
+  });
+});
+
+describe('cartAllowedWeekdays', () => {
+  it('null sin restricciones, intersección con productos por fecha', () => {
+    expect(cartAllowedWeekdays([])).toBeNull();
+    expect(cartAllowedWeekdays([{ availableDays: [] }])).toBeNull();
+    // Jue+Sab con todos-los-días → [4,6].
+    expect(cartAllowedWeekdays([{ availableDays: [4, 6] }, {}])).toEqual([4, 6]);
+    // Jue+Sab con solo-miércoles → conflicto [].
+    expect(cartAllowedWeekdays([{ availableDays: [4, 6] }, { availableDays: [3] }])).toEqual([]);
   });
 });
