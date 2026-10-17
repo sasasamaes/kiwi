@@ -352,6 +352,8 @@ export default function MenuPage() {
 
   // Otro comercio (navegación cliente entre menús): carrito, zona y pedido
   // pendiente son del anterior — resetear para no cobrarle a quien no es.
+  // zoneManualRef vive acá arriba porque el reset lo usa.
+  const zoneManualRef = useRef(false);
   useEffect(() => {
     setCart([]);
     setDeliveryInfo({ address: '', phone: '', name: '', instructions: '', zone: '' });
@@ -371,10 +373,9 @@ export default function MenuPage() {
     setFollowBusy(false);
   }, [merchantId]);
 
-  // Ubicación del cliente → resolver zona en la DB (polígono) y autoseleccionar
-  // su precio. Solo manda la elección MANUAL del barrio (flag explícito): la
-  // zona pre-llenada del perfil puede ser vieja y no debe opacar al GPS.
-  const zoneManualRef = useRef(false);
+  // Si "ahora" no vale (cerrado o solo preventa), el modo se fuerza a
+  // programado junto a su definición (más abajo, con nowPossible ya
+  // declarado): evita el toggle incoherente sin pelear con el usuario.
   useEffect(() => {
     if (!deliveryCoords) return;
     let alive = true;
@@ -681,6 +682,33 @@ export default function MenuPage() {
       ? preorderDeliveryLabel(preorderItems as any[], tomorrowKey, weekdayNameES)
       : null;
 
+  // "Ahora" solo vale con el local abierto y sin productos de otro día. Si
+  // no, el pedido es programado sí o sí (el toggle lo refleja y el modo se
+  // fuerza abajo: si no, conviven "ahora" activo + "entrega sábado").
+  const crDow = new Date(Date.now() - 6 * 3_600_000).getUTCDay();
+  const cartHasFutureOnly = cart.some((c) => {
+    if ((c as any).offeredTomorrow) return false;
+    const days = (c as any).availableDays as number[] | undefined;
+    return Array.isArray(days) && days.length > 0 && !days.includes(crDow);
+  });
+  const nowPossible = merchant?.isOpen !== false && !cartHasTomorrow && !cartHasFutureOnly;
+  const scheduleReason = !nowPossible
+    ? merchant?.isOpen === false
+      ? `Hoy está cerrado: solo entrega programada${preorderLabel ? ` · ${preorderLabel}` : ''}`
+      : cartHasTomorrow
+        ? `Incluye productos de mañana: sale programado para mañana ${weekdayNameES(tomorrowKey)}`
+        : 'Incluye productos de otro día: elegí el día que toca'
+    : null;
+
+  // Si "ahora" no vale (cerrado o solo preventa), forzar programado para no
+  // dejar el toggle en un estado incoherente. Guard: no pelea con el usuario.
+  // Va acá (no arriba con los otros effects) porque usa nowPossible.
+  useEffect(() => {
+    if (!nowPossible) {
+      setSchedule((prev) => (prev.mode === 'scheduled' ? prev : { ...prev, mode: 'scheduled' }));
+    }
+  }, [nowPossible]);
+
   // Validate checkout
   // Cocina casera cerrada hoy igual acepta preventa futura (ej. lunes pido
   // para el jueves): el isOpen solo bloquea el "lo quiero ahora".
@@ -695,17 +723,18 @@ export default function MenuPage() {
       ? 'Completa nombre, dirección y teléfono para continuar'
       : !deliveryInfo.zone.trim()
         ? 'Elegí tu barrio de entrega'
-        : merchant?.isOpen === false && !schedulingFuture
-          ? `Hoy está cerrado: tocá “Programar entrega” y elegí día y hora${preorderLabel ? ` · 📅 ${preorderLabel}` : ''}`
+        : merchant?.isOpen === false && schedule.mode !== 'scheduled'
+          ? 'Hoy está cerrado: solo entrega programada'
           : cartHasTomorrow && !(schedule.mode === 'scheduled' && schedule.date === tomorrowKey)
             ? `Tu pedido incluye productos de mañana: programalo para mañana ${weekdayNameES(tomorrowKey)} y elegí la hora`
-            : !isValidSchedule(schedule)
-              ? 'Elegí día y hora de entrega'
-              : !cashCovers
-                ? 'El monto en efectivo no cubre el total'
-                : null;
+            : cartHasFutureOnly && schedule.mode !== 'scheduled'
+              ? 'Tu pedido incluye productos de otro día: programá la entrega'
+              : !isValidSchedule(schedule)
+                ? 'Elegí día y hora de entrega'
+                : !cashCovers
+                  ? 'El monto en efectivo no cubre el total'
+                  : null;
   const canCheckout = checkoutBlockReason === null;
-
   // Anti-duplicados (doble tap con wifi caído = N pedidos): el state
   // llega tarde al segundo tap; el ref no. La key se reusa en reintentos
   // para que el backend devuelva el mismo pedido.
@@ -1924,11 +1953,15 @@ export default function MenuPage() {
                     <SchedulePicker
                       value={schedule}
                       onChange={setSchedule}
+                      nowDisabled={!nowPossible}
+                      nowDisabledReason={scheduleReason ?? undefined}
                       hint={
-                        cartHasTomorrow
-                          ? `Tu pedido incluye productos de mañana: sale programado para mañana ${weekdayNameES(tomorrowKey)}. Elegí la hora.`
-                          : (preorderLabel ??
-                            'Acepta pedidos aunque hoy esté cerrada: programá para su día de venta.')
+                        nowPossible
+                          ? cartHasTomorrow
+                            ? `Tu pedido incluye productos de mañana: sale programado para mañana ${weekdayNameES(tomorrowKey)}. Elegí la hora.`
+                            : (preorderLabel ??
+                              'Acepta pedidos aunque hoy esté cerrada: programá para su día de venta.')
+                          : undefined
                       }
                     />
                   </div>

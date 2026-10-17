@@ -63,19 +63,35 @@ interface SchedulePickerProps {
   onChange: (v: ScheduleValue) => void;
   /** Texto contextual, ej. "Solo jueves" o "Menú del día". */
   hint?: string;
+  /** "Ahora" no vale (cerrado / solo preventa): se deshabilita. */
+  nowDisabled?: boolean;
+  /** Motivo que se muestra cuando "ahora" está deshabilitado. */
+  nowDisabledReason?: string;
 }
 
-export function SchedulePicker({ value, onChange, hint }: SchedulePickerProps) {
+export function SchedulePicker({
+  value,
+  onChange,
+  hint,
+  nowDisabled,
+  nowDisabledReason,
+}: SchedulePickerProps) {
   return (
     <div>
       <div className="grid grid-cols-2 gap-3 mb-3">
         <button
           type="button"
-          onClick={() => onChange({ ...value, mode: 'now' })}
+          onClick={() => {
+            if (!nowDisabled) onChange({ ...value, mode: 'now' });
+          }}
+          disabled={nowDisabled}
+          title={nowDisabled ? (nowDisabledReason ?? 'No disponible ahora') : undefined}
           className={`rounded-2xl px-4 py-3 text-sm font-semibold transition-all ${
-            value.mode === 'now'
+            value.mode === 'now' && !nowDisabled
               ? 'bg-kiwi-100 dark:bg-kiwi-900/50 ring-2 ring-kiwi-600 text-kiwi-800 dark:text-kiwi-200'
-              : 'bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-300'
+              : nowDisabled
+                ? 'bg-surface-100 dark:bg-surface-700 text-surface-400 dark:text-surface-500 cursor-not-allowed opacity-60'
+                : 'bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-300'
           }`}
         >
           ⚡ Lo quiero ahora
@@ -118,6 +134,11 @@ export function SchedulePicker({ value, onChange, hint }: SchedulePickerProps) {
             />
           </label>
         </div>
+      )}
+      {nowDisabled && nowDisabledReason && (
+        <p className="mt-2 rounded-xl bg-orange-50 dark:bg-orange-900/30 px-3 py-2 text-xs font-medium text-orange-700 dark:text-orange-300">
+          🧡 {nowDisabledReason}
+        </p>
       )}
       {hint && <p className="mt-2 text-xs text-surface-500 dark:text-surface-400">🧡 {hint}</p>}
     </div>
