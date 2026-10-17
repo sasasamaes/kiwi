@@ -358,6 +358,7 @@ export default function MenuPage() {
     setDeliveryCoords(null);
     setZoneAuto(false);
     setResolvedZone(null);
+    zoneManualRef.current = false;
     setProfilePrefilled(false);
     setPendingOrderId(null);
     setOrderSuccess(null);
@@ -371,7 +372,9 @@ export default function MenuPage() {
   }, [merchantId]);
 
   // Ubicación del cliente → resolver zona en la DB (polígono) y autoseleccionar
-  // su precio. No pisa una elección manual del barrio.
+  // su precio. Solo manda la elección MANUAL del barrio (flag explícito): la
+  // zona pre-llenada del perfil puede ser vieja y no debe opacar al GPS.
+  const zoneManualRef = useRef(false);
   useEffect(() => {
     if (!deliveryCoords) return;
     let alive = true;
@@ -381,7 +384,8 @@ export default function MenuPage() {
         if (!alive || !r.zone) return;
         const zone = r.zone;
         setResolvedZone({ id: zone.id, label: zone.label });
-        setDeliveryInfo((prev) => (prev.zone ? prev : { ...prev, zone: zone.id }));
+        if (zoneManualRef.current) return;
+        setDeliveryInfo((prev) => ({ ...prev, zone: zone.id }));
         setZoneAuto(true);
       })
       .catch(() => undefined);
@@ -772,6 +776,11 @@ export default function MenuPage() {
         pickupAddress: merchant.address,
         deliveryAddress: deliveryInfo.address,
         deliveryZone: deliveryInfo.zone,
+        // GPS de entrega: el servidor valida cobertura/zonas con esto y el
+        // repartidor ve el punto exacto (antes viajaba solo el barrio).
+        ...(deliveryCoords
+          ? { deliveryLat: deliveryCoords.lat, deliveryLng: deliveryCoords.lng }
+          : {}),
         ...scheduleFields(schedule),
         items: cart.map((item) => ({
           menuItemId: item.id,
@@ -1931,6 +1940,8 @@ export default function MenuPage() {
                           : null
                       }
                       onChange={(zone) => {
+                        // Elección manual: el GPS deja de mandar.
+                        zoneManualRef.current = true;
                         setZoneAuto(false);
                         setResolvedZone(null);
                         setDeliveryInfo((prev) => ({ ...prev, zone }));
