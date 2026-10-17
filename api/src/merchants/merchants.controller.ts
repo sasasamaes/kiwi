@@ -245,11 +245,33 @@ export class MerchantsController {
   /** Estado de la subida para la UI (mostrar el picker una vez configurado). */
   @Get('me/logo-status')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('merchant')
+  @Roles('merchant', 'admin')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Whether merchant logo upload is configured' })
   async logoStatus() {
     return { enabled: this.imageUpload.isConfigured() };
+  }
+
+  /**
+   * Logo de un comercio subido por el admin (setup rápido desde soporte).
+   * :id es el userId del comercio.
+   */
+  @Post(':id/logo')
+  @HttpCode(200)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @UseInterceptors(
+    FileInterceptor('photo', { storage: memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } }),
+  )
+  @ApiOperation({ summary: 'Subir logo de un comercio (admin, multipart/form-data)' })
+  @ApiBearerAuth()
+  @ApiConsumes('multipart/form-data')
+  async uploadLogoForUser(@Param('id') userId: string, @UploadedFile() file: any) {
+    // findByUserId lanza 404 si el userId no es un comercio.
+    await this.merchantsService.findByUserId(userId);
+    const { url } = await this.imageUpload.uploadMerchantLogo(file);
+    await this.merchantsService.updateProfile(userId, { logoUrl: url });
+    return { url };
   }
 
   @Post('me/marketplace/onboarding')

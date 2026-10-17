@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { AuthForm, useAuth } from '@kiwi/ui';
+import { AuthForm, useAuth, useTranslations } from '@kiwi/ui';
 
 /** Destino post-login según rol: el admin va a su panel, no al dashboard. */
 function homeForRole(role?: string): string {
@@ -14,6 +14,7 @@ function homeForRole(role?: string): string {
 
 export default function LoginPage() {
   const router = useRouter();
+  const { t } = useTranslations();
   const { login, user, loading } = useAuth();
   const [formLoading, setFormLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +45,7 @@ export default function LoginPage() {
       const loggedUser = await login(data.email, data.password);
       router.push(consumeReturnTo() ?? homeForRole((loggedUser as any)?.role));
     } catch (err: any) {
-      setError(err.message || 'Error al iniciar sesión. Intenta de nuevo.');
+      setError(err.message || t('webauth.login.fallbackError'));
     } finally {
       setFormLoading(false);
     }
@@ -82,7 +83,7 @@ export default function LoginPage() {
           className="inline-flex items-center gap-2 text-surface-600 hover:text-surface-800"
         >
           <span>←</span>
-          <span className="text-sm font-medium">Volver</span>
+          <span className="text-sm font-medium">{t('webauth.login.back')}</span>
         </Link>
       </motion.header>
 
@@ -107,13 +108,13 @@ export default function LoginPage() {
         transition={{ delay: 1 }}
       >
         <p className="text-xs text-surface-500 dark:text-surface-400">
-          Al iniciar sesión, aceptas nuestros{' '}
+          {t('webauth.login.footerPrefix')}{' '}
           <a href="/terms" className="text-kiwi-700 hover:underline">
-            Términos
+            {t('webauth.login.terms')}
           </a>{' '}
-          y{' '}
+          {t('webauth.login.footerAnd')}{' '}
           <a href="/privacy" className="text-kiwi-700 hover:underline">
-            Privacidad
+            {t('webauth.login.privacy')}
           </a>
         </p>
       </motion.footer>

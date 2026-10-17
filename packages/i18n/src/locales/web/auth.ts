@@ -1,9 +1,112 @@
 // Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 /**
  * 🥝 KIWI web - Auth (ES tico / EN). Lo llena el subagente g-auth.
- * Forma: export const authEs = {...} as const; export const authEn = {...} as const;
+ * Forma: export const authEs = {...}; export const authEn = {...};
  */
 
-export const authEs = {} as const;
+export const authEs = {
+  login: {
+    back: 'Volver',
+    fallbackError: 'No pudimos ingresarte, mae. Revisá tus datos e intentá de nuevo.',
+    footerPrefix: 'Al iniciar sesión, aceptás nuestros',
+    terms: 'Términos',
+    footerAnd: 'y',
+    privacy: 'Privacidad',
+  },
+  register: {
+    back: 'Volver',
+    inviteValid:
+      '🥝 Te invitaron a sumar tu comercio a Kiwi — completá el registro con este correo, mae. ¡Pura vida!',
+    inviteInvalid: 'Ese link de invitación venció o no es válido. Podés registrarte igual, ¡dale!',
+    fallbackError: 'No pudimos crearte la cuenta, mae. Probá con otro correo.',
+    waitlistAction: 'Ir al panel',
+    footerPrefix: 'Al registrarte, aceptás nuestros',
+    terms: 'Términos',
+    footerAnd: 'y',
+    privacy: 'Privacidad',
+  },
+  forgot: {
+    back: 'Volver',
+    title: 'Recuperá tu contraseña, mae',
+    subtitle: 'Te mandamos un link válido por 1 hora. ¡Pura vida!',
+    sentMessage:
+      'Si la cuenta existe, ya te mandamos el correo. Revisá tu bandeja (y el spam), mae.',
+    backToLogin: 'Volver al inicio de sesión',
+    emailLabel: 'Correo electrónico',
+    emailPlaceholder: 'tu@correo.com',
+    sendError: 'No pudimos mandar el correo, mae. Intentá de nuevo.',
+    submitting: 'Mandando…',
+    submit: 'Mandar link',
+  },
+  reset: {
+    back: 'Volver',
+    title: 'Poné una contraseña nueva',
+    missingPrefix: 'Falta el token del link, mae. Pedí uno nuevo desde',
+    missingLink: 'recuperar contraseña',
+    missingSuffix: '.',
+    doneMessage: '¡Listo, pura vida! Tus sesiones viejas se cerraron.',
+    goLogin: 'Ingresá ahora',
+    newLabel: 'Contraseña nueva',
+    newPlaceholder: 'Mínimo 6 caracteres, mae',
+    confirmLabel: 'Repetí la contraseña',
+    confirmPlaceholder: 'Repetila acá',
+    errShort: 'Ocupás mínimo 6 caracteres, mae',
+    errMismatch: 'No calzan, mae. Revisalas.',
+    errFailed: 'No pudimos cambiar la contraseña. Intentá de nuevo.',
+    saving: 'Guardando…',
+    save: 'Fijar contraseña',
+  },
+};
 
-export const authEn = {} as const;
+export const authEn = {
+  login: {
+    back: 'Back',
+    fallbackError: 'We could not log you in. Check your details and try again.',
+    footerPrefix: 'By logging in, you accept our',
+    terms: 'Terms',
+    footerAnd: 'and',
+    privacy: 'Privacy',
+  },
+  register: {
+    back: 'Back',
+    inviteValid:
+      '🥝 You were invited to add your business to Kiwi — complete signup with this email!',
+    inviteInvalid: 'That invitation link expired or is not valid. You can still sign up.',
+    fallbackError: 'We could not create your account. Try another email.',
+    waitlistAction: 'Go to dashboard',
+    footerPrefix: 'By signing up, you accept our',
+    terms: 'Terms',
+    footerAnd: 'and',
+    privacy: 'Privacy',
+  },
+  forgot: {
+    back: 'Back',
+    title: 'Recover your password',
+    subtitle: 'We will send you a link valid for 1 hour.',
+    sentMessage: 'If the account exists, we already sent the email. Check your inbox (and spam).',
+    backToLogin: 'Back to log in',
+    emailLabel: 'Email address',
+    emailPlaceholder: 'you@email.com',
+    sendError: 'We could not send the email. Try again.',
+    submitting: 'Sending…',
+    submit: 'Send link',
+  },
+  reset: {
+    back: 'Back',
+    title: 'Set a new password',
+    missingPrefix: 'The link token is missing. Request a new one from',
+    missingLink: 'recover password',
+    missingSuffix: '.',
+    doneMessage: 'Done! Your previous sessions were closed.',
+    goLogin: 'Log in now',
+    newLabel: 'New password',
+    newPlaceholder: 'At least 6 characters',
+    confirmLabel: 'Repeat password',
+    confirmPlaceholder: 'Repeat it here',
+    errShort: 'At least 6 characters required',
+    errMismatch: 'They do not match. Check them.',
+    errFailed: 'We could not change the password. Try again.',
+    saving: 'Saving…',
+    save: 'Set password',
+  },
+};

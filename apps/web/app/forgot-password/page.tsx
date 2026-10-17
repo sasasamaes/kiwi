@@ -4,9 +4,10 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { api } from '@kiwi/ui';
+import { api, useTranslations } from '@kiwi/ui';
 
 export default function ForgotPasswordPage() {
+  const { t } = useTranslations();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
@@ -20,7 +21,7 @@ export default function ForgotPasswordPage() {
       await api.requestPasswordReset(email.trim());
       setSent(true);
     } catch (err: any) {
-      setError(err?.message || 'No se pudo enviar el email. Intenta de nuevo.');
+      setError(err?.message || t('webauth.forgot.sendError'));
     } finally {
       setLoading(false);
     }
@@ -38,7 +39,7 @@ export default function ForgotPasswordPage() {
           className="inline-flex items-center gap-2 text-surface-600 hover:text-surface-800"
         >
           <span>←</span>
-          <span className="text-sm font-medium">Volver</span>
+          <span className="text-sm font-medium">{t('webauth.forgot.back')}</span>
         </Link>
       </motion.header>
 
@@ -49,22 +50,22 @@ export default function ForgotPasswordPage() {
           animate={{ opacity: 1, y: 0 }}
         >
           <h1 className="text-2xl font-display font-bold text-surface-800 dark:text-surface-100">
-            Recuperar contraseña
+            {t('webauth.forgot.title')}
           </h1>
           <p className="mt-1 text-sm text-surface-500 dark:text-surface-400">
-            Te enviamos un link válido por 1 hora.
+            {t('webauth.forgot.subtitle')}
           </p>
 
           {sent ? (
             <div className="mt-6 rounded-2xl bg-kiwi-50 dark:bg-kiwi-900/30 p-4">
               <p className="text-sm font-medium text-kiwi-700 dark:text-kiwi-300">
-                Si la cuenta existe, ya te enviamos el email. Revisá tu bandeja (y spam).
+                {t('webauth.forgot.sentMessage')}
               </p>
               <Link
                 href="/login"
                 className="mt-3 inline-block text-sm font-medium text-kiwi-700 hover:underline"
               >
-                Volver al inicio de sesión
+                {t('webauth.forgot.backToLogin')}
               </Link>
             </div>
           ) : (
@@ -74,7 +75,7 @@ export default function ForgotPasswordPage() {
                   htmlFor="fp-email"
                   className="mb-1 block text-sm font-medium text-surface-700 dark:text-surface-300"
                 >
-                  Correo electrónico
+                  {t('webauth.forgot.emailLabel')}
                 </label>
                 <input
                   id="fp-email"
@@ -82,7 +83,7 @@ export default function ForgotPasswordPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="tu@email.com"
+                  placeholder={t('webauth.forgot.emailPlaceholder')}
                   autoComplete="email"
                   className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20"
                 />
@@ -97,7 +98,7 @@ export default function ForgotPasswordPage() {
                 disabled={loading}
                 className="w-full rounded-xl bg-kiwi-700 py-3 font-semibold text-white hover:bg-kiwi-800 transition-colors disabled:opacity-50"
               >
-                {loading ? 'Enviando…' : 'Enviar link'}
+                {loading ? t('webauth.forgot.submitting') : t('webauth.forgot.submit')}
               </button>
             </form>
           )}

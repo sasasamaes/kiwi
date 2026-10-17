@@ -101,4 +101,35 @@ export class UsersController {
   async unlockLogin(@Param('id') id: string) {
     return this.usersService.unlockLogin(id);
   }
+
+  @Put(':id/merchant-location')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Set a merchant pickup GPS point (admin)' })
+  async setMerchantLocation(
+    @Param('id') id: string,
+    @Body() body: { latitude?: number | null; longitude?: number | null },
+  ) {
+    return this.usersService.setMerchantLocation(id, body ?? {});
+  }
+
+  @Put(':id/merchant-profile')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update merchant basic info (admin support setup)' })
+  async updateMerchantProfile(
+    @Param('id') id: string,
+    @Body()
+    body: {
+      businessName?: string;
+      address?: string | null;
+      description?: string | null;
+      logoUrl?: string | null;
+      phone?: string;
+    },
+  ) {
+    return this.usersService.updateMerchantProfileAdmin(id, body ?? {});
+  }
 }

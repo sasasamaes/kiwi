@@ -5,10 +5,11 @@ import { Suspense, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { AuthForm, useAuth, useInviteReferral, WaitlistNotice } from '@kiwi/ui';
+import { AuthForm, useAuth, useInviteReferral, WaitlistNotice, useTranslations } from '@kiwi/ui';
 
 /** Banner del link de invitación (?email=&invitation=). Nulo = sin invitación. */
 function InvitationBanner({ state }: { state: 'valid' | 'invalid' | null }) {
+  const { t } = useTranslations();
   if (!state) return null;
   return (
     <div
@@ -19,15 +20,14 @@ function InvitationBanner({ state }: { state: 'valid' | 'invalid' | null }) {
           : 'border-amber-300 bg-amber-50 text-amber-800'
       }`}
     >
-      {state === 'valid'
-        ? '🥝 Te invitaron a sumar tu comercio a Kiwi — completá el registro con este correo.'
-        : 'Ese link de invitación venció o no es válido. Podés registrarte igual.'}
+      {state === 'valid' ? t('webauth.register.inviteValid') : t('webauth.register.inviteInvalid')}
     </div>
   );
 }
 
 function RegisterForm() {
   const router = useRouter();
+  const { t } = useTranslations();
   const { register } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -68,7 +68,7 @@ function RegisterForm() {
       }
       router.push('/dashboard');
     } catch (err: any) {
-      setError(err.message || 'Error al crear la cuenta. Intenta de nuevo.');
+      setError(err.message || t('webauth.register.fallbackError'));
     } finally {
       setLoading(false);
     }
@@ -79,7 +79,7 @@ function RegisterForm() {
       <WaitlistNotice
         city={waitlist.city}
         message={waitlist.message}
-        actionLabel="Ir al panel"
+        actionLabel={t('webauth.register.waitlistAction')}
         onContinue={() => router.push('/dashboard')}
       />
     );
@@ -107,6 +107,7 @@ function RegisterForm() {
 }
 
 export default function RegisterPage() {
+  const { t } = useTranslations();
   return (
     <div className="min-h-[100dvh] bg-gradient-to-br from-kiwi-50 via-white to-kiwi-100 dark:from-surface-950 dark:via-surface-900 dark:to-surface-950 flex flex-col">
       {/* Background decorations */}
@@ -134,7 +135,7 @@ export default function RegisterPage() {
           className="inline-flex items-center gap-2 text-surface-600 hover:text-surface-800"
         >
           <span>←</span>
-          <span className="text-sm font-medium">Volver</span>
+          <span className="text-sm font-medium">{t('webauth.register.back')}</span>
         </Link>
       </motion.header>
 
@@ -155,13 +156,13 @@ export default function RegisterPage() {
         transition={{ delay: 1 }}
       >
         <p className="text-xs text-surface-500 dark:text-surface-400">
-          Al registrarte, aceptas nuestros{' '}
+          {t('webauth.register.footerPrefix')}{' '}
           <a href="/terms" className="text-kiwi-700 hover:underline">
-            Términos
+            {t('webauth.register.terms')}
           </a>{' '}
-          y{' '}
+          {t('webauth.register.footerAnd')}{' '}
           <a href="/privacy" className="text-kiwi-700 hover:underline">
-            Privacidad
+            {t('webauth.register.privacy')}
           </a>
         </p>
       </motion.footer>

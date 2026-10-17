@@ -82,6 +82,10 @@ export class UsersService {
             select: {
               id: true,
               businessName: true,
+              address: true,
+              latitude: true,
+              longitude: true,
+              logoUrl: true,
               kycStatus: true,
               cardPaymentsEnabled: true,
               isHomeCook: true,
@@ -178,6 +182,108 @@ export class UsersService {
         tokenVersion: { increment: 1 },
       },
     });
+    return this.findById(targetUserId);
+  }
+
+  /**
+   * Admin fija el punto GPS de retiro de un comercio (dónde llegan los
+   * repartidores). Ambos null quitan el punto. Lo ve el mapa general de
+   * zonas y lo heredan los pedidos como pickup por defecto.
+   */
+  async setMerchantLocation(
+    targetUserId: string,
+    data: { latitude?: number | null; longitude?: number | null },
+  ) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: targetUserId },
+      include: { merchantProfile: true },
+    });
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+    if (user.role !== 'merchant' || !user.merchantProfile) {
+      throw new BadRequestException('El usuario no es un comercio');
+    }
+    const latRaw = data?.latitude ?? null;
+    const lngRaw = data?.longitude ?? null;
+    if ((latRaw == null) !== (lngRaw == null)) {
+      throw new BadRequestException('Ubicación incompleta: latitud y longitud juntas o ninguna');
+    }
+    let latitude: number | null = null;
+    let longitude: number | null = null;
+    if (latRaw != null && lngRaw != null) {
+      latitude = Number(latRaw);
+      longitude = Number(lngRaw);
+      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+        throw new BadRequestException('Coordenadas inválidas');
+      }
+      if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+        throw new BadRequestException('Coordenadas fuera de rango');
+      }
+    }
+    await this.prisma.merchantProfile.update({
+      where: { userId: targetUserId },
+      data: { latitude, longitude },
+    });
+    return this.findById(targetUserId);
+  }
+
+  /**
+   * Admin completa la info básica de un comercio (setup rápido desde soporte):
+   * nombre, dirección, descripción, logo y teléfono. Solo merchant.
+   */
+  async updateMerchantProfileAdmin(
+    targetUserId: string,
+    data: {
+      businessName?: string;
+      address?: string | null;
+      description?: string | null;
+      logoUrl?: string | null;
+      phone?: string;
+    },
+  ) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: targetUserId },
+      include: { merchantProfile: true },
+    });
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+    if (user.role !== 'merchant' || !user.merchantProfile) {
+      throw new BadRequestException('El usuario no es un comercio');
+    }
+    if (data.phone !== undefined) {
+      const raw = String(data.phone ?? '').trim();
+      if (raw === '') {
+        await this.prisma.user.update({ where: { id: targetUserId }, data: { phone: null } });
+      } else {
+        const phone = normalizeCRPhone(raw);
+        if (!phone) {
+          throw new BadRequestException('Formato de teléfono inválido (8888-8888)');
+        }
+        const taken = await this.prisma.user.findFirst({
+          where: { phone, role: 'merchant', id: { not: targetUserId } },
+          select: { id: true },
+        });
+        if (taken) {
+          throw new ConflictException('Ese teléfono ya está registrado en otro comercio');
+        }
+        await this.prisma.user.update({ where: { id: targetUserId }, data: { phone } });
+      }
+    }
+    const patch: any = {};
+    if (data.businessName !== undefined) {
+      const name = String(data.businessName ?? '').trim();
+      if (!name) throw new BadRequestException('El nombre del negocio es requerido');
+      patch.businessName = name;
+    }
+    if (data.address !== undefined) patch.address = String(data.address ?? '').trim() || null;
+    if (data.description !== undefined)
+      patch.description = String(data.description ?? '').trim() || null;
+    if (data.logoUrl !== undefined) patch.logoUrl = String(data.logoUrl ?? '').trim() || null;
+    if (Object.keys(patch).length > 0) {
+      await this.prisma.merchantProfile.update({ where: { userId: targetUserId }, data: patch });
+    }
     return this.findById(targetUserId);
   }
 

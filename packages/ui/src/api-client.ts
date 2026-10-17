@@ -336,6 +336,73 @@ class ApiClient {
     return this.request<any>(`/users/${id}/unlock`, { method: 'PUT' });
   }
 
+  /** Fija el punto GPS de retiro de un comercio (admin). null/null lo quita. */
+  async setMerchantLocation(
+    userId: string,
+    data: { latitude: number | null; longitude: number | null },
+  ) {
+    return this.request<any>(`/users/${userId}/merchant-location`, {
+      method: 'PUT',
+      body: data,
+    });
+  }
+
+  /** Completa la info básica de un comercio (admin, setup rápido). */
+  async updateMerchantProfileAdmin(
+    userId: string,
+    data: {
+      businessName?: string;
+      address?: string | null;
+      description?: string | null;
+      logoUrl?: string | null;
+      phone?: string;
+    },
+  ) {
+    return this.request<any>(`/users/${userId}/merchant-profile`, {
+      method: 'PUT',
+      body: data,
+    });
+  }
+
+  /**
+   * Sube el logo de un comercio como admin (multipart `photo`).
+   * `userId` es el id del usuario comercio.
+   */
+  async uploadMerchantLogoFor(userId: string, file: File): Promise<{ url: string }> {
+    const fd = new FormData();
+    fd.append('photo', file);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
+    try {
+      let response = await fetch(`${this.baseUrl}/merchants/${userId}/logo`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${this.getToken() ?? ''}` },
+        body: fd,
+        signal: controller.signal,
+      });
+      if (response.status === 401 && (await this.refreshSession())) {
+        response = await fetch(`${this.baseUrl}/merchants/${userId}/logo`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${this.getToken() ?? ''}` },
+          body: fd,
+          signal: controller.signal,
+        });
+      }
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error((data as any)?.message || `Error al subir logo (${response.status})`);
+      }
+      return data as { url: string };
+    } catch (err: any) {
+      if (err?.name === 'AbortError') {
+        throw new Error('El servidor tardó demasiado. Revisá tu conexión e intentá de nuevo.');
+      }
+      throw err;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
   // ============================================
   // ✉️ INVITACIONES (venta en campo, admin)
   // ============================================
