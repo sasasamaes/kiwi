@@ -103,6 +103,10 @@ export default function AdminZonesPage() {
   const mapObj = useRef<any>(null);
   const layerRef = useRef<any>(null);
   const LRef = useRef<any>(null);
+  // Espejo de vértices para el mover-todo (el handler de doble-clic los lee
+  // fuera del render) y click pendiente (distinguir 1 clic de doble-clic).
+  const vertsRef = useRef<Ring>([]);
+  const pendingClick = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -119,6 +123,31 @@ export default function AdminZonesPage() {
     if (!authLoading && user?.role === 'admin') void load();
   }, [authLoading, user, load]);
 
+  // Mueve TODO el polígono (conservando la forma) para que su centro quede
+  // donde se hizo doble-clic, y lleva el punto de referencia al centro nuevo.
+  // Así un auto-generado que cayó en el lugar equivocado se reubica de una,
+  // con lat/long coherentes para que el precio por zona funcione.
+  const movePolygonTo = (lat: number, lng: number) => {
+    const prev = vertsRef.current;
+    if (prev.length < 3) return false;
+    const closed =
+      prev.length > 3 &&
+      prev[0][0] === prev[prev.length - 1][0] &&
+      prev[0][1] === prev[prev.length - 1][1];
+    const pts = closed ? prev.slice(0, -1) : prev;
+    const cx = pts.reduce((s, p) => s + p[0], 0) / pts.length;
+    const cy = pts.reduce((s, p) => s + p[1], 0) / pts.length;
+    const dLng = lng - cx;
+    const dLat = lat - cy;
+    setVertices(pts.map(([x, y]) => [x + dLng, y + dLat]));
+    setForm((f) => ({
+      ...f,
+      latitude: (cy + dLat).toFixed(6),
+      longitude: (cx + dLng).toFixed(6),
+    }));
+    return true;
+  };
+
   // Map init (client-only) — click agrega vértices al polígono.
   useEffect(() => {
     if (!showForm || !mapRef.current || mapObj.current) return;
@@ -129,7 +158,8 @@ export default function AdminZonesPage() {
       if (cancelled || !mapRef.current) return;
       const lat0 = Number(form.latitude) || NICoya[0];
       const lng0 = Number(form.longitude) || NICoya[1];
-      const map = L.map(mapRef.current).setView(
+      // Sin zoom-con-doble-clic: el doble-clic mueve el polígono entero.
+      const map = L.map(mapRef.current, { doubleClickZoom: false }).setView(
         [lat0, lng0],
         Number.isFinite(Number(form.latitude)) ? 14 : 13,
       );
@@ -144,8 +174,22 @@ export default function AdminZonesPage() {
             longitude: e.latlng.lng.toFixed(6),
           }));
         } else {
-          setVertices((prev) => [...prev, [e.latlng.lng, e.latlng.lat]]);
+          // En modo polígono el clic espera 260ms por si es la primera mitad
+          // de un doble-clic (mover todo). El punto se ubica igual de rápido.
+          if (pendingClick.current) clearTimeout(pendingClick.current);
+          const { lat, lng } = e.latlng;
+          pendingClick.current = setTimeout(() => {
+            pendingClick.current = null;
+            setVertices((prev) => [...prev, [lng, lat]]);
+          }, 260);
         }
+      });
+      map.on('dblclick', (e: any) => {
+        if (pendingClick.current) {
+          clearTimeout(pendingClick.current);
+          pendingClick.current = null;
+        }
+        movePolygonTo(e.latlng.lat, e.latlng.lng);
       });
       mapObj.current = map;
       setMapReady(true);
@@ -159,6 +203,7 @@ export default function AdminZonesPage() {
   useEffect(() => {
     const L = LRef.current;
     const map = mapObj.current;
+    vertsRef.current = vertices;
     if (!L || !map) return;
     if (layerRef.current) layerRef.current.remove();
     const ll = vertices.map(([lng, lat]) => [lat, lng]);
@@ -240,6 +285,10 @@ export default function AdminZonesPage() {
   }, [mapReady]);
 
   const destroyMap = () => {
+    if (pendingClick.current) {
+      clearTimeout(pendingClick.current);
+      pendingClick.current = null;
+    }
     mapObj.current?.remove?.();
     mapObj.current = null;
     layerRef.current = null;
@@ -606,7 +655,7 @@ export default function AdminZonesPage() {
                   ? 'Tocá el mapa para ubicar el punto de entrega (o arrastrá el marcador).'
                   : `Tocá el mapa para agregar vértices (${vertices.length} punto${
                       vertices.length === 1 ? '' : 's'
-                    }); arrastrá un vértice para moverlo.`}
+                    }); arrastrá un vértice para moverlo; doble-clic para mover TODO el polígono (y el punto).`}
               </p>
               <div
                 ref={mapRef}
