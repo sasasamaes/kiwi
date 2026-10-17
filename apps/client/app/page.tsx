@@ -77,9 +77,15 @@ const CATEGORIES = [
   { id: 'bar', label: 'Bares', icon: Beer },
 ];
 
-const SALES_WA_NUMBER = process.env.NEXT_PUBLIC_SALES_WHATSAPP || '50688888888';
+const SALES_WA_NUMBER = process.env.NEXT_PUBLIC_SALES_WHATSAPP || '50672199768';
 const waLink = (text: string) =>
   `https://wa.me/${SALES_WA_NUMBER}?text=${encodeURIComponent(text)}`;
+
+/** Comunidad de WhatsApp de KiwiCR (ofertas, pautas y novedades). */
+const COMMUNITY_URL =
+  process.env.NEXT_PUBLIC_WA_COMMUNITY || 'https://chat.whatsapp.com/IY4TzyYBWij1MO7Nz61UGt';
+/** Número comercial visible (506 7219-9768). */
+const SALES_WA_DISPLAY = '+506 7219-9768';
 
 const formatRating = (v: unknown): string => {
   const n = typeof v === 'string' ? Number(v) : (v as number);
@@ -613,6 +619,46 @@ export default function ClientHome() {
           )}
         </ScrollReveal>
         <div className="lg:grid lg:grid-cols-2 lg:gap-6 lg:items-start">
+          {/* Comunidad KiwiCR: ofertas, pautas y novedades por WhatsApp */}
+          <ScrollReveal index={1} className="lg:h-full lg:col-span-2">
+            <div className="mt-8 rounded-2xl overflow-hidden border border-kiwi-600/25 dark:border-kiwi-400/20 bg-gradient-to-br from-kiwi-500/15 via-white to-white dark:from-kiwi-500/10 dark:via-surface-800 dark:to-surface-800 p-6 shadow-soft">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-kiwi-600/15">
+                  <MessageCircle className="h-6 w-6 text-kiwi-700 dark:text-kiwi-300" />
+                </div>
+                <div>
+                  <p className="font-display font-bold text-surface-800 dark:text-surface-100">
+                    Comunidad KiwiCR
+                  </p>
+                  <p className="text-xs text-surface-500 dark:text-surface-400">
+                    Ofertas, pautas y novedades por WhatsApp
+                  </p>
+                </div>
+              </div>
+              <p className="text-sm text-surface-600 dark:text-surface-300 mb-4">
+                Unite para recibir las promos antes que nadie y pautar tu negocio. O escribinos
+                directo al {SALES_WA_DISPLAY}.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <a
+                  href={COMMUNITY_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-kiwi-600 px-4 py-3 text-sm font-semibold text-white"
+                >
+                  <MessageCircle className="h-4 w-4" /> Unirme a la comunidad
+                </a>
+                <a
+                  href={`https://wa.me/${SALES_WA_NUMBER}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-kiwi-600/30 px-4 py-3 text-sm font-semibold text-kiwi-700 dark:text-kiwi-300"
+                >
+                  <Smartphone className="h-4 w-4" /> {SALES_WA_DISPLAY}
+                </a>
+              </div>
+            </div>
+          </ScrollReveal>
           {/* Banner comercio: pautar + usar la app (manda al WhatsApp del negocio) */}
           <ScrollReveal index={1} className="lg:h-full">
             <div className="mt-8 rounded-2xl overflow-hidden border border-gold-500/30 dark:border-gold-500/20 bg-gradient-to-br from-gold-500/15 via-white to-white dark:from-gold-500/10 dark:via-surface-800 dark:to-surface-800 p-6 shadow-soft">
@@ -643,7 +689,7 @@ export default function ClientHome() {
                   <MessageCircle className="h-4 w-4" /> Quiero pautar mi restaurante
                 </a>
                 <a
-                  href={waLink('Hola Kiwi, quiero usar la app en mi negocio')}
+                  href={COMMUNITY_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center justify-center gap-2 rounded-xl border border-kiwi-600/30 px-4 py-3 text-sm font-semibold text-kiwi-700 dark:text-kiwi-300"
@@ -651,9 +697,7 @@ export default function ClientHome() {
                   <Store className="h-4 w-4" /> Usar Kiwi en mi negocio
                 </a>
                 <a
-                  href={waLink(
-                    'Hola Kiwi, cocino en casa (emprendimiento) y quiero vender por la app',
-                  )}
+                  href={COMMUNITY_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center justify-center gap-2 rounded-xl border border-orange-500/40 bg-orange-500/10 px-4 py-3 text-sm font-semibold text-orange-700 dark:text-orange-300"
