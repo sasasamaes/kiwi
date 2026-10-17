@@ -24,7 +24,8 @@ function tierColor(price: number): string {
 /**
  * Mapa general: TODAS las zonas con su precio (punto de referencia con ₡) y,
  * si tienen, su polígono coloreado por tramo de precio. Para ver el panorama,
- * no para editar.
+ * no para editar. Encuadra las zonas cargadas (sirve para Nicoya hoy y para
+ * otra ciudad mañana); sin zonas, arranca en Nicoya.
  */
 export function ZonesOverviewMap({ zones, height = 440 }: { zones: ZoneLike[]; height?: number }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -61,6 +62,15 @@ export function ZonesOverviewMap({ zones, height = 440 }: { zones: ZoneLike[]; h
     if (layerRef.current) layerRef.current.remove();
     const layer = L.layerGroup().addTo(map);
     const points: number[][] = [];
+    // Para encuadrar solo cuentan puntos dentro de Costa Rica: un dato malo
+    // (ej. 0,0) no debe volver a mandar la vista al Atlántico.
+    const sane = (lat: number, lng: number) =>
+      Number.isFinite(lat) &&
+      Number.isFinite(lng) &&
+      lat >= 7 &&
+      lat <= 12 &&
+      lng >= -88 &&
+      lng <= -82;
 
     for (const z of zones) {
       const color = tierColor(Number(z.price));
@@ -75,7 +85,9 @@ export function ZonesOverviewMap({ zones, height = 440 }: { zones: ZoneLike[]; h
           L.polygon(rings, { color, weight: 2, fillOpacity: 0.2 })
             .bindPopup(`<b>${z.label}</b><br>Envío ${price}`)
             .addTo(layer);
-          (rings[0] ?? []).forEach((p: number[]) => points.push(p));
+          (rings[0] ?? []).forEach((p: number[]) => {
+            if (sane(p[0], p[1])) points.push(p);
+          });
         }
       }
 
@@ -89,7 +101,8 @@ export function ZonesOverviewMap({ zones, height = 440 }: { zones: ZoneLike[]; h
         L.marker([Number(z.latitude), Number(z.longitude)], { icon })
           .bindPopup(`<b>${z.label}</b><br>Envío ${price}`)
           .addTo(layer);
-        points.push([Number(z.latitude), Number(z.longitude)]);
+        if (sane(Number(z.latitude), Number(z.longitude)))
+          points.push([Number(z.latitude), Number(z.longitude)]);
       }
     }
 

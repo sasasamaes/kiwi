@@ -49,8 +49,15 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): nu
   return 2 * 6371 * Math.asin(Math.sqrt(h));
 }
 
-const hasPoint = (z: Zone) =>
-  Number.isFinite(Number(z.latitude)) && Number.isFinite(Number(z.longitude));
+/** ¿Punto de referencia usable? Ojo: (0,0) = Null Island (ej. Number(null)), no es punto real. */
+const hasPoint = (z: Zone) => {
+  if (z.latitude == null || z.longitude == null) return false;
+  const la = Number(z.latitude);
+  const ln = Number(z.longitude);
+  if (!Number.isFinite(la) || !Number.isFinite(ln)) return false;
+  if (la === 0 && ln === 0) return false;
+  return true;
+};
 
 /**
  * Anillo aproximado alrededor del punto de la zona (octágono): para
