@@ -560,7 +560,10 @@ export const admin1Es = {
     hintPoint:
       'Edificio conocido (ej. hospital): dejá el punto donde se entregan los express. Barrio/zona: quitá el punto — el cliente pone el suyo al pedir.',
     hintPolygon:
-      'Tocá el mapa para agregar vértices ({{n}} punto{{s}}); arrastrá un vértice para moverlo; agarrá el polígono para mover TODO con su forma (o doble-clic para centrarlo).',
+      'Tocá el mapa para agregar vértices ({{n}} punto{{s}}); arrastrá un vértice para moverlo; agarrá el polígono para mover TODO con su forma (o doble-clic para centrarlo); achicá/agrandá con −/+.',
+    shrink: '− Achicar',
+    grow: '+ Agrandar',
+    shrinkTip: 'Cambia el tamaño conservando la forma (±10% por toque)',
     pointTip: 'Punto de entrega — arrastrá para mover',
     vertexTip: 'Vértice {{n}} — arrastrá para mover',
     reset: 'Reiniciar',
@@ -1149,7 +1152,10 @@ export const admin1En = {
     hintPoint:
       'Known building (e.g. hospital): leave the point where express deliveries go. Neighborhood/zone: remove the point — the customer drops theirs when ordering.',
     hintPolygon:
-      'Tap the map to add vertices ({{n}} point{{s}}); drag a vertex to move it; grab the polygon to move it WHOLE keeping its shape (or double-click to center it).',
+      'Tap the map to add vertices ({{n}} point{{s}}); drag a vertex to move it; grab the polygon to move it WHOLE keeping its shape (or double-click to center it); shrink/grow with −/+.',
+    shrink: '− Shrink',
+    grow: '+ Grow',
+    shrinkTip: 'Resize keeping the shape (±10% per tap)',
     pointTip: 'Delivery point — drag to move',
     vertexTip: 'Vertex {{n}} — drag to move',
     reset: 'Reset',

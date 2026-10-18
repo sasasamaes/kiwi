@@ -3,7 +3,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Pencil, Ban, RotateCcw, Check, Sparkles } from 'lucide-react';
+import { Plus, Pencil, Ban, RotateCcw, Check, Sparkles, Minus } from 'lucide-react';
 import { api, useAuth, useTranslations, addStreetsAndSatellite } from '@kiwi/ui';
 import { ZonesOverviewMap } from './ZonesOverviewMap';
 import { kiwiIcon } from './markers';
@@ -393,6 +393,28 @@ export default function AdminZonesPage() {
     // Solo al quedar listo el mapa (evita re-centrar mientras editás).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapReady]);
+
+  // Escala el objeto completo alrededor de su centroide (±10% por toque),
+  // conservando la forma. El punto de entrega escala con él.
+  const scalePolygon = (factor: number) => {
+    const verts = vertsRef.current;
+    if (verts.length < 3) return;
+    const cx = verts.reduce((s, p) => s + p[0], 0) / verts.length;
+    const cy = verts.reduce((s, p) => s + p[1], 0) / verts.length;
+    setVertices(verts.map(([x, y]) => [cx + (x - cx) * factor, cy + (y - cy) * factor]));
+    setForm((f) => {
+      const la = Number(f.latitude);
+      const ln = Number(f.longitude);
+      if (f.latitude === '' || f.longitude === '' || !Number.isFinite(la) || !Number.isFinite(ln)) {
+        return f;
+      }
+      return {
+        ...f,
+        latitude: (cy + (la - cy) * factor).toFixed(6),
+        longitude: (cx + (ln - cx) * factor).toFixed(6),
+      };
+    });
+  };
 
   const destroyMap = () => {
     if (pendingClick.current) {
@@ -820,6 +842,24 @@ export default function AdminZonesPage() {
                   className="rounded-lg border border-surface-200 dark:border-surface-700 px-3 py-1.5 text-xs disabled:opacity-40"
                 >
                   {t('webadmin1.azones.removeLast')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => scalePolygon(0.9)}
+                  disabled={mode !== 'polygon' || vertices.length < 3}
+                  title={t('webadmin1.azones.shrinkTip')}
+                  className="inline-flex items-center gap-1 rounded-lg border border-surface-200 dark:border-surface-700 px-3 py-1.5 text-xs disabled:opacity-40"
+                >
+                  <Minus className="h-3.5 w-3.5" /> {t('webadmin1.azones.shrink')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => scalePolygon(1.1)}
+                  disabled={mode !== 'polygon' || vertices.length < 3}
+                  title={t('webadmin1.azones.shrinkTip')}
+                  className="inline-flex items-center gap-1 rounded-lg border border-surface-200 dark:border-surface-700 px-3 py-1.5 text-xs disabled:opacity-40"
+                >
+                  <Plus className="h-3.5 w-3.5" /> {t('webadmin1.azones.grow')}
                 </button>
                 <button
                   type="button"
