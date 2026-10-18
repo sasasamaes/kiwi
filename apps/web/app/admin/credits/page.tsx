@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Coins, Plus, History, Phone, X, RefreshCw } from 'lucide-react';
-import { api } from '@kiwi/ui';
+import { api, useTranslations } from '@kiwi/ui';
 
 interface CreditMerchant {
   id: string;
@@ -17,7 +17,7 @@ interface CreditMerchant {
 interface CreditEntry {
   id: string;
   amount: number;
-  kind: 'recharge' | 'spend' | 'refund';
+  kind: 'recharge' | 'spend' | 'refund' | 'adjustment';
   reason?: string | null;
   orderId?: string | null;
   createdAt: string;
@@ -25,13 +25,8 @@ interface CreditEntry {
 
 const PACKAGES = [10000, 20000, 30000, 50000];
 
-const KIND_LABEL: Record<string, string> = {
-  recharge: 'Recarga',
-  spend: 'Gasto en envío',
-  refund: 'Devolución',
-};
-
 export default function AdminCredits() {
+  const { t } = useTranslations();
   const [merchants, setMerchants] = useState<CreditMerchant[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -40,9 +35,16 @@ export default function AdminCredits() {
   const [history, setHistory] = useState<CreditEntry[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [amount, setAmount] = useState('10000');
-  const [reason, setReason] = useState('Paquete prepago semanal');
+  const [reason, setReason] = useState(t('webadmin1.acreds.defaultReason'));
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+
+  const KIND_LABEL: Record<string, string> = {
+    recharge: t('webadmin1.acreds.kind.recharge'),
+    spend: t('webadmin1.acreds.kind.spend'),
+    refund: t('webadmin1.acreds.kind.refund'),
+    adjustment: t('webadmin1.acreds.kind.adjustment'),
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -50,11 +52,11 @@ export default function AdminCredits() {
     try {
       setMerchants(await api.getCreditMerchants());
     } catch (e: any) {
-      setError(e?.message || 'No se pudieron cargar los comercios');
+      setError(e?.message || t('webadmin1.acreds.loadError'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     load();
@@ -79,22 +81,63 @@ export default function AdminCredits() {
     if (!selected) return;
     const value = Math.round(Number(amount));
     if (!Number.isFinite(value) || value <= 0) {
-      setNotice('Monto inválido');
+      setNotice(t('webadmin1.acreds.invalidAmount'));
       return;
     }
+    await doRecharge(selected, value, reason || undefined);
+  };
+
+  const doRecharge = async (m: CreditMerchant, value: number, reasonText?: string) => {
     setSaving(true);
     setNotice(null);
     try {
-      const res = await api.rechargeMerchantCredit(selected.id, value, reason || undefined);
+      const res = await api.rechargeMerchantCredit(m.id, value, reasonText);
+      setMerchants((prev) =>
+        prev.map((x) => (x.id === m.id ? { ...x, balance: Number(res.balance) } : x)),
+      );
+      setSelected((prev) => (prev ? { ...prev, balance: Number(res.balance) } : prev));
+      setNotice(
+        t('webadmin1.acreds.recharged', {
+          amount: value.toLocaleString(),
+          name: m.businessName,
+        }),
+      );
+      const res2 = await api.getMerchantCreditHistory(m.id, 30, 0);
+      setHistory(Array.isArray(res2?.items) ? res2.items : []);
+    } catch (e: any) {
+      setNotice(e?.message || t('webadmin1.acreds.rechargeError'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const zeroOut = async () => {
+    if (!selected || Number(selected.balance) === 0) return;
+    const ok = window.confirm(
+      t('webadmin1.acreds.zeroConfirm', {
+        name: selected.businessName,
+        amount: Number(selected.balance).toLocaleString(),
+      }),
+    );
+    if (!ok) return;
+    setSaving(true);
+    setNotice(null);
+    try {
+      const res = await api.zeroOutMerchantCredit(selected.id, reason || undefined);
       setMerchants((prev) =>
         prev.map((m) => (m.id === selected.id ? { ...m, balance: Number(res.balance) } : m)),
       );
       setSelected((prev) => (prev ? { ...prev, balance: Number(res.balance) } : prev));
-      setNotice(`Recargados ₡${value.toLocaleString()} a ${selected.businessName}`);
+      setNotice(
+        t('webadmin1.acreds.zeroed', {
+          name: selected.businessName,
+          amount: Number(res.adjusted || 0).toLocaleString(),
+        }),
+      );
       const res2 = await api.getMerchantCreditHistory(selected.id, 30, 0);
       setHistory(Array.isArray(res2?.items) ? res2.items : []);
     } catch (e: any) {
-      setNotice(e?.message || 'No se pudo recargar');
+      setNotice(e?.message || t('webadmin1.acreds.zeroError'));
     } finally {
       setSaving(false);
     }
@@ -110,25 +153,27 @@ export default function AdminCredits() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-display font-bold text-surface-800 dark:text-surface-100">
-            <Coins className="h-6 w-6" /> Crédito prepago
+            <Coins className="h-6 w-6" /> {t('webadmin1.acreds.title')}
           </h1>
           <p className="mt-1 text-sm text-surface-500 dark:text-surface-400">
-            Recargas semanales de ₡10,000 o más · {merchants.length} comercios · ₡
-            {totalBalance.toLocaleString()} en circulación
+            {t('webadmin1.acreds.subtitle', {
+              count: merchants.length,
+              total: totalBalance.toLocaleString(),
+            })}
           </p>
         </div>
         <button
           onClick={load}
           className="flex items-center gap-1 px-4 py-2 text-sm font-medium bg-surface-100 dark:bg-surface-800 rounded-lg"
         >
-          <RefreshCw className="h-4 w-4" /> Actualizar
+          <RefreshCw className="h-4 w-4" /> {t('webadmin1.acreds.refresh')}
         </button>
       </div>
 
       <input
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        placeholder="Buscar comercio…"
+        placeholder={t('webadmin1.acreds.searchPh')}
         className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm"
       />
 
@@ -178,13 +223,15 @@ export default function AdminCredits() {
                   ₡{Number(m.balance).toLocaleString()}
                 </p>
                 <p className="text-xs text-surface-500 dark:text-surface-400">
-                  Tocar para recargar
+                  {t('webadmin1.acreds.tapToRecharge')}
                 </p>
               </div>
             </motion.button>
           ))}
           {filtered.length === 0 && (
-            <p className="py-8 text-center text-sm text-surface-500">Sin comercios</p>
+            <p className="py-8 text-center text-sm text-surface-500">
+              {t('webadmin1.acreds.empty')}
+            </p>
           )}
         </div>
       )}
@@ -222,7 +269,7 @@ export default function AdminCredits() {
                 </button>
               </div>
 
-              <p className="mb-2 text-sm font-semibold">Recargar paquete</p>
+              <p className="mb-2 text-sm font-semibold">{t('webadmin1.acreds.rechargePack')}</p>
               <div className="mb-3 grid grid-cols-4 gap-2">
                 {PACKAGES.map((p) => (
                   <button
@@ -244,7 +291,7 @@ export default function AdminCredits() {
                   min="1"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  placeholder="Otro monto"
+                  placeholder={t('webadmin1.acreds.otherAmount')}
                   className="flex-1 rounded-xl border border-surface-200 dark:border-surface-700 px-4 py-2.5 text-sm"
                 />
                 <button
@@ -252,24 +299,37 @@ export default function AdminCredits() {
                   disabled={saving}
                   className="flex items-center gap-1 rounded-xl bg-kiwi-700 px-5 text-sm font-bold text-white disabled:opacity-50"
                 >
-                  <Plus className="h-4 w-4" /> {saving ? '…' : 'Recargar'}
+                  <Plus className="h-4 w-4" />{' '}
+                  {saving ? t('webadmin1.acreds.recharging') : t('webadmin1.acreds.recharge')}
                 </button>
               </div>
+              <button
+                onClick={zeroOut}
+                disabled={saving || !selected || Number(selected.balance) === 0}
+                title={t('webadmin1.acreds.zeroHint')}
+                className="mb-3 w-full rounded-xl border border-red-200 dark:border-red-800 px-4 py-2 text-sm font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-40"
+              >
+                {saving ? t('webadmin1.acreds.zeroing') : t('webadmin1.acreds.zeroOut')}
+              </button>
               <input
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
-                placeholder="Motivo (opcional)"
+                placeholder={t('webadmin1.acreds.reasonPh')}
                 className="mb-2 w-full rounded-xl border border-surface-200 dark:border-surface-700 px-4 py-2.5 text-sm"
               />
               {notice && <p className="mb-2 text-sm text-kiwi-700">{notice}</p>}
 
               <p className="mb-2 mt-4 flex items-center gap-1 text-sm font-semibold">
-                <History className="h-4 w-4" /> Movimientos
+                <History className="h-4 w-4" /> {t('webadmin1.acreds.history')}
               </p>
               {historyLoading ? (
-                <p className="text-sm text-surface-500 dark:text-surface-400">Cargando…</p>
+                <p className="text-sm text-surface-500 dark:text-surface-400">
+                  {t('webadmin1.acreds.loadingHistory')}
+                </p>
               ) : history.length === 0 ? (
-                <p className="text-sm text-surface-500 dark:text-surface-400">Sin movimientos</p>
+                <p className="text-sm text-surface-500 dark:text-surface-400">
+                  {t('webadmin1.acreds.noHistory')}
+                </p>
               ) : (
                 <div className="space-y-2">
                   {history.map((h) => (

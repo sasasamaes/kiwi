@@ -127,6 +127,30 @@ export class CreditsService {
     }
   }
 
+  /** Puesta en cero del admin: deja el saldo en 0 y lo asienta como ajuste. */
+  async zeroOut(merchantId: string, adminUserId: string, reason?: string) {
+    const merchant = await this.prisma.merchantProfile.findUnique({ where: { id: merchantId } });
+    if (!merchant) throw new NotFoundException('Comercio no encontrado');
+    const current = Number(merchant.creditBalance ?? 0);
+    if (current === 0) return { merchantId, balance: 0, adjusted: 0 };
+    const [updated] = await this.prisma.$transaction([
+      this.prisma.merchantProfile.update({
+        where: { id: merchantId },
+        data: { creditBalance: 0 },
+      }),
+      this.prisma.creditTransaction.create({
+        data: {
+          merchantId,
+          amount: -current,
+          kind: 'adjustment',
+          reason: reason || 'Puesta en cero por admin',
+          createdBy: adminUserId,
+        },
+      }),
+    ]);
+    return { merchantId, balance: Number(updated.creditBalance), adjusted: -current };
+  }
+
   /** Devolución del admin (ej. pedido cancelado con crédito). */
   async refund(merchantId: string, amount: number, adminUserId: string, reason?: string) {
     const value = Math.round(Number(amount));

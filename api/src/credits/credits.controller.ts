@@ -103,4 +103,16 @@ export class CreditsController {
   ) {
     return this.creditsService.refund(id, Number(amount), user.sub, reason);
   }
+
+  @Post('admin/merchants/:id/zero-out')
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  @ApiOperation({ summary: 'Poner en cero el crédito de un comercio (admin)' })
+  async zeroOut(
+    @Param('id') id: string,
+    @Body('reason') reason: string | undefined,
+    @CurrentUser() user: any,
+  ) {
+    return this.creditsService.zeroOut(id, user.sub, reason);
+  }
 }

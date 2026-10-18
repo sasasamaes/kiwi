@@ -1894,6 +1894,13 @@ class ApiClient {
     });
   }
 
+  async zeroOutMerchantCredit(id: string, reason?: string) {
+    return this.request<any>(`/credits/admin/merchants/${id}/zero-out`, {
+      method: 'POST',
+      body: { reason },
+    });
+  }
+
   async getMerchantCreditHistory(id: string, take = 30, skip = 0) {
     return this.request<any>(`/credits/admin/merchants/${id}/history?take=${take}&skip=${skip}`);
   }
