@@ -139,6 +139,21 @@ export default function ClientHome() {
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [locating, setLocating] = useState(false);
   const [locDenied, setLocDenied] = useState(false);
+  /** Feature flag del admin: muestra u oculta la tarjeta de encomiendas. */
+  const [showEncomienda, setShowEncomienda] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .getFeatureFlags()
+      .then((f) => {
+        if (!cancelled) setShowEncomienda(f.encomiendaEnabled !== false);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   // Baymard: el re-pedido es el hábito #1 — rail "Pedir de nuevo" con el último entregado.
   const [lastDelivered, setLastDelivered] = useState<{
     id: string;
@@ -400,26 +415,28 @@ export default function ClientHome() {
       <main className="mx-auto max-w-lg lg:max-w-5xl px-4 py-6">
         {/* Atajos: icono con tinte por acción, jerarquía serif, chevron */}
         <div className="mb-4 grid gap-3">
-          <Link
-            href="/encomienda"
-            className={`flex items-center gap-3 rounded-2xl border border-surface-200/60 bg-white p-4 shadow-card dark:border-white/[0.06] dark:bg-surface-800 ${hoverCard} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-600/40 active:scale-[0.99]`}
-          >
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-kiwi-100 text-kiwi-700 dark:bg-kiwi-400/10 dark:text-kiwi-300">
-              <Package className="h-6 w-6" aria-hidden />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block font-display text-[17px] font-bold leading-snug text-surface-900 dark:text-surface-100">
-                {t('wclihome.home.encomiendaTitle')}
+          {showEncomienda && (
+            <Link
+              href="/encomienda"
+              className={`flex items-center gap-3 rounded-2xl border border-surface-200/60 bg-white p-4 shadow-card dark:border-white/[0.06] dark:bg-surface-800 ${hoverCard} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-600/40 active:scale-[0.99]`}
+            >
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-kiwi-100 text-kiwi-700 dark:bg-kiwi-400/10 dark:text-kiwi-300">
+                <Package className="h-6 w-6" aria-hidden />
               </span>
-              <span className="block text-xs text-surface-500 dark:text-surface-400">
-                {t('wclihome.home.encomiendaDesc')}
+              <span className="min-w-0 flex-1">
+                <span className="block font-display text-[17px] font-bold leading-snug text-surface-900 dark:text-surface-100">
+                  {t('wclihome.home.encomiendaTitle')}
+                </span>
+                <span className="block text-xs text-surface-500 dark:text-surface-400">
+                  {t('wclihome.home.encomiendaDesc')}
+                </span>
               </span>
-            </span>
-            <ChevronRight
-              className="h-5 w-5 shrink-0 text-kiwi-700 dark:text-kiwi-300"
-              aria-hidden
-            />
-          </Link>
+              <ChevronRight
+                className="h-5 w-5 shrink-0 text-kiwi-700 dark:text-kiwi-300"
+                aria-hidden
+              />
+            </Link>
+          )}
           <Link
             href="/zona-azul"
             className={`flex items-center gap-3 rounded-2xl border border-gold-500/25 bg-gradient-to-r from-gold-50 via-white to-white p-4 shadow-card dark:border-gold-400/20 dark:from-gold-400/10 dark:via-surface-800 dark:to-surface-800 ${hoverCard} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-500/40 active:scale-[0.99]`}

@@ -37,6 +37,13 @@ export class SettingsController {
     return { standardPct, homeCookPct };
   }
 
+  @Public()
+  @Get('features')
+  @ApiOperation({ summary: 'Feature flags públicos (público)' })
+  async features() {
+    return { encomiendaEnabled: await this.settingsService.getEncomiendaEnabled() };
+  }
+
   @Get('admin')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')

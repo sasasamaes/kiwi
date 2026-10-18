@@ -12,6 +12,8 @@ export interface PlatformSettings {
     minimumOrder: number;
     maximumDeliveryDistance: number;
     freeDeliveryThreshold: number;
+    /** Feature flag: muestra/oculta Encomiendas en la app cliente. */
+    encomiendaEnabled: boolean;
   };
   payments: {
     sinpeEnabled: boolean;
@@ -67,6 +69,7 @@ export const DEFAULT_SETTINGS: PlatformSettings = {
     minimumOrder: 2000,
     maximumDeliveryDistance: 20,
     freeDeliveryThreshold: 10000,
+    encomiendaEnabled: true,
   },
   payments: {
     sinpeEnabled: true,
@@ -180,6 +183,7 @@ export class SettingsService {
       100,
     );
     next.platform.minimumOrder = Math.max(Math.round(Number(next.platform.minimumOrder) || 0), 0);
+    next.platform.encomiendaEnabled = next.platform.encomiendaEnabled !== false;
     next.security.sessionTimeout = Math.min(
       Math.max(Math.round(Number(next.security.sessionTimeout) || 30), 5),
       480,
@@ -266,6 +270,12 @@ export class SettingsService {
   }
 
   /** Minutos de aceptación y de concurso (admin, default 5/10, saneado 1–60). */
+
+  /** Feature flag de Encomiendas (default true: visible). */
+  async getEncomiendaEnabled(): Promise<boolean> {
+    const all = await this.getAll();
+    return all.platform?.encomiendaEnabled !== false;
+  }
   async getAssignmentTimeouts(): Promise<{ acceptanceMinutes: number; contestMinutes: number }> {
     const all = await this.getAll();
     const clamp = (v: unknown, dflt: number) => {

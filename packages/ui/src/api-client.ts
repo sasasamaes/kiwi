@@ -1924,6 +1924,16 @@ class ApiClient {
     }>('/settings/payments');
   }
 
+  /** Feature flags públicos (ej. encomiendas visible o no). Default true. */
+  async getFeatureFlags(): Promise<{ encomiendaEnabled: boolean }> {
+    try {
+      const r = await this.request<any>('/settings/features');
+      return { encomiendaEnabled: r?.encomiendaEnabled !== false };
+    } catch {
+      return { encomiendaEnabled: true };
+    }
+  }
+
   /**
    * Mezcla real de zonas de pedidos entregados (admin): pesos % por zona id
    * para el simulador de ganancias.

@@ -73,6 +73,23 @@ export default function EncomiendaPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [placed, setPlaced] = useState<{ id: string } | null>(null);
+  /** Feature flag del admin: si está apagado, la función no está disponible. */
+  const [available, setAvailable] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .getFeatureFlags()
+      .then((f) => {
+        if (!cancelled) setAvailable(f.encomiendaEnabled !== false);
+      })
+      .catch(() => {
+        if (!cancelled) setAvailable(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Doble tap o reintento con wifi caído: misma key = mismo pedido.
   const placingRef = useRef(false);
@@ -185,6 +202,27 @@ export default function EncomiendaPage() {
       placingRef.current = false;
       setLoading(false);
     }
+  }
+
+  if (available === false) {
+    return (
+      <main className="mx-auto flex min-h-[100dvh] max-w-lg flex-col px-6 pb-28 pt-16 text-center">
+        <p className="mt-10 text-5xl">📦</p>
+        <h1 className="mt-4 font-display text-2xl font-bold tracking-tight text-surface-900 dark:text-surface-100">
+          {t('wclimisc.enco.unavailableTitle')}
+        </h1>
+        <p className="mt-2 text-sm leading-relaxed text-surface-600 dark:text-surface-300">
+          {t('wclimisc.enco.unavailableHint')}
+        </p>
+        <Link
+          href="/"
+          className="mt-6 inline-flex items-center justify-center gap-2 rounded-full bg-kiwi-700 py-3.5 font-semibold text-white shadow-card transition-transform active:scale-[0.98]"
+        >
+          {t('wclimisc.enco.backHome')}
+        </Link>
+        <BottomNav />
+      </main>
+    );
   }
 
   if (placed) {

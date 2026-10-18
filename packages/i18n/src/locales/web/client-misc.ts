@@ -70,6 +70,9 @@ export const cliMiscEs = {
   },
   enco: {
     created: 'Pedido creado',
+    unavailableTitle: 'Encomiendas en pausa',
+    unavailableHint: 'Por ahora no estamos recibiendo encomiendas. Volvé pronto, ¡pura vida!',
+    backHome: 'Volver al inicio',
     findingDriver: 'Buscando tu repartidor',
     driverNotice:
       'Avisamos a los repartidores cerca de {{pickup}}. Pagás {{total}} en efectivo al entregar.',
@@ -271,6 +274,9 @@ export const cliMiscEn = {
   },
   enco: {
     created: 'Order created',
+    unavailableTitle: 'Parcels paused',
+    unavailableHint: 'We are not taking parcels right now. Check back soon!',
+    backHome: 'Back home',
     findingDriver: 'Finding your driver',
     driverNotice: 'Notifying drivers near {{pickup}}. You’ll pay {{total}} in cash on delivery.',
     pickupFallback: 'the pickup spot',

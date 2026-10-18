@@ -33,6 +33,9 @@ export const admin2Es = {
     minOrder: 'Pedido mínimo (₡)',
     maxDistance: 'Distancia máxima de entrega (km)',
     freeDelivery: 'Envío gratis desde (₡)',
+    encomienda: '📦 Encomiendas',
+    encomiendaHint:
+      'Muestra la tarjeta de encomiendas en la app cliente. Apagala para esconderla (lanzamiento, pausas o temporadas).',
     opsTitle: 'Costos operativos reales',
     opsSub:
       'Alimentan la ganancia neta del reporte «Real vs Proyección». Se aplican a cada mes según sus viajes y su GMV.',
@@ -513,6 +516,9 @@ export const admin2En = {
     minOrder: 'Minimum order (₡)',
     maxDistance: 'Maximum delivery distance (km)',
     freeDelivery: 'Free delivery from (₡)',
+    encomienda: '📦 Parcels',
+    encomiendaHint:
+      'Shows the parcels card in the customer app. Turn it off to hide it (launch, pauses or seasons).',
     opsTitle: 'Real operating costs',
     opsSub:
       'They feed the net profit in the "Actual vs Projection" report. Applied to each month by its trips and GMV.',
