@@ -126,6 +126,23 @@ export function ZonesOverviewMap({
   const fittedRef = useRef(false);
   const [ready, setReady] = useState(false);
 
+  // Vista persistente: el mapa se queda donde el admin lo dejó (zoom/pan),
+  // incluso entre recargas. Sin vista guardada se encuadra a los datos una vez.
+  const VIEW_KEY = 'kiwi-zones-view';
+  const readSavedView = (): { lat: number; lng: number; zoom: number } | null => {
+    try {
+      const raw = window.localStorage.getItem(VIEW_KEY);
+      if (!raw) return null;
+      const v = JSON.parse(raw);
+      if (!Number.isFinite(v?.lat) || !Number.isFinite(v?.lng) || !Number.isFinite(v?.zoom)) {
+        return null;
+      }
+      return { lat: v.lat, lng: v.lng, zoom: Math.min(Math.max(v.zoom, 3), 18) };
+    } catch {
+      return null;
+    }
+  };
+
   // Init (client-only).
   useEffect(() => {
     let cancelled = false;
@@ -133,8 +150,24 @@ export function ZonesOverviewMap({
       const mod: any = await import('leaflet');
       const L = mod.default ?? mod;
       if (cancelled || !ref.current || mapRef.current) return;
-      const map = L.map(ref.current).setView([10.1467, -85.452], 12);
+      const saved = readSavedView();
+      const map = L.map(ref.current).setView(
+        saved ? [saved.lat, saved.lng] : [10.1467, -85.452],
+        saved ? saved.zoom : 12,
+      );
+      if (saved) fittedRef.current = true;
       addStreetsAndSatellite(map, L);
+      map.on('moveend zoomend', () => {
+        try {
+          const c = map.getCenter();
+          window.localStorage.setItem(
+            VIEW_KEY,
+            JSON.stringify({ lat: c.lat, lng: c.lng, zoom: map.getZoom() }),
+          );
+        } catch {
+          // sin storage: la vista igual se mantiene en la sesión
+        }
+      });
       LRef.current = L;
       mapRef.current = map;
       setReady(true);
