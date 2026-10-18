@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 'use client';
 
+import { useCallback, useMemo } from 'react';
 import { useLanguage } from './LanguageContext';
 import {
   getNestedValue,
@@ -26,43 +27,51 @@ export function useTranslation() {
   const { locale, setLocale, t } = useLanguage();
 
   /**
-   * Get translation with optional interpolation
+   * Get translation with optional interpolation (memoized: safe in deps).
    */
-  const translate = (path: string, variables?: Record<string, string | number>): string => {
-    const value = getNestedValue(t, path);
+  const translate = useCallback(
+    (path: string, variables?: Record<string, string | number>): string => {
+      const value = getNestedValue(t, path);
 
-    if (variables) {
-      return interpolate(value, variables);
-    }
+      if (variables) {
+        return interpolate(value, variables);
+      }
 
-    return value;
-  };
+      return value;
+    },
+    [t],
+  );
 
   /**
    * Format relative time
    */
-  const relativeTime = (date: Date) => formatRelativeTime(date, locale);
+  const relativeTime = useCallback((date: Date) => formatRelativeTime(date, locale), [locale]);
 
   /**
    * Format currency
    */
-  const currency = (amount: number, currencyCode?: string) =>
-    formatCurrency(amount, locale, currencyCode);
+  const currency = useCallback(
+    (amount: number, currencyCode?: string) => formatCurrency(amount, locale, currencyCode),
+    [locale],
+  );
 
   /**
    * Format number
    */
-  const number = (num: number) => formatNumber(num, locale);
+  const number = useCallback((num: number) => formatNumber(num, locale), [locale]);
 
-  return {
-    t,
-    locale,
-    setLocale,
-    translate,
-    relativeTime,
-    currency,
-    number,
-  };
+  return useMemo(
+    () => ({
+      t,
+      locale,
+      setLocale,
+      translate,
+      relativeTime,
+      currency,
+      number,
+    }),
+    [t, locale, setLocale, translate, relativeTime, currency, number],
+  );
 }
 
 export default useTranslation;

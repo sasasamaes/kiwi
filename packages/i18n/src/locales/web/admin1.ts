@@ -199,6 +199,7 @@ export const admin1Es = {
       driver: 'Repartidor',
       merchant: 'Comercio',
       admin: 'Admin',
+      customer: 'Cliente',
     },
     status: {
       active: 'Activo',
@@ -789,6 +790,7 @@ export const admin1En = {
       driver: 'Driver',
       merchant: 'Store',
       admin: 'Admin',
+      customer: 'Customer',
     },
     status: {
       active: 'Active',

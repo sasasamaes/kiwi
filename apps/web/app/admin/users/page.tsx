@@ -635,6 +635,11 @@ export default function UsersPage() {
         return { label: t('webadmin1.ausers.role.merchant'), color: 'bg-blue-100 text-blue-700' };
       case 'admin':
         return { label: t('webadmin1.ausers.role.admin'), color: 'bg-purple-100 text-purple-700' };
+      case 'customer':
+        return {
+          label: t('webadmin1.ausers.role.customer'),
+          color: 'bg-surface-100 text-surface-700',
+        };
       default:
         return { label: role, color: 'bg-surface-100 text-surface-700' };
     }

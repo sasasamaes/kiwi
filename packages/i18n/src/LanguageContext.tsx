@@ -1,7 +1,15 @@
 // Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+  useEffect,
+  ReactNode,
+} from 'react';
 import { locales, defaultLocale, Locale, TranslationKeys } from './index';
 import { getNestedValue, interpolate } from './utils';
 
@@ -96,25 +104,32 @@ export function LanguageProvider({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const setLocale = (newLocale: Locale) => {
-    setLocaleState(newLocale);
-    const store = storage ?? webStorage();
-    try {
-      void store?.setLocale(newLocale);
-    } catch {
-      // in-memory fallback
-    }
-    if (typeof document !== 'undefined' && document.documentElement) {
-      document.documentElement.lang = newLocale;
-    }
-  };
+  const setLocale = useCallback(
+    (newLocale: Locale) => {
+      setLocaleState(newLocale);
+      const store = storage ?? webStorage();
+      try {
+        void store?.setLocale(newLocale);
+      } catch {
+        // in-memory fallback
+      }
+      if (typeof document !== 'undefined' && document.documentElement) {
+        document.documentElement.lang = newLocale;
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
 
-  const value: LanguageContextType = {
-    locale,
-    setLocale,
-    t: locales[locale].translations,
-    localeConfig: locales[locale],
-  };
+  const value: LanguageContextType = useMemo(
+    () => ({
+      locale,
+      setLocale,
+      t: locales[locale].translations,
+      localeConfig: locales[locale],
+    }),
+    [locale, setLocale],
+  );
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 }
@@ -129,16 +144,20 @@ export function useLanguage() {
 
 // Helper hook for translations
 // Returns a translate function that resolves flat dot-path keys, e.g. t('traffic.free')
+// NOTE: memoized — safe to use in useEffect/useCallback deps without refetch loops.
 export function useTranslations() {
   const { t, locale } = useLanguage();
 
-  const translate = (key: string, variables?: Record<string, string | number>): string => {
-    const value = getNestedValue(t, key);
-    if (variables) {
-      return interpolate(value, variables);
-    }
-    return value;
-  };
+  const translate = useCallback(
+    (key: string, variables?: Record<string, string | number>): string => {
+      const value = getNestedValue(t, key);
+      if (variables) {
+        return interpolate(value, variables);
+      }
+      return value;
+    },
+    [t],
+  );
 
-  return { t: translate, locale };
+  return useMemo(() => ({ t: translate, locale }), [translate, locale]);
 }
