@@ -4,7 +4,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Store, Check } from 'lucide-react';
-import { api, useAuth } from '@kiwi/ui';
+import { api, useAuth, useTranslations, addStreetsAndSatellite } from '@kiwi/ui';
 import { MerchantNav } from '../../components/MerchantNav';
 import { MerchantLogoEditor } from '../../components/MerchantLogoEditor';
 
@@ -43,7 +43,24 @@ const normalizePhone = (raw: string): string => {
 
 const isHHMM = (v: string) => /^\d{2}:\d{2}$/.test(v);
 
+const CAT_KEY: Record<string, string> = {
+  restaurante: 'catRestaurante',
+  soda: 'catSoda',
+  pizzeria: 'catPizzeria',
+  cafe_brunch: 'catCafe',
+  panaderia: 'catPanaderia',
+  mariscos: 'catMariscos',
+  comida_rapida: 'catRapida',
+  saludable: 'catSaludable',
+  cocina_casera: 'catCasera',
+  bar: 'catBar',
+  otro: 'catOtro',
+};
+
+const dayKey = (key: string) => `day${key.charAt(0).toUpperCase()}${key.slice(1)}`;
+
 export default function PerfilPage() {
+  const { t } = useTranslations();
   const router = useRouter();
   const { user, loading: authLoading, updateUser } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -130,7 +147,7 @@ export default function PerfilPage() {
         setCashEnabled((profile as any)?.cashEnabled !== false);
         setSinpeEnabled((profile as any)?.sinpeEnabled !== false);
       } catch {
-        if (!cancelled) setFormError('No se pudo cargar el perfil.');
+        if (!cancelled) setFormError(t('webshop2.perfil.errLoad'));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -160,9 +177,7 @@ export default function PerfilPage() {
         hasPt ? [lat, lng] : [10.1467, -85.452],
         hasPt ? 16 : 13,
       );
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap',
-      }).addTo(map);
+      addStreetsAndSatellite(map, L);
       map.on('click', (e: any) => {
         setForm((f) => ({
           ...f,
@@ -204,14 +219,14 @@ export default function PerfilPage() {
       return;
     }
     const icon = L.divIcon({
-      html: '<img src="/kiwi.svg" alt="Mi local" style="width:34px;height:34px;display:block;border-radius:999px;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35);background:#fff;"/>',
+      html: `<img src="/kiwi.svg" alt="${t('webshop2.perfil.markerAlt')}" style="width:34px;height:34px;display:block;border-radius:999px;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35);background:#fff;"/>`,
       className: 'merchant-point',
       iconSize: [34, 34],
       iconAnchor: [17, 17],
     });
     const marker = L.marker([lat, lng], { draggable: true, icon })
       .addTo(map)
-      .bindTooltip('Mi local — arrastrá para mover');
+      .bindTooltip(t('webshop2.perfil.markerTooltip'));
     marker.on('dragend', () => {
       const p = marker.getLatLng();
       setForm((f) => ({ ...f, latitude: p.lat.toFixed(6), longitude: p.lng.toFixed(6) }));
@@ -221,7 +236,7 @@ export default function PerfilPage() {
 
   const useMyLocation = () => {
     if (!navigator.geolocation) {
-      setFormError('Tu dispositivo no da ubicación.');
+      setFormError(t('webshop2.perfil.errNoGeo'));
       return;
     }
     navigator.geolocation.getCurrentPosition(
@@ -233,7 +248,7 @@ export default function PerfilPage() {
         }));
         setFormError(null);
       },
-      () => setFormError('No se pudo obtener tu ubicación. Tocá el mapa.'),
+      () => setFormError(t('webshop2.perfil.errGeo')),
       { enableHighAccuracy: true, timeout: 10_000 },
     );
   };
@@ -248,7 +263,7 @@ export default function PerfilPage() {
         const st = await api.getMarketplaceStatus();
         if (!cancelled) setMpStatus(st);
       } catch {
-        if (!cancelled) setMpError('No se pudo cargar el estado de cobros con tarjeta.');
+        if (!cancelled) setMpError(t('webshop2.perfil.errMpStatus'));
       } finally {
         if (!cancelled) setMpLoading(false);
       }
@@ -289,28 +304,37 @@ export default function PerfilPage() {
     setSaving(true);
     setFormError(null);
     try {
-      if (!form.businessName.trim()) throw new Error('El nombre del negocio es requerido.');
+      if (!form.businessName.trim()) throw new Error(t('webshop2.perfil.errName'));
       const phone = normalizePhone(form.phone);
       if (form.phone.trim() !== '' && !/^\d{4}-\d{4}$/.test(phone)) {
-        throw new Error('Teléfono inválido (formato 8888-8888).');
+        throw new Error(t('webshop2.perfil.errPhone'));
       }
       const openingHours: Record<string, { open: string; close: string }> = {};
       for (const d of DAYS) {
         const h = form.hours[d.key];
         if (h) {
           if (!isHHMM(h.open) || !isHHMM(h.close)) {
-            throw new Error(`Horario inválido el ${d.label.toLowerCase()} (HH:MM).`);
+            throw new Error(
+              t('webshop2.perfil.errHours', {
+                day: t(`webshop2.perfil.${dayKey(d.key)}`).toLowerCase(),
+              }),
+            );
           }
           // Tope operativo Kiwi (8:00–20:00): sin repartidores fuera de ese
           // rango, el horario del local no puede excederlo.
           if (h.open < '08:00' || h.close > '20:00') {
             throw new Error(
-              `El ${d.label.toLowerCase()} excede el horario Kiwi (8:00–20:00): ${h.open}–${h.close}.`,
+              t('webshop2.perfil.errRange', {
+                day: t(`webshop2.perfil.${dayKey(d.key)}`).toLowerCase(),
+                range: `${h.open}–${h.close}`,
+              }),
             );
           }
           if (h.close <= h.open) {
             throw new Error(
-              `El cierre debe ser después de la apertura el ${d.label.toLowerCase()}.`,
+              t('webshop2.perfil.errClose', {
+                day: t(`webshop2.perfil.${dayKey(d.key)}`).toLowerCase(),
+              }),
             );
           }
           openingHours[d.key] = { open: h.open, close: h.close };
@@ -319,10 +343,10 @@ export default function PerfilPage() {
       const latRaw = form.latitude === '' ? null : Number(form.latitude);
       const lngRaw = form.longitude === '' ? null : Number(form.longitude);
       if ((latRaw == null) !== (lngRaw == null)) {
-        throw new Error('Ubicación incompleta: tocá el mapa o quitá el punto.');
+        throw new Error(t('webshop2.perfil.errLocationHalf'));
       }
       if (latRaw != null && (!Number.isFinite(latRaw) || !Number.isFinite(lngRaw as number))) {
-        throw new Error('Ubicación inválida.');
+        throw new Error(t('webshop2.perfil.errLocationBad'));
       }
       const [updated] = await Promise.all([
         api.updateMerchantProfile({
@@ -347,7 +371,7 @@ export default function PerfilPage() {
       setSavedTick(true);
       setTimeout(() => setSavedTick(false), 3000);
     } catch (err: any) {
-      setFormError(err?.message || 'No se pudo guardar.');
+      setFormError(err?.message || t('webshop2.perfil.errSave'));
     } finally {
       setSaving(false);
     }
@@ -362,7 +386,7 @@ export default function PerfilPage() {
       await api.setMyVisibility(next);
     } catch {
       setListed(!next);
-      setListedError('No se pudo cambiar la visibilidad. Intentá de nuevo.');
+      setListedError(t('webshop2.perfil.errVisibility'));
     } finally {
       setListedBusy(false);
     }
@@ -379,7 +403,7 @@ export default function PerfilPage() {
       );
     } catch {
       setter(!next);
-      setPayError('No se pudo guardar el método de pago. Intentá de nuevo.');
+      setPayError(t('webshop2.perfil.errPayMethod'));
     } finally {
       setPayBusy(false);
     }
@@ -394,10 +418,10 @@ export default function PerfilPage() {
       setMpStatus({ accountId: out.accountId, status: out.status });
       if (out.onboardingUrl) {
         window.open(out.onboardingUrl, '_blank', 'noopener,noreferrer');
-        setMpInfo('Completá el registro en Onvo y volvé a revisar estado.');
+        setMpInfo(t('webshop2.perfil.mpDoneInfo'));
       }
     } catch {
-      setMpError('No se pudo activar los cobros con tarjeta. Intentá de nuevo.');
+      setMpError(t('webshop2.perfil.errMpActivate'));
     } finally {
       setMpBusy(false);
     }
@@ -412,10 +436,10 @@ export default function PerfilPage() {
       if (out.status) setMpStatus({ accountId: out.accountId, status: out.status });
       if (out.onboardingUrl) {
         window.open(out.onboardingUrl, '_blank', 'noopener,noreferrer');
-        setMpInfo('Completá el registro en Onvo y volvé a revisar estado.');
+        setMpInfo(t('webshop2.perfil.mpDoneInfo'));
       }
     } catch {
-      setMpError('No se pudo abrir el registro. Intentá de nuevo.');
+      setMpError(t('webshop2.perfil.errMpOpen'));
     } finally {
       setMpBusy(false);
     }
@@ -429,10 +453,10 @@ export default function PerfilPage() {
       const st = await api.getMarketplaceStatus();
       setMpStatus(st);
       if (st?.status !== 'active') {
-        setMpInfo('Todavía no está activo. Terminá el registro en Onvo e intentá de nuevo.');
+        setMpInfo(t('webshop2.perfil.mpNotActive'));
       }
     } catch {
-      setMpError('No se pudo revisar el estado. Intentá de nuevo.');
+      setMpError(t('webshop2.perfil.errMpRefresh'));
     } finally {
       setMpBusy(false);
     }
@@ -465,13 +489,13 @@ export default function PerfilPage() {
       />
       <main className="mx-auto max-w-2xl p-6 pb-20">
         <h1 className="text-2xl font-semibold flex items-center gap-2 mb-1">
-          <Store className="h-6 w-6" /> Mi negocio
+          <Store className="h-6 w-6" /> {t('webshop2.perfil.title')}
         </h1>
-        <p className="text-sm text-surface-500 mb-6">Estos datos los ven los clientes en la app.</p>
+        <p className="text-sm text-surface-500 mb-6">{t('webshop2.perfil.subtitle')}</p>
 
         <div className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] p-5 shadow-soft dark:shadow-dark">
           <p className="text-xs font-bold uppercase tracking-wider text-surface-500 dark:text-surface-400 mb-4">
-            Presentación
+            {t('webshop2.perfil.sectionProfile')}
           </p>
           <div className="space-y-4">
             <div className="flex items-center gap-4">
@@ -482,34 +506,32 @@ export default function PerfilPage() {
               />
               <div>
                 <p className="font-semibold text-surface-800 dark:text-surface-100">
-                  Foto de perfil
+                  {t('webshop2.perfil.profilePhoto')}
                 </p>
-                <p className="text-xs text-surface-500">
-                  Aparece en la lista y el menú del cliente.
-                </p>
+                <p className="text-xs text-surface-500">{t('webshop2.perfil.profilePhotoHint')}</p>
               </div>
             </div>
 
             <div>
               <label className="mb-1.5 block text-sm font-medium text-surface-600 dark:text-surface-400">
-                Nombre del negocio *
+                {t('webshop2.perfil.businessName')}
               </label>
               <input
                 value={form.businessName}
                 onChange={(e) => setForm((f) => ({ ...f, businessName: e.target.value }))}
-                placeholder="Restaurante El Sabor"
+                placeholder={t('webshop2.perfil.businessNamePh')}
                 className={inputCls}
               />
             </div>
 
             <div>
               <label className="mb-1.5 block text-sm font-medium text-surface-600 dark:text-surface-400">
-                Descripción
+                {t('webshop2.perfil.description')}
               </label>
               <textarea
                 value={form.description}
                 onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                placeholder="Contanos qué ofrecen…"
+                placeholder={t('webshop2.perfil.descriptionPh')}
                 rows={3}
                 className={`${inputCls} resize-none`}
               />
@@ -517,7 +539,7 @@ export default function PerfilPage() {
 
             <div>
               <label className="mb-1.5 block text-sm font-medium text-surface-600 dark:text-surface-400">
-                Categoría
+                {t('webshop2.perfil.category')}
               </label>
               <select
                 value={form.category}
@@ -526,7 +548,7 @@ export default function PerfilPage() {
               >
                 {CATEGORIES.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.label}
+                    {t(`webshop2.perfil.${CAT_KEY[c.id]}`)}
                   </option>
                 ))}
               </select>
@@ -535,30 +557,30 @@ export default function PerfilPage() {
 
           <div className="my-5 border-t border-surface-100 dark:border-surface-700/60" />
           <p className="text-xs font-bold uppercase tracking-wider text-surface-500 dark:text-surface-400 mb-4">
-            Contacto
+            {t('webshop2.perfil.sectionContact')}
           </p>
           <div className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-surface-600 dark:text-surface-400">
-                  Dirección
+                  {t('webshop2.perfil.address')}
                 </label>
                 <input
                   value={form.address}
                   onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
-                  placeholder="Nicoya, Guanacaste"
+                  placeholder={t('webshop2.perfil.addressPh')}
                   className={inputCls}
                 />
               </div>
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-surface-600 dark:text-surface-400">
-                  Teléfono
+                  {t('webshop2.perfil.phone')}
                 </label>
                 <input
                   value={form.phone}
                   onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
                   onBlur={() => setForm((f) => ({ ...f, phone: normalizePhone(f.phone) }))}
-                  placeholder="8888-8888"
+                  placeholder={t('webshop2.perfil.phonePh')}
                   inputMode="tel"
                   className={inputCls}
                 />
@@ -568,11 +590,10 @@ export default function PerfilPage() {
 
           <div className="my-5 border-t border-surface-100 dark:border-surface-700/60" />
           <p className="text-xs font-bold uppercase tracking-wider text-surface-500 dark:text-surface-400 mb-4">
-            Ubicación del local
+            {t('webshop2.perfil.sectionLocation')}
           </p>
           <p className="mb-3 text-sm text-surface-500 dark:text-surface-400">
-            Tocá el mapa para marcar dónde llegan a recoger. Ese punto se ve en el mapa general de
-            operaciones.
+            {t('webshop2.perfil.locationHint')}
           </p>
           <div
             ref={mapDivRef}
@@ -584,7 +605,7 @@ export default function PerfilPage() {
               onClick={useMyLocation}
               className="rounded-lg border border-surface-200 dark:border-surface-700 px-3 py-1.5 text-xs font-medium"
             >
-              Usar mi ubicación
+              {t('webshop2.perfil.useLocation')}
             </button>
             <button
               type="button"
@@ -592,24 +613,40 @@ export default function PerfilPage() {
               disabled={form.latitude === '' && form.longitude === ''}
               className="rounded-lg border border-surface-200 dark:border-surface-700 px-3 py-1.5 text-xs font-medium disabled:opacity-40"
             >
-              Quitar punto
+              {t('webshop2.perfil.removePoint')}
             </button>
           </div>
 
           <div className="my-5 border-t border-surface-100 dark:border-surface-700/60" />
           <p className="text-xs font-bold uppercase tracking-wider text-surface-500 dark:text-surface-400 mb-4">
-            Redes sociales
+            {t('webshop2.perfil.sectionSocial')}
           </p>
           <p className="mb-3 text-sm text-surface-500 dark:text-surface-400">
-            Se muestran en tu menú de la app cliente. Acepta link o @usuario.
+            {t('webshop2.perfil.socialHint')}
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {(
               [
-                { key: 'instagram', label: 'Instagram', placeholder: '@mi_negocio' },
-                { key: 'facebook', label: 'Facebook', placeholder: 'link o nombre' },
-                { key: 'tiktok', label: 'TikTok', placeholder: '@mi_negocio' },
-                { key: 'whatsapp', label: 'WhatsApp', placeholder: '8888-8888' },
+                {
+                  key: 'instagram',
+                  label: t('webshop2.perfil.socialInstagram'),
+                  placeholder: t('webshop2.perfil.socialInstagramPh'),
+                },
+                {
+                  key: 'facebook',
+                  label: t('webshop2.perfil.socialFacebook'),
+                  placeholder: t('webshop2.perfil.socialFacebookPh'),
+                },
+                {
+                  key: 'tiktok',
+                  label: t('webshop2.perfil.socialTiktok'),
+                  placeholder: t('webshop2.perfil.socialTiktokPh'),
+                },
+                {
+                  key: 'whatsapp',
+                  label: t('webshop2.perfil.socialWhatsapp'),
+                  placeholder: t('webshop2.perfil.socialWhatsappPh'),
+                },
               ] as const
             ).map((s) => (
               <div key={s.key}>
@@ -630,12 +667,11 @@ export default function PerfilPage() {
 
           <div className="my-5 border-t border-surface-100 dark:border-surface-700/60" />
           <p className="text-xs font-bold uppercase tracking-wider text-surface-500 dark:text-surface-400 mb-4">
-            Horario
+            {t('webshop2.perfil.sectionHours')}
           </p>
           <div>
             <p className="mb-1.5 text-sm font-medium text-surface-600 dark:text-surface-400">
-              Define si aparecés “Abierto”. Kiwi reparte de 8:00 a 20:00: fuera de ese horario no
-              hay repartidores aunque marques abierto.
+              {t('webshop2.perfil.hoursHint')}
             </p>
             <div className="space-y-2">
               {DAYS.map((d) => {
@@ -646,7 +682,7 @@ export default function PerfilPage() {
                     className="flex items-center gap-2 rounded-xl bg-surface-50 dark:bg-surface-900 px-3 py-2"
                   >
                     <span className="w-20 shrink-0 text-sm font-medium text-surface-700 dark:text-surface-300">
-                      {d.label}
+                      {t(`webshop2.perfil.${dayKey(d.key)}`)}
                     </span>
                     {h ? (
                       <>
@@ -670,23 +706,23 @@ export default function PerfilPage() {
                         <button
                           type="button"
                           onClick={() => setDay(d.key, null)}
-                          title="Marcar cerrado"
+                          title={t('webshop2.perfil.markClosed')}
                           className="shrink-0 rounded-lg px-2 py-1.5 text-xs font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
                         >
-                          Cerrado
+                          {t('webshop2.perfil.closed')}
                         </button>
                       </>
                     ) : (
                       <>
                         <span className="flex-1 text-sm text-surface-500 dark:text-surface-400">
-                          Cerrado
+                          {t('webshop2.perfil.closed')}
                         </span>
                         <button
                           type="button"
                           onClick={() => setDay(d.key, { open: '08:00', close: '20:00' })}
                           className="shrink-0 rounded-lg px-2 py-1.5 text-xs font-semibold text-kiwi-700 dark:text-kiwi-300 hover:bg-kiwi-50 dark:hover:bg-kiwi-900/20"
                         >
-                          Agregar horario
+                          {t('webshop2.perfil.addHours')}
                         </button>
                       </>
                     )}
@@ -699,7 +735,7 @@ export default function PerfilPage() {
           {formError && <p className="text-sm text-red-600">{formError}</p>}
           {savedTick && (
             <p className="text-sm text-kiwi-700 dark:text-kiwi-300 flex items-center gap-1">
-              <Check className="h-4 w-4" /> Guardado
+              <Check className="h-4 w-4" /> {t('webshop2.perfil.saved')}
             </p>
           )}
           <button
@@ -707,16 +743,16 @@ export default function PerfilPage() {
             disabled={saving}
             className="w-full rounded-xl bg-kiwi-600 px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
           >
-            {saving ? 'Guardando…' : 'Guardar cambios'}
+            {saving ? t('webshop2.perfil.saving') : t('webshop2.perfil.save')}
           </button>
           <div className="mt-4 rounded-xl bg-surface-50 dark:bg-surface-900 p-4">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-semibold text-surface-800 dark:text-surface-100">
-                  Visible en la app cliente
+                  {t('webshop2.perfil.visibleTitle')}
                 </p>
                 <p className="text-xs text-surface-500 dark:text-surface-400">
-                  Ocultalo para probar sin que te vean. Tu QR y tu menú directo siguen funcionando.
+                  {t('webshop2.perfil.visibleHint')}
                 </p>
               </div>
               <button
@@ -738,14 +774,16 @@ export default function PerfilPage() {
 
         <div className="mt-6 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] p-5 shadow-soft dark:shadow-dark">
           <p className="text-xs font-bold uppercase tracking-wider text-surface-500 dark:text-surface-400 mb-4">
-            Métodos de pago
+            {t('webshop2.perfil.sectionPay')}
           </p>
 
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-sm font-medium text-surface-800 dark:text-surface-100">Efectivo</p>
+              <p className="text-sm font-medium text-surface-800 dark:text-surface-100">
+                {t('webshop2.perfil.cash')}
+              </p>
               <p className="text-xs text-surface-500 dark:text-surface-400">
-                El cliente paga al recibir.
+                {t('webshop2.perfil.cashHint')}
               </p>
             </div>
             <button
@@ -769,12 +807,12 @@ export default function PerfilPage() {
           <div className="mt-3 flex items-center justify-between gap-3 border-t border-surface-100 dark:border-white/5 pt-3">
             <div>
               <p className="text-sm font-medium text-surface-800 dark:text-surface-100">
-                SINPE Móvil
+                {t('webshop2.perfil.sinpe')}
               </p>
               <p className="text-xs text-surface-500 dark:text-surface-400">
                 {mpStatus?.status === 'active'
-                  ? 'Cobro vía Onvo.'
-                  : 'Requiere activación Onvo (KYC).'}
+                  ? t('webshop2.perfil.sinpeOn')
+                  : t('webshop2.perfil.sinpeOff')}
               </p>
             </div>
             <button
@@ -802,22 +840,20 @@ export default function PerfilPage() {
 
         <div className="mt-6 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] p-5 shadow-soft dark:shadow-dark">
           <p className="text-xs font-bold uppercase tracking-wider text-surface-500 dark:text-surface-400 mb-4">
-            Cobros con tarjeta
+            {t('webshop2.perfil.sectionCard')}
           </p>
           {mpLoading ? (
-            <p className="text-sm text-surface-500">Cargando estado de cobros…</p>
+            <p className="text-sm text-surface-500">{t('webshop2.perfil.cardLoading')}</p>
           ) : mpStatus?.status === 'active' ? (
             <p className="text-sm font-semibold text-kiwi-700 dark:text-kiwi-300">
-              Cobros con tarjeta activos ✓
+              {t('webshop2.perfil.cardActive')}
             </p>
           ) : mpStatus?.accountId ? (
             <div className="space-y-3">
               <p className="text-sm font-semibold text-surface-800 dark:text-surface-100">
-                Registro pendiente
+                {t('webshop2.perfil.cardPending')}
               </p>
-              <p className="text-sm text-surface-500">
-                Terminá el registro en Onvo para activar los cobros con tarjeta.
-              </p>
+              <p className="text-sm text-surface-500">{t('webshop2.perfil.cardPendingHint')}</p>
               <div className="flex flex-col sm:flex-row gap-2">
                 <button
                   type="button"
@@ -825,7 +861,7 @@ export default function PerfilPage() {
                   disabled={mpBusy}
                   className="flex-1 rounded-xl bg-kiwi-600 px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
                 >
-                  {mpBusy ? 'Abriendo…' : 'Abrir registro'}
+                  {mpBusy ? t('webshop2.perfil.cardOpening') : t('webshop2.perfil.cardOpen')}
                 </button>
                 <button
                   type="button"
@@ -833,22 +869,20 @@ export default function PerfilPage() {
                   disabled={mpBusy}
                   className="flex-1 rounded-xl border border-surface-200 dark:border-surface-700 px-4 py-3 text-sm font-semibold text-surface-700 dark:text-surface-200 disabled:opacity-60"
                 >
-                  {mpBusy ? 'Revisando…' : 'Ya lo completé'}
+                  {mpBusy ? t('webshop2.perfil.cardChecking') : t('webshop2.perfil.cardDone')}
                 </button>
               </div>
             </div>
           ) : (
             <div className="space-y-3">
-              <p className="text-sm text-surface-500">
-                Aceptá pagos con tarjeta y SINPE directo en tu cuenta IBAN.
-              </p>
+              <p className="text-sm text-surface-500">{t('webshop2.perfil.cardActivateHint')}</p>
               <button
                 type="button"
                 onClick={() => void startOnboarding()}
                 disabled={mpBusy}
                 className="w-full rounded-xl bg-kiwi-600 px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
               >
-                {mpBusy ? 'Activando…' : 'Activar cobros con tarjeta'}
+                {mpBusy ? t('webshop2.perfil.cardActivating') : t('webshop2.perfil.cardActivate')}
               </button>
             </div>
           )}
@@ -859,10 +893,12 @@ export default function PerfilPage() {
           {mpStatus?.status === 'active' && (
             <div className="mt-5 border-t border-surface-100 dark:border-surface-700/60 pt-4">
               <p className="text-xs font-bold uppercase tracking-wider text-surface-500 dark:text-surface-400 mb-3">
-                Cobros liquidados
+                {t('webshop2.perfil.cardSettled')}
               </p>
               {mpPaymentsLoading ? (
-                <p className="text-sm text-surface-500">Cargando cobros…</p>
+                <p className="text-sm text-surface-500">
+                  {t('webshop2.perfil.cardSettledLoading')}
+                </p>
               ) : mpPayments && mpPayments.length > 0 ? (
                 <ul className="space-y-2">
                   {mpPayments.map((p) => (
@@ -884,7 +920,7 @@ export default function PerfilPage() {
                   ))}
                 </ul>
               ) : (
-                <p className="text-sm text-surface-500">Aún no hay cobros liquidados</p>
+                <p className="text-sm text-surface-500">{t('webshop2.perfil.cardSettledEmpty')}</p>
               )}
             </div>
           )}

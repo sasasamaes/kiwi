@@ -4,7 +4,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Pencil, Ban, RotateCcw, Check, Sparkles } from 'lucide-react';
-import { api, useAuth } from '@kiwi/ui';
+import { api, useAuth, useTranslations, addStreetsAndSatellite } from '@kiwi/ui';
 import { ZonesOverviewMap } from './ZonesOverviewMap';
 import { kiwiIcon } from './markers';
 
@@ -89,6 +89,7 @@ function autoRingFor(zone: Zone, zones: Zone[], sides = 8): Ring | null {
 }
 
 export default function AdminZonesPage() {
+  const { t } = useTranslations();
   const { user, loading: authLoading } = useAuth();
   const [zones, setZones] = useState<Zone[]>([]);
   const [merchants, setMerchants] = useState<any[]>([]);
@@ -130,11 +131,11 @@ export default function AdminZonesPage() {
         /* sin negocios no se cae el mapa */
       }
     } catch (err: any) {
-      setMsg(err?.message || 'No se pudieron cargar las zonas');
+      setMsg(err?.message || t('webadmin1.azones.loadError'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     if (!authLoading && user?.role === 'admin') void load();
@@ -200,9 +201,7 @@ export default function AdminZonesPage() {
         [lat0, lng0],
         Number.isFinite(Number(form.latitude)) ? 14 : 13,
       );
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap',
-      }).addTo(map);
+      addStreetsAndSatellite(map, L);
       map.on('click', (e: any) => {
         if (modeRef.current === 'point') {
           setForm((f) => ({
@@ -255,7 +254,7 @@ export default function AdminZonesPage() {
     // Vértices arrastrables: seleccionás un punto y lo movés para corregir.
     ll.forEach((p: number[], i: number) => {
       const marker = L.marker(p, { icon: vertexIcon(i + 1), draggable: true }).addTo(layer);
-      marker.bindTooltip(`Vértice ${i + 1} — arrastrá para mover`);
+      marker.bindTooltip(t('webadmin1.azones.vertexTip', { n: i + 1 }));
       marker.on('dragend', () => {
         const np = marker.getLatLng();
         setVertices((prev) => prev.map((v, idx) => (idx === i ? [np.lng, np.lat] : v)));
@@ -282,13 +281,14 @@ export default function AdminZonesPage() {
       const pointIcon = kiwiIcon(L, { size: 34 });
       const marker = L.marker([lat, lng], { draggable: true, icon: pointIcon })
         .addTo(map)
-        .bindTooltip('Punto de entrega — arrastrá para mover');
+        .bindTooltip(t('webadmin1.azones.pointTip'));
       marker.on('dragend', () => {
         const p = marker.getLatLng();
         setForm((f) => ({ ...f, latitude: p.lat.toFixed(6), longitude: p.lng.toFixed(6) }));
       });
       pointMarkerRef.current = marker;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vertices, showForm, form.latitude, form.longitude, mapReady]);
 
   // Al abrir el editor (mapa listo): encuadrar el polígono o centrar en el punto.
@@ -354,12 +354,12 @@ export default function AdminZonesPage() {
 
   const save = async () => {
     if (!form.label.trim()) {
-      setMsg('Poné un nombre a la zona');
+      setMsg(t('webadmin1.azones.needName'));
       return;
     }
     const hasPt = form.latitude !== '' && form.longitude !== '';
     if (!hasPt && vertices.length < 3) {
-      setMsg('La zona necesita un punto de entrega o un polígono (3+ vértices)');
+      setMsg(t('webadmin1.azones.needPointOrPoly'));
       return;
     }
     const ring = vertices.length >= 3 ? [...vertices, vertices[0]] : null;
@@ -380,9 +380,9 @@ export default function AdminZonesPage() {
       setShowForm(false);
       destroyMap();
       await load();
-      setMsg('Guardado ✓');
+      setMsg(t('webadmin1.azones.saved'));
     } catch (err: any) {
-      setMsg(err?.message || 'No se pudo guardar');
+      setMsg(err?.message || t('webadmin1.azones.saveError'));
     } finally {
       setSaving(false);
     }
@@ -393,7 +393,7 @@ export default function AdminZonesPage() {
       await api.adminDeactivateZone(z.id);
       await load();
     } catch (err: any) {
-      setMsg(err?.message || 'No se pudo desactivar');
+      setMsg(err?.message || t('webadmin1.azones.deactivateError'));
     }
   };
 
@@ -402,7 +402,7 @@ export default function AdminZonesPage() {
   const autofillRow = (z: Zone) => {
     const ring = autoRingFor(z, zones);
     if (!ring) {
-      setMsg(`"${z.label}" no tiene punto: editala y marcá su ubicación primero`);
+      setMsg(t('webadmin1.azones.noPointFor', { label: z.label }));
       return;
     }
     openEdit(z);
@@ -417,12 +417,7 @@ export default function AdminZonesPage() {
   const bulkAutofill = async () => {
     const missing = zones.filter((z) => !z.geometry && hasPoint(z));
     if (missing.length === 0) return;
-    if (
-      !window.confirm(
-        `Generar ${missing.length} polígono(s) aproximados y guardarlos? Revisalos en el mapa y corregí los vértices después.`,
-      )
-    )
-      return;
+    if (!window.confirm(t('webadmin1.azones.confirmBulk', { n: missing.length }))) return;
     setBulkSaving(true);
     setMsg(null);
     let ok = 0;
@@ -442,13 +437,13 @@ export default function AdminZonesPage() {
     await load();
     setMsg(
       ok === missing.length
-        ? `${ok} polígonos generados ✓ Revisalos en el mapa y corregí vértices.`
-        : `${ok}/${missing.length} generados (algunos fallaron, reintentá).`,
+        ? t('webadmin1.azones.bulkOk', { ok })
+        : t('webadmin1.azones.bulkPartial', { ok, total: missing.length }),
     );
   };
 
   if (!authLoading && user?.role !== 'admin') {
-    return <div className="p-6 text-sm text-surface-500">Solo administradores.</div>;
+    return <div className="p-6 text-sm text-surface-500">{t('webadmin1.azones.adminOnly')}</div>;
   }
 
   const hasPolygon = (z: Zone) => !!z.geometry;
@@ -458,18 +453,17 @@ export default function AdminZonesPage() {
       <div className="mb-4 flex items-center justify-between">
         <div>
           <h1 className="font-display text-2xl font-extrabold text-surface-900 dark:text-white">
-            Zonas y barrios
+            {t('webadmin1.azones.title')}
           </h1>
           <p className="text-sm text-surface-500 dark:text-surface-400">
-            Precio de envío por zona. El punto es referencia; el polígono habilita el cobro por
-            cercanía.
+            {t('webadmin1.azones.subtitle')}
           </p>
         </div>
         <button
           onClick={openCreate}
           className="inline-flex items-center gap-1.5 rounded-xl bg-kiwi-700 px-3 py-2 text-sm font-semibold text-white hover:bg-kiwi-800"
         >
-          <Plus className="h-4 w-4" /> Nueva zona
+          <Plus className="h-4 w-4" /> {t('webadmin1.azones.newZone')}
         </button>
       </div>
       {missingCount > 0 && (
@@ -479,7 +473,9 @@ export default function AdminZonesPage() {
           className="mb-4 inline-flex items-center gap-1.5 rounded-xl bg-purple-600 px-3 py-2 text-sm font-semibold text-white hover:bg-purple-700 disabled:opacity-50"
         >
           <Sparkles className="h-4 w-4" />
-          {bulkSaving ? 'Generando…' : `✨ Generar ${missingCount} polígono(s) faltante(s)`}
+          {bulkSaving
+            ? t('webadmin1.azones.generating')
+            : t('webadmin1.azones.generateMissing', { n: missingCount })}
         </button>
       )}
 
@@ -489,7 +485,7 @@ export default function AdminZonesPage() {
       <div className="mb-6 rounded-2xl border border-surface-200/60 dark:border-white/10 p-3">
         <div className="mb-2 flex flex-wrap items-center gap-x-4 gap-y-1 px-1 text-xs text-surface-500 dark:text-surface-400">
           <span className="font-medium text-surface-700 dark:text-surface-200">
-            Todas las zonas
+            {t('webadmin1.azones.allZones')}
           </span>
           <span className="flex items-center gap-1">
             <i
@@ -527,18 +523,26 @@ export default function AdminZonesPage() {
         <table className="w-full text-sm">
           <thead className="bg-surface-50 dark:bg-surface-800/60 text-surface-500">
             <tr>
-              <th className="px-4 py-3 text-left font-medium">Zona</th>
-              <th className="px-4 py-3 text-right font-medium">Precio</th>
-              <th className="px-4 py-3 text-center font-medium">Polígono</th>
-              <th className="px-4 py-3 text-center font-medium">Activo</th>
-              <th className="px-4 py-3 text-right font-medium">Acciones</th>
+              <th className="px-4 py-3 text-left font-medium">{t('webadmin1.azones.col.zone')}</th>
+              <th className="px-4 py-3 text-right font-medium">
+                {t('webadmin1.azones.col.price')}
+              </th>
+              <th className="px-4 py-3 text-center font-medium">
+                {t('webadmin1.azones.col.polygon')}
+              </th>
+              <th className="px-4 py-3 text-center font-medium">
+                {t('webadmin1.azones.col.active')}
+              </th>
+              <th className="px-4 py-3 text-right font-medium">
+                {t('webadmin1.azones.col.actions')}
+              </th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
                 <td colSpan={5} className="py-8 text-center text-surface-500 dark:text-surface-400">
-                  Cargando…
+                  {t('webadmin1.azones.loading')}
                 </td>
               </tr>
             ) : (
@@ -551,18 +555,18 @@ export default function AdminZonesPage() {
                     {z.label}
                     {hasPolygon(z) && !hasPoint(z) && (
                       <span
-                        title="Solo área: el cliente pone su punto al pedir"
+                        title={t('webadmin1.azones.areaOnlyTip')}
                         className="ml-2 rounded-full bg-sky-100 px-2 py-0.5 text-[11px] font-semibold text-sky-700 dark:bg-sky-900/40 dark:text-sky-300"
                       >
-                        Solo área
+                        {t('webadmin1.azones.areaOnly')}
                       </span>
                     )}
                     {!hasPolygon(z) && hasPoint(z) && (
                       <span
-                        title="Solo punto: edificio conocido sin área dibujada"
+                        title={t('webadmin1.azones.pointOnlyTip')}
                         className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
                       >
-                        Solo punto
+                        {t('webadmin1.azones.pointOnly')}
                       </span>
                     )}
                   </td>
@@ -575,10 +579,10 @@ export default function AdminZonesPage() {
                     ) : hasPoint(z) ? (
                       <button
                         onClick={() => autofillRow(z)}
-                        title="Pre-marcar polígono para corregir"
+                        title={t('webadmin1.azones.autoTip')}
                         className="inline-flex items-center gap-1 text-purple-700 dark:text-purple-300"
                       >
-                        <Sparkles className="h-3.5 w-3.5" /> Auto
+                        <Sparkles className="h-3.5 w-3.5" /> {t('webadmin1.azones.auto')}
                       </button>
                     ) : (
                       '—'
@@ -590,7 +594,7 @@ export default function AdminZonesPage() {
                         z.active ? 'text-kiwi-600' : 'text-surface-500 dark:text-surface-400'
                       }
                     >
-                      {z.active ? 'Activa' : 'Inactiva'}
+                      {z.active ? t('webadmin1.azones.active') : t('webadmin1.azones.inactive')}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right">
@@ -598,14 +602,14 @@ export default function AdminZonesPage() {
                       onClick={() => openEdit(z)}
                       className="mr-2 inline-flex items-center gap-1 text-kiwi-700 dark:text-kiwi-300"
                     >
-                      <Pencil className="h-3.5 w-3.5" /> Editar
+                      <Pencil className="h-3.5 w-3.5" /> {t('webadmin1.azones.edit')}
                     </button>
                     {z.active && (
                       <button
                         onClick={() => deactivate(z)}
                         className="inline-flex items-center gap-1 text-red-600"
                       >
-                        <Ban className="h-3.5 w-3.5" /> Desactivar
+                        <Ban className="h-3.5 w-3.5" /> {t('webadmin1.azones.deactivate')}
                       </button>
                     )}
                   </td>
@@ -624,21 +628,21 @@ export default function AdminZonesPage() {
             className="mx-auto my-8 w-full max-w-2xl rounded-2xl border border-surface-200/60 dark:border-white/10 bg-white dark:bg-surface-800 p-5"
           >
             <h2 className="mb-4 font-display font-bold text-surface-900 dark:text-white">
-              {form.id ? 'Editar zona' : 'Nueva zona'}
+              {form.id ? t('webadmin1.azones.editZone') : t('webadmin1.azones.newZone')}
             </h2>
 
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="text-sm">
-                <span className="text-surface-500">Nombre *</span>
+                <span className="text-surface-500">{t('webadmin1.azones.nameLabel')}</span>
                 <input
                   value={form.label}
                   onChange={(e) => setForm({ ...form, label: e.target.value })}
-                  placeholder="Ej: Barrio Los Ángeles"
+                  placeholder={t('webadmin1.azones.namePh')}
                   className="mt-1 w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 px-3 py-2"
                 />
               </label>
               <label className="text-sm">
-                <span className="text-surface-500">Precio (₡) *</span>
+                <span className="text-surface-500">{t('webadmin1.azones.priceLabel')}</span>
                 <input
                   type="number"
                   value={form.price}
@@ -647,7 +651,7 @@ export default function AdminZonesPage() {
                 />
               </label>
               <label className="text-sm">
-                <span className="text-surface-500">Latitud (referencia)</span>
+                <span className="text-surface-500">{t('webadmin1.azones.latLabel')}</span>
                 <input
                   value={form.latitude}
                   onChange={(e) => setForm({ ...form, latitude: e.target.value })}
@@ -656,7 +660,7 @@ export default function AdminZonesPage() {
                 />
               </label>
               <label className="text-sm">
-                <span className="text-surface-500">Longitud (referencia)</span>
+                <span className="text-surface-500">{t('webadmin1.azones.lngLabel')}</span>
                 <input
                   value={form.longitude}
                   onChange={(e) => setForm({ ...form, longitude: e.target.value })}
@@ -670,10 +674,12 @@ export default function AdminZonesPage() {
                   checked={form.active}
                   onChange={(e) => setForm({ ...form, active: e.target.checked })}
                 />
-                <span className="text-surface-600 dark:text-surface-300">Activa</span>
+                <span className="text-surface-600 dark:text-surface-300">
+                  {t('webadmin1.azones.active')}
+                </span>
               </label>
               <label className="text-sm">
-                <span className="text-surface-500">Orden</span>
+                <span className="text-surface-500">{t('webadmin1.azones.orderLabel')}</span>
                 <input
                   type="number"
                   value={form.sortOrder}
@@ -694,7 +700,7 @@ export default function AdminZonesPage() {
                       : 'border border-surface-200 dark:border-surface-700'
                   }`}
                 >
-                  📍 Punto de entrega
+                  {t('webadmin1.azones.modePoint')}
                 </button>
                 <button
                   type="button"
@@ -705,15 +711,16 @@ export default function AdminZonesPage() {
                       : 'border border-surface-200 dark:border-surface-700'
                   }`}
                 >
-                  ▦ Polígono ({vertices.length})
+                  {t('webadmin1.azones.modePolygon', { n: vertices.length })}
                 </button>
               </div>
               <p className="mb-2 text-xs text-surface-500">
                 {mode === 'point'
-                  ? 'Edificio conocido (ej. hospital): dejá el punto donde se entregan los express. Barrio/zona: quitá el punto — el cliente pone el suyo al pedir.'
-                  : `Tocá el mapa para agregar vértices (${vertices.length} punto${
-                      vertices.length === 1 ? '' : 's'
-                    }); arrastrá un vértice para moverlo; doble-clic para mover TODO el polígono (y el punto).`}
+                  ? t('webadmin1.azones.hintPoint')
+                  : t('webadmin1.azones.hintPolygon', {
+                      n: vertices.length,
+                      s: vertices.length === 1 ? '' : 's',
+                    })}
               </p>
               <div
                 ref={mapRef}
@@ -725,7 +732,7 @@ export default function AdminZonesPage() {
                   onClick={() => setVertices([])}
                   className="inline-flex items-center gap-1 rounded-lg border border-surface-200 dark:border-surface-700 px-3 py-1.5 text-xs"
                 >
-                  <RotateCcw className="h-3.5 w-3.5" /> Reiniciar
+                  <RotateCcw className="h-3.5 w-3.5" /> {t('webadmin1.azones.reset')}
                 </button>
                 <button
                   type="button"
@@ -733,16 +740,16 @@ export default function AdminZonesPage() {
                   disabled={!vertices.length}
                   className="rounded-lg border border-surface-200 dark:border-surface-700 px-3 py-1.5 text-xs disabled:opacity-40"
                 >
-                  Quitar último
+                  {t('webadmin1.azones.removeLast')}
                 </button>
                 <button
                   type="button"
                   onClick={() => setForm((f) => ({ ...f, latitude: '', longitude: '' }))}
                   disabled={form.latitude === '' && form.longitude === ''}
-                  title="Zona tipo barrio: solo área, el cliente pone su punto al pedir"
+                  title={t('webadmin1.azones.removePointTip')}
                   className="rounded-lg border border-surface-200 dark:border-surface-700 px-3 py-1.5 text-xs disabled:opacity-40"
                 >
-                  Quitar punto
+                  {t('webadmin1.azones.removePoint')}
                 </button>
               </div>
             </div>
@@ -753,7 +760,8 @@ export default function AdminZonesPage() {
                 disabled={saving}
                 className="inline-flex items-center gap-1.5 rounded-xl bg-kiwi-700 px-4 py-2 text-sm font-semibold text-white hover:bg-kiwi-800 disabled:opacity-50"
               >
-                <Check className="h-4 w-4" /> {saving ? 'Guardando…' : 'Guardar'}
+                <Check className="h-4 w-4" />{' '}
+                {saving ? t('webadmin1.azones.saving') : t('webadmin1.azones.save')}
               </button>
               <button
                 onClick={() => {
@@ -762,7 +770,7 @@ export default function AdminZonesPage() {
                 }}
                 className="rounded-xl border border-surface-200 dark:border-surface-700 px-4 py-2 text-sm"
               >
-                Cancelar
+                {t('webadmin1.azones.cancel')}
               </button>
             </div>
           </motion.div>

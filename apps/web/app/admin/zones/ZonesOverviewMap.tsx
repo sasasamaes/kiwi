@@ -3,6 +3,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { kiwiIcon } from './markers';
+import { addStreetsAndSatellite } from '@kiwi/ui';
 
 export interface ZoneLike {
   id: string;
@@ -120,7 +121,9 @@ export function ZonesOverviewMap({
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const LRef = useRef<any>(null);
-  const layerRef = useRef<any>(null);
+  const staticLayerRef = useRef<any>(null);
+  const driversLayerRef = useRef<any>(null);
+  const fittedRef = useRef(false);
   const [ready, setReady] = useState(false);
 
   // Init (client-only).
@@ -131,9 +134,7 @@ export function ZonesOverviewMap({
       const L = mod.default ?? mod;
       if (cancelled || !ref.current || mapRef.current) return;
       const map = L.map(ref.current).setView([10.1467, -85.452], 12);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap',
-      }).addTo(map);
+      addStreetsAndSatellite(map, L);
       LRef.current = L;
       mapRef.current = map;
       setReady(true);
@@ -143,12 +144,14 @@ export function ZonesOverviewMap({
     };
   }, []);
 
-  // (Re)dibuja cuando cambian las capas o el mapa está listo.
+  // Capa ESTÁTICA (zonas + negocios): solo se redibuja si cambian los datos.
+  // El encuadre inicial se hace UNA vez: el polling de repartidores ya no
+  // mueve ni resetea la vista mientras se mira el mapa.
   useEffect(() => {
     const L = LRef.current;
     const map = mapRef.current;
     if (!ready || !L || !map) return;
-    if (layerRef.current) layerRef.current.remove();
+    if (staticLayerRef.current) staticLayerRef.current.remove();
     const layer = L.layerGroup().addTo(map);
     const points: number[][] = [];
     // Para encuadrar solo cuentan puntos dentro de Costa Rica: un dato malo
@@ -237,6 +240,29 @@ export function ZonesOverviewMap({
       points.push([lat, lng]);
     }
 
+    if (!fittedRef.current && points.length) {
+      map.fitBounds(L.latLngBounds(points), { padding: [30, 30], maxZoom: 13 });
+      fittedRef.current = true;
+    }
+    staticLayerRef.current = layer;
+  }, [zones, merchants, ready]);
+
+  // Capa DINÁMICA (repartidores en vivo): se redibuja en cada polling SIN
+  // tocar la vista (sin fitBounds) ni la capa estática.
+  useEffect(() => {
+    const L = LRef.current;
+    const map = mapRef.current;
+    if (!ready || !L || !map) return;
+    if (driversLayerRef.current) driversLayerRef.current.remove();
+    const layer = L.layerGroup().addTo(map);
+    const sane = (lat: number, lng: number) =>
+      Number.isFinite(lat) &&
+      Number.isFinite(lng) &&
+      lat >= 7 &&
+      lat <= 12 &&
+      lng >= -88 &&
+      lng <= -82;
+
     // Repartidores en vivo: kiwi con pulso; apagado si el ping es viejo.
     for (const d of drivers) {
       if (!sane(d.lat, d.lng)) continue;
@@ -280,12 +306,10 @@ export function ZonesOverviewMap({
         )
         .bindTooltip(`${d.name} · ${ageTxt}`)
         .addTo(layer);
-      points.push([d.lat, d.lng]);
     }
 
-    if (points.length) map.fitBounds(L.latLngBounds(points), { padding: [30, 30], maxZoom: 13 });
-    layerRef.current = layer;
-  }, [zones, merchants, drivers, ready]);
+    driversLayerRef.current = layer;
+  }, [drivers, ready]);
 
   return (
     <div className="relative">

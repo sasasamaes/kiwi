@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Star, Check, Loader2 } from 'lucide-react';
-import { api, useAuth, KiwiLoader, useTranslations } from '@kiwi/ui';
+import { api, useAuth, KiwiLoader, useTranslations, addStreetsAndSatellite } from '@kiwi/ui';
 import { MerchantNav } from '../../../components/MerchantNav';
 
 interface AdminUser {
@@ -116,9 +116,7 @@ function MerchantLocationEditor({
         hasPt ? [la, ln] : [10.1467, -85.452],
         hasPt ? 16 : 13,
       );
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap',
-      }).addTo(map);
+      addStreetsAndSatellite(map, L);
       map.on('click', (e: any) => {
         setLat(e.latlng.lat.toFixed(6));
         setLng(e.latlng.lng.toFixed(6));

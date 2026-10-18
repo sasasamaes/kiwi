@@ -16,7 +16,7 @@ import {
   Heart,
   Navigation,
 } from 'lucide-react';
-import { api, useAuth, KiwiLogo, ZonePicker } from '@kiwi/ui';
+import { api, useAuth, KiwiLogo, ZonePicker, addStreetsAndSatellite } from '@kiwi/ui';
 import { BottomNav } from '../components/BottomNav';
 import { AvatarEditor } from '../components/AvatarEditor';
 import { InstallAppButton } from '../components/InstallAppButton';
@@ -84,9 +84,7 @@ function PlaceMapPicker({
         hasPt ? [lat as number, lng as number] : [10.1467, -85.452],
         hasPt ? 16 : 13,
       );
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap',
-      }).addTo(map);
+      addStreetsAndSatellite(map, L);
       map.on('click', (e: any) => {
         onPickRef.current(Number(e.latlng.lat.toFixed(6)), Number(e.latlng.lng.toFixed(6)));
       });
