@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { kiwiIcon } from './markers';
+import { kiwiIcon, motoIcon } from './markers';
 import { addStreetsAndSatellite } from '@kiwi/ui';
 
 export interface ZoneLike {
@@ -311,7 +311,7 @@ export function ZonesOverviewMap({
         d.rating != null && Number.isFinite(Number(d.rating))
           ? `★ ${Number(d.rating).toFixed(1)}`
           : null;
-      L.marker([d.lat, d.lng], { icon: kiwiIcon(L, { size: 34, pulse: !stale, dimmed: stale }) })
+      L.marker([d.lat, d.lng], { icon: motoIcon(L, { size: 36, pulse: !stale, dimmed: stale }) })
         .bindPopup(
           `<div style="display:flex;gap:8px;align-items:center;min-width:210px;max-width:260px">` +
             avatar +
@@ -359,7 +359,9 @@ export function ZonesOverviewMap({
           <img src="/kiwi.svg" alt="" className="h-4 w-4 rounded-full" /> Negocios
         </span>
         <span className="flex items-center gap-1">
-          <span className="inline-block h-2.5 w-2.5 animate-pulse rounded-full bg-green-500" />{' '}
+          <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-green-600 text-[10px] leading-none text-white">
+            🏍
+          </span>{' '}
           Repartidores
           {drivers.length > 0 && ` (${drivers.length})`}
         </span>
