@@ -4,6 +4,14 @@
  * Voseo + calidez guanacasteca: ¡pura vida, mae!
  */
 
+import { navEs as webnav, adminNavEs as adminnav } from './web/nav';
+import { authEs as webauth } from './web/auth';
+import { shop1Es as webshop1 } from './web/shop1';
+import { shop2Es as webshop2 } from './web/shop2';
+import { admin1Es as webadmin1 } from './web/admin1';
+import { admin2Es as webadmin2 } from './web/admin2';
+import { pubEs as webpub } from './web/pub';
+
 export default {
   // General
   app: {
@@ -904,4 +912,14 @@ export default {
       settings: 'Ajustes sin conexión',
     },
   },
+
+  // ===== Web (los grupos viven en ./web/*) =====
+  webnav,
+  adminnav,
+  webauth,
+  webshop1,
+  webshop2,
+  webadmin1,
+  webadmin2,
+  webpub,
 };

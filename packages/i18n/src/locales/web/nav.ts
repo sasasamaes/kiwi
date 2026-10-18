@@ -24,7 +24,7 @@ export const navEs = {
   openMenu: 'Abrir menú',
   closeMenu: 'Cerrar menú',
   currentPage: 'Kiwi',
-} as const;
+};
 
 export const navEn = {
   links: {
@@ -46,7 +46,7 @@ export const navEn = {
   openMenu: 'Open menu',
   closeMenu: 'Close menu',
   currentPage: 'Kiwi',
-} as const;
+};
 
 export const adminNavEs = {
   title: 'Admin',
@@ -83,7 +83,7 @@ export const adminNavEs = {
   restrictedHint: 'Solo usuarios con rol admin.',
   roleLabel: 'Super Admin',
   logout: 'Cerrar sesión',
-} as const;
+};
 
 export const adminNavEn = {
   title: 'Admin',
@@ -120,4 +120,4 @@ export const adminNavEn = {
   restrictedHint: 'Admin role users only.',
   roleLabel: 'Super Admin',
   logout: 'Log out',
-} as const;
+};

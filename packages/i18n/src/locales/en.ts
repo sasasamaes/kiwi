@@ -3,6 +3,14 @@
  * 🥝 KIWI - English Translations
  */
 
+import { navEn as webnav, adminNavEn as adminnav } from './web/nav';
+import { authEn as webauth } from './web/auth';
+import { shop1En as webshop1 } from './web/shop1';
+import { shop2En as webshop2 } from './web/shop2';
+import { admin1En as webadmin1 } from './web/admin1';
+import { admin2En as webadmin2 } from './web/admin2';
+import { pubEn as webpub } from './web/pub';
+
 export default {
   // General
   app: {
@@ -903,4 +911,14 @@ export default {
       settings: 'Offline settings',
     },
   },
+
+  // ===== Web (groups live in ./web/*) =====
+  webnav,
+  adminnav,
+  webauth,
+  webshop1,
+  webshop2,
+  webadmin1,
+  webadmin2,
+  webpub,
 };
