@@ -22,6 +22,7 @@ import {
   Skeleton,
   ThemeToggle,
   useAuth,
+  useTranslations,
   api,
 } from '@kiwi/ui';
 
@@ -56,19 +57,29 @@ interface AlertStats {
 }
 
 const ALERT_TYPES = [
-  { id: 'congestion', label: 'Congestión', icon: '🚦', color: '#f97316' },
-  { id: 'accident', label: 'Accidente', icon: '🚑', color: '#ef4444' },
-  { id: 'road_closed', label: 'Camino Cerrado', icon: '🚧', color: '#eab308' },
-  { id: 'weather', label: 'Clima', icon: '🌧️', color: '#3b82f6' },
-  { id: 'event', label: 'Evento', icon: PartyPopper, color: '#8b5cf6' },
-  { id: 'alternative_route', label: 'Ruta Alternativa', icon: Map, color: '#22c55e' },
+  { id: 'congestion', labelKey: 'webadmin2.atraff.types.congestion', icon: '🚦', color: '#f97316' },
+  { id: 'accident', labelKey: 'webadmin2.atraff.types.accident', icon: '🚑', color: '#ef4444' },
+  {
+    id: 'road_closed',
+    labelKey: 'webadmin2.atraff.types.road_closed',
+    icon: '🚧',
+    color: '#eab308',
+  },
+  { id: 'weather', labelKey: 'webadmin2.atraff.types.weather', icon: '🌧️', color: '#3b82f6' },
+  { id: 'event', labelKey: 'webadmin2.atraff.types.event', icon: PartyPopper, color: '#8b5cf6' },
+  {
+    id: 'alternative_route',
+    labelKey: 'webadmin2.atraff.types.alternative_route',
+    icon: Map,
+    color: '#22c55e',
+  },
 ];
 
 const SEVERITY_LEVELS = [
-  { id: 'low', label: 'Baja', color: '#84cc16' },
-  { id: 'medium', label: 'Media', color: '#eab308' },
-  { id: 'high', label: 'Alta', color: '#f97316' },
-  { id: 'critical', label: 'Crítica', color: '#ef4444' },
+  { id: 'low', labelKey: 'webadmin2.atraff.sev.low', color: '#84cc16' },
+  { id: 'medium', labelKey: 'webadmin2.atraff.sev.medium', color: '#eab308' },
+  { id: 'high', labelKey: 'webadmin2.atraff.sev.high', color: '#f97316' },
+  { id: 'critical', labelKey: 'webadmin2.atraff.sev.critical', color: '#ef4444' },
 ];
 
 const NICOYA_LOCATIONS = [
@@ -83,6 +94,7 @@ const NICOYA_LOCATIONS = [
 ];
 
 export default function AdminTrafficAlertsPage() {
+  const { t } = useTranslations();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
 
@@ -167,7 +179,7 @@ export default function AdminTrafficAlertsPage() {
       await fetchData();
     } catch (error) {
       console.error('Failed to create alert:', error);
-      alert('Error al crear la alerta');
+      alert(t('webadmin2.atraff.createError'));
     }
   };
 
@@ -247,10 +259,10 @@ export default function AdminTrafficAlertsPage() {
               className="flex items-center gap-2 text-surface-600 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200"
             >
               <motion.span whileHover={{ x: -4 }}>←</motion.span>
-              <span className="text-sm font-medium">Admin</span>
+              <span className="text-sm font-medium">{t('webadmin2.atraff.back')}</span>
             </Link>
             <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-              Alertas de Trafico
+              {t('webadmin2.atraff.title')}
             </h1>
             <ThemeToggle />
           </div>
@@ -276,7 +288,9 @@ export default function AdminTrafficAlertsPage() {
                   <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
                     {stats.total}
                   </p>
-                  <p className="text-xs text-surface-500 dark:text-surface-400">Total Alertas</p>
+                  <p className="text-xs text-surface-500 dark:text-surface-400">
+                    {t('webadmin2.atraff.total')}
+                  </p>
                 </div>
               </div>
             </div>
@@ -290,7 +304,9 @@ export default function AdminTrafficAlertsPage() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-green-600">{stats.active}</p>
-                  <p className="text-xs text-surface-500 dark:text-surface-400">Activas</p>
+                  <p className="text-xs text-surface-500 dark:text-surface-400">
+                    {t('webadmin2.atraff.active')}
+                  </p>
                 </div>
               </div>
             </div>
@@ -304,7 +320,9 @@ export default function AdminTrafficAlertsPage() {
                   <p className="text-2xl font-bold text-red-600">
                     {stats.bySeverity?.critical || 0}
                   </p>
-                  <p className="text-xs text-surface-500 dark:text-surface-400">Críticas</p>
+                  <p className="text-xs text-surface-500 dark:text-surface-400">
+                    {t('webadmin2.atraff.critical')}
+                  </p>
                 </div>
               </div>
             </div>
@@ -318,7 +336,9 @@ export default function AdminTrafficAlertsPage() {
                   <p className="text-2xl font-bold text-yellow-600">
                     {stats.byType?.congestion || 0}
                   </p>
-                  <p className="text-xs text-surface-500 dark:text-surface-400">Congestión</p>
+                  <p className="text-xs text-surface-500 dark:text-surface-400">
+                    {t('webadmin2.atraff.congestion')}
+                  </p>
                 </div>
               </div>
             </div>
@@ -338,7 +358,7 @@ export default function AdminTrafficAlertsPage() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar alertas..."
+              placeholder={t('webadmin2.atraff.searchPh')}
               className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20 transition-all"
             />
           </div>
@@ -350,11 +370,11 @@ export default function AdminTrafficAlertsPage() {
               onChange={(e) => setFilterType(e.target.value)}
               className="rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-3 text-surface-800 dark:text-surface-100 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20 transition-all"
             >
-              <option value="all">Todos los tipos</option>
+              <option value="all">{t('webadmin2.atraff.filterTypeAll')}</option>
               {ALERT_TYPES.map((type) => (
                 <option key={type.id} value={type.id}>
                   {typeof type.icon === 'string' ? `${type.icon} ` : ''}
-                  {type.label}
+                  {t(type.labelKey)}
                 </option>
               ))}
             </select>
@@ -364,10 +384,10 @@ export default function AdminTrafficAlertsPage() {
               onChange={(e) => setFilterSeverity(e.target.value)}
               className="rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-3 text-surface-800 dark:text-surface-100 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20 transition-all"
             >
-              <option value="all">Todas las severidades</option>
+              <option value="all">{t('webadmin2.atraff.filterSevAll')}</option>
               {SEVERITY_LEVELS.map((level) => (
                 <option key={level.id} value={level.id}>
-                  {level.label}
+                  {t(level.labelKey)}
                 </option>
               ))}
             </select>
@@ -375,7 +395,7 @@ export default function AdminTrafficAlertsPage() {
 
           {/* Create Button */}
           <AnimatedButton variant="gradient" onClick={() => setShowCreateModal(true)}>
-            ➕ Crear Alerta
+            {t('webadmin2.atraff.create')}
           </AnimatedButton>
         </motion.div>
 
@@ -395,16 +415,16 @@ export default function AdminTrafficAlertsPage() {
                 <AlertTriangle className="h-16 w-16" />
               </motion.div>
               <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-2">
-                No hay alertas
+                {t('webadmin2.atraff.empty')}
               </h3>
               <p className="text-surface-500 dark:text-surface-400 mb-6">
                 {searchQuery || filterType !== 'all' || filterSeverity !== 'all'
-                  ? 'No se encontraron alertas con estos filtros'
-                  : 'Crea la primera alerta de tráfico'}
+                  ? t('webadmin2.atraff.emptyFiltered')
+                  : t('webadmin2.atraff.emptyHint')}
               </p>
               {!searchQuery && filterType === 'all' && filterSeverity === 'all' && (
                 <AnimatedButton variant="gradient" onClick={() => setShowCreateModal(true)}>
-                  ➕ Crear Primera Alerta
+                  {t('webadmin2.atraff.createFirst')}
                 </AnimatedButton>
               )}
             </div>
@@ -446,7 +466,7 @@ export default function AdminTrafficAlertsPage() {
                                   className="px-2 py-0.5 rounded-full text-xs font-medium text-white"
                                   style={{ backgroundColor: severityConfig?.color }}
                                 >
-                                  {severityConfig?.label}
+                                  {severityConfig ? t(severityConfig.labelKey) : ''}
                                 </span>
                               </div>
                               <p className="text-sm text-surface-500 dark:text-surface-400 mb-2">
@@ -457,11 +477,13 @@ export default function AdminTrafficAlertsPage() {
                                   <MapPin className="h-4 w-4 inline" /> {alert.location.address}
                                 </span>
                                 <span>
-                                  <RefreshCw className="h-4 w-4 inline" /> Radio:{' '}
-                                  {alert.affectedArea.radius} km
+                                  <RefreshCw className="h-4 w-4 inline" />{' '}
+                                  {t('webadmin2.atraff.radius', { r: alert.affectedArea.radius })}
                                 </span>
                                 <span>
-                                  ⏰ Expira: {new Date(alert.expiresAt).toLocaleString('es-CR')}
+                                  {t('webadmin2.atraff.expires', {
+                                    date: new Date(alert.expiresAt).toLocaleString('es-CR'),
+                                  })}
                                 </span>
                               </div>
                             </div>
@@ -472,7 +494,7 @@ export default function AdminTrafficAlertsPage() {
                                 className="p-2 rounded-lg bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400 hover:bg-surface-200 dark:hover:bg-surface-600 transition-colors"
                                 onClick={() => setSelectedAlert(alert)}
                                 whileTap={{ scale: 0.95 }}
-                                title="Ver detalles"
+                                title={t('webadmin2.atraff.viewDetails')}
                               >
                                 👁️
                               </motion.button>
@@ -480,7 +502,7 @@ export default function AdminTrafficAlertsPage() {
                                 className="p-2 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"
                                 onClick={() => handleDismissAlert(alert.id)}
                                 whileTap={{ scale: 0.95 }}
-                                title="Eliminar"
+                                title={t('webadmin2.atraff.delete')}
                               >
                                 <Trash2 className="h-5 w-5" />
                               </motion.button>
@@ -495,11 +517,15 @@ export default function AdminTrafficAlertsPage() {
                                   <Map className="h-4 w-4" />
                                 </span>
                                 <span className="text-xs font-medium text-green-700 dark:text-green-400">
-                                  Ruta alternativa: {alert.alternativeRoute.description}
+                                  {t('webadmin2.atraff.altRoute', {
+                                    desc: alert.alternativeRoute.description,
+                                  })}
                                 </span>
                                 {alert.alternativeRoute.estimatedTimeSaved > 0 && (
                                   <span className="text-xs text-green-600 dark:text-green-300">
-                                    (Ahorra ~{alert.alternativeRoute.estimatedTimeSaved} min)
+                                    {t('webadmin2.atraff.saves', {
+                                      n: alert.alternativeRoute.estimatedTimeSaved,
+                                    })}
                                   </span>
                                 )}
                               </div>
@@ -540,11 +566,11 @@ export default function AdminTrafficAlertsPage() {
               <div className="sticky top-0 bg-white dark:bg-surface-800 p-6 border-b border-surface-100 dark:border-surface-700 rounded-t-3xl">
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100">
-                    <AlertTriangle className="h-5 w-5 inline" /> Crear Alerta de Tráfico
+                    <AlertTriangle className="h-5 w-5 inline" /> {t('webadmin2.atraff.createTitle')}
                   </h2>
                   <motion.button
                     onClick={() => setShowCreateModal(false)}
-                    aria-label="Cerrar formulario de alerta"
+                    aria-label={t('webadmin2.atraff.closeForm')}
                     className="text-surface-500 hover:text-surface-700 dark:text-surface-400 dark:hover:text-surface-200"
                     whileTap={{ scale: 0.9 }}
                   >
@@ -558,7 +584,7 @@ export default function AdminTrafficAlertsPage() {
                 {/* Type */}
                 <div>
                   <label className="mb-2 block text-sm font-medium text-surface-600 dark:text-surface-400">
-                    Tipo de Alerta *
+                    {t('webadmin2.atraff.typeLabel')}
                   </label>
                   <div className="grid grid-cols-3 gap-2">
                     {ALERT_TYPES.map((type) => {
@@ -585,7 +611,7 @@ export default function AdminTrafficAlertsPage() {
                             </span>
                           )}
                           <span className="text-xs font-medium text-surface-700 dark:text-surface-300">
-                            {type.label}
+                            {t(type.labelKey)}
                           </span>
                         </motion.button>
                       );
@@ -596,7 +622,7 @@ export default function AdminTrafficAlertsPage() {
                 {/* Severity */}
                 <div>
                   <label className="mb-2 block text-sm font-medium text-surface-600 dark:text-surface-400">
-                    Severidad *
+                    {t('webadmin2.atraff.sevLabel')}
                   </label>
                   <div className="grid grid-cols-4 gap-2">
                     {SEVERITY_LEVELS.map((level) => (
@@ -619,7 +645,7 @@ export default function AdminTrafficAlertsPage() {
                         }
                         whileTap={{ scale: 0.95 }}
                       >
-                        {level.label}
+                        {t(level.labelKey)}
                       </motion.button>
                     ))}
                   </div>
@@ -628,13 +654,13 @@ export default function AdminTrafficAlertsPage() {
                 {/* Title */}
                 <div>
                   <label className="mb-2 block text-sm font-medium text-surface-600 dark:text-surface-400">
-                    Título *
+                    {t('webadmin2.atraff.titleLabel')}
                   </label>
                   <input
                     type="text"
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    placeholder="Ej: Tráfico pesado en Centro"
+                    placeholder={t('webadmin2.atraff.titlePh')}
                     className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20 transition-all"
                   />
                 </div>
@@ -642,12 +668,12 @@ export default function AdminTrafficAlertsPage() {
                 {/* Message */}
                 <div>
                   <label className="mb-2 block text-sm font-medium text-surface-600 dark:text-surface-400">
-                    Mensaje *
+                    {t('webadmin2.atraff.msgLabel')}
                   </label>
                   <textarea
                     value={formData.message}
                     onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                    placeholder="Descripción detallada de la alerta..."
+                    placeholder={t('webadmin2.atraff.msgPh')}
                     rows={3}
                     className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20 transition-all resize-none"
                   />
@@ -656,7 +682,7 @@ export default function AdminTrafficAlertsPage() {
                 {/* Location */}
                 <div>
                   <label className="mb-2 block text-sm font-medium text-surface-600 dark:text-surface-400">
-                    Ubicación *
+                    {t('webadmin2.atraff.locLabel')}
                   </label>
                   <select
                     value={formData.locationName}
@@ -683,7 +709,7 @@ export default function AdminTrafficAlertsPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="mb-2 block text-sm font-medium text-surface-600 dark:text-surface-400">
-                      Radio (km)
+                      {t('webadmin2.atraff.radiusLabel')}
                     </label>
                     <input
                       type="number"
@@ -699,7 +725,7 @@ export default function AdminTrafficAlertsPage() {
                   </div>
                   <div>
                     <label className="mb-2 block text-sm font-medium text-surface-600 dark:text-surface-400">
-                      Duración (minutos)
+                      {t('webadmin2.atraff.durationLabel')}
                     </label>
                     <input
                       type="number"
@@ -721,7 +747,7 @@ export default function AdminTrafficAlertsPage() {
                 {/* Alternative Route */}
                 <div className="p-4 rounded-xl bg-surface-50 dark:bg-surface-900">
                   <h4 className="text-sm font-medium text-surface-600 dark:text-surface-400 mb-3">
-                    <Map className="h-4 w-4 inline" /> Ruta Alternativa (Opcional)
+                    <Map className="h-4 w-4 inline" /> {t('webadmin2.atraff.altSection')}
                   </h4>
                   <div className="space-y-3">
                     <input
@@ -730,12 +756,12 @@ export default function AdminTrafficAlertsPage() {
                       onChange={(e) =>
                         setFormData({ ...formData, alternativeDescription: e.target.value })
                       }
-                      placeholder="Ej: Usar la periferia norte"
+                      placeholder={t('webadmin2.atraff.altPh')}
                       className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20 transition-all"
                     />
                     <div>
                       <label className="mb-1 block text-xs text-surface-500 dark:text-surface-400">
-                        Tiempo ahorrado (minutos)
+                        {t('webadmin2.atraff.altTime')}
                       </label>
                       <input
                         type="number"
@@ -764,7 +790,7 @@ export default function AdminTrafficAlertsPage() {
                       resetForm();
                     }}
                   >
-                    Cancelar
+                    {t('webadmin2.atraff.cancel')}
                   </AnimatedButton>
                   <AnimatedButton
                     variant="gradient"
@@ -772,7 +798,7 @@ export default function AdminTrafficAlertsPage() {
                     onClick={handleCreateAlert}
                     disabled={!formData.title || !formData.message}
                   >
-                    <AlertTriangle className="h-4 w-4 inline" /> Crear Alerta
+                    <AlertTriangle className="h-4 w-4 inline" /> {t('webadmin2.atraff.createBtn')}
                   </AnimatedButton>
                 </div>
               </div>
@@ -803,11 +829,11 @@ export default function AdminTrafficAlertsPage() {
             >
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-display font-bold text-surface-800 dark:text-surface-100">
-                  Detalles de Alerta
+                  {t('webadmin2.atraff.detailTitle')}
                 </h3>
                 <motion.button
                   onClick={() => setSelectedAlert(null)}
-                  aria-label="Cerrar detalles de alerta"
+                  aria-label={t('webadmin2.atraff.closeDetail')}
                   className="text-surface-500 hover:text-surface-700 dark:text-surface-400 dark:hover:text-surface-200"
                   whileTap={{ scale: 0.9 }}
                 >
@@ -840,7 +866,10 @@ export default function AdminTrafficAlertsPage() {
                         )?.color,
                       }}
                     >
-                      {SEVERITY_LEVELS.find((s) => s.id === selectedAlert.severity)?.label}
+                      {(() => {
+                        const sev = SEVERITY_LEVELS.find((s) => s.id === selectedAlert.severity);
+                        return sev ? t(sev.labelKey) : '';
+                      })()}
                     </span>
                   </div>
                 </div>
@@ -852,7 +881,7 @@ export default function AdminTrafficAlertsPage() {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-surface-500 dark:text-surface-400">
-                      <MapPin className="h-4 w-4 inline" /> Ubicación
+                      <MapPin className="h-4 w-4 inline" /> {t('webadmin2.atraff.location')}
                     </span>
                     <span className="text-surface-800 dark:text-surface-200">
                       {selectedAlert.location.address}
@@ -860,21 +889,23 @@ export default function AdminTrafficAlertsPage() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-surface-500 dark:text-surface-400">
-                      <RefreshCw className="h-4 w-4 inline" /> Radio
+                      <RefreshCw className="h-4 w-4 inline" /> {t('webadmin2.atraff.radiusRow')}
                     </span>
                     <span className="text-surface-800 dark:text-surface-200">
                       {selectedAlert.affectedArea.radius} km
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-surface-500 dark:text-surface-400">⏰ Creada</span>
+                    <span className="text-surface-500 dark:text-surface-400">
+                      {t('webadmin2.atraff.created')}
+                    </span>
                     <span className="text-surface-800 dark:text-surface-200">
                       {new Date(selectedAlert.createdAt).toLocaleString('es-CR')}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-surface-500 dark:text-surface-400">
-                      <Clock className="h-4 w-4 inline" /> Expira
+                      <Clock className="h-4 w-4 inline" /> {t('webadmin2.atraff.expiresRow')}
                     </span>
                     <span className="text-surface-800 dark:text-surface-200">
                       {new Date(selectedAlert.expiresAt).toLocaleString('es-CR')}
@@ -885,14 +916,16 @@ export default function AdminTrafficAlertsPage() {
                 {selectedAlert.alternativeRoute && (
                   <div className="p-3 rounded-xl bg-green-50 dark:bg-green-900/30">
                     <p className="text-sm font-medium text-green-700 dark:text-green-400">
-                      <Map className="h-4 w-4 inline" /> Ruta Alternativa
+                      <Map className="h-4 w-4 inline" /> {t('webadmin2.atraff.altTitle')}
                     </p>
                     <p className="text-sm text-green-600 dark:text-green-300">
                       {selectedAlert.alternativeRoute.description}
                     </p>
                     {selectedAlert.alternativeRoute.estimatedTimeSaved > 0 && (
                       <p className="text-xs text-green-500 dark:text-green-400 mt-1">
-                        Ahorra ~{selectedAlert.alternativeRoute.estimatedTimeSaved} minutos
+                        {t('webadmin2.atraff.savesLong', {
+                          n: selectedAlert.alternativeRoute.estimatedTimeSaved,
+                        })}
                       </p>
                     )}
                   </div>
@@ -907,14 +940,14 @@ export default function AdminTrafficAlertsPage() {
                       setSelectedAlert(null);
                     }}
                   >
-                    <Trash2 className="h-4 w-4 inline" /> Eliminar
+                    <Trash2 className="h-4 w-4 inline" /> {t('webadmin2.atraff.deleteBtn')}
                   </AnimatedButton>
                   <AnimatedButton
                     variant="secondary"
                     className="flex-1"
                     onClick={() => setSelectedAlert(null)}
                   >
-                    Cerrar
+                    {t('webadmin2.atraff.closeBtn')}
                   </AnimatedButton>
                 </div>
               </div>

@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TicketPercent, Plus, X, Loader2 } from 'lucide-react';
-import { api } from '@kiwi/ui';
+import { api, useTranslations } from '@kiwi/ui';
 
 interface Offer {
   title: string;
@@ -20,10 +20,10 @@ interface Referral {
   createdAt: string;
 }
 
-const ROLE_LABELS: Record<string, string> = {
-  customer: 'Clientes',
-  driver: 'Repartidores',
-  merchant: 'Comercios',
+const ROLE_KEYS: Record<string, string> = {
+  customer: 'webadmin2.aref.roles.customer',
+  driver: 'webadmin2.aref.roles.driver',
+  merchant: 'webadmin2.aref.roles.merchant',
 };
 
 const emptyOffers = (): Record<string, Offer> => ({
@@ -33,6 +33,7 @@ const emptyOffers = (): Record<string, Offer> => ({
 });
 
 export default function ReferidosPage() {
+  const { t } = useTranslations();
   const [items, setItems] = useState<Referral[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -51,7 +52,7 @@ export default function ReferidosPage() {
       const r = await api.listReferrals();
       setItems(r?.referrals ?? []);
     } catch (e: any) {
-      setError(e?.message || 'No se pudieron cargar los códigos');
+      setError(e?.message || t('webadmin2.aref.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -70,7 +71,7 @@ export default function ReferidosPage() {
       setNewCode('');
       load();
     } catch (err: any) {
-      setError(err?.message || 'No se pudo crear el código');
+      setError(err?.message || t('webadmin2.aref.createFailed'));
     } finally {
       setCreating(false);
     }
@@ -89,7 +90,7 @@ export default function ReferidosPage() {
       setEditing(null);
       load();
     } catch (e: any) {
-      setError(e?.message || 'No se pudo guardar');
+      setError(e?.message || t('webadmin2.aref.saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -101,7 +102,7 @@ export default function ReferidosPage() {
       await api.setReferralActive(r.id, !r.active);
       load();
     } catch (e: any) {
-      setError(e?.message || 'No se pudo cambiar el estado');
+      setError(e?.message || t('webadmin2.aref.toggleFailed'));
     } finally {
       setToggling(null);
     }
@@ -111,11 +112,10 @@ export default function ReferidosPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-display font-bold text-surface-800 dark:text-surface-100">
-          <TicketPercent className="h-6 w-6 inline" /> Referidos
+          <TicketPercent className="h-6 w-6 inline" /> {t('webadmin2.aref.title')}
         </h1>
         <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">
-          Códigos que el registro muestra con su oferta según la app. KIKO y WICHO ya vienen
-          cargados.
+          {t('webadmin2.aref.subtitle')}
         </p>
       </div>
 
@@ -141,7 +141,7 @@ export default function ReferidosPage() {
                 .slice(0, 20),
             )
           }
-          placeholder="NUEVO CÓDIGO"
+          placeholder={t('webadmin2.aref.newCodePh')}
           className="flex-1 px-4 py-2.5 text-sm uppercase rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
         />
         <motion.button
@@ -151,7 +151,7 @@ export default function ReferidosPage() {
           whileTap={{ scale: 0.97 }}
         >
           {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-          Agregar
+          {t('webadmin2.aref.add')}
         </motion.button>
       </motion.form>
 
@@ -165,19 +165,19 @@ export default function ReferidosPage() {
             <thead>
               <tr className="border-b border-surface-200 dark:border-surface-700">
                 <th className="text-left py-4 px-6 text-sm font-medium text-surface-500 dark:text-surface-400">
-                  Código
+                  {t('webadmin2.aref.thCode')}
                 </th>
                 <th className="text-left py-4 px-6 text-sm font-medium text-surface-500 dark:text-surface-400">
-                  Ofertas por app
+                  {t('webadmin2.aref.thOffers')}
                 </th>
                 <th className="text-left py-4 px-6 text-sm font-medium text-surface-500 dark:text-surface-400">
-                  Usos
+                  {t('webadmin2.aref.thUses')}
                 </th>
                 <th className="text-left py-4 px-6 text-sm font-medium text-surface-500 dark:text-surface-400">
-                  Estado
+                  {t('webadmin2.aref.thStatus')}
                 </th>
                 <th className="text-right py-4 px-6 text-sm font-medium text-surface-500 dark:text-surface-400">
-                  Acciones
+                  {t('webadmin2.aref.thActions')}
                 </th>
               </tr>
             </thead>
@@ -188,7 +188,7 @@ export default function ReferidosPage() {
                     colSpan={5}
                     className="py-8 text-center text-sm text-surface-500 dark:text-surface-400"
                   >
-                    Cargando…
+                    {t('webadmin2.aref.loading')}
                   </td>
                 </tr>
               ) : (
@@ -206,7 +206,7 @@ export default function ReferidosPage() {
                       <div className="space-y-1 text-xs text-surface-600 dark:text-surface-300">
                         {(['customer', 'driver', 'merchant'] as const).map((role) => (
                           <p key={role}>
-                            <b>{ROLE_LABELS[role]}:</b>{' '}
+                            <b>{t(ROLE_KEYS[role])}:</b>{' '}
                             {r.offers?.[role]?.title || (
                               <span className="text-surface-500 dark:text-surface-400">—</span>
                             )}
@@ -227,7 +227,7 @@ export default function ReferidosPage() {
                             : 'bg-surface-100 text-surface-500'
                         }`}
                       >
-                        {r.active ? 'Activo' : 'Pausado'}
+                        {r.active ? t('webadmin2.aref.active') : t('webadmin2.aref.paused')}
                       </span>
                     </td>
                     <td className="py-4 px-6">
@@ -236,7 +236,7 @@ export default function ReferidosPage() {
                           onClick={() => openEdit(r)}
                           className="px-3 py-1.5 text-xs font-medium text-surface-500 hover:text-kiwi-700 hover:bg-kiwi-50 dark:hover:bg-kiwi-900/30 rounded-lg transition-colors"
                         >
-                          Ofertas
+                          {t('webadmin2.aref.offersBtn')}
                         </button>
                         <button
                           onClick={() => handleToggle(r)}
@@ -247,7 +247,7 @@ export default function ReferidosPage() {
                               : 'text-kiwi-700 hover:bg-kiwi-50 dark:hover:bg-kiwi-900/30'
                           }`}
                         >
-                          {r.active ? 'Pausar' : 'Activar'}
+                          {r.active ? t('webadmin2.aref.pause') : t('webadmin2.aref.activate')}
                         </button>
                       </div>
                     </td>
@@ -277,10 +277,11 @@ export default function ReferidosPage() {
             >
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100">
-                  Ofertas de <span className="font-mono">{editing.code}</span>
+                  {t('webadmin2.aref.modalTitle', { code: editing.code })}
                 </h3>
                 <button
                   onClick={() => setEditing(null)}
+                  aria-label={t('webadmin2.aref.closeModal')}
                   className="p-2 hover:bg-surface-100 dark:hover:bg-surface-700 rounded-lg transition-colors"
                 >
                   <X className="h-4 w-4" />
@@ -293,7 +294,7 @@ export default function ReferidosPage() {
                     className="rounded-xl bg-surface-50 dark:bg-surface-700/50 p-4 space-y-2"
                   >
                     <p className="text-sm font-semibold text-surface-800 dark:text-surface-200">
-                      {ROLE_LABELS[role]}
+                      {t(ROLE_KEYS[role])}
                     </p>
                     <input
                       value={editOffers[role]?.title ?? ''}
@@ -303,7 +304,7 @@ export default function ReferidosPage() {
                           [role]: { ...prev[role], title: e.target.value },
                         }))
                       }
-                      placeholder="Título corto (ej. ₡2.000 de regalo)"
+                      placeholder={t('webadmin2.aref.titlePh')}
                       className="w-full px-3 py-2 text-sm rounded-lg border border-surface-200 dark:border-surface-600 bg-white dark:bg-surface-800 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
                     />
                     <textarea
@@ -314,7 +315,7 @@ export default function ReferidosPage() {
                           [role]: { ...prev[role], detail: e.target.value },
                         }))
                       }
-                      placeholder="Detalle de la oferta"
+                      placeholder={t('webadmin2.aref.detailPh')}
                       rows={2}
                       className="w-full px-3 py-2 text-sm rounded-lg border border-surface-200 dark:border-surface-600 bg-white dark:bg-surface-800 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
                     />
@@ -326,7 +327,7 @@ export default function ReferidosPage() {
                 disabled={saving}
                 className="mt-4 w-full py-2.5 rounded-xl bg-kiwi-gradient text-white text-sm font-semibold disabled:opacity-50"
               >
-                {saving ? 'Guardando…' : 'Guardar ofertas'}
+                {saving ? t('webadmin2.aref.saving') : t('webadmin2.aref.save')}
               </button>
             </motion.div>
           </motion.div>

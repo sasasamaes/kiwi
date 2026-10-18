@@ -19,9 +19,10 @@ import {
   Calculator,
   Timer,
 } from 'lucide-react';
-import { api } from '@kiwi/ui';
+import { api, useTranslations } from '@kiwi/ui';
 
 export default function SettingsPage() {
+  const { t } = useTranslations();
   const [settings, setSettings] = useState({
     platform: {
       name: 'Kiwi',
@@ -81,7 +82,7 @@ export default function SettingsPage() {
           assignment: { ...prev.assignment, ...(data?.assignment ?? {}) },
         }));
       })
-      .catch((e) => setLoadError(e?.message || 'No se pudieron cargar los ajustes'))
+      .catch((e) => setLoadError(e?.message || t('webadmin2.asettings.loadFailed')))
       .finally(() => setLoading(false));
   }, []);
 
@@ -117,10 +118,10 @@ export default function SettingsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-display font-bold text-surface-800 dark:text-surface-100">
-            Configuración
+            {t('webadmin2.asettings.title')}
           </h1>
           <p className="text-surface-500 dark:text-surface-400">
-            Administra la configuración de la plataforma
+            {t('webadmin2.asettings.subtitle')}
           </p>
         </div>
         <button
@@ -128,7 +129,11 @@ export default function SettingsPage() {
           disabled={saving || loading}
           className="px-6 py-2 text-sm font-medium bg-kiwi-700 text-white rounded-lg hover:bg-kiwi-800 transition-colors disabled:opacity-50"
         >
-          {saving ? 'Guardando…' : saveState === 'ok' ? 'Guardado' : 'Guardar Cambios'}
+          {saving
+            ? t('webadmin2.asettings.saving')
+            : saveState === 'ok'
+              ? t('webadmin2.asettings.saved')
+              : t('webadmin2.asettings.save')}
         </button>
       </div>
       {loadError && (
@@ -138,7 +143,7 @@ export default function SettingsPage() {
       )}
       {saveState === 'error' && (
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600">
-          No se pudo guardar. Revisá tu conexión.
+          {t('webadmin2.asettings.saveFailed')}
         </div>
       )}
       {loading && (
@@ -155,12 +160,16 @@ export default function SettingsPage() {
       {/* Tabs */}
       <div className="flex gap-2 border-b border-surface-200 dark:border-surface-700 pb-2">
         {[
-          { id: 'platform', label: 'Plataforma', icon: Settings },
-          { id: 'operations', label: 'Costos', icon: Calculator },
-          { id: 'assignment', label: 'Asignación', icon: Timer },
-          { id: 'payments', label: 'Pagos', icon: CreditCard },
-          { id: 'notifications', label: 'Notificaciones', icon: Bell },
-          { id: 'security', label: 'Seguridad', icon: Lock },
+          { id: 'platform', label: t('webadmin2.asettings.tabs.platform'), icon: Settings },
+          { id: 'operations', label: t('webadmin2.asettings.tabs.operations'), icon: Calculator },
+          { id: 'assignment', label: t('webadmin2.asettings.tabs.assignment'), icon: Timer },
+          { id: 'payments', label: t('webadmin2.asettings.tabs.payments'), icon: CreditCard },
+          {
+            id: 'notifications',
+            label: t('webadmin2.asettings.tabs.notifications'),
+            icon: Bell,
+          },
+          { id: 'security', label: t('webadmin2.asettings.tabs.security'), icon: Lock },
         ].map((tab) => {
           const TabIcon = tab.icon as any;
           return (
@@ -188,13 +197,13 @@ export default function SettingsPage() {
           animate={{ opacity: 1, y: 0 }}
         >
           <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-6">
-            Configuracion de la Plataforma
+            {t('webadmin2.asettings.platformTitle')}
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
-                Nombre de la plataforma
+                {t('webadmin2.asettings.platformName')}
               </label>
               <input
                 type="text"
@@ -211,7 +220,7 @@ export default function SettingsPage() {
 
             <div>
               <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
-                Cargo por servicio standard (% sobre productos)
+                {t('webadmin2.asettings.commission')}
               </label>
               <input
                 type="number"
@@ -225,14 +234,13 @@ export default function SettingsPage() {
                 className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
               />
               <p className="mt-1 text-xs text-surface-500 dark:text-surface-400">
-                Extra que paga el cliente sobre productos. El corte del viaje al repartidor usa esta
-                misma tasa. Rige para pedidos nuevos (cada pedido guarda su tasa).
+                {t('webadmin2.asettings.commissionHint')}
               </p>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
-                🧡 Cargo cocina casera (% sobre productos)
+                {t('webadmin2.asettings.homeCook')}
               </label>
               <input
                 type="number"
@@ -249,14 +257,13 @@ export default function SettingsPage() {
                 className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
               />
               <p className="mt-1 text-xs text-surface-500 dark:text-surface-400">
-                Incentivo a emprendedores (10%). Solo el cargo sobre productos; el corte del viaje
-                al repartidor sigue con la tasa standard. Solo pedidos nuevos.
+                {t('webadmin2.asettings.homeCookHint')}
               </p>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
-                Pedido mínimo (₡)
+                {t('webadmin2.asettings.minOrder')}
               </label>
               <input
                 type="number"
@@ -273,7 +280,7 @@ export default function SettingsPage() {
 
             <div>
               <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
-                Distancia máxima de entrega (km)
+                {t('webadmin2.asettings.maxDistance')}
               </label>
               <input
                 type="number"
@@ -293,7 +300,7 @@ export default function SettingsPage() {
 
             <div>
               <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
-                Envío gratis desde (₡)
+                {t('webadmin2.asettings.freeDelivery')}
               </label>
               <input
                 type="number"
@@ -322,17 +329,16 @@ export default function SettingsPage() {
           animate={{ opacity: 1, y: 0 }}
         >
           <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-1">
-            Costos operativos reales
+            {t('webadmin2.asettings.opsTitle')}
           </h3>
           <p className="mb-6 text-sm text-surface-500 dark:text-surface-400">
-            Alimentan la ganancia neta del reporte "Real vs Proyección". Se aplican a cada mes según
-            sus viajes y su GMV.
+            {t('webadmin2.asettings.opsSub')}
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
-                Costos fijos mensuales (₡)
+                {t('webadmin2.asettings.fixedCost')}
               </label>
               <input
                 type="number"
@@ -350,13 +356,13 @@ export default function SettingsPage() {
                 className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
               />
               <p className="mt-1 text-xs text-surface-500 dark:text-surface-400">
-                Hosting, infraestructura, equipo base.
+                {t('webadmin2.asettings.fixedHint')}
               </p>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
-                Soporte por viaje (₡)
+                {t('webadmin2.asettings.supportTrip')}
               </label>
               <input
                 type="number"
@@ -374,13 +380,13 @@ export default function SettingsPage() {
                 className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
               />
               <p className="mt-1 text-xs text-surface-500 dark:text-surface-400">
-                Chats, llamadas e incidencias por pedido entregado.
+                {t('webadmin2.asettings.supportHint')}
               </p>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
-                Fee de pasarela (%)
+                {t('webadmin2.asettings.gateway')}
               </label>
               <input
                 type="number"
@@ -400,13 +406,13 @@ export default function SettingsPage() {
                 className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
               />
               <p className="mt-1 text-xs text-surface-500 dark:text-surface-400">
-                Comisión de tarjeta/SINPE web del banco o procesador.
+                {t('webadmin2.asettings.gatewayHint')}
               </p>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
-                % de pagos digitales
+                {t('webadmin2.asettings.digital')}
               </label>
               <input
                 type="number"
@@ -425,7 +431,7 @@ export default function SettingsPage() {
                 className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
               />
               <p className="mt-1 text-xs text-surface-500 dark:text-surface-400">
-                El fee solo aplica a la parte digital del GMV — el efectivo no pasa por la pasarela.
+                {t('webadmin2.asettings.digitalHint')}
               </p>
             </div>
           </div>
@@ -439,16 +445,15 @@ export default function SettingsPage() {
           animate={{ opacity: 1, y: 0 }}
         >
           <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-1">
-            Tiempos de asignación
+            {t('webadmin2.asettings.assignTitle')}
           </h3>
           <p className="mb-6 text-sm text-surface-500 dark:text-surface-400">
-            Cuánto espera un pedido al repartidor seleccionado antes de entrar en concurso, y cuánto
-            dura el concurso.
+            {t('webadmin2.asettings.assignSub')}
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
-                Minutos para aceptar (1–60)
+                {t('webadmin2.asettings.acceptMinutes')}
               </label>
               <input
                 type="number"
@@ -469,7 +474,7 @@ export default function SettingsPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
-                Minutos de concurso (1–60)
+                {t('webadmin2.asettings.contestMinutes')}
               </label>
               <input
                 type="number"
@@ -497,20 +502,20 @@ export default function SettingsPage() {
           animate={{ opacity: 1, y: 0 }}
         >
           <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-6">
-            Configuracion de Pagos
+            {t('webadmin2.asettings.payTitle')}
           </h3>
 
           <div className="space-y-6">
             <div>
               <h4 className="font-medium text-surface-800 dark:text-surface-100 mb-4">
-                Métodos de pago
+                {t('webadmin2.asettings.methodsTitle')}
               </h4>
               <div className="space-y-3">
                 {[
-                  { key: 'sinpeEnabled', label: 'SINPE Móvil', icon: Smartphone },
-                  { key: 'cardEnabled', label: 'Tarjeta de crédito/débito', icon: CreditCard },
-                  { key: 'cashEnabled', label: 'Efectivo', icon: DollarSign },
-                  { key: 'cryptoEnabled', label: 'Criptomonedas (USDC/USDT)', icon: '₿' },
+                  { key: 'sinpeEnabled', label: t('webadmin2.asettings.sinpe'), icon: Smartphone },
+                  { key: 'cardEnabled', label: t('webadmin2.asettings.card'), icon: CreditCard },
+                  { key: 'cashEnabled', label: t('webadmin2.asettings.cash'), icon: DollarSign },
+                  { key: 'cryptoEnabled', label: t('webadmin2.asettings.crypto'), icon: '₿' },
                 ].map((method) => {
                   const MethodIcon = method.icon as any;
                   return (
@@ -557,7 +562,7 @@ export default function SettingsPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
-                  Wallet crypto (USDC/USDT)
+                  {t('webadmin2.asettings.wallet')}
                 </label>
                 <input
                   type="text"
@@ -574,7 +579,7 @@ export default function SettingsPage() {
 
               <div>
                 <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
-                  Programa de pagos
+                  {t('webadmin2.asettings.payout')}
                 </label>
                 <select
                   value={settings.payments.payoutSchedule}
@@ -586,16 +591,16 @@ export default function SettingsPage() {
                   }
                   className="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
                 >
-                  <option value="daily">Diario</option>
-                  <option value="weekly">Semanal</option>
-                  <option value="biweekly">Quincenal</option>
-                  <option value="monthly">Mensual</option>
+                  <option value="daily">{t('webadmin2.asettings.daily')}</option>
+                  <option value="weekly">{t('webadmin2.asettings.weekly')}</option>
+                  <option value="biweekly">{t('webadmin2.asettings.biweekly')}</option>
+                  <option value="monthly">{t('webadmin2.asettings.monthly')}</option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
-                  Pago mínimo (₡)
+                  {t('webadmin2.asettings.minPayout')}
                 </label>
                 <input
                   type="number"
@@ -622,45 +627,45 @@ export default function SettingsPage() {
           animate={{ opacity: 1, y: 0 }}
         >
           <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-6">
-            Configuracion de Notificaciones
+            {t('webadmin2.asettings.notifTitle')}
           </h3>
 
           <div className="space-y-3">
             {[
               {
                 key: 'newOrder',
-                label: 'Nuevo pedido disponible',
-                description: 'Cuando un comercio crea un nuevo pedido',
+                label: t('webadmin2.asettings.nNew'),
+                description: t('webadmin2.asettings.nNewD'),
                 icon: Package,
               },
               {
                 key: 'orderAccepted',
-                label: 'Pedido aceptado',
-                description: 'Cuando un repartidor acepta un pedido',
+                label: t('webadmin2.asettings.nAccepted'),
+                description: t('webadmin2.asettings.nAcceptedD'),
                 icon: Check,
               },
               {
                 key: 'orderStatus',
-                label: 'Cambios de estado',
-                description: 'Cuando el estado de un pedido cambia',
+                label: t('webadmin2.asettings.nStatus'),
+                description: t('webadmin2.asettings.nStatusD'),
                 icon: RefreshCw,
               },
               {
                 key: 'payment',
-                label: 'Pagos',
-                description: 'Cuando se procesa un pago',
+                label: t('webadmin2.asettings.nPayment'),
+                description: t('webadmin2.asettings.nPaymentD'),
                 icon: Coins,
               },
               {
                 key: 'rating',
-                label: 'Calificaciones',
-                description: 'Cuando recibes una nueva calificación',
+                label: t('webadmin2.asettings.nRating'),
+                description: t('webadmin2.asettings.nRatingD'),
                 icon: Star,
               },
               {
                 key: 'promotion',
-                label: 'Promociones',
-                description: 'Ofertas especiales y descuentos',
+                label: t('webadmin2.asettings.nPromo'),
+                description: t('webadmin2.asettings.nPromoD'),
                 icon: PartyPopper,
               },
             ].map((notification) => {
@@ -719,7 +724,7 @@ export default function SettingsPage() {
           animate={{ opacity: 1, y: 0 }}
         >
           <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-6">
-            Configuracion de Seguridad
+            {t('webadmin2.asettings.secTitle')}
           </h3>
 
           <div className="space-y-6">
@@ -727,20 +732,20 @@ export default function SettingsPage() {
               {[
                 {
                   key: 'requireKYC',
-                  label: 'Requerir KYC',
-                  description: 'Todos los usuarios deben verificar su identidad',
+                  label: t('webadmin2.asettings.kyc'),
+                  description: t('webadmin2.asettings.kycD'),
                   icon: '🪪',
                 },
                 {
                   key: 'requirePhoneVerification',
-                  label: 'Verificación telefónica',
-                  description: 'Requerir verificación por SMS al registrarse',
+                  label: t('webadmin2.asettings.phone'),
+                  description: t('webadmin2.asettings.phoneD'),
                   icon: Smartphone,
                 },
                 {
                   key: 'twoFactorAuth',
-                  label: 'Autenticación de dos factores',
-                  description: 'Habilitar 2FA para cuentas de administrador',
+                  label: t('webadmin2.asettings.tfa'),
+                  description: t('webadmin2.asettings.tfaD'),
                   icon: '🔐',
                 },
               ].map((security) => {
@@ -792,7 +797,7 @@ export default function SettingsPage() {
 
             <div>
               <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
-                Tiempo de sesión (minutos)
+                {t('webadmin2.asettings.session')}
               </label>
               <input
                 type="number"

@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Star, MessageSquare, RefreshCw } from 'lucide-react';
-import { api } from '@kiwi/ui';
+import { api, useTranslations } from '@kiwi/ui';
 
 interface RatingItem {
   id: string;
@@ -32,6 +32,7 @@ function Stars({ value }: { value: number }) {
 }
 
 export default function AdminRatings() {
+  const { t } = useTranslations();
   const [items, setItems] = useState<RatingItem[]>([]);
   const [total, setTotal] = useState(0);
   const [average, setAverage] = useState(0);
@@ -54,7 +55,7 @@ export default function AdminRatings() {
       setAverage(Number(res?.summary?.average ?? 0));
       setCount(Number(res?.summary?.count ?? 0));
     } catch (e: any) {
-      setError(e?.message || 'No se pudieron cargar los comentarios');
+      setError(e?.message || t('webadmin2.arat.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -69,17 +70,17 @@ export default function AdminRatings() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-display font-bold text-surface-800 dark:text-surface-100">
-            <MessageSquare className="h-6 w-6" /> Comentarios
+            <MessageSquare className="h-6 w-6" /> {t('webadmin2.arat.title')}
           </h1>
           <p className="mt-1 text-sm text-surface-500 dark:text-surface-400">
-            Lo que dicen los comercios de los repartidores
+            {t('webadmin2.arat.subtitle')}
           </p>
         </div>
         <button
           onClick={load}
           className="flex items-center gap-1 px-4 py-2 text-sm font-medium bg-surface-100 dark:bg-surface-800 text-surface-700 dark:text-surface-300 rounded-lg hover:bg-surface-200 transition-colors"
         >
-          <RefreshCw className="h-4 w-4" /> Actualizar
+          <RefreshCw className="h-4 w-4" /> {t('webadmin2.arat.refresh')}
         </button>
       </div>
 
@@ -90,17 +91,17 @@ export default function AdminRatings() {
             {average.toFixed(1)}
           </p>
           <Stars value={Math.round(average)} />
-          <p className="mt-1 text-xs text-surface-500">Promedio ({count})</p>
+          <p className="mt-1 text-xs text-surface-500">{t('webadmin2.arat.avg', { count })}</p>
         </div>
         <div className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4 text-center">
           <p className="text-3xl font-bold text-surface-800 dark:text-surface-100">{total}</p>
-          <p className="mt-1 text-xs text-surface-500">En esta vista</p>
+          <p className="mt-1 text-xs text-surface-500">{t('webadmin2.arat.inView')}</p>
         </div>
         <div className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4 text-center">
           <p className="text-3xl font-bold text-kiwi-700">
             {items.filter((i) => (i.rating ?? 0) >= 4).length}
           </p>
-          <p className="mt-1 text-xs text-surface-500">De 4+ estrellas</p>
+          <p className="mt-1 text-xs text-surface-500">{t('webadmin2.arat.fourPlus')}</p>
         </div>
       </div>
 
@@ -108,9 +109,9 @@ export default function AdminRatings() {
       <div className="flex flex-wrap items-center gap-2">
         {(
           [
-            { id: 'all', label: 'Todos' },
-            { id: 'good', label: '4-5 estrellas' },
-            { id: 'bad', label: '1-3 estrellas' },
+            { id: 'all', labelKey: 'webadmin2.arat.fAll' },
+            { id: 'good', labelKey: 'webadmin2.arat.fGood' },
+            { id: 'bad', labelKey: 'webadmin2.arat.fBad' },
           ] as const
         ).map((f) => (
           <button
@@ -122,7 +123,7 @@ export default function AdminRatings() {
                 : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400'
             }`}
           >
-            {f.label}
+            {t(f.labelKey)}
           </button>
         ))}
         <button
@@ -133,7 +134,7 @@ export default function AdminRatings() {
               : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400'
           }`}
         >
-          Solo con texto
+          {t('webadmin2.arat.onlyText')}
         </button>
       </div>
 
@@ -155,7 +156,7 @@ export default function AdminRatings() {
         ) : items.length === 0 ? (
           <div className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-8 text-center">
             <MessageSquare className="h-10 w-10 mx-auto mb-2 text-surface-300" />
-            <p className="text-sm text-surface-500">No hay comentarios con este filtro</p>
+            <p className="text-sm text-surface-500">{t('webadmin2.arat.empty')}</p>
           </div>
         ) : (
           items.map((r, i) => (
@@ -179,11 +180,25 @@ export default function AdminRatings() {
                 <p className="text-sm text-surface-800 dark:text-surface-100">“{r.comment}”</p>
               )}
               <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-surface-500">
-                <span>Repartidor: {r.driver?.fullName ?? '—'}</span>
-                <span>Comercio: {r.merchant?.businessName ?? '—'}</span>
-                {r.onTime != null && <span>{r.onTime ? 'A tiempo' : 'Tarde'}</span>}
+                <span>
+                  {t('webadmin2.arat.driver', {
+                    name: r.driver?.fullName ?? t('webadmin2.arat.unknown'),
+                  })}
+                </span>
+                <span>
+                  {t('webadmin2.arat.merchant', {
+                    name: r.merchant?.businessName ?? t('webadmin2.arat.unknown'),
+                  })}
+                </span>
+                {r.onTime != null && (
+                  <span>{r.onTime ? t('webadmin2.arat.onTime') : t('webadmin2.arat.late')}</span>
+                )}
                 {r.carefulWithOrder != null && (
-                  <span>{r.carefulWithOrder ? 'Cuidadoso' : 'Descuidado'}</span>
+                  <span>
+                    {r.carefulWithOrder
+                      ? t('webadmin2.arat.careful')
+                      : t('webadmin2.arat.careless')}
+                  </span>
                 )}
               </div>
             </motion.div>

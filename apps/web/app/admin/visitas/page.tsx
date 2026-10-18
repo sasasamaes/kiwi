@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { MapPin, Send, Trash2, Loader2, Search } from 'lucide-react';
-import { api } from '@kiwi/ui';
+import { api, useTranslations } from '@kiwi/ui';
 
 interface Visit {
   id: string;
@@ -22,11 +22,31 @@ interface Visit {
 }
 
 const OUTCOMES = [
-  { value: 'pending', label: 'Pendiente', color: 'bg-surface-100 text-surface-500' },
-  { value: 'interested', label: 'Interesado', color: 'bg-blue-100 text-blue-700' },
-  { value: 'invited', label: 'Invitado', color: 'bg-yellow-100 text-yellow-700' },
-  { value: 'registered', label: 'Registrado 🎉', color: 'bg-green-100 text-green-700' },
-  { value: 'not_interested', label: 'No le interesa', color: 'bg-red-100 text-red-500' },
+  {
+    value: 'pending',
+    labelKey: 'webadmin2.avis.outcomes.pending',
+    color: 'bg-surface-100 text-surface-500',
+  },
+  {
+    value: 'interested',
+    labelKey: 'webadmin2.avis.outcomes.interested',
+    color: 'bg-blue-100 text-blue-700',
+  },
+  {
+    value: 'invited',
+    labelKey: 'webadmin2.avis.outcomes.invited',
+    color: 'bg-yellow-100 text-yellow-700',
+  },
+  {
+    value: 'registered',
+    labelKey: 'webadmin2.avis.outcomes.registered',
+    color: 'bg-green-100 text-green-700',
+  },
+  {
+    value: 'not_interested',
+    labelKey: 'webadmin2.avis.outcomes.not_interested',
+    color: 'bg-red-100 text-red-500',
+  },
 ] as const;
 
 const outcomeOf = (v: string) => OUTCOMES.find((o) => o.value === v) ?? OUTCOMES[0];
@@ -38,6 +58,7 @@ const isOverdue = (v: Visit) =>
   v.outcome !== 'not_interested';
 
 export default function VisitasPage() {
+  const { t } = useTranslations();
   const [visits, setVisits] = useState<Visit[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -71,7 +92,7 @@ export default function VisitasPage() {
       setVisits(r?.visits ?? []);
       setTotal(Number(r?.total ?? 0));
     } catch (e: any) {
-      setError(e?.message || 'No se pudieron cargar las visitas');
+      setError(e?.message || t('webadmin2.avis.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -105,11 +126,11 @@ export default function VisitasPage() {
       setVisitOutcome('pending');
       setNotes('');
       setFollowUpAt('');
-      setNotice('Visita registrada');
+      setNotice(t('webadmin2.avis.saved'));
       setTimeout(() => setNotice(null), 3000);
       load();
     } catch (err: any) {
-      setError(err?.message || 'No se pudo guardar la visita');
+      setError(err?.message || t('webadmin2.avis.saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -121,20 +142,20 @@ export default function VisitasPage() {
       await api.updateVisit(v.id, { outcome: next });
       load();
     } catch (e: any) {
-      setError(e?.message || 'No se pudo actualizar');
+      setError(e?.message || t('webadmin2.avis.updateFailed'));
     } finally {
       setActing(null);
     }
   };
 
   const handleDelete = async (v: Visit) => {
-    if (!window.confirm(`¿Borrar la visita a "${v.businessName}"?`)) return;
+    if (!window.confirm(t('webadmin2.avis.deleteConfirm', { name: v.businessName }))) return;
     setActing(v.id);
     try {
       await api.deleteVisit(v.id);
       load();
     } catch (e: any) {
-      setError(e?.message || 'No se pudo borrar');
+      setError(e?.message || t('webadmin2.avis.deleteFailed'));
     } finally {
       setActing(null);
     }
@@ -152,10 +173,10 @@ export default function VisitasPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-display font-bold text-surface-800 dark:text-surface-100">
-          <MapPin className="h-6 w-6 inline" /> Visitas de venta
+          <MapPin className="h-6 w-6 inline" /> {t('webadmin2.avis.title')}
         </h1>
         <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">
-          Qué negocio visitaste, de qué hablaron y cuándo volver.
+          {t('webadmin2.avis.subtitle')}
         </p>
       </div>
 
@@ -183,13 +204,13 @@ export default function VisitasPage() {
               htmlFor="v-biz"
               className="mb-1 block text-xs font-medium text-surface-600 dark:text-surface-400"
             >
-              Negocio *
+              {t('webadmin2.avis.business')}
             </label>
             <input
               id="v-biz"
               value={businessName}
               onChange={(e) => setBusinessName(e.target.value)}
-              placeholder="Soda El Sabor"
+              placeholder={t('webadmin2.avis.businessPh')}
               className="w-full px-4 py-2.5 text-sm rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
             />
           </div>
@@ -198,13 +219,13 @@ export default function VisitasPage() {
               htmlFor="v-contact"
               className="mb-1 block text-xs font-medium text-surface-600 dark:text-surface-400"
             >
-              Con quién hablaste
+              {t('webadmin2.avis.contact')}
             </label>
             <input
               id="v-contact"
               value={contactName}
               onChange={(e) => setContactName(e.target.value)}
-              placeholder="María"
+              placeholder={t('webadmin2.avis.contactPh')}
               className="w-full px-4 py-2.5 text-sm rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
             />
           </div>
@@ -213,7 +234,7 @@ export default function VisitasPage() {
               htmlFor="v-outcome"
               className="mb-1 block text-xs font-medium text-surface-600 dark:text-surface-400"
             >
-              Resultado
+              {t('webadmin2.avis.outcome')}
             </label>
             <select
               id="v-outcome"
@@ -223,7 +244,7 @@ export default function VisitasPage() {
             >
               {OUTCOMES.map((o) => (
                 <option key={o.value} value={o.value}>
-                  {o.label}
+                  {t(o.labelKey)}
                 </option>
               ))}
             </select>
@@ -233,14 +254,14 @@ export default function VisitasPage() {
               htmlFor="v-email"
               className="mb-1 block text-xs font-medium text-surface-600 dark:text-surface-400"
             >
-              Correo
+              {t('webadmin2.avis.email')}
             </label>
             <input
               id="v-email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="soda@ejemplo.com"
+              placeholder={t('webadmin2.avis.emailPh')}
               className="w-full px-4 py-2.5 text-sm rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
             />
           </div>
@@ -249,14 +270,14 @@ export default function VisitasPage() {
               htmlFor="v-phone"
               className="mb-1 block text-xs font-medium text-surface-600 dark:text-surface-400"
             >
-              Teléfono
+              {t('webadmin2.avis.phone')}
             </label>
             <input
               id="v-phone"
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              placeholder="8888-8888"
+              placeholder={t('webadmin2.avis.phonePh')}
               className="w-full px-4 py-2.5 text-sm rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
             />
           </div>
@@ -265,7 +286,7 @@ export default function VisitasPage() {
               htmlFor="v-follow"
               className="mb-1 block text-xs font-medium text-surface-600 dark:text-surface-400"
             >
-              Volver el
+              {t('webadmin2.avis.followUp')}
             </label>
             <input
               id="v-follow"
@@ -279,13 +300,13 @@ export default function VisitasPage() {
         <input
           value={address}
           onChange={(e) => setAddress(e.target.value)}
-          placeholder="Dirección / referencia (opcional)"
+          placeholder={t('webadmin2.avis.addressPh')}
           className="w-full px-4 py-2.5 text-sm rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
         />
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          placeholder="De qué hablaron, qué presentar la próxima…"
+          placeholder={t('webadmin2.avis.notesPh')}
           rows={2}
           className="w-full px-4 py-2.5 text-sm rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
         />
@@ -296,7 +317,7 @@ export default function VisitasPage() {
           whileTap={{ scale: 0.97 }}
         >
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <MapPin className="h-4 w-4" />}
-          Registrar visita
+          {t('webadmin2.avis.submit')}
         </motion.button>
       </motion.form>
 
@@ -307,7 +328,7 @@ export default function VisitasPage() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar negocio, contacto o correo…"
+            placeholder={t('webadmin2.avis.searchPh')}
             className="w-full pl-9 pr-4 py-2.5 text-sm rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
           />
         </div>
@@ -316,10 +337,10 @@ export default function VisitasPage() {
           onChange={(e) => setOutcome(e.target.value)}
           className="px-4 py-2.5 text-sm rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 text-surface-800 dark:text-surface-100"
         >
-          <option value="">Todos</option>
+          <option value="">{t('webadmin2.avis.all')}</option>
           {OUTCOMES.map((o) => (
             <option key={o.value} value={o.value}>
-              {o.label}
+              {t(o.labelKey)}
             </option>
           ))}
         </select>
@@ -331,15 +352,19 @@ export default function VisitasPage() {
               : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400'
           }`}
         >
-          ⏰ Seguimiento vencido
+          {t('webadmin2.avis.overdueOnly')}
         </button>
       </div>
 
-      <p className="text-sm text-surface-500 dark:text-surface-400">{total} visitas</p>
+      <p className="text-sm text-surface-500 dark:text-surface-400">
+        {t('webadmin2.avis.total', { n: total })}
+      </p>
 
       <div className="space-y-3">
         {loading ? (
-          <p className="text-center text-sm text-surface-500 dark:text-surface-400">Cargando…</p>
+          <p className="text-center text-sm text-surface-500 dark:text-surface-400">
+            {t('webadmin2.avis.loading')}
+          </p>
         ) : (
           visits.map((v) => {
             const o = outcomeOf(v.outcome);
@@ -360,14 +385,19 @@ export default function VisitasPage() {
                       {v.businessName}
                       {isOverdue(v) && (
                         <span className="ml-2 text-xs font-medium text-amber-600">
-                          ⏰ toca volver
+                          {t('webadmin2.avis.overdue')}
                         </span>
                       )}
                     </p>
                     <p className="text-xs text-surface-500 dark:text-surface-400">
                       {[v.contactName, v.email, v.phone].filter(Boolean).join(' · ')}
                       {v.followUpAt && (
-                        <> · volver el {new Date(v.followUpAt).toLocaleDateString('es-CR')}</>
+                        <>
+                          {' '}
+                          {t('webadmin2.avis.followUpOn', {
+                            date: new Date(v.followUpAt).toLocaleDateString('es-CR'),
+                          })}
+                        </>
                       )}
                     </p>
                     {v.notes && (
@@ -379,7 +409,7 @@ export default function VisitasPage() {
                   <span
                     className={`shrink-0 px-3 py-1 rounded-full text-xs font-medium ${o.color}`}
                   >
-                    {o.label}
+                    {t(o.labelKey)}
                   </span>
                 </div>
                 <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -388,11 +418,11 @@ export default function VisitasPage() {
                     disabled={acting === v.id}
                     onChange={(e) => setRowOutcome(v, e.target.value)}
                     className="px-3 py-1.5 text-xs rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-700 dark:text-surface-200 disabled:opacity-50"
-                    aria-label="Cambiar resultado"
+                    aria-label={t('webadmin2.avis.changeOutcome')}
                   >
                     {OUTCOMES.map((opt) => (
                       <option key={opt.value} value={opt.value}>
-                        {opt.label}
+                        {t(opt.labelKey)}
                       </option>
                     ))}
                   </select>
@@ -401,7 +431,7 @@ export default function VisitasPage() {
                       href={inviteHref(v)}
                       className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-kiwi-50 dark:bg-kiwi-900/30 text-kiwi-700 dark:text-kiwi-300 hover:bg-kiwi-100"
                     >
-                      <Send className="h-3.5 w-3.5" /> Invitar
+                      <Send className="h-3.5 w-3.5" /> {t('webadmin2.avis.invite')}
                     </Link>
                   )}
                   <button
@@ -409,7 +439,7 @@ export default function VisitasPage() {
                     disabled={acting === v.id}
                     className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg disabled:opacity-50"
                   >
-                    <Trash2 className="h-3.5 w-3.5" /> Borrar
+                    <Trash2 className="h-3.5 w-3.5" /> {t('webadmin2.avis.delete')}
                   </button>
                 </div>
               </motion.div>
@@ -418,7 +448,7 @@ export default function VisitasPage() {
         )}
         {!loading && visits.length === 0 && (
           <p className="text-center text-sm text-surface-500 dark:text-surface-400">
-            Sin visitas con ese filtro.
+            {t('webadmin2.avis.empty')}
           </p>
         )}
       </div>

@@ -14,7 +14,7 @@ import {
   Calendar,
   Star,
 } from 'lucide-react';
-import { api, Skeleton } from '@kiwi/ui';
+import { api, Skeleton, useTranslations } from '@kiwi/ui';
 
 interface Withdrawal {
   id: string;
@@ -45,43 +45,24 @@ interface Withdrawal {
   };
 }
 
-const STATUS_CONFIG: Record<string, { label: string; icon: any; color: string }> = {
-  pending: {
-    label: 'Pendiente',
-    icon: Clock,
-    color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400',
-  },
-  processing: {
-    label: 'Procesando',
-    icon: RefreshCw,
-    color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400',
-  },
-  completed: {
-    label: 'Completado',
-    icon: Check,
-    color: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400',
-  },
-  failed: {
-    label: 'Cancelado',
-    icon: X,
-    color: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400',
-  },
-  rejected: {
-    label: 'Rechazado',
-    icon: X,
-    color: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400',
-  },
+const STATUS_ICON: Record<string, any> = {
+  pending: Clock,
+  processing: RefreshCw,
+  completed: Check,
+  failed: X,
+  rejected: X,
 };
 
-const FILTER_TABS = [
-  { id: 'all', label: 'Todos', icon: ClipboardList },
-  { id: 'pending', label: 'Pendientes', icon: Clock },
-  { id: 'processing', label: 'Procesando', icon: RefreshCw },
-  { id: 'completed', label: 'Completados', icon: Check },
-  { id: 'rejected', label: 'Rechazados', icon: X },
-];
+const STATUS_COLOR: Record<string, string> = {
+  pending: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400',
+  processing: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400',
+  completed: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400',
+  failed: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400',
+  rejected: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400',
+};
 
 export default function AdminWithdrawalsPage() {
+  const { t } = useTranslations();
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -91,6 +72,22 @@ export default function AdminWithdrawalsPage() {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [transactionId, setTransactionId] = useState('');
+
+  const STATUS_LABEL: Record<string, string> = {
+    pending: t('webadmin1.awith.status.pending'),
+    processing: t('webadmin1.awith.status.processing'),
+    completed: t('webadmin1.awith.status.completed'),
+    failed: t('webadmin1.awith.status.failed'),
+    rejected: t('webadmin1.awith.status.rejected'),
+  };
+
+  const FILTER_TABS = [
+    { id: 'all', label: t('webadmin1.awith.tabs.all'), icon: ClipboardList },
+    { id: 'pending', label: t('webadmin1.awith.tabs.pending'), icon: Clock },
+    { id: 'processing', label: t('webadmin1.awith.tabs.processing'), icon: RefreshCw },
+    { id: 'completed', label: t('webadmin1.awith.tabs.completed'), icon: Check },
+    { id: 'rejected', label: t('webadmin1.awith.tabs.rejected'), icon: X },
+  ];
 
   const fetchWithdrawals = useCallback(async () => {
     try {
@@ -103,11 +100,11 @@ export default function AdminWithdrawalsPage() {
       setWithdrawals(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Failed to fetch withdrawals:', err);
-      setError(err instanceof Error ? err.message : 'No se pudieron cargar los retiros');
+      setError(err instanceof Error ? err.message : t('webadmin1.awith.loadError'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchWithdrawals();
@@ -122,7 +119,7 @@ export default function AdminWithdrawalsPage() {
       fetchWithdrawals();
     } catch (err) {
       console.error('Failed to approve withdrawal:', err);
-      alert('No se pudo aprobar el retiro');
+      alert(t('webadmin1.awith.approveError'));
     } finally {
       setActionLoading(false);
     }
@@ -130,7 +127,7 @@ export default function AdminWithdrawalsPage() {
 
   const handleReject = async (id: string) => {
     if (!rejectReason.trim()) {
-      alert('Por favor ingresa un motivo de rechazo');
+      alert(t('webadmin1.awith.needReason'));
       return;
     }
 
@@ -143,7 +140,7 @@ export default function AdminWithdrawalsPage() {
       fetchWithdrawals();
     } catch (err) {
       console.error('Failed to reject withdrawal:', err);
-      alert('No se pudo rechazar el retiro');
+      alert(t('webadmin1.awith.rejectError'));
     } finally {
       setActionLoading(false);
     }
@@ -163,14 +160,16 @@ export default function AdminWithdrawalsPage() {
     });
   };
 
-  const getStatusConfig = (status: string) => {
-    return (
-      STATUS_CONFIG[status] || {
-        label: status,
-        icon: '❓',
-        color: 'bg-surface-100 text-surface-700',
-      }
-    );
+  const getStatusLabel = (status: string) => {
+    return STATUS_LABEL[status] ?? status;
+  };
+
+  const getStatusColor = (status: string) => {
+    return STATUS_COLOR[status] ?? 'bg-surface-100 text-surface-700';
+  };
+
+  const getStatusIcon = (status: string) => {
+    return STATUS_ICON[status] ?? '❓';
   };
 
   // Filter withdrawals
@@ -222,7 +221,7 @@ export default function AdminWithdrawalsPage() {
             😕
           </motion.div>
           <h2 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100 mb-2">
-            No pudimos cargar los retiros
+            {t('webadmin1.awith.loadTitle')}
           </h2>
           <p className="text-surface-500 dark:text-surface-400 mb-6">{error}</p>
           <motion.button
@@ -231,7 +230,7 @@ export default function AdminWithdrawalsPage() {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            <RefreshCw className="h-4 w-4 inline" /> Reintentar
+            <RefreshCw className="h-4 w-4 inline" /> {t('webadmin1.awith.retry')}
           </motion.button>
         </motion.div>
       </div>
@@ -244,10 +243,12 @@ export default function AdminWithdrawalsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-display font-bold text-surface-800 dark:text-surface-100">
-            <Coins className="h-6 w-6 inline" /> Retiros
+            <Coins className="h-6 w-6 inline" /> {t('webadmin1.awith.title')}
           </h1>
           <p className="text-surface-500 dark:text-surface-400">
-            {withdrawals.filter((w) => w.status === 'pending').length} pendientes de procesar
+            {t('webadmin1.awith.pendingCount', {
+              n: withdrawals.filter((w) => w.status === 'pending').length,
+            })}
           </p>
         </div>
         <motion.button
@@ -255,7 +256,7 @@ export default function AdminWithdrawalsPage() {
           className="px-4 py-2 text-sm font-medium bg-surface-100 dark:bg-surface-800 text-surface-700 dark:text-surface-300 rounded-lg hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors"
           whileTap={{ scale: 0.95 }}
         >
-          <RefreshCw className="h-4 w-4 inline" /> Actualizar
+          <RefreshCw className="h-4 w-4 inline" /> {t('webadmin1.awith.refresh')}
         </motion.button>
       </div>
 
@@ -265,7 +266,9 @@ export default function AdminWithdrawalsPage() {
           className="rounded-2xl bg-yellow-50 dark:bg-yellow-900/30 p-4 shadow-soft dark:shadow-dark border border-yellow-200 dark:border-yellow-800"
           whileHover={{ y: -2 }}
         >
-          <p className="text-sm text-yellow-600 dark:text-yellow-400">Pendientes</p>
+          <p className="text-sm text-yellow-600 dark:text-yellow-400">
+            {t('webadmin1.awith.stats.pending')}
+          </p>
           <p className="text-2xl font-bold text-yellow-700 dark:text-yellow-300">
             {formatCurrency(totalPending)}
           </p>
@@ -274,7 +277,9 @@ export default function AdminWithdrawalsPage() {
           className="rounded-2xl bg-blue-50 dark:bg-blue-900/30 p-4 shadow-soft dark:shadow-dark border border-blue-200 dark:border-blue-800"
           whileHover={{ y: -2 }}
         >
-          <p className="text-sm text-blue-600 dark:text-blue-400">Procesando</p>
+          <p className="text-sm text-blue-600 dark:text-blue-400">
+            {t('webadmin1.awith.stats.processing')}
+          </p>
           <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">
             {formatCurrency(totalProcessing)}
           </p>
@@ -307,13 +312,12 @@ export default function AdminWithdrawalsPage() {
       {filteredWithdrawals.length === 0 ? (
         <motion.div className="text-center py-12" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
           <span className="text-5xl mb-4 block">📭</span>
-          <p className="text-surface-500 dark:text-surface-400">No hay retiros en esta categoría</p>
+          <p className="text-surface-500 dark:text-surface-400">{t('webadmin1.awith.empty')}</p>
         </motion.div>
       ) : (
         <div className="space-y-4">
           {filteredWithdrawals.map((withdrawal, index) => {
-            const statusConfig = getStatusConfig(withdrawal.status);
-            const StatusIcon = statusConfig.icon as any;
+            const StatusIcon = getStatusIcon(withdrawal.status) as any;
 
             return (
               <motion.div
@@ -344,14 +348,14 @@ export default function AdminWithdrawalsPage() {
                     </div>
                   </div>
                   <span
-                    className={`px-3 py-1 rounded-full text-xs font-medium ${statusConfig.color}`}
+                    className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(withdrawal.status)}`}
                   >
                     {typeof StatusIcon === 'string' ? (
                       <span>{StatusIcon}</span>
                     ) : (
                       <StatusIcon className="h-4 w-4 inline" />
                     )}{' '}
-                    {statusConfig.label}
+                    {getStatusLabel(withdrawal.status)}
                   </span>
                 </div>
 
@@ -363,10 +367,11 @@ export default function AdminWithdrawalsPage() {
                     <span>
                       {withdrawal.paymentMethod === 'sinpe' ? (
                         <>
-                          <Smartphone className="h-4 w-4 inline" /> SINPE
+                          <Smartphone className="h-4 w-4 inline" />{' '}
+                          {t('webadmin1.awith.methodSinpe')}
                         </>
                       ) : (
-                        '🏦 Transferencia'
+                        t('webadmin1.awith.methodBank')
                       )}
                     </span>
                   </div>
@@ -386,7 +391,7 @@ export default function AdminWithdrawalsPage() {
                         setShowRejectModal(true);
                       }}
                     >
-                      <X className="h-4 w-4 inline" /> Rechazar
+                      <X className="h-4 w-4 inline" /> {t('webadmin1.awith.reject')}
                     </button>
                     <button
                       className="flex-1 py-2 text-sm font-medium bg-kiwi-700 text-white rounded-lg hover:bg-kiwi-800 transition-colors"
@@ -395,7 +400,7 @@ export default function AdminWithdrawalsPage() {
                         handleApprove(withdrawal.id);
                       }}
                     >
-                      <Check className="h-4 w-4 inline" /> Aprobar
+                      <Check className="h-4 w-4 inline" /> {t('webadmin1.awith.approve')}
                     </button>
                   </div>
                 )}
@@ -426,7 +431,7 @@ export default function AdminWithdrawalsPage() {
               <div className="sticky top-0 bg-white dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700 p-6 z-10">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100">
-                    <Coins className="h-5 w-5 inline" /> Detalle del Retiro
+                    <Coins className="h-5 w-5 inline" /> {t('webadmin1.awith.detailTitle')}
                   </h3>
                   <button
                     onClick={() => setSelectedWithdrawal(null)}
@@ -445,24 +450,25 @@ export default function AdminWithdrawalsPage() {
                     {formatCurrency(selectedWithdrawal.amount)}
                   </p>
                   <span
-                    className={`inline-block mt-2 px-3 py-1 rounded-full text-sm font-medium ${getStatusConfig(selectedWithdrawal.status).color}`}
+                    className={`inline-block mt-2 px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(selectedWithdrawal.status)}`}
                   >
                     {(() => {
-                      const ModalStatusIcon = getStatusConfig(selectedWithdrawal.status)
-                        .icon as any;
+                      const ModalStatusIcon = getStatusIcon(selectedWithdrawal.status) as any;
                       return typeof ModalStatusIcon === 'string' ? (
                         <span>{ModalStatusIcon}</span>
                       ) : (
                         <ModalStatusIcon className="h-4 w-4 inline" />
                       );
                     })()}{' '}
-                    {getStatusConfig(selectedWithdrawal.status).label}
+                    {getStatusLabel(selectedWithdrawal.status)}
                   </span>
                 </div>
 
                 {/* Driver Info */}
                 <div className="p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50">
-                  <p className="text-sm text-surface-500 dark:text-surface-400 mb-2">Repartidor</p>
+                  <p className="text-sm text-surface-500 dark:text-surface-400 mb-2">
+                    {t('webadmin1.awith.driver')}
+                  </p>
                   <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-kiwi-100 dark:bg-kiwi-900/50 text-kiwi-700 dark:text-kiwi-400 font-bold">
                       {selectedWithdrawal.driver.fullName.charAt(0)}
@@ -484,23 +490,27 @@ export default function AdminWithdrawalsPage() {
                   <p className="text-sm text-surface-500 dark:text-surface-400 mb-2">
                     {selectedWithdrawal.paymentMethod === 'sinpe' ? (
                       <>
-                        <Smartphone className="h-4 w-4 inline" /> Datos SINPE
+                        <Smartphone className="h-4 w-4 inline" /> {t('webadmin1.awith.sinpeData')}
                       </>
                     ) : (
-                      '🏦 Datos Bancarios'
+                      t('webadmin1.awith.bankData')
                     )}
                   </p>
                   {selectedWithdrawal.paymentMethod === 'sinpe' ? (
                     <div className="space-y-2">
                       <div className="flex justify-between">
-                        <span className="text-surface-500 dark:text-surface-400">Teléfono</span>
+                        <span className="text-surface-500 dark:text-surface-400">
+                          {t('webadmin1.awith.phone')}
+                        </span>
                         <span className="font-medium text-surface-800 dark:text-surface-100">
-                          {selectedWithdrawal.sinpePhone || 'No especificado'}
+                          {selectedWithdrawal.sinpePhone || t('webadmin1.awith.notSpecified')}
                         </span>
                       </div>
                       {selectedWithdrawal.sinpeName && (
                         <div className="flex justify-between">
-                          <span className="text-surface-500 dark:text-surface-400">Nombre</span>
+                          <span className="text-surface-500 dark:text-surface-400">
+                            {t('webadmin1.awith.name')}
+                          </span>
                           <span className="font-medium text-surface-800 dark:text-surface-100">
                             {selectedWithdrawal.sinpeName}
                           </span>
@@ -510,21 +520,27 @@ export default function AdminWithdrawalsPage() {
                   ) : (
                     <div className="space-y-2">
                       <div className="flex justify-between">
-                        <span className="text-surface-500 dark:text-surface-400">Banco</span>
+                        <span className="text-surface-500 dark:text-surface-400">
+                          {t('webadmin1.awith.bank')}
+                        </span>
                         <span className="font-medium text-surface-800 dark:text-surface-100">
-                          {selectedWithdrawal.bankName || 'No especificado'}
+                          {selectedWithdrawal.bankName || t('webadmin1.awith.notSpecified')}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-surface-500 dark:text-surface-400">Cuenta</span>
+                        <span className="text-surface-500 dark:text-surface-400">
+                          {t('webadmin1.awith.account')}
+                        </span>
                         <span className="font-medium text-surface-800 dark:text-surface-100 font-mono">
-                          {selectedWithdrawal.accountNumber || 'No especificado'}
+                          {selectedWithdrawal.accountNumber || t('webadmin1.awith.notSpecified')}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-surface-500 dark:text-surface-400">Titular</span>
+                        <span className="text-surface-500 dark:text-surface-400">
+                          {t('webadmin1.awith.holder')}
+                        </span>
                         <span className="font-medium text-surface-800 dark:text-surface-100">
-                          {selectedWithdrawal.accountHolder || 'No especificado'}
+                          {selectedWithdrawal.accountHolder || t('webadmin1.awith.notSpecified')}
                         </span>
                       </div>
                     </div>
@@ -536,10 +552,10 @@ export default function AdminWithdrawalsPage() {
                   selectedWithdrawal.status === 'completed') && (
                   <div className="p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50">
                     <p className="text-sm text-surface-500 dark:text-surface-400 mb-2">
-                      ID de Transacción
+                      {t('webadmin1.awith.txId')}
                     </p>
                     <p className="font-mono text-surface-800 dark:text-surface-100">
-                      {selectedWithdrawal.transactionId || 'No registrado'}
+                      {selectedWithdrawal.transactionId || t('webadmin1.awith.notRecorded')}
                     </p>
                   </div>
                 )}
@@ -547,7 +563,9 @@ export default function AdminWithdrawalsPage() {
                 {/* Rejection Reason (if rejected) */}
                 {selectedWithdrawal.status === 'rejected' && selectedWithdrawal.rejectionReason && (
                   <div className="p-4 rounded-xl bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800">
-                    <p className="text-sm text-red-600 dark:text-red-400 mb-1">Motivo de rechazo</p>
+                    <p className="text-sm text-red-600 dark:text-red-400 mb-1">
+                      {t('webadmin1.awith.rejectReasonLabel')}
+                    </p>
                     <p className="text-red-700 dark:text-red-300">
                       {selectedWithdrawal.rejectionReason}
                     </p>
@@ -558,14 +576,18 @@ export default function AdminWithdrawalsPage() {
                 <div className="p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50">
                   <div className="space-y-2">
                     <div className="flex justify-between">
-                      <span className="text-surface-500 dark:text-surface-400">Solicitado</span>
+                      <span className="text-surface-500 dark:text-surface-400">
+                        {t('webadmin1.awith.requested')}
+                      </span>
                       <span className="text-surface-800 dark:text-surface-100">
                         {formatDate(selectedWithdrawal.createdAt)}
                       </span>
                     </div>
                     {selectedWithdrawal.processedAt && (
                       <div className="flex justify-between">
-                        <span className="text-surface-500 dark:text-surface-400">Procesado</span>
+                        <span className="text-surface-500 dark:text-surface-400">
+                          {t('webadmin1.awith.processed')}
+                        </span>
                         <span className="text-surface-800 dark:text-surface-100">
                           {formatDate(selectedWithdrawal.processedAt)}
                         </span>
@@ -579,13 +601,13 @@ export default function AdminWithdrawalsPage() {
                   <div className="space-y-3 pt-4 border-t border-surface-200 dark:border-surface-700">
                     <div>
                       <label className="block text-sm font-medium text-surface-600 dark:text-surface-400 mb-1">
-                        ID de Transacción (opcional)
+                        {t('webadmin1.awith.txIdOptional')}
                       </label>
                       <input
                         type="text"
                         value={transactionId}
                         onChange={(e) => setTransactionId(e.target.value)}
-                        placeholder="Ej: SINPE-123456 o BAC-789012"
+                        placeholder={t('webadmin1.awith.txPh')}
                         className="w-full px-4 py-3 rounded-xl bg-surface-50 dark:bg-surface-700 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-kiwi-600 transition-all"
                       />
                     </div>
@@ -595,7 +617,7 @@ export default function AdminWithdrawalsPage() {
                         onClick={() => setShowRejectModal(true)}
                         disabled={actionLoading}
                       >
-                        <X className="h-4 w-4 inline" /> Rechazar
+                        <X className="h-4 w-4 inline" /> {t('webadmin1.awith.reject')}
                       </button>
                       <button
                         className="flex-1 py-3 px-4 text-sm font-medium bg-kiwi-700 text-white rounded-xl hover:bg-kiwi-800 transition-colors"
@@ -603,10 +625,10 @@ export default function AdminWithdrawalsPage() {
                         disabled={actionLoading}
                       >
                         {actionLoading ? (
-                          'Procesando...'
+                          t('webadmin1.awith.processing')
                         ) : (
                           <>
-                            <Check className="h-4 w-4 inline" /> Aprobar
+                            <Check className="h-4 w-4 inline" /> {t('webadmin1.awith.approve')}
                           </>
                         )}
                       </button>
@@ -638,15 +660,15 @@ export default function AdminWithdrawalsPage() {
             >
               <div className="p-6">
                 <h3 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100 mb-4">
-                  <X className="h-5 w-5 inline" /> Rechazar Retiro
+                  <X className="h-5 w-5 inline" /> {t('webadmin1.awith.rejectTitle')}
                 </h3>
                 <p className="text-surface-500 dark:text-surface-400 mb-4">
-                  Por favor, indica el motivo del rechazo:
+                  {t('webadmin1.awith.rejectHint')}
                 </p>
                 <textarea
                   value={rejectReason}
                   onChange={(e) => setRejectReason(e.target.value)}
-                  placeholder="Ej: Datos incorrectos, cuenta no válida, etc."
+                  placeholder={t('webadmin1.awith.rejectPh')}
                   className="w-full px-4 py-3 rounded-xl bg-surface-50 dark:bg-surface-700 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-red-500 transition-all resize-none h-24"
                 />
                 <div className="flex gap-3 mt-4">
@@ -657,14 +679,14 @@ export default function AdminWithdrawalsPage() {
                       setRejectReason('');
                     }}
                   >
-                    Cancelar
+                    {t('webadmin1.awith.cancel')}
                   </button>
                   <button
                     className="flex-1 py-3 px-4 text-sm font-medium bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors"
                     onClick={() => selectedWithdrawal && handleReject(selectedWithdrawal.id)}
                     disabled={actionLoading || !rejectReason.trim()}
                   >
-                    {actionLoading ? 'Procesando...' : 'Rechazar'}
+                    {actionLoading ? t('webadmin1.awith.processing') : t('webadmin1.awith.reject')}
                   </button>
                 </div>
               </div>

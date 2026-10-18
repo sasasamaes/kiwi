@@ -23,7 +23,7 @@ import {
   X,
   Mail,
 } from 'lucide-react';
-import { api, StaggerContainer, StaggerItem } from '@kiwi/ui';
+import { api, StaggerContainer, StaggerItem, useTranslations } from '@kiwi/ui';
 
 interface PlatformAnalytics {
   period: string;
@@ -61,11 +61,11 @@ interface PlatformAnalytics {
 }
 
 const PERIODS = [
-  { id: 'today', label: 'Hoy', icon: Calendar },
-  { id: 'week', label: 'Semana', icon: CalendarDays },
-  { id: 'month', label: 'Mes', icon: Calendar },
-  { id: 'quarter', label: 'Trimestre', icon: BarChart3 },
-  { id: 'year', label: 'Año', icon: TrendingUp },
+  { id: 'today', icon: Calendar },
+  { id: 'week', icon: CalendarDays },
+  { id: 'month', icon: Calendar },
+  { id: 'quarter', icon: BarChart3 },
+  { id: 'year', icon: TrendingUp },
 ];
 
 interface LivePulse {
@@ -76,6 +76,7 @@ interface LivePulse {
 }
 
 export default function AdminDashboard() {
+  const { t } = useTranslations();
   const [analytics, setAnalytics] = useState<PlatformAnalytics | null>(null);
   const [live, setLive] = useState<LivePulse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -154,19 +155,22 @@ export default function AdminDashboard() {
     return () => clearInterval(t);
   }, [fetchLive]);
 
-  const fetchAnalytics = useCallback(async (period: string) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await api.getPlatformAnalytics(period);
-      setAnalytics(data);
-    } catch (err) {
-      console.error('Failed to fetch analytics:', err);
-      setError(err instanceof Error ? err.message : 'No se pudieron cargar las analíticas');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const fetchAnalytics = useCallback(
+    async (period: string) => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await api.getPlatformAnalytics(period);
+        setAnalytics(data);
+      } catch (err) {
+        console.error('Failed to fetch analytics:', err);
+        setError(err instanceof Error ? err.message : t('webadmin1.adash.loadError'));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [t],
+  );
 
   useEffect(() => {
     fetchAnalytics(selectedPeriod);
@@ -247,7 +251,7 @@ export default function AdminDashboard() {
             <AlertTriangle className="h-14 w-14 text-amber-500" />
           </motion.div>
           <h2 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100 mb-2">
-            No pudimos cargar las analíticas
+            {t('webadmin1.adash.loadTitle')}
           </h2>
           <p className="text-surface-500 dark:text-surface-400 mb-6">{error}</p>
           <motion.button
@@ -256,7 +260,7 @@ export default function AdminDashboard() {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            <RefreshCw className="h-4 w-4 inline" /> Reintentar
+            <RefreshCw className="h-4 w-4 inline" /> {t('webadmin1.adash.retry')}
           </motion.button>
         </motion.div>
       </div>
@@ -269,10 +273,10 @@ export default function AdminDashboard() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-display font-bold text-surface-800 dark:text-surface-100">
-            <BarChart3 className="h-6 w-6 inline" /> Dashboard Admin
+            <BarChart3 className="h-6 w-6 inline" /> {t('webadmin1.adash.title')}
           </h1>
           <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">
-            Analíticas de la plataforma Kiwi
+            {t('webadmin1.adash.subtitle')}
           </p>
         </div>
         <div className="flex gap-2">
@@ -281,7 +285,7 @@ export default function AdminDashboard() {
             className="px-4 py-2 text-sm font-medium bg-surface-100 dark:bg-surface-800 text-surface-700 dark:text-surface-300 rounded-lg hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors"
             whileTap={{ scale: 0.95 }}
           >
-            <RefreshCw className="h-4 w-4 inline" /> Actualizar
+            <RefreshCw className="h-4 w-4 inline" /> {t('webadmin1.adash.refresh')}
           </motion.button>
         </div>
       </div>
@@ -295,14 +299,32 @@ export default function AdminDashboard() {
         >
           <AlertTriangle className="h-5 w-5 shrink-0 text-amber-500" />
           <p className="min-w-0 flex-1 text-sm text-amber-800 dark:text-amber-200">
-            Vas a <b>{rhythm!.realPerDay.toFixed(1)} viajes/día</b> · la meta del escenario es{' '}
-            <b>{rhythm!.meta}/día</b> ({rhythm!.ratioPct.toFixed(0)}%). A este ritmo el mes cierra
-            con ~{Math.round(rhythm!.projectedTrips)} viajes y{' '}
-            <b>₡{Math.round(rhythm!.projectedCommission).toLocaleString('es-CR')}</b> de comisión.
-            Te faltan <b>{rhythmAlert.missingPerDay.toFixed(1)} viajes/día</b>
-            {rhythmAlert.pctToMeta != null && <> (subir {rhythmAlert.pctToMeta.toFixed(0)}%)</>}
+            {t('webadmin1.adash.rhythmLead')}{' '}
+            <b>
+              {rhythm!.realPerDay.toFixed(1)} {t('webadmin1.adash.rhythmTripsDay')}
+            </b>{' '}
+            {t('webadmin1.adash.rhythmMetaIs')}{' '}
+            <b>
+              {rhythm!.meta}
+              {t('webadmin1.adash.rhythmPerDay')}
+            </b>{' '}
+            ({rhythm!.ratioPct.toFixed(0)}%).{' '}
+            {t('webadmin1.adash.rhythmCloses', { trips: Math.round(rhythm!.projectedTrips) })}{' '}
+            <b>₡{Math.round(rhythm!.projectedCommission).toLocaleString('es-CR')}</b>{' '}
+            {t('webadmin1.adash.rhythmCommissionOf')} {t('webadmin1.adash.rhythmMissing')}{' '}
+            <b>
+              {rhythmAlert.missingPerDay.toFixed(1)} {t('webadmin1.adash.rhythmTripsDay')}
+            </b>
+            {rhythmAlert.pctToMeta != null && (
+              <> {t('webadmin1.adash.rhythmRaise', { pct: rhythmAlert.pctToMeta.toFixed(0) })}</>
+            )}
             {rhythmAlert.possible > rhythm!.projectedCommission && (
-              <> para alcanzar ₡{Math.round(rhythmAlert.possible).toLocaleString('es-CR')}/mes</>
+              <>
+                {' '}
+                {t('webadmin1.adash.rhythmToReach', {
+                  amount: Math.round(rhythmAlert.possible).toLocaleString('es-CR'),
+                })}
+              </>
             )}
             .
           </p>
@@ -311,12 +333,12 @@ export default function AdminDashboard() {
               href="/admin/reportes"
               className="rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-600"
             >
-              Ver reporte
+              {t('webadmin1.adash.viewReport')}
             </Link>
             <button
               onClick={() => setRhythmDismissed(true)}
               className="rounded-lg p-1.5 text-amber-500 hover:bg-amber-100 dark:hover:bg-amber-900/40"
-              aria-label="Descartar alerta"
+              aria-label={t('webadmin1.adash.dismissAlert')}
             >
               <X className="h-4 w-4" />
             </button>
@@ -348,7 +370,7 @@ export default function AdminDashboard() {
               ) : (
                 <PeriodIcon className="mr-1 h-4 w-4 inline" />
               )}
-              {period.label}
+              {t(`webadmin1.adash.periods.${period.id}`)}
             </motion.button>
           );
         })}
@@ -366,13 +388,13 @@ export default function AdminDashboard() {
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-kiwi-400 opacity-75" />
               <span className="relative inline-flex h-3 w-3 rounded-full bg-kiwi-500" />
             </span>
-            Pulso en vivo
+            {t('webadmin1.adash.liveTitle')}
           </h3>
           <button
             onClick={fetchLive}
             className="flex items-center gap-1 text-xs font-medium text-surface-500 hover:text-surface-700"
           >
-            <RefreshCw className="h-3 w-3" /> Ahora
+            <RefreshCw className="h-3 w-3" /> {t('webadmin1.adash.now')}
           </button>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -382,7 +404,8 @@ export default function AdminDashboard() {
               {live?.drivers.online ?? '—'}
             </p>
             <p className="text-xs text-kiwi-700 dark:text-kiwi-400">
-              Drivers en línea{live ? ` (${live.drivers.offline} en pausa)` : ''}
+              {t('webadmin1.adash.driversOnline')}
+              {live ? ` ${t('webadmin1.adash.driversPaused', { n: live.drivers.offline })}` : ''}
             </p>
           </div>
           <div className="rounded-xl bg-surface-50 dark:bg-surface-700/50 p-4 text-center">
@@ -391,7 +414,8 @@ export default function AdminDashboard() {
               {live?.orders.waiting ?? '—'}
             </p>
             <p className="text-xs text-surface-500">
-              Esperando repartidor{live ? ` · ${live.orders.inProgress} en curso` : ''}
+              {t('webadmin1.adash.waitingDriver')}
+              {live ? ` ${t('webadmin1.adash.inProgress', { n: live.orders.inProgress })}` : ''}
             </p>
           </div>
           <div className="rounded-xl bg-surface-50 dark:bg-surface-700/50 p-4 text-center">
@@ -399,7 +423,7 @@ export default function AdminDashboard() {
             <p className="mt-1 text-2xl font-bold text-surface-800 dark:text-surface-100">
               {live ? (live.users.merchant ?? 0) : '—'}
             </p>
-            <p className="text-xs text-surface-500">Comercios activos</p>
+            <p className="text-xs text-surface-500">{t('webadmin1.adash.activeMerchants')}</p>
           </div>
           <div className="rounded-xl bg-surface-50 dark:bg-surface-700/50 p-4 text-center">
             <Coins className="h-6 w-6 mx-auto text-kiwi-700" />
@@ -407,7 +431,8 @@ export default function AdminDashboard() {
               {live ? `₡${Number(live.today.revenue).toLocaleString()}` : '—'}
             </p>
             <p className="text-xs text-surface-500">
-              Hoy{live ? ` · ${live.today.delivered} entregas` : ''}
+              {t('webadmin1.adash.today')}
+              {live ? ` ${t('webadmin1.adash.todayDeliveries', { n: live.today.delivered })}` : ''}
             </p>
           </div>
         </div>
@@ -432,7 +457,9 @@ export default function AdminDashboard() {
             <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
               {formatNumber(analytics?.overview?.totalUsers || 0)}
             </p>
-            <p className="text-sm text-surface-500 dark:text-surface-400">Usuarios Totales</p>
+            <p className="text-sm text-surface-500 dark:text-surface-400">
+              {t('webadmin1.adash.totalUsers')}
+            </p>
           </motion.div>
         </StaggerItem>
 
@@ -447,13 +474,17 @@ export default function AdminDashboard() {
                 <span className="relative inline-flex h-3 w-3 rounded-full bg-kiwi-500" />
               </span>
               <span className="text-xs font-medium text-kiwi-700 dark:text-kiwi-400">
-                {analytics?.overview?.activeUsers || 0} activos
+                {t('webadmin1.adash.activeUsersCount', {
+                  n: analytics?.overview?.activeUsers || 0,
+                })}
               </span>
             </div>
             <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
               {formatNumber(analytics?.users?.active || 0)}
             </p>
-            <p className="text-sm text-surface-500 dark:text-surface-400">Usuarios Activos</p>
+            <p className="text-sm text-surface-500 dark:text-surface-400">
+              {t('webadmin1.adash.activeUsersTitle')}
+            </p>
           </motion.div>
         </StaggerItem>
 
@@ -476,7 +507,9 @@ export default function AdminDashboard() {
             <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
               {formatNumber(analytics?.overview?.totalOrders || 0)}
             </p>
-            <p className="text-sm text-surface-500 dark:text-surface-400">Total Pedidos</p>
+            <p className="text-sm text-surface-500 dark:text-surface-400">
+              {t('webadmin1.adash.totalOrders')}
+            </p>
           </motion.div>
         </StaggerItem>
 
@@ -499,7 +532,9 @@ export default function AdminDashboard() {
             <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
               {formatCurrency(analytics?.overview?.totalRevenue || 0)}
             </p>
-            <p className="text-sm text-surface-500 dark:text-surface-400">Ingresos Totales</p>
+            <p className="text-sm text-surface-500 dark:text-surface-400">
+              {t('webadmin1.adash.totalRevenue')}
+            </p>
           </motion.div>
         </StaggerItem>
 
@@ -511,16 +546,20 @@ export default function AdminDashboard() {
             <div className="flex items-center justify-between mb-2">
               <Coins className="h-6 w-6 text-kiwi-700 dark:text-kiwi-400" />
               <span className="text-xs font-medium text-kiwi-700 dark:text-kiwi-400">
-                {commissionPct}% del viaje · la paga el repartidor
+                {t('webadmin1.adash.commissionNote', { pct: commissionPct })}
               </span>
             </div>
             <p className="text-2xl font-bold text-kiwi-700 dark:text-kiwi-300">
               {formatCurrency(analytics?.overview?.platformFee || 0)}
             </p>
-            <p className="text-sm text-kiwi-700 dark:text-kiwi-400">Ganancias Kiwi</p>
+            <p className="text-sm text-kiwi-700 dark:text-kiwi-400">
+              {t('webadmin1.adash.kiwiEarnings')}
+            </p>
             {(live?.today?.platformFee ?? 0) > 0 && (
               <p className="mt-1 text-xs text-kiwi-700/80 dark:text-kiwi-400/80">
-                Hoy: {formatCurrency(live?.today?.platformFee || 0)}
+                {t('webadmin1.adash.todayAmount', {
+                  amount: formatCurrency(live?.today?.platformFee || 0),
+                })}
               </p>
             )}
           </motion.div>
@@ -536,13 +575,15 @@ export default function AdminDashboard() {
                 <Bike className="h-6 w-6" />
               </span>
               <span className="text-xs font-medium text-surface-500 dark:text-surface-400">
-                {analytics?.users?.drivers || 0} registrados
+                {t('webadmin1.adash.registered', { n: analytics?.users?.drivers || 0 })}
               </span>
             </div>
             <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
               {analytics?.users?.drivers || 0}
             </p>
-            <p className="text-sm text-surface-500 dark:text-surface-400">Repartidores</p>
+            <p className="text-sm text-surface-500 dark:text-surface-400">
+              {t('webadmin1.adash.drivers')}
+            </p>
           </motion.div>
         </StaggerItem>
 
@@ -554,13 +595,15 @@ export default function AdminDashboard() {
             <div className="flex items-center justify-between mb-2">
               <Store className="h-6 w-6 text-surface-500 dark:text-surface-400" />
               <span className="text-xs font-medium text-surface-500 dark:text-surface-400">
-                {analytics?.users?.merchants || 0} registrados
+                {t('webadmin1.adash.registered', { n: analytics?.users?.merchants || 0 })}
               </span>
             </div>
             <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
               {analytics?.users?.merchants || 0}
             </p>
-            <p className="text-sm text-surface-500 dark:text-surface-400">Comercios</p>
+            <p className="text-sm text-surface-500 dark:text-surface-400">
+              {t('webadmin1.adash.merchants')}
+            </p>
           </motion.div>
         </StaggerItem>
 
@@ -574,13 +617,15 @@ export default function AdminDashboard() {
                 <BarChart3 className="h-6 w-6" />
               </span>
               <span className="text-xs font-medium text-surface-500 dark:text-surface-400">
-                Promedio
+                {t('webadmin1.adash.average')}
               </span>
             </div>
             <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
               {formatCurrency(analytics?.overview?.averageOrderValue || 0)}
             </p>
-            <p className="text-sm text-surface-500 dark:text-surface-400">Promedio/Pedido</p>
+            <p className="text-sm text-surface-500 dark:text-surface-400">
+              {t('webadmin1.adash.avgPerOrder')}
+            </p>
           </motion.div>
         </StaggerItem>
       </StaggerContainer>
@@ -595,13 +640,15 @@ export default function AdminDashboard() {
           transition={{ delay: 0.3 }}
         >
           <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-            <BarChart3 className="h-5 w-5 inline" /> Estado de Pedidos
+            <BarChart3 className="h-5 w-5 inline" /> {t('webadmin1.adash.orderStatus')}
           </h3>
           <div className="space-y-4">
             {/* Completed */}
             <div>
               <div className="flex justify-between text-sm mb-1">
-                <span className="text-surface-600 dark:text-surface-400">Completados</span>
+                <span className="text-surface-600 dark:text-surface-400">
+                  {t('webadmin1.adash.completed')}
+                </span>
                 <span className="font-medium text-surface-800 dark:text-surface-200">
                   {analytics?.orders?.completed || 0}
                 </span>
@@ -621,7 +668,9 @@ export default function AdminDashboard() {
             {/* Cancelled */}
             <div>
               <div className="flex justify-between text-sm mb-1">
-                <span className="text-surface-600 dark:text-surface-400">Cancelados</span>
+                <span className="text-surface-600 dark:text-surface-400">
+                  {t('webadmin1.adash.cancelled')}
+                </span>
                 <span className="font-medium text-surface-800 dark:text-surface-200">
                   {analytics?.orders?.cancelled || 0}
                 </span>
@@ -641,7 +690,9 @@ export default function AdminDashboard() {
             {/* Pending */}
             <div>
               <div className="flex justify-between text-sm mb-1">
-                <span className="text-surface-600 dark:text-surface-400">Pendientes</span>
+                <span className="text-surface-600 dark:text-surface-400">
+                  {t('webadmin1.adash.pending')}
+                </span>
                 <span className="font-medium text-surface-800 dark:text-surface-200">
                   {analytics?.orders?.pending || 0}
                 </span>
@@ -662,7 +713,7 @@ export default function AdminDashboard() {
             <div className="pt-4 border-t border-surface-100 dark:border-surface-700">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-surface-600 dark:text-surface-400">
-                  Tasa de Finalización
+                  {t('webadmin1.adash.completionRate')}
                 </span>
                 <span className="text-lg font-bold text-kiwi-700 dark:text-kiwi-400">
                   {analytics?.orders?.total
@@ -685,7 +736,7 @@ export default function AdminDashboard() {
           transition={{ delay: 0.4 }}
         >
           <h3 className="flex items-center gap-2 text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-            <TrendingUp className="h-5 w-5" /> Crecimiento
+            <TrendingUp className="h-5 w-5" /> {t('webadmin1.adash.growth')}
           </h3>
           <div className="space-y-6">
             {/* User Growth */}
@@ -695,9 +746,13 @@ export default function AdminDashboard() {
                   <Users className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <p className="font-medium text-surface-800 dark:text-surface-200">Usuarios</p>
+                  <p className="font-medium text-surface-800 dark:text-surface-200">
+                    {t('webadmin1.adash.users')}
+                  </p>
                   <p className="text-sm text-surface-500 dark:text-surface-400">
-                    {formatNumber(analytics?.users?.total || 0)} total
+                    {t('webadmin1.adash.totalCount', {
+                      n: formatNumber(analytics?.users?.total || 0),
+                    })}
                   </p>
                 </div>
               </div>
@@ -718,9 +773,13 @@ export default function AdminDashboard() {
                   </span>
                 </div>
                 <div>
-                  <p className="font-medium text-surface-800 dark:text-surface-200">Pedidos</p>
+                  <p className="font-medium text-surface-800 dark:text-surface-200">
+                    {t('webadmin1.adash.orders')}
+                  </p>
                   <p className="text-sm text-surface-500 dark:text-surface-400">
-                    {formatNumber(analytics?.orders?.total || 0)} total
+                    {t('webadmin1.adash.totalCount', {
+                      n: formatNumber(analytics?.orders?.total || 0),
+                    })}
                   </p>
                 </div>
               </div>
@@ -741,9 +800,13 @@ export default function AdminDashboard() {
                   </span>
                 </div>
                 <div>
-                  <p className="font-medium text-surface-800 dark:text-surface-200">Ingresos</p>
+                  <p className="font-medium text-surface-800 dark:text-surface-200">
+                    {t('webadmin1.adash.revenue')}
+                  </p>
                   <p className="text-sm text-surface-500 dark:text-surface-400">
-                    {formatCurrency(analytics?.revenue?.total || 0)} total
+                    {t('webadmin1.adash.totalCount', {
+                      n: formatCurrency(analytics?.revenue?.total || 0),
+                    })}
                   </p>
                 </div>
               </div>
@@ -764,10 +827,10 @@ export default function AdminDashboard() {
                   </div>
                   <div>
                     <p className="font-medium text-surface-800 dark:text-surface-200">
-                      Ganancias Kiwi
+                      {t('webadmin1.adash.kiwiEarnings')}
                     </p>
                     <p className="text-sm text-surface-500 dark:text-surface-400">
-                      {commissionPct}% del viaje · la paga el repartidor
+                      {t('webadmin1.adash.commissionNote', { pct: commissionPct })}
                     </p>
                   </div>
                 </div>
@@ -788,7 +851,7 @@ export default function AdminDashboard() {
         transition={{ delay: 0.5 }}
       >
         <h3 className="flex items-center gap-2 text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-          <Bike className="h-5 w-5" /> Acciones Rápidas
+          <Bike className="h-5 w-5" /> {t('webadmin1.adash.quickActions')}
         </h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Link href="/admin/users">
@@ -800,7 +863,7 @@ export default function AdminDashboard() {
               <span className="mb-2 flex justify-center">
                 <Users className="h-7 w-7 text-kiwi-700 dark:text-kiwi-400" />
               </span>
-              <span className="text-sm font-medium">Gestionar Usuarios</span>
+              <span className="text-sm font-medium">{t('webadmin1.adash.manageUsers')}</span>
             </motion.button>
           </Link>
           <Link href="/admin/orders">
@@ -812,7 +875,7 @@ export default function AdminDashboard() {
               <span className="text-2xl block mb-2">
                 <Package className="h-6 w-6" />
               </span>
-              <span className="text-sm font-medium">Ver Pedidos</span>
+              <span className="text-sm font-medium">{t('webadmin1.adash.viewOrders')}</span>
             </motion.button>
           </Link>
           <Link href="/admin/kyc">
@@ -824,7 +887,7 @@ export default function AdminDashboard() {
               <span className="mb-2 flex justify-center">
                 <BadgeCheck className="h-7 w-7 text-yellow-600 dark:text-yellow-400" />
               </span>
-              <span className="text-sm font-medium">Aprobar KYC</span>
+              <span className="text-sm font-medium">{t('webadmin1.adash.approveKyc')}</span>
             </motion.button>
           </Link>
           <Link href="/admin/ratings">
@@ -836,7 +899,7 @@ export default function AdminDashboard() {
               <span className="mb-2 flex justify-center">
                 <Star className="h-7 w-7" />
               </span>
-              <span className="text-sm font-medium">Comentarios</span>
+              <span className="text-sm font-medium">{t('webadmin1.adash.comments')}</span>
             </motion.button>
           </Link>
           <Link href="/admin/payments">
@@ -848,7 +911,7 @@ export default function AdminDashboard() {
               <span className="text-2xl block mb-2">
                 <Coins className="h-6 w-6" />
               </span>
-              <span className="text-sm font-medium">Ver Pagos</span>
+              <span className="text-sm font-medium">{t('webadmin1.adash.viewPayments')}</span>
             </motion.button>
           </Link>
           <Link href="/admin/invitaciones">
@@ -860,7 +923,7 @@ export default function AdminDashboard() {
               <span className="mb-2 flex justify-center">
                 <Mail className="h-7 w-7" />
               </span>
-              <span className="text-sm font-medium">Invitar comercios / repartidores</span>
+              <span className="text-sm font-medium">{t('webadmin1.adash.invite')}</span>
             </motion.button>
           </Link>
         </div>
@@ -874,32 +937,40 @@ export default function AdminDashboard() {
         transition={{ delay: 0.6 }}
       >
         <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-          <ClipboardList className="h-5 w-5 inline" /> Resumen del Sistema
+          <ClipboardList className="h-5 w-5 inline" /> {t('webadmin1.adash.systemSummary')}
         </h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="text-center p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50">
             <p className="text-3xl font-bold text-surface-800 dark:text-surface-100">
               {analytics?.orders?.completed || 0}
             </p>
-            <p className="text-sm text-surface-500 dark:text-surface-400">Entregas Completadas</p>
+            <p className="text-sm text-surface-500 dark:text-surface-400">
+              {t('webadmin1.adash.deliveredDone')}
+            </p>
           </div>
           <div className="text-center p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50">
             <p className="text-3xl font-bold text-surface-800 dark:text-surface-100">
               {analytics?.orders?.cancelled || 0}
             </p>
-            <p className="text-sm text-surface-500 dark:text-surface-400">Cancelaciones</p>
+            <p className="text-sm text-surface-500 dark:text-surface-400">
+              {t('webadmin1.adash.cancellations')}
+            </p>
           </div>
           <div className="text-center p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50">
             <p className="text-3xl font-bold text-kiwi-700 dark:text-kiwi-400">
               {formatCurrency(analytics?.revenue?.averagePerOrder || 0)}
             </p>
-            <p className="text-sm text-surface-500 dark:text-surface-400">Promedio por Pedido</p>
+            <p className="text-sm text-surface-500 dark:text-surface-400">
+              {t('webadmin1.adash.avgPerOrderLong')}
+            </p>
           </div>
           <div className="text-center p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50">
             <p className="text-3xl font-bold text-surface-800 dark:text-surface-100">
               {analytics?.users?.customers || 0}
             </p>
-            <p className="text-sm text-surface-500 dark:text-surface-400">Clientes Activos</p>
+            <p className="text-sm text-surface-500 dark:text-surface-400">
+              {t('webadmin1.adash.activeCustomers')}
+            </p>
           </div>
         </div>
       </motion.div>

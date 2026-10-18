@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bike, Car, ClipboardList, Clock, Check, X } from 'lucide-react';
-import { api, Skeleton } from '@kiwi/ui';
+import { api, Skeleton, useTranslations } from '@kiwi/ui';
 
 interface KYCVerification {
   id: string;
@@ -43,37 +43,8 @@ interface KYCStats {
   rejected: number;
 }
 
-const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-  pending: {
-    label: 'Pendiente',
-    color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400',
-  },
-  documents_submitted: {
-    label: 'Documentos Enviados',
-    color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400',
-  },
-  under_review: {
-    label: 'En Revisión',
-    color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-400',
-  },
-  approved: {
-    label: 'Aprobado',
-    color: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400',
-  },
-  rejected: {
-    label: 'Rechazado',
-    color: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400',
-  },
-};
-
-const FILTER_TABS = [
-  { id: 'all', label: 'Todos', icon: ClipboardList },
-  { id: 'pending', label: 'Pendientes', icon: Clock },
-  { id: 'approved', label: 'Aprobados', icon: Check },
-  { id: 'rejected', label: 'Rechazados', icon: X },
-];
-
 export default function KYCPage() {
+  const { t } = useTranslations();
   const [verifications, setVerifications] = useState<KYCVerification[]>([]);
   const [stats, setStats] = useState<KYCStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -83,6 +54,36 @@ export default function KYCPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [showRejectModal, setShowRejectModal] = useState(false);
+
+  const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
+    pending: {
+      label: t('webadmin1.akyc.status.pending'),
+      color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400',
+    },
+    documents_submitted: {
+      label: t('webadmin1.akyc.status.submitted'),
+      color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400',
+    },
+    under_review: {
+      label: t('webadmin1.akyc.status.review'),
+      color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-400',
+    },
+    approved: {
+      label: t('webadmin1.akyc.status.approved'),
+      color: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400',
+    },
+    rejected: {
+      label: t('webadmin1.akyc.status.rejected'),
+      color: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400',
+    },
+  };
+
+  const FILTER_TABS = [
+    { id: 'all', label: t('webadmin1.akyc.tabs.all'), icon: ClipboardList },
+    { id: 'pending', label: t('webadmin1.akyc.tabs.pending'), icon: Clock },
+    { id: 'approved', label: t('webadmin1.akyc.tabs.approved'), icon: Check },
+    { id: 'rejected', label: t('webadmin1.akyc.tabs.rejected'), icon: X },
+  ];
 
   const fetchData = useCallback(async () => {
     try {
@@ -96,11 +97,11 @@ export default function KYCPage() {
       setStats(statsData);
     } catch (err) {
       console.error('Failed to fetch KYC data:', err);
-      setError(err instanceof Error ? err.message : 'No se pudieron cargar las verificaciones');
+      setError(err instanceof Error ? err.message : t('webadmin1.akyc.loadError'));
     } finally {
       setLoading(false);
     }
-  }, [activeFilter]);
+  }, [activeFilter, t]);
 
   useEffect(() => {
     fetchData();
@@ -114,7 +115,7 @@ export default function KYCPage() {
       fetchData();
     } catch (err) {
       console.error('Failed to approve KYC:', err);
-      alert('No se pudo aprobar la verificación');
+      alert(t('webadmin1.akyc.approveError'));
     } finally {
       setActionLoading(false);
     }
@@ -122,7 +123,7 @@ export default function KYCPage() {
 
   const handleReject = async (id: string) => {
     if (!rejectReason.trim()) {
-      alert('Por favor ingresa un motivo de rechazo');
+      alert(t('webadmin1.akyc.needReason'));
       return;
     }
 
@@ -135,7 +136,7 @@ export default function KYCPage() {
       fetchData();
     } catch (err) {
       console.error('Failed to reject KYC:', err);
-      alert('No se pudo rechazar la verificación');
+      alert(t('webadmin1.akyc.rejectError'));
     } finally {
       setActionLoading(false);
     }
@@ -190,7 +191,7 @@ export default function KYCPage() {
             😕
           </motion.div>
           <h2 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100 mb-2">
-            No pudimos cargar las verificaciones
+            {t('webadmin1.akyc.loadTitle')}
           </h2>
           <p className="text-surface-500 dark:text-surface-400 mb-6">{error}</p>
           <motion.button
@@ -199,7 +200,7 @@ export default function KYCPage() {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            Reintentar
+            {t('webadmin1.akyc.retry')}
           </motion.button>
         </motion.div>
       </div>
@@ -212,10 +213,10 @@ export default function KYCPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-display font-bold text-surface-800 dark:text-surface-100">
-            🪪 Verificaciones KYC
+            {t('webadmin1.akyc.title')}
           </h1>
           <p className="text-surface-500 dark:text-surface-400">
-            {stats?.pending || 0} pendientes de revisión
+            {t('webadmin1.akyc.pendingCount', { n: stats?.pending || 0 })}
           </p>
         </div>
         <motion.button
@@ -223,7 +224,7 @@ export default function KYCPage() {
           className="px-4 py-2 text-sm font-medium bg-surface-100 dark:bg-surface-800 text-surface-700 dark:text-surface-300 rounded-lg hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors"
           whileTap={{ scale: 0.95 }}
         >
-          Actualizar
+          {t('webadmin1.akyc.refresh')}
         </motion.button>
       </div>
 
@@ -233,7 +234,9 @@ export default function KYCPage() {
           className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4"
           whileHover={{ y: -2 }}
         >
-          <p className="text-sm text-surface-500 dark:text-surface-400">Total</p>
+          <p className="text-sm text-surface-500 dark:text-surface-400">
+            {t('webadmin1.akyc.stats.total')}
+          </p>
           <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
             {stats?.total || 0}
           </p>
@@ -242,7 +245,9 @@ export default function KYCPage() {
           className="rounded-2xl bg-yellow-50 dark:bg-yellow-900/30 p-4 shadow-soft dark:shadow-dark border border-yellow-200 dark:border-yellow-800"
           whileHover={{ y: -2 }}
         >
-          <p className="text-sm text-yellow-600 dark:text-yellow-400">Pendientes</p>
+          <p className="text-sm text-yellow-600 dark:text-yellow-400">
+            {t('webadmin1.akyc.stats.pending')}
+          </p>
           <p className="text-2xl font-bold text-yellow-700 dark:text-yellow-300">
             {stats?.pending || 0}
           </p>
@@ -251,7 +256,9 @@ export default function KYCPage() {
           className="rounded-2xl bg-green-50 dark:bg-green-900/30 p-4 shadow-soft dark:shadow-dark border border-green-200 dark:border-green-800"
           whileHover={{ y: -2 }}
         >
-          <p className="text-sm text-green-600 dark:text-green-400">Aprobados</p>
+          <p className="text-sm text-green-600 dark:text-green-400">
+            {t('webadmin1.akyc.stats.approved')}
+          </p>
           <p className="text-2xl font-bold text-green-700 dark:text-green-300">
             {stats?.approved || 0}
           </p>
@@ -260,7 +267,9 @@ export default function KYCPage() {
           className="rounded-2xl bg-red-50 dark:bg-red-900/30 p-4 shadow-soft dark:shadow-dark border border-red-200 dark:border-red-800"
           whileHover={{ y: -2 }}
         >
-          <p className="text-sm text-red-600 dark:text-red-400">Rechazados</p>
+          <p className="text-sm text-red-600 dark:text-red-400">
+            {t('webadmin1.akyc.stats.rejected')}
+          </p>
           <p className="text-2xl font-bold text-red-700 dark:text-red-300">
             {stats?.rejected || 0}
           </p>
@@ -293,9 +302,7 @@ export default function KYCPage() {
       {verifications.length === 0 ? (
         <motion.div className="text-center py-12" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
           <span className="text-5xl mb-4 block">📭</span>
-          <p className="text-surface-500 dark:text-surface-400">
-            No hay verificaciones en esta categoría
-          </p>
+          <p className="text-surface-500 dark:text-surface-400">{t('webadmin1.akyc.empty')}</p>
         </motion.div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -335,7 +342,7 @@ export default function KYCPage() {
                         {u.email}
                       </p>
                       <p className="text-sm text-surface-500 dark:text-surface-400">
-                        {u.phone || 'Sin teléfono'}
+                        {u.phone || t('webadmin1.akyc.noPhone')}
                       </p>
                     </div>
                   </div>
@@ -348,19 +355,25 @@ export default function KYCPage() {
 
                 <div className="space-y-2 mb-4">
                   <div className="flex justify-between text-sm">
-                    <span className="text-surface-500 dark:text-surface-400">Tipo documento</span>
+                    <span className="text-surface-500 dark:text-surface-400">
+                      {t('webadmin1.akyc.docType')}
+                    </span>
                     <span className="text-surface-800 dark:text-surface-200">
-                      {kyc.idType || 'No especificado'}
+                      {kyc.idType || t('webadmin1.akyc.notSpecified')}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-surface-500 dark:text-surface-400">Número</span>
+                    <span className="text-surface-500 dark:text-surface-400">
+                      {t('webadmin1.akyc.docNumber')}
+                    </span>
                     <span className="text-surface-800 dark:text-surface-200 font-mono">
-                      {kyc.idNumber || 'No especificado'}
+                      {kyc.idNumber || t('webadmin1.akyc.notSpecified')}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-surface-500 dark:text-surface-400">Enviado</span>
+                    <span className="text-surface-500 dark:text-surface-400">
+                      {t('webadmin1.akyc.submittedAt')}
+                    </span>
                     <span className="text-surface-800 dark:text-surface-200">
                       {formatDate(kyc.createdAt)}
                     </span>
@@ -377,7 +390,7 @@ export default function KYCPage() {
                         setShowRejectModal(true);
                       }}
                     >
-                      Rechazar
+                      {t('webadmin1.akyc.reject')}
                     </button>
                     <button
                       className="flex-1 py-2 text-sm font-medium bg-kiwi-700 text-white rounded-lg hover:bg-kiwi-800 transition-colors"
@@ -386,7 +399,7 @@ export default function KYCPage() {
                         handleApprove(kyc.id);
                       }}
                     >
-                      Aprobar
+                      {t('webadmin1.akyc.approve')}
                     </button>
                   </div>
                 )}
@@ -401,7 +414,9 @@ export default function KYCPage() {
 
                 {kyc.status === 'approved' && kyc.verifiedAt && (
                   <div className="pt-2 border-t border-surface-100 dark:border-surface-700">
-                    <p className="text-sm text-green-500">Aprobado {formatDate(kyc.verifiedAt)}</p>
+                    <p className="text-sm text-green-500">
+                      {t('webadmin1.akyc.approvedOn', { date: formatDate(kyc.verifiedAt) })}
+                    </p>
                   </div>
                 )}
               </motion.div>
@@ -445,14 +460,16 @@ export default function KYCPage() {
                         {selectedKYC.user.email}
                       </h3>
                       <p className="text-surface-500 dark:text-surface-400">
-                        {selectedKYC.user.phone || 'Sin teléfono'} •{' '}
-                        {selectedKYC.user.role === 'driver' ? 'Repartidor' : 'Comercio'}
+                        {selectedKYC.user.phone || t('webadmin1.akyc.noPhone')} •{' '}
+                        {selectedKYC.user.role === 'driver'
+                          ? t('webadmin1.akyc.driver')
+                          : t('webadmin1.akyc.merchant')}
                       </p>
                     </div>
                   </div>
                   <button
                     onClick={() => setSelectedKYC(null)}
-                    aria-label="Cerrar detalle de verificación"
+                    aria-label={t('webadmin1.akyc.closeDetailAria')}
                     className="p-2 min-h-[44px] min-w-[44px] hover:bg-surface-100 dark:hover:bg-surface-700 rounded-lg transition-colors"
                   >
                     ✕
@@ -466,20 +483,24 @@ export default function KYCPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50">
                     <p className="text-sm text-surface-500 dark:text-surface-400 mb-1">
-                      Tipo de documento
+                      {t('webadmin1.akyc.detailDocType')}
                     </p>
                     <p className="font-semibold text-surface-800 dark:text-surface-100">
-                      {selectedKYC.idType || 'No especificado'}
+                      {selectedKYC.idType || t('webadmin1.akyc.notSpecified')}
                     </p>
                   </div>
                   <div className="p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50">
-                    <p className="text-sm text-surface-500 dark:text-surface-400 mb-1">Número</p>
+                    <p className="text-sm text-surface-500 dark:text-surface-400 mb-1">
+                      {t('webadmin1.akyc.docNumber')}
+                    </p>
                     <p className="font-semibold text-surface-800 dark:text-surface-100 font-mono">
-                      {selectedKYC.idNumber || 'No especificado'}
+                      {selectedKYC.idNumber || t('webadmin1.akyc.notSpecified')}
                     </p>
                   </div>
                   <div className="p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50">
-                    <p className="text-sm text-surface-500 dark:text-surface-400 mb-1">Estado</p>
+                    <p className="text-sm text-surface-500 dark:text-surface-400 mb-1">
+                      {t('webadmin1.akyc.detailStatus')}
+                    </p>
                     <p
                       className={`font-semibold ${getStatusConfig(selectedKYC.status).color} px-2 py-1 rounded-lg inline-block`}
                     >
@@ -488,7 +509,7 @@ export default function KYCPage() {
                   </div>
                   <div className="p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50">
                     <p className="text-sm text-surface-500 dark:text-surface-400 mb-1">
-                      Fecha de envío
+                      {t('webadmin1.akyc.sentDate')}
                     </p>
                     <p className="font-semibold text-surface-800 dark:text-surface-100">
                       {formatDate(selectedKYC.createdAt)}
@@ -499,7 +520,7 @@ export default function KYCPage() {
                 {/* Document Images */}
                 <div>
                   <h4 className="font-semibold text-surface-800 dark:text-surface-100 mb-4">
-                    📄 Documentos Subidos
+                    {t('webadmin1.akyc.docsTitle')}
                   </h4>
                   <div className="grid grid-cols-2 gap-4">
                     {selectedKYC.idFrontUrl && (
@@ -508,7 +529,7 @@ export default function KYCPage() {
                           <span className="text-4xl">🪪</span>
                         </div>
                         <p className="text-sm text-surface-600 dark:text-surface-400">
-                          Frente del documento
+                          {t('webadmin1.akyc.docFront')}
                         </p>
                       </div>
                     )}
@@ -518,7 +539,7 @@ export default function KYCPage() {
                           <span className="text-4xl">🪪</span>
                         </div>
                         <p className="text-sm text-surface-600 dark:text-surface-400">
-                          Reverso del documento
+                          {t('webadmin1.akyc.docBack')}
                         </p>
                       </div>
                     )}
@@ -528,7 +549,7 @@ export default function KYCPage() {
                           <span className="text-4xl">🤳</span>
                         </div>
                         <p className="text-sm text-surface-600 dark:text-surface-400">
-                          Selfie de verificación
+                          {t('webadmin1.akyc.selfie')}
                         </p>
                       </div>
                     )}
@@ -540,7 +561,7 @@ export default function KYCPage() {
                           </span>
                         </div>
                         <p className="text-sm text-surface-600 dark:text-surface-400">
-                          Licencia de conducir
+                          {t('webadmin1.akyc.license')}
                         </p>
                       </div>
                     )}
@@ -551,7 +572,7 @@ export default function KYCPage() {
                         <div className="col-span-2 text-center py-8">
                           <span className="text-4xl mb-2 block">📭</span>
                           <p className="text-surface-500 dark:text-surface-400">
-                            No se han subido documentos
+                            {t('webadmin1.akyc.noDocs')}
                           </p>
                         </div>
                       )}
@@ -562,12 +583,12 @@ export default function KYCPage() {
                 {selectedKYC.user.role === 'driver' && selectedKYC.licenseNumber && (
                   <div>
                     <h4 className="font-semibold text-surface-800 dark:text-surface-100 mb-4">
-                      Licencia de Conducir
+                      {t('webadmin1.akyc.licenseTitle')}
                     </h4>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50">
                         <p className="text-sm text-surface-500 dark:text-surface-400 mb-1">
-                          Número
+                          {t('webadmin1.akyc.docNumber')}
                         </p>
                         <p className="font-semibold text-surface-800 dark:text-surface-100">
                           {selectedKYC.licenseNumber}
@@ -576,7 +597,7 @@ export default function KYCPage() {
                       {selectedKYC.licenseExpiry && (
                         <div className="p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50">
                           <p className="text-sm text-surface-500 dark:text-surface-400 mb-1">
-                            Vencimiento
+                            {t('webadmin1.akyc.expiry')}
                           </p>
                           <p className="font-semibold text-surface-800 dark:text-surface-100">
                             {formatDate(selectedKYC.licenseExpiry)}
@@ -591,13 +612,13 @@ export default function KYCPage() {
                 {selectedKYC.user.role === 'merchant' && selectedKYC.businessLicenseUrl && (
                   <div>
                     <h4 className="font-semibold text-surface-800 dark:text-surface-100 mb-4">
-                      🏪 Documentos del Negocio
+                      {t('webadmin1.akyc.bizDocsTitle')}
                     </h4>
                     <div className="grid grid-cols-2 gap-4">
                       {selectedKYC.taxId && (
                         <div className="p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50">
                           <p className="text-sm text-surface-500 dark:text-surface-400 mb-1">
-                            Cédula Jurídica
+                            {t('webadmin1.akyc.taxId')}
                           </p>
                           <p className="font-semibold text-surface-800 dark:text-surface-100">
                             {selectedKYC.taxId}
@@ -609,7 +630,7 @@ export default function KYCPage() {
                           <span className="text-4xl">📄</span>
                         </div>
                         <p className="text-sm text-surface-600 dark:text-surface-400">
-                          Patente comercial
+                          {t('webadmin1.akyc.patente')}
                         </p>
                       </div>
                     </div>
@@ -620,7 +641,11 @@ export default function KYCPage() {
                 {selectedKYC.verifiedAt && (
                   <div className="pt-4 border-t border-surface-200 dark:border-surface-700">
                     <div className="flex items-center gap-2 text-sm text-surface-500 dark:text-surface-400">
-                      <span>Revisado por {selectedKYC.verifiedBy || 'Admin'}</span>
+                      <span>
+                        {t('webadmin1.akyc.reviewedBy', {
+                          who: selectedKYC.verifiedBy || 'Admin',
+                        })}
+                      </span>
                       <span>•</span>
                       <span>{formatDate(selectedKYC.verifiedAt)}</span>
                     </div>
@@ -641,14 +666,14 @@ export default function KYCPage() {
                       onClick={() => setShowRejectModal(true)}
                       disabled={actionLoading}
                     >
-                      Rechazar
+                      {t('webadmin1.akyc.reject')}
                     </button>
                     <button
                       className="flex-1 py-3 px-4 text-sm font-medium bg-kiwi-700 text-white rounded-xl hover:bg-kiwi-800 transition-colors"
                       onClick={() => handleApprove(selectedKYC.id)}
                       disabled={actionLoading}
                     >
-                      {actionLoading ? 'Procesando...' : 'Aprobar'}
+                      {actionLoading ? t('webadmin1.akyc.processing') : t('webadmin1.akyc.approve')}
                     </button>
                   </div>
                 )}
@@ -677,15 +702,15 @@ export default function KYCPage() {
             >
               <div className="p-6">
                 <h3 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100 mb-4">
-                  Rechazar Verificación
+                  {t('webadmin1.akyc.rejectTitle')}
                 </h3>
                 <p className="text-surface-500 dark:text-surface-400 mb-4">
-                  Por favor, indica el motivo del rechazo:
+                  {t('webadmin1.akyc.rejectHint')}
                 </p>
                 <textarea
                   value={rejectReason}
                   onChange={(e) => setRejectReason(e.target.value)}
-                  placeholder="Ej: Documento ilegible, selfie no coincide, etc."
+                  placeholder={t('webadmin1.akyc.rejectPh')}
                   className="w-full px-4 py-3 rounded-xl bg-surface-50 dark:bg-surface-700 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-red-500 transition-all resize-none h-24"
                 />
                 <div className="flex gap-3 mt-4">
@@ -696,14 +721,14 @@ export default function KYCPage() {
                       setRejectReason('');
                     }}
                   >
-                    Cancelar
+                    {t('webadmin1.akyc.cancel')}
                   </button>
                   <button
                     className="flex-1 py-3 px-4 text-sm font-medium bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors"
                     onClick={() => selectedKYC && handleReject(selectedKYC.id)}
                     disabled={actionLoading || !rejectReason.trim()}
                   >
-                    {actionLoading ? 'Procesando...' : 'Rechazar'}
+                    {actionLoading ? t('webadmin1.akyc.processing') : t('webadmin1.akyc.reject')}
                   </button>
                 </div>
               </div>

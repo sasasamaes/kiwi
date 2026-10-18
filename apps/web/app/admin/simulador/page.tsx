@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Calculator, RefreshCw, TrendingUp, AlertTriangle } from 'lucide-react';
-import { api } from '@kiwi/ui';
+import { api, useTranslations } from '@kiwi/ui';
 import { priceById, labelById, computeExpectedTrip } from './model';
 import type { ZoneMix } from './model';
 
@@ -19,6 +19,7 @@ const fmt = (n: number) => `₡${Math.round(n).toLocaleString('es-CR')}`;
  * entran al cálculo (se avisa cuántos son).
  */
 export default function SimuladorPage() {
+  const { t } = useTranslations();
   const [mix, setMix] = useState<ZoneMix | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,7 +46,7 @@ export default function SimuladorPage() {
       setCommissionPct(pct);
       setSavedPct(pct);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo cargar');
+      setError(err instanceof Error ? err.message : t('webadmin2.asim.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -86,9 +87,9 @@ export default function SimuladorPage() {
         platform: { ...current.platform, commission: rate * 100 },
       });
       setSavedPct(rate * 100);
-      setApplyMsg(`Comisión guardada en ${rate * 100}%. Rige para pedidos nuevos.`);
+      setApplyMsg(t('webadmin2.asim.appliedOk', { pct: rate * 100 }));
     } catch (err) {
-      setApplyMsg(err instanceof Error ? err.message : 'No se pudo guardar');
+      setApplyMsg(err instanceof Error ? err.message : t('webadmin2.asim.applyFailed'));
     } finally {
       setApplying(false);
     }
@@ -116,12 +117,12 @@ export default function SimuladorPage() {
     return (
       <div className="rounded-2xl bg-white dark:bg-surface-800 p-8 text-center shadow-soft">
         <AlertTriangle className="mx-auto mb-3 h-10 w-10 text-amber-500" />
-        <p className="mb-4 text-sm text-surface-500">{error ?? 'Sin datos'}</p>
+        <p className="mb-4 text-sm text-surface-500">{error ?? t('webadmin2.asim.noData')}</p>
         <button
           onClick={load}
           className="rounded-xl bg-kiwi-700 px-5 py-2.5 text-sm font-semibold text-white"
         >
-          Reintentar
+          {t('webadmin2.asim.retry')}
         </button>
       </div>
     );
@@ -132,26 +133,25 @@ export default function SimuladorPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="flex items-center gap-2 text-xl font-display font-bold text-surface-800 dark:text-surface-100">
-            <Calculator className="h-5 w-5" /> Simulador de ganancias
+            <Calculator className="h-5 w-5" /> {t('webadmin2.asim.title')}
           </h1>
           <p className="text-sm text-surface-500">
-            Proyección con la mezcla real de {mix.classified} pedidos entregados
-            {mix.unclassified > 0 && ` (${mix.unclassified} sin zona no entran)`}
+            {t('webadmin2.asim.subtitle', { n: mix.classified })}
+            {mix.unclassified > 0 &&
+              t('webadmin2.asim.subtitleUnclassified', { n: mix.unclassified })}
           </p>
         </div>
         <button
           onClick={load}
           className="flex items-center gap-1 rounded-xl px-3 py-2 text-sm text-surface-500 hover:bg-surface-100 dark:hover:bg-surface-800"
         >
-          <RefreshCw className="h-4 w-4" /> Actualizar
+          <RefreshCw className="h-4 w-4" /> {t('webadmin2.asim.refresh')}
         </button>
       </div>
 
       {mix.classified === 0 ? (
         <div className="rounded-2xl bg-white dark:bg-surface-800 p-8 text-center shadow-soft">
-          <p className="text-sm text-surface-500">
-            Todavía no hay pedidos entregados con zona. El simulador se activa con datos reales.
-          </p>
+          <p className="text-sm text-surface-500">{t('webadmin2.asim.empty')}</p>
         </div>
       ) : (
         <>
@@ -159,7 +159,7 @@ export default function SimuladorPage() {
           <div className="grid gap-4 md:grid-cols-2">
             <div className="rounded-2xl bg-white dark:bg-surface-800 p-5 shadow-soft">
               <label className="mb-1 block text-sm font-medium text-surface-600 dark:text-surface-300">
-                Pedidos por día
+                {t('webadmin2.asim.ordersLabel')}
               </label>
               <input
                 type="number"
@@ -171,7 +171,7 @@ export default function SimuladorPage() {
             </div>
             <div className="rounded-2xl bg-white dark:bg-surface-800 p-5 shadow-soft">
               <label className="mb-1 block text-sm font-medium text-surface-600 dark:text-surface-300">
-                Comisión al repartidor (% del viaje)
+                {t('webadmin2.asim.commissionLabel')}
               </label>
               <div className="flex gap-2">
                 <input
@@ -186,9 +186,9 @@ export default function SimuladorPage() {
                   onClick={applyCommission}
                   disabled={applying || !dirty}
                   className="rounded-xl bg-kiwi-700 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-40"
-                  title="Guardar como tasa vigente (rige para pedidos nuevos)"
+                  title={t('webadmin2.asim.applyTitle')}
                 >
-                  {applying ? '…' : 'Aplicar'}
+                  {applying ? t('webadmin2.asim.applying') : t('webadmin2.asim.apply')}
                 </button>
               </div>
               {applyMsg && <p className="mt-1.5 text-xs text-surface-500">{applyMsg}</p>}
@@ -203,20 +203,20 @@ export default function SimuladorPage() {
           >
             <div className="grid gap-4 text-center sm:grid-cols-4">
               <div>
-                <p className="text-xs text-white/70">Viaje esperado</p>
+                <p className="text-xs text-white/70">{t('webadmin2.asim.expectedTrip')}</p>
                 <p className="text-2xl font-bold">{fmt(expectedTrip)}</p>
               </div>
               <div>
-                <p className="text-xs text-white/70">Por pedido (Kiwi)</p>
+                <p className="text-xs text-white/70">{t('webadmin2.asim.perOrder')}</p>
                 <p className="text-2xl font-bold">{fmt(revenuePerOrder)}</p>
               </div>
               <div>
-                <p className="text-xs text-white/70">Por día</p>
+                <p className="text-xs text-white/70">{t('webadmin2.asim.perDay')}</p>
                 <p className="text-2xl font-bold">{fmt(dailyRevenue)}</p>
               </div>
               <div>
                 <p className="flex items-center justify-center gap-1 text-xs text-white/70">
-                  <TrendingUp className="h-3 w-3" /> Por mes (×30)
+                  <TrendingUp className="h-3 w-3" /> {t('webadmin2.asim.perMonth')}
                 </p>
                 <p className="text-2xl font-bold">{fmt(monthlyRevenue)}</p>
               </div>
@@ -229,11 +229,19 @@ export default function SimuladorPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-surface-200 dark:border-surface-700 text-left text-xs text-surface-500 dark:text-surface-400">
-                    <th className="px-4 py-3 font-medium">Zona</th>
-                    <th className="px-4 py-3 text-right font-medium">Pedidos</th>
-                    <th className="px-4 py-3 text-right font-medium">Peso</th>
-                    <th className="px-4 py-3 text-right font-medium">Viaje</th>
-                    <th className="px-4 py-3 text-right font-medium">Kiwi/día</th>
+                    <th className="px-4 py-3 font-medium">{t('webadmin2.asim.thZone')}</th>
+                    <th className="px-4 py-3 text-right font-medium">
+                      {t('webadmin2.asim.thOrders')}
+                    </th>
+                    <th className="px-4 py-3 text-right font-medium">
+                      {t('webadmin2.asim.thWeight')}
+                    </th>
+                    <th className="px-4 py-3 text-right font-medium">
+                      {t('webadmin2.asim.thTrip')}
+                    </th>
+                    <th className="px-4 py-3 text-right font-medium">
+                      {t('webadmin2.asim.thKiwiDay')}
+                    </th>
                   </tr>
                 </thead>
                 <tbody>

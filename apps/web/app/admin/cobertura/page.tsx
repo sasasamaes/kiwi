@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Globe, Send, Loader2 } from 'lucide-react';
-import { api } from '@kiwi/ui';
+import { api, useTranslations } from '@kiwi/ui';
 
 interface DemandRow {
   city: string;
@@ -21,6 +21,7 @@ interface CityRow {
 }
 
 export default function CoberturaPage() {
+  const { t } = useTranslations();
   const [cities, setCities] = useState<CityRow[]>([]);
   const [demand, setDemand] = useState<DemandRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,29 +37,33 @@ export default function CoberturaPage() {
       setCities(r?.cities ?? []);
       setDemand(r?.demand ?? []);
     } catch (e: any) {
-      setError(e?.message || 'No se pudo cargar la cobertura');
+      setError(e?.message || t('webadmin1.acob.loadError'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     load();
   }, [load]);
 
   const handleNotify = async (city: string) => {
-    if (!window.confirm(`¿Avisar por correo a los interesados de ${city} que ya llegamos?`)) return;
+    if (!window.confirm(t('webadmin1.acob.confirmNotify', { city }))) return;
     setSending(city);
     setNotice(null);
     try {
       const r = await api.notifyCoverageCity(city);
       setNotice({
         ok: r.failed === 0,
-        text: `${city}: avisados ${r.sent}${r.failed ? `, fallaron ${r.failed}` : ''}.`,
+        text: t('webadmin1.acob.notified', {
+          city,
+          sent: r.sent,
+          fails: r.failed ? t('webadmin1.acob.failedPart', { n: r.failed }) : '',
+        }),
       });
       load();
     } catch (e: any) {
-      setNotice({ ok: false, text: e?.message || 'No se pudo avisar' });
+      setNotice({ ok: false, text: e?.message || t('webadmin1.acob.notifyError') });
     } finally {
       setSending(null);
     }
@@ -68,10 +73,10 @@ export default function CoberturaPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-display font-bold text-surface-800 dark:text-surface-100">
-          <Globe className="h-6 w-6 inline" /> Cobertura
+          <Globe className="h-6 w-6 inline" /> {t('webadmin1.acob.title')}
         </h1>
         <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">
-          Dónde quieren usar Kiwi y aún no llegamos — para decidir dónde abrir.
+          {t('webadmin1.acob.subtitle')}
         </p>
       </div>
 
@@ -99,7 +104,7 @@ export default function CoberturaPage() {
         animate={{ opacity: 1, y: 0 }}
       >
         <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-3">
-          Ciudades
+          {t('webadmin1.acob.cities')}
         </h3>
         <div className="flex flex-wrap gap-2">
           {cities.map((c) => (
@@ -109,11 +114,13 @@ export default function CoberturaPage() {
                 c.active ? 'bg-green-100 text-green-700' : 'bg-surface-100 text-surface-500'
               }`}
             >
-              {c.name} · {c.active ? 'operando' : 'próximamente'}
+              {c.name} · {c.active ? t('webadmin1.acob.operating') : t('webadmin1.acob.soon')}
             </span>
           ))}
           {cities.length === 0 && !loading && (
-            <p className="text-sm text-surface-500 dark:text-surface-400">Sin ciudades.</p>
+            <p className="text-sm text-surface-500 dark:text-surface-400">
+              {t('webadmin1.acob.noCities')}
+            </p>
           )}
         </div>
       </motion.div>
@@ -129,19 +136,19 @@ export default function CoberturaPage() {
             <thead>
               <tr className="border-b border-surface-200 dark:border-surface-700">
                 <th className="text-left py-4 px-6 text-sm font-medium text-surface-500 dark:text-surface-400">
-                  Lugar
+                  {t('webadmin1.acob.col.place')}
                 </th>
                 <th className="text-left py-4 px-6 text-sm font-medium text-surface-500 dark:text-surface-400">
-                  Interesados
+                  {t('webadmin1.acob.col.interested')}
                 </th>
                 <th className="text-left py-4 px-6 text-sm font-medium text-surface-500 dark:text-surface-400">
-                  Avisados
+                  {t('webadmin1.acob.col.notified')}
                 </th>
                 <th className="text-left py-4 px-6 text-sm font-medium text-surface-500 dark:text-surface-400">
-                  Pendientes
+                  {t('webadmin1.acob.col.pending')}
                 </th>
                 <th className="text-right py-4 px-6 text-sm font-medium text-surface-500 dark:text-surface-400">
-                  Acción
+                  {t('webadmin1.acob.col.action')}
                 </th>
               </tr>
             </thead>
@@ -152,7 +159,7 @@ export default function CoberturaPage() {
                     colSpan={5}
                     className="py-8 text-center text-sm text-surface-500 dark:text-surface-400"
                   >
-                    Cargando…
+                    {t('webadmin1.acob.loading')}
                   </td>
                 </tr>
               ) : (
@@ -193,7 +200,7 @@ export default function CoberturaPage() {
                           ) : (
                             <Send className="h-3.5 w-3.5" />
                           )}
-                          Avisar al llegar
+                          {t('webadmin1.acob.notifyBtn')}
                         </button>
                       </div>
                     </td>
@@ -207,7 +214,7 @@ export default function CoberturaPage() {
 
       {!loading && demand.length === 0 && !error && (
         <p className="text-center text-sm text-surface-500 dark:text-surface-400">
-          Nadie en lista de espera todavía. Aparecen acá los registros y pedidos fuera de zona.
+          {t('webadmin1.acob.empty')}
         </p>
       )}
     </div>

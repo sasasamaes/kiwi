@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Megaphone, Send, Loader2, Mail, MessageCircle, Eye } from 'lucide-react';
-import { api } from '@kiwi/ui';
+import { api, useTranslations } from '@kiwi/ui';
 
 type Channel = 'email' | 'whatsapp' | 'both';
 
@@ -29,12 +29,13 @@ interface Log {
 }
 
 const ROLES = [
-  { value: 'merchant', label: 'Comercios' },
-  { value: 'driver', label: 'Repartidores' },
-  { value: 'customer', label: 'Clientes' },
+  { value: 'merchant', labelKey: 'webadmin2.adif.roleMerchant' },
+  { value: 'driver', labelKey: 'webadmin2.adif.roleDriver' },
+  { value: 'customer', labelKey: 'webadmin2.adif.roleCustomer' },
 ];
 
 export default function DifusionPage() {
+  const { t } = useTranslations();
   const [channel, setChannel] = useState<Channel>('email');
   const [roles, setRoles] = useState<string[]>(['merchant']);
   const [templates, setTemplates] = useState<Template[]>([]);
@@ -100,7 +101,7 @@ export default function DifusionPage() {
       const r = await api.previewBroadcast(payload());
       setCount(r.count);
     } catch (e: any) {
-      setResult({ ok: false, text: e?.message || 'No se pudo contar' });
+      setResult({ ok: false, text: e?.message || t('webadmin2.adif.countFailed') });
     } finally {
       setCounting(false);
     }
@@ -108,30 +109,45 @@ export default function DifusionPage() {
 
   const handleSend = async () => {
     if (!subject.trim() || !body.trim()) {
-      setResult({ ok: false, text: 'Faltan asunto y mensaje' });
+      setResult({ ok: false, text: t('webadmin2.adif.missingFields') });
       return;
     }
     const who =
       channel === 'email'
-        ? 'por correo'
+        ? t('webadmin2.adif.viaEmail')
         : channel === 'whatsapp'
-          ? 'por WhatsApp'
-          : 'por correo y WhatsApp';
-    if (!window.confirm(`¿Enviar ${who} a ${count ?? 'los destinatarios'}?`)) return;
+          ? t('webadmin2.adif.viaWhatsapp')
+          : t('webadmin2.adif.viaBoth');
+    if (
+      !window.confirm(
+        t('webadmin2.adif.confirmSend', {
+          who,
+          count: count != null ? String(count) : t('webadmin2.adif.defaultRecipients'),
+        }),
+      )
+    )
+      return;
     setSending(true);
     setResult(null);
     try {
       const r = await api.sendMarketingBroadcast(payload());
       setResult({
         ok: r.failed === 0,
-        text: `Enviados ${r.sent}${r.failed ? `, fallaron ${r.failed}${r.error ? `: ${r.error}` : ' (¿SMTP/Kapso configurados?)'}` : ''}.`,
+        text:
+          r.failed === 0
+            ? t('webadmin2.adif.sentOk', { sent: r.sent })
+            : t('webadmin2.adif.sentPartial', {
+                sent: r.sent,
+                failed: r.failed,
+                extra: r.error ? `: ${r.error}` : t('webadmin2.adif.checkConfig'),
+              }),
       });
       api
         .getBroadcastHistory(20)
         .then((h) => setLogs(h?.logs ?? []))
         .catch(() => undefined);
     } catch (e: any) {
-      setResult({ ok: false, text: e?.message || 'No se pudo enviar' });
+      setResult({ ok: false, text: e?.message || t('webadmin2.adif.sendFailed') });
     } finally {
       setSending(false);
     }
@@ -141,10 +157,10 @@ export default function DifusionPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-display font-bold text-surface-800 dark:text-surface-100">
-          <Megaphone className="h-6 w-6 inline" /> Difusión
+          <Megaphone className="h-6 w-6 inline" /> {t('webadmin2.adif.title')}
         </h1>
         <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">
-          Correos y WhatsApp informativos para que entiendan cómo funciona Kiwi.
+          {t('webadmin2.adif.subtitle')}
         </p>
       </div>
 
@@ -167,11 +183,12 @@ export default function DifusionPage() {
             className={`px-3 py-1.5 rounded-full font-medium ${
               channels.smtp.verified ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'
             }`}
-            title={channels.smtp.error ?? 'SMTP verificado'}
+            title={channels.smtp.error ?? t('webadmin2.adif.smtpOkTitle')}
           >
-            📧 SMTP: {channels.smtp.verified ? 'verificado ✓' : 'con problema ✗'}
+            {t('webadmin2.adif.smtpLabel')}{' '}
+            {channels.smtp.verified ? t('webadmin2.adif.verified') : t('webadmin2.adif.broken')}
             {!channels.smtp.verified && channels.smtp.error ? ` — ${channels.smtp.error}` : ''}
-            {!channels.smtp.configured && ' (sin configurar)'}
+            {!channels.smtp.configured && ` ${t('webadmin2.adif.unconfigured')}`}
           </span>
           <span
             className={`px-3 py-1.5 rounded-full font-medium ${
@@ -180,9 +197,14 @@ export default function DifusionPage() {
                 : 'bg-surface-100 text-surface-500'
             }`}
           >
-            💬 Kapso: {channels.whatsapp.configured ? 'configurado' : 'sin configurar'}
+            {t('webadmin2.adif.kapsoLabel')}{' '}
+            {channels.whatsapp.configured
+              ? t('webadmin2.adif.configured')
+              : t('webadmin2.adif.notConfigured')}
             {channels.whatsapp.configured &&
-              ` · plantilla info: ${channels.whatsapp.infoTemplate ?? 'no'}`}
+              t('webadmin2.adif.templateInfo', {
+                v: channels.whatsapp.infoTemplate ?? t('webadmin2.adif.templateNone'),
+              })}
           </span>
         </div>
       )}
@@ -196,36 +218,39 @@ export default function DifusionPage() {
         <div className="flex gap-2 rounded-xl bg-surface-100 dark:bg-surface-800 p-1">
           {(
             [
-              { value: 'email', label: 'Correo', Icon: Mail },
-              { value: 'whatsapp', label: 'WhatsApp', Icon: MessageCircle },
-              { value: 'both', label: 'Ambos', Icon: Send },
+              { value: 'email', labelKey: 'webadmin2.adif.channelEmail', Icon: Mail },
+              {
+                value: 'whatsapp',
+                labelKey: 'webadmin2.adif.channelWhatsapp',
+                Icon: MessageCircle,
+              },
+              { value: 'both', labelKey: 'webadmin2.adif.channelBoth', Icon: Send },
             ] as const
-          ).map((t) => (
+          ).map((tab) => (
             <button
-              key={t.value}
-              onClick={() => setChannel(t.value)}
+              key={tab.value}
+              onClick={() => setChannel(tab.value)}
               className={`flex flex-1 items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                channel === t.value
+                channel === tab.value
                   ? 'bg-white dark:bg-surface-700 text-surface-800 dark:text-surface-100 shadow-soft'
                   : 'text-surface-500 dark:text-surface-400'
               }`}
             >
-              <t.Icon className="h-4 w-4" />
-              {t.label}
+              <tab.Icon className="h-4 w-4" />
+              {t(tab.labelKey)}
             </button>
           ))}
         </div>
         {channel !== 'email' && (
           <p className="text-xs text-amber-600 dark:text-amber-400">
-            WhatsApp a contactos fríos exige plantilla aprobada en Kapso (KAPSO_TEMPLATE_INFO). Sin
-            plantilla solo llega si hay conversación abierta de 24h.
+            {t('webadmin2.adif.whatsappWarning')}
           </p>
         )}
 
         {/* Audiencia */}
         <div>
           <p className="mb-2 text-xs font-medium text-surface-600 dark:text-surface-400">
-            Audiencia (usuarios registrados)
+            {t('webadmin2.adif.audience')}
           </p>
           <div className="flex flex-wrap gap-2">
             {ROLES.map((r) => (
@@ -238,7 +263,7 @@ export default function DifusionPage() {
                     : 'bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400'
                 }`}
               >
-                {r.label}
+                {r.labelKey ? t(r.labelKey) : r.value}
               </button>
             ))}
           </div>
@@ -250,7 +275,7 @@ export default function DifusionPage() {
             htmlFor="tpl"
             className="mb-1 block text-xs font-medium text-surface-600 dark:text-surface-400"
           >
-            Plantilla informativa (opcional)
+            {t('webadmin2.adif.templateLabel')}
           </label>
           <select
             id="tpl"
@@ -258,10 +283,10 @@ export default function DifusionPage() {
             defaultValue=""
             className="w-full px-4 py-2.5 text-sm rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
           >
-            <option value="">Escribir manual…</option>
-            {templates.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.label}
+            <option value="">{t('webadmin2.adif.manualOption')}</option>
+            {templates.map((tpl) => (
+              <option key={tpl.id} value={tpl.id}>
+                {tpl.label}
               </option>
             ))}
           </select>
@@ -272,13 +297,14 @@ export default function DifusionPage() {
             htmlFor="subj"
             className="mb-1 block text-xs font-medium text-surface-600 dark:text-surface-400"
           >
-            Asunto {channel !== 'email' && '(primera línea del WhatsApp)'}
+            {t('webadmin2.adif.subjectLabel')}{' '}
+            {channel !== 'email' && t('webadmin2.adif.subjectSuffix')}
           </label>
           <input
             id="subj"
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
-            placeholder="Cómo funciona Kiwi para tu comercio"
+            placeholder={t('webadmin2.adif.subjectPh')}
             className="w-full px-4 py-2.5 text-sm rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
           />
         </div>
@@ -288,7 +314,7 @@ export default function DifusionPage() {
             htmlFor="msg"
             className="mb-1 block text-xs font-medium text-surface-600 dark:text-surface-400"
           >
-            Mensaje ({'{{name}}'} = nombre, {'{{registerUrl}}'} = link de registro)
+            {t('webadmin2.adif.messageLabel')}
           </label>
           <textarea
             id="msg"
@@ -305,14 +331,14 @@ export default function DifusionPage() {
               htmlFor="extra-emails"
               className="mb-1 block text-xs font-medium text-surface-600 dark:text-surface-400"
             >
-              Emails extra (uno por línea)
+              {t('webadmin2.adif.extraEmails')}
             </label>
             <textarea
               id="extra-emails"
               value={extraEmails}
               onChange={(e) => setExtraEmails(e.target.value)}
               rows={3}
-              placeholder="soda@ejemplo.com"
+              placeholder={t('webadmin2.adif.extraEmailsPh')}
               className="w-full px-4 py-2.5 text-sm rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
             />
           </div>
@@ -321,14 +347,14 @@ export default function DifusionPage() {
               htmlFor="extra-phones"
               className="mb-1 block text-xs font-medium text-surface-600 dark:text-surface-400"
             >
-              Teléfonos extra WhatsApp (uno por línea)
+              {t('webadmin2.adif.extraPhones')}
             </label>
             <textarea
               id="extra-phones"
               value={extraPhones}
               onChange={(e) => setExtraPhones(e.target.value)}
               rows={3}
-              placeholder="8888-8888"
+              placeholder={t('webadmin2.adif.extraPhonesPh')}
               className="w-full px-4 py-2.5 text-sm rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
             />
           </div>
@@ -341,11 +367,11 @@ export default function DifusionPage() {
             className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium bg-surface-100 dark:bg-surface-700 text-surface-700 dark:text-surface-200 disabled:opacity-50"
           >
             {counting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
-            Contar destinatarios
+            {t('webadmin2.adif.countBtn')}
           </button>
           {count != null && (
             <span className="text-sm text-surface-600 dark:text-surface-300">
-              Llega a <b>{count}</b>
+              {t('webadmin2.adif.reachPrefix')} <b>{count}</b>
             </span>
           )}
           <motion.button
@@ -356,7 +382,7 @@ export default function DifusionPage() {
             whileTap={{ scale: 0.98 }}
           >
             {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-            {sending ? 'Enviando…' : 'Enviar difusión'}
+            {sending ? t('webadmin2.adif.sending') : t('webadmin2.adif.sendBtn')}
           </motion.button>
         </div>
       </motion.div>
@@ -368,11 +394,11 @@ export default function DifusionPage() {
         animate={{ opacity: 1, y: 0 }}
       >
         <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-          Historial de envíos
+          {t('webadmin2.adif.history')}
         </h3>
         {logs.length === 0 ? (
           <p className="text-sm text-surface-500 dark:text-surface-400">
-            Todavía no se envió nada.
+            {t('webadmin2.adif.empty')}
           </p>
         ) : (
           <div className="space-y-2">
@@ -383,10 +409,11 @@ export default function DifusionPage() {
               >
                 <span className="font-medium text-surface-800 dark:text-surface-200">
                   {l.channel === 'email' ? '📧' : l.channel === 'whatsapp' ? '💬' : '📧💬'}{' '}
-                  {l.subject || '(sin asunto)'}
+                  {l.subject || t('webadmin2.adif.noSubject')}
                 </span>
                 <span className="text-xs text-surface-500">
-                  {l.audience} · {l.count} enviados{l.failed ? ` · ${l.failed} fallaron` : ''} ·{' '}
+                  {l.audience} · {l.count} {t('webadmin2.adif.sentSuffix')}
+                  {l.failed ? t('webadmin2.adif.failedPart', { n: l.failed }) : ''} ·{' '}
                   {new Date(l.createdAt).toLocaleDateString('es-CR')}
                 </span>
               </div>

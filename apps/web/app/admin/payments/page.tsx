@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Smartphone, CreditCard, DollarSign, Coins, Clock, Wallet, Landmark } from 'lucide-react';
-import { AreaChartComponent, PieChartComponent, StatCard, api } from '@kiwi/ui';
+import { AreaChartComponent, PieChartComponent, StatCard, api, useTranslations } from '@kiwi/ui';
 
 interface AdminPayment {
   id: string;
@@ -22,20 +22,12 @@ interface AdminPayment {
   } | null;
 }
 
-const METHOD_META: Record<string, { label: string; icon: any }> = {
-  onvopay_sinpe: { label: 'SINPE', icon: Smartphone },
-  onvopay_card: { label: 'Tarjeta', icon: CreditCard },
-  cash: { label: 'Efectivo', icon: DollarSign },
-  crypto: { label: 'Cripto', icon: Coins },
-  credit: { label: 'Crédito', icon: Wallet },
-};
-
-const STATUS_LABEL: Record<string, string> = {
-  completed: 'Completado',
-  pending: 'Pendiente',
-  processing: 'Procesando',
-  failed: 'Fallido',
-  refunded: 'Reembolsado',
+const METHOD_ICON: Record<string, any> = {
+  onvopay_sinpe: Smartphone,
+  onvopay_card: CreditCard,
+  cash: DollarSign,
+  crypto: Coins,
+  credit: Wallet,
 };
 
 const STATUS_COLOR: Record<string, string> = {
@@ -46,15 +38,8 @@ const STATUS_COLOR: Record<string, string> = {
   refunded: 'bg-surface-200 text-surface-600 dark:bg-surface-700 dark:text-surface-300',
 };
 
-const STATUS_FILTERS = [
-  { id: '', label: 'Todos' },
-  { id: 'completed', label: 'Completados' },
-  { id: 'pending', label: 'Pendientes' },
-  { id: 'failed', label: 'Fallidos' },
-  { id: 'refunded', label: 'Reembolsados' },
-];
-
 export default function PaymentsPage() {
+  const { t } = useTranslations();
   const [payments, setPayments] = useState<AdminPayment[]>([]);
   const [total, setTotal] = useState(0);
   const [summary, setSummary] = useState<{
@@ -70,26 +55,63 @@ export default function PaymentsPage() {
 
   const PAGE_SIZE = 20;
 
-  const load = useCallback(async (status: string, method: string, p: number) => {
-    if (p === 0) setLoading(true);
-    setError(null);
-    try {
-      const res = await api.getPaymentsAdmin({
-        take: PAGE_SIZE,
-        skip: p * PAGE_SIZE,
-        status: status || undefined,
-        method: method || undefined,
-      });
-      const items = Array.isArray(res?.items) ? res.items : [];
-      setPayments((prev) => (p === 0 ? items : [...prev, ...items]));
-      setTotal(Number(res?.total ?? 0));
-      setSummary(res?.summary ?? null);
-    } catch (e: any) {
-      setError(e?.message || 'No se pudieron cargar los pagos');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const METHOD_META: Record<string, { label: string; icon: any }> = {
+    onvopay_sinpe: { label: t('webadmin1.apay.methods.sinpe'), icon: Smartphone },
+    onvopay_card: { label: t('webadmin1.apay.methods.card'), icon: CreditCard },
+    cash: { label: t('webadmin1.apay.methods.cash'), icon: DollarSign },
+    crypto: { label: t('webadmin1.apay.methods.crypto'), icon: Coins },
+    credit: { label: t('webadmin1.apay.methods.credit'), icon: Wallet },
+  };
+
+  const STATUS_LABEL: Record<string, string> = {
+    completed: t('webadmin1.apay.status.completed'),
+    pending: t('webadmin1.apay.status.pending'),
+    processing: t('webadmin1.apay.status.processing'),
+    failed: t('webadmin1.apay.status.failed'),
+    refunded: t('webadmin1.apay.status.refunded'),
+  };
+
+  const STATUS_FILTERS = [
+    { id: '', label: t('webadmin1.apay.filters.all') },
+    { id: 'completed', label: t('webadmin1.apay.filters.completed') },
+    { id: 'pending', label: t('webadmin1.apay.filters.pending') },
+    { id: 'failed', label: t('webadmin1.apay.filters.failed') },
+    { id: 'refunded', label: t('webadmin1.apay.filters.refunded') },
+  ];
+
+  const TABLE_HEADERS = [
+    t('webadmin1.apay.col.order'),
+    t('webadmin1.apay.col.merchant'),
+    t('webadmin1.apay.col.driver'),
+    t('webadmin1.apay.col.method'),
+    t('webadmin1.apay.col.amount'),
+    t('webadmin1.apay.col.status'),
+    t('webadmin1.apay.col.date'),
+  ];
+
+  const load = useCallback(
+    async (status: string, method: string, p: number) => {
+      if (p === 0) setLoading(true);
+      setError(null);
+      try {
+        const res = await api.getPaymentsAdmin({
+          take: PAGE_SIZE,
+          skip: p * PAGE_SIZE,
+          status: status || undefined,
+          method: method || undefined,
+        });
+        const items = Array.isArray(res?.items) ? res.items : [];
+        setPayments((prev) => (p === 0 ? items : [...prev, ...items]));
+        setTotal(Number(res?.total ?? 0));
+        setSummary(res?.summary ?? null);
+      } catch (e: any) {
+        setError(e?.message || t('webadmin1.apay.loadError'));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [t],
+  );
 
   useEffect(() => {
     load(statusFilter, methodFilter, page);
@@ -108,10 +130,10 @@ export default function PaymentsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-display font-bold text-surface-800 dark:text-surface-100">
-          Gestión de Pagos
+          {t('webadmin1.apay.title')}
         </h1>
         <p className="text-surface-500 dark:text-surface-400">
-          {total} transacciones · datos reales, sin mocks
+          {t('webadmin1.apay.subtitle', { total })}
         </p>
       </div>
 
@@ -124,25 +146,25 @@ export default function PaymentsPage() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard
-          title="Cobrado"
+          title={t('webadmin1.apay.stats.collected')}
           value={`₡${Number(completed?.amount ?? 0).toLocaleString()}`}
           icon={<Coins className="h-6 w-6" />}
           color="kiwi"
         />
         <StatCard
-          title="Operaciones OK"
+          title={t('webadmin1.apay.stats.okCount')}
           value={String(completed?.count ?? 0)}
           icon={<Landmark className="h-6 w-6" />}
           color="blue"
         />
         <StatCard
-          title="Pendientes"
+          title={t('webadmin1.apay.stats.pending')}
           value={`₡${Number(pending?.amount ?? 0).toLocaleString()}`}
           icon={<Clock className="h-6 w-6" />}
           color="gold"
         />
         <StatCard
-          title="Con crédito"
+          title={t('webadmin1.apay.stats.onCredit')}
           value={`₡${Number(summary?.byMethod?.credit?.amount ?? 0).toLocaleString()}`}
           icon={<Wallet className="h-6 w-6" />}
           color="bark"
@@ -157,13 +179,13 @@ export default function PaymentsPage() {
           animate={{ opacity: 1, y: 0 }}
         >
           <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-            Cobrado por día (30 días)
+            {t('webadmin1.apay.chartDaily')}
           </h3>
           {dailyChart.length > 0 ? (
             <AreaChartComponent data={dailyChart} height={250} />
           ) : (
             <p className="py-10 text-center text-sm text-surface-500 dark:text-surface-400">
-              Sin cobros aún
+              {t('webadmin1.apay.noCharges')}
             </p>
           )}
         </motion.div>
@@ -175,13 +197,13 @@ export default function PaymentsPage() {
           transition={{ delay: 0.1 }}
         >
           <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-            Por método
+            {t('webadmin1.apay.byMethod')}
           </h3>
           {methodChart.length > 0 ? (
             <PieChartComponent data={methodChart} height={250} />
           ) : (
             <p className="py-10 text-center text-sm text-surface-500 dark:text-surface-400">
-              Sin datos
+              {t('webadmin1.apay.noData')}
             </p>
           )}
         </motion.div>
@@ -219,7 +241,7 @@ export default function PaymentsPage() {
                 : 'bg-surface-100 dark:bg-surface-800 text-surface-600'
             }`}
           >
-            Todos los métodos
+            {t('webadmin1.apay.allMethods')}
           </button>
           {Object.entries(METHOD_META).map(([id, m]) => (
             <button
@@ -250,16 +272,14 @@ export default function PaymentsPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-surface-200 dark:border-surface-700">
-                {['Pedido', 'Comercio', 'Repartidor', 'Método', 'Monto', 'Estado', 'Fecha'].map(
-                  (h) => (
-                    <th
-                      key={h}
-                      className="text-left py-4 px-6 text-sm font-medium text-surface-500 dark:text-surface-400"
-                    >
-                      {h}
-                    </th>
-                  ),
-                )}
+                {TABLE_HEADERS.map((h) => (
+                  <th
+                    key={h}
+                    className="text-left py-4 px-6 text-sm font-medium text-surface-500 dark:text-surface-400"
+                  >
+                    {h}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
@@ -269,7 +289,7 @@ export default function PaymentsPage() {
                     colSpan={7}
                     className="py-10 text-center text-sm text-surface-500 dark:text-surface-400"
                   >
-                    Cargando…
+                    {t('webadmin1.apay.loading')}
                   </td>
                 </tr>
               ) : payments.length === 0 ? (
@@ -278,12 +298,15 @@ export default function PaymentsPage() {
                     colSpan={7}
                     className="py-10 text-center text-sm text-surface-500 dark:text-surface-400"
                   >
-                    Sin pagos con este filtro
+                    {t('webadmin1.apay.empty')}
                   </td>
                 </tr>
               ) : (
                 payments.map((p) => {
-                  const meta = METHOD_META[p.method] ?? { label: p.method, icon: Coins };
+                  const meta = METHOD_META[p.method] ?? {
+                    label: p.method,
+                    icon: METHOD_ICON[p.method] ?? Coins,
+                  };
                   return (
                     <tr
                       key={p.id}
@@ -333,13 +356,13 @@ export default function PaymentsPage() {
 
       {pages > 1 && (
         <p className="text-center text-xs text-surface-500 dark:text-surface-400">
-          Página {page + 1} de {pages} ·{' '}
+          {t('webadmin1.apay.pageOf', { p: page + 1, pages })} ·{' '}
           <button
             onClick={() => setPage((p) => Math.min(pages - 1, p + 1))}
             disabled={page >= pages - 1}
             className="font-semibold text-kiwi-700 disabled:opacity-40"
           >
-            Cargar más
+            {t('webadmin1.apay.loadMore')}
           </button>
         </p>
       )}

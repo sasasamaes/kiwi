@@ -16,7 +16,7 @@ import {
   AlertTriangle,
   Pin,
 } from 'lucide-react';
-import { api } from '@kiwi/ui';
+import { api, useTranslations } from '@kiwi/ui';
 import {
   computeExpectedTrip,
   computeOperatingCosts,
@@ -85,6 +85,7 @@ function daysInPeriod(ym: string): number {
 }
 
 export default function ReportesPage() {
+  const { t } = useTranslations();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -164,7 +165,7 @@ export default function ReportesPage() {
         setCostsDraft(c);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo cargar');
+      setError(err instanceof Error ? err.message : t('webadmin2.arep.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -331,12 +332,12 @@ export default function ReportesPage() {
   if (error || !mix) {
     return (
       <div className="rounded-2xl bg-white p-8 text-center shadow-soft dark:bg-surface-800">
-        <p className="mb-4 text-sm text-surface-500">{error ?? 'Sin datos'}</p>
+        <p className="mb-4 text-sm text-surface-500">{error ?? t('webadmin2.arep.noData')}</p>
         <button
           onClick={() => load(months)}
           className="rounded-xl bg-kiwi-700 px-5 py-2.5 text-sm font-semibold text-white"
         >
-          Reintentar
+          {t('webadmin2.arep.retry')}
         </button>
       </div>
     );
@@ -376,11 +377,15 @@ export default function ReportesPage() {
         note: null,
       });
       setPinMsg(
-        `Escenario de ${monthLabel(ym)} fijado: ${ordersPerDay}/día, neta proyectada ${fmt(proj.netMonthly)}.`,
+        t('webadmin2.arep.pinnedOk', {
+          month: monthLabel(ym),
+          orders: ordersPerDay,
+          net: fmt(proj.netMonthly),
+        }),
       );
       setHistory(await api.getScenarioHistory());
     } catch {
-      setPinMsg('No se pudo fijar el escenario. Intentá de nuevo.');
+      setPinMsg(t('webadmin2.arep.pinFailed'));
     } finally {
       setPinning(false);
     }
@@ -405,18 +410,17 @@ export default function ReportesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="flex items-center gap-2 text-xl font-display font-bold text-surface-800 dark:text-surface-100">
-            <BarChart3 className="h-5 w-5" /> Real vs Proyección
+            <BarChart3 className="h-5 w-5" /> {t('webadmin2.arep.title')}
           </h1>
           <p className="text-sm text-surface-500">
-            Ingreso real de pedidos entregados contra el escenario del simulador (mezcla real de{' '}
-            {mix.classified} pedidos · tasa {commissionPct}%)
+            {t('webadmin2.arep.subtitle', { classified: mix.classified, rate: commissionPct })}
           </p>
         </div>
         <button
           onClick={() => load(months)}
           className="flex items-center gap-1 rounded-xl px-3 py-2 text-sm text-surface-500 hover:bg-surface-100 dark:hover:bg-surface-800"
         >
-          <RefreshCw className="h-4 w-4" /> Actualizar
+          <RefreshCw className="h-4 w-4" /> {t('webadmin2.arep.refresh')}
         </button>
       </div>
 
@@ -424,7 +428,7 @@ export default function ReportesPage() {
       <div className="flex flex-wrap items-end gap-4 rounded-2xl bg-white p-5 shadow-soft dark:bg-surface-800">
         <div>
           <label className="mb-1 block text-sm font-medium text-surface-600 dark:text-surface-300">
-            Pedidos por día (escenario)
+            {t('webadmin2.arep.scenarioOrders')}
           </label>
           <div className="flex items-center gap-2">
             <input
@@ -437,18 +441,21 @@ export default function ReportesPage() {
             {last30 && (
               <button
                 onClick={applyRealRhythm}
-                title={`Últimos 30 días: ${last30.trips} viajes → ${last30.tripsPerDay.toFixed(1)}/día`}
+                title={t('webadmin2.arep.useRealTitle', {
+                  trips: last30.trips,
+                  rate: last30.tripsPerDay.toFixed(1),
+                })}
                 className="flex items-center gap-1.5 rounded-xl border border-kiwi-300 bg-kiwi-50 px-3 py-2.5 text-xs font-semibold text-kiwi-700 hover:bg-kiwi-100 dark:border-kiwi-700 dark:bg-kiwi-900/30 dark:text-kiwi-300 dark:hover:bg-kiwi-900/50"
               >
                 <Wand2 className="h-3.5 w-3.5" />
-                Usar ritmo real (30 días): {last30.tripsPerDay.toFixed(1)}/día
+                {t('webadmin2.arep.useReal', { rate: last30.tripsPerDay.toFixed(1) })}
               </button>
             )}
           </div>
         </div>
         <div>
           <label className="mb-1 block text-sm font-medium text-surface-600 dark:text-surface-300">
-            Período
+            {t('webadmin2.arep.period')}
           </label>
           <div className="flex rounded-xl border border-surface-200 p-1 dark:border-surface-700">
             {[6, 12].map((n) => (
@@ -461,24 +468,28 @@ export default function ReportesPage() {
                     : 'text-surface-500 hover:text-surface-700 dark:hover:text-surface-300'
                 }`}
               >
-                {n} meses
+                {t('webadmin2.arep.months', { n })}
               </button>
             ))}
           </div>
         </div>
         <div className="ml-auto flex flex-col items-end gap-2">
           <p className="max-w-xs text-xs text-surface-500 dark:text-surface-400">
-            Viaje esperado {fmt(expectedTrip)} × {commissionPct}% ={' '}
-            <span className="font-semibold text-kiwi-700">{fmt(proj.perOrder)}</span> por pedido
+            {t('webadmin2.arep.expectedPrefix', {
+              trip: fmt(expectedTrip),
+              rate: commissionPct,
+            })}{' '}
+            <span className="font-semibold text-kiwi-700">{fmt(proj.perOrder)}</span>{' '}
+            {t('webadmin2.arep.expectedSuffix')}
           </p>
           <button
             onClick={pinCurrentScenario}
             disabled={pinning || loading}
-            title="Guarda el escenario actual como la proyección de este mes, contra la que se comparará lo real al cerrar"
+            title={t('webadmin2.arep.pinTitle')}
             className="flex items-center gap-1.5 rounded-xl bg-kiwi-700 px-4 py-2 text-xs font-semibold text-white hover:bg-kiwi-800 disabled:opacity-40"
           >
             <Pin className="h-3.5 w-3.5" />
-            {pinning ? 'Fijando…' : 'Fijar escenario de este mes'}
+            {pinning ? t('webadmin2.arep.pinning') : t('webadmin2.arep.pinBtn')}
           </button>
           {pinMsg && <p className="max-w-xs text-right text-xs text-surface-500">{pinMsg}</p>}
         </div>
@@ -489,22 +500,26 @@ export default function ReportesPage() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <p className="text-xs text-surface-500 dark:text-surface-400">Real mes en curso</p>
+          <p className="text-xs text-surface-500 dark:text-surface-400">
+            {t('webadmin2.arep.realTitle')}
+          </p>
           <p className="mt-1 text-2xl font-bold text-surface-800 dark:text-surface-100">
             {fmt(currentMonth?.commission ?? 0)}
           </p>
           <p className="text-xs text-surface-500">
-            {currentMonth?.trips ?? 0} viajes · {dev ? fmt(dev.realCommissionPerDay) : '—'}/día
+            {currentMonth?.trips ?? 0} {t('webadmin2.arep.tripsSuffix')} ·{' '}
+            {dev ? fmt(dev.realCommissionPerDay) : '—'}
+            {t('webadmin2.arep.perDaySuffix')}
           </p>
           <p className="mt-1.5 border-t border-surface-100 pt-1.5 text-xs dark:border-surface-700">
-            Neta real:{' '}
+            {t('webadmin2.arep.netReal')}{' '}
             <b className={curNet >= 0 ? 'text-kiwi-700' : 'text-red-500 dark:text-red-400'}>
               {fmt(curNet)}
             </b>
             {curMarginPct != null && (
               <span className="text-surface-500 dark:text-surface-400">
                 {' '}
-                · margen {curMarginPct.toFixed(0)}%
+                {t('webadmin2.arep.margin', { pct: curMarginPct.toFixed(0) })}
               </span>
             )}
           </p>
@@ -515,7 +530,9 @@ export default function ReportesPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
         >
-          <p className="text-xs text-surface-500 dark:text-surface-400">Neta proyectada del mes</p>
+          <p className="text-xs text-surface-500 dark:text-surface-400">
+            {t('webadmin2.arep.projNetTitle')}
+          </p>
           <p
             className={`mt-1 text-2xl font-bold ${
               proj.netMonthly >= 0 ? 'text-kiwi-700' : 'text-red-500 dark:text-red-400'
@@ -524,7 +541,10 @@ export default function ReportesPage() {
             {fmt(proj.netMonthly)}
           </p>
           <p className="text-xs text-surface-500">
-            bruto {fmt(proj.monthly)} − costos {fmt(proj.costs.total)}
+            {t('webadmin2.arep.projDetail', {
+              gross: fmt(proj.monthly),
+              costs: fmt(proj.costs.total),
+            })}
           </p>
         </motion.div>
         <motion.div
@@ -534,7 +554,7 @@ export default function ReportesPage() {
           transition={{ delay: 0.1 }}
         >
           <p className="text-xs text-surface-500 dark:text-surface-400">
-            Desviación neta (mes en curso)
+            {t('webadmin2.arep.devTitle')}
           </p>
           {dev && dev.deltaPct != null && hasRealData ? (
             <>
@@ -553,7 +573,7 @@ export default function ReportesPage() {
               </p>
               <p className="text-xs text-surface-500">
                 {dev.deltaCommission >= 0 ? '+' : '−'}
-                {fmt(Math.abs(dev.deltaCommission))} vs proyección
+                {fmt(Math.abs(dev.deltaCommission))} {t('webadmin2.arep.vsProj')}
               </p>
             </>
           ) : (
@@ -561,7 +581,7 @@ export default function ReportesPage() {
               <p className="mt-1 flex items-center gap-1.5 text-2xl font-bold text-surface-500 dark:text-surface-400">
                 <Minus className="h-5 w-5" /> —
               </p>
-              <p className="text-xs text-surface-500">Sin viajes entregados aún este mes</p>
+              <p className="text-xs text-surface-500">{t('webadmin2.arep.noTrips')}</p>
             </>
           )}
         </motion.div>
@@ -571,7 +591,9 @@ export default function ReportesPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
         >
-          <p className="text-xs text-surface-500 dark:text-surface-400">Ritmo de viajes (día)</p>
+          <p className="text-xs text-surface-500 dark:text-surface-400">
+            {t('webadmin2.arep.paceTitle')}
+          </p>
           <p className="mt-1 text-2xl font-bold text-surface-800 dark:text-surface-100">
             {dev ? dev.realPerDay.toFixed(1) : '—'}
             <span className="text-base font-medium text-surface-500 dark:text-surface-400">
@@ -580,19 +602,25 @@ export default function ReportesPage() {
             </span>
           </p>
           <p className="text-xs text-surface-500">
-            {dev ? `meta del escenario: ${ordersPerDay}/día` : 'sin datos del mes'}
+            {dev
+              ? t('webadmin2.arep.paceGoal', { n: ordersPerDay })
+              : t('webadmin2.arep.paceEmpty')}
           </p>
         </motion.div>
       </div>
 
       <p className="-mt-4 text-xs text-surface-500 dark:text-surface-400">
-        Costos aplicados: fijos {fmt(costs.fixedMonthlyCost)} · soporte {fmt(costs.supportPerTrip)}
-        /viaje · pasarela {costs.gatewayPct}% sobre {costs.digitalPct}% digital del GMV —{' '}
+        {t('webadmin2.arep.costsPrefix', {
+          fixed: fmt(costs.fixedMonthlyCost),
+          support: fmt(costs.supportPerTrip),
+          gw: costs.gatewayPct,
+          dig: costs.digitalPct,
+        })}{' '}
         <button
           onClick={() => setCostsEditable((v) => !v)}
           className="font-medium text-kiwi-700 hover:underline"
         >
-          editar
+          {t('webadmin2.arep.edit')}
         </button>
       </p>
 
@@ -606,7 +634,7 @@ export default function ReportesPage() {
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
             <div>
               <label className="mb-1 block text-xs font-medium text-surface-600 dark:text-surface-300">
-                Fijos/mes (₡)
+                {t('webadmin2.arep.costFixed')}
               </label>
               <input
                 type="number"
@@ -620,7 +648,7 @@ export default function ReportesPage() {
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-surface-600 dark:text-surface-300">
-                Soporte/viaje (₡)
+                {t('webadmin2.arep.costSupport')}
               </label>
               <input
                 type="number"
@@ -634,7 +662,7 @@ export default function ReportesPage() {
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-surface-600 dark:text-surface-300">
-                Pasarela (%)
+                {t('webadmin2.arep.costGateway')}
               </label>
               <input
                 type="number"
@@ -650,7 +678,7 @@ export default function ReportesPage() {
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-surface-600 dark:text-surface-300">
-                % digital
+                {t('webadmin2.arep.costDigital')}
               </label>
               <input
                 type="number"
@@ -670,7 +698,8 @@ export default function ReportesPage() {
               disabled={savingCosts || !costsDirty}
               className="flex items-center gap-1.5 rounded-xl bg-kiwi-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
             >
-              <Save className="h-4 w-4" /> {savingCosts ? 'Guardando…' : 'Guardar costos'}
+              <Save className="h-4 w-4" />{' '}
+              {savingCosts ? t('webadmin2.arep.savingCosts') : t('webadmin2.arep.saveCosts')}
             </button>
             <button
               onClick={() => {
@@ -679,10 +708,10 @@ export default function ReportesPage() {
               }}
               className="rounded-xl px-4 py-2 text-sm text-surface-500 hover:bg-surface-100 dark:hover:bg-surface-800"
             >
-              Cancelar
+              {t('webadmin2.arep.cancel')}
             </button>
             <p className="text-xs text-surface-500 dark:text-surface-400">
-              Se guardan para todo el sistema (también en Configuración → Costos).
+              {t('webadmin2.arep.costsHint')}
             </p>
           </div>
         </motion.div>
@@ -697,19 +726,19 @@ export default function ReportesPage() {
         >
           <AlertTriangle className="h-5 w-5 shrink-0 text-red-500" />
           <p className="min-w-0 flex-1 text-sm text-red-800 dark:text-red-200">
-            Dos meses consecutivos a la baja: la neta real de{' '}
-            <b className="capitalize">{monthLabel(losingStreak.curMonth)}</b> (
-            {fmtCompact(losingStreak.curNet)}) quedó por debajo de{' '}
-            <b className="capitalize">{monthLabel(losingStreak.prevMonth)}</b> (
-            {fmtCompact(losingStreak.prevNet)}) —{' '}
-            <b>{fmtDrop({ pct: losingStreak.pct, delta: losingStreak.delta })}</b>. Revisá mezcla de
-            zonas, volumen y costos en el simulador.
+            {t('webadmin2.arep.alertText', {
+              cur: monthLabel(losingStreak.curMonth),
+              curNet: fmtCompact(losingStreak.curNet),
+              prev: monthLabel(losingStreak.prevMonth),
+              prevNet: fmtCompact(losingStreak.prevNet),
+              drop: fmtDrop({ pct: losingStreak.pct, delta: losingStreak.delta }),
+            })}
           </p>
           <Link
             href="/admin/simulador?from=reportes"
             className="shrink-0 rounded-lg bg-red-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-600"
           >
-            Abrir simulador
+            {t('webadmin2.arep.openSim')}
           </Link>
         </motion.div>
       )}
@@ -718,11 +747,11 @@ export default function ReportesPage() {
       {actuals && actuals.length > 0 && (
         <div className="rounded-2xl bg-white p-5 shadow-soft dark:bg-surface-800">
           <p className="mb-3 text-sm font-medium text-surface-600 dark:text-surface-300">
-            Ganancia neta real por mes{' '}
+            {t('webadmin2.arep.chartTitle')}{' '}
             <span className="text-surface-500 dark:text-surface-400">
-              — línea punteada: neta proyectada ({fmt(proj.netMonthly)}/mes)
+              {t('webadmin2.arep.chartProj', { net: fmt(proj.netMonthly) })}
             </span>{' '}
-            <span className="text-kiwi-700">◆ escenario fijado</span>
+            <span className="text-kiwi-700">{t('webadmin2.arep.chartPinned')}</span>
           </p>
           <MonthBars
             rows={actuals.map((r) => ({
@@ -744,19 +773,24 @@ export default function ReportesPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-surface-200 text-left text-xs text-surface-500 dark:text-surface-400 dark:border-surface-700">
-                <th className="px-4 py-3 font-medium">Mes</th>
-                <th className="px-4 py-3 text-right font-medium">Viajes</th>
-                <th className="px-4 py-3 text-right font-medium">Viajes/día</th>
-                <th className="px-4 py-3 text-right font-medium">GMV</th>
-                <th className="px-4 py-3 text-right font-medium">Bruto</th>
-                <th className="px-4 py-3 text-right font-medium">Costos</th>
-                <th className="px-4 py-3 text-right font-medium">Neta</th>
-                <th className="px-4 py-3 text-right font-medium" title="Cambio vs mes anterior">
-                  MoM
+                <th className="px-4 py-3 font-medium">{t('webadmin2.arep.thMonth')}</th>
+                <th className="px-4 py-3 text-right font-medium">{t('webadmin2.arep.thTrips')}</th>
+                <th className="px-4 py-3 text-right font-medium">{t('webadmin2.arep.thPerDay')}</th>
+                <th className="px-4 py-3 text-right font-medium">{t('webadmin2.arep.thGmv')}</th>
+                <th className="px-4 py-3 text-right font-medium">{t('webadmin2.arep.thGross')}</th>
+                <th className="px-4 py-3 text-right font-medium">{t('webadmin2.arep.thCosts')}</th>
+                <th className="px-4 py-3 text-right font-medium">{t('webadmin2.arep.thNet')}</th>
+                <th
+                  className="px-4 py-3 text-right font-medium"
+                  title={t('webadmin2.arep.thMomTitle')}
+                >
+                  {t('webadmin2.arep.thMom')}
                 </th>
-                <th className="px-4 py-3 text-right font-medium">Tasa real</th>
-                <th className="px-4 py-3 text-right font-medium">Proy. neta</th>
-                <th className="px-4 py-3 text-right font-medium">Desv.</th>
+                <th className="px-4 py-3 text-right font-medium">{t('webadmin2.arep.thRate')}</th>
+                <th className="px-4 py-3 text-right font-medium">
+                  {t('webadmin2.arep.thProjNet')}
+                </th>
+                <th className="px-4 py-3 text-right font-medium">{t('webadmin2.arep.thDev')}</th>
               </tr>
             </thead>
             <tbody>
@@ -767,7 +801,7 @@ export default function ReportesPage() {
                 const delta = net - proj.netMonthly;
                 const deltaPct = proj.netMonthly > 0 ? (delta / proj.netMonthly) * 100 : null;
                 const zero = r.trips === 0;
-                const t = mom(r.month);
+                const trend = mom(r.month);
                 return (
                   <tr
                     key={r.month}
@@ -802,35 +836,41 @@ export default function ReportesPage() {
                     </td>
                     <td
                       className={`px-4 py-2.5 text-right font-medium ${
-                        t == null
+                        trend == null
                           ? 'text-surface-500 dark:text-surface-400'
-                          : t.delta >= 0
+                          : trend.delta >= 0
                             ? 'text-kiwi-700 dark:text-kiwi-400'
                             : 'text-red-500 dark:text-red-400'
                       }`}
                       title={
-                        t == null
-                          ? 'Sin mes anterior comparable en el período'
-                          : `vs ${monthLabel(prevMonthKey(r.month))}: neta ${fmtCompact(netsByMonth[prevMonthKey(r.month)])} → ${fmtCompact(net)}`
+                        trend == null
+                          ? t('webadmin2.arep.momNoBase')
+                          : t('webadmin2.arep.momVs', {
+                              month: monthLabel(prevMonthKey(r.month)),
+                              from: fmtCompact(netsByMonth[prevMonthKey(r.month)]),
+                              to: fmtCompact(net),
+                            })
                       }
                     >
-                      {t == null ? (
+                      {trend == null ? (
                         '—'
-                      ) : t.delta === 0 ? (
+                      ) : trend.delta === 0 ? (
                         <span className="inline-flex items-center gap-1">
                           <Minus className="h-3.5 w-3.5" /> 0%
                         </span>
-                      ) : t.delta > 0 ? (
+                      ) : trend.delta > 0 ? (
                         <span className="inline-flex items-center gap-1">
                           <TrendingUp className="h-3.5 w-3.5" />
-                          {t.pct != null ? `+${t.pct.toFixed(0)}%` : `+${fmtCompact(t.delta)}`}
+                          {trend.pct != null
+                            ? `+${trend.pct.toFixed(0)}%`
+                            : `+${fmtCompact(trend.delta)}`}
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1">
                           <TrendingDown className="h-3.5 w-3.5" />
-                          {t.pct != null
-                            ? `−${Math.abs(t.pct).toFixed(0)}%`
-                            : `−${fmtCompact(Math.abs(t.delta))}`}
+                          {trend.pct != null
+                            ? `−${Math.abs(trend.pct).toFixed(0)}%`
+                            : `−${fmtCompact(Math.abs(trend.delta))}`}
                         </span>
                       )}
                     </td>
@@ -869,24 +909,31 @@ export default function ReportesPage() {
       {history.length > 0 && (
         <div className="rounded-2xl bg-white p-5 shadow-soft dark:bg-surface-800">
           <p className="mb-1 text-sm font-medium text-surface-600 dark:text-surface-300">
-            Historial de escenarios
+            {t('webadmin2.arep.histTitle')}
           </p>
           <p className="mb-3 text-xs text-surface-500 dark:text-surface-400">
-            Lo que se proyectó al fijar cada mes contra la neta real que después ocurrió. Desviación
-            positiva = el mes rindió mejor que lo planeado.
+            {t('webadmin2.arep.histSub')}
           </p>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-surface-200 text-left text-xs text-surface-500 dark:text-surface-400 dark:border-surface-700">
-                  <th className="px-4 py-3 font-medium">Mes fijado</th>
-                  <th className="px-4 py-3 font-medium">Escenario</th>
-                  <th className="px-4 py-3 text-right font-medium">Tasa</th>
-                  <th className="px-4 py-3 text-right font-medium">Proy. bruto</th>
-                  <th className="px-4 py-3 text-right font-medium">Proy. neta</th>
-                  <th className="px-4 py-3 text-right font-medium">Neta real</th>
-                  <th className="px-4 py-3 text-right font-medium">Desv.</th>
-                  <th className="px-4 py-3 text-right font-medium">Fijado</th>
+                  <th className="px-4 py-3 font-medium">{t('webadmin2.arep.hMonth')}</th>
+                  <th className="px-4 py-3 font-medium">{t('webadmin2.arep.hScenario')}</th>
+                  <th className="px-4 py-3 text-right font-medium">{t('webadmin2.arep.hRate')}</th>
+                  <th className="px-4 py-3 text-right font-medium">
+                    {t('webadmin2.arep.hProjGross')}
+                  </th>
+                  <th className="px-4 py-3 text-right font-medium">
+                    {t('webadmin2.arep.hProjNet')}
+                  </th>
+                  <th className="px-4 py-3 text-right font-medium">
+                    {t('webadmin2.arep.hRealNet')}
+                  </th>
+                  <th className="px-4 py-3 text-right font-medium">{t('webadmin2.arep.hDev')}</th>
+                  <th className="px-4 py-3 text-right font-medium">
+                    {t('webadmin2.arep.hPinnedAt')}
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -904,7 +951,10 @@ export default function ReportesPage() {
                         {monthLabel(h.month)}
                       </td>
                       <td className="px-4 py-2.5 text-surface-600 dark:text-surface-300">
-                        {h.ordersPerDay}/día · viaje {fmtCompact(h.expectedTrip)}
+                        {t('webadmin2.arep.scenarioCell', {
+                          orders: h.ordersPerDay,
+                          trip: fmtCompact(h.expectedTrip),
+                        })}
                       </td>
                       <td className="px-4 py-2.5 text-right text-surface-600 dark:text-surface-300">
                         {h.commissionPct}%
@@ -961,21 +1011,20 @@ export default function ReportesPage() {
       {/* Desviación por zona */}
       <div className="rounded-2xl bg-white p-5 shadow-soft dark:bg-surface-800">
         <p className="mb-1 text-sm font-medium text-surface-600 dark:text-surface-300">
-          Desviación por zona
+          {t('webadmin2.arep.zoneTitle')}
         </p>
         <p className="mb-3 text-xs text-surface-500 dark:text-surface-400">
-          Viajes reales del mes en curso contra lo proyectado según el peso del mix real y el
-          escenario de {ordersPerDay} pedidos/día
+          {t('webadmin2.arep.zoneSub', { n: ordersPerDay })}
         </p>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-surface-200 text-left text-xs text-surface-500 dark:text-surface-400 dark:border-surface-700">
-                <th className="px-4 py-3 font-medium">Zona</th>
-                <th className="px-4 py-3 text-right font-medium">Peso mix</th>
-                <th className="px-4 py-3 text-right font-medium">Real mes</th>
-                <th className="px-4 py-3 text-right font-medium">Proyección mes</th>
-                <th className="px-4 py-3 text-right font-medium">Desv.</th>
+                <th className="px-4 py-3 font-medium">{t('webadmin2.arep.zZone')}</th>
+                <th className="px-4 py-3 text-right font-medium">{t('webadmin2.arep.zWeight')}</th>
+                <th className="px-4 py-3 text-right font-medium">{t('webadmin2.arep.zReal')}</th>
+                <th className="px-4 py-3 text-right font-medium">{t('webadmin2.arep.zProj')}</th>
+                <th className="px-4 py-3 text-right font-medium">{t('webadmin2.arep.zDev')}</th>
               </tr>
             </thead>
             <tbody>
@@ -1025,6 +1074,7 @@ function MonthBars({
   projected: number;
   historyMarks?: Array<{ month: string; net: number }>;
 }) {
+  const { t } = useTranslations();
   const W = 660;
   const H = 210;
   const pad = { l: 10, r: 10, t: 26, b: 26 };
@@ -1049,7 +1099,7 @@ function MonthBars({
       viewBox={`0 0 ${W} ${H}`}
       className="w-full"
       role="img"
-      aria-label="Ganancia neta real por mes"
+      aria-label={t('webadmin2.arep.chartAria')}
     >
       {/* Línea de proyección */}
       <line
@@ -1091,7 +1141,7 @@ function MonthBars({
               fill="#16a34a"
               transform={`rotate(45 ${x} ${y})`}
             >
-              <title>{`Escenario fijado: ${fmtCompact(net)}/mes`}</title>
+              <title>{t('webadmin2.arep.pinnedTooltip', { net: fmtCompact(net) })}</title>
             </rect>
           </g>
         );

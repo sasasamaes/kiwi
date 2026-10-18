@@ -17,7 +17,7 @@ import {
   Loader2,
   MessageCircle,
 } from 'lucide-react';
-import { api } from '@kiwi/ui';
+import { api, useTranslations } from '@kiwi/ui';
 
 type Role = 'merchant' | 'driver' | 'customer';
 type StatusFilter = 'pending' | 'accepted' | 'all';
@@ -36,19 +36,8 @@ interface Invitation {
 }
 
 /** Motivo legible cuando el correo no sale: distingue "sin configurar" del error real. */
-const smtpReason = (emailError?: string) =>
-  !emailError || emailError === 'not-configured' ? 'SMTP sin configurar en el API' : emailError;
-
-const statusLabel = (status: string) => {
-  switch (status) {
-    case 'accepted':
-      return { label: 'Aceptada', color: 'bg-green-100 text-green-700' };
-    case 'revoked':
-      return { label: 'Revocada', color: 'bg-red-100 text-red-500' };
-    default:
-      return { label: 'Pendiente', color: 'bg-yellow-100 text-yellow-700' };
-  }
-};
+const smtpReason = (emailError?: string, fallback?: string) =>
+  !emailError || emailError === 'not-configured' ? (fallback ?? emailError ?? '') : emailError;
 
 export default function InvitacionesPage() {
   return (
@@ -71,6 +60,17 @@ function usePrefill() {
 }
 
 function InvitacionesInner() {
+  const { t } = useTranslations();
+  const statusLabel = (status: string) => {
+    switch (status) {
+      case 'accepted':
+        return { label: t('webadmin2.ainv.stAccepted'), color: 'bg-green-100 text-green-700' };
+      case 'revoked':
+        return { label: t('webadmin2.ainv.stRevoked'), color: 'bg-red-100 text-red-500' };
+      default:
+        return { label: t('webadmin2.ainv.stPending'), color: 'bg-yellow-100 text-yellow-700' };
+    }
+  };
   const prefill = usePrefill();
   const [role, setRole] = useState<Role>(prefill.role);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('pending');
@@ -104,7 +104,7 @@ function InvitacionesInner() {
       setItems(Array.isArray(res?.invitations) ? res.invitations : []);
       setTotal(Number(res?.total ?? 0));
     } catch (e: any) {
-      setNotice({ ok: false, text: e?.message || 'No se pudieron cargar las invitaciones' });
+      setNotice({ ok: false, text: e?.message || t('webadmin2.ainv.loadFailed') });
       setItems([]);
     } finally {
       setLoading(false);
@@ -120,7 +120,7 @@ function InvitacionesInner() {
     setFormError(null);
     setLastLink(null);
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      setFormError('Escribí un email válido');
+      setFormError(t('webadmin2.ainv.emailInvalid'));
       return;
     }
     setSending(true);
@@ -135,15 +135,17 @@ function InvitacionesInner() {
       setNotice({
         ok: res.emailSent,
         text: res.emailSent
-          ? `Invitación enviada a ${res.invitation.email}`
-          : `Guardada, pero el correo NO salió (${smtpReason(res.emailError)}). Copiá el link y mandalo manual.`,
+          ? t('webadmin2.ainv.createdOk', { email: res.invitation.email })
+          : t('webadmin2.ainv.createdNoMail', {
+              reason: smtpReason(res.emailError, t('webadmin2.ainv.smtpMissing')),
+            }),
       });
       setEmail('');
       setPhone('');
       setName('');
       load(role, statusFilter);
     } catch (err: any) {
-      setFormError(err?.message || 'No se pudo crear la invitación');
+      setFormError(err?.message || t('webadmin2.ainv.createFailed'));
     } finally {
       setSending(false);
     }
@@ -173,12 +175,14 @@ function InvitacionesInner() {
       setNotice({
         ok: res.emailSent,
         text: res.emailSent
-          ? 'Invitación reenviada con un link nuevo (el anterior ya no vale)'
-          : `Link renovado, pero el correo NO salió (${smtpReason(res.emailError)}). Copiá el link de abajo.`,
+          ? t('webadmin2.ainv.resentOk')
+          : t('webadmin2.ainv.resentNoMail', {
+              reason: smtpReason(res.emailError, t('webadmin2.ainv.smtpMissing')),
+            }),
       });
       load(role, statusFilter);
     } catch (e: any) {
-      setNotice({ ok: false, text: e?.message || 'No se pudo reenviar' });
+      setNotice({ ok: false, text: e?.message || t('webadmin2.ainv.resendFailed') });
     } finally {
       setActing(null);
     }
@@ -193,26 +197,31 @@ function InvitacionesInner() {
       setNotice({
         ok: res.waSent,
         text: res.waSent
-          ? 'Invitación enviada por WhatsApp con un link nuevo (el anterior ya no vale)'
-          : `El WhatsApp NO salió (${!res.waError || res.waError === 'not-configured' ? 'Kapso sin configurar' : res.waError}). Copiá el link de abajo.`,
+          ? t('webadmin2.ainv.waOk')
+          : t('webadmin2.ainv.waFail', {
+              reason:
+                !res.waError || res.waError === 'not-configured'
+                  ? t('webadmin2.ainv.kapsoMissing')
+                  : res.waError,
+            }),
       });
       load(role, statusFilter);
     } catch (e: any) {
-      setNotice({ ok: false, text: e?.message || 'No se pudo enviar por WhatsApp' });
+      setNotice({ ok: false, text: e?.message || t('webadmin2.ainv.waFailed') });
     } finally {
       setActing(null);
     }
   };
 
   const handleRevoke = async (id: string) => {
-    if (!window.confirm('¿Revocar esta invitación? El link deja de funcionar.')) return;
+    if (!window.confirm(t('webadmin2.ainv.revokeConfirm'))) return;
     setActing(id);
     try {
       await api.revokeInvitation(id);
-      setNotice({ ok: true, text: 'Invitación revocada' });
+      setNotice({ ok: true, text: t('webadmin2.ainv.revokedOk') });
       load(role, statusFilter);
     } catch (e: any) {
-      setNotice({ ok: false, text: e?.message || 'No se pudo revocar' });
+      setNotice({ ok: false, text: e?.message || t('webadmin2.ainv.revokeFailed') });
     } finally {
       setActing(null);
     }
@@ -225,11 +234,10 @@ function InvitacionesInner() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-display font-bold text-surface-800 dark:text-surface-100">
-          <Mail className="h-6 w-6 inline" /> Invitaciones
+          <Mail className="h-6 w-6 inline" /> {t('webadmin2.ainv.title')}
         </h1>
         <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">
-          Venta en campo: anotás el correo negocio por negocio y les llega la invitación a
-          registrarse.
+          {t('webadmin2.ainv.subtitle')}
         </p>
       </div>
 
@@ -237,9 +245,9 @@ function InvitacionesInner() {
       <div className="flex gap-2 rounded-xl bg-surface-100 dark:bg-surface-800 p-1">
         {(
           [
-            { value: 'merchant', label: 'Kiwi Comercio', Icon: Store },
-            { value: 'driver', label: 'Kiwi Repartidores', Icon: Bike },
-            { value: 'customer', label: 'Clientes', Icon: Users },
+            { value: 'merchant', labelKey: 'webadmin2.ainv.tabMerchant', Icon: Store },
+            { value: 'driver', labelKey: 'webadmin2.ainv.tabDriver', Icon: Bike },
+            { value: 'customer', labelKey: 'webadmin2.ainv.tabCustomer', Icon: Users },
           ] as const
         ).map((tab) => (
           <motion.button
@@ -257,7 +265,7 @@ function InvitacionesInner() {
             whileTap={{ scale: 0.97 }}
           >
             <tab.Icon className="h-4 w-4" />
-            {tab.label}
+            {t(tab.labelKey)}
           </motion.button>
         ))}
       </div>
@@ -284,9 +292,9 @@ function InvitacionesInner() {
           <p className="text-sm font-medium text-kiwi-700 dark:text-kiwi-300 mb-2">
             {lastLink.sent
               ? lastLink.channel === 'whatsapp'
-                ? 'Link enviado por WhatsApp (también lo podés copiar):'
-                : 'Link enviado por correo (también lo podés copiar):'
-              : 'Copiá este link y mandalo manual:'}
+                ? t('webadmin2.ainv.linkSentWa')
+                : t('webadmin2.ainv.linkSentEmail')
+              : t('webadmin2.ainv.linkManual')}
           </p>
           <div className="flex items-center gap-2">
             <code className="min-w-0 flex-1 truncate rounded-lg bg-white dark:bg-surface-800 px-3 py-2 text-xs text-surface-700 dark:text-surface-300">
@@ -297,7 +305,7 @@ function InvitacionesInner() {
               className="flex shrink-0 items-center gap-1 rounded-lg bg-kiwi-600 px-3 py-2 text-xs font-semibold text-white hover:bg-kiwi-700"
             >
               {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-              {copied ? 'Copiado' : 'Copiar'}
+              {copied ? t('webadmin2.ainv.copied') : t('webadmin2.ainv.copy')}
             </button>
           </div>
         </motion.div>
@@ -312,13 +320,13 @@ function InvitacionesInner() {
         <h3 className="flex items-center gap-2 text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-1">
           <Send className="h-5 w-5" />
           {isMerchant
-            ? 'Invitar un comercio'
+            ? t('webadmin2.ainv.formMerchant')
             : isDriver
-              ? 'Invitar un repartidor'
-              : 'Invitar un cliente'}
+              ? t('webadmin2.ainv.formDriver')
+              : t('webadmin2.ainv.formCustomer')}
         </h3>
         <p className="text-xs text-surface-500 dark:text-surface-400 mb-4">
-          Pedí el correo en el local. El teléfono es opcional (solo para contactarlo después).
+          {t('webadmin2.ainv.formHint')}
         </p>
         <form
           onSubmit={handleSubmit}
@@ -329,14 +337,14 @@ function InvitacionesInner() {
               htmlFor="inv-email"
               className="mb-1 block text-xs font-medium text-surface-600 dark:text-surface-400"
             >
-              Correo *
+              {t('webadmin2.ainv.emailLabel')}
             </label>
             <input
               id="inv-email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="soda@ejemplo.com"
+              placeholder={t('webadmin2.ainv.emailPh')}
               autoComplete="email"
               className="w-full px-4 py-2.5 text-sm rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
             />
@@ -346,14 +354,14 @@ function InvitacionesInner() {
               htmlFor="inv-phone"
               className="mb-1 block text-xs font-medium text-surface-600 dark:text-surface-400"
             >
-              Teléfono (opcional)
+              {t('webadmin2.ainv.phoneLabel')}
             </label>
             <input
               id="inv-phone"
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              placeholder="8888-8888"
+              placeholder={t('webadmin2.ainv.phonePh')}
               autoComplete="tel"
               inputMode="tel"
               className="w-full px-4 py-2.5 text-sm rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
@@ -364,14 +372,16 @@ function InvitacionesInner() {
               htmlFor="inv-name"
               className="mb-1 block text-xs font-medium text-surface-600 dark:text-surface-400"
             >
-              {isMerchant ? 'Negocio (opcional)' : 'Nombre (opcional)'}
+              {isMerchant ? t('webadmin2.ainv.nameMerchant') : t('webadmin2.ainv.nameOther')}
             </label>
             <input
               id="inv-name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder={isMerchant ? 'Soda El Sabor' : 'Juan Pérez'}
+              placeholder={
+                isMerchant ? t('webadmin2.ainv.namePhMerchant') : t('webadmin2.ainv.namePhOther')
+              }
               className="w-full px-4 py-2.5 text-sm rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
             />
           </div>
@@ -388,7 +398,7 @@ function InvitacionesInner() {
               ) : (
                 <Send className="h-4 w-4" />
               )}
-              {sending ? 'Enviando…' : 'Enviar invitación'}
+              {sending ? t('webadmin2.ainv.submitting') : t('webadmin2.ainv.submit')}
             </motion.button>
             {formError && <p className="text-sm text-red-500">{formError}</p>}
           </div>
@@ -400,25 +410,27 @@ function InvitacionesInner() {
         <div className="flex gap-2">
           {(
             [
-              { value: 'pending', label: 'Pendientes' },
-              { value: 'accepted', label: 'Aceptadas' },
-              { value: 'all', label: 'Todas' },
+              { value: 'pending', labelKey: 'webadmin2.ainv.filterPending' },
+              { value: 'accepted', labelKey: 'webadmin2.ainv.filterAccepted' },
+              { value: 'all', labelKey: 'webadmin2.ainv.filterAll' },
             ] as const
-          ).map((tab) => (
+          ).map((ftab) => (
             <button
-              key={tab.value}
-              onClick={() => setStatusFilter(tab.value)}
+              key={ftab.value}
+              onClick={() => setStatusFilter(ftab.value)}
               className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                statusFilter === tab.value
+                statusFilter === ftab.value
                   ? 'bg-kiwi-700 text-white'
                   : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400 hover:bg-surface-200 dark:hover:bg-surface-700'
               }`}
             >
-              {tab.label}
+              {t(ftab.labelKey)}
             </button>
           ))}
         </div>
-        <p className="text-sm text-surface-500 dark:text-surface-400">{total} en total</p>
+        <p className="text-sm text-surface-500 dark:text-surface-400">
+          {t('webadmin2.ainv.total', { n: total })}
+        </p>
       </div>
 
       <motion.div
@@ -431,16 +443,16 @@ function InvitacionesInner() {
             <thead>
               <tr className="border-b border-surface-200 dark:border-surface-700">
                 <th className="text-left py-4 px-6 text-sm font-medium text-surface-500 dark:text-surface-400">
-                  Contacto
+                  {t('webadmin2.ainv.thContact')}
                 </th>
                 <th className="text-left py-4 px-6 text-sm font-medium text-surface-500 dark:text-surface-400">
-                  Estado
+                  {t('webadmin2.ainv.thStatus')}
                 </th>
                 <th className="text-left py-4 px-6 text-sm font-medium text-surface-500 dark:text-surface-400">
-                  Carga
+                  {t('webadmin2.ainv.thCreated')}
                 </th>
                 <th className="text-right py-4 px-6 text-sm font-medium text-surface-500 dark:text-surface-400">
-                  Acciones
+                  {t('webadmin2.ainv.thActions')}
                 </th>
               </tr>
             </thead>
@@ -451,7 +463,7 @@ function InvitacionesInner() {
                     colSpan={4}
                     className="py-8 text-center text-sm text-surface-500 dark:text-surface-400"
                   >
-                    Cargando…
+                    {t('webadmin2.ainv.loading')}
                   </td>
                 </tr>
               ) : (
@@ -492,17 +504,17 @@ function InvitacionesInner() {
                                 <RefreshCw
                                   className={`h-3.5 w-3.5 ${acting === inv.id ? 'animate-spin' : ''}`}
                                 />
-                                Reenviar
+                                {t('webadmin2.ainv.resend')}
                               </button>
                               {inv.phone && (
                                 <button
                                   onClick={() => handleWhatsapp(inv.id)}
                                   disabled={acting === inv.id}
-                                  title={`Enviar por WhatsApp al ${inv.phone}`}
+                                  title={t('webadmin2.ainv.whatsappTitle', { phone: inv.phone })}
                                   className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition-colors disabled:opacity-50"
                                 >
                                   <MessageCircle className="h-3.5 w-3.5" />
-                                  WhatsApp
+                                  {t('webadmin2.ainv.whatsapp')}
                                 </button>
                               )}
                               <button
@@ -511,7 +523,7 @@ function InvitacionesInner() {
                                 className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors disabled:opacity-50"
                               >
                                 <X className="h-3.5 w-3.5" />
-                                Revocar
+                                {t('webadmin2.ainv.revoke')}
                               </button>
                             </>
                           )}
@@ -528,7 +540,7 @@ function InvitacionesInner() {
 
       {!loading && items.length === 0 && (
         <p className="text-center text-sm text-surface-500 dark:text-surface-400">
-          Sin invitaciones con ese filtro. Cargá la primera arriba.
+          {t('webadmin2.ainv.empty')}
         </p>
       )}
     </div>

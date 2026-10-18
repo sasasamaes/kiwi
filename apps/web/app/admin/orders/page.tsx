@@ -15,7 +15,7 @@ import {
   ChevronRight,
   Navigation,
 } from 'lucide-react';
-import { api, buildTrackingUrl } from '@kiwi/ui';
+import { api, buildTrackingUrl, useTranslations } from '@kiwi/ui';
 
 interface AdminOrder {
   id: string;
@@ -40,19 +40,6 @@ interface AdminOrder {
   deliveryProofPhotoUrl?: string | null;
 }
 
-const STATUS_LABEL: Record<string, string> = {
-  pending: 'Pendiente',
-  driver_proposals: 'Propuestas',
-  assigned: 'Asignado',
-  pending_acceptance: 'Esperando al repartidor',
-  in_transit_to_pickup: 'A recoger',
-  picked_up: 'Recogido',
-  in_transit_to_delivery: 'Entregando',
-  delivered: 'Entregado',
-  cancelled: 'Cancelado',
-  no_driver: 'Sin repartidores',
-};
-
 const STATUS_COLOR: Record<string, string> = {
   pending: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300',
   driver_proposals: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
@@ -67,18 +54,10 @@ const STATUS_COLOR: Record<string, string> = {
   no_driver: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
 };
 
-const FILTERS = [
-  { id: '', label: 'Todos' },
-  { id: 'pending', label: 'Pendientes' },
-  { id: 'assigned', label: 'Asignados' },
-  { id: 'in_transit_to_delivery', label: 'Entregando' },
-  { id: 'delivered', label: 'Entregados' },
-  { id: 'cancelled', label: 'Cancelados' },
-];
-
 const PAGE_SIZE = 20;
 
 export default function AdminOrders() {
+  const { t } = useTranslations();
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [total, setTotal] = useState(0);
   const [stats, setStats] = useState<{
@@ -102,21 +81,43 @@ export default function AdminOrders() {
   const [advancing, setAdvancing] = useState(false);
   const [nextStatus, setNextStatus] = useState('');
 
+  const STATUS_LABEL: Record<string, string> = {
+    pending: t('webadmin1.aorders.status.pending'),
+    driver_proposals: t('webadmin1.aorders.status.proposals'),
+    assigned: t('webadmin1.aorders.status.assigned'),
+    pending_acceptance: t('webadmin1.aorders.status.awaiting'),
+    in_transit_to_pickup: t('webadmin1.aorders.status.toPickup'),
+    picked_up: t('webadmin1.aorders.status.pickedUp'),
+    in_transit_to_delivery: t('webadmin1.aorders.status.delivering'),
+    delivered: t('webadmin1.aorders.status.delivered'),
+    cancelled: t('webadmin1.aorders.status.cancelled'),
+    no_driver: t('webadmin1.aorders.status.noDriver'),
+  };
+
+  const FILTERS = [
+    { id: '', label: t('webadmin1.aorders.filters.all') },
+    { id: 'pending', label: t('webadmin1.aorders.filters.pending') },
+    { id: 'assigned', label: t('webadmin1.aorders.filters.assigned') },
+    { id: 'in_transit_to_delivery', label: t('webadmin1.aorders.filters.delivering') },
+    { id: 'delivered', label: t('webadmin1.aorders.filters.delivered') },
+    { id: 'cancelled', label: t('webadmin1.aorders.filters.cancelled') },
+  ];
+
   const NEXT_STATUS: Record<string, Array<{ id: string; label: string }>> = {
     pending: [
-      { id: 'pending_acceptance', label: 'En aceptación' },
-      { id: 'no_driver', label: 'Sin repartidores' },
+      { id: 'pending_acceptance', label: t('webadmin1.aorders.next.toAccept') },
+      { id: 'no_driver', label: t('webadmin1.aorders.next.toNoDriver') },
     ],
-    driver_proposals: [{ id: 'assigned', label: 'Asignado (elegir repartidor aparte)' }],
+    driver_proposals: [{ id: 'assigned', label: t('webadmin1.aorders.next.assignedContest') }],
     pending_acceptance: [
-      { id: 'assigned', label: 'Asignado' },
-      { id: 'pending', label: 'A concurso' },
+      { id: 'assigned', label: t('webadmin1.aorders.next.assigned') },
+      { id: 'pending', label: t('webadmin1.aorders.next.toContest') },
     ],
-    assigned: [{ id: 'in_transit_to_pickup', label: 'Va a recoger' }],
-    in_transit_to_pickup: [{ id: 'picked_up', label: 'Recogido' }],
-    picked_up: [{ id: 'in_transit_to_delivery', label: 'En camino a entregar' }],
-    in_transit_to_delivery: [{ id: 'delivered', label: 'Entregado' }],
-    no_driver: [{ id: 'pending', label: 'Reabrir concurso' }],
+    assigned: [{ id: 'in_transit_to_pickup', label: t('webadmin1.aorders.next.toPickup') }],
+    in_transit_to_pickup: [{ id: 'picked_up', label: t('webadmin1.aorders.next.pickedUp') }],
+    picked_up: [{ id: 'in_transit_to_delivery', label: t('webadmin1.aorders.next.toDeliver') }],
+    in_transit_to_delivery: [{ id: 'delivered', label: t('webadmin1.aorders.next.delivered') }],
+    no_driver: [{ id: 'pending', label: t('webadmin1.aorders.next.reopen') }],
   };
 
   const advanceSelected = async () => {
@@ -129,7 +130,7 @@ export default function AdminOrders() {
       setNextStatus('');
       await load(filter, search, page);
     } catch (e: any) {
-      setCancelError(e?.message || 'No se pudo cambiar el estado');
+      setCancelError(e?.message || t('webadmin1.aorders.statusChangeError'));
     } finally {
       setAdvancing(false);
     }
@@ -140,7 +141,10 @@ export default function AdminOrders() {
     if (!selected || advancing) return;
     if (
       !window.confirm(
-        `Marcar ENTREGADO el pedido #${selected.id.slice(0, 8).toUpperCase()} de ${selected.merchant?.businessName ?? ''}? Solo si ya se entregó en la calle.`,
+        t('webadmin1.aorders.confirmDeliver', {
+          id: selected.id.slice(0, 8).toUpperCase(),
+          biz: selected.merchant?.businessName ?? '',
+        }),
       )
     ) {
       return;
@@ -153,7 +157,7 @@ export default function AdminOrders() {
       setNextStatus('');
       await load(filter, search, page);
     } catch (e: any) {
-      setCancelError(e?.message || 'No se pudo marcar entregado');
+      setCancelError(e?.message || t('webadmin1.aorders.markDeliveredError'));
     } finally {
       setAdvancing(false);
     }
@@ -163,7 +167,10 @@ export default function AdminOrders() {
     if (!selected || cancelling) return;
     if (
       !window.confirm(
-        `Cancelar el pedido #${selected.id.slice(0, 8).toUpperCase()} de ${selected.merchant?.businessName ?? ''}? No se puede deshacer.`,
+        t('webadmin1.aorders.confirmCancel', {
+          id: selected.id.slice(0, 8).toUpperCase(),
+          biz: selected.merchant?.businessName ?? '',
+        }),
       )
     ) {
       return;
@@ -175,32 +182,35 @@ export default function AdminOrders() {
       setSelected(null);
       await load(filter, search, page);
     } catch (e: any) {
-      setCancelError(e?.message || 'No se pudo cancelar');
+      setCancelError(e?.message || t('webadmin1.aorders.cancelError'));
     } finally {
       setCancelling(false);
     }
   };
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const load = useCallback(async (status: string, q: string, p: number) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await api.getOrdersAdmin({
-        take: PAGE_SIZE,
-        skip: p * PAGE_SIZE,
-        status: status || undefined,
-        search: q.trim() || undefined,
-      });
-      setOrders(Array.isArray(res?.items) ? res.items : []);
-      setTotal(Number(res?.total ?? 0));
-      setStats(res?.stats ?? null);
-    } catch (e: any) {
-      setError(e?.message || 'No se pudieron cargar los pedidos');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const load = useCallback(
+    async (status: string, q: string, p: number) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await api.getOrdersAdmin({
+          take: PAGE_SIZE,
+          skip: p * PAGE_SIZE,
+          status: status || undefined,
+          search: q.trim() || undefined,
+        });
+        setOrders(Array.isArray(res?.items) ? res.items : []);
+        setTotal(Number(res?.total ?? 0));
+        setStats(res?.stats ?? null);
+      } catch (e: any) {
+        setError(e?.message || t('webadmin1.aorders.loadError'));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [t],
+  );
 
   useEffect(() => {
     if (searchTimer.current) clearTimeout(searchTimer.current);
@@ -216,11 +226,14 @@ export default function AdminOrders() {
     <div className="space-y-6">
       <div>
         <h1 className="flex items-center gap-2 text-2xl font-display font-bold text-surface-800 dark:text-surface-100">
-          <Package className="h-6 w-6" /> Gestión de Pedidos
+          <Package className="h-6 w-6" /> {t('webadmin1.aorders.title')}
         </h1>
         <p className="text-sm text-surface-500 dark:text-surface-400">
-          {total} pedidos · ₡{Number(stats?.revenue ?? 0).toLocaleString()} movidos · ₡
-          {Number(stats?.platformFee ?? 0).toLocaleString()} comisión
+          {t('webadmin1.aorders.subtitle', {
+            total,
+            revenue: Number(stats?.revenue ?? 0).toLocaleString(),
+            fee: Number(stats?.platformFee ?? 0).toLocaleString(),
+          })}
         </p>
       </div>
 
@@ -253,7 +266,7 @@ export default function AdminOrders() {
               setSearch(e.target.value);
               setPage(0);
             }}
-            placeholder="Buscar por ID, dirección o nombre…"
+            placeholder={t('webadmin1.aorders.searchPh')}
             className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 pl-10 pr-4 py-2.5 text-sm"
           />
         </div>
@@ -278,7 +291,7 @@ export default function AdminOrders() {
       ) : orders.length === 0 ? (
         <div className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-8 text-center">
           <Package className="h-10 w-10 mx-auto mb-2 text-surface-300" />
-          <p className="text-sm text-surface-500">Sin pedidos con este filtro</p>
+          <p className="text-sm text-surface-500">{t('webadmin1.aorders.empty')}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -316,7 +329,9 @@ export default function AdminOrders() {
                     hour: '2-digit',
                     minute: '2-digit',
                   })}
-                  {o.driver?.fullName ? ` · ${o.driver.fullName}` : ' · Sin repartidor'}
+                  {o.driver?.fullName
+                    ? ` · ${o.driver.fullName}`
+                    : ` · ${t('webadmin1.aorders.noDriver')}`}
                 </p>
               </div>
               <div className="shrink-0 text-right">
@@ -324,7 +339,9 @@ export default function AdminOrders() {
                   ₡{Number(o.totalAmount).toLocaleString()}
                 </p>
                 <p className="text-xs text-kiwi-700">
-                  ₡{Number(o.commission).toLocaleString()} com.
+                  {t('webadmin1.aorders.commissionShort', {
+                    amount: Number(o.commission).toLocaleString(),
+                  })}
                 </p>
               </div>
             </motion.button>
@@ -340,17 +357,17 @@ export default function AdminOrders() {
             disabled={page === 0}
             className="flex items-center gap-1 rounded-xl px-4 py-2 text-sm font-medium bg-surface-100 dark:bg-surface-800 disabled:opacity-40"
           >
-            <ChevronLeft className="h-4 w-4" /> Anterior
+            <ChevronLeft className="h-4 w-4" /> {t('webadmin1.aorders.prev')}
           </button>
           <span className="text-xs text-surface-500">
-            Página {page + 1} de {pages}
+            {t('webadmin1.aorders.pageOf', { p: page + 1, pages })}
           </span>
           <button
             onClick={() => setPage((p) => Math.min(pages - 1, p + 1))}
             disabled={page >= pages - 1}
             className="flex items-center gap-1 rounded-xl px-4 py-2 text-sm font-medium bg-surface-100 dark:bg-surface-800 disabled:opacity-40"
           >
-            Siguiente <ChevronRight className="h-4 w-4" />
+            {t('webadmin1.aorders.nextPage')} <ChevronRight className="h-4 w-4" />
           </button>
         </div>
       )}
@@ -414,7 +431,7 @@ export default function AdminOrders() {
                 </p>
                 <p className="flex items-center gap-2">
                   <Bike className="h-4 w-4 shrink-0 text-surface-500 dark:text-surface-400" />
-                  {selected.driver?.fullName ?? 'Sin repartidor asignado'}
+                  {selected.driver?.fullName ?? t('webadmin1.aorders.noDriverAssigned')}
                 </p>
                 <div className="flex items-center gap-2 rounded-xl bg-kiwi-50 dark:bg-kiwi-900/30 px-3 py-2">
                   <Navigation className="h-4 w-4 shrink-0 text-kiwi-700" />
@@ -424,7 +441,7 @@ export default function AdminOrders() {
                     rel="noopener noreferrer"
                     className="min-w-0 flex-1 truncate text-xs font-medium text-kiwi-700 dark:text-kiwi-300 hover:underline"
                   >
-                    Seguimiento en vivo
+                    {t('webadmin1.aorders.liveTracking')}
                   </a>
                   <button
                     onClick={async () => {
@@ -433,12 +450,15 @@ export default function AdminOrders() {
                         setCopiedTrack(true);
                         setTimeout(() => setCopiedTrack(false), 2000);
                       } catch {
-                        window.prompt('Copiá el link:', buildTrackingUrl(selected.id));
+                        window.prompt(
+                          t('webadmin1.aorders.copyPrompt'),
+                          buildTrackingUrl(selected.id),
+                        );
                       }
                     }}
                     className="shrink-0 rounded-lg px-2 py-1 text-xs font-semibold text-kiwi-700 dark:text-kiwi-300 hover:bg-kiwi-100 dark:hover:bg-kiwi-900/50"
                   >
-                    {copiedTrack ? '¡Copiado!' : 'Copiar'}
+                    {copiedTrack ? t('webadmin1.aorders.copied') : t('webadmin1.aorders.copy')}
                   </button>
                 </div>
                 {Array.isArray(selected.items) && selected.items.length > 0 && (
@@ -453,24 +473,28 @@ export default function AdminOrders() {
                 {(selected.pickupProofPhotoUrl || selected.deliveryProofPhotoUrl) && (
                   <div className="rounded-xl bg-surface-50 dark:bg-surface-700/50 p-3 space-y-3">
                     <p className="text-xs font-semibold text-surface-600 dark:text-surface-300">
-                      Evidencia fotográfica
+                      {t('webadmin1.aorders.photoEvidence')}
                     </p>
                     {selected.pickupProofPhotoUrl && (
                       <div>
-                        <p className="mb-1 text-xs text-surface-500">Comercio al entregar</p>
+                        <p className="mb-1 text-xs text-surface-500">
+                          {t('webadmin1.aorders.pickupPhotoLabel')}
+                        </p>
                         <img
                           src={selected.pickupProofPhotoUrl}
-                          alt="Foto del comercio al entregar"
+                          alt={t('webadmin1.aorders.pickupPhotoAlt')}
                           className="rounded-xl w-full object-cover"
                         />
                       </div>
                     )}
                     {selected.deliveryProofPhotoUrl && (
                       <div>
-                        <p className="mb-1 text-xs text-surface-500">Entrega al cliente</p>
+                        <p className="mb-1 text-xs text-surface-500">
+                          {t('webadmin1.aorders.deliveryPhotoLabel')}
+                        </p>
                         <img
                           src={selected.deliveryProofPhotoUrl}
-                          alt="Foto de la entrega al cliente"
+                          alt={t('webadmin1.aorders.deliveryPhotoAlt')}
                           className="rounded-xl w-full object-cover"
                         />
                       </div>
@@ -479,14 +503,14 @@ export default function AdminOrders() {
                 )}
                 <div className="rounded-xl bg-surface-50 dark:bg-surface-700/50 p-3 space-y-1 text-xs">
                   <div className="flex justify-between">
-                    <span className="text-surface-500">Viaje (repartidor)</span>
+                    <span className="text-surface-500">{t('webadmin1.aorders.tripDriver')}</span>
                     <span className="font-mono">
                       ₡{Number(selected.driverPayout).toLocaleString()}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-surface-500">
-                      Comisión
+                      {t('webadmin1.aorders.commission')}
                       {selected.commissionRate != null
                         ? ` (${Math.round(Number(selected.commissionRate) * 100)}%)`
                         : ''}
@@ -496,7 +520,7 @@ export default function AdminOrders() {
                     </span>
                   </div>
                   <div className="flex justify-between border-t border-surface-200 pt-1 text-sm font-bold">
-                    <span>Total</span>
+                    <span>{t('webadmin1.aorders.total')}</span>
                     <span className="font-mono">
                       ₡{Number(selected.totalAmount).toLocaleString()}
                     </span>
@@ -504,9 +528,13 @@ export default function AdminOrders() {
                 </div>
                 <p className="flex items-center gap-2 text-xs text-surface-500 dark:text-surface-400">
                   <Wallet className="h-3 w-3" />
-                  Creado {new Date(selected.createdAt).toLocaleString('es-CR')}
+                  {t('webadmin1.aorders.createdAt', {
+                    date: new Date(selected.createdAt).toLocaleString('es-CR'),
+                  })}
                   {selected.deliveredAt
-                    ? ` · Entregado ${new Date(selected.deliveredAt).toLocaleString('es-CR')}`
+                    ? ` ${t('webadmin1.aorders.deliveredAt', {
+                        date: new Date(selected.deliveredAt).toLocaleString('es-CR'),
+                      })}`
                     : ''}
                 </p>
                 {selected.status !== 'delivered' && selected.status !== 'cancelled' && (
@@ -519,7 +547,7 @@ export default function AdminOrders() {
                           onChange={(e) => setNextStatus(e.target.value)}
                           className="min-w-0 flex-1 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-2.5 text-sm"
                         >
-                          <option value="">Avanzar a…</option>
+                          <option value="">{t('webadmin1.aorders.advanceTo')}</option>
                           {(NEXT_STATUS[selected.status] ?? []).map((s) => (
                             <option key={s.id} value={s.id}>
                               {s.label}
@@ -531,7 +559,9 @@ export default function AdminOrders() {
                           disabled={!nextStatus || advancing}
                           className="shrink-0 rounded-xl bg-kiwi-700 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"
                         >
-                          {advancing ? '…' : 'Aplicar'}
+                          {advancing
+                            ? t('webadmin1.aorders.applying')
+                            : t('webadmin1.aorders.apply')}
                         </button>
                       </div>
                     )}
@@ -540,14 +570,18 @@ export default function AdminOrders() {
                       disabled={advancing}
                       className="w-full rounded-xl bg-kiwi-700 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"
                     >
-                      {advancing ? 'Marcando…' : 'Marcar entregado'}
+                      {advancing
+                        ? t('webadmin1.aorders.marking')
+                        : t('webadmin1.aorders.markDelivered')}
                     </button>
                     <button
                       onClick={() => void cancelSelected()}
                       disabled={cancelling}
                       className="w-full rounded-xl border border-red-300 px-4 py-2.5 text-sm font-bold text-red-600 disabled:opacity-50"
                     >
-                      {cancelling ? 'Cancelando…' : 'Cancelar este pedido'}
+                      {cancelling
+                        ? t('webadmin1.aorders.cancelling')
+                        : t('webadmin1.aorders.cancelOrder')}
                     </button>
                   </div>
                 )}

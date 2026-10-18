@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { RefreshCw, CheckCircle2, XCircle, Clock, Link2, Pause, Play } from 'lucide-react';
-import { api } from '@kiwi/ui';
+import { api, useTranslations } from '@kiwi/ui';
 
 interface PendingCryptoPayment {
   orderId: string;
@@ -40,6 +40,7 @@ const AUTO_REFRESH_MS = 60_000;
  * monto y tx confirmada) — el botón nunca marca pagado por sí mismo.
  */
 export default function CryptoReconciliationPage() {
+  const { t } = useTranslations();
   const [payments, setPayments] = useState<PendingCryptoPayment[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
@@ -53,21 +54,33 @@ export default function CryptoReconciliationPage() {
   // mientras hay una re-verificación en curso sin reiniciar el temporizador.
   const busyRef = useRef(false);
 
-  const load = useCallback(async (p: number) => {
-    if (p === 0) setLoading(true);
-    setError(null);
-    try {
-      const res = await api.listPendingCryptoAdmin({ take: PAGE_SIZE, skip: p * PAGE_SIZE });
-      const items = Array.isArray(res?.items) ? res.items : [];
-      setPayments((prev) => (p === 0 ? items : [...prev, ...items]));
-      setTotal(Number(res?.total ?? 0));
-    } catch (e: any) {
-      setError(e?.message || 'No se pudieron cargar los pagos crypto');
-    } finally {
-      setLoading(false);
-      setLastRefreshed(new Date());
-    }
-  }, []);
+  const TABLE_HEADERS = [
+    t('webadmin1.acrypto.col.order'),
+    t('webadmin1.acrypto.col.merchant'),
+    t('webadmin1.acrypto.col.expected'),
+    t('webadmin1.acrypto.col.wallet'),
+    t('webadmin1.acrypto.col.created'),
+    t('webadmin1.acrypto.col.verify'),
+  ];
+
+  const load = useCallback(
+    async (p: number) => {
+      if (p === 0) setLoading(true);
+      setError(null);
+      try {
+        const res = await api.listPendingCryptoAdmin({ take: PAGE_SIZE, skip: p * PAGE_SIZE });
+        const items = Array.isArray(res?.items) ? res.items : [];
+        setPayments((prev) => (p === 0 ? items : [...prev, ...items]));
+        setTotal(Number(res?.total ?? 0));
+      } catch (e: any) {
+        setError(e?.message || t('webadmin1.acrypto.loadError'));
+      } finally {
+        setLoading(false);
+        setLastRefreshed(new Date());
+      }
+    },
+    [t],
+  );
 
   useEffect(() => {
     load(page);
@@ -114,7 +127,7 @@ export default function CryptoReconciliationPage() {
         [orderId]: {
           state: 'done',
           completed: false,
-          reason: e?.message || 'Error de verificación',
+          reason: e?.message || t('webadmin1.acrypto.verifyError'),
         },
       }));
     }
@@ -126,14 +139,15 @@ export default function CryptoReconciliationPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="text-2xl font-display font-bold text-surface-800 dark:text-surface-100">
-          Cripto — Reconciliación
+          {t('webadmin1.acrypto.title')}
         </h1>
         {/* Badge del contador: aria-live para que el auto-refresh se anuncie sin focus */}
         <span
           aria-live="polite"
           className="px-3 py-1 rounded-full text-xs font-semibold bg-kiwi-700 text-white"
         >
-          {total} pendiente{total === 1 ? '' : 's'}
+          {total}{' '}
+          {total === 1 ? t('webadmin1.acrypto.pendingOne') : t('webadmin1.acrypto.pendingMany')}
         </span>
         <span
           className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs ${
@@ -144,8 +158,8 @@ export default function CryptoReconciliationPage() {
         >
           <Clock className="h-3.5 w-3.5" />
           {autoRefresh
-            ? `Auto cada 1 min${lastRefreshed ? ` · ${lastRefreshed.toLocaleTimeString('es-CR')}` : ''}`
-            : 'Auto-refresco pausado'}
+            ? `${t('webadmin1.acrypto.autoEveryMin')}${lastRefreshed ? ` · ${lastRefreshed.toLocaleTimeString('es-CR')}` : ''}`
+            : t('webadmin1.acrypto.autoPaused')}
         </span>
         <button
           type="button"
@@ -155,17 +169,17 @@ export default function CryptoReconciliationPage() {
         >
           {autoRefresh ? (
             <>
-              <Pause className="h-3.5 w-3.5" /> Pausar
+              <Pause className="h-3.5 w-3.5" /> {t('webadmin1.acrypto.pause')}
             </>
           ) : (
             <>
-              <Play className="h-3.5 w-3.5" /> Reanudar
+              <Play className="h-3.5 w-3.5" /> {t('webadmin1.acrypto.resume')}
             </>
           )}
         </button>
       </div>
       <p className="-mt-4 text-surface-500 dark:text-surface-400">
-        La verificación es contra la blockchain de Stellar (Horizon), nunca manual.
+        {t('webadmin1.acrypto.subtitle')}
       </p>
 
       {error && (
@@ -186,14 +200,7 @@ export default function CryptoReconciliationPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-surface-200 dark:border-surface-700">
-                {[
-                  'Pedido',
-                  'Comercio',
-                  'Esperado',
-                  'Wallet receptora',
-                  'Creado',
-                  'Verificación',
-                ].map((h) => (
+                {TABLE_HEADERS.map((h) => (
                   <th
                     key={h}
                     className="text-left py-4 px-6 text-sm font-medium text-surface-500 dark:text-surface-400"
@@ -210,7 +217,7 @@ export default function CryptoReconciliationPage() {
                     colSpan={6}
                     className="py-10 text-center text-sm text-surface-500 dark:text-surface-400"
                   >
-                    Cargando…
+                    {t('webadmin1.acrypto.loading')}
                   </td>
                 </tr>
               ) : payments.length === 0 ? (
@@ -219,7 +226,7 @@ export default function CryptoReconciliationPage() {
                     colSpan={6}
                     className="py-10 text-center text-sm text-surface-500 dark:text-surface-400"
                   >
-                    Sin pagos crypto pendientes 🎉
+                    {t('webadmin1.acrypto.empty')}
                   </td>
                 </tr>
               ) : (
@@ -237,7 +244,9 @@ export default function CryptoReconciliationPage() {
                           #{p.orderId.slice(0, 8).toUpperCase()}
                         </span>
                         <span className="block text-xs text-surface-500 dark:text-surface-400">
-                          pedido: {p.order?.status ?? '—'}
+                          {t('webadmin1.acrypto.orderStatus', {
+                            status: p.order?.status ?? '—',
+                          })}
                         </span>
                       </td>
                       <td className="py-4 px-6 text-sm">
@@ -253,7 +262,7 @@ export default function CryptoReconciliationPage() {
                           </>
                         ) : (
                           <span className="text-xs text-red-600 dark:text-red-400">
-                            monto no registrado — no acreditable
+                            {t('webadmin1.acrypto.noAmount')}
                           </span>
                         )}
                       </td>
@@ -270,7 +279,9 @@ export default function CryptoReconciliationPage() {
                       <td className="py-4 px-6 text-sm">
                         <span className="flex items-center gap-1.5 text-surface-500">
                           <Clock className="h-4 w-4" />
-                          hace {ageMin < 60 ? `${ageMin} min` : `${Math.round(ageMin / 60)} h`}
+                          {ageMin < 60
+                            ? t('webadmin1.acrypto.minsAgo', { n: ageMin })
+                            : t('webadmin1.acrypto.hoursAgo', { n: Math.round(ageMin / 60) })}
                         </span>
                       </td>
                       <td className="py-4 px-6">
@@ -283,15 +294,19 @@ export default function CryptoReconciliationPage() {
                             className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg bg-kiwi-700 text-white hover:bg-kiwi-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                           >
                             <RefreshCw className={`h-4 w-4 ${checking ? 'animate-spin' : ''}`} />
-                            {checking ? 'Verificando…' : 'Re-verificar on-chain'}
+                            {checking
+                              ? t('webadmin1.acrypto.verifying')
+                              : t('webadmin1.acrypto.reverify')}
                           </button>
                           {res?.state === 'done' && res.completed && (
                             <span
                               role="status"
                               className="flex items-center gap-1 text-xs font-medium text-green-700 dark:text-green-400"
                             >
-                              <CheckCircle2 className="h-4 w-4" /> Acreditado
-                              {res.txHash ? ` (tx ${res.txHash.slice(0, 10)}…)` : ''}
+                              <CheckCircle2 className="h-4 w-4" /> {t('webadmin1.acrypto.credited')}
+                              {res.txHash
+                                ? ` ${t('webadmin1.acrypto.txShort', { hash: res.txHash.slice(0, 10) })}`
+                                : ''}
                             </span>
                           )}
                           {res?.state === 'done' && !res.completed && (
@@ -300,7 +315,7 @@ export default function CryptoReconciliationPage() {
                               className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400"
                             >
                               <XCircle className="h-4 w-4" />
-                              Sin evidencia on-chain — sigue pendiente
+                              {t('webadmin1.acrypto.noEvidence')}
                             </span>
                           )}
                         </div>
@@ -316,14 +331,14 @@ export default function CryptoReconciliationPage() {
 
       {pages > 1 && (
         <p className="text-center text-xs text-surface-500 dark:text-surface-400">
-          Página {page + 1} de {pages} ·{' '}
+          {t('webadmin1.acrypto.pageOf', { p: page + 1, pages })} ·{' '}
           <button
             type="button"
             onClick={() => setPage((p) => Math.min(pages - 1, p + 1))}
             disabled={page >= pages - 1}
             className="font-semibold text-kiwi-700 disabled:opacity-40"
           >
-            Cargar más
+            {t('webadmin1.acrypto.loadMore')}
           </button>
         </p>
       )}
