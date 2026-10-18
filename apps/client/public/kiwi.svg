@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <radialGradient id="skin" cx="35%" cy="30%" r="80%">
+      <stop offset="0%" stop-color="#4ade80"/>
+      <stop offset="60%" stop-color="#22c55e"/>
+      <stop offset="100%" stop-color="#15803d"/>
+    </radialGradient>
+    <radialGradient id="flesh" cx="42%" cy="38%" r="75%">
+      <stop offset="0%" stop-color="#eaf9e0"/>
+      <stop offset="70%" stop-color="#cdeb9f"/>
+      <stop offset="100%" stop-color="#a3d86b"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Piel exterior -->
+  <circle cx="256" cy="256" r="232" fill="url(#skin)"/>
+  <!-- Textura fibrillosa de la piel -->
+  <g opacity="0.25" stroke="#14532d" stroke-width="10" stroke-linecap="round" fill="none">
+    <path d="M96 140 Q150 100 220 84"/>
+    <path d="M70 220 Q90 150 150 104"/>
+    <path d="M300 70 Q380 90 428 150"/>
+    <path d="M436 240 Q430 330 380 392"/>
+    <path d="M300 442 Q220 452 150 420"/>
+  </g>
+
+  <!-- Carne interior -->
+  <circle cx="256" cy="256" r="180" fill="url(#flesh)"/>
+
+  <!-- Corazón blanco -->
+  <path fill="#f8fdf2" d="M256 148c-52-46-138-20-138 56 0 74 92 132 138 160 46-28 138-86 138-160 0-76-86-102-138-56z"/>
+
+  <!-- Semillas: negras, en dos anillos concéntricos alrededor del corazón -->
+  <g fill="#1c2b18">
+    <ellipse cx="256" cy="176" rx="10" ry="17"/>
+    <ellipse cx="308" cy="196" rx="10" ry="17" transform="rotate(40 308 196)"/>
+    <ellipse cx="332" cy="252" rx="10" ry="17" transform="rotate(90 332 252)"/>
+    <ellipse cx="308" cy="308" rx="10" ry="17" transform="rotate(140 308 308)"/>
+    <ellipse cx="256" cy="328" rx="10" ry="17" transform="rotate(180 256 328)"/>
+    <ellipse cx="204" cy="308" rx="10" ry="17" transform="rotate(220 204 308)"/>
+    <ellipse cx="180" cy="252" rx="10" ry="17" transform="rotate(270 180 252)"/>
+    <ellipse cx="204" cy="196" rx="10" ry="17" transform="rotate(320 204 196)"/>
+
+    <ellipse cx="256" cy="120" rx="9" ry="15"/>
+    <ellipse cx="330" cy="130" rx="9" ry="15" transform="rotate(45 330 130)"/>
+    <ellipse cx="384" cy="184" rx="9" ry="15" transform="rotate(90 384 184)"/>
+    <ellipse cx="396" cy="256" rx="9" ry="15" transform="rotate(135 396 256)"/>
+    <ellipse cx="384" cy="330" rx="9" ry="15" transform="rotate(180 384 330)"/>
+    <ellipse cx="330" cy="382" rx="9" ry="15" transform="rotate(225 330 382)"/>
+    <ellipse cx="256" cy="392" rx="9" ry="15" transform="rotate(270 256 392)"/>
+    <ellipse cx="182" cy="382" rx="9" ry="15" transform="rotate(315 182 382)"/>
+    <ellipse cx="128" cy="330" rx="9" ry="15"/>
+    <ellipse cx="116" cy="256" rx="9" ry="15" transform="rotate(45 116 256)"/>
+    <ellipse cx="128" cy="184" rx="9" ry="15" transform="rotate(90 128 184)"/>
+    <ellipse cx="182" cy="130" rx="9" ry="15" transform="rotate(135 182 130)"/>
+  </g>
+</svg>
