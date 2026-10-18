@@ -7,30 +7,41 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { FlaskConical } from 'lucide-react';
 import { BottomNav } from '../components/BottomNav';
-import { useAuth, usePushNotifications, api, TapButton, KiwiLoader } from '@kiwi/ui';
+import {
+  useAuth,
+  usePushNotifications,
+  api,
+  TapButton,
+  KiwiLoader,
+  useTranslations,
+} from '@kiwi/ui';
 
 /** Mensaje exacto según el paso que falló (permiso vs token vs servidor). */
-function pushErrorMessage(reason?: string): string {
+function pushErrorMessage(
+  t: (key: string, vars?: Record<string, string | number>) => string,
+  reason?: string,
+): string {
   switch (reason) {
     case 'denied':
-      return 'No se pudieron activar las alertas. Revisá el permiso en tu navegador.';
+      return t('wdrvmisc.testing.errDenied');
     case 'no-push-manager':
     case 'unsupported':
-      return 'Este navegador no soporta alertas. Probá con Chrome o instalando la app.';
+      return t('wdrvmisc.testing.errUnsupported');
     case 'missing-vapid':
     case 'missing-config':
-      return 'Falta configuración del servidor para alertas. Avisanos por WhatsApp.';
+      return t('wdrvmisc.testing.errConfig');
     case 'sync-failed':
-      return 'Se activó en el celu pero no llegó al servidor. Revisá tu conexión y reintentá.';
+      return t('wdrvmisc.testing.errSync');
     case 'token-failed':
-      return 'No se pudo registrar este celu para alertas. Revisá tu conexión y reintentá.';
+      return t('wdrvmisc.testing.errToken');
     default:
-      return 'No se pudo completar la activación. Reintentá con buena conexión.';
+      return t('wdrvmisc.testing.errDefault');
   }
 }
 
 export default function TestingPage() {
   const router = useRouter();
+  const { t } = useTranslations();
   const { user, loading: authLoading } = useAuth();
   const {
     permission: pushPermission,
@@ -83,10 +94,10 @@ export default function TestingPage() {
             className="flex min-h-[44px] items-center gap-2 text-surface-600 dark:text-surface-400"
           >
             <span>←</span>
-            <span className="text-sm font-medium">Perfil</span>
+            <span className="text-sm font-medium">{t('wdrvmisc.testing.back')}</span>
           </Link>
           <h1 className="flex items-center gap-2 font-display font-semibold text-surface-800 dark:text-surface-100">
-            <FlaskConical className="h-5 w-5" /> Pruebas
+            <FlaskConical className="h-5 w-5" /> {t('wdrvmisc.testing.title')}
           </h1>
           <div className="w-16" />
         </div>
@@ -102,13 +113,13 @@ export default function TestingPage() {
         {/* Prueba de notificaciones con diagnóstico real del servidor */}
         <div className="mb-4 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4">
           <p className="text-sm font-semibold text-surface-800 dark:text-surface-100">
-            Probar notificaciones
+            {t('wdrvmisc.testing.pushTitle')}
           </p>
           {pushTest ? (
             <p className="mt-1 text-xs text-surface-500 dark:text-surface-400">{pushTest}</p>
           ) : (
             <p className="mt-0.5 text-xs text-surface-500 dark:text-surface-400">
-              ¿No te llegan? Probá ahora y te decimos dónde se corta.
+              {t('wdrvmisc.testing.pushHint')}
             </p>
           )}
           <TapButton
@@ -122,41 +133,44 @@ export default function TestingPage() {
                 const r = await api.sendTestPush();
                 if (!r.fcmConfigured) {
                   setPushTokenMissing(false);
-                  setPushTest('El servidor no tiene push configurado. Avisanos por WhatsApp.');
+                  setPushTest(t('wdrvmisc.testing.noFcm'));
                 } else if (r.tokens === 0) {
                   setPushTokenMissing(true);
-                  setPushTest('Este celu no registró token: tocá Reactivar abajo.');
+                  setPushTest(t('wdrvmisc.testing.noToken'));
                 } else {
                   setPushTokenMissing(false);
                   void refreshDeviceTokens();
                   const bad = r.results.filter((x) => !x.ok);
                   setPushTest(
                     bad.length === 0
-                      ? `Prueba enviada ${r.sent ?? 1} vez a este celu. Si ves 2 banners, el duplicado está en el celu.`
-                      : `Falló el envío (${bad[0]?.error ?? 'error'}). Reinstalá la app y reactivá.`,
+                      ? t('wdrvmisc.testing.sentOk', { count: r.sent ?? 1 })
+                      : t('wdrvmisc.testing.sendFailed', { error: bad[0]?.error ?? 'error' }),
                   );
                 }
               } catch {
-                setPushTest('No se pudo probar. Revisá tu conexión.');
+                setPushTest(t('wdrvmisc.testing.testFailed'));
               } finally {
                 setPushTesting(false);
               }
             }}
           >
-            {pushTesting ? 'Probando…' : 'Probar alerta'}
+            {pushTesting ? t('wdrvmisc.testing.testingAlert') : t('wdrvmisc.testing.testAlert')}
           </TapButton>
           {pushDebug?.swRegistrations && pushDebug.swRegistrations.length > 0 && (
             <p className="mt-2 text-[11px] text-surface-500 dark:text-surface-400">
-              SW: {pushDebug.swRegistrations.map((s) => `${s.script}@${s.scope}`).join(' · ')}
+              {t('wdrvmisc.testing.sw', {
+                list: pushDebug.swRegistrations.map((s) => `${s.script}@${s.scope}`).join(' · '),
+              })}
             </p>
           )}
           {/* Registros duplicados: si hay más de 1, cada push llega N veces */}
           {deviceTokens.length > 1 && (
             <div className="mt-3 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 px-3 py-2">
               <p className="text-xs text-amber-800 dark:text-amber-300">
-                Tenés {deviceTokens.length} registros (
-                {deviceTokens.map((t) => t.platform).join(', ')}): cada alerta te llega{' '}
-                {deviceTokens.length} veces.
+                {t('wdrvmisc.testing.duplicates', {
+                  count: deviceTokens.length,
+                  platforms: deviceTokens.map((tok) => tok.platform).join(', '),
+                })}
               </p>
               <TapButton
                 variant="secondary"
@@ -168,18 +182,20 @@ export default function TestingPage() {
                     const r = await api.pruneDeviceTokens();
                     setPushTest(
                       r.removed > 0
-                        ? `Borramos ${r.removed} registro(s) viejo(s). Probá de nuevo.`
-                        : 'Ya hay un solo registro. Probá de nuevo.',
+                        ? t('wdrvmisc.testing.pruned', { count: r.removed })
+                        : t('wdrvmisc.testing.singleRecord'),
                     );
                     await refreshDeviceTokens();
                   } catch {
-                    setPushTest('No se pudo limpiar. Revisá tu conexión.');
+                    setPushTest(t('wdrvmisc.testing.cleanFailed'));
                   } finally {
                     setPruningTokens(false);
                   }
                 }}
               >
-                {pruningTokens ? 'Limpiando…' : 'Limpiar duplicados'}
+                {pruningTokens
+                  ? t('wdrvmisc.testing.cleaningDupes')
+                  : t('wdrvmisc.testing.cleanDupes')}
               </TapButton>
             </div>
           )}
@@ -196,17 +212,17 @@ export default function TestingPage() {
                   const res = await requestPushPermission();
                   if (res.ok) {
                     setPushTokenMissing(false);
-                    setPushTest('Token registrado. Tocá Probar alerta de nuevo.');
+                    setPushTest(t('wdrvmisc.testing.tokenOk'));
                     void refreshDeviceTokens();
                   } else {
-                    setPageError(pushErrorMessage(res.reason));
+                    setPageError(pushErrorMessage(t, res.reason));
                   }
                 } finally {
                   setPushBusy(false);
                 }
               }}
             >
-              {pushBusy ? 'Reactivando…' : 'Reactivar alertas'}
+              {pushBusy ? t('wdrvmisc.testing.reactivating') : t('wdrvmisc.testing.reactivate')}
             </TapButton>
           )}
         </div>
@@ -214,7 +230,7 @@ export default function TestingPage() {
         {/* Diagnóstico técnico */}
         {pushDebug && (
           <details className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4 text-xs text-surface-500 dark:text-surface-400">
-            <summary className="font-semibold">Diagnóstico</summary>
+            <summary className="font-semibold">{t('wdrvmisc.testing.diagnostics')}</summary>
             <pre className="mt-1 whitespace-pre-wrap break-all">
               {JSON.stringify(pushDebug, null, 1)}
             </pre>
@@ -224,12 +240,12 @@ export default function TestingPage() {
         {deviceTokens.length > 0 && (
           <div className="mt-4 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4">
             <p className="text-sm font-semibold text-surface-800 dark:text-surface-100">
-              Registros de este usuario ({deviceTokens.length})
+              {t('wdrvmisc.testing.userTokens', { count: deviceTokens.length })}
             </p>
             <div className="mt-2 space-y-1">
-              {deviceTokens.map((t) => (
-                <p key={t.short} className="font-mono text-[11px] text-surface-500">
-                  {t.short} · {t.platform}
+              {deviceTokens.map((tok) => (
+                <p key={tok.short} className="font-mono text-[11px] text-surface-500">
+                  {tok.short} · {tok.platform}
                 </p>
               ))}
             </div>

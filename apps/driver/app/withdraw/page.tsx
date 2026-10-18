@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { BottomNav } from '../components/BottomNav';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Clock, RefreshCw, Check, X, Smartphone, Home } from 'lucide-react';
-import { api, Skeleton } from '@kiwi/ui';
+import { api, Skeleton, LanguageSwitcher, useTranslations } from '@kiwi/ui';
 
 interface Balance {
   totalEarnings: number;
@@ -31,35 +31,36 @@ interface Withdrawal {
   createdAt: string;
 }
 
-const STATUS_CONFIG: Record<string, { label: string; icon: any; color: string }> = {
+const STATUS_CONFIG: Record<string, { labelKey: string; icon: any; color: string }> = {
   pending: {
-    label: 'Pendiente',
+    labelKey: 'statusPending',
     icon: Clock,
     color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400',
   },
   processing: {
-    label: 'Procesando',
+    labelKey: 'statusProcessing',
     icon: RefreshCw,
     color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400',
   },
   completed: {
-    label: 'Completado',
+    labelKey: 'statusCompleted',
     icon: Check,
     color: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400',
   },
   failed: {
-    label: 'Cancelado',
+    labelKey: 'statusFailed',
     icon: X,
     color: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400',
   },
   rejected: {
-    label: 'Rechazado',
+    labelKey: 'statusRejected',
     icon: X,
     color: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400',
   },
 };
 
 export default function WithdrawPage() {
+  const { t } = useTranslations();
   const [balance, setBalance] = useState<Balance | null>(null);
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
   const [loading, setLoading] = useState(true);
@@ -88,11 +89,11 @@ export default function WithdrawPage() {
       setWithdrawals(Array.isArray(withdrawalsData) ? withdrawalsData : []);
     } catch (err) {
       console.error('Failed to fetch withdrawal data:', err);
-      setError(err instanceof Error ? err.message : 'No se pudieron cargar los datos');
+      setError(err instanceof Error ? err.message : t('wdrvwork.withdraw.loadError'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchData();
@@ -104,22 +105,22 @@ export default function WithdrawPage() {
     const amountNum = parseInt(amount.replace(/[^0-9]/g, ''));
 
     if (!amountNum || amountNum < 1000) {
-      alert('El monto mínimo de retiro es ₡1,000');
+      alert(t('wdrvwork.withdraw.minAlert'));
       return;
     }
 
     if (balance && amountNum > balance.availableBalance) {
-      alert('Saldo insuficiente');
+      alert(t('wdrvwork.withdraw.insufficient'));
       return;
     }
 
     if (paymentMethod === 'sinpe' && !sinpePhone) {
-      alert('El número SINPE es requerido');
+      alert(t('wdrvwork.withdraw.sinpeRequired'));
       return;
     }
 
     if (paymentMethod === 'bank_transfer' && (!bankName || !accountNumber || !accountHolder)) {
-      alert('Los datos bancarios son requeridos');
+      alert(t('wdrvwork.withdraw.bankRequired'));
       return;
     }
 
@@ -147,24 +148,24 @@ export default function WithdrawPage() {
       // Refresh data
       fetchData();
 
-      alert('Solicitud de retiro enviada exitosamente');
+      alert(t('wdrvwork.withdraw.requestOk'));
     } catch (err) {
       console.error('Failed to request withdrawal:', err);
-      alert(err instanceof Error ? err.message : 'No se pudo procesar el retiro');
+      alert(err instanceof Error ? err.message : t('wdrvwork.withdraw.requestFailed'));
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleCancel = async (id: string) => {
-    if (!confirm('¿Estás seguro de cancelar este retiro?')) return;
+    if (!confirm(t('wdrvwork.withdraw.cancelConfirm'))) return;
 
     try {
       await api.cancelWithdrawal(id);
       fetchData();
     } catch (err) {
       console.error('Failed to cancel withdrawal:', err);
-      alert('No se pudo cancelar el retiro');
+      alert(t('wdrvwork.withdraw.cancelFailed'));
     }
   };
 
@@ -217,7 +218,7 @@ export default function WithdrawPage() {
             😕
           </motion.div>
           <h2 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100 mb-2">
-            No pudimos cargar los datos
+            {t('wdrvwork.withdraw.errorTitle')}
           </h2>
           <p className="text-surface-500 dark:text-surface-400 mb-6">{error}</p>
           <motion.button
@@ -226,7 +227,7 @@ export default function WithdrawPage() {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            Reintentar
+            {t('wdrvwork.withdraw.retry')}
           </motion.button>
         </motion.div>
         <BottomNav />
@@ -249,12 +250,12 @@ export default function WithdrawPage() {
               className="flex items-center gap-2 text-surface-600 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200"
             >
               <span>←</span>
-              <span className="text-sm font-medium">Volver</span>
+              <span className="text-sm font-medium">{t('wdrvwork.withdraw.back')}</span>
             </Link>
             <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-              Retirar
+              {t('wdrvwork.withdraw.title')}
             </h1>
-            <div className="w-16" />
+            <LanguageSwitcher />
           </div>
         </div>
       </motion.header>
@@ -278,7 +279,9 @@ export default function WithdrawPage() {
           />
 
           <div className="relative">
-            <p className="text-white/80 text-sm font-medium">Saldo Disponible</p>
+            <p className="text-white/80 text-sm font-medium">
+              {t('wdrvwork.withdraw.balanceLabel')}
+            </p>
             <motion.p
               className="mt-1 text-4xl font-display font-bold"
               key={balance?.availableBalance}
@@ -290,15 +293,15 @@ export default function WithdrawPage() {
             </motion.p>
             <div className="mt-4 grid grid-cols-3 gap-4 text-sm">
               <div>
-                <p className="text-white/60">Ganancias</p>
+                <p className="text-white/60">{t('wdrvwork.withdraw.earnedLabel')}</p>
                 <p className="font-medium">{formatCurrency(balance?.totalEarnings || 0)}</p>
               </div>
               <div>
-                <p className="text-white/60">Retirado</p>
+                <p className="text-white/60">{t('wdrvwork.withdraw.withdrawnLabel')}</p>
                 <p className="font-medium">{formatCurrency(balance?.totalWithdrawn || 0)}</p>
               </div>
               <div>
-                <p className="text-white/60">Pendiente</p>
+                <p className="text-white/60">{t('wdrvwork.withdraw.pendingLabel')}</p>
                 <p className="font-medium">{formatCurrency(balance?.pendingWithdrawals || 0)}</p>
               </div>
             </div>
@@ -313,7 +316,7 @@ export default function WithdrawPage() {
             whileHover={{ scale: 1.02, borderColor: '#22c55e' }}
             whileTap={{ scale: 0.98 }}
           >
-            Solicitar Retiro
+            {t('wdrvwork.withdraw.requestCta')}
           </motion.button>
         )}
 
@@ -328,11 +331,11 @@ export default function WithdrawPage() {
             >
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-                  Nuevo Retiro
+                  {t('wdrvwork.withdraw.formTitle')}
                 </h3>
                 <button
                   onClick={() => setShowForm(false)}
-                  aria-label="Cerrar formulario de retiro"
+                  aria-label={t('wdrvwork.withdraw.closeAria')}
                   className="text-surface-500 hover:text-surface-700 dark:text-surface-400 dark:hover:text-surface-200"
                 >
                   ✕
@@ -343,7 +346,7 @@ export default function WithdrawPage() {
                 {/* Amount Input */}
                 <div>
                   <label className="block text-sm font-medium text-surface-600 dark:text-surface-400 mb-2">
-                    Monto a retirar
+                    {t('wdrvwork.withdraw.amountLabel')}
                   </label>
                   <div className="relative">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-surface-500 dark:text-surface-400">
@@ -353,7 +356,7 @@ export default function WithdrawPage() {
                       type="text"
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
-                      placeholder="0"
+                      placeholder={t('wdrvwork.withdraw.amountPh')}
                       className="w-full pl-8 pr-4 py-3 rounded-xl bg-surface-50 dark:bg-surface-700 text-surface-800 dark:text-surface-100 text-2xl font-bold placeholder-surface-300 focus:outline-none focus:ring-2 focus:ring-kiwi-600 transition-all"
                     />
                   </div>
@@ -379,7 +382,7 @@ export default function WithdrawPage() {
                 {/* Payment Method */}
                 <div>
                   <label className="block text-sm font-medium text-surface-600 dark:text-surface-400 mb-2">
-                    Método de pago
+                    {t('wdrvwork.withdraw.methodLabel')}
                   </label>
                   <div className="grid grid-cols-2 gap-3">
                     <button
@@ -393,7 +396,7 @@ export default function WithdrawPage() {
                     >
                       <Smartphone className="text-2xl block mb-1 h-6 w-6 mx-auto" />
                       <span className="font-medium text-surface-800 dark:text-surface-100">
-                        SINPE
+                        {t('wdrvwork.withdraw.methodSinpe')}
                       </span>
                     </button>
                     <button
@@ -407,7 +410,7 @@ export default function WithdrawPage() {
                     >
                       <span className="text-2xl block mb-1">🏦</span>
                       <span className="font-medium text-surface-800 dark:text-surface-100">
-                        Transferencia
+                        {t('wdrvwork.withdraw.methodBank')}
                       </span>
                     </button>
                   </div>
@@ -422,25 +425,25 @@ export default function WithdrawPage() {
                   >
                     <div>
                       <label className="block text-sm font-medium text-surface-600 dark:text-surface-400 mb-1">
-                        Número SINPE
+                        {t('wdrvwork.withdraw.sinpeLabel')}
                       </label>
                       <input
                         type="tel"
                         value={sinpePhone}
                         onChange={(e) => setSinpePhone(e.target.value)}
-                        placeholder="8888-1234"
+                        placeholder={t('wdrvwork.withdraw.sinpePh')}
                         className="w-full px-4 py-3 rounded-xl bg-surface-50 dark:bg-surface-700 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-kiwi-600 transition-all"
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-surface-600 dark:text-surface-400 mb-1">
-                        Nombre (opcional)
+                        {t('wdrvwork.withdraw.sinpeNameLabel')}
                       </label>
                       <input
                         type="text"
                         value={sinpeName}
                         onChange={(e) => setSinpeName(e.target.value)}
-                        placeholder="Tu nombre"
+                        placeholder={t('wdrvwork.withdraw.sinpeNamePh')}
                         className="w-full px-4 py-3 rounded-xl bg-surface-50 dark:bg-surface-700 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-kiwi-600 transition-all"
                       />
                     </div>
@@ -456,14 +459,14 @@ export default function WithdrawPage() {
                   >
                     <div>
                       <label className="block text-sm font-medium text-surface-600 dark:text-surface-400 mb-1">
-                        Banco
+                        {t('wdrvwork.withdraw.bankLabel')}
                       </label>
                       <select
                         value={bankName}
                         onChange={(e) => setBankName(e.target.value)}
                         className="w-full px-4 py-3 rounded-xl bg-surface-50 dark:bg-surface-700 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600 transition-all"
                       >
-                        <option value="">Seleccionar banco</option>
+                        <option value="">{t('wdrvwork.withdraw.bankPh')}</option>
                         <option value="BAC">BAC</option>
                         <option value="BNCR">BNCR</option>
                         <option value="BCT">BCT</option>
@@ -474,25 +477,25 @@ export default function WithdrawPage() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-surface-600 dark:text-surface-400 mb-1">
-                        Número de cuenta
+                        {t('wdrvwork.withdraw.acctLabel')}
                       </label>
                       <input
                         type="text"
                         value={accountNumber}
                         onChange={(e) => setAccountNumber(e.target.value)}
-                        placeholder="0000-0000-0000"
+                        placeholder={t('wdrvwork.withdraw.acctPh')}
                         className="w-full px-4 py-3 rounded-xl bg-surface-50 dark:bg-surface-700 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-kiwi-600 transition-all"
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-surface-600 dark:text-surface-400 mb-1">
-                        Titular de la cuenta
+                        {t('wdrvwork.withdraw.holderLabel')}
                       </label>
                       <input
                         type="text"
                         value={accountHolder}
                         onChange={(e) => setAccountHolder(e.target.value)}
-                        placeholder="Nombre completo"
+                        placeholder={t('wdrvwork.withdraw.holderPh')}
                         className="w-full px-4 py-3 rounded-xl bg-surface-50 dark:bg-surface-700 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-kiwi-600 transition-all"
                       />
                     </div>
@@ -508,12 +511,16 @@ export default function WithdrawPage() {
                   whileTap={{ scale: 0.98 }}
                 >
                   {submitting
-                    ? 'Procesando...'
-                    : `Retirar ${amount ? formatCurrency(parseInt(amount.replace(/[^0-9]/g, ''))) : ''}`}
+                    ? t('wdrvwork.withdraw.submitting')
+                    : amount
+                      ? t('wdrvwork.withdraw.submitWithdraw', {
+                          amount: formatCurrency(parseInt(amount.replace(/[^0-9]/g, ''))),
+                        })
+                      : t('wdrvwork.withdraw.submitPlain')}
                 </motion.button>
 
                 <p className="text-xs text-center text-surface-500 dark:text-surface-400">
-                  Mínimo ₡1,000 • Los retiros se procesan de lunes a viernes
+                  {t('wdrvwork.withdraw.minNote')}
                 </p>
               </form>
             </motion.div>
@@ -528,13 +535,15 @@ export default function WithdrawPage() {
           transition={{ delay: 0.2 }}
         >
           <h3 className="mb-4 text-sm font-semibold text-surface-600 dark:text-surface-400">
-            ClipboardList Historial de Retiros
+            {t('wdrvwork.withdraw.historyTitle')}
           </h3>
 
           {withdrawals.length === 0 ? (
             <div className="text-center py-8">
               <span className="text-4xl mb-2 block">📭</span>
-              <p className="text-surface-500 dark:text-surface-400 text-sm">No hay retiros aún</p>
+              <p className="text-surface-500 dark:text-surface-400 text-sm">
+                {t('wdrvwork.withdraw.historyEmpty')}
+              </p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -565,7 +574,9 @@ export default function WithdrawPage() {
                           {formatCurrency(withdrawal.amount)}
                         </p>
                         <p className="text-xs text-surface-500 dark:text-surface-400">
-                          {withdrawal.paymentMethod === 'sinpe' ? 'SINPE' : 'Transferencia'} •{' '}
+                          {withdrawal.paymentMethod === 'sinpe'
+                            ? t('wdrvwork.withdraw.methodSinpe')
+                            : t('wdrvwork.withdraw.methodBank')}{' '}
                           {formatDate(withdrawal.createdAt)}
                         </p>
                       </div>
@@ -574,12 +585,14 @@ export default function WithdrawPage() {
                       <span
                         className={`px-2 py-1 rounded-full text-xs font-medium ${statusConfig.color}`}
                       >
-                        {statusConfig.label}
+                        {t(`wdrvwork.withdraw.${statusConfig.labelKey}`)}
                       </span>
                       {withdrawal.status === 'pending' && (
                         <button
                           onClick={() => handleCancel(withdrawal.id)}
-                          aria-label={`Cancelar retiro de ${formatCurrency(withdrawal.amount)}`}
+                          aria-label={t('wdrvwork.withdraw.cancelAria', {
+                            amount: formatCurrency(withdrawal.amount),
+                          })}
                           className="text-red-500 hover:text-red-600 text-xs"
                         >
                           ✕

@@ -6,9 +6,19 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Car, Shield } from 'lucide-react';
-import { KYCVerification, KYCStatusBadge, DiditVerifyButton, useAuth, api, events } from '@kiwi/ui';
+import {
+  KYCVerification,
+  KYCStatusBadge,
+  DiditVerifyButton,
+  useAuth,
+  api,
+  events,
+  useTranslations,
+  LanguageSwitcher,
+} from '@kiwi/ui';
 
 export default function DriverKYCPage() {
+  const { t } = useTranslations();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -48,7 +58,7 @@ export default function DriverKYCPage() {
       events.kyc.documentsSubmitted('driver');
     } catch (error: any) {
       console.error('KYC error:', error);
-      setSubmitError(error?.message || 'No se pudo enviar. Intentá de nuevo.');
+      setSubmitError(error?.message || t('wdrvauth.kyc.submitError'));
     } finally {
       setLoading(false);
     }
@@ -69,10 +79,12 @@ export default function DriverKYCPage() {
               className="flex items-center gap-2 text-surface-600 hover:text-surface-800"
             >
               <span>←</span>
-              <span className="text-sm font-medium">Inicio</span>
+              <span className="text-sm font-medium">{t('wdrvauth.kyc.homeLink')}</span>
             </Link>
-            <h1 className="font-display font-semibold text-surface-800">Verificación KYC</h1>
-            <div className="w-16" />
+            <h1 className="font-display font-semibold text-surface-800">
+              {t('wdrvauth.kyc.title')}
+            </h1>
+            <LanguageSwitcher />
           </div>
         </div>
       </motion.header>
@@ -87,11 +99,10 @@ export default function DriverKYCPage() {
           <div className="flex items-start gap-4">
             <span className="text-4xl">🪪</span>
             <div>
-              <h2 className="text-xl font-display font-bold mb-2">Verifica tu Cuenta</h2>
-              <p className="text-white/80 text-sm">
-                Para empezar a trabajar como repartidor en Kiwi, necesitamos verificar tu identidad
-                y documentos del vehículo. Esto garantiza la seguridad de todos.
-              </p>
+              <h2 className="text-xl font-display font-bold mb-2">
+                {t('wdrvauth.kyc.bannerTitle')}
+              </h2>
+              <p className="text-white/80 text-sm">{t('wdrvauth.kyc.bannerDesc')}</p>
             </div>
           </div>
         </motion.div>
@@ -104,48 +115,52 @@ export default function DriverKYCPage() {
           transition={{ delay: 0.1 }}
         >
           <h3 className="font-display font-semibold text-surface-800 mb-4">
-            ClipboardList Documentos Requeridos
+            {t('wdrvauth.kyc.reqTitle')}
           </h3>
           <div className="space-y-3">
             <div className="flex items-start gap-3 p-4 rounded-xl bg-surface-50">
               <span className="text-2xl">🪪</span>
               <div>
-                <p className="font-medium text-surface-700">Identificación Personal</p>
+                <p className="font-medium text-surface-700">{t('wdrvauth.kyc.docId')}</p>
                 <p className="text-xs text-surface-500 dark:text-surface-400">
-                  Cédula o pasaporte (frente y reverso)
+                  {t('wdrvauth.kyc.docIdDesc')}
                 </p>
               </div>
             </div>
             <div className="flex items-start gap-3 p-4 rounded-xl bg-surface-50">
               <span className="text-2xl">🤳</span>
               <div>
-                <p className="font-medium text-surface-700">Selfie con Documento</p>
+                <p className="font-medium text-surface-700">{t('wdrvauth.kyc.docSelfie')}</p>
                 <p className="text-xs text-surface-500 dark:text-surface-400">
-                  Rostro visible sosteniendo tu ID
+                  {t('wdrvauth.kyc.docSelfieDesc')}
                 </p>
               </div>
             </div>
             <div className="flex items-start gap-3 p-4 rounded-xl bg-surface-50">
               <span className="text-2xl">🪪</span>
               <div>
-                <p className="font-medium text-surface-700">Licencia de Conducir</p>
+                <p className="font-medium text-surface-700">{t('wdrvauth.kyc.docLicense')}</p>
                 <p className="text-xs text-surface-500 dark:text-surface-400">
-                  Número y fecha de expiración
+                  {t('wdrvauth.kyc.docLicenseDesc')}
                 </p>
               </div>
             </div>
             <div className="flex items-start gap-3 p-4 rounded-xl bg-surface-50">
               <Car className="text-2xl h-6 w-6" />
               <div>
-                <p className="font-medium text-surface-700">Marchamo del Vehículo</p>
-                <p className="text-xs text-surface-500 dark:text-surface-400">Último año pagado</p>
+                <p className="font-medium text-surface-700">{t('wdrvauth.kyc.docMarchamo')}</p>
+                <p className="text-xs text-surface-500 dark:text-surface-400">
+                  {t('wdrvauth.kyc.docMarchamoDesc')}
+                </p>
               </div>
             </div>
             <div className="flex items-start gap-3 p-4 rounded-xl bg-surface-50">
               <Shield className="text-2xl h-6 w-6" />
               <div>
-                <p className="font-medium text-surface-700">Seguro del Vehículo</p>
-                <p className="text-xs text-surface-500 dark:text-surface-400">Póliza vigente</p>
+                <p className="font-medium text-surface-700">{t('wdrvauth.kyc.docInsurance')}</p>
+                <p className="text-xs text-surface-500 dark:text-surface-400">
+                  {t('wdrvauth.kyc.docInsuranceDesc')}
+                </p>
               </div>
             </div>
           </div>
@@ -160,11 +175,9 @@ export default function DriverKYCPage() {
           {kycStatus !== 'approved' && kycStatus !== 'under_review' && (
             <div className="mb-4 rounded-2xl bg-white p-6 shadow-soft">
               <h3 className="font-display font-semibold text-surface-800 mb-1">
-                Verificación instantánea
+                {t('wdrvauth.kyc.instantTitle')}
               </h3>
-              <p className="text-sm text-surface-500 mb-4">
-                Con tu cédula y un selfie, en menos de un minuto.
-              </p>
+              <p className="text-sm text-surface-500 mb-4">{t('wdrvauth.kyc.instantDesc')}</p>
               <DiditVerifyButton
                 onStatus={(s) => {
                   if (s === 'approved' || s === 'rejected' || s === 'under_review') {
@@ -174,7 +187,7 @@ export default function DriverKYCPage() {
               />
               <div className="my-4 flex items-center gap-3 text-xs text-surface-500 dark:text-surface-400">
                 <span className="h-px flex-1 bg-surface-200" />
-                o subí tus documentos
+                {t('wdrvauth.kyc.orUpload')}
                 <span className="h-px flex-1 bg-surface-200" />
               </div>
             </div>
@@ -204,26 +217,20 @@ export default function DriverKYCPage() {
           transition={{ delay: 0.3 }}
         >
           <h3 className="font-display font-semibold text-surface-800 mb-4">
-            ❓ Preguntas Frecuentes
+            {t('wdrvauth.kyc.faqTitle')}
           </h3>
           <div className="space-y-4">
             <div>
-              <p className="font-medium text-surface-700">
-                ¿Por qué necesito verificar mi identidad?
-              </p>
-              <p className="text-sm text-surface-500">
-                Para garantizar la seguridad de comercios y clientes.
-              </p>
+              <p className="font-medium text-surface-700">{t('wdrvauth.kyc.q1')}</p>
+              <p className="text-sm text-surface-500">{t('wdrvauth.kyc.a1')}</p>
             </div>
             <div>
-              <p className="font-medium text-surface-700">¿Cuánto tiempo toma la verificación?</p>
-              <p className="text-sm text-surface-500">Normalmente 24-48 horas hábiles.</p>
+              <p className="font-medium text-surface-700">{t('wdrvauth.kyc.q2')}</p>
+              <p className="text-sm text-surface-500">{t('wdrvauth.kyc.a2')}</p>
             </div>
             <div>
-              <p className="font-medium text-surface-700">¿Puedo trabajar mientras verifico?</p>
-              <p className="text-sm text-surface-500">
-                No, necesitas estar verificado para aceptar pedidos.
-              </p>
+              <p className="font-medium text-surface-700">{t('wdrvauth.kyc.q3')}</p>
+              <p className="text-sm text-surface-500">{t('wdrvauth.kyc.a3')}</p>
             </div>
           </div>
         </motion.div>
@@ -236,9 +243,9 @@ export default function DriverKYCPage() {
           transition={{ delay: 0.4 }}
         >
           <p className="text-sm text-surface-500 dark:text-surface-400">
-            ¿Necesitas ayuda?{' '}
+            {t('wdrvauth.kyc.helpPrefix')}{' '}
             <a href="https://wa.me/50688888888" className="text-kiwi-700 hover:underline">
-              Contáctanos por WhatsApp
+              {t('wdrvauth.kyc.helpLink')}
             </a>
           </p>
         </motion.div>

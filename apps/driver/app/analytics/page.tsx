@@ -18,7 +18,15 @@ import {
   Target,
   DollarSign,
 } from 'lucide-react';
-import { api, Skeleton, StaggerContainer, StaggerItem, useAuth } from '@kiwi/ui';
+import {
+  api,
+  Skeleton,
+  StaggerContainer,
+  StaggerItem,
+  LanguageSwitcher,
+  useAuth,
+  useTranslations,
+} from '@kiwi/ui';
 
 interface DriverAnalytics {
   period: string;
@@ -63,33 +71,37 @@ interface DriverAnalytics {
 }
 
 const PERIODS = [
-  { id: 'today', label: 'Hoy', icon: Calendar },
-  { id: 'week', label: 'Semana', icon: '📆' },
-  { id: 'month', label: 'Mes', icon: CalendarDays },
-  { id: 'all', label: 'Todo', icon: '♾️' },
+  { id: 'today', labelKey: 'periodToday', icon: Calendar },
+  { id: 'week', labelKey: 'periodWeek', icon: '📆' },
+  { id: 'month', labelKey: 'periodMonth', icon: CalendarDays },
+  { id: 'all', labelKey: 'periodAll', icon: '♾️' },
 ];
 
 export default function DriverAnalyticsPage() {
   const router = useRouter();
+  const { t } = useTranslations();
   const { user, loading: authLoading } = useAuth();
   const [analytics, setAnalytics] = useState<DriverAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState('week');
 
-  const fetchAnalytics = useCallback(async (period: string) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await api.getDriverAnalytics(period);
-      setAnalytics(data);
-    } catch (err) {
-      console.error('Failed to fetch analytics:', err);
-      setError(err instanceof Error ? err.message : 'No se pudieron cargar las analíticas');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const fetchAnalytics = useCallback(
+    async (period: string) => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await api.getDriverAnalytics(period);
+        setAnalytics(data);
+      } catch (err) {
+        console.error('Failed to fetch analytics:', err);
+        setError(err instanceof Error ? err.message : t('wdrvwork.analytics.loadError'));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [t],
+  );
 
   useEffect(() => {
     if (authLoading) return;
@@ -160,7 +172,7 @@ export default function DriverAnalyticsPage() {
             😕
           </motion.div>
           <h2 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100 mb-2">
-            No pudimos cargar las analíticas
+            {t('wdrvwork.analytics.errorTitle')}
           </h2>
           <p className="text-surface-500 dark:text-surface-400 mb-6">{error}</p>
           <motion.button
@@ -169,7 +181,7 @@ export default function DriverAnalyticsPage() {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            <RefreshCw className="h-4 w-4 inline" /> Reintentar
+            <RefreshCw className="h-4 w-4 inline" /> {t('wdrvwork.analytics.retry')}
           </motion.button>
         </motion.div>
         <BottomNav />
@@ -192,12 +204,12 @@ export default function DriverAnalyticsPage() {
               className="flex items-center gap-2 text-surface-600 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200"
             >
               <span>←</span>
-              <span className="text-sm font-medium">Volver</span>
+              <span className="text-sm font-medium">{t('wdrvwork.analytics.back')}</span>
             </Link>
             <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-              <BarChart3 className="h-5 w-5 inline" /> Mis Analytics
+              <BarChart3 className="h-5 w-5 inline" /> {t('wdrvwork.analytics.title')}
             </h1>
-            <div className="w-16" />
+            <LanguageSwitcher />
           </div>
         </div>
       </motion.header>
@@ -227,7 +239,7 @@ export default function DriverAnalyticsPage() {
                 ) : (
                   <PeriodIcon className="h-4 w-4 inline mr-1" />
                 )}
-                {period.label}
+                {t(`wdrvwork.analytics.${period.labelKey}`)}
               </motion.button>
             );
           })}
@@ -252,7 +264,9 @@ export default function DriverAnalyticsPage() {
               <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
                 {analytics?.overview?.totalDeliveries || 0}
               </p>
-              <p className="text-sm text-surface-500 dark:text-surface-400">Entregas</p>
+              <p className="text-sm text-surface-500 dark:text-surface-400">
+                {t('wdrvwork.analytics.statDeliveries')}
+              </p>
             </motion.div>
           </StaggerItem>
 
@@ -273,7 +287,9 @@ export default function DriverAnalyticsPage() {
               <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
                 {formatCurrency(analytics?.overview?.totalEarnings || 0)}
               </p>
-              <p className="text-sm text-surface-500 dark:text-surface-400">Ganancias</p>
+              <p className="text-sm text-surface-500 dark:text-surface-400">
+                {t('wdrvwork.analytics.statEarnings')}
+              </p>
             </motion.div>
           </StaggerItem>
 
@@ -285,13 +301,15 @@ export default function DriverAnalyticsPage() {
               <div className="flex items-center justify-between mb-2">
                 <BarChart3 className="text-2xl h-6 w-6" />
                 <span className="text-xs font-medium text-surface-500 dark:text-surface-400">
-                  Promedio
+                  {t('wdrvwork.analytics.statAvg')}
                 </span>
               </div>
               <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
                 {formatCurrency(analytics?.overview?.averageEarningPerDelivery || 0)}
               </p>
-              <p className="text-sm text-surface-500 dark:text-surface-400">Por Entrega</p>
+              <p className="text-sm text-surface-500 dark:text-surface-400">
+                {t('wdrvwork.analytics.statPerDelivery')}
+              </p>
             </motion.div>
           </StaggerItem>
 
@@ -312,7 +330,9 @@ export default function DriverAnalyticsPage() {
               <p className="text-2xl font-bold text-kiwi-700 dark:text-kiwi-300">
                 {analytics?.overview?.averageRating || 0}
               </p>
-              <p className="text-sm text-kiwi-700 dark:text-kiwi-400">Calificación</p>
+              <p className="text-sm text-kiwi-700 dark:text-kiwi-400">
+                {t('wdrvwork.analytics.statRating')}
+              </p>
             </motion.div>
           </StaggerItem>
         </StaggerContainer>
@@ -325,7 +345,7 @@ export default function DriverAnalyticsPage() {
           transition={{ delay: 0.2 }}
         >
           <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-4">
-            <Coins className="h-4 w-4 inline" /> Ganancias Diarias
+            <Coins className="h-4 w-4 inline" /> {t('wdrvwork.analytics.earnDaily')}
           </h3>
           <div className="flex items-end gap-1 h-32">
             {(analytics?.earnings?.daily || []).slice(-7).map((day, index) => (
@@ -364,7 +384,7 @@ export default function DriverAnalyticsPage() {
           transition={{ delay: 0.3 }}
         >
           <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-4">
-            <Package className="h-4 w-4 inline" /> Entregas Diarias
+            <Package className="h-4 w-4 inline" /> {t('wdrvwork.analytics.delivDaily')}
           </h3>
           <div className="flex items-end gap-1 h-32">
             {(analytics?.deliveries?.daily || []).slice(-7).map((day, index) => (
@@ -403,7 +423,7 @@ export default function DriverAnalyticsPage() {
           transition={{ delay: 0.4 }}
         >
           <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-4">
-            <DollarSign className="h-4 w-4 inline" /> Desglose de Ganancias
+            <DollarSign className="h-4 w-4 inline" /> {t('wdrvwork.analytics.breakdown')}
           </h3>
           <div className="space-y-3">
             {(analytics?.earnings?.breakdown || []).map((item) => {
@@ -442,31 +462,39 @@ export default function DriverAnalyticsPage() {
           transition={{ delay: 0.5 }}
         >
           <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-4">
-            <BarChart3 className="h-4 w-4 inline" /> Métricas de Rendimiento
+            <BarChart3 className="h-4 w-4 inline" /> {t('wdrvwork.analytics.perfTitle')}
           </h3>
           <div className="grid grid-cols-2 gap-4">
             <div className="p-3 rounded-xl bg-surface-50 dark:bg-surface-700/50">
-              <p className="text-sm text-surface-500 dark:text-surface-400">Distancia Promedio</p>
+              <p className="text-sm text-surface-500 dark:text-surface-400">
+                {t('wdrvwork.analytics.avgDistance')}
+              </p>
               <p className="text-lg font-bold text-surface-800 dark:text-surface-100">
                 {analytics?.deliveries?.averageDistance || 0} km
               </p>
             </div>
             <div className="p-3 rounded-xl bg-surface-50 dark:bg-surface-700/50">
-              <p className="text-sm text-surface-500 dark:text-surface-400">Tiempo Promedio</p>
+              <p className="text-sm text-surface-500 dark:text-surface-400">
+                {t('wdrvwork.analytics.avgTime')}
+              </p>
               <p className="text-lg font-bold text-surface-800 dark:text-surface-100">
                 {analytics?.deliveries?.averageTime || 0} min
               </p>
             </div>
             <div className="p-3 rounded-xl bg-surface-50 dark:bg-surface-700/50">
-              <p className="text-sm text-surface-500 dark:text-surface-400">Horas Activas</p>
+              <p className="text-sm text-surface-500 dark:text-surface-400">
+                {t('wdrvwork.analytics.activeHours')}
+              </p>
               <p className="text-lg font-bold text-surface-800 dark:text-surface-100">
                 {analytics?.schedule?.activeHours || 0}h
               </p>
             </div>
             <div className="p-3 rounded-xl bg-surface-50 dark:bg-surface-700/50">
-              <p className="text-sm text-surface-500 dark:text-surface-400">Día más activo</p>
+              <p className="text-sm text-surface-500 dark:text-surface-400">
+                {t('wdrvwork.analytics.topDay')}
+              </p>
               <p className="text-lg font-bold text-kiwi-700 dark:text-kiwi-400">
-                {analytics?.schedule?.mostActiveDay || '—'}
+                {analytics?.schedule?.mostActiveDay || t('wdrvwork.analytics.noDay')}
               </p>
             </div>
           </div>
@@ -480,7 +508,7 @@ export default function DriverAnalyticsPage() {
           transition={{ delay: 0.6 }}
         >
           <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-4">
-            <Star className="h-4 w-4 inline" /> Calificaciones
+            <Star className="h-4 w-4 inline" /> {t('wdrvwork.analytics.ratingsTitle')}
           </h3>
           <div className="flex items-center gap-6">
             <div className="text-center">
@@ -489,7 +517,7 @@ export default function DriverAnalyticsPage() {
               </p>
               <Star className="text-2xl h-6 w-6 mx-auto" />
               <p className="text-xs text-surface-500 dark:text-surface-400">
-                {analytics?.ratings?.total || 0} calificaciones
+                {t('wdrvwork.analytics.ratingsCount', { count: analytics?.ratings?.total || 0 })}
               </p>
             </div>
             <div className="flex-1 space-y-2">
@@ -527,27 +555,25 @@ export default function DriverAnalyticsPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.7 }}
         >
-          <h3 className="text-lg font-display font-semibold mb-4">💡 Consejos para Ganar Más</h3>
+          <h3 className="text-lg font-display font-semibold mb-4">
+            {t('wdrvwork.analytics.tipsTitle')}
+          </h3>
           <div className="space-y-3">
             <div className="bg-white/20 rounded-xl p-3">
-              <p className="font-medium">🌅 Trabaja en horas pico</p>
-              <p className="text-sm text-white/80">Las 11am-2pm y 5pm-8pm tienen más pedidos</p>
+              <p className="font-medium">{t('wdrvwork.analytics.tipPeak')}</p>
+              <p className="text-sm text-white/80">{t('wdrvwork.analytics.tipPeakDesc')}</p>
             </div>
             <div className="bg-white/20 rounded-xl p-3">
               <p className="font-medium">
-                <Star className="h-4 w-4 inline" /> Mantén alta calificación
+                <Star className="h-4 w-4 inline" /> {t('wdrvwork.analytics.tipRating')}
               </p>
-              <p className="text-sm text-white/80">
-                Los repartidores top reciben más pedidos premium
-              </p>
+              <p className="text-sm text-white/80">{t('wdrvwork.analytics.tipRatingDesc')}</p>
             </div>
             <div className="bg-white/20 rounded-xl p-3">
               <p className="font-medium">
-                <Target className="h-4 w-4 inline" /> Sé consistente
+                <Target className="h-4 w-4 inline" /> {t('wdrvwork.analytics.tipSteady')}
               </p>
-              <p className="text-sm text-white/80">
-                Trabaja al menos 5 días a la semana para bonos
-              </p>
+              <p className="text-sm text-white/80">{t('wdrvwork.analytics.tipSteadyDesc')}</p>
             </div>
           </div>
         </motion.div>

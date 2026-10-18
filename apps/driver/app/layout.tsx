@@ -7,6 +7,7 @@ import {
   ThemeScript,
   AuthProvider,
   NotificationProvider,
+  LanguageProvider,
   CookieConsentBanner,
   ServiceWorkerUpdater,
   SkipToContent,
@@ -65,17 +66,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         className="font-sans antialiased min-h-[100dvh] bg-bg-light dark:bg-[#0b1326] dark:text-[#f8fafc]"
         style={{ background: 'var(--bg-gradient)' }}
       >
-        <ThemeProvider>
-          <AuthProvider>
-            <NotificationProvider>
-              <SkipToContent />
-              {children}
-              <OfflineBanner />
-              <CookieConsentBanner />
-              <ServiceWorkerUpdater />
-            </NotificationProvider>
-          </AuthProvider>
-        </ThemeProvider>
+        <LanguageProvider>
+          <ThemeProvider>
+            <AuthProvider>
+              <NotificationProvider>
+                <SkipToContent />
+                {children}
+                <OfflineBanner />
+                <CookieConsentBanner />
+                <ServiceWorkerUpdater />
+              </NotificationProvider>
+            </AuthProvider>
+          </ThemeProvider>
+        </LanguageProvider>
       </body>
     </html>
   );

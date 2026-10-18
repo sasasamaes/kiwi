@@ -5,9 +5,10 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { AuthForm, useAuth } from '@kiwi/ui';
+import { AuthForm, useAuth, useTranslations, LanguageSwitcher } from '@kiwi/ui';
 
 export default function DriverLoginPage() {
+  const { t } = useTranslations();
   const router = useRouter();
   const { login } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -21,7 +22,7 @@ export default function DriverLoginPage() {
       await login(data.email, data.password);
       router.push('/');
     } catch (err: any) {
-      setError(err.message || 'Error al iniciar sesión. Intenta de nuevo.');
+      setError(err.message || t('wdrvauth.login.fallbackError'));
     } finally {
       setLoading(false);
     }
@@ -50,7 +51,7 @@ export default function DriverLoginPage() {
 
       {/* Header */}
       <motion.header
-        className="relative z-10 p-4"
+        className="relative z-10 flex items-center justify-between p-4"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
       >
@@ -59,8 +60,9 @@ export default function DriverLoginPage() {
           className="inline-flex min-h-[44px] items-center gap-2 text-surface-600 hover:text-surface-800"
         >
           <span>←</span>
-          <span className="text-sm font-medium">Volver</span>
+          <span className="text-sm font-medium">{t('wdrvauth.login.back')}</span>
         </Link>
+        <LanguageSwitcher />
       </motion.header>
 
       {/* Main Content */}
@@ -84,19 +86,19 @@ export default function DriverLoginPage() {
         transition={{ delay: 1 }}
       >
         <p className="flex flex-wrap items-center justify-center gap-x-1 gap-y-2 text-xs text-surface-500 dark:text-surface-400">
-          Al iniciar sesión, aceptas nuestros{' '}
+          {t('wdrvauth.login.footerPrefix')}{' '}
           <a
             href="/terms"
             className="inline-flex min-h-[44px] items-center px-1 text-kiwi-700 hover:underline"
           >
-            Términos
+            {t('wdrvauth.login.terms')}
           </a>{' '}
-          y{' '}
+          {t('wdrvauth.login.footerAnd')}{' '}
           <a
             href="/privacy"
             className="inline-flex min-h-[44px] items-center px-1 text-kiwi-700 hover:underline"
           >
-            Privacidad
+            {t('wdrvauth.login.privacy')}
           </a>
         </p>
       </motion.footer>

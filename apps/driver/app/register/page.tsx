@@ -5,10 +5,18 @@ import { Suspense, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { AuthForm, useAuth, useInviteReferral, WaitlistNotice } from '@kiwi/ui';
+import {
+  AuthForm,
+  useAuth,
+  useInviteReferral,
+  WaitlistNotice,
+  useTranslations,
+  LanguageSwitcher,
+} from '@kiwi/ui';
 
 /** Banner del link de invitación (?email=&invitation=). Nulo = sin invitación. */
 function InvitationBanner({ state }: { state: 'valid' | 'invalid' | null }) {
+  const { t } = useTranslations();
   if (!state) return null;
   return (
     <div
@@ -20,13 +28,14 @@ function InvitationBanner({ state }: { state: 'valid' | 'invalid' | null }) {
       }`}
     >
       {state === 'valid'
-        ? '🛵 Te invitaron a repartir con Kiwi — completá el registro con este correo.'
-        : 'Ese link de invitación venció o no es válido. Podés registrarte igual.'}
+        ? t('wdrvauth.register.inviteValid')
+        : t('wdrvauth.register.inviteInvalid')}
     </div>
   );
 }
 
 function DriverRegisterForm() {
+  const { t } = useTranslations();
   const router = useRouter();
   const { register } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -67,7 +76,7 @@ function DriverRegisterForm() {
       }
       router.push('/');
     } catch (err: any) {
-      setError(err.message || 'Error al crear la cuenta. Intenta de nuevo.');
+      setError(err.message || t('wdrvauth.register.fallbackError'));
     } finally {
       setLoading(false);
     }
@@ -78,7 +87,7 @@ function DriverRegisterForm() {
       <WaitlistNotice
         city={waitlist.city}
         message={waitlist.message}
-        actionLabel="Ir a la app"
+        actionLabel={t('wdrvauth.register.waitlistAction')}
         onContinue={() => router.push('/')}
       />
     );
@@ -106,6 +115,7 @@ function DriverRegisterForm() {
 }
 
 export default function DriverRegisterPage() {
+  const { t } = useTranslations();
   return (
     <div className="min-h-[100dvh] bg-gradient-to-br from-kiwi-50 via-white to-kiwi-100 dark:from-surface-950 dark:via-surface-900 dark:to-surface-950 flex flex-col">
       {/* Background decorations */}
@@ -124,7 +134,7 @@ export default function DriverRegisterPage() {
 
       {/* Header */}
       <motion.header
-        className="relative z-10 p-4"
+        className="relative z-10 flex items-center justify-between p-4"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
       >
@@ -133,8 +143,9 @@ export default function DriverRegisterPage() {
           className="inline-flex items-center gap-2 text-surface-600 hover:text-surface-800"
         >
           <span>←</span>
-          <span className="text-sm font-medium">Volver</span>
+          <span className="text-sm font-medium">{t('wdrvauth.register.back')}</span>
         </Link>
+        <LanguageSwitcher />
       </motion.header>
 
       {/* Main Content */}
@@ -154,13 +165,13 @@ export default function DriverRegisterPage() {
         transition={{ delay: 1 }}
       >
         <p className="text-xs text-surface-500 dark:text-surface-400">
-          Al registrarte, aceptas nuestros{' '}
+          {t('wdrvauth.register.footerPrefix')}{' '}
           <a href="/terms" className="text-kiwi-700 hover:underline">
-            Términos
+            {t('wdrvauth.register.terms')}
           </a>{' '}
-          y{' '}
+          {t('wdrvauth.register.footerAnd')}{' '}
           <a href="/privacy" className="text-kiwi-700 hover:underline">
-            Privacidad
+            {t('wdrvauth.register.privacy')}
           </a>
         </p>
       </motion.footer>

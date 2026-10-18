@@ -21,16 +21,24 @@ import {
   X,
   Lightbulb,
 } from 'lucide-react';
-import { AnimatedButton, StaggerContainer, StaggerItem, useAuth, api } from '@kiwi/ui';
+import {
+  AnimatedButton,
+  StaggerContainer,
+  StaggerItem,
+  LanguageSwitcher,
+  useAuth,
+  useTranslations,
+  api,
+} from '@kiwi/ui';
 
 const days = [
-  { short: 'Dom', full: 'Domingo', icon: Sun },
-  { short: 'Lun', full: 'Lunes', icon: Briefcase },
-  { short: 'Mar', full: 'Martes', icon: Briefcase },
-  { short: 'Mié', full: 'Miércoles', icon: Briefcase },
-  { short: 'Jue', full: 'Jueves', icon: Briefcase },
-  { short: 'Vie', full: 'Viernes', icon: Briefcase },
-  { short: 'Sáb', full: 'Sábado', icon: PartyPopper },
+  { id: 'sun', icon: Sun },
+  { id: 'mon', icon: Briefcase },
+  { id: 'tue', icon: Briefcase },
+  { id: 'wed', icon: Briefcase },
+  { id: 'thu', icon: Briefcase },
+  { id: 'fri', icon: Briefcase },
+  { id: 'sat', icon: PartyPopper },
 ];
 
 const hours = Array.from({ length: 15 }, (_, i) => i + 7); // 7am to 9pm
@@ -110,11 +118,11 @@ function fromApiRows(rows: any[]): Record<number, string[]> {
 }
 
 const presets = [
-  { name: 'Mañana', icon: Sun, hours: [7, 8, 9, 10, 11, 12] },
-  { name: 'Tarde', icon: Sun, hours: [13, 14, 15, 16, 17, 18] },
-  { name: 'Noche', icon: Moon, hours: [18, 19, 20, 21] },
+  { id: 'presetMorning', icon: Sun, hours: [7, 8, 9, 10, 11, 12] },
+  { id: 'presetAfternoon', icon: Sun, hours: [13, 14, 15, 16, 17, 18] },
+  { id: 'presetNight', icon: Moon, hours: [18, 19, 20, 21] },
   {
-    name: 'Día completo',
+    id: 'presetFull',
     icon: CalendarDays,
     hours: [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
   },
@@ -122,6 +130,7 @@ const presets = [
 
 export default function Schedule() {
   const router = useRouter();
+  const { t } = useTranslations();
   const { user, loading: authLoading } = useAuth();
   const [selectedDay, setSelectedDay] = useState(new Date().getDay());
   const [schedule, setSchedule] = useState<Record<number, string[]>>({
@@ -199,7 +208,7 @@ export default function Schedule() {
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch {
-      setScheduleError('No se pudo guardar tu horario. Revisá tu conexión.');
+      setScheduleError(t('wdrvwork.schedule.saveError'));
     } finally {
       setSaving(false);
     }
@@ -231,12 +240,12 @@ export default function Schedule() {
               className="flex items-center gap-2 text-surface-600 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200"
             >
               <span>←</span>
-              <span className="text-sm font-medium">Volver</span>
+              <span className="text-sm font-medium">{t('wdrvwork.schedule.back')}</span>
             </Link>
             <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-              Mi Horario
+              {t('wdrvwork.schedule.title')}
             </h1>
-            <div className="w-16" />
+            <LanguageSwitcher />
           </div>
         </div>
       </motion.header>
@@ -255,7 +264,7 @@ export default function Schedule() {
           />
           <div className="relative flex items-center justify-between">
             <div>
-              <p className="text-white/80 text-sm">Horas esta semana</p>
+              <p className="text-white/80 text-sm">{t('wdrvwork.schedule.weekHours')}</p>
               <motion.p
                 className="text-4xl font-bold"
                 key={weeklyHours}
@@ -268,13 +277,15 @@ export default function Schedule() {
             </div>
             <div className="flex gap-6">
               <div className="text-center">
-                <p className="text-white/80 text-sm">Días</p>
+                <p className="text-white/80 text-sm">{t('wdrvwork.schedule.daysLabel')}</p>
                 <p className="text-2xl font-bold">{activeDays}</p>
               </div>
               <div className="text-center">
-                <p className="text-white/80 text-sm">Promedio</p>
+                <p className="text-white/80 text-sm">{t('wdrvwork.schedule.avgLabel')}</p>
                 <p className="text-2xl font-bold">
-                  {activeDays > 0 ? Math.round(weeklyHours / activeDays) : 0}h/día
+                  {t('wdrvwork.schedule.avgValue', {
+                    count: activeDays > 0 ? Math.round(weeklyHours / activeDays) : 0,
+                  })}
                 </p>
               </div>
             </div>
@@ -295,7 +306,7 @@ export default function Schedule() {
 
               return (
                 <motion.button
-                  key={day.short}
+                  key={day.id}
                   onClick={() => setSelectedDay(index)}
                   className={`relative flex flex-col items-center rounded-xl px-4 py-3 min-w-[65px] transition-all ${
                     selectedDay === index
@@ -311,9 +322,11 @@ export default function Schedule() {
                       transition={{ duration: 2, repeat: Infinity }}
                     />
                   )}
-                  <span className="text-xs font-medium">{day.short}</span>
+                  <span className="text-xs font-medium">
+                    {t(`wdrvwork.schedule.${day.id}Short`)}
+                  </span>
                   <span className="text-lg font-bold mt-1">{dayHours > 0 ? dayHours : '·'}</span>
-                  <span className="text-[10px] opacity-70">horas</span>
+                  <span className="text-[10px] opacity-70">{t('wdrvwork.schedule.hoursUnit')}</span>
                 </motion.button>
               );
             })}
@@ -330,10 +343,12 @@ export default function Schedule() {
           <div>
             <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 flex items-center gap-2">
               <SelectedDayIcon className="h-5 w-5 text-kiwi-500" />
-              {days[selectedDay].full}
+              {t(`wdrvwork.schedule.${days[selectedDay].id}Full`)}
             </h3>
             <p className="text-sm text-surface-500 dark:text-surface-400">
-              {(schedule[selectedDay] || []).length} horas seleccionadas
+              {t('wdrvwork.schedule.selectedCount', {
+                count: (schedule[selectedDay] || []).length,
+              })}
             </p>
           </div>
           <motion.button
@@ -341,7 +356,7 @@ export default function Schedule() {
             onClick={() => setShowCopyModal(true)}
             whileTap={{ scale: 0.95 }}
           >
-            <Copy className="h-4 w-4" /> Copiar a...
+            <Copy className="h-4 w-4" /> {t('wdrvwork.schedule.copyTo')}
           </motion.button>
         </motion.div>
 
@@ -358,7 +373,7 @@ export default function Schedule() {
             whileTap={{ scale: 0.98 }}
           >
             <span className="flex items-center gap-2 text-sm font-medium text-surface-700 dark:text-surface-300">
-              <Zap className="h-4 w-4 text-gold-500" /> Atajos rápidos
+              <Zap className="h-4 w-4 text-gold-500" /> {t('wdrvwork.schedule.shortcuts')}
             </span>
             <motion.span
               animate={{ rotate: showPresets ? 180 : 0 }}
@@ -378,17 +393,17 @@ export default function Schedule() {
               >
                 {presets.map((preset) => (
                   <motion.button
-                    key={preset.name}
+                    key={preset.id}
                     className="p-3 rounded-xl bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-700 text-left hover:border-kiwi-300 dark:hover:border-kiwi-600 transition-colors"
                     onClick={() => applyPreset(preset.hours)}
                     whileTap={{ scale: 0.95 }}
                   >
                     <span className="flex items-center gap-2 text-sm font-medium text-surface-700 dark:text-surface-300">
                       <preset.icon className="h-4 w-4 text-kiwi-500" />
-                      {preset.name}
+                      {t(`wdrvwork.schedule.${preset.id}`)}
                     </span>
                     <span className="block text-xs text-surface-500 dark:text-surface-400 mt-1">
-                      {preset.hours.length} horas
+                      {t('wdrvwork.schedule.presetHours', { count: preset.hours.length })}
                     </span>
                   </motion.button>
                 ))}
@@ -457,7 +472,7 @@ export default function Schedule() {
               });
             }}
           >
-            Seleccionar todo el día
+            {t('wdrvwork.schedule.selectDay')}
           </AnimatedButton>
 
           <AnimatedButton
@@ -470,7 +485,7 @@ export default function Schedule() {
               });
             }}
           >
-            Limpiar horario
+            {t('wdrvwork.schedule.clearDay')}
           </AnimatedButton>
         </motion.div>
 
@@ -494,11 +509,12 @@ export default function Schedule() {
                 animate={{ scale: 1 }}
                 className="flex items-center justify-center gap-2"
               >
-                <Check className="h-5 w-5" /> Guardado
+                <Check className="h-5 w-5" /> {t('wdrvwork.schedule.saved')}
               </motion.span>
             ) : (
               <span className="flex items-center justify-center gap-2">
-                <Save className="h-5 w-5" /> {saving ? 'Guardando…' : 'Guardar Horario'}
+                <Save className="h-5 w-5" />{' '}
+                {saving ? t('wdrvwork.schedule.saving') : t('wdrvwork.schedule.saveCta')}
               </span>
             )}
           </AnimatedButton>
@@ -519,8 +535,7 @@ export default function Schedule() {
           <p className="flex items-center justify-center gap-1 text-xs text-surface-500 dark:text-surface-400 text-center">
             <Lightbulb className="h-4 w-4 shrink-0 text-gold-500" />
             <span>
-              <strong>Consejo:</strong> Los repartidores con horarios consistentes reciben más
-              pedidos programados.
+              <strong>{t('wdrvwork.schedule.tipLabel')}</strong> {t('wdrvwork.schedule.tip')}
             </span>
           </p>
         </motion.div>
@@ -546,7 +561,7 @@ export default function Schedule() {
             >
               <div className="mb-6 flex items-center justify-between">
                 <h3 className="flex items-center gap-2 font-display text-lg font-semibold text-surface-800 dark:text-surface-100">
-                  <Copy className="h-5 w-5 text-kiwi-500" /> Copiar horario
+                  <Copy className="h-5 w-5 text-kiwi-500" /> {t('wdrvwork.schedule.copyTitle')}
                 </h3>
                 <button
                   onClick={() => setShowCopyModal(false)}
@@ -557,7 +572,9 @@ export default function Schedule() {
               </div>
 
               <p className="text-sm text-surface-500 dark:text-surface-400 mb-4">
-                Copiar horario de <strong>{days[selectedDay].full}</strong> a:
+                {t('wdrvwork.schedule.copyFrom', {
+                  day: t(`wdrvwork.schedule.${days[selectedDay].id}Full`),
+                })}
               </p>
 
               <div className="grid grid-cols-2 gap-3">
@@ -565,7 +582,7 @@ export default function Schedule() {
                   const DayIcon = day.icon as any;
                   return (
                     <motion.button
-                      key={day.short}
+                      key={day.id}
                       className={`p-4 rounded-xl border text-left transition-all ${
                         index === selectedDay
                           ? 'border-surface-200 dark:border-surface-600 bg-surface-50 dark:bg-surface-700 opacity-50 cursor-not-allowed'
@@ -577,12 +594,14 @@ export default function Schedule() {
                     >
                       <span className="flex items-center gap-1 font-medium text-surface-800 dark:text-surface-200">
                         <DayIcon className="h-4 w-4 text-kiwi-500" />
-                        {day.short}
+                        {t(`wdrvwork.schedule.${day.id}Short`)}
                       </span>
                       <span className="block text-xs text-surface-500 dark:text-surface-400 mt-1">
                         {index === selectedDay
-                          ? 'Origen'
-                          : `${(schedule[index] || []).length} horas actuales`}
+                          ? t('wdrvwork.schedule.origin')
+                          : t('wdrvwork.schedule.currentHours', {
+                              count: (schedule[index] || []).length,
+                            })}
                       </span>
                     </motion.button>
                   );

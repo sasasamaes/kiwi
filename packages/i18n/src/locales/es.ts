@@ -15,6 +15,9 @@ import { cliHomeEs as wclihome } from './web/client-home';
 import { cliMenuEs as wclimenu } from './web/client-menu';
 import { cliOrderEs as wcliord } from './web/client-order';
 import { cliMiscEs as wclimisc } from './web/client-misc';
+import { drvAuthEs as wdrvauth } from './web/driver-auth';
+import { drvWorkEs as wdrvwork } from './web/driver-work';
+import { drvMiscEs as wdrvmisc } from './web/driver-misc';
 
 export default {
   // General
@@ -930,4 +933,7 @@ export default {
   wclimenu,
   wcliord,
   wclimisc,
+  wdrvauth,
+  wdrvwork,
+  wdrvmisc,
 };

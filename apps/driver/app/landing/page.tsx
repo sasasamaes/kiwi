@@ -12,40 +12,54 @@ import {
   ShieldCheck,
   Wallet,
 } from 'lucide-react';
-import { AnimatedButton, StaggerContainer, StaggerItem, KiwiMark, KiwiLogo } from '@kiwi/ui';
+import {
+  AnimatedButton,
+  StaggerContainer,
+  StaggerItem,
+  KiwiMark,
+  KiwiLogo,
+  useTranslations,
+  LanguageSwitcher,
+} from '@kiwi/ui';
 
 export default function DriverLanding() {
+  const { t } = useTranslations();
   return (
     <main className="min-h-[100dvh] bg-bg-light text-surface-900 antialiased scroll-smooth dark:bg-surface-950 dark:text-surface-100">
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-surface-200/60 bg-white/80 backdrop-blur-xl dark:border-surface-800 dark:bg-surface-950/80">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6 lg:px-8">
-          <Link href="/landing" className="flex items-center gap-2" aria-label="Kiwi inicio">
+          <Link
+            href="/landing"
+            className="flex items-center gap-2"
+            aria-label={t('wdrvauth.landing.logoAria')}
+          >
             <KiwiLogo size={28} />
             <span className="font-display text-lg font-bold tracking-tight">
               <span className="font-medium text-surface-500 dark:text-surface-400">
-                Repartidores
+                {t('wdrvauth.landing.brandSuffix')}
               </span>
             </span>
           </Link>
           <nav className="hidden items-center gap-8 text-sm font-medium text-surface-500 md:flex dark:text-surface-400">
             <a href="#beneficios" className="transition-colors hover:text-kiwi-600">
-              Beneficios
+              {t('wdrvauth.landing.navBenefits')}
             </a>
             <a href="#como-funciona" className="transition-colors hover:text-kiwi-600">
-              Cómo funciona
+              {t('wdrvauth.landing.navHow')}
             </a>
           </nav>
           <div className="flex items-center gap-3">
+            <LanguageSwitcher />
             <Link
               href="/login"
               className="hidden text-sm font-medium text-surface-600 transition-colors hover:text-kiwi-600 sm:block dark:text-surface-300"
             >
-              Iniciar sesión
+              {t('wdrvauth.landing.login')}
             </Link>
             <Link href="/register">
               <AnimatedButton variant="gradient" size="sm">
-                Crear cuenta
+                {t('wdrvauth.landing.register')}
               </AnimatedButton>
             </Link>
           </div>
@@ -101,7 +115,7 @@ export default function DriverLanding() {
           >
             <span className="inline-flex items-center gap-1.5 rounded-full border border-kiwi-200 bg-kiwi-50 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-kiwi-700 dark:border-kiwi-800 dark:bg-kiwi-950 dark:text-kiwi-400">
               <MapPin className="h-3.5 w-3.5" />
-              Nicoya y Guanacaste
+              {t('wdrvauth.landing.badge')}
             </span>
           </motion.div>
           <motion.h1
@@ -110,9 +124,9 @@ export default function DriverLanding() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
           >
-            Manejá tus horarios,{' '}
+            {t('wdrvauth.landing.heroA')}{' '}
             <span className="bg-gradient-to-r from-kiwi-600 to-kiwi-400 bg-clip-text text-transparent">
-              ganá por cada viaje
+              {t('wdrvauth.landing.heroB')}
             </span>
           </motion.h1>
           <motion.p
@@ -121,8 +135,7 @@ export default function DriverLanding() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
           >
-            Delivery, viajes y fletes en una sola app: elegís qué pedidos tomar, cuándo conectarte y
-            cobrás por SINPE. Sin jefes, sin turnos fijos.
+            {t('wdrvauth.landing.heroSub')}
           </motion.p>
 
           <motion.div
@@ -133,13 +146,13 @@ export default function DriverLanding() {
           >
             <Link href="/register">
               <AnimatedButton variant="gradient" size="lg" className="min-w-[220px] shadow-kiwi-lg">
-                Crear mi cuenta
+                {t('wdrvauth.landing.ctaRegister')}
                 <ArrowRight className="h-4 w-4" />
               </AnimatedButton>
             </Link>
             <Link href="/login">
               <AnimatedButton variant="glass" size="lg" className="min-w-[220px]">
-                Iniciar sesión
+                {t('wdrvauth.landing.ctaLogin')}
               </AnimatedButton>
             </Link>
           </motion.div>
@@ -151,9 +164,9 @@ export default function DriverLanding() {
             transition={{ delay: 0.7 }}
           >
             {[
-              { icon: Bike, text: 'Moto, bici, carro o camión' },
-              { icon: Wallet, text: 'Retiros por SINPE' },
-              { icon: ShieldCheck, text: 'Verificación con KYC' },
+              { icon: Bike, textKey: 'proof1' },
+              { icon: Wallet, textKey: 'proof2' },
+              { icon: ShieldCheck, textKey: 'proof3' },
             ].map((item, i) => {
               const ProofIcon = item.icon as any;
               return (
@@ -163,7 +176,9 @@ export default function DriverLanding() {
                   whileHover={{ scale: 1.05, color: '#22c55e' }}
                 >
                   <ProofIcon className="h-5 w-5" />
-                  <span className="text-sm font-medium">{item.text}</span>
+                  <span className="text-sm font-medium">
+                    {t(`wdrvauth.landing.${item.textKey}`)}
+                  </span>
                 </motion.div>
               );
             })}
@@ -181,13 +196,13 @@ export default function DriverLanding() {
             viewport={{ once: true }}
           >
             <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-kiwi-600">
-              Beneficios
+              {t('wdrvauth.landing.benEyebrow')}
             </p>
             <h2 className="mb-3 text-balance text-3xl font-display font-bold tracking-tight lg:text-4xl">
-              Trabajá a tu manera
+              {t('wdrvauth.landing.benTitle')}
             </h2>
             <p className="text-pretty text-surface-500 dark:text-surface-400">
-              Vos decidís cuándo y qué trabajar.
+              {t('wdrvauth.landing.benSub')}
             </p>
           </motion.div>
 
@@ -204,10 +219,11 @@ export default function DriverLanding() {
                 >
                   <ClipboardCheck className="h-7 w-7" />
                 </motion.div>
-                <h3 className="mb-2 text-xl font-display font-semibold">Elegís tus pedidos</h3>
+                <h3 className="mb-2 text-xl font-display font-semibold">
+                  {t('wdrvauth.landing.card1Title')}
+                </h3>
                 <p className="max-w-md text-pretty text-surface-500 dark:text-surface-400">
-                  Ves cada pedido con su pago antes de aceptarlo: delivery de comercios, viajes y
-                  fletes. Nadie te asigna nada a la fuerza.
+                  {t('wdrvauth.landing.card1Desc')}
                 </p>
               </motion.div>
             </StaggerItem>
@@ -224,9 +240,11 @@ export default function DriverLanding() {
                 >
                   <CalendarClock className="h-7 w-7" />
                 </motion.div>
-                <h3 className="mb-2 text-xl font-display font-semibold">Pedidos programados</h3>
+                <h3 className="mb-2 text-xl font-display font-semibold">
+                  {t('wdrvauth.landing.card2Title')}
+                </h3>
                 <p className="text-pretty text-surface-500 dark:text-surface-400">
-                  Proponete para entregas programadas y armá tu semana con ingresos previsibles.
+                  {t('wdrvauth.landing.card2Desc')}
                 </p>
               </motion.div>
             </StaggerItem>
@@ -243,10 +261,11 @@ export default function DriverLanding() {
                 >
                   <Wallet className="h-7 w-7" />
                 </motion.div>
-                <h3 className="mb-2 text-xl font-display font-semibold">Cobrás por SINPE</h3>
+                <h3 className="mb-2 text-xl font-display font-semibold">
+                  {t('wdrvauth.landing.card3Title')}
+                </h3>
                 <p className="text-pretty text-surface-500 dark:text-surface-400">
-                  Pedí tu retiro cuando quieras y recibí la plata directo. Tus ganancias siempre
-                  visibles en la app.
+                  {t('wdrvauth.landing.card3Desc')}
                 </p>
               </motion.div>
             </StaggerItem>
@@ -263,10 +282,11 @@ export default function DriverLanding() {
                 >
                   <ShieldCheck className="h-7 w-7" />
                 </motion.div>
-                <h3 className="mb-2 text-xl font-display font-semibold">Verificado y respaldado</h3>
+                <h3 className="mb-2 text-xl font-display font-semibold">
+                  {t('wdrvauth.landing.card4Title')}
+                </h3>
                 <p className="max-w-md text-pretty text-surface-500 dark:text-surface-400">
-                  Verificación de identidad, calificaciones de los comercios y niveles que premian a
-                  los mejores repartidores. Funciona hasta sin señal.
+                  {t('wdrvauth.landing.card4Desc')}
                 </p>
               </motion.div>
             </StaggerItem>
@@ -287,10 +307,10 @@ export default function DriverLanding() {
             viewport={{ once: true }}
           >
             <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-kiwi-600">
-              Cómo funciona
+              {t('wdrvauth.landing.howEyebrow')}
             </p>
             <h2 className="mb-3 text-balance text-3xl font-display font-bold tracking-tight lg:text-4xl">
-              Empezá en tres pasos
+              {t('wdrvauth.landing.howTitle')}
             </h2>
           </motion.div>
 
@@ -298,18 +318,18 @@ export default function DriverLanding() {
             {[
               {
                 n: '01',
-                title: 'Creá tu cuenta',
-                text: 'Registrate gratis con tu vehículo y verificá tu identidad para generar confianza.',
+                titleKey: 'step1Title',
+                textKey: 'step1Desc',
               },
               {
                 n: '02',
-                title: 'Conectate disponible',
-                text: 'Activá tu estado cuando quieras trabajar: los pedidos cercanos te llegan al instante.',
+                titleKey: 'step2Title',
+                textKey: 'step2Desc',
               },
               {
                 n: '03',
-                title: 'Aceptá y cobrá',
-                text: 'Elegí los pedidos que te sirven, entregá con seguimiento en vivo y retirá por SINPE.',
+                titleKey: 'step3Title',
+                textKey: 'step3Desc',
               },
             ].map((step, i) => (
               <StaggerItem key={step.n}>
@@ -321,8 +341,12 @@ export default function DriverLanding() {
                   >
                     {step.n}
                   </motion.span>
-                  <h3 className="mb-2 text-lg font-display font-semibold">{step.title}</h3>
-                  <p className="text-pretty text-surface-500 dark:text-surface-400">{step.text}</p>
+                  <h3 className="mb-2 text-lg font-display font-semibold">
+                    {t(`wdrvauth.landing.${step.titleKey}`)}
+                  </h3>
+                  <p className="text-pretty text-surface-500 dark:text-surface-400">
+                    {t(`wdrvauth.landing.${step.textKey}`)}
+                  </p>
                   {i < 2 && (
                     <div
                       className="absolute right-0 top-16 hidden h-0.5 w-12 bg-kiwi-200 md:block dark:bg-kiwi-800"
@@ -361,11 +385,10 @@ export default function DriverLanding() {
 
             <div className="relative">
               <h2 className="mb-4 text-balance text-3xl font-display font-bold text-white lg:text-4xl">
-                Tu moto ya puede estar ganando
+                {t('wdrvauth.landing.ctaTitle')}
               </h2>
               <p className="mx-auto mb-8 max-w-xl text-pretty text-lg text-white/80">
-                Creá tu cuenta gratis, conectate cuando quieras y empezá a recibir pedidos hoy
-                mismo.
+                {t('wdrvauth.landing.ctaSub')}
               </p>
               <Link href="/register">
                 <AnimatedButton
@@ -373,7 +396,7 @@ export default function DriverLanding() {
                   size="lg"
                   className="bg-white text-kiwi-700 hover:bg-white/90"
                 >
-                  Crear mi cuenta
+                  {t('wdrvauth.landing.ctaButton')}
                   <ArrowRight className="h-4 w-4" />
                 </AnimatedButton>
               </Link>
@@ -389,7 +412,7 @@ export default function DriverLanding() {
             <KiwiLogo size={26} />
           </motion.div>
           <p className="text-sm text-surface-500 dark:text-surface-400">
-            © 2026 Kiwi. Hecho con 💚 en Nicoya, Costa Rica
+            {t('wdrvauth.landing.footerNote')}
           </p>
           <div className="flex gap-4 text-sm">
             <motion.a
@@ -397,21 +420,21 @@ export default function DriverLanding() {
               className="text-surface-500 dark:text-surface-400 transition-colors hover:text-kiwi-500"
               whileHover={{ y: -2 }}
             >
-              Términos
+              {t('wdrvauth.landing.footerTerms')}
             </motion.a>
             <motion.a
               href="/privacy"
               className="text-surface-500 dark:text-surface-400 transition-colors hover:text-kiwi-500"
               whileHover={{ y: -2 }}
             >
-              Privacidad
+              {t('wdrvauth.landing.footerPrivacy')}
             </motion.a>
             <motion.a
               href="/cookies"
               className="text-surface-500 dark:text-surface-400 transition-colors hover:text-kiwi-500"
               whileHover={{ y: -2 }}
             >
-              Cookies
+              {t('wdrvauth.landing.footerCookies')}
             </motion.a>
           </div>
         </div>

@@ -42,6 +42,8 @@ import {
   AnimatedCounter,
   playNotificationSound,
   OrderChat,
+  LanguageSwitcher,
+  useTranslations,
 } from '@kiwi/ui';
 
 // Estados considerados "activos" para el repartidor
@@ -62,20 +64,20 @@ const FLOW_ORDER = [
   'delivered',
 ] as const;
 
-const STEP_META: Record<string, { label: string; hint: string }> = {
-  assigned: { label: 'Aceptado', hint: 'Andá al comercio a recoger' },
-  pending_acceptance: { label: 'Aceptá el pedido', hint: 'El comercio te eligió' },
-  in_transit_to_pickup: { label: 'En camino', hint: 'Vas hacia el comercio' },
-  picked_up: { label: 'Recogido', hint: 'Llevá el pedido al cliente' },
-  in_transit_to_delivery: { label: 'Entregando', hint: 'Estás por llegar' },
-  delivered: { label: 'Entregado', hint: 'Pedido completado' },
+const STEP_META: Record<string, { labelKey: string; hintKey: string }> = {
+  assigned: { labelKey: 'stepAssignedLabel', hintKey: 'stepAssignedHint' },
+  pending_acceptance: { labelKey: 'stepPendingLabel', hintKey: 'stepPendingHint' },
+  in_transit_to_pickup: { labelKey: 'stepToPickupLabel', hintKey: 'stepToPickupHint' },
+  picked_up: { labelKey: 'stepPickedLabel', hintKey: 'stepPickedHint' },
+  in_transit_to_delivery: { labelKey: 'stepToDeliveryLabel', hintKey: 'stepToDeliveryHint' },
+  delivered: { labelKey: 'stepDeliveredLabel', hintKey: 'stepDeliveredHint' },
 };
 
-const NEXT_STATUS: Record<string, { next: string; label: string; final?: boolean }> = {
-  assigned: { next: 'in_transit_to_pickup', label: 'Voy en camino' },
-  in_transit_to_pickup: { next: 'picked_up', label: 'Recogí el pedido' },
-  picked_up: { next: 'in_transit_to_delivery', label: 'Voy a entregar' },
-  in_transit_to_delivery: { next: 'delivered', label: 'Entregué el pedido', final: true },
+const NEXT_STATUS: Record<string, { next: string; labelKey: string; final?: boolean }> = {
+  assigned: { next: 'in_transit_to_pickup', labelKey: 'nextToPickup' },
+  in_transit_to_pickup: { next: 'picked_up', labelKey: 'nextPickedUp' },
+  picked_up: { next: 'in_transit_to_delivery', labelKey: 'nextToDelivery' },
+  in_transit_to_delivery: { next: 'delivered', labelKey: 'nextDelivered', final: true },
 };
 
 // Terminales: nunca se muestran en la lista de activos.
@@ -133,13 +135,19 @@ function toWaLink(phone: string): string {
   return `https://wa.me/${normalized}`;
 }
 
-function elapsedLabel(iso?: string | null): string {
+function elapsedLabel(
+  iso: string | null | undefined,
+  t: (key: string, variables?: Record<string, string | number>) => string,
+): string {
   if (!iso) return '';
   const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
-  if (mins < 1) return 'ahora mismo';
-  if (mins < 60) return `hace ${mins} min`;
+  if (mins < 1) return t('wdrvwork.active.elapsedNow');
+  if (mins < 60) return t('wdrvwork.active.elapsedMins', { count: mins });
   const h = Math.floor(mins / 60);
-  return `hace ${h} h${mins % 60 ? ` ${mins % 60} min` : ''}`;
+  const m = mins % 60;
+  return m
+    ? t('wdrvwork.active.elapsedHoursMins', { h, m })
+    : t('wdrvwork.active.elapsedHours', { h });
 }
 
 // Clave de caché para render offline
@@ -147,6 +155,7 @@ const ORDERS_CACHE_KEY = 'driver_active_orders';
 
 export default function ActiveOrders() {
   const router = useRouter();
+  const { t } = useTranslations();
   const { user, loading: authLoading } = useAuth();
   const { on: onSocketEvent } = useSocket({});
 
@@ -205,11 +214,11 @@ export default function ActiveOrders() {
         .catch((e) => console.error('Failed to cache active orders:', e));
     } catch (err) {
       console.error('Failed to fetch active orders:', err);
-      setError(err instanceof Error ? err.message : 'No se pudieron cargar los pedidos activos');
+      setError(err instanceof Error ? err.message : t('wdrvwork.active.loadError'));
       // Si ya había lista en pantalla, el error era invisible y la lista
       // quedaba vieja ("no se cierran"): avisar con reintento.
       if (loadedOnceRef.current) {
-        setNotice('No se pudo actualizar la lista. Revisá tu conexión y tocá Refrescar.');
+        setNotice(t('wdrvwork.active.listStale'));
       }
       // Fallback offline: sirve la última lista activa conocida
       try {
@@ -229,7 +238,7 @@ export default function ActiveOrders() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -313,10 +322,10 @@ export default function ActiveOrders() {
       if (rest.length === 0) {
         router.push('/');
       } else {
-        setNotice('Pedido devuelto. El comercio fue avisado para reasignarlo.');
+        setNotice(t('wdrvwork.active.rejectDone'));
       }
     } catch (err) {
-      setNotice(err instanceof Error ? err.message : 'No se pudo rechazar el pedido.');
+      setNotice(err instanceof Error ? err.message : t('wdrvwork.active.rejectFailed'));
     } finally {
       setRejecting(false);
     }
@@ -327,10 +336,10 @@ export default function ActiveOrders() {
     setAccepting(true);
     try {
       await api.acceptAssignment(order.id);
-      setNotice('Pedido aceptado. ¡Andá a recogerlo!');
+      setNotice(t('wdrvwork.active.acceptDone'));
       await fetchActiveOrders();
     } catch (err) {
-      setNotice(err instanceof Error ? err.message : 'No se pudo aceptar el pedido.');
+      setNotice(err instanceof Error ? err.message : t('wdrvwork.active.acceptFailed'));
     } finally {
       setAccepting(false);
     }
@@ -386,12 +395,12 @@ export default function ActiveOrders() {
     // Evidencia 1+1 obligatoria: sin foto no se avanza (el backend también
     // lo bloquea con 400, esto evita el tap inútil y explica el porqué).
     if (flow.next === 'picked_up' && !(order as any).pickupProofPhotoUrl) {
-      setNotice('El comercio debe subir la foto del pedido antes de que lo recojas.');
+      setNotice(t('wdrvwork.active.needPickupPhoto'));
       return;
     }
     if (flow.next === 'delivered' && !(order as any).deliveryProofPhotoUrl) {
       // La foto la toma el driver en este paso:
-      setNotice('Tomá la foto de la entrega antes de cerrar el pedido.');
+      setNotice(t('wdrvwork.active.needDeliveryPhoto'));
       return;
     }
 
@@ -406,7 +415,7 @@ export default function ActiveOrders() {
     // ¿Ya hay una transición encolada para este pedido? No duplicar (pero
     // avisar: el tap silencioso que no hace nada parece "no cierra").
     if (queuedTransitionsRef.current[order.id]) {
-      setNotice('Ya se está enviando el cambio de estado. Esperá unos segundos.');
+      setNotice(t('wdrvwork.active.alreadyQueued'));
       return;
     }
 
@@ -468,7 +477,7 @@ export default function ActiveOrders() {
         console.error('Failed to enqueue status change:', queueErr);
         // Sin cola disponible: revertir para no mostrar un estado mentiroso
         applyOptimistic(order.id, order.status);
-        setNotice('Sin conexión y no se pudo guardar el cambio. Intenta de nuevo.');
+        setNotice(t('wdrvwork.active.queueFailed'));
       }
     } finally {
       setUpdating(false);
@@ -481,7 +490,7 @@ export default function ActiveOrders() {
   const uploadDeliveryPhoto = async (target: Order, file: File) => {
     if (uploadingPhoto) return;
     if (file.size > 5 * 1024 * 1024) {
-      setNotice('La foto es muy grande (máx 5 MB). Probá con otra imagen.');
+      setNotice(t('wdrvwork.active.photoTooBig'));
       return;
     }
     if (
@@ -490,16 +499,16 @@ export default function ActiveOrders() {
         file.type,
       )
     ) {
-      setNotice('Formato no soportado. Usá JPG, PNG, WEBP, GIF o HEIC.');
+      setNotice(t('wdrvwork.active.photoBadType'));
       return;
     }
     setUploadingPhoto(true);
     try {
       await api.uploadOrderProofPhoto(target.id, 'delivery', file);
-      setNotice('Foto de entrega registrada. Ya podés cerrar el pedido.');
+      setNotice(t('wdrvwork.active.photoSaved'));
       await fetchActiveOrders();
     } catch (err) {
-      setNotice(err instanceof Error ? err.message : 'No se pudo subir la foto.');
+      setNotice(err instanceof Error ? err.message : t('wdrvwork.active.photoFailed'));
     } finally {
       setUploadingPhoto(false);
     }
@@ -511,7 +520,7 @@ export default function ActiveOrders() {
       setCopied(kind);
       setTimeout(() => setCopied(null), 2000);
     } catch {
-      setNotice('No se pudo copiar la dirección.');
+      setNotice(t('wdrvwork.active.copyFailed'));
     }
   };
 
@@ -553,7 +562,7 @@ export default function ActiveOrders() {
           // perdida o doble tap): convergió, no es un error real.
           const errMsg = String((payload as any)?.error ?? '');
           if (!/No se puede cambiar/i.test(errMsg)) {
-            setNotice('Un cambio de estado no se pudo sincronizar después de varios intentos.');
+            setNotice(t('wdrvwork.active.syncFailed'));
           }
         }
       }
@@ -606,10 +615,12 @@ export default function ActiveOrders() {
           <div className="mx-auto max-w-lg px-4 py-4 flex items-center justify-between">
             <Link href="/" className="flex min-h-[44px] items-center gap-2 text-surface-600">
               <span>←</span>
-              <span className="text-sm font-medium">Volver</span>
+              <span className="text-sm font-medium">{t('wdrvwork.active.back')}</span>
             </Link>
-            <h1 className="font-display font-semibold text-surface-800">Pedido Activo</h1>
-            <div className="w-16" />
+            <h1 className="font-display font-semibold text-surface-800">
+              {t('wdrvwork.active.title')}
+            </h1>
+            <LanguageSwitcher />
           </div>
         </header>
         <main className="flex-1 flex items-center justify-center p-4">
@@ -620,7 +631,7 @@ export default function ActiveOrders() {
               onClick={fetchActiveOrders}
               className="px-6 py-3 rounded-xl bg-kiwi-gradient text-white font-semibold shadow-kiwi-lg"
             >
-              <RefreshCw className="h-4 w-4 inline" /> Reintentar
+              <RefreshCw className="h-4 w-4 inline" /> {t('wdrvwork.active.retry')}
             </button>
           </motion.div>
         </main>
@@ -635,10 +646,12 @@ export default function ActiveOrders() {
           <div className="mx-auto max-w-lg px-4 py-4 flex items-center justify-between">
             <Link href="/" className="flex min-h-[44px] items-center gap-2 text-surface-600">
               <span>←</span>
-              <span className="text-sm font-medium">Volver</span>
+              <span className="text-sm font-medium">{t('wdrvwork.active.back')}</span>
             </Link>
-            <h1 className="font-display font-semibold text-surface-800">Pedido Activo</h1>
-            <div className="w-16" />
+            <h1 className="font-display font-semibold text-surface-800">
+              {t('wdrvwork.active.title')}
+            </h1>
+            <LanguageSwitcher />
           </div>
         </header>
         <main className="flex-1 flex items-center justify-center p-4">
@@ -653,15 +666,15 @@ export default function ActiveOrders() {
             >
               <Inbox className="h-14 w-14 mx-auto mb-4 text-surface-300 dark:text-surface-600" />
             </motion.div>
-            <h2 className="text-lg font-semibold text-surface-800 mb-2">Sin pedidos activos</h2>
-            <p className="text-sm text-surface-500 mb-6">
-              Acepta un pedido desde el inicio para verlo aquí.
-            </p>
+            <h2 className="text-lg font-semibold text-surface-800 mb-2">
+              {t('wdrvwork.active.emptyTitle')}
+            </h2>
+            <p className="text-sm text-surface-500 mb-6">{t('wdrvwork.active.emptyDesc')}</p>
             <Link
               href="/"
               className="inline-block px-6 py-3 rounded-xl bg-kiwi-gradient text-white font-semibold shadow-kiwi-lg"
             >
-              Ver pedidos disponibles
+              {t('wdrvwork.active.emptyCta')}
             </Link>
           </motion.div>
         </main>
@@ -672,7 +685,7 @@ export default function ActiveOrders() {
 
   const order = orders.find((o) => o.id === selectedId) ?? orders[0];
   const stepIndex = Math.max(0, FLOW_ORDER.indexOf(order.status as (typeof FLOW_ORDER)[number]));
-  const meta = STEP_META[order.status] ?? { label: order.status, hint: '' };
+  const meta = STEP_META[order.status];
   // La barra de acción fija es dueña del borde inferior en todos los pasos:
   // el BottomNav se oculta en esta pantalla para que no tape el botón
   // (antes se traslapaban en "assigned" y el botón quedaba cortado).
@@ -710,8 +723,10 @@ export default function ActiveOrders() {
   const mapTarget = stepIndex >= 2 ? ('delivery' as const) : ('pickup' as const);
   const mapTargetLabel =
     mapTarget === 'pickup'
-      ? `Vas a recoger · ${order.merchant?.businessName || 'Comercio'}`
-      : `Vas a entregar · ${order.deliveryAddress}`;
+      ? t('wdrvwork.active.mapPickup', {
+          name: order.merchant?.businessName || t('wdrvwork.active.commerceFallback'),
+        })
+      : t('wdrvwork.active.mapDelivery', { address: order.deliveryAddress });
 
   return (
     <main className="min-h-[100dvh] flex flex-col bg-bg-light dark:bg-surface-950">
@@ -720,19 +735,24 @@ export default function ActiveOrders() {
         <div className="mx-auto max-w-lg px-4 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 text-surface-600">
             <span>←</span>
-            <span className="text-sm font-medium">Volver</span>
+            <span className="text-sm font-medium">{t('wdrvwork.active.back')}</span>
           </Link>
-          <h1 className="font-display font-semibold text-surface-800">Pedido Activo</h1>
-          <button
-            onClick={() => {
-              setRefreshing(true);
-              fetchActiveOrders();
-            }}
-            className="w-16 flex justify-end text-surface-500"
-            aria-label="Refrescar"
-          >
-            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-          </button>
+          <h1 className="font-display font-semibold text-surface-800">
+            {t('wdrvwork.active.title')}
+          </h1>
+          <div className="flex items-center gap-2">
+            <LanguageSwitcher />
+            <button
+              onClick={() => {
+                setRefreshing(true);
+                fetchActiveOrders();
+              }}
+              className="flex justify-end text-surface-500"
+              aria-label={t('wdrvwork.active.refreshAria')}
+            >
+              <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
         </div>
       </header>
 
@@ -758,7 +778,7 @@ export default function ActiveOrders() {
               <p className="text-xs font-medium text-amber-800 dark:text-amber-300">{notice}</p>
               <button
                 onClick={() => setNotice(null)}
-                aria-label="Descartar aviso"
+                aria-label={t('wdrvwork.active.dismissAria')}
                 className="text-amber-600 dark:text-amber-400"
               >
                 ✕
@@ -771,9 +791,7 @@ export default function ActiveOrders() {
           <div className="mb-4 flex items-center gap-3 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 p-3">
             <CloudOff className="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
             <p className="text-xs font-medium text-amber-800 dark:text-amber-300">
-              {fromCache
-                ? 'Sin conexión — mostrando tus pedidos guardados. Los cambios se envían al reconectar.'
-                : 'Sin conexión — los cambios de estado se guardan y se envían automáticamente.'}
+              {fromCache ? t('wdrvwork.active.offlineCached') : t('wdrvwork.active.offlineQueue')}
             </p>
           </div>
         )}
@@ -794,12 +812,12 @@ export default function ActiveOrders() {
               <div className="mb-4 rounded-3xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-5">
                 <p className="flex items-center gap-2 text-base font-semibold text-surface-800 dark:text-surface-100">
                   <Timer className="h-5 w-5 text-kiwi-600" />
-                  Tenés un pedido para aceptar
+                  {t('wdrvwork.active.acceptTitle')}
                 </p>
                 <p className="mt-1 text-sm text-surface-500 dark:text-surface-400">
                   {remaining != null && remaining <= 0
-                    ? 'Se venció el tiempo: volvé al inicio para refrescar.'
-                    : `Te quedan ${mm}:${ss} para aceptarlo antes de que vuelva a concurso.`}
+                    ? t('wdrvwork.active.acceptExpired')
+                    : t('wdrvwork.active.acceptCountdown', { time: `${mm}:${ss}` })}
                 </p>
                 <p className="mt-2 font-mono text-3xl font-bold text-kiwi-700 dark:text-kiwi-300">
                   {mm}:{ss}
@@ -812,7 +830,7 @@ export default function ActiveOrders() {
                     onClick={acceptAssignment}
                     disabled={accepting || rejecting}
                   >
-                    {accepting ? 'Aceptando…' : 'Aceptar pedido'}
+                    {accepting ? t('wdrvwork.active.accepting') : t('wdrvwork.active.acceptCta')}
                   </TapButton>
                   <TapButton
                     haptic
@@ -822,10 +840,10 @@ export default function ActiveOrders() {
                     disabled={accepting || rejecting}
                   >
                     {rejecting
-                      ? 'Rechazando…'
+                      ? t('wdrvwork.active.rejecting')
                       : rejectArmed
-                        ? 'Tocá de nuevo para confirmar'
-                        : 'Rechazar'}
+                        ? t('wdrvwork.active.rejectConfirm')
+                        : t('wdrvwork.active.rejectCta')}
                   </TapButton>
                 </div>
               </div>
@@ -858,12 +876,17 @@ export default function ActiveOrders() {
                   }`}
                 >
                   <Timer className="h-5 w-5" />
-                  {ready ? '¡Ir a recoger!' : `La comida sale ${hh}`}
+                  {ready
+                    ? t('wdrvwork.active.readyToGo')
+                    : t('wdrvwork.active.readyAt', { time: hh })}
                 </p>
                 {ready ? (
                   <p className="mt-1 text-sm text-white/90">
-                    Pasá por {(order as any).merchant?.businessName || 'el comercio'} a retirar el
-                    pedido.
+                    {t('wdrvwork.active.pickupAt', {
+                      name:
+                        (order as any).merchant?.businessName ||
+                        t('wdrvwork.active.merchantFallback'),
+                    })}
                   </p>
                 ) : (
                   <p className="mt-2 font-mono text-3xl font-bold text-kiwi-700 dark:text-kiwi-300">
@@ -877,7 +900,7 @@ export default function ActiveOrders() {
         {orders.length > 1 && (
           <div className="mb-4 overflow-hidden rounded-3xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark">
             <p className="px-4 pt-3 text-xs font-semibold uppercase tracking-wide text-surface-500 dark:text-surface-400">
-              Cola de entregas ({orders.length})
+              {t('wdrvwork.active.queueTitle', { count: orders.length })}
             </p>
             <div className="space-y-1 p-2">
               {orders.map((o, idx) => {
@@ -910,14 +933,17 @@ export default function ActiveOrders() {
                           active ? 'text-white' : 'text-surface-800 dark:text-surface-100'
                         }`}
                       >
-                        {(o as any).merchant?.businessName || 'Comercio'} → {o.deliveryAddress}
+                        {(o as any).merchant?.businessName || t('wdrvwork.active.commerceFallback')}{' '}
+                        → {o.deliveryAddress}
                       </span>
                       <span
                         className={`text-xs ${active ? 'text-white/80' : 'text-surface-500 dark:text-surface-400'}`}
                       >
-                        {STEP_META[o.status]?.label ?? o.status}
-                        {queuedTransitions[o.id] ? ' · ⏳ sincronizando' : ''}
-                        {active ? ' · VIENDO ESTE' : ''}
+                        {STEP_META[o.status]
+                          ? t(`wdrvwork.active.${STEP_META[o.status].labelKey}`)
+                          : o.status}
+                        {queuedTransitions[o.id] ? t('wdrvwork.active.syncingSuffix') : ''}
+                        {active ? t('wdrvwork.active.viewingSuffix') : ''}
                       </span>
                     </span>
                     <span
@@ -957,22 +983,26 @@ export default function ActiveOrders() {
                     animate={{ opacity: 1, y: 0 }}
                     className="text-2xl font-display font-bold"
                   >
-                    {meta.label}
+                    {meta ? t(`wdrvwork.active.${meta.labelKey}`) : order.status}
                   </motion.p>
-                  <p className="text-white/80 text-sm">{meta.hint}</p>
+                  <p className="text-white/80 text-sm">
+                    {meta ? t(`wdrvwork.active.${meta.hintKey}`) : ''}
+                  </p>
                   <p className="mt-1 flex items-center gap-1 text-xs text-white/70">
                     <Timer className="h-3 w-3" />
-                    {elapsedLabel((order as any).assignedAt ?? order.createdAt)} · #
+                    {elapsedLabel((order as any).assignedAt ?? order.createdAt, t)} · #
                     {order.id.slice(0, 8).toUpperCase()}
                   </p>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="text-xs text-white/70">Ganás</p>
+                  <p className="text-xs text-white/70">{t('wdrvwork.active.earnLabel')}</p>
                   <AnimatedCounter value={driverPayout} className="text-2xl font-bold font-mono" />
-                  <p className="text-xs text-white/70">CRC</p>
+                  <p className="text-xs text-white/70">{t('wdrvwork.active.currencyCode')}</p>
                   <p className="mt-0.5 text-[11px] text-white/60">
-                    Viaje ₡{Number(order.basePrice ?? driverPayout).toLocaleString()} − {feePct}%
-                    Kiwi
+                    {t('wdrvwork.active.tripNet', {
+                      amount: Number(order.basePrice ?? driverPayout).toLocaleString(),
+                      pct: feePct,
+                    })}
                   </p>
                 </div>
               </div>
@@ -981,21 +1011,22 @@ export default function ActiveOrders() {
                 (order as any).cashTendered != null) && (
                 <div className="mt-4 rounded-2xl bg-gold-400/90 p-4 text-surface-900">
                   <p className="text-sm font-bold">
-                    💵 Efectivo: cobrá ₡{Number(order.totalAmount ?? 0).toLocaleString()}
+                    {t('wdrvwork.active.cashTitle', {
+                      amount: Number(order.totalAmount ?? 0).toLocaleString(),
+                    })}
                   </p>
                   {(order as any).cashTendered != null ? (
                     <p className="mt-0.5 text-sm font-semibold">
-                      Paga con ₡{Number((order as any).cashTendered).toLocaleString()} · Vuelto ₡
-                      {Math.max(
-                        0,
-                        Number((order as any).cashTendered) - Number(order.totalAmount ?? 0),
-                      ).toLocaleString()}{' '}
-                      listo
+                      {t('wdrvwork.active.cashChange', {
+                        tendered: Number((order as any).cashTendered).toLocaleString(),
+                        change: Math.max(
+                          0,
+                          Number((order as any).cashTendered) - Number(order.totalAmount ?? 0),
+                        ).toLocaleString(),
+                      })}
                     </p>
                   ) : (
-                    <p className="mt-0.5 text-xs">
-                      El cliente no indicó con cuánto paga: llevá sencillo.
-                    </p>
+                    <p className="mt-0.5 text-xs">{t('wdrvwork.active.cashNoTender')}</p>
                   )}
                 </div>
               )}
@@ -1034,9 +1065,9 @@ export default function ActiveOrders() {
                 })}
               </div>
               <div className="mt-2 flex justify-between text-[11px] text-white/80">
-                <span>Aceptado</span>
-                <span>Recogido</span>
-                <span>Entregado</span>
+                <span>{t('wdrvwork.active.stepAccepted')}</span>
+                <span>{t('wdrvwork.active.stepPicked')}</span>
+                <span>{t('wdrvwork.active.stepDelivered')}</span>
               </div>
               <div className="mt-1 h-1 overflow-hidden rounded bg-white/20">
                 <motion.div
@@ -1066,10 +1097,10 @@ export default function ActiveOrders() {
             </div>
             <div className="flex-1 pb-5">
               <p className="text-xs font-semibold uppercase tracking-wide text-kiwi-700">
-                {stepIndex >= 2 ? 'Recogido en' : 'Ir a recoger a'}
+                {stepIndex >= 2 ? t('wdrvwork.active.pickupDone') : t('wdrvwork.active.pickupGo')}
               </p>
               <p className="text-base font-semibold text-surface-800 dark:text-surface-100">
-                {order.merchant?.businessName || 'Comercio'}
+                {order.merchant?.businessName || t('wdrvwork.active.commerceFallback')}
               </p>
               <button
                 onClick={() => copyAddress('pickup', order.pickupAddress)}
@@ -1088,14 +1119,14 @@ export default function ActiveOrders() {
                 className="mt-3 h-11 w-full rounded-xl text-sm"
                 onClick={scrollToMap}
               >
-                <Navigation className="h-4 w-4" /> Ver en mapa
+                <Navigation className="h-4 w-4" /> {t('wdrvwork.active.viewOnMap')}
               </TapButton>
               {merchantPhone && (
                 <a
                   href={`tel:${merchantPhone.replace(/\s/g, '')}`}
                   className="mt-2 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark text-sm font-semibold text-surface-700 dark:text-surface-200"
                 >
-                  <Phone className="h-4 w-4 text-kiwi-500" /> Llamar al comercio
+                  <Phone className="h-4 w-4 text-kiwi-500" /> {t('wdrvwork.active.callCommerce')}
                 </a>
               )}
               <button
@@ -1108,7 +1139,7 @@ export default function ActiveOrders() {
                 }
                 className="mt-2 w-full text-center text-xs text-surface-500 dark:text-surface-400 underline-offset-2 hover:underline"
               >
-                Abrir en Google Maps
+                {t('wdrvwork.active.openGmaps')}
               </button>
             </div>
           </div>
@@ -1130,7 +1161,9 @@ export default function ActiveOrders() {
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-xs font-semibold uppercase tracking-wide text-gold-600">
-                {order.status === 'in_transit_to_delivery' ? 'Ir a entregar a' : 'Entregar en'}
+                {order.status === 'in_transit_to_delivery'
+                  ? t('wdrvwork.active.deliverGo')
+                  : t('wdrvwork.active.deliverAt')}
               </p>
               <p className="break-words text-base font-semibold text-surface-800 dark:text-surface-100">
                 {order.deliveryAddress}
@@ -1150,11 +1183,11 @@ export default function ActiveOrders() {
               >
                 {copied === 'delivery' ? (
                   <span className="flex items-center gap-1 text-kiwi-700">
-                    <Check className="h-3 w-3" /> Copiada
+                    <Check className="h-3 w-3" /> {t('wdrvwork.active.copied')}
                   </span>
                 ) : (
                   <span className="flex items-center gap-1">
-                    <Copy className="h-3 w-3" /> Copiar dirección
+                    <Copy className="h-3 w-3" /> {t('wdrvwork.active.copyAddress')}
                   </span>
                 )}
               </button>
@@ -1164,7 +1197,7 @@ export default function ActiveOrders() {
                 className="mt-3 h-11 w-full rounded-xl text-sm"
                 onClick={scrollToMap}
               >
-                <Navigation className="h-4 w-4" /> Navegar en la app
+                <Navigation className="h-4 w-4" /> {t('wdrvwork.active.navigateInApp')}
               </TapButton>
               <button
                 onClick={() =>
@@ -1176,7 +1209,7 @@ export default function ActiveOrders() {
                 }
                 className="mt-2 w-full text-center text-xs text-surface-500 dark:text-surface-400 underline-offset-2 hover:underline"
               >
-                Abrir en Google Maps
+                {t('wdrvwork.active.openGmaps')}
               </button>
             </div>
           </div>
@@ -1185,7 +1218,8 @@ export default function ActiveOrders() {
         {customer.phone && (
           <div className="mb-4">
             <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-surface-500 dark:text-surface-400">
-              Contacto del cliente{customer.name ? ` · ${customer.name}` : ''}
+              {t('wdrvwork.active.customerContact')}
+              {customer.name ? ` · ${customer.name}` : ''}
             </p>
             <motion.div
               initial={{ opacity: 0, y: 12 }}
@@ -1196,7 +1230,7 @@ export default function ActiveOrders() {
                 href={`tel:${customer.phone.replace(/\s/g, '')}`}
                 className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark text-sm font-semibold text-surface-700 dark:text-surface-200"
               >
-                <Phone className="h-4 w-4 text-kiwi-500" /> Llamar
+                <Phone className="h-4 w-4 text-kiwi-500" /> {t('wdrvwork.active.call')}
               </a>
               <a
                 href={toWaLink(customer.phone)}
@@ -1218,7 +1252,7 @@ export default function ActiveOrders() {
           <div className="mb-4 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4">
             <p className="flex items-center gap-2 text-sm font-semibold text-surface-800 dark:text-surface-200">
               <Package className="h-4 w-4 text-kiwi-500" />
-              {order.packageDescription || 'Encomienda'}
+              {order.packageDescription || t('wdrvwork.active.parcelFallback')}
             </p>
             <div className="mt-1 flex flex-wrap gap-2 text-xs text-surface-500">
               {order.weightKg != null && (
@@ -1226,7 +1260,9 @@ export default function ActiveOrders() {
                   <Weight className="h-3 w-3" /> {Number(order.weightKg)} kg
                 </span>
               )}
-              {order.packageSize && <span>Tamaño {order.packageSize}</span>}
+              {order.packageSize && (
+                <span>{t('wdrvwork.active.sizeLabel', { size: order.packageSize })}</span>
+              )}
             </div>
           </div>
         )}
@@ -1239,12 +1275,12 @@ export default function ActiveOrders() {
             >
               <span className="flex items-center gap-2">
                 <Package className="h-4 w-4 text-kiwi-500" />
-                Qué llevar (
-                {(order as any).items.reduce(
-                  (s: number, it: any) => s + Number(it.quantity || 0),
-                  0,
-                )}
-                )
+                {t('wdrvwork.active.itemsTitle', {
+                  count: (order as any).items.reduce(
+                    (s: number, it: any) => s + Number(it.quantity || 0),
+                    0,
+                  ),
+                })}
               </span>
               <motion.span animate={{ rotate: showItems ? 180 : 0 }}>
                 <ChevronDown className="h-4 w-4" />
@@ -1287,7 +1323,7 @@ export default function ActiveOrders() {
         {notes && (
           <div className="mb-4 rounded-2xl bg-gold-50 dark:bg-gold-900/20 border border-gold-200 dark:border-gold-800 p-4">
             <p className="mb-1 flex items-center gap-1 text-xs font-semibold text-gold-700 dark:text-gold-300">
-              <Flag className="h-3 w-3" /> Notas del pedido
+              <Flag className="h-3 w-3" /> {t('wdrvwork.active.notesTitle')}
             </p>
             <p className="text-sm text-surface-700 dark:text-surface-200">{notes}</p>
           </div>
@@ -1295,23 +1331,22 @@ export default function ActiveOrders() {
         {/* Evidencia 1+1: foto del comercio al recoger, foto tuya al entregar */}
         <div className="mb-4 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4">
           <p className="mb-2 text-sm font-semibold text-surface-800 dark:text-surface-100">
-            📷 Evidencia del pedido
+            {t('wdrvwork.active.evidenceTitle')}
           </p>
           {(order as any).pickupProofPhotoUrl ? (
             <div className="mb-3">
               <p className="text-xs font-medium text-kiwi-700 dark:text-kiwi-300">
-                ✓ Foto del comercio al entregar
+                {t('wdrvwork.active.pickupPhotoDone')}
               </p>
               <img
                 src={(order as any).pickupProofPhotoUrl}
-                alt="Foto del comercio al entregar"
+                alt={t('wdrvwork.active.pickupPhotoAlt')}
                 className="mt-1.5 rounded-xl w-full object-cover"
               />
             </div>
           ) : (
             <p className="mb-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
-              El comercio todavía no subió la foto del pedido. No vas a poder marcarlo como recogido
-              hasta que lo haga.
+              {t('wdrvwork.active.pickupPhotoMissing')}
             </p>
           )}
           {(order.status === 'picked_up' ||
@@ -1321,18 +1356,20 @@ export default function ActiveOrders() {
               {(order as any).deliveryProofPhotoUrl ? (
                 <div>
                   <p className="text-xs font-medium text-kiwi-700 dark:text-kiwi-300">
-                    ✓ Foto de tu entrega registrada
+                    {t('wdrvwork.active.deliveryPhotoDone')}
                   </p>
                   <img
                     src={(order as any).deliveryProofPhotoUrl}
-                    alt="Foto de la entrega al cliente"
+                    alt={t('wdrvwork.active.deliveryPhotoAlt')}
                     className="mt-1.5 rounded-xl w-full object-cover"
                   />
                 </div>
               ) : (
                 <div>
                   <label className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-kiwi-700 px-4 py-3 text-sm font-bold text-white">
-                    {uploadingPhoto ? 'Subiendo…' : '📷 Tomar foto de la entrega'}
+                    {uploadingPhoto
+                      ? t('wdrvwork.active.uploading')
+                      : t('wdrvwork.active.takePhoto')}
                     <input
                       type="file"
                       accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif"
@@ -1350,7 +1387,9 @@ export default function ActiveOrders() {
                   {/* Fallback: en algunos Android el intent de cámara con
                       capture no abre nada. La galería siempre funciona. */}
                   <label className="mt-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-surface-200 dark:border-surface-700 px-4 py-2.5 text-sm font-semibold text-surface-600 dark:text-surface-300">
-                    {uploadingPhoto ? 'Subiendo…' : '🖼️ Elegir de la galería'}
+                    {uploadingPhoto
+                      ? t('wdrvwork.active.uploading')
+                      : t('wdrvwork.active.chooseGallery')}
                     <input
                       type="file"
                       accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif"
@@ -1365,7 +1404,7 @@ export default function ActiveOrders() {
                     />
                   </label>
                   <p className="mt-1.5 text-xs text-amber-600 dark:text-amber-400">
-                    Sin esta foto no podés cerrar el pedido.
+                    {t('wdrvwork.active.photoRequired')}
                   </p>
                 </div>
               )}
@@ -1382,10 +1421,10 @@ export default function ActiveOrders() {
               className="text-xs font-medium text-surface-500 dark:text-surface-400 underline-offset-2 hover:underline disabled:opacity-50"
             >
               {rejecting
-                ? 'Rechazando…'
+                ? t('wdrvwork.active.rejecting')
                 : rejectArmed
-                  ? 'Tocá de nuevo para devolver el pedido'
-                  : 'No puedo hacerlo: rechazar pedido'}
+                  ? t('wdrvwork.active.rejectConfirmReturn')
+                  : t('wdrvwork.active.cantDo')}
             </button>
           </div>
         )}
@@ -1400,12 +1439,14 @@ export default function ActiveOrders() {
               className="rounded-3xl glass-strong p-3 shadow-kiwi-lg flex items-center gap-3"
             >
               <div className="pl-2">
-                <p className="text-[11px] text-surface-500 dark:text-surface-400">Ganancia</p>
+                <p className="text-[11px] text-surface-500 dark:text-surface-400">
+                  {t('wdrvwork.active.gainLabel')}
+                </p>
                 <p className="font-mono text-lg font-bold text-kiwi-700">
                   ₡{driverPayout.toLocaleString()}
                 </p>
                 <p className="text-[10px] text-surface-500 dark:text-surface-400">
-                  neta (−{feePct}% Kiwi)
+                  {t('wdrvwork.active.netSuffix', { pct: feePct })}
                 </p>
               </div>
               <div className="flex-1">
@@ -1415,7 +1456,7 @@ export default function ActiveOrders() {
                     className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-surface-200 dark:bg-surface-700 font-semibold text-surface-600 dark:text-surface-300"
                   >
                     <CloudUpload className="h-5 w-5 animate-pulse" />
-                    <span className="text-sm">Sincronizando…</span>
+                    <span className="text-sm">{t('wdrvwork.active.syncingBtn')}</span>
                   </button>
                 ) : (
                   flow && (
@@ -1429,9 +1470,9 @@ export default function ActiveOrders() {
                       {updating ? (
                         <Loader2 className="h-5 w-5 animate-spin" />
                       ) : confirmArmed ? (
-                        'Tocá de nuevo para confirmar'
+                        t('wdrvwork.active.confirmTap')
                       ) : (
-                        flow.label
+                        t(`wdrvwork.active.${flow.labelKey}`)
                       )}
                     </TapButton>
                   )
@@ -1465,9 +1506,9 @@ export default function ActiveOrders() {
                 <PartyPopper className="h-14 w-14 mx-auto mb-3 text-kiwi-500" />
               </motion.div>
               <h2 className="text-2xl font-display font-bold text-surface-800 dark:text-surface-100">
-                ¡Entregado!
+                {t('wdrvwork.active.deliveredTitle')}
               </h2>
-              <p className="mt-1 text-sm text-surface-500">Ganaste</p>
+              <p className="mt-1 text-sm text-surface-500">{t('wdrvwork.active.youWon')}</p>
               <AnimatedCounter
                 value={celebration.payout}
                 className="font-mono text-4xl font-bold text-kiwi-700"
@@ -1482,13 +1523,13 @@ export default function ActiveOrders() {
                     router.push('/');
                   }}
                 >
-                  Buscar más pedidos
+                  {t('wdrvwork.active.moreOrders')}
                 </TapButton>
                 <button
                   onClick={() => setCelebration(null)}
                   className="h-11 w-full rounded-2xl text-sm font-medium text-surface-500"
                 >
-                  Quedarme aquí
+                  {t('wdrvwork.active.stayHere')}
                 </button>
               </div>
             </motion.div>

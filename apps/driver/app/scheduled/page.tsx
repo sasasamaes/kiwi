@@ -11,15 +11,17 @@ import {
   StaggerContainer,
   StaggerItem,
   Skeleton,
-  ThemeToggle,
+  LanguageSwitcher,
   useAuth,
   useSocket,
+  useTranslations,
   api,
   Order,
 } from '@kiwi/ui';
 
 export default function ScheduledOrdersPage() {
   const router = useRouter();
+  const { t } = useTranslations();
   const { user, loading: authLoading } = useAuth();
   const [scheduledOrders, setScheduledOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -95,11 +97,11 @@ export default function ScheduledOrdersPage() {
       setProposalData({ estimatedArrival: '', message: '' });
     } catch (error) {
       console.error('Failed to submit proposal:', error);
-      setSubmitError('Error al enviar propuesta. Quizás ya enviaste una o el pedido cerró.');
+      setSubmitError(t('wdrvwork.scheduled.submitError'));
     } finally {
       setSubmitting(false);
     }
-  }, [selectedOrder, proposalData]);
+  }, [selectedOrder, proposalData, t]);
 
   if (authLoading || loading) {
     return (
@@ -146,12 +148,12 @@ export default function ScheduledOrdersPage() {
               className="flex items-center gap-2 text-surface-600 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200"
             >
               <motion.span whileHover={{ x: -4 }}>←</motion.span>
-              <span className="text-sm font-medium">Inicio</span>
+              <span className="text-sm font-medium">{t('wdrvwork.scheduled.backHome')}</span>
             </Link>
             <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-              <Calendar className="h-5 w-5 inline" /> Pedidos Programados
+              <Calendar className="h-5 w-5 inline" /> {t('wdrvwork.scheduled.title')}
             </h1>
-            <div className="w-16" />
+            <LanguageSwitcher />
           </div>
         </div>
       </motion.header>
@@ -167,11 +169,10 @@ export default function ScheduledOrdersPage() {
             <span className="text-2xl">💡</span>
             <div>
               <h3 className="font-medium text-surface-800 dark:text-surface-200">
-                Propón tu servicio
+                {t('wdrvwork.scheduled.infoTitle')}
               </h3>
               <p className="text-sm text-surface-600 dark:text-surface-400 mt-1">
-                Envía tu propuesta con tiempo estimado de llegada y un mensaje. El comerciante
-                elegirá al repartidor que mejor se adapte.
+                {t('wdrvwork.scheduled.infoDesc')}
               </p>
             </div>
           </div>
@@ -192,10 +193,10 @@ export default function ScheduledOrdersPage() {
               <Calendar className="h-12 w-12" />
             </motion.div>
             <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-2">
-              No hay pedidos programados
+              {t('wdrvwork.scheduled.emptyTitle')}
             </h3>
             <p className="text-surface-500 dark:text-surface-400">
-              Cuando los comerciantes creen pedidos programados, aparecerán aquí
+              {t('wdrvwork.scheduled.emptyDesc')}
             </p>
           </motion.div>
         ) : (
@@ -222,7 +223,7 @@ export default function ScheduledOrdersPage() {
                         <div className="flex items-start justify-between">
                           <div>
                             <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-                              Pedido Programado
+                              {t('wdrvwork.scheduled.cardTitle')}
                             </h3>
                             <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">
                               {order.pickupAddress} → {order.deliveryAddress}
@@ -260,7 +261,9 @@ export default function ScheduledOrdersPage() {
                           {hasSubmitted ? (
                             <div className="flex items-center gap-2 text-kiwi-700 dark:text-kiwi-400">
                               <Check className="text-lg h-5 w-5" />
-                              <span className="text-sm font-medium">Propuesta enviada</span>
+                              <span className="text-sm font-medium">
+                                {t('wdrvwork.scheduled.sentCta')}
+                              </span>
                             </div>
                           ) : (
                             <AnimatedButton
@@ -268,7 +271,7 @@ export default function ScheduledOrdersPage() {
                               className="w-full"
                               onClick={() => handleSelectOrder(order)}
                             >
-                              📩 Enviar Propuesta
+                              {t('wdrvwork.scheduled.sendCta')}
                             </AnimatedButton>
                           )}
                         </div>
@@ -313,7 +316,7 @@ export default function ScheduledOrdersPage() {
                 <div className="w-12 h-1 bg-surface-300 dark:bg-surface-600 rounded-full mx-auto mb-3" />
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100">
-                    📩 Enviar Propuesta
+                    {t('wdrvwork.scheduled.modalTitle')}
                   </h2>
                   <motion.button
                     onClick={() => {
@@ -321,7 +324,7 @@ export default function ScheduledOrdersPage() {
                       setSelectedOrder(null);
                     }}
                     className="text-surface-500 hover:text-surface-700 dark:text-surface-400 dark:hover:text-surface-200"
-                    aria-label="Cerrar propuesta de pedido"
+                    aria-label={t('wdrvwork.scheduled.closeAria')}
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                   >
@@ -341,7 +344,7 @@ export default function ScheduledOrdersPage() {
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-surface-500 dark:text-surface-400">
-                        <MapPin className="h-4 w-4 inline" /> Recoger:
+                        <MapPin className="h-4 w-4 inline" /> {t('wdrvwork.scheduled.pickupLabel')}
                       </span>
                       <span className="font-medium text-surface-800 dark:text-surface-200 text-right max-w-[60%]">
                         {selectedOrder.pickupAddress}
@@ -349,7 +352,7 @@ export default function ScheduledOrdersPage() {
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-surface-500 dark:text-surface-400">
-                        <Home className="h-4 w-4 inline" /> Entregar:
+                        <Home className="h-4 w-4 inline" /> {t('wdrvwork.scheduled.deliverLabel')}
                       </span>
                       <span className="font-medium text-surface-800 dark:text-surface-200 text-right max-w-[60%]">
                         {selectedOrder.deliveryAddress}
@@ -358,7 +361,8 @@ export default function ScheduledOrdersPage() {
                     {selectedOrder.scheduledDate && (
                       <div className="flex justify-between text-sm">
                         <span className="text-surface-500 dark:text-surface-400">
-                          <Calendar className="h-4 w-4 inline" /> Fecha:
+                          <Calendar className="h-4 w-4 inline" />{' '}
+                          {t('wdrvwork.scheduled.dateLabel')}
                         </span>
                         <span className="font-medium text-gold-600 dark:text-gold-400">
                           {new Date(selectedOrder.scheduledDate).toLocaleDateString('es-CR', {
@@ -366,13 +370,14 @@ export default function ScheduledOrdersPage() {
                             month: 'long',
                             day: 'numeric',
                           })}
-                          {selectedOrder.scheduledTime && ` a las ${selectedOrder.scheduledTime}`}
+                          {selectedOrder.scheduledTime &&
+                            t('wdrvwork.scheduled.atTime', { time: selectedOrder.scheduledTime })}
                         </span>
                       </div>
                     )}
                     <div className="flex justify-between text-sm">
                       <span className="text-surface-500 dark:text-surface-400">
-                        <Coins className="h-4 w-4 inline" /> Pago:
+                        <Coins className="h-4 w-4 inline" /> {t('wdrvwork.scheduled.payLabel')}
                       </span>
                       <span className="font-bold text-kiwi-700 dark:text-kiwi-400">
                         ₡
@@ -387,7 +392,7 @@ export default function ScheduledOrdersPage() {
                 {/* Estimated Arrival */}
                 <div>
                   <label className="mb-2 block text-sm font-medium text-surface-600 dark:text-surface-400">
-                    <Clock className="h-4 w-4 inline" /> ¿Cuándo puedes llegar? *
+                    <Clock className="h-4 w-4 inline" /> {t('wdrvwork.scheduled.arrivalLabel')}
                   </label>
                   <input
                     type="text"
@@ -395,11 +400,16 @@ export default function ScheduledOrdersPage() {
                     onChange={(e) =>
                       setProposalData({ ...proposalData, estimatedArrival: e.target.value })
                     }
-                    placeholder="Ej: En 15 minutos, A las 3:00 PM, En una hora"
+                    placeholder={t('wdrvwork.scheduled.arrivalPh')}
                     className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20 transition-all"
                   />
                   <div className="flex flex-wrap gap-2 mt-2">
-                    {['En 10 min', 'En 15 min', 'En 30 min', 'En 1 hora'].map((time) => (
+                    {[
+                      t('wdrvwork.scheduled.quick10'),
+                      t('wdrvwork.scheduled.quick15'),
+                      t('wdrvwork.scheduled.quick30'),
+                      t('wdrvwork.scheduled.quick60'),
+                    ].map((time) => (
                       <motion.button
                         key={time}
                         type="button"
@@ -420,12 +430,12 @@ export default function ScheduledOrdersPage() {
                 {/* Message */}
                 <div>
                   <label className="mb-2 block text-sm font-medium text-surface-600 dark:text-surface-400">
-                    MessageCircle Mensaje (opcional)
+                    {t('wdrvwork.scheduled.messageLabel')}
                   </label>
                   <textarea
                     value={proposalData.message}
                     onChange={(e) => setProposalData({ ...proposalData, message: e.target.value })}
-                    placeholder="Ej: Conozco bien la zona, llego rápido. Tengo moto nueva."
+                    placeholder={t('wdrvwork.scheduled.messagePh')}
                     rows={3}
                     className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20 transition-all resize-none"
                   />
@@ -446,15 +456,15 @@ export default function ScheduledOrdersPage() {
                       >
                         <Clock className="h-4 w-4" />
                       </motion.span>
-                      Enviando...
+                      {t('wdrvwork.scheduled.sending')}
                     </span>
                   ) : (
-                    '📩 Enviar Mi Propuesta'
+                    t('wdrvwork.scheduled.sendMine')
                   )}
                 </AnimatedButton>
 
                 <p className="text-xs text-center text-surface-500 dark:text-surface-400">
-                  El comerciante verá tu propuesta y te elegirá si eres el mejor fit
+                  {t('wdrvwork.scheduled.hint')}
                 </p>
               </div>
             </motion.div>

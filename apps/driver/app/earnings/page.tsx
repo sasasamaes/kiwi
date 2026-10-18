@@ -18,7 +18,7 @@ import {
   AlertTriangle,
   ClipboardList,
 } from 'lucide-react';
-import { api, ScrollToTop } from '@kiwi/ui';
+import { api, ScrollToTop, LanguageSwitcher, useTranslations } from '@kiwi/ui';
 
 interface EarningsData {
   period: string;
@@ -46,10 +46,10 @@ interface EarningsData {
 }
 
 const PERIODS = [
-  { id: 'today', label: 'Hoy', icon: Calendar },
-  { id: 'week', label: 'Semana', icon: CalendarDays },
-  { id: 'month', label: 'Mes', icon: Calendar },
-  { id: 'all', label: 'Todo', icon: InfinityIcon },
+  { id: 'today', labelKey: 'periodToday', icon: Calendar },
+  { id: 'week', labelKey: 'periodWeek', icon: CalendarDays },
+  { id: 'month', labelKey: 'periodMonth', icon: Calendar },
+  { id: 'all', labelKey: 'periodAll', icon: InfinityIcon },
 ];
 
 const ORDER_TYPE_ICONS: Record<string, any> = {
@@ -60,24 +60,28 @@ const ORDER_TYPE_ICONS: Record<string, any> = {
 };
 
 export default function EarningsPage() {
+  const { t } = useTranslations();
   const [earnings, setEarnings] = useState<EarningsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState('week');
 
-  const fetchEarnings = useCallback(async (period: string) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await api.getDriverEarnings(period);
-      setEarnings(data);
-    } catch (err) {
-      console.error('Failed to fetch earnings:', err);
-      setError(err instanceof Error ? err.message : 'No se pudieron cargar las ganancias');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const fetchEarnings = useCallback(
+    async (period: string) => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await api.getDriverEarnings(period);
+        setEarnings(data);
+      } catch (err) {
+        console.error('Failed to fetch earnings:', err);
+        setError(err instanceof Error ? err.message : t('wdrvwork.earnings.loadError'));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [t],
+  );
 
   useEffect(() => {
     fetchEarnings(selectedPeriod);
@@ -118,12 +122,12 @@ export default function EarningsPage() {
                 className="flex items-center gap-2 text-surface-600 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200"
               >
                 <span>←</span>
-                <span className="text-sm font-medium">Volver</span>
+                <span className="text-sm font-medium">{t('wdrvwork.earnings.back')}</span>
               </Link>
               <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-                Ganancias
+                {t('wdrvwork.earnings.title')}
               </h1>
-              <div className="w-16" />
+              <LanguageSwitcher />
             </div>
           </div>
         </header>
@@ -155,12 +159,12 @@ export default function EarningsPage() {
                 className="flex items-center gap-2 text-surface-600 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200"
               >
                 <span>←</span>
-                <span className="text-sm font-medium">Volver</span>
+                <span className="text-sm font-medium">{t('wdrvwork.earnings.back')}</span>
               </Link>
               <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-                Ganancias
+                {t('wdrvwork.earnings.title')}
               </h1>
-              <div className="w-16" />
+              <LanguageSwitcher />
             </div>
           </div>
         </header>
@@ -173,7 +177,7 @@ export default function EarningsPage() {
           >
             <AlertTriangle className="h-14 w-14 mx-auto mb-4 text-amber-500" />
             <h2 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100 mb-2">
-              No pudimos cargar las ganancias
+              {t('wdrvwork.earnings.errorTitle')}
             </h2>
             <p className="text-surface-500 dark:text-surface-400 mb-6">{error}</p>
             <motion.button
@@ -182,7 +186,7 @@ export default function EarningsPage() {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
-              Reintentar
+              {t('wdrvwork.earnings.retry')}
             </motion.button>
           </motion.div>
         </main>
@@ -233,7 +237,14 @@ export default function EarningsPage() {
 
           <div className="relative">
             <p className="text-white/80 text-sm font-medium">
-              Ganancias {PERIODS.find((p) => p.id === selectedPeriod)?.label || 'Totales'}
+              {(() => {
+                const found = PERIODS.find((p) => p.id === selectedPeriod);
+                return found
+                  ? t('wdrvwork.earnings.totalFor', {
+                      period: t(`wdrvwork.earnings.${found.labelKey}`),
+                    })
+                  : t('wdrvwork.earnings.totalAll');
+              })()}
             </p>
             <motion.p
               className="mt-1 text-4xl font-display font-bold"
@@ -247,11 +258,17 @@ export default function EarningsPage() {
             <div className="mt-4 flex items-center gap-4 text-sm">
               <div className="flex items-center gap-1 text-white/80">
                 <Package className="text-kiwi-200 h-5 w-5" />
-                <span>{earnings?.totalTrips || 0} viajes</span>
+                <span>
+                  {t('wdrvwork.earnings.tripsCount', { count: earnings?.totalTrips || 0 })}
+                </span>
               </div>
               <div className="flex items-center gap-1 text-white/80">
                 <Clock className="h-5 w-5 text-kiwi-200" />
-                <span>{earnings?.totalHours?.toFixed(1) || 0}h</span>
+                <span>
+                  {t('wdrvwork.earnings.hoursCount', {
+                    count: earnings?.totalHours?.toFixed(1) || 0,
+                  })}
+                </span>
               </div>
             </div>
           </div>
@@ -282,7 +299,7 @@ export default function EarningsPage() {
                 ) : (
                   <PeriodIcon className="h-4 w-4 inline mr-1" />
                 )}
-                {period.label}
+                {t(`wdrvwork.earnings.${period.labelKey}`)}
               </motion.button>
             );
           })}
@@ -299,7 +316,9 @@ export default function EarningsPage() {
             className="rounded-xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4"
             whileHover={{ y: -2 }}
           >
-            <p className="text-sm text-surface-500 dark:text-surface-400">Viajes</p>
+            <p className="text-sm text-surface-500 dark:text-surface-400">
+              {t('wdrvwork.earnings.statTrips')}
+            </p>
             <p className="mt-1 text-2xl font-bold text-surface-800 dark:text-surface-100">
               {earnings?.totalTrips || 0}
             </p>
@@ -308,7 +327,9 @@ export default function EarningsPage() {
             className="rounded-xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4"
             whileHover={{ y: -2 }}
           >
-            <p className="text-sm text-surface-500 dark:text-surface-400">Promedio/Viaje</p>
+            <p className="text-sm text-surface-500 dark:text-surface-400">
+              {t('wdrvwork.earnings.statAvg')}
+            </p>
             <p className="mt-1 text-2xl font-bold text-surface-800 dark:text-surface-100">
               {formatCurrency(earnings?.averagePerTrip || 0)}
             </p>
@@ -317,7 +338,9 @@ export default function EarningsPage() {
             className="rounded-xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4"
             whileHover={{ y: -2 }}
           >
-            <p className="text-sm text-surface-500 dark:text-surface-400">Horas</p>
+            <p className="text-sm text-surface-500 dark:text-surface-400">
+              {t('wdrvwork.earnings.statHours')}
+            </p>
             <p className="mt-1 text-2xl font-bold text-surface-800 dark:text-surface-100">
               {earnings?.totalHours?.toFixed(1) || '0'}h
             </p>
@@ -326,7 +349,9 @@ export default function EarningsPage() {
             className="rounded-xl bg-kiwi-50 dark:bg-kiwi-900/30 p-4 shadow-soft dark:shadow-dark border border-kiwi-200 dark:border-kiwi-800"
             whileHover={{ y: -2 }}
           >
-            <p className="text-sm text-kiwi-700 dark:text-kiwi-400">Por Hora</p>
+            <p className="text-sm text-kiwi-700 dark:text-kiwi-400">
+              {t('wdrvwork.earnings.statPerHour')}
+            </p>
             <p className="mt-1 text-2xl font-bold text-kiwi-700 dark:text-kiwi-300">
               {formatCurrency(earnings?.earningsPerHour || 0)}
             </p>
@@ -342,7 +367,7 @@ export default function EarningsPage() {
             transition={{ delay: 0.3 }}
           >
             <h3 className="mb-4 text-sm font-semibold text-surface-600 dark:text-surface-400">
-              <BarChart3 className="h-4 w-4 inline" /> Ganancias Diarias
+              <BarChart3 className="h-4 w-4 inline" /> {t('wdrvwork.earnings.dailyTitle')}
             </h3>
             <div className="flex items-end gap-1 h-32">
               {earnings.daily.slice(-7).map((day, index) => (
@@ -382,7 +407,7 @@ export default function EarningsPage() {
           transition={{ delay: 0.4 }}
         >
           <h3 className="mb-3 text-sm font-semibold text-surface-600 dark:text-surface-400 flex items-center gap-2">
-            <ClipboardList className="h-4 w-4" /> Transacciones Recientes
+            <ClipboardList className="h-4 w-4" /> {t('wdrvwork.earnings.recentTitle')}
           </h3>
 
           {earnings?.transactions && earnings.transactions.length > 0 ? (
@@ -428,7 +453,7 @@ export default function EarningsPage() {
             <div className="text-center py-8">
               <Inbox className="h-10 w-10 mx-auto mb-2 text-surface-300 dark:text-surface-600" />
               <p className="text-surface-500 dark:text-surface-400 text-sm">
-                No hay transacciones en este período
+                {t('wdrvwork.earnings.recentEmpty')}
               </p>
             </div>
           )}
@@ -447,11 +472,11 @@ export default function EarningsPage() {
               whileHover={{ scale: 1.02, boxShadow: '0 16px 40px -8px rgba(34, 197, 94, 0.5)' }}
               whileTap={{ scale: 0.98 }}
             >
-              Retirar Ganancias
+              {t('wdrvwork.earnings.withdrawCta')}
             </motion.button>
           </Link>
           <p className="text-center text-xs text-surface-500 dark:text-surface-400 mt-2">
-            Retiros disponibles de lunes a viernes
+            {t('wdrvwork.earnings.withdrawNote')}
           </p>
         </motion.div>
       </main>

@@ -39,16 +39,18 @@ import {
   type KYCStatus,
   KiwiLoader,
   ThemeToggle,
+  useTranslations,
+  LanguageSwitcher,
   isEmojiImage,
   isHttpUrl,
 } from '@kiwi/ui';
 
-const LEVEL_LABEL: Record<string, string> = {
-  bronce: 'Bronce',
-  plata: 'Plata',
-  oro: 'Oro',
-  diamante: 'Diamante',
-  vip: 'VIP',
+const LEVEL_KEY: Record<string, string> = {
+  bronce: 'levelBronze',
+  plata: 'levelSilver',
+  oro: 'levelGold',
+  diamante: 'levelDiamond',
+  vip: 'levelVip',
 };
 
 const LEVEL_MEDAL: Record<string, any> = {
@@ -59,18 +61,18 @@ const LEVEL_MEDAL: Record<string, any> = {
   vip: Crown,
 };
 
-const STATUS_LABEL: Record<string, string> = {
-  available: 'Disponible',
-  offline: 'En pausa',
-  busy: 'Ocupado',
+const STATUS_KEY: Record<string, string> = {
+  available: 'statusAvailable',
+  offline: 'statusOffline',
+  busy: 'statusBusy',
 };
 
-const VEHICLE_LABEL: Record<string, string> = {
-  motorcycle: 'Moto',
-  motorized_bike: 'Bici Moto',
-  bicycle: 'Bici',
-  car: 'Carro',
-  truck: 'Camión',
+const VEHICLE_KEY: Record<string, string> = {
+  motorcycle: 'vehicleMotorcycle',
+  motorized_bike: 'vehicleMotorizedBike',
+  bicycle: 'vehicleBicycle',
+  car: 'vehicleCar',
+  truck: 'vehicleTruck',
 };
 
 const initials = (name: string) =>
@@ -97,6 +99,7 @@ const normalizeKyc = (s: unknown): KYCStatus =>
 
 export default function Profile() {
   const router = useRouter();
+  const { t, locale } = useTranslations();
   const { user, loading: authLoading, logout } = useAuth();
   const [profile, setProfile] = useState<any>(null);
   const [earnings, setEarnings] = useState(0);
@@ -158,11 +161,11 @@ export default function Profile() {
         // Ganancias opcionales
       }
     } catch {
-      setError('No se pudo cargar tu perfil');
+      setError(t('wdrvmisc.profile.loadFailed'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -184,7 +187,7 @@ export default function Profile() {
         const st = await api.getDriverMarketplaceStatus();
         if (!cancelled) setMpStatus(st);
       } catch {
-        if (!cancelled) setMpError('No se pudo cargar el estado de cobros.');
+        if (!cancelled) setMpError(t('wdrvmisc.profile.payoutStatusFailed'));
       } finally {
         if (!cancelled) setMpLoading(false);
       }
@@ -222,10 +225,10 @@ export default function Profile() {
       setMpStatus({ accountId: out.accountId, status: out.status });
       if (out.onboardingUrl) {
         window.open(out.onboardingUrl, '_blank', 'noopener,noreferrer');
-        setMpInfo('Completá el registro en Onvo y volvé a revisar estado.');
+        setMpInfo(t('wdrvmisc.profile.payoutCompleteOnvo'));
       }
     } catch {
-      setMpError('No se pudo activar los cobros. Intentá de nuevo.');
+      setMpError(t('wdrvmisc.profile.payoutActivateFailed'));
     } finally {
       setMpBusy(false);
     }
@@ -240,10 +243,10 @@ export default function Profile() {
       if (out.status) setMpStatus({ accountId: out.accountId, status: out.status });
       if (out.onboardingUrl) {
         window.open(out.onboardingUrl, '_blank', 'noopener,noreferrer');
-        setMpInfo('Completá el registro en Onvo y volvé a revisar estado.');
+        setMpInfo(t('wdrvmisc.profile.payoutCompleteOnvo'));
       }
     } catch {
-      setMpError('No se pudo abrir el registro. Intentá de nuevo.');
+      setMpError(t('wdrvmisc.profile.payoutOpenFailed'));
     } finally {
       setMpBusy(false);
     }
@@ -257,10 +260,10 @@ export default function Profile() {
       const st = await api.getDriverMarketplaceStatus();
       setMpStatus(st);
       if (st?.status !== 'active') {
-        setMpInfo('Todavía no está activo. Terminá el registro en Onvo e intentá de nuevo.');
+        setMpInfo(t('wdrvmisc.profile.payoutNotActive'));
       }
     } catch {
-      setMpError('No se pudo revisar el estado. Intentá de nuevo.');
+      setMpError(t('wdrvmisc.profile.payoutRefreshFailed'));
     } finally {
       setMpBusy(false);
     }
@@ -277,7 +280,7 @@ export default function Profile() {
       setShowVehicleModal(false);
       await load();
     } catch {
-      setError('No se pudo guardar el vehículo');
+      setError(t('wdrvmisc.profile.vehicleSaveFailed'));
     } finally {
       setSavingVehicle(false);
     }
@@ -297,7 +300,7 @@ export default function Profile() {
       await api.uploadDriverPhoto(file);
       await load();
     } catch (e: any) {
-      setError(e?.message || 'No se pudo subir la foto');
+      setError(e?.message || t('wdrvmisc.profile.photoUploadFailed'));
     } finally {
       setUploadingPhoto(false);
       if (photoInputRef.current) photoInputRef.current.value = '';
@@ -311,7 +314,7 @@ export default function Profile() {
       await api.updateDriverProfile({ photoUrl: emoji });
       await load();
     } catch {
-      setError('No se pudo guardar el avatar');
+      setError(t('wdrvmisc.profile.avatarSaveFailed'));
     }
   };
 
@@ -323,15 +326,26 @@ export default function Profile() {
     );
   }
 
-  const name = profile?.fullName || user?.driverProfile?.fullName || 'Repartidor';
+  const name =
+    profile?.fullName || user?.driverProfile?.fullName || t('wdrvmisc.profile.fallbackName');
   const rating = Number(profile?.rating ?? 5);
   const trips = Math.max(Number(profile?.totalTrips ?? 0), Number(earnedTrips ?? 0));
   const safeTrips = Number.isFinite(trips) && trips >= 0 ? Math.floor(trips) : 0;
   const level = String(profile?.level || 'bronce');
   const status = String(profile?.status || 'offline');
   const since = profile?.createdAt
-    ? new Date(profile.createdAt).toLocaleDateString('es-CR', { month: 'long', year: 'numeric' })
+    ? new Date(profile.createdAt).toLocaleDateString(locale === 'en' ? 'en-US' : 'es-CR', {
+        month: 'long',
+        year: 'numeric',
+      })
     : null;
+  const levelName = LEVEL_KEY[level] ? t(`wdrvmisc.profile.${LEVEL_KEY[level]}`) : level;
+  const statusKey = STATUS_KEY[status];
+  const statusName = statusKey ? t(`wdrvmisc.profile.${statusKey}`) : status;
+  const vehicleKey = profile?.vehicleType ? VEHICLE_KEY[profile.vehicleType] : null;
+  const vehicleName = vehicleKey
+    ? t(`wdrvmisc.profile.${vehicleKey}`)
+    : (profile?.vehicleType ?? t('wdrvmisc.profile.vehicleUndefined'));
   // Con KYC desactivado (flag), la disponibilidad basta para ser visible.
   const visible = status === 'available' && (!kycRequired || kycStatus === 'approved');
 
@@ -349,12 +363,15 @@ export default function Profile() {
               className="flex items-center gap-2 text-surface-600 dark:text-surface-400 hover:text-surface-800"
             >
               <span>←</span>
-              <span className="text-sm font-medium">Volver</span>
+              <span className="text-sm font-medium">{t('wdrvmisc.profile.back')}</span>
             </Link>
             <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-              Mi Perfil
+              {t('wdrvmisc.profile.title')}
             </h1>
-            <ThemeToggle />
+            <div className="flex items-center gap-2">
+              <LanguageSwitcher />
+              <ThemeToggle />
+            </div>
           </div>
         </div>
       </motion.header>
@@ -397,8 +414,8 @@ export default function Profile() {
               <button
                 onClick={() => photoInputRef.current?.click()}
                 disabled={uploadingPhoto}
-                aria-label="Cambiar foto de perfil"
-                title="Cambiar foto de perfil"
+                aria-label={t('wdrvmisc.profile.changePhoto')}
+                title={t('wdrvmisc.profile.changePhoto')}
                 className="absolute -bottom-1 -right-1 flex h-9 w-9 items-center justify-center rounded-full bg-surface-900 text-white shadow-lg disabled:opacity-60"
               >
                 {uploadingPhoto ? (
@@ -415,17 +432,19 @@ export default function Profile() {
             accept="image/jpeg,image/png,image/webp,image/gif"
             capture="user"
             className="hidden"
-            aria-label="Foto de perfil"
+            aria-label={t('wdrvmisc.profile.photoInputAria')}
             onChange={(e) => handlePhotoSelect(e.target.files?.[0])}
           />
           <h2 className="relative text-xl font-display font-bold">{name}</h2>
           <p className="relative text-white/80">
-            {since ? `Repartidor desde ${since}` : 'Repartidor Kiwi'}
+            {since
+              ? t('wdrvmisc.profile.driverSince', { date: since })
+              : t('wdrvmisc.profile.driverDefault')}
           </p>
           <p className="relative mt-1 text-xs text-white/70">
             {photoUploadEnabled
-              ? 'Tu foto la ven los comercios y los clientes en el seguimiento'
-              : 'Subida de fotos no disponible por el momento'}
+              ? t('wdrvmisc.profile.photoHintVisible')
+              : t('wdrvmisc.profile.photoHintDisabled')}
           </p>
           <div className="relative mt-3 flex flex-wrap justify-center gap-1.5">
             {['🛵', '🚲', '🚗', '😎', '🦊', '🐼', '🦁', '🌮'].map((e) => (
@@ -433,7 +452,7 @@ export default function Profile() {
                 key={e}
                 type="button"
                 onClick={() => void pickEmoji(e)}
-                aria-label={`Usar ${e} como avatar`}
+                aria-label={t('wdrvmisc.profile.avatarAria', { emoji: e })}
                 className={`flex h-9 w-9 items-center justify-center rounded-full text-xl transition-all ${
                   profile?.photoUrl === e
                     ? 'bg-white ring-2 ring-white scale-110'
@@ -455,18 +474,20 @@ export default function Profile() {
                   className="text-2xl font-bold"
                 />
               </div>
-              <p className="text-xs text-white/70">Rating</p>
+              <p className="text-xs text-white/70">{t('wdrvmisc.profile.rating')}</p>
             </div>
             <div className="text-center">
               <AnimatedCounter value={safeTrips} className="text-2xl font-bold" />
-              <p className="text-xs text-white/70">Viajes</p>
+              <p className="text-xs text-white/70">{t('wdrvmisc.profile.trips')}</p>
             </div>
             <div className="text-center">
               {(() => {
                 const LevelIcon = LEVEL_MEDAL[level] ?? Medal;
                 return <LevelIcon className="h-7 w-7 mx-auto text-white/90" />;
               })()}
-              <p className="text-xs text-white/70 mt-1">Nivel {LEVEL_LABEL[level] ?? level}</p>
+              <p className="text-xs text-white/70 mt-1">
+                {t('wdrvmisc.profile.level', { level: levelName })}
+              </p>
             </div>
           </div>
         </motion.div>
@@ -486,14 +507,14 @@ export default function Profile() {
             )}
             <div className="flex-1">
               <p className="font-medium text-surface-800 dark:text-surface-200">
-                {visible ? 'Visible para comercios' : 'No apareces en búsquedas'}
+                {visible ? t('wdrvmisc.profile.visibleYes') : t('wdrvmisc.profile.visibleNo')}
               </p>
               <p className="text-xs text-surface-500 dark:text-surface-400">
                 {kycRequired && kycStatus !== 'approved'
-                  ? 'Completa tu verificación para aparecer.'
+                  ? t('wdrvmisc.profile.verifyToAppear')
                   : status !== 'available'
-                    ? 'Estás en pausa: no recibís pedidos ni aparecés en búsquedas.'
-                    : 'Los comercios pueden encontrarte y asignarte.'}
+                    ? t('wdrvmisc.profile.pausedHint')
+                    : t('wdrvmisc.profile.visibleHint')}
               </p>
             </div>
           </div>
@@ -508,17 +529,17 @@ export default function Profile() {
                   socketUpdateStatus('available' as any);
                   await load();
                 } catch {
-                  setError('No se pudo cambiar tu estado');
+                  setError(t('wdrvmisc.profile.statusChangeFailed'));
                 }
               }}
             >
-              <Power className="h-4 w-4 inline mr-1" /> Ponerme disponible
+              <Power className="h-4 w-4 inline mr-1" /> {t('wdrvmisc.profile.goAvailable')}
             </AnimatedButton>
           )}
           {kycRequired && kycStatus !== 'approved' && (
             <Link href="/kyc">
               <AnimatedButton variant="primary" className="w-full mt-4">
-                Verificar identidad
+                {t('wdrvmisc.profile.verifyIdentity')}
               </AnimatedButton>
             </Link>
           )}
@@ -532,7 +553,7 @@ export default function Profile() {
               <p className="mt-2 text-xl font-bold text-surface-800 dark:text-surface-100">
                 {trips}
               </p>
-              <p className="text-xs text-surface-500">Viajes totales</p>
+              <p className="text-xs text-surface-500">{t('wdrvmisc.profile.totalTrips')}</p>
             </div>
           </StaggerItem>
           <StaggerItem>
@@ -541,27 +562,25 @@ export default function Profile() {
               <p className="mt-2 text-xl font-bold text-kiwi-700">
                 ₡{Math.round(earnings).toLocaleString()}
               </p>
-              <p className="text-xs text-surface-500">Ganancias totales</p>
+              <p className="text-xs text-surface-500">{t('wdrvmisc.profile.totalEarnings')}</p>
             </div>
           </StaggerItem>
           <StaggerItem>
             <div className="rounded-xl bg-white dark:bg-surface-800 p-4 shadow-soft text-center">
               <Bike className="text-2xl h-6 w-6 mx-auto" />
               <p className="mt-2 text-xl font-bold text-surface-800 dark:text-surface-100">
-                {profile?.vehicleType
-                  ? (VEHICLE_LABEL[profile.vehicleType] ?? profile.vehicleType)
-                  : '—'}
+                {vehicleName}
               </p>
-              <p className="text-xs text-surface-500">Vehículo</p>
+              <p className="text-xs text-surface-500">{t('wdrvmisc.profile.vehicle')}</p>
             </div>
           </StaggerItem>
           <StaggerItem>
             <div className="rounded-xl bg-white dark:bg-surface-800 p-4 shadow-soft text-center">
               <Package className="text-2xl h-6 w-6 mx-auto" />
               <p className="mt-2 text-xl font-bold text-surface-800 dark:text-surface-100">
-                {STATUS_LABEL[status] ?? status}
+                {statusName}
               </p>
-              <p className="text-xs text-surface-500">Estado</p>
+              <p className="text-xs text-surface-500">{t('wdrvmisc.profile.state')}</p>
             </div>
           </StaggerItem>
         </StaggerContainer>
@@ -575,7 +594,7 @@ export default function Profile() {
         >
           <div className="flex items-center justify-between mb-4">
             <h3 className="flex items-center gap-2 font-display font-semibold text-surface-800 dark:text-surface-100">
-              <BadgeCheck className="h-5 w-5 text-kiwi-500" /> Verificación
+              <BadgeCheck className="h-5 w-5 text-kiwi-500" /> {t('wdrvmisc.profile.verification')}
             </h3>
             <KYCStatusBadge status={kycStatus} size="sm" />
           </div>
@@ -583,12 +602,12 @@ export default function Profile() {
             <>
               <p className="text-sm text-surface-500 dark:text-surface-400 mb-4">
                 {kycRequired
-                  ? 'Verifica tu identidad para empezar a trabajar'
-                  : 'Verificá tu identidad con Didit para generar confianza y acceder a más pedidos'}
+                  ? t('wdrvmisc.profile.verifyRequired')
+                  : t('wdrvmisc.profile.verifySuggest')}
               </p>
               <Link href="/kyc">
                 <AnimatedButton variant="primary" className="w-full">
-                  Verificar identidad
+                  {t('wdrvmisc.profile.verifyIdentity')}
                 </AnimatedButton>
               </Link>
             </>
@@ -604,10 +623,10 @@ export default function Profile() {
         >
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-              <Car className="h-5 w-5 inline" /> Mi Vehículo
+              <Car className="h-5 w-5 inline" /> {t('wdrvmisc.profile.myVehicle')}
             </h3>
             <AnimatedButton variant="ghost" size="sm" onClick={() => setShowVehicleModal(true)}>
-              Editar
+              {t('wdrvmisc.profile.edit')}
             </AnimatedButton>
           </div>
           <div className="flex items-center gap-4">
@@ -616,11 +635,11 @@ export default function Profile() {
             </div>
             <div>
               <p className="font-display font-semibold text-surface-800 dark:text-surface-100">
-                {profile?.vehicleType
-                  ? (VEHICLE_LABEL[profile.vehicleType] ?? profile.vehicleType)
-                  : 'Sin definir'}
+                {profile?.vehicleType ? vehicleName : t('wdrvmisc.profile.vehicleUndefined')}
               </p>
-              <p className="text-sm text-surface-500">Placa: {profile?.vehiclePlate || '—'}</p>
+              <p className="text-sm text-surface-500">
+                {t('wdrvmisc.profile.plateLabel', { plate: profile?.vehiclePlate || '—' })}
+              </p>
             </div>
           </div>
         </motion.div>
@@ -633,21 +652,23 @@ export default function Profile() {
           transition={{ delay: 0.2 }}
         >
           <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-            Cobros
+            {t('wdrvmisc.profile.payouts')}
           </h3>
           {mpLoading ? (
-            <p className="text-sm text-surface-500">Cargando estado de cobros…</p>
+            <p className="text-sm text-surface-500">{t('wdrvmisc.profile.payoutsLoading')}</p>
           ) : mpStatus?.status === 'active' ? (
             <>
               <p className="text-sm font-semibold text-kiwi-700 dark:text-kiwi-300">
-                Cobros con tarjeta activos ✓
+                {t('wdrvmisc.profile.payoutsActive')}
               </p>
               <div className="mt-5 border-t border-surface-100 dark:border-surface-700/60 pt-4">
                 <p className="text-xs font-bold uppercase tracking-wider text-surface-500 dark:text-surface-400 mb-3">
-                  Cobros liquidados
+                  {t('wdrvmisc.profile.payoutsSettled')}
                 </p>
                 {mpPaymentsLoading ? (
-                  <p className="text-sm text-surface-500">Cargando cobros…</p>
+                  <p className="text-sm text-surface-500">
+                    {t('wdrvmisc.profile.payoutsSettledLoading')}
+                  </p>
                 ) : mpPayments && mpPayments.length > 0 ? (
                   <ul className="space-y-2">
                     {mpPayments.map((p) => (
@@ -656,7 +677,7 @@ export default function Profile() {
                         className="flex items-center justify-between gap-2 rounded-xl bg-surface-50 dark:bg-surface-900 px-3 py-2"
                       >
                         <span className="text-sm font-semibold text-surface-800 dark:text-surface-100">
-                          {new Intl.NumberFormat('es-CR', {
+                          {new Intl.NumberFormat(locale === 'en' ? 'en-US' : 'es-CR', {
                             style: 'currency',
                             currency: 'CRC',
                             maximumFractionDigits: 0,
@@ -669,18 +690,16 @@ export default function Profile() {
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-sm text-surface-500">Aún no hay cobros liquidados</p>
+                  <p className="text-sm text-surface-500">{t('wdrvmisc.profile.payoutsEmpty')}</p>
                 )}
               </div>
             </>
           ) : mpStatus?.accountId ? (
             <div className="space-y-3">
               <p className="text-sm font-semibold text-surface-800 dark:text-surface-100">
-                Registro pendiente
+                {t('wdrvmisc.profile.payoutPending')}
               </p>
-              <p className="text-sm text-surface-500">
-                Terminá el registro en Onvo para activar los cobros de tus fletes.
-              </p>
+              <p className="text-sm text-surface-500">{t('wdrvmisc.profile.payoutPendingHint')}</p>
               <div className="flex flex-col gap-2">
                 <AnimatedButton
                   variant="primary"
@@ -688,7 +707,9 @@ export default function Profile() {
                   onClick={() => void openMpRegistration()}
                   disabled={mpBusy}
                 >
-                  {mpBusy ? 'Abriendo…' : 'Abrir registro'}
+                  {mpBusy
+                    ? t('wdrvmisc.profile.openingRegistration')
+                    : t('wdrvmisc.profile.openRegistration')}
                 </AnimatedButton>
                 <AnimatedButton
                   variant="ghost"
@@ -696,22 +717,24 @@ export default function Profile() {
                   onClick={() => void refreshMpStatus()}
                   disabled={mpBusy}
                 >
-                  {mpBusy ? 'Revisando…' : 'Ya lo completé'}
+                  {mpBusy
+                    ? t('wdrvmisc.profile.checkingStatus')
+                    : t('wdrvmisc.profile.alreadyDone')}
                 </AnimatedButton>
               </div>
             </div>
           ) : (
             <div className="space-y-3">
-              <p className="text-sm text-surface-500">
-                Recibí el pago de tus fletes y express con tarjeta directo en tu cuenta IBAN.
-              </p>
+              <p className="text-sm text-surface-500">{t('wdrvmisc.profile.payoutIntro')}</p>
               <AnimatedButton
                 variant="primary"
                 className="w-full"
                 onClick={() => void startMpOnboarding()}
                 disabled={mpBusy}
               >
-                {mpBusy ? 'Activando…' : 'Activar cobros con tarjeta'}
+                {mpBusy
+                  ? t('wdrvmisc.profile.activatingPayouts')
+                  : t('wdrvmisc.profile.activatePayouts')}
               </AnimatedButton>
             </div>
           )}
@@ -730,7 +753,7 @@ export default function Profile() {
           className="mb-6 flex items-center justify-between rounded-2xl bg-white dark:bg-surface-800 p-4 shadow-soft"
         >
           <span className="flex items-center gap-2 text-sm font-medium text-surface-500 dark:text-surface-400">
-            <FlaskConical className="h-4 w-4" /> Pruebas
+            <FlaskConical className="h-4 w-4" /> {t('wdrvmisc.profile.testing')}
           </span>
           <span className="text-surface-300">→</span>
         </Link>
@@ -740,7 +763,7 @@ export default function Profile() {
             className="w-full text-red-500 hover:bg-red-50"
             onClick={handleLogout}
           >
-            Cerrar sesión
+            {t('wdrvmisc.profile.logout')}
           </AnimatedButton>
         </div>
       </main>
@@ -765,11 +788,11 @@ export default function Profile() {
             >
               <div className="mb-6 flex items-center justify-between">
                 <h3 className="font-display text-lg font-semibold text-surface-800 dark:text-surface-100">
-                  Seleccionar vehículo
+                  {t('wdrvmisc.profile.selectVehicle')}
                 </h3>
                 <button
                   onClick={() => setShowVehicleModal(false)}
-                  aria-label="Cerrar selector de vehículo"
+                  aria-label={t('wdrvmisc.profile.closeVehicleAria')}
                   className="text-surface-500 hover:text-surface-700 dark:text-surface-400 dark:hover:text-surface-200"
                 >
                   ✕
@@ -780,13 +803,13 @@ export default function Profile() {
 
               <div className="mt-4">
                 <label className="mb-2 block text-sm font-medium text-surface-600 dark:text-surface-400">
-                  Placa (opcional)
+                  {t('wdrvmisc.profile.plateOptional')}
                 </label>
                 <input
                   type="text"
                   value={plate}
                   onChange={(e) => setPlate(e.target.value.toUpperCase())}
-                  placeholder="Ej: ABC123"
+                  placeholder={t('wdrvmisc.profile.platePh')}
                   className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20"
                 />
               </div>
@@ -797,7 +820,7 @@ export default function Profile() {
                   className="flex-1"
                   onClick={() => setShowVehicleModal(false)}
                 >
-                  Cancelar
+                  {t('wdrvmisc.profile.cancel')}
                 </AnimatedButton>
                 <AnimatedButton
                   variant="primary"
@@ -805,7 +828,7 @@ export default function Profile() {
                   onClick={saveVehicle}
                   disabled={savingVehicle}
                 >
-                  {savingVehicle ? 'Guardando…' : 'Guardar'}
+                  {savingVehicle ? t('wdrvmisc.profile.saving') : t('wdrvmisc.profile.save')}
                 </AnimatedButton>
               </div>
             </motion.div>

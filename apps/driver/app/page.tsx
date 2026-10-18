@@ -14,6 +14,8 @@ import {
   StaggerItem,
   VehicleBadge,
   ThemeToggle,
+  useTranslations,
+  LanguageSwitcher,
   useAuth,
   useSocket,
   useNotifications,
@@ -45,36 +47,49 @@ import {
 } from 'lucide-react';
 
 /** Etiqueta de recogida rápida: "Recoger 18:20" o "en 14 min". Null si no trae readyAt. */
-function readyLabel(readyAt: unknown): string | null {
+function readyLabel(
+  readyAt: unknown,
+  t: (key: string, vars?: Record<string, string | number>) => string,
+  locale: string,
+): string | null {
   if (!readyAt) return null;
-  const t = new Date(String(readyAt)).getTime();
-  if (!Number.isFinite(t)) return null;
-  const mins = Math.max(0, Math.round((t - Date.now()) / 60000));
-  const hh = new Date(t).toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' });
-  return mins <= 0 ? `Recoger ${hh}` : `Recoger ${hh} · en ${mins} min`;
+  const ts = new Date(String(readyAt)).getTime();
+  if (!Number.isFinite(ts)) return null;
+  const mins = Math.max(0, Math.round((ts - Date.now()) / 60000));
+  const hh = new Date(ts).toLocaleTimeString(locale === 'en' ? 'en-US' : 'es-CR', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+  return mins <= 0
+    ? t('wdrvauth.home.readyTime', { hh })
+    : t('wdrvauth.home.readyIn', { hh, mins });
 }
 
 /** Mensaje exacto según el paso que falló (permiso vs token vs servidor). */
-function pushErrorMessage(reason?: string): string {
+function pushErrorMessage(
+  t: (key: string, vars?: Record<string, string | number>) => string,
+  reason?: string,
+): string {
   switch (reason) {
     case 'denied':
-      return 'No se pudieron activar las alertas. Revisá el permiso en tu navegador.';
+      return t('wdrvauth.home.pushErrDenied');
     case 'no-push-manager':
     case 'unsupported':
-      return 'Este navegador no soporta alertas. Probá con Chrome o instalando la app.';
+      return t('wdrvauth.home.pushErrUnsupported');
     case 'missing-vapid':
     case 'missing-config':
-      return 'Falta configuración del servidor para alertas. Avisanos por WhatsApp.';
+      return t('wdrvauth.home.pushErrConfig');
     case 'sync-failed':
-      return 'Se activó en el celu pero no llegó al servidor. Revisá tu conexión y reintentá.';
+      return t('wdrvauth.home.pushErrSync');
     case 'token-failed':
-      return 'No se pudo registrar este celu para alertas. Revisá tu conexión y reintentá.';
+      return t('wdrvauth.home.pushErrToken');
     default:
-      return 'No se pudo completar la activación. Reintentá con buena conexión.';
+      return t('wdrvauth.home.pushErrDefault');
   }
 }
 
 export default function Home() {
+  const { t, locale } = useTranslations();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const [isOnline, setIsOnline] = useState(true);
@@ -101,10 +116,10 @@ export default function Home() {
   const [pushDetail, setPushDetail] = useState<string | null>(null);
 
   const tabs = [
-    { id: 'all' as const, label: 'Todos', icon: ClipboardList },
-    { id: 'delivery' as const, label: 'Delivery', icon: Package },
-    { id: 'trip' as const, label: 'Viajes', icon: Bike },
-    { id: 'freight' as const, label: 'Fletes', icon: Truck },
+    { id: 'all' as const, label: t('wdrvauth.home.tabAll'), icon: ClipboardList },
+    { id: 'delivery' as const, label: t('wdrvauth.home.tabDelivery'), icon: Package },
+    { id: 'trip' as const, label: t('wdrvauth.home.tabTrips'), icon: Bike },
+    { id: 'freight' as const, label: t('wdrvauth.home.tabFreight'), icon: Truck },
   ];
 
   // El socket no sabe si estás offline: el backend solo targetea a
@@ -189,8 +204,10 @@ export default function Home() {
         playNotificationSound('order_update');
         addNotification({
           type: 'order_status',
-          title: 'Pedido tomado',
-          body: winner ? `${winner} ya tomó este pedido` : 'Otro repartidor ya tomó este pedido',
+          title: t('wdrvauth.home.takenTitle'),
+          body: winner
+            ? t('wdrvauth.home.takenWithName', { name: winner })
+            : t('wdrvauth.home.takenOther'),
         });
       }
     },
@@ -304,7 +321,7 @@ export default function Home() {
       }
     } catch (error) {
       console.error('Failed to update status:', error);
-      setPageError('No se pudo cambiar tu estado. Revisa tu conexión.');
+      setPageError(t('wdrvauth.home.errStatus'));
     }
   };
 
@@ -344,7 +361,7 @@ export default function Home() {
   const acceptingRef = useRef<string | null>(null);
   const handleAcceptOrder = async (orderId: string) => {
     if (!orderId) {
-      setPageError('Ese pedido llegó incompleto. Cerrá y volvé a abrir la app.');
+      setPageError(t('wdrvauth.home.errIncomplete'));
       return;
     }
     if (acceptingRef.current === orderId) return;
@@ -375,15 +392,18 @@ export default function Home() {
       console.error('Failed to accept order:', error);
       // Mostrar el mensaje REAL del servidor (programado, ya asignado,
       // cancelado, etc.) en vez del genérico "otro repartidor".
-      const msg =
-        error?.message || 'No se pudo aceptar el pedido. Quizás otro repartidor lo tomó primero.';
+      const msg = error?.message || t('wdrvauth.home.errAcceptFallback');
       setPageError(msg);
       // Refrescar: si ya es tuyo (doble tap), aparece en Activos;
       // si ya no existe, sale de Disponibles.
       await fetchActiveOrders();
       await fetchAvailableOrders();
       // El banner queda arriba (fuera de vista): toast para que sí se vea
-      addNotification({ type: 'order_status', title: 'No se pudo aceptar', body: msg });
+      addNotification({
+        type: 'order_status',
+        title: t('wdrvauth.home.acceptFailTitle'),
+        body: msg,
+      });
     } finally {
       acceptingRef.current = null;
       setAcceptingOrder(null);
@@ -397,12 +417,12 @@ export default function Home() {
 
   const getStatusLabel = (status: string) => {
     const labels: Record<string, string> = {
-      assigned: 'Asignado',
-      pending_acceptance: 'Pendiente de aceptación',
-      in_transit_to_pickup: 'En camino a recoger',
-      picked_up: 'Recogido',
-      in_transit_to_delivery: 'Entregando',
-      delivered: 'Entregado',
+      assigned: t('wdrvauth.home.statusAssigned'),
+      pending_acceptance: t('wdrvauth.home.statusPending'),
+      in_transit_to_pickup: t('wdrvauth.home.statusToPickup'),
+      picked_up: t('wdrvauth.home.statusPicked'),
+      in_transit_to_delivery: t('wdrvauth.home.statusDelivering'),
+      delivered: t('wdrvauth.home.statusDelivered'),
     };
     return labels[status] || status;
   };
@@ -435,11 +455,11 @@ export default function Home() {
 
   const driverLevel = (user?.driverProfile as any)?.level as string | undefined;
   const levelLabel: Record<string, string> = {
-    bronce: 'Bronce',
-    plata: 'Plata',
-    oro: 'Oro',
-    diamante: 'Diamante',
-    vip: 'VIP',
+    bronce: t('wdrvauth.home.lvlBronce'),
+    plata: t('wdrvauth.home.lvlPlata'),
+    oro: t('wdrvauth.home.lvlOro'),
+    diamante: t('wdrvauth.home.lvlDiamante'),
+    vip: t('wdrvauth.home.lvlVip'),
   };
 
   return (
@@ -461,7 +481,7 @@ export default function Home() {
             >
               <KiwiLogo size={30} />
               <h1 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100">
-                Driver
+                {t('wdrvauth.home.brand')}
               </h1>
               <VehicleBadge
                 type={(user?.driverProfile?.vehicleType as any) || 'motorcycle'}
@@ -477,12 +497,13 @@ export default function Home() {
                 />
               </div>
               <ThemeToggle />
+              <LanguageSwitcher />
               <div className="h-8 w-8 rounded-full bg-kiwi-gradient text-white flex items-center justify-center text-sm font-semibold ring-2 ring-white dark:ring-surface-800 shadow-sm overflow-hidden">
                 {isHttpUrl((user as any)?.driverProfile?.photoUrl) ? (
                   // NOTE: <img> intencional — foto dinámica de Cloudinary.
                   <img
                     src={(user as any).driverProfile.photoUrl}
-                    alt="Mi foto"
+                    alt={t('wdrvauth.home.photoAlt')}
                     className="h-8 w-8 object-cover"
                   />
                 ) : isEmojiImage((user as any)?.driverProfile?.photoUrl) ? (
@@ -505,7 +526,7 @@ export default function Home() {
             {pageError}
             {pushDetail && (
               <details className="mt-2 text-xs">
-                <summary className="font-semibold">Diagnóstico</summary>
+                <summary className="font-semibold">{t('wdrvauth.home.diag')}</summary>
                 <pre className="mt-1 whitespace-pre-wrap break-all">{pushDetail}</pre>
               </details>
             )}
@@ -515,22 +536,19 @@ export default function Home() {
         {pushNeedsInstall && (
           <div className="mb-4 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4">
             <p className="text-sm font-semibold text-surface-800 dark:text-surface-100">
-              Recibí pedidos con el celu bloqueado
+              {t('wdrvauth.home.pushTitle')}
             </p>
             <p className="mt-0.5 text-xs text-surface-500 dark:text-surface-400">
-              En iPhone las alertas solo funcionan con la app instalada: en Safari tocá{' '}
-              <span className="font-semibold">Compartir → Agregar a inicio</span>, abrí Kiwi desde
-              el ícono nuevo y activá las alertas ahí.
+              {t('wdrvauth.home.pushIosLead')}{' '}
+              <span className="font-semibold">{t('wdrvauth.home.pushIosBold')}</span>
+              {t('wdrvauth.home.pushIosTail')}
             </p>
             {pushDebug && !pushDebug.hasNotification && !pushDebug.hasServiceWorker && (
-              <p className="mt-2 font-semibold">
-                ¿Ves «Modo hermético activado» en Safari? Ese modo le bloquea las alertas. Excluí a
-                Kiwi: Ajustes → Privacidad y seguridad → Modo hermético → Configurar navegación web.
-              </p>
+              <p className="mt-2 font-semibold">{t('wdrvauth.home.pushHermetic')}</p>
             )}
             {pushDebug && (
               <details className="mt-2 text-xs text-surface-500 dark:text-surface-400">
-                <summary className="font-semibold">Diagnóstico</summary>
+                <summary className="font-semibold">{t('wdrvauth.home.diag')}</summary>
                 <pre className="mt-1 whitespace-pre-wrap break-all">
                   {JSON.stringify(pushDebug, null, 1)}
                 </pre>
@@ -541,20 +559,16 @@ export default function Home() {
         {/* iPhone instalado pero viejo de verdad: push requiere iOS 16.4+ */}
         {!pushNeedsInstall && pushUnsupported === 'ios-old' && (
           <div className="mb-4 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 px-4 py-3 text-xs text-amber-800 dark:text-amber-300">
-            Tu iPhone necesita iOS 16.4 o más nuevo para las alertas. Actualizalo en Ajustes →
-            General → Actualización.
+            {t('wdrvauth.home.pushOldIos')}
           </div>
         )}
         {/* iPhone nuevo pero sin APIs de push en el celu: típico Modo hermético (reinstalar no ayuda) */}
         {!pushNeedsInstall && pushUnsupported === 'ios-push-unavailable' && (
           <div className="mb-4 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 px-4 py-3 text-xs text-amber-800 dark:text-amber-300">
-            Tu iOS ({pushDebug?.iosVersion ?? '…'}) ya soporta alertas, pero el celu las tiene
-            bloqueadas. Si ves «Modo hermético activado» en Safari, excluí a Kiwi: Ajustes →
-            Privacidad y seguridad → Modo hermético → Configurar navegación web. Igual te llegan los
-            pedidos con la app abierta.
+            {t('wdrvauth.home.pushBlocked', { version: pushDebug?.iosVersion ?? '…' })}
             {pushDebug && (
               <details className="mt-2">
-                <summary className="font-semibold">Diagnóstico</summary>
+                <summary className="font-semibold">{t('wdrvauth.home.diag')}</summary>
                 <pre className="mt-1 whitespace-pre-wrap break-all">
                   {JSON.stringify(pushDebug, null, 1)}
                 </pre>
@@ -566,10 +580,10 @@ export default function Home() {
         {!pushNeedsInstall && !pushUnsupported && pushSupported && pushPermission === 'default' && (
           <div className="mb-4 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4">
             <p className="text-sm font-semibold text-surface-800 dark:text-surface-100">
-              Recibí pedidos con el celu bloqueado
+              {t('wdrvauth.home.pushTitle')}
             </p>
             <p className="mt-0.5 text-xs text-surface-500 dark:text-surface-400">
-              Activá las alertas para que te avisemos aunque la app esté cerrada.
+              {t('wdrvauth.home.pushDefaultDesc')}
             </p>
             <TapButton
               variant="gradient"
@@ -582,7 +596,7 @@ export default function Home() {
                 try {
                   const res = await requestPushPermission();
                   if (!res.ok) {
-                    setPageError(pushErrorMessage(res.reason));
+                    setPageError(pushErrorMessage(t, res.reason));
                     setPushDetail(res.detail ?? null);
                   }
                 } finally {
@@ -590,14 +604,13 @@ export default function Home() {
                 }
               }}
             >
-              {pushBusy ? 'Activando…' : 'Activar alertas'}
+              {pushBusy ? t('wdrvauth.home.pushBusy') : t('wdrvauth.home.pushCta')}
             </TapButton>
           </div>
         )}
         {!pushNeedsInstall && pushSupported && pushPermission === 'denied' && isOnline && (
           <div className="mb-4 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 px-4 py-3 text-xs text-amber-800 dark:text-amber-300">
-            Las alertas están bloqueadas en tu navegador: activalas en los ajustes del sitio para
-            recibir pedidos con la app cerrada.
+            {t('wdrvauth.home.pushDenied')}
           </div>
         )}
         {/* Status Toggle */}
@@ -630,12 +643,10 @@ export default function Home() {
                   exit={{ opacity: 0, y: -8 }}
                 >
                   <h2 className="text-xl font-display font-bold">
-                    {isOnline ? 'En línea' : 'En pausa'}
+                    {isOnline ? t('wdrvauth.home.online') : t('wdrvauth.home.paused')}
                   </h2>
                   <p className="text-white/80 text-sm">
-                    {isOnline
-                      ? 'Estás en la lista · te llegan pedidos'
-                      : 'Fuera de la lista · no te llegan pedidos'}
+                    {isOnline ? t('wdrvauth.home.onlineHint') : t('wdrvauth.home.offlineHint')}
                   </p>
                 </motion.div>
               </AnimatePresence>
@@ -646,7 +657,7 @@ export default function Home() {
               }`}
               onClick={toggleOnlineStatus}
               whileTap={{ scale: 0.95 }}
-              aria-label={isOnline ? 'Ponerme en pausa' : 'Ponerme en línea'}
+              aria-label={isOnline ? t('wdrvauth.home.pauseAria') : t('wdrvauth.home.resumeAria')}
             >
               <motion.div
                 className={`flex h-12 w-12 items-center justify-center rounded-full shadow-md ${
@@ -677,8 +688,8 @@ export default function Home() {
                     ●
                   </motion.span>
                   <span>
-                    Recibiendo pedidos
-                    {isConnected ? '' : ' (reconectando…)'}
+                    {t('wdrvauth.home.receiving')}
+                    {isConnected ? '' : t('wdrvauth.home.reconnecting')}
                   </span>
                 </div>
 
@@ -714,7 +725,7 @@ export default function Home() {
                   className="w-full rounded-xl h-12 text-sm font-bold"
                   onClick={toggleOnlineStatus}
                 >
-                  Ponerme en línea y recibir pedidos
+                  {t('wdrvauth.home.goOnlineCta')}
                 </TapButton>
               </motion.div>
             )}
@@ -726,7 +737,9 @@ export default function Home() {
           <StaggerItem>
             <motion.div className="rounded-xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-card dark:shadow-dark p-4 text-center">
               <AnimatedCounter value={stats.trips} className="text-2xl font-bold text-kiwi-700" />
-              <p className="text-xs text-surface-500 dark:text-surface-400">Viajes</p>
+              <p className="text-xs text-surface-500 dark:text-surface-400">
+                {t('wdrvauth.home.statTrips')}
+              </p>
             </motion.div>
           </StaggerItem>
           <StaggerItem>
@@ -739,7 +752,9 @@ export default function Home() {
                   className="text-2xl font-bold text-gold-600"
                 />
               </div>
-              <p className="text-xs text-surface-500 dark:text-surface-400">Rating</p>
+              <p className="text-xs text-surface-500 dark:text-surface-400">
+                {t('wdrvauth.home.statRating')}
+              </p>
             </motion.div>
           </StaggerItem>
           <StaggerItem>
@@ -747,13 +762,17 @@ export default function Home() {
               <span className="text-2xl font-bold text-kiwi-700">
                 ₡{Math.round(stats.earnings).toLocaleString()}
               </span>
-              <p className="text-xs text-surface-500 dark:text-surface-400">Ganado</p>
+              <p className="text-xs text-surface-500 dark:text-surface-400">
+                {t('wdrvauth.home.statEarnings')}
+              </p>
             </motion.div>
           </StaggerItem>
           <StaggerItem>
             <motion.div className="rounded-xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-card dark:shadow-dark p-4 text-center">
               <span className="text-2xl font-bold text-gold-600">{availableOrders.length}</span>
-              <p className="text-xs text-surface-500 dark:text-surface-400">Disponibles</p>
+              <p className="text-xs text-surface-500 dark:text-surface-400">
+                {t('wdrvauth.home.statAvailable')}
+              </p>
             </motion.div>
           </StaggerItem>
         </StaggerContainer>
@@ -768,10 +787,10 @@ export default function Home() {
           >
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-300">
-                Mis Pedidos Activos
+                {t('wdrvauth.home.activeTitle')}
               </h3>
               <span className="text-xs text-surface-500 dark:text-surface-400">
-                {activeOrders.length} en curso
+                {t('wdrvauth.home.activeCount', { count: activeOrders.length })}
               </span>
             </div>
 
@@ -798,7 +817,7 @@ export default function Home() {
                             ₡{Number(order.driverPayout ?? order.totalAmount ?? 0).toLocaleString()}
                           </p>
                           <p className="text-[11px] text-surface-500 dark:text-surface-400">
-                            tu ganancia
+                            {t('wdrvauth.home.yourEarning')}
                           </p>
                         </div>
                       </div>
@@ -814,8 +833,8 @@ export default function Home() {
                             </p>
                             <p className="text-xs text-surface-500 dark:text-surface-400">
                               {(order as any).merchant?.businessName
-                                ? `${order.pickupAddress} · Recoger aquí`
-                                : 'Recoger aquí'}
+                                ? t('wdrvauth.home.pickupDetail', { address: order.pickupAddress })
+                                : t('wdrvauth.home.pickupHere')}
                             </p>
                           </div>
                         </div>
@@ -828,7 +847,7 @@ export default function Home() {
                               {order.deliveryAddress}
                             </p>
                             <p className="text-xs text-surface-500 dark:text-surface-400">
-                              Entregar aquí
+                              {t('wdrvauth.home.deliverHere')}
                             </p>
                           </div>
                         </div>
@@ -862,10 +881,10 @@ export default function Home() {
         >
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-300 flex items-center gap-2">
-              <Package className="h-4 w-4" /> Pedidos Disponibles
+              <Package className="h-4 w-4" /> {t('wdrvauth.home.availTitle')}
             </h3>
             <span className="text-xs text-surface-500 dark:text-surface-400">
-              {filteredOrders.length} cerca de ti
+              {t('wdrvauth.home.nearbyCount', { count: filteredOrders.length })}
             </span>
           </div>
 
@@ -887,12 +906,10 @@ export default function Home() {
                 )}
               </motion.div>
               <p className="text-surface-500 dark:text-surface-400">
-                {isOnline ? 'No hay pedidos disponibles ahora' : 'Estás en pausa'}
+                {isOnline ? t('wdrvauth.home.emptyOnline') : t('wdrvauth.home.emptyPaused')}
               </p>
               <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">
-                {isOnline
-                  ? 'Cuando haya pedidos, aparecerán aquí'
-                  : 'Ponte en línea para entrar en la lista y recibir pedidos'}
+                {isOnline ? t('wdrvauth.home.emptyOnlineHint') : t('wdrvauth.home.emptyPausedHint')}
               </p>
               {!isOnline && (
                 <TapButton
@@ -901,7 +918,7 @@ export default function Home() {
                   className="mt-4 rounded-xl h-11 px-6 text-sm"
                   onClick={toggleOnlineStatus}
                 >
-                  Ponerme en línea
+                  {t('wdrvauth.home.goOnlineShort')}
                 </TapButton>
               )}
             </motion.div>
@@ -924,14 +941,14 @@ export default function Home() {
                           animate={{ scale: 1 }}
                           transition={{ type: 'spring', stiffness: 500, delay: 0.5 }}
                         >
-                          <Package className="h-3 w-3 inline" /> Delivery
+                          <Package className="h-3 w-3 inline" /> {t('wdrvauth.home.badgeDelivery')}
                         </motion.span>
                         <span className="text-xs text-surface-500 dark:text-surface-400">•</span>
                         <span className="text-xs text-surface-500 dark:text-surface-400">
-                          Nuevo
+                          {t('wdrvauth.home.badgeNew')}
                         </span>
                         {(() => {
-                          const label = readyLabel((order as any).readyAt);
+                          const label = readyLabel((order as any).readyAt, t, locale);
                           return label ? (
                             <span className="inline-flex items-center gap-1 rounded-full bg-gold-100 dark:bg-gold-900/50 px-3 py-1 text-xs font-semibold text-gold-700 dark:text-gold-300">
                               <Clock className="h-3 w-3" /> {label}
@@ -955,8 +972,8 @@ export default function Home() {
                           </p>
                           <p className="break-words text-xs text-surface-500 dark:text-surface-400">
                             {(order as any).merchant?.businessName
-                              ? `${order.pickupAddress} · Origen`
-                              : 'Origen'}
+                              ? t('wdrvauth.home.originDetail', { address: order.pickupAddress })
+                              : t('wdrvauth.home.originFallback')}
                           </p>
                         </div>
                       </div>
@@ -972,8 +989,8 @@ export default function Home() {
                             {(order as any).deliveryZone
                               ? String((order as any).deliveryZone)
                               : order.distanceKm
-                                ? `${order.distanceKm} km`
-                                : 'Destino'}
+                                ? t('wdrvauth.home.distKm', { dist: order.distanceKm })
+                                : t('wdrvauth.home.destFallback')}
                           </p>
                         </div>
                       </div>
@@ -984,7 +1001,7 @@ export default function Home() {
                         />
                         <span className="text-xs text-surface-500 dark:text-surface-400">•</span>
                         <span className="text-xs text-surface-500 dark:text-surface-400">
-                          Ganancia:{' '}
+                          {t('wdrvauth.home.earningLabel')}{' '}
                           <span className="font-mono">
                             {order.driverPayout != null
                               ? `₡${Number(order.driverPayout).toLocaleString()}`
@@ -1001,7 +1018,7 @@ export default function Home() {
                         onClick={() => handleRejectOrder(order.id)}
                         disabled={acceptingOrder === order.id}
                       >
-                        Rechazar
+                        {t('wdrvauth.home.reject')}
                       </AnimatedButton>
                       <TapButton
                         variant="gradient"
@@ -1010,7 +1027,9 @@ export default function Home() {
                         onClick={() => handleAcceptOrder(order.id)}
                         disabled={acceptingOrder === order.id}
                       >
-                        {acceptingOrder === order.id ? 'Aceptando...' : 'Aceptar'}
+                        {acceptingOrder === order.id
+                          ? t('wdrvauth.home.accepting')
+                          : t('wdrvauth.home.accept')}
                       </TapButton>
                     </div>
                   </motion.div>
@@ -1028,25 +1047,33 @@ export default function Home() {
           transition={{ delay: 0.6 }}
         >
           <h3 className="mb-3 text-sm font-semibold text-surface-600 dark:text-surface-300">
-            Tu Nivel
+            {t('wdrvauth.home.levelTitle')}
           </h3>
           <div className="space-y-3">
             <div>
               <div className="mb-1 flex items-center justify-between text-sm">
                 <span className="text-surface-600 dark:text-surface-400">
-                  Nivel {driverLevel ? (levelLabel[driverLevel] ?? driverLevel) : 'Bronce'}
+                  {t('wdrvauth.home.levelName', {
+                    level: driverLevel
+                      ? (levelLabel[driverLevel] ?? driverLevel)
+                      : t('wdrvauth.home.lvlBronce'),
+                  })}
                 </span>
-                <span className="text-kiwi-700 font-medium">{stats.trips} viajes en total</span>
+                <span className="text-kiwi-700 font-medium">
+                  {t('wdrvauth.home.tripsTotal', { count: stats.trips })}
+                </span>
               </div>
             </div>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-surface-500 dark:text-surface-400">Estado</span>
+              <span className="text-surface-500 dark:text-surface-400">
+                {t('wdrvauth.home.stateLabel')}
+              </span>
               <motion.span
                 className="font-medium text-surface-700 dark:text-surface-300"
                 animate={{ scale: [1, 1.05, 1] }}
                 transition={{ duration: 2, repeat: Infinity }}
               >
-                {isOnline ? 'Recibiendo pedidos' : 'En pausa'}
+                {isOnline ? t('wdrvauth.home.receiving') : t('wdrvauth.home.paused')}
               </motion.span>
             </div>
           </div>
@@ -1086,33 +1113,41 @@ export default function Home() {
                       <Package className="h-12 w-12 text-kiwi-500" />
                     </motion.div>
                     <h3 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100">
-                      Nuevo Pedido
+                      {t('wdrvauth.home.alertTitle')}
                     </h3>
                   </div>
 
                   <div className="space-y-3 mb-6">
                     <div className="flex items-center justify-between">
-                      <span className="text-surface-500 dark:text-surface-400">Desde</span>
+                      <span className="text-surface-500 dark:text-surface-400">
+                        {t('wdrvauth.home.from')}
+                      </span>
                       <span className="font-medium text-surface-800 dark:text-surface-200">
                         {newOrderAlert.pickupAddress}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-surface-500 dark:text-surface-400">Hasta</span>
+                      <span className="text-surface-500 dark:text-surface-400">
+                        {t('wdrvauth.home.to')}
+                      </span>
                       <span className="font-medium text-surface-800 dark:text-surface-200">
                         {newOrderAlert.deliveryAddress}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-surface-500 dark:text-surface-400">Distancia</span>
+                      <span className="text-surface-500 dark:text-surface-400">
+                        {t('wdrvauth.home.distance')}
+                      </span>
                       <span className="font-medium text-surface-800 dark:text-surface-200">
-                        {newOrderAlert.distanceKm || '?'} km
+                        {t('wdrvauth.home.distKm', { dist: newOrderAlert.distanceKm || '?' })}
                       </span>
                     </div>
                     <div className="border-t border-surface-200 dark:border-surface-700 pt-3">
                       <div className="flex items-center justify-between">
                         <span className="text-surface-500 dark:text-surface-400">
-                          {hasPayout ? 'Ganancia' : 'Total del pedido'}
+                          {hasPayout
+                            ? t('wdrvauth.home.payoutLabel')
+                            : t('wdrvauth.home.orderTotalLabel')}
                         </span>
                         <span className="text-2xl font-bold text-kiwi-700 dark:text-kiwi-400 font-mono">
                           {hasPayout
@@ -1122,7 +1157,7 @@ export default function Home() {
                       </div>
                       {!hasPayout && (
                         <p className="mt-1 text-right text-[11px] text-surface-500 dark:text-surface-400">
-                          Tu ganancia se confirma al aceptar
+                          {t('wdrvauth.home.payoutHint')}
                         </p>
                       )}
                     </div>
@@ -1135,7 +1170,7 @@ export default function Home() {
                       onClick={() => handleRejectOrder(alertId)}
                       disabled={busy}
                     >
-                      Rechazar
+                      {t('wdrvauth.home.reject')}
                     </AnimatedButton>
                     <AnimatedButton
                       variant="gradient"
@@ -1143,7 +1178,7 @@ export default function Home() {
                       onClick={() => handleAcceptOrder(alertId)}
                       disabled={busy}
                     >
-                      {busy ? 'Aceptando...' : 'Aceptar'}
+                      {busy ? t('wdrvauth.home.accepting') : t('wdrvauth.home.accept')}
                     </AnimatedButton>
                   </div>
                 </motion.div>
