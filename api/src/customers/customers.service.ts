@@ -24,11 +24,19 @@ function sanitizeAddressInput(data: any) {
   const lat = data.latitude !== undefined ? Number(data.latitude) : NaN;
   const lng = data.longitude !== undefined ? Number(data.longitude) : NaN;
   if (data.latitude !== undefined || data.longitude !== undefined) {
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-      throw new BadRequestException('Coordenadas inválidas');
+    if (data.latitude == null && data.longitude == null) {
+      // Quitar el punto (lugar "raro"/peligroso o dirección sin GPS).
+      out.latitude = null;
+      out.longitude = null;
+    } else if (data.latitude == null || data.longitude == null) {
+      throw new BadRequestException('Ubicación incompleta: latitud y longitud juntas o ninguna');
+    } else {
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+        throw new BadRequestException('Coordenadas inválidas');
+      }
+      out.latitude = lat;
+      out.longitude = lng;
     }
-    out.latitude = lat;
-    out.longitude = lng;
   }
   if (data.deliveryZone !== undefined) {
     out.deliveryZone =

@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -27,6 +27,103 @@ const normalizePhone = (raw: string): string => {
   const local = digits.length === 11 && digits.startsWith('506') ? digits.slice(3) : digits;
   return /^\d{8}$/.test(local) ? `${local.slice(0, 4)}-${local.slice(4)}` : raw.trim();
 };
+
+/** Mini-mapa para marcar el punto exacto de un lugar (el repartidor ve ese
+ * pin). Click = poner/mover, arrastrar el kiwi = afinar. */
+function PlaceMapPicker({
+  lat,
+  lng,
+  onPick,
+}: {
+  lat: number | null;
+  lng: number | null;
+  onPick: (lat: number, lng: number) => void;
+}) {
+  const mapDivRef = useRef<HTMLDivElement>(null);
+  const mapObj = useRef<any>(null);
+  const markerObj = useRef<any>(null);
+  const LRef = useRef<any>(null);
+  const onPickRef = useRef(onPick);
+  onPickRef.current = onPick;
+
+  const drawMarker = () => {
+    const L = LRef.current;
+    const map = mapObj.current;
+    if (!L || !map) return;
+    if (markerObj.current) {
+      markerObj.current.remove();
+      markerObj.current = null;
+    }
+    if (lat == null || lng == null) return;
+    const icon = L.divIcon({
+      html: '<img src="/kiwi.svg" alt="Punto de entrega" style="width:34px;height:34px;display:block;border-radius:999px;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35);background:#fff;"/>',
+      className: 'place-point',
+      iconSize: [34, 34],
+      iconAnchor: [17, 17],
+    });
+    const marker = L.marker([lat, lng], { draggable: true, icon })
+      .addTo(map)
+      .bindTooltip('Tu punto de entrega — arrastrá para afinar');
+    marker.on('dragend', () => {
+      const p = marker.getLatLng();
+      onPickRef.current(Number(p.lat.toFixed(6)), Number(p.lng.toFixed(6)));
+    });
+    markerObj.current = marker;
+  };
+
+  // Init una sola vez (el padre lo remonta con key al cambiar de lugar).
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const mod: any = await import('leaflet');
+      if (cancelled || mapObj.current || !mapDivRef.current) return;
+      const L = mod.default ?? mod;
+      LRef.current = L;
+      const hasPt = lat != null && lng != null;
+      const map = L.map(mapDivRef.current).setView(
+        hasPt ? [lat as number, lng as number] : [10.1467, -85.452],
+        hasPt ? 16 : 13,
+      );
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap',
+      }).addTo(map);
+      map.on('click', (e: any) => {
+        onPickRef.current(Number(e.latlng.lat.toFixed(6)), Number(e.latlng.lng.toFixed(6)));
+      });
+      mapObj.current = map;
+      setTimeout(() => {
+        if (!cancelled && mapObj.current) mapObj.current.invalidateSize();
+      }, 150);
+      drawMarker();
+    })();
+    return () => {
+      cancelled = true;
+      if (mapObj.current) {
+        mapObj.current.remove();
+        mapObj.current = null;
+      }
+      markerObj.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // El GPS o otro lugar mueven el pin: recentrar + redibujar.
+  useEffect(() => {
+    if (!mapObj.current) return;
+    if (lat != null && lng != null) {
+      mapObj.current.setView([lat, lng], Math.max(mapObj.current.getZoom(), 15));
+    }
+    drawMarker();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lat, lng]);
+
+  return (
+    <div
+      ref={mapDivRef}
+      className="h-52 w-full overflow-hidden rounded-xl bg-surface-100 dark:bg-surface-800"
+    />
+  );
+}
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -81,6 +178,8 @@ export default function ProfilePage() {
   const [placeSaving, setPlaceSaving] = useState(false);
   const [placeError, setPlaceError] = useState<string | null>(null);
   const [placeActing, setPlaceActing] = useState<string | null>(null);
+  /** Lugar en edición (null = creando uno nuevo). */
+  const [editingPlaceId, setEditingPlaceId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && !user) return;
@@ -233,17 +332,25 @@ export default function ProfilePage() {
     setPlaceSaving(true);
     setPlaceError(null);
     try {
-      await api.createAddress({
-        label: placeLabel.trim(),
-        address: placeAddress.trim(),
-        ...(placeGps ? { latitude: placeGps.lat, longitude: placeGps.lng } : {}),
-        ...(placeZone ? { deliveryZone: placeZone } : {}),
-      });
-      setPlaceLabel('');
-      setPlaceAddress('');
-      setPlaceZone('');
-      setPlaceGps(null);
-      setPlaceResolved(null);
+      const label = placeLabel.trim();
+      const address = placeAddress.trim();
+      if (editingPlaceId) {
+        await api.updateAddress(editingPlaceId, {
+          label,
+          address,
+          latitude: placeGps ? placeGps.lat : null,
+          longitude: placeGps ? placeGps.lng : null,
+          ...(placeZone ? { deliveryZone: placeZone } : {}),
+        });
+      } else {
+        await api.createAddress({
+          label,
+          address,
+          ...(placeGps ? { latitude: placeGps.lat, longitude: placeGps.lng } : {}),
+          ...(placeZone ? { deliveryZone: placeZone } : {}),
+        });
+      }
+      resetPlaceForm();
       setShowPlaceForm(false);
       await reloadPlaces();
     } catch (e: any) {
@@ -251,6 +358,40 @@ export default function ProfilePage() {
     } finally {
       setPlaceSaving(false);
     }
+  };
+
+  const resetPlaceForm = () => {
+    setPlaceLabel('');
+    setPlaceAddress('');
+    setPlaceZone('');
+    setPlaceGps(null);
+    setPlaceResolved(null);
+    setPlaceError(null);
+    setEditingPlaceId(null);
+  };
+
+  const startEditPlace = (p: {
+    id: string;
+    label: string;
+    address: string;
+    latitude: number | string | null;
+    longitude: number | string | null;
+    deliveryZone: string | null;
+  }) => {
+    setEditingPlaceId(p.id);
+    setPlaceLabel(p.label);
+    setPlaceAddress(p.address);
+    setPlaceZone(p.deliveryZone ?? '');
+    const la = Number(p.latitude);
+    const ln = Number(p.longitude);
+    setPlaceGps(
+      p.latitude != null && p.longitude != null && Number.isFinite(la) && Number.isFinite(ln)
+        ? { lat: la, lng: ln }
+        : null,
+    );
+    setPlaceResolved(null);
+    setPlaceError(null);
+    setShowPlaceForm(true);
   };
 
   const removePlace = async (id: string) => {
@@ -504,7 +645,15 @@ export default function ProfilePage() {
               <MapPin className="h-4 w-4" aria-hidden /> Mis lugares
             </p>
             <button
-              onClick={() => setShowPlaceForm((v) => !v)}
+              onClick={() => {
+                if (showPlaceForm) {
+                  resetPlaceForm();
+                  setShowPlaceForm(false);
+                } else {
+                  resetPlaceForm();
+                  setShowPlaceForm(true);
+                }
+              }}
               className="rounded-full bg-surface-100 dark:bg-surface-700 px-3 py-1.5 text-xs font-semibold text-surface-600 dark:text-surface-300"
             >
               {showPlaceForm ? 'Cerrar' : '+ Agregar'}
@@ -543,6 +692,46 @@ export default function ProfilePage() {
                     ? 'Ubicación lista'
                     : 'Usar mi ubicación GPS'}
               </button>
+              <PlaceMapPicker
+                key={editingPlaceId ?? 'new'}
+                lat={placeGps?.lat ?? null}
+                lng={placeGps?.lng ?? null}
+                onPick={(la, ln) => {
+                  setPlaceGps({ lat: la, lng: ln });
+                  // El pin manda: resolver la zona del punto.
+                  api
+                    .resolveDeliveryZone(la, ln)
+                    .then((r) => {
+                      if (!r.zone) return;
+                      setPlaceResolved({ id: r.zone.id, label: r.zone.label });
+                      setPlaceZone(r.zone.id);
+                    })
+                    .catch(() => undefined);
+                }}
+              />
+              {placeGps ? (
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs text-surface-500 dark:text-surface-400">
+                    📍 {placeGps.lat.toFixed(6)}, {placeGps.lng.toFixed(6)} · arrastrá el kiwi para
+                    afinar.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPlaceGps(null);
+                      setPlaceResolved(null);
+                    }}
+                    className="shrink-0 rounded-lg px-2 py-1.5 text-xs font-semibold text-red-500"
+                  >
+                    Quitar punto
+                  </button>
+                </div>
+              ) : (
+                <p className="text-xs text-surface-500 dark:text-surface-400">
+                  Sin punto marcado: tocá el mapa donde llegan los repartidores. Podés quitarlo si
+                  el lugar es raro o peligroso.
+                </p>
+              )}
               <ZonePicker
                 value={placeZone}
                 detectedLabel={
@@ -559,8 +748,19 @@ export default function ProfilePage() {
                 disabled={placeSaving}
                 className="w-full rounded-xl bg-kiwi-600 px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
               >
-                {placeSaving ? 'Guardando…' : 'Guardar lugar'}
+                {placeSaving ? 'Guardando…' : editingPlaceId ? 'Guardar cambios' : 'Guardar lugar'}
               </button>
+              {editingPlaceId && (
+                <button
+                  onClick={() => {
+                    resetPlaceForm();
+                    setShowPlaceForm(false);
+                  }}
+                  className="w-full rounded-xl px-4 py-2 text-xs font-semibold text-surface-500 dark:text-surface-400"
+                >
+                  Cancelar edición
+                </button>
+              )}
             </div>
           )}
           {places.length === 0 ? (
@@ -586,8 +786,20 @@ export default function ProfilePage() {
                         </span>
                       )}
                     </p>
-                    <p className="truncate text-xs text-surface-500">{p.address}</p>
+                    <p className="truncate text-xs text-surface-500">
+                      {p.address}
+                      {p.latitude != null && p.longitude != null ? ' · 📍' : ''}
+                    </p>
                   </div>
+                  <button
+                    onClick={() => startEditPlace(p)}
+                    disabled={placeActing === p.id}
+                    className="shrink-0 rounded-lg px-2 py-1.5 text-xs font-semibold text-surface-500 dark:text-surface-400 disabled:opacity-50"
+                    title="Editar"
+                    aria-label={`Editar ${p.label}`}
+                  >
+                    <Pencil className="h-3.5 w-3.5" aria-hidden />
+                  </button>
                   {!p.isDefault && (
                     <button
                       onClick={() => void defaultPlace(p.id)}
