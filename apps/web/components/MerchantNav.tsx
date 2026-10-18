@@ -24,7 +24,7 @@ import {
   KiwiLogo,
   isHttpUrl,
   isEmojiImage,
-  LanguageSwitcher,
+  LanguageSwitcherCompact,
   useTranslations,
 } from '@kiwi/ui';
 
@@ -76,8 +76,8 @@ export function MerchantNav({ isConnected, unreadCount = 0, businessName }: Merc
             <KiwiLogo size={26} />
           </Link>
 
-          {/* Desktop: links inline */}
-          <nav className="hidden md:flex items-center gap-1">
+          {/* Desktop: links inline (lg+; en md sale hamburguesa para que quepa todo) */}
+          <nav className="hidden lg:flex items-center gap-0.5">
             {LINKS.map((l) => {
               const active = isActive(l.href);
               const Icon = l.icon;
@@ -123,8 +123,8 @@ export function MerchantNav({ isConnected, unreadCount = 0, businessName }: Merc
                     </span>
                   )}
                 </Link>
-                <span className="hidden items-center gap-2 lg:flex">
-                  <span className="text-sm font-medium text-surface-600 dark:text-surface-400">
+                <span className="hidden items-center gap-2 xl:flex">
+                  <span className="max-w-[140px] truncate text-sm font-medium text-surface-600 dark:text-surface-400">
                     {businessName || t('webnav.fallbackBusiness')}
                   </span>
                   <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-kiwi-gradient text-white text-sm font-semibold ring-2 ring-white shadow-sm dark:ring-surface-800">
@@ -144,7 +144,7 @@ export function MerchantNav({ isConnected, unreadCount = 0, businessName }: Merc
                 </span>
               </>
             )}
-            <LanguageSwitcher />
+            <LanguageSwitcherCompact />
             <ThemeToggle />
             <button
               onClick={handleLogout}
@@ -155,8 +155,8 @@ export function MerchantNav({ isConnected, unreadCount = 0, businessName }: Merc
             </button>
           </nav>
 
-          {/* Mobile: página actual + hamburguesa */}
-          <div className="flex md:hidden items-center gap-2">
+          {/* Mobile/tablet: página actual + hamburguesa */}
+          <div className="flex lg:hidden items-center gap-2">
             <span className="text-sm font-medium text-surface-600 dark:text-surface-300">
               {(() => {
                 const found = LINKS.find((l) => isActive(l.href));
@@ -197,7 +197,7 @@ export function MerchantNav({ isConnected, unreadCount = 0, businessName }: Merc
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.18, ease: 'easeOut' }}
-            className="md:hidden overflow-hidden border-t border-surface-200/50 dark:border-surface-700/50 bg-white dark:bg-surface-900"
+            className="lg:hidden overflow-hidden border-t border-surface-200/50 dark:border-surface-700/50 bg-white dark:bg-surface-900"
           >
             <div className="px-4 py-3 space-y-1">
               {LINKS.map((l) => {
@@ -231,7 +231,7 @@ export function MerchantNav({ isConnected, unreadCount = 0, businessName }: Merc
                   {t('webnav.theme')}
                 </span>
                 <div className="flex items-center gap-2">
-                  <LanguageSwitcher />
+                  <LanguageSwitcherCompact />
                   <ThemeToggle />
                 </div>
               </div>
