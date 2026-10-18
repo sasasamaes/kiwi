@@ -40,7 +40,7 @@ import {
   KiwiLoader,
   ThemeToggle,
   useTranslations,
-  LanguageSwitcher,
+  LanguageSwitcherCompact,
   isEmojiImage,
   isHttpUrl,
 } from '@kiwi/ui';
@@ -369,7 +369,7 @@ export default function Profile() {
               {t('wdrvmisc.profile.title')}
             </h1>
             <div className="flex items-center gap-2">
-              <LanguageSwitcher />
+              <LanguageSwitcherCompact />
               <ThemeToggle />
             </div>
           </div>

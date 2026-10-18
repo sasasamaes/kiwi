@@ -19,7 +19,7 @@ import {
   KiwiMark,
   KiwiLogo,
   useTranslations,
-  LanguageSwitcher,
+  LanguageSwitcherCompact,
 } from '@kiwi/ui';
 
 export default function DriverLanding() {
@@ -50,7 +50,7 @@ export default function DriverLanding() {
             </a>
           </nav>
           <div className="flex items-center gap-3">
-            <LanguageSwitcher />
+            <LanguageSwitcherCompact />
             <Link
               href="/login"
               className="hidden text-sm font-medium text-surface-600 transition-colors hover:text-kiwi-600 sm:block dark:text-surface-300"

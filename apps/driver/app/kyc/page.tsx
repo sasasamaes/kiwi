@@ -14,7 +14,7 @@ import {
   api,
   events,
   useTranslations,
-  LanguageSwitcher,
+  LanguageSwitcherCompact,
 } from '@kiwi/ui';
 
 export default function DriverKYCPage() {
@@ -84,7 +84,7 @@ export default function DriverKYCPage() {
             <h1 className="font-display font-semibold text-surface-800">
               {t('wdrvauth.kyc.title')}
             </h1>
-            <LanguageSwitcher />
+            <LanguageSwitcherCompact />
           </div>
         </div>
       </motion.header>

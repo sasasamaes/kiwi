@@ -15,7 +15,7 @@ import {
   VehicleBadge,
   ThemeToggle,
   useTranslations,
-  LanguageSwitcher,
+  LanguageSwitcherCompact,
   useAuth,
   useSocket,
   useNotifications,
@@ -497,7 +497,7 @@ export default function Home() {
                 />
               </div>
               <ThemeToggle />
-              <LanguageSwitcher />
+              <LanguageSwitcherCompact />
               <div className="h-8 w-8 rounded-full bg-kiwi-gradient text-white flex items-center justify-center text-sm font-semibold ring-2 ring-white dark:ring-surface-800 shadow-sm overflow-hidden">
                 {isHttpUrl((user as any)?.driverProfile?.photoUrl) ? (
                   // NOTE: <img> intencional — foto dinámica de Cloudinary.

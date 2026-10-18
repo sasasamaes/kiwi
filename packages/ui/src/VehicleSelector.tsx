@@ -188,7 +188,7 @@ export function VehicleBadge({ type, size = 'md' }: VehicleBadgeProps) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-full bg-surface-100 font-medium text-surface-700',
+        'inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-surface-100 font-medium text-surface-700',
         sizes[size],
       )}
     >

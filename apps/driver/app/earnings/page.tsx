@@ -18,7 +18,7 @@ import {
   AlertTriangle,
   ClipboardList,
 } from 'lucide-react';
-import { api, ScrollToTop, LanguageSwitcher, useTranslations } from '@kiwi/ui';
+import { api, ScrollToTop, LanguageSwitcherCompact, useTranslations } from '@kiwi/ui';
 
 interface EarningsData {
   period: string;
@@ -127,7 +127,7 @@ export default function EarningsPage() {
               <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
                 {t('wdrvwork.earnings.title')}
               </h1>
-              <LanguageSwitcher />
+              <LanguageSwitcherCompact />
             </div>
           </div>
         </header>
@@ -164,7 +164,7 @@ export default function EarningsPage() {
               <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
                 {t('wdrvwork.earnings.title')}
               </h1>
-              <LanguageSwitcher />
+              <LanguageSwitcherCompact />
             </div>
           </div>
         </header>

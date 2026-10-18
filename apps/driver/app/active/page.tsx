@@ -42,7 +42,7 @@ import {
   AnimatedCounter,
   playNotificationSound,
   OrderChat,
-  LanguageSwitcher,
+  LanguageSwitcherCompact,
   useTranslations,
 } from '@kiwi/ui';
 
@@ -620,7 +620,7 @@ export default function ActiveOrders() {
             <h1 className="font-display font-semibold text-surface-800">
               {t('wdrvwork.active.title')}
             </h1>
-            <LanguageSwitcher />
+            <LanguageSwitcherCompact />
           </div>
         </header>
         <main className="flex-1 flex items-center justify-center p-4">
@@ -651,7 +651,7 @@ export default function ActiveOrders() {
             <h1 className="font-display font-semibold text-surface-800">
               {t('wdrvwork.active.title')}
             </h1>
-            <LanguageSwitcher />
+            <LanguageSwitcherCompact />
           </div>
         </header>
         <main className="flex-1 flex items-center justify-center p-4">
@@ -741,7 +741,7 @@ export default function ActiveOrders() {
             {t('wdrvwork.active.title')}
           </h1>
           <div className="flex items-center gap-2">
-            <LanguageSwitcher />
+            <LanguageSwitcherCompact />
             <button
               onClick={() => {
                 setRefreshing(true);

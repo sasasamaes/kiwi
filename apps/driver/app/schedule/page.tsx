@@ -25,7 +25,7 @@ import {
   AnimatedButton,
   StaggerContainer,
   StaggerItem,
-  LanguageSwitcher,
+  LanguageSwitcherCompact,
   useAuth,
   useTranslations,
   api,
@@ -245,7 +245,7 @@ export default function Schedule() {
             <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
               {t('wdrvwork.schedule.title')}
             </h1>
-            <LanguageSwitcher />
+            <LanguageSwitcherCompact />
           </div>
         </div>
       </motion.header>

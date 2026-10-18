@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { BottomNav } from '../components/BottomNav';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Clock, RefreshCw, Check, X, Smartphone, Home } from 'lucide-react';
-import { api, Skeleton, LanguageSwitcher, useTranslations } from '@kiwi/ui';
+import { api, Skeleton, LanguageSwitcherCompact, useTranslations } from '@kiwi/ui';
 
 interface Balance {
   totalEarnings: number;
@@ -255,7 +255,7 @@ export default function WithdrawPage() {
             <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
               {t('wdrvwork.withdraw.title')}
             </h1>
-            <LanguageSwitcher />
+            <LanguageSwitcherCompact />
           </div>
         </div>
       </motion.header>

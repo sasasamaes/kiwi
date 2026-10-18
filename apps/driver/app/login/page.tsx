@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { AuthForm, useAuth, useTranslations, LanguageSwitcher } from '@kiwi/ui';
+import { AuthForm, useAuth, useTranslations, LanguageSwitcherCompact } from '@kiwi/ui';
 
 export default function DriverLoginPage() {
   const { t } = useTranslations();
@@ -62,7 +62,7 @@ export default function DriverLoginPage() {
           <span>←</span>
           <span className="text-sm font-medium">{t('wdrvauth.login.back')}</span>
         </Link>
-        <LanguageSwitcher />
+        <LanguageSwitcherCompact />
       </motion.header>
 
       {/* Main Content */}

@@ -11,7 +11,7 @@ import {
   useInviteReferral,
   WaitlistNotice,
   useTranslations,
-  LanguageSwitcher,
+  LanguageSwitcherCompact,
 } from '@kiwi/ui';
 
 /** Banner del link de invitación (?email=&invitation=). Nulo = sin invitación. */
@@ -145,7 +145,7 @@ export default function DriverRegisterPage() {
           <span>←</span>
           <span className="text-sm font-medium">{t('wdrvauth.register.back')}</span>
         </Link>
-        <LanguageSwitcher />
+        <LanguageSwitcherCompact />
       </motion.header>
 
       {/* Main Content */}

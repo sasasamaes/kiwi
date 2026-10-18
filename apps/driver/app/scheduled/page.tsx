@@ -11,7 +11,7 @@ import {
   StaggerContainer,
   StaggerItem,
   Skeleton,
-  LanguageSwitcher,
+  LanguageSwitcherCompact,
   useAuth,
   useSocket,
   useTranslations,
@@ -153,7 +153,7 @@ export default function ScheduledOrdersPage() {
             <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
               <Calendar className="h-5 w-5 inline" /> {t('wdrvwork.scheduled.title')}
             </h1>
-            <LanguageSwitcher />
+            <LanguageSwitcherCompact />
           </div>
         </div>
       </motion.header>

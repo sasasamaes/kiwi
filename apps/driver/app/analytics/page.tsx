@@ -23,7 +23,7 @@ import {
   Skeleton,
   StaggerContainer,
   StaggerItem,
-  LanguageSwitcher,
+  LanguageSwitcherCompact,
   useAuth,
   useTranslations,
 } from '@kiwi/ui';
@@ -209,7 +209,7 @@ export default function DriverAnalyticsPage() {
             <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
               <BarChart3 className="h-5 w-5 inline" /> {t('wdrvwork.analytics.title')}
             </h1>
-            <LanguageSwitcher />
+            <LanguageSwitcherCompact />
           </div>
         </div>
       </motion.header>

@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { api, useTranslations, LanguageSwitcher } from '@kiwi/ui';
+import { api, useTranslations, LanguageSwitcherCompact } from '@kiwi/ui';
 
 export default function ForgotPasswordPage() {
   const { t } = useTranslations();
@@ -41,7 +41,7 @@ export default function ForgotPasswordPage() {
           <span>←</span>
           <span className="text-sm font-medium">{t('wdrvauth.forgot.back')}</span>
         </Link>
-        <LanguageSwitcher />
+        <LanguageSwitcherCompact />
       </motion.header>
 
       <main id="main-content" className="relative z-10 flex-1 flex items-center justify-center p-4">
