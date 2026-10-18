@@ -349,15 +349,58 @@ export default function EncomiendaPage() {
               </div>
               <div>
                 <label className={label} htmlFor="pickup">
-                  {t('wclimisc.enco.pickupAddress')}
+                  Dirección donde se recoge
                 </label>
                 <input
                   id="pickup"
                   className={field}
                   value={pickupAddress}
                   onChange={(e) => setPickupAddress(e.target.value)}
-                  placeholder={t('wclimisc.enco.pickupPh')}
+                  placeholder="Ej: Frente al Mercado de Nicoya"
                 />
+              </div>
+              <div>
+                <span className={label}>{t('wclimisc.enco.pinTitle')}</span>
+                <PinMapPicker
+                  lat={pickupGps?.lat ?? null}
+                  lng={pickupGps?.lng ?? null}
+                  tooltip={t('wclimisc.enco.pinTipPickup')}
+                  onPick={(la, ln) => setPickupGps({ lat: la, lng: ln })}
+                />
+                <div className="mt-1.5 flex items-center justify-between gap-2">
+                  <p className="text-xs text-surface-500 dark:text-surface-400">
+                    {pickupGps ? (
+                      <>
+                        {t('wclimisc.enco.pinSet', {
+                          lat: pickupGps.lat.toFixed(6),
+                          lng: pickupGps.lng.toFixed(6),
+                        })}
+                      </>
+                    ) : (
+                      t('wclimisc.enco.pinHintPickup')
+                    )}
+                  </p>
+                </div>
+                <div className="mt-1.5 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={usePickupGps}
+                    disabled={pickupLocating}
+                    className="flex-1 rounded-xl border border-surface-200 dark:border-surface-700 px-3 py-2 text-xs font-semibold disabled:opacity-60"
+                  >
+                    {pickupLocating
+                      ? t('wclimisc.enco.locating')
+                      : t('wclimisc.enco.useMyLocation')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPickupGps(null)}
+                    disabled={!pickupGps}
+                    className="rounded-xl border border-surface-200 dark:border-surface-700 px-3 py-2 text-xs font-semibold text-red-500 disabled:opacity-40"
+                  >
+                    {t('wclimisc.enco.removePin')}
+                  </button>
+                </div>
               </div>
             </div>
           </section>
@@ -374,15 +417,47 @@ export default function EncomiendaPage() {
               <DeliveryZoneSelect value={deliveryZone} onChange={setDeliveryZone} />
               <div>
                 <label className={label} htmlFor="delivery">
-                  {t('wclimisc.enco.deliveryAddress')}
+                  Dirección exacta de entrega
                 </label>
                 <input
                   id="delivery"
                   className={field}
                   value={deliveryAddress}
                   onChange={(e) => setDeliveryAddress(e.target.value)}
-                  placeholder={t('wclimisc.enco.deliveryPh')}
+                  placeholder="Casa, local, punto de referencia…"
                 />
+              </div>
+              <div>
+                <span className={label}>{t('wclimisc.enco.pinTitle')}</span>
+                <PinMapPicker
+                  lat={deliveryGps?.lat ?? null}
+                  lng={deliveryGps?.lng ?? null}
+                  tooltip={t('wclimisc.enco.pinTipDelivery')}
+                  onPick={(la, ln) => setDeliveryGps({ lat: la, lng: ln })}
+                />
+                <div className="mt-1.5 flex items-center justify-between gap-2">
+                  <p className="text-xs text-surface-500 dark:text-surface-400">
+                    {deliveryGps ? (
+                      <>
+                        {t('wclimisc.enco.pinSet', {
+                          lat: deliveryGps.lat.toFixed(6),
+                          lng: deliveryGps.lng.toFixed(6),
+                        })}
+                      </>
+                    ) : (
+                      t('wclimisc.enco.pinHintDelivery')
+                    )}
+                  </p>
+                  {deliveryGps && (
+                    <button
+                      type="button"
+                      onClick={() => setDeliveryGps(null)}
+                      className="shrink-0 rounded-lg px-2 py-1.5 text-xs font-semibold text-red-500"
+                    >
+                      {t('wclimisc.enco.removePin')}
+                    </button>
+                  )}
+                </div>
               </div>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
