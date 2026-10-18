@@ -1493,6 +1493,7 @@ export class OrdersService {
           merchant: { select: { businessName: true } },
           driver: { select: { fullName: true } },
           items: { select: { name: true, quantity: true, kioskName: true } },
+          payment: { select: { method: true, status: true } },
         },
       }),
       this.prisma.order.aggregate({

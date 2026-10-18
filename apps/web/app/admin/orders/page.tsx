@@ -30,6 +30,9 @@ interface AdminOrder {
   commissionRate?: number | string | null;
   driverPayout: number | string;
   totalAmount: number | string;
+  productsTotal?: number | string | null;
+  cashTendered?: number | string | null;
+  payment?: { method?: string | null; status?: string | null } | null;
   createdAt: string;
   assignedAt?: string | null;
   deliveredAt?: string | null;
@@ -503,6 +506,34 @@ export default function AdminOrders() {
                 )}
                 <div className="rounded-xl bg-surface-50 dark:bg-surface-700/50 p-3 space-y-1 text-xs">
                   <div className="flex justify-between">
+                    <span className="text-surface-500">{t('webadmin1.aorders.payMethod')}</span>
+                    <span className="font-semibold">
+                      {(() => {
+                        const m = selected.payment?.method;
+                        const label =
+                          m === 'cash'
+                            ? t('webadmin1.aorders.payCash')
+                            : m === 'onvopay_card'
+                              ? t('webadmin1.aorders.payCard')
+                              : m === 'onvopay_sinpe'
+                                ? t('webadmin1.aorders.paySinpe')
+                                : m === 'crypto'
+                                  ? t('webadmin1.aorders.payCrypto')
+                                  : m === 'credit'
+                                    ? t('webadmin1.aorders.payCredit')
+                                    : t('webadmin1.aorders.payUnknown');
+                        const done = selected.payment?.status === 'completed';
+                        return `${label} · ${done ? t('webadmin1.aorders.payDone') : t('webadmin1.aorders.payPending')}`;
+                      })()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-surface-500">{t('webadmin1.aorders.productsStore')}</span>
+                    <span className="font-mono">
+                      ₡{Number(selected.productsTotal ?? 0).toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
                     <span className="text-surface-500">{t('webadmin1.aorders.tripDriver')}</span>
                     <span className="font-mono">
                       ₡{Number(selected.driverPayout).toLocaleString()}
@@ -519,6 +550,19 @@ export default function AdminOrders() {
                       ₡{Number(selected.commission).toLocaleString()}
                     </span>
                   </div>
+                  {selected.payment?.method === 'cash' && selected.cashTendered != null && (
+                    <div className="flex justify-between">
+                      <span className="text-surface-500">
+                        {t('webadmin1.aorders.paidWith', {
+                          amount: Number(selected.cashTendered).toLocaleString(),
+                          change: Math.max(
+                            0,
+                            Number(selected.cashTendered) - Number(selected.totalAmount),
+                          ).toLocaleString(),
+                        })}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex justify-between border-t border-surface-200 pt-1 text-sm font-bold">
                     <span>{t('webadmin1.aorders.total')}</span>
                     <span className="font-mono">
