@@ -109,6 +109,54 @@ export default function AdminZonesPage() {
   }, [mode]);
   const pointMarkerRef = useRef<any>(null);
   const [mapReady, setMapReady] = useState(false);
+  // Arrastre del polígono completo: capas vivas durante el gesto.
+  const polyRef = useRef<any>(null);
+  const vertexMarkersRef = useRef<any[]>([]);
+  const wholeDragRef = useRef<{ startLat: number; startLng: number; verts: Ring } | null>(null);
+  // Al soltar el polígono el mapa tira un 'click': se suprime una vez para
+  // no plantar un vértice donde cayó.
+  const suppressClickRef = useRef(false);
+
+  const onWholeDragMove = (e: any) => {
+    const drag = wholeDragRef.current;
+    if (!drag || !polyRef.current) return;
+    const dLat = e.latlng.lat - drag.startLat;
+    const dLng = e.latlng.lng - drag.startLng;
+    const moved = drag.verts.map(([x, y]) => [y + dLat, x + dLng]);
+    polyRef.current.setLatLngs([moved]);
+    vertexMarkersRef.current.forEach((m: any, i: number) => m?.setLatLng?.(moved[i]));
+  };
+
+  const onWholeDragEnd = (e: any) => {
+    const drag = wholeDragRef.current;
+    const map = mapObj.current;
+    wholeDragRef.current = null;
+    if (!drag || !map) return;
+    map.off('mousemove', onWholeDragMove);
+    map.dragging?.enable?.();
+    const dLat = e.latlng.lat - drag.startLat;
+    const dLng = e.latlng.lng - drag.startLng;
+    if (Math.abs(dLat) < 1e-9 && Math.abs(dLng) < 1e-9) return;
+    // Suprimir el click que Leaflet dispara al soltar.
+    suppressClickRef.current = true;
+    setTimeout(() => {
+      suppressClickRef.current = false;
+    }, 300);
+    setVertices(drag.verts.map(([x, y]) => [x + dLng, y + dLat]));
+    // El punto de entrega viaja con el polígono.
+    setForm((f) => {
+      const la = Number(f.latitude);
+      const ln = Number(f.longitude);
+      if (f.latitude === '' || f.longitude === '' || !Number.isFinite(la) || !Number.isFinite(ln)) {
+        return f;
+      }
+      return {
+        ...f,
+        latitude: (la + dLat).toFixed(6),
+        longitude: (ln + dLng).toFixed(6),
+      };
+    });
+  };
 
   const mapRef = useRef<HTMLDivElement>(null);
   const mapObj = useRef<any>(null);
@@ -203,6 +251,7 @@ export default function AdminZonesPage() {
       );
       addStreetsAndSatellite(map, L);
       map.on('click', (e: any) => {
+        if (suppressClickRef.current) return;
         if (modeRef.current === 'point') {
           setForm((f) => ({
             ...f,
@@ -252,6 +301,7 @@ export default function AdminZonesPage() {
         iconAnchor: [10, 10],
       });
     // Vértices arrastrables: seleccionás un punto y lo movés para corregir.
+    vertexMarkersRef.current = [];
     ll.forEach((p: number[], i: number) => {
       const marker = L.marker(p, { icon: vertexIcon(i + 1), draggable: true }).addTo(layer);
       marker.bindTooltip(t('webadmin1.azones.vertexTip', { n: i + 1 }));
@@ -259,9 +309,38 @@ export default function AdminZonesPage() {
         const np = marker.getLatLng();
         setVertices((prev) => prev.map((v, idx) => (idx === i ? [np.lng, np.lat] : v)));
       });
+      vertexMarkersRef.current.push(marker);
     });
+    polyRef.current = null;
     if (ll.length >= 2) L.polyline(ll, { color: '#22c55e' }).addTo(layer);
-    if (ll.length >= 3) L.polygon(ll, { color: '#16a34a', fillOpacity: 0.25 }).addTo(layer);
+    if (ll.length >= 3) {
+      const poly = L.polygon(ll, { color: '#16a34a', fillOpacity: 0.25 }).addTo(layer);
+      // Arrastre del OBJETO completo: agarrás el relleno/borde y movés todo
+      // conservando la forma. El punto de entrega se mueve con él.
+      try {
+        (poly.getElement() as HTMLElement | null)?.style.setProperty('cursor', 'move');
+      } catch {
+        // SVG aún no pintado: el cursor igual funciona por defecto
+      }
+      poly.on('mousedown', (e: any) => {
+        if (wholeDragRef.current) return;
+        // Que no pelee con el arrastre de un vértice.
+        try {
+          e.originalEvent?.stopPropagation?.();
+        } catch {
+          // noop
+        }
+        wholeDragRef.current = {
+          startLat: e.latlng.lat,
+          startLng: e.latlng.lng,
+          verts: vertsRef.current.map((v) => [...v] as [number, number]),
+        };
+        map.dragging?.disable?.();
+        map.on('mousemove', onWholeDragMove);
+        map.once('mouseup', onWholeDragEnd);
+      });
+      polyRef.current = poly;
+    }
     layerRef.current = layer;
 
     // Punto de entrega (referencia) según lat/long, arrastrable para corregir.
