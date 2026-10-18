@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { ClipboardList, Home as HomeIcon, MapPin } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { api, useAuth, type Order } from '@kiwi/ui';
+import { api, useAuth, useTranslations, type Order } from '@kiwi/ui';
 
 /**
  * Navegación inferior única del app de cliente. Antes solo /orders tenía nav,
@@ -16,9 +16,9 @@ import { api, useAuth, type Order } from '@kiwi/ui';
  * (el más reciente que no esté entregado/cancelado).
  */
 const ITEMS = [
-  { href: '/', label: 'Inicio', icon: HomeIcon, exact: true },
-  { href: '/orders', label: 'Pedidos', icon: ClipboardList, exact: false },
-];
+  { href: '/', key: 'navHome', icon: HomeIcon, exact: true },
+  { href: '/orders', key: 'navOrders', icon: ClipboardList, exact: false },
+] as const;
 
 // Estados reales del backend (OrderStatus en schema.prisma): un pedido en
 // concurso, aceptado o sin driver sigue activo y se puede seguir.
@@ -36,6 +36,7 @@ const ACTIVE_STATUSES = new Set([
 export function BottomNav() {
   const pathname = usePathname();
   const { user } = useAuth();
+  const { t } = useTranslations();
   const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -71,17 +72,19 @@ export function BottomNav() {
     };
   }, [user, pathname]);
 
-  const items = activeOrderId
-    ? [
-        ...ITEMS,
-        {
-          href: `/tracking/${activeOrderId}`,
-          label: 'Seguir pedido',
-          icon: MapPin,
-          exact: false,
-        },
-      ]
-    : ITEMS;
+  const items = (
+    activeOrderId
+      ? [
+          ...ITEMS,
+          {
+            href: `/tracking/${activeOrderId}`,
+            key: 'navTrack',
+            icon: MapPin,
+            exact: false,
+          },
+        ]
+      : ITEMS
+  ).map((item) => ({ ...item, label: t(`wclihome.home.${item.key}`) }));
 
   return (
     <nav className="pb-safe fixed bottom-0 left-0 right-0 z-50 border-t border-surface-200/50 dark:border-surface-700/50 bg-white/80 dark:bg-surface-900/80 backdrop-blur-xl">

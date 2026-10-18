@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Star, Loader2, CheckCircle2, Bike, PackageCheck, Clock, ShieldCheck } from 'lucide-react';
-import { api, Skeleton, AnimatedButton, formatRating } from '@kiwi/ui';
+import { api, Skeleton, AnimatedButton, formatRating, useTranslations } from '@kiwi/ui';
 
 interface OrderInfo {
   id: string;
@@ -16,17 +16,23 @@ interface OrderInfo {
   driver?: { id: string; fullName: string; rating: number | string | null; vehicleType: string };
 }
 
-const RATING_LABELS: Record<number, { title: string; emoji: string }> = {
-  1: { title: 'Muy malo', emoji: '😠' },
-  2: { title: 'Malo', emoji: '🙁' },
-  3: { title: 'Normal', emoji: '😐' },
-  4: { title: 'Bueno', emoji: '🙂' },
-  5: { title: '¡Excelente!', emoji: '🤩' },
-};
+function getRatingLabels(
+  t: (key: string) => string,
+): Record<number, { title: string; emoji: string }> {
+  return {
+    1: { title: t('wcliord.rate.rating1'), emoji: '😠' },
+    2: { title: t('wcliord.rate.rating2'), emoji: '🙁' },
+    3: { title: t('wcliord.rate.rating3'), emoji: '😐' },
+    4: { title: t('wcliord.rate.rating4'), emoji: '🙂' },
+    5: { title: t('wcliord.rate.rating5'), emoji: '🤩' },
+  };
+}
 
 export default function RateOrderPage() {
   const params = useParams();
   const router = useRouter();
+  const { t } = useTranslations();
+  const RATING_LABELS = getRatingLabels(t);
   const orderId = params.id as string;
 
   const [order, setOrder] = useState<OrderInfo | null>(null);
@@ -74,13 +80,13 @@ export default function RateOrderPage() {
       setError(null);
     } catch (err) {
       console.error('Failed to fetch order:', err);
-      const msg = err instanceof Error ? err.message : 'No se pudo cargar el pedido';
+      const msg = err instanceof Error ? err.message : t('wcliord.rate.loadFailed');
       // Nunca mostrar el crudo del backend ("Unauthorized") al cliente.
-      setError(/unauthor|forbidden|401|403/i.test(msg) ? 'No se pudo cargar el pedido' : msg);
+      setError(/unauthor|forbidden|401|403/i.test(msg) ? t('wcliord.rate.loadFailed') : msg);
     } finally {
       setLoading(false);
     }
-  }, [orderId]);
+  }, [orderId, t]);
 
   useEffect(() => {
     fetchOrder();
@@ -113,7 +119,7 @@ export default function RateOrderPage() {
       setDone(true);
     } catch (err) {
       console.error('Failed to submit rating:', err);
-      setSubmitError(err instanceof Error ? err.message : 'No se pudo enviar la calificación');
+      setSubmitError(err instanceof Error ? err.message : t('wcliord.rate.submitFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -137,10 +143,10 @@ export default function RateOrderPage() {
     return (
       <div className="min-h-screen bg-surface-50 dark:bg-surface-900 flex flex-col items-center justify-center p-4 text-center">
         <p className="text-surface-600 dark:text-surface-400 mb-4">
-          {error || 'Pedido no encontrado'}
+          {error || t('wcliord.rate.notFound')}
         </p>
         <Link href="/orders" className="text-kiwi-700 dark:text-kiwi-400 font-medium underline">
-          Volver a mis pedidos
+          {t('wcliord.rate.backOrders')}
         </Link>
       </div>
     );
@@ -155,23 +161,21 @@ export default function RateOrderPage() {
           <CheckCircle2 className="h-16 w-16 text-kiwi-500 mb-4" />
         </motion.div>
         <h1 className="font-display text-2xl font-bold text-surface-800 dark:text-surface-100 mb-2">
-          ¡Gracias por calificar!
+          {t('wcliord.rate.doneTitle')}
         </h1>
-        <p className="text-surface-500 dark:text-surface-400 mb-6">
-          Tu opinión ayuda a mejorar el servicio.
-        </p>
+        <p className="text-surface-500 dark:text-surface-400 mb-6">{t('wcliord.rate.doneHint')}</p>
         <div className="flex gap-3">
           <Link
             href="/orders"
             className="rounded-xl px-5 py-3 font-medium bg-surface-200 dark:bg-surface-700 text-surface-800 dark:text-surface-100"
           >
-            Mis pedidos
+            {t('wcliord.rate.myOrders')}
           </Link>
           <Link
             href={`/tracking/${orderId}`}
             className="rounded-xl px-5 py-3 font-medium bg-kiwi-gradient text-white"
           >
-            Ver el pedido
+            {t('wcliord.rate.viewOrder')}
           </Link>
         </div>
       </div>
@@ -185,13 +189,13 @@ export default function RateOrderPage() {
       <div className="min-h-screen bg-surface-50 dark:bg-surface-900 flex flex-col items-center justify-center p-4 text-center">
         <p className="text-4xl mb-3">🚚</p>
         <p className="text-surface-600 dark:text-surface-400 mb-4">
-          Podrás calificar este pedido cuando sea entregado.
+          {t('wcliord.rate.waitDelivery')}
         </p>
         <Link
           href={`/tracking/${orderId}`}
           className="rounded-xl px-5 py-3 font-medium bg-kiwi-gradient text-white"
         >
-          Ver el seguimiento
+          {t('wcliord.rate.viewTracking')}
         </Link>
       </div>
     );
@@ -206,17 +210,17 @@ export default function RateOrderPage() {
           onClick={() => router.back()}
           className="flex min-h-[44px] items-center gap-2 text-surface-600 dark:text-surface-400 mb-6"
         >
-          ← Volver
+          {t('wcliord.rate.back')}
         </button>
 
         <div className="text-center mb-8">
           <p className="text-4xl mb-2">🎉</p>
           <h1 className="font-display text-2xl font-bold text-surface-800 dark:text-surface-100">
-            ¿Cómo estuvo tu entrega?
+            {t('wcliord.rate.title')}
           </h1>
           {order.merchant?.businessName && (
             <p className="text-surface-500 dark:text-surface-400 mt-1">
-              Pedido de {order.merchant.businessName}
+              {t('wcliord.rate.orderFrom', { name: order.merchant.businessName })}
             </p>
           )}
         </div>
@@ -233,7 +237,7 @@ export default function RateOrderPage() {
               </p>
               <p className="text-xs text-surface-500 dark:text-surface-400 flex items-center gap-1">
                 <Star className="h-3 w-3 text-yellow-500" />
-                {formatRating(order.driver.rating)} · calificación actual
+                {t('wcliord.rate.currentRating', { rating: formatRating(order.driver.rating) })}
               </p>
             </div>
           </div>
@@ -247,7 +251,7 @@ export default function RateOrderPage() {
                 key={value}
                 whileTap={{ scale: 0.85 }}
                 onClick={() => setStars(value)}
-                aria-label={`${value} estrellas`}
+                aria-label={t('wcliord.rate.starsAria', { count: value })}
                 className="focus:outline-none"
               >
                 <Star
@@ -274,12 +278,12 @@ export default function RateOrderPage() {
           >
             <div>
               <p className="flex items-center gap-2 text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
-                <Clock className="h-4 w-4" /> ¿Llegó a tiempo?
+                <Clock className="h-4 w-4" /> {t('wcliord.rate.onTimeQ')}
               </p>
               <div className="flex gap-2">
                 {[
-                  { value: true, label: 'Sí, puntual' },
-                  { value: false, label: 'Se demoró' },
+                  { value: true, label: t('wcliord.rate.onTimeYes') },
+                  { value: false, label: t('wcliord.rate.onTimeNo') },
                 ].map((opt) => (
                   <button
                     key={opt.label}
@@ -298,12 +302,12 @@ export default function RateOrderPage() {
 
             <div>
               <p className="flex items-center gap-2 text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
-                <PackageCheck className="h-4 w-4" /> ¿Trató bien el paquete?
+                <PackageCheck className="h-4 w-4" /> {t('wcliord.rate.carefulQ')}
               </p>
               <div className="flex gap-2">
                 {[
-                  { value: true, label: 'Sí, impecable' },
-                  { value: false, label: 'Con descuidos' },
+                  { value: true, label: t('wcliord.rate.carefulYes') },
+                  { value: false, label: t('wcliord.rate.carefulNo') },
                 ].map((opt) => (
                   <button
                     key={opt.label}
@@ -322,18 +326,18 @@ export default function RateOrderPage() {
 
             <div>
               <p className="flex items-center gap-2 text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
-                <ShieldCheck className="h-4 w-4" /> Comentario (opcional)
+                <ShieldCheck className="h-4 w-4" /> {t('wcliord.rate.commentLabel')}
               </p>
               <textarea
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
                 maxLength={500}
                 rows={3}
-                placeholder="Cuéntanos algo sobre la entrega…"
+                placeholder={t('wcliord.rate.commentPlaceholder')}
                 className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 p-3 text-sm text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
               />
               <p className="mt-1 text-right text-xs text-surface-500 dark:text-surface-400">
-                {comment.length}/500
+                {t('wcliord.rate.charCount', { count: comment.length })}
               </p>
             </div>
           </motion.div>
@@ -350,12 +354,12 @@ export default function RateOrderPage() {
           >
             {submitting ? (
               <>
-                <Loader2 className="h-5 w-5 animate-spin" /> Enviando…
+                <Loader2 className="h-5 w-5 animate-spin" /> {t('wcliord.rate.sending')}
               </>
             ) : stars === 0 ? (
-              'Elige una calificación'
+              t('wcliord.rate.chooseRating')
             ) : (
-              'Enviar calificación'
+              t('wcliord.rate.submit')
             )}
           </AnimatedButton>
           {submitError && <p className="mt-2 text-center text-sm text-red-500">{submitError}</p>}

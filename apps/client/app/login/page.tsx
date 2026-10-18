@@ -4,10 +4,11 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useAuth, KiwiLogo } from '@kiwi/ui';
+import { useAuth, KiwiLogo, useTranslations } from '@kiwi/ui';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { t } = useTranslations();
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -27,7 +28,7 @@ export default function LoginPage() {
       if (next) window.sessionStorage.removeItem('kiwi_redirect_after_login');
       router.push(next && next.startsWith('/') ? next : '/');
     } catch (err: any) {
-      setError(err?.message || 'No se pudo entrar. Revisá tus datos.');
+      setError(err?.message || t('wclimisc.auth.loginFailed'));
     } finally {
       setLoading(false);
     }
@@ -40,15 +41,15 @@ export default function LoginPage() {
           href="/"
           className="inline-flex items-center gap-2 text-sm text-surface-500 dark:text-surface-400 mb-6"
         >
-          <span>←</span> Volver al inicio
+          <span>←</span> {t('wclimisc.auth.backHome')}
         </Link>
         <div className="flex justify-center mb-6">
           <KiwiLogo size={40} />
         </div>
-        <h1 className="text-xl font-display font-bold text-center mb-1">Entrar</h1>
-        <p className="text-sm text-center text-surface-500 mb-6">
-          Pedí más rápido y recibí ofertas de tu ciudad
-        </p>
+        <h1 className="text-xl font-display font-bold text-center mb-1">
+          {t('wclimisc.auth.loginTitle')}
+        </h1>
+        <p className="text-sm text-center text-surface-500 mb-6">{t('wclimisc.auth.loginSub')}</p>
         <form
           onSubmit={submit}
           className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-6 space-y-4"
@@ -58,7 +59,7 @@ export default function LoginPage() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="tu@correo.com"
+            placeholder={t('wclimisc.auth.emailPh')}
             className="w-full rounded-xl bg-surface-100 dark:bg-surface-800 px-4 py-3 text-sm outline-none"
           />
           <input
@@ -67,7 +68,7 @@ export default function LoginPage() {
             minLength={6}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="Contraseña"
+            placeholder={t('wclimisc.auth.passwordPh')}
             className="w-full rounded-xl bg-surface-100 dark:bg-surface-800 px-4 py-3 text-sm outline-none"
           />
           {error && <p className="text-sm text-red-600">{error}</p>}
@@ -75,13 +76,13 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full rounded-xl bg-kiwi-600 text-white font-semibold py-3 disabled:opacity-60"
           >
-            {loading ? 'Entrando…' : 'Entrar'}
+            {loading ? t('wclimisc.auth.loggingIn') : t('wclimisc.auth.loginTitle')}
           </button>
         </form>
         <p className="text-sm text-center mt-4">
-          ¿No tenés cuenta?{' '}
+          {t('wclimisc.auth.noAccount')}{' '}
           <Link href="/register" className="font-semibold text-kiwi-700">
-            Crear cuenta
+            {t('wclimisc.auth.createAccount')}
           </Link>
         </p>
       </div>

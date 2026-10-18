@@ -11,6 +11,10 @@ import { shop2Es as webshop2 } from './web/shop2';
 import { admin1Es as webadmin1 } from './web/admin1';
 import { admin2Es as webadmin2 } from './web/admin2';
 import { pubEs as webpub } from './web/pub';
+import { cliHomeEs as wclihome } from './web/client-home';
+import { cliMenuEs as wclimenu } from './web/client-menu';
+import { cliOrderEs as wcliord } from './web/client-order';
+import { cliMiscEs as wclimisc } from './web/client-misc';
 
 export default {
   // General
@@ -922,4 +926,8 @@ export default {
   webadmin1,
   webadmin2,
   webpub,
+  wclihome,
+  wclimenu,
+  wcliord,
+  wclimisc,
 };

@@ -3,6 +3,7 @@
 
 import { useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { useTranslations } from '@kiwi/ui';
 
 /**
  * Ruta legacy: redirige a la página canónica de seguimiento (/tracking/[id]),
@@ -11,6 +12,7 @@ import { useParams, useRouter } from 'next/navigation';
 export default function LegacyOrderTrackingRedirect() {
   const params = useParams();
   const router = useRouter();
+  const { t } = useTranslations();
   const orderId = params.id as string;
 
   useEffect(() => {
@@ -19,7 +21,7 @@ export default function LegacyOrderTrackingRedirect() {
 
   return (
     <main className="min-h-[100dvh] bg-bg-light dark:bg-surface-950 flex items-center justify-center">
-      <p className="text-surface-500 animate-pulse">Abriendo seguimiento…</p>
+      <p className="text-surface-500 animate-pulse">{t('wcliord.tracking.opening')}</p>
     </main>
   );
 }

@@ -10,6 +10,7 @@ import {
   TrackingMap,
   Skeleton,
   useSocket,
+  useTranslations,
   api,
   Order,
   isEmojiImage,
@@ -29,52 +30,65 @@ type OrderStatus =
   | 'cancelled'
   | 'no_driver';
 
-const statusConfig: Record<OrderStatus, { label: string; description: string; progress: number }> =
-  {
-    pending: { label: 'Pendiente', description: 'Esperando repartidor', progress: 10 },
-    assigned: { label: 'Asignado', description: 'Repartidor asignado', progress: 20 },
+function getStatusConfig(
+  t: (key: string) => string,
+): Record<OrderStatus, { label: string; description: string; progress: number }> {
+  return {
+    pending: {
+      label: t('wcliord.tracking.statusPending'),
+      description: t('wcliord.tracking.statusPendingDesc'),
+      progress: 10,
+    },
+    assigned: {
+      label: t('wcliord.tracking.statusAssigned'),
+      description: t('wcliord.tracking.statusAssignedDesc'),
+      progress: 20,
+    },
     pending_acceptance: {
-      label: 'Esperando al repartidor',
-      description: 'Confirmando repartidor',
+      label: t('wcliord.tracking.statusPendingAccept'),
+      description: t('wcliord.tracking.statusPendingAcceptDesc'),
       progress: 15,
     },
     in_transit_to_pickup: {
-      label: 'En camino a recoger',
-      description: 'El repartidor va al comercio',
+      label: t('wcliord.tracking.statusToPickup'),
+      description: t('wcliord.tracking.statusToPickupDesc'),
       progress: 40,
     },
     picked_up: {
-      label: 'Recogido',
-      description: 'El repartidor recogio tu pedido',
+      label: t('wcliord.tracking.statusPickedUp'),
+      description: t('wcliord.tracking.statusPickedUpDesc'),
       progress: 60,
     },
     in_transit_to_delivery: {
-      label: 'En camino',
-      description: 'Tu pedido va en camino',
+      label: t('wcliord.tracking.statusToDelivery'),
+      description: t('wcliord.tracking.statusToDeliveryDesc'),
       progress: 80,
     },
     delivered: {
-      label: 'Entregado',
-      description: 'Recibiste tu pedido!',
+      label: t('wcliord.tracking.statusDelivered'),
+      description: t('wcliord.tracking.statusDeliveredDesc'),
       progress: 100,
     },
     cancelled: {
-      label: 'Cancelado',
-      description: 'El pedido fue cancelado',
+      label: t('wcliord.tracking.statusCancelled'),
+      description: t('wcliord.tracking.statusCancelledDesc'),
       progress: 0,
     },
     no_driver: {
-      label: 'Sin repartidores',
-      description: 'No hay repartidores disponibles en este momento.',
+      label: t('wcliord.tracking.statusNoDriver'),
+      description: t('wcliord.tracking.statusNoDriverDesc'),
       progress: 10,
     },
   };
+}
 
-const fallbackConfig = {
-  label: 'Actualizando',
-  description: 'Sincronizando estado…',
-  progress: 0,
-};
+function getFallbackConfig(t: (key: string) => string) {
+  return {
+    label: t('wcliord.tracking.statusUpdating'),
+    description: t('wcliord.tracking.statusUpdatingDesc'),
+    progress: 0,
+  };
+}
 
 function StatusIcon({ status }: { status: string }) {
   const iconClass = 'h-5 w-5';
@@ -103,11 +117,12 @@ function StatusIcon({ status }: { status: string }) {
 }
 
 export default function TrackingPage() {
+  const { t } = useTranslations();
   return (
     <Suspense
       fallback={
         <div className="min-h-[100dvh] bg-bg-light dark:bg-surface-950 flex items-center justify-center">
-          <p className="text-surface-500 animate-pulse">Cargando seguimiento…</p>
+          <p className="text-surface-500 animate-pulse">{t('wcliord.tracking.loading')}</p>
         </div>
       }
     >
@@ -118,6 +133,7 @@ export default function TrackingPage() {
 
 function TrackingContent() {
   const params = useParams();
+  const { t } = useTranslations();
   const searchParams = useSearchParams();
   // Vuelta desde OnvoPay (returnUrl/cancelUrl del intent).
   const paidFlag = searchParams.get('paid') === '1';
@@ -163,15 +179,15 @@ function TrackingContent() {
   });
 
   const STATUS_LABELS: Record<string, string> = {
-    pending: 'Viaje recibido',
-    assigned: 'Repartidor asignado',
-    pending_acceptance: 'Esperando al repartidor',
-    in_transit_to_pickup: 'En camino a recoger',
-    picked_up: 'Pedido recogido',
-    in_transit_to_delivery: 'En camino a entregar',
-    delivered: 'Entregado',
-    cancelled: 'Cancelado',
-    no_driver: 'Sin repartidores',
+    pending: t('wcliord.tracking.histPending'),
+    assigned: t('wcliord.tracking.histAssigned'),
+    pending_acceptance: t('wcliord.tracking.histPendingAccept'),
+    in_transit_to_pickup: t('wcliord.tracking.histToPickup'),
+    picked_up: t('wcliord.tracking.histPickedUp'),
+    in_transit_to_delivery: t('wcliord.tracking.histToDelivery'),
+    delivered: t('wcliord.tracking.histDelivered'),
+    cancelled: t('wcliord.tracking.histCancelled'),
+    no_driver: t('wcliord.tracking.histNoDriver'),
   };
 
   const etaForStatus = (status?: string | null): number | null => {
@@ -210,7 +226,7 @@ function TrackingContent() {
   const fetchOrder = useCallback(
     async (silent = false) => {
       if (!orderId) {
-        setError('Pedido no encontrado');
+        setError(t('wcliord.tracking.notFound'));
         setLoading(false);
         return;
       }
@@ -257,12 +273,12 @@ function TrackingContent() {
         refreshEta(data).catch(() => undefined);
         setError(null);
       } catch {
-        if (!silent) setError('No se pudo cargar el pedido');
+        if (!silent) setError(t('wcliord.tracking.loadFailed'));
       } finally {
         if (!silent) setLoading(false);
       }
     },
-    [orderId, refreshEta],
+    [orderId, refreshEta, t],
   );
 
   const driverId = (order as any)?.driverId ?? (order as any)?.driver?.id;
@@ -347,15 +363,15 @@ function TrackingContent() {
     return () => clearInterval(interval);
   }, [eta]);
 
-  const config = statusConfig[currentStatus] ?? fallbackConfig;
+  const config = getStatusConfig(t)[currentStatus] ?? getFallbackConfig(t);
 
   const driver = (order as any)?.driver ?? null;
   const vehicleLabels: Record<string, string> = {
-    motorcycle: 'Moto',
-    motorized_bike: 'Bici Moto',
-    bicycle: 'Bicicleta',
-    car: 'Carro',
-    truck: 'Camión',
+    motorcycle: t('wcliord.tracking.vehicleMotorcycle'),
+    motorized_bike: t('wcliord.tracking.vehicleMotorizedBike'),
+    bicycle: t('wcliord.tracking.vehicleBicycle'),
+    car: t('wcliord.tracking.vehicleCar'),
+    truck: t('wcliord.tracking.vehicleTruck'),
   };
 
   // Solo coords REALES: null/undefined/'' (Number(null) === 0, ¡finito!)
@@ -395,10 +411,10 @@ function TrackingContent() {
         <div className="text-center">
           <X className="h-16 w-16 text-surface-300 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-surface-800 dark:text-surface-100 mb-2">
-            {error || 'Pedido no encontrado'}
+            {error || t('wcliord.tracking.notFound')}
           </h2>
           <Link href="/">
-            <AnimatedButton>Volver al inicio</AnimatedButton>
+            <AnimatedButton>{t('wcliord.tracking.backHome')}</AnimatedButton>
           </Link>
         </div>
       </div>
@@ -419,10 +435,10 @@ function TrackingContent() {
               className="flex items-center gap-2 text-surface-600 dark:text-surface-400"
             >
               <ArrowLeft className="h-4 w-4" />
-              <span className="text-sm font-medium">Volver</span>
+              <span className="text-sm font-medium">{t('wcliord.tracking.back')}</span>
             </Link>
             <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-              Rastrear Pedido
+              {t('wcliord.tracking.title')}
             </h1>
             <div className="w-16" />
           </div>
@@ -442,9 +458,9 @@ function TrackingContent() {
           >
             {paidFlag
               ? paidState === 'paid'
-                ? 'Pago confirmado, ¡gracias! Tu pedido sigue su curso.'
-                : 'Estamos confirmando tu pago con el banco… esta página se actualiza sola.'
-              : 'El pago se canceló. Tu pedido sigue activo: coordinamos el cobro por WhatsApp.'}
+                ? t('wcliord.tracking.paidOk')
+                : t('wcliord.tracking.paidPending')
+              : t('wcliord.tracking.paidCancelled')}
           </div>
         )}
         <motion.div
@@ -463,7 +479,7 @@ function TrackingContent() {
         </motion.div>
         {!delivery && (
           <p className="mb-6 -mt-3 text-center text-xs text-surface-500 dark:text-surface-400">
-            Este pedido no trae GPS de entrega: la dirección escrita vale.
+            {t('wcliord.tracking.noGpsNote')}
           </p>
         )}
 
@@ -479,11 +495,11 @@ function TrackingContent() {
           <span
             className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-amber-500'}`}
           />
-          {isConnected ? 'En vivo' : 'Se actualiza solo'}
+          {isConnected ? t('wcliord.tracking.live') : t('wcliord.tracking.autoRefresh')}
         </motion.div>
         {!driverLocation && (order as any)?.driverId && (
           <p className="mb-4 -mt-1 text-center text-xs text-surface-500 dark:text-surface-400">
-            Conectando con la ubicación del repartidor… si tarda, puede tener el GPS apagado.
+            {t('wcliord.tracking.connectingDriver')}
           </p>
         )}
 
@@ -522,14 +538,14 @@ function TrackingContent() {
             >
               <Clock className="h-4 w-4 text-surface-500 dark:text-surface-400" />
               <span className="text-sm text-surface-500 dark:text-surface-400">
-                Tiempo estimado:
+                {t('wcliord.tracking.etaLabel')}
               </span>
               <span className="text-lg font-bold text-kiwi-700 dark:text-kiwi-400 font-mono">
-                {eta} min
+                {t('wcliord.tracking.etaValue', { n: eta })}
               </span>
               {trafficLevel && (
                 <span className="ml-1 rounded-full bg-surface-100 dark:bg-surface-700 px-2 py-0.5 text-xs font-medium text-surface-500 dark:text-surface-400">
-                  Tráfico: {trafficLevel}
+                  {t('wcliord.tracking.trafficLabel', { level: trafficLevel })}
                 </span>
               )}
             </motion.div>
@@ -538,7 +554,7 @@ function TrackingContent() {
 
         {currentStatus === 'no_driver' && (
           <div className="mb-6 rounded-2xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">
-            No hay repartidores disponibles en este momento.
+            {t('wcliord.tracking.noDriverNote')}
           </div>
         )}
 
@@ -550,17 +566,17 @@ function TrackingContent() {
             transition={{ delay: 0.28 }}
           >
             <h3 className="font-semibold text-surface-800 dark:text-surface-100 mb-3">
-              Evidencia del pedido
+              {t('wcliord.tracking.evidenceTitle')}
             </h3>
             <div className="space-y-3">
               {(order as any).pickupProofPhotoUrl && (
                 <div>
                   <p className="mb-1 text-xs text-surface-500 dark:text-surface-400">
-                    Así lo entregó el comercio
+                    {t('wcliord.tracking.evidencePickup')}
                   </p>
                   <img
                     src={(order as any).pickupProofPhotoUrl}
-                    alt="Foto del comercio al entregar"
+                    alt={t('wcliord.tracking.evidencePickupAlt')}
                     className="rounded-xl w-full object-cover"
                   />
                 </div>
@@ -568,11 +584,11 @@ function TrackingContent() {
               {(order as any).deliveryProofPhotoUrl && (
                 <div>
                   <p className="mb-1 text-xs text-surface-500 dark:text-surface-400">
-                    Así se entregó a destino
+                    {t('wcliord.tracking.evidenceDelivery')}
                   </p>
                   <img
                     src={(order as any).deliveryProofPhotoUrl}
-                    alt="Foto de la entrega al cliente"
+                    alt={t('wcliord.tracking.evidenceDeliveryAlt')}
                     className="rounded-xl w-full object-cover"
                   />
                 </div>
@@ -589,14 +605,14 @@ function TrackingContent() {
             transition={{ delay: 0.25 }}
           >
             <h3 className="font-semibold text-surface-800 dark:text-surface-100 mb-3">
-              Tu repartidor
+              {t('wcliord.tracking.driverTitle')}
             </h3>
             <div className="flex items-center gap-3">
               {isHttpUrl(driver.photoUrl || '') ? (
                 // NOTE: <img> intencional — foto dinámica externa, next/image no aporta aquí
                 <img
                   src={driver.photoUrl}
-                  alt={driver.fullName ?? 'Repartidor'}
+                  alt={driver.fullName ?? t('wcliord.tracking.driverFallback')}
                   className="h-14 w-14 rounded-full object-cover bg-surface-100 dark:bg-surface-700"
                 />
               ) : isEmojiImage(driver.photoUrl || '') ? (
@@ -610,7 +626,7 @@ function TrackingContent() {
               )}
               <div className="min-w-0 flex-1">
                 <p className="font-semibold text-surface-800 dark:text-surface-100 truncate">
-                  {driver.fullName ?? 'Repartidor'}
+                  {driver.fullName ?? t('wcliord.tracking.driverFallback')}
                 </p>
                 <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-surface-500 dark:text-surface-400">
                   {driver.rating != null && (
@@ -652,17 +668,21 @@ function TrackingContent() {
           transition={{ delay: 0.3 }}
         >
           <h3 className="font-semibold text-surface-800 dark:text-surface-100 mb-3">
-            Detalles del pedido
+            {t('wcliord.tracking.detailsTitle')}
           </h3>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-surface-500 dark:text-surface-400">Pedido</span>
+              <span className="text-surface-500 dark:text-surface-400">
+                {t('wcliord.tracking.orderLabel')}
+              </span>
               <span className="text-surface-700 dark:text-surface-200 font-medium font-mono">
                 #{(orderId || '').slice(0, 8) || '—'}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-surface-500 dark:text-surface-400">Estado</span>
+              <span className="text-surface-500 dark:text-surface-400">
+                {t('wcliord.tracking.statusLabel')}
+              </span>
               <span className="text-surface-700 dark:text-surface-200">{config.label}</span>
             </div>
             {Array.isArray((order as any).items) && (order as any).items.length > 0 && (
@@ -681,7 +701,9 @@ function TrackingContent() {
             )}
             {(order as any).totalAmount ? (
               <div className="flex justify-between">
-                <span className="text-surface-500 dark:text-surface-400">Total</span>
+                <span className="text-surface-500 dark:text-surface-400">
+                  {t('wcliord.tracking.totalLabel')}
+                </span>
                 <span className="text-surface-700 dark:text-surface-200 font-semibold font-mono">
                   {Number((order as any).totalAmount).toLocaleString()}
                 </span>
@@ -697,7 +719,9 @@ function TrackingContent() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
           >
-            <h3 className="font-semibold text-surface-800 dark:text-surface-100 mb-3">Historial</h3>
+            <h3 className="font-semibold text-surface-800 dark:text-surface-100 mb-3">
+              {t('wcliord.tracking.historyTitle')}
+            </h3>
             <div className="space-y-3">
               {statusHistory.map((item, index) => (
                 <div key={index} className="flex gap-3">
@@ -724,12 +748,12 @@ function TrackingContent() {
         <div className="flex gap-3">
           <Link href="/" className="flex-1">
             <AnimatedButton variant="secondary" className="w-full">
-              Volver al inicio
+              {t('wcliord.tracking.backHome')}
             </AnimatedButton>
           </Link>
           {currentStatus === 'delivered' && (
             <Link href={`/order/${orderId}/rate`} className="flex-1">
-              <AnimatedButton className="w-full">Calificar</AnimatedButton>
+              <AnimatedButton className="w-full">{t('wcliord.tracking.rate')}</AnimatedButton>
             </Link>
           )}
         </div>

@@ -67,6 +67,7 @@ import {
   preorderDeliveryLabel,
   cartAllowedWeekdays,
   weekdayOfDateKey,
+  useTranslations,
 } from '@kiwi/ui';
 import type { ScheduleValue } from '@kiwi/ui';
 import { findDeliveryZone } from '@kiwi/types';
@@ -123,6 +124,7 @@ interface DeliveryInfo {
 }
 
 export default function MenuPage() {
+  const { t } = useTranslations();
   const params = useParams();
   const router = useRouter();
   const merchantId = params.id as string;
@@ -375,11 +377,11 @@ export default function MenuPage() {
       events.menu.viewed(merchantId);
     } catch (err) {
       console.error('Failed to fetch menu:', err);
-      setError(err instanceof Error ? err.message : 'No se pudo cargar el menú');
+      setError(err instanceof Error ? err.message : t('wclimenu.menu.menuLoadFailedFallback'));
     } finally {
       setLoading(false);
     }
-  }, [merchantId]);
+  }, [merchantId, t]);
 
   useEffect(() => {
     fetchData();
@@ -569,8 +571,8 @@ export default function MenuPage() {
       const noneAvailable = missing.options.every((o) => o.isAvailable === false);
       setPickError(
         noneAvailable
-          ? `Agotado: no queda ninguna opción de "${missing.name}"`
-          : `Elegí una opción de "${missing.name}"`,
+          ? t('wclimenu.menu.pickMissingNone', { name: missing.name })
+          : t('wclimenu.menu.pickMissingChoose', { name: missing.name }),
       );
       return;
     }
@@ -593,7 +595,7 @@ export default function MenuPage() {
     presetScheduleForItem(picking);
     setPicking(null);
     setPicks({});
-  }, [picking, picks, addLine, presetScheduleForItem]);
+  }, [picking, picks, addLine, presetScheduleForItem, t]);
 
   const removeFromCart = useCallback((lineId: string) => {
     setCart((prev) => {
@@ -784,10 +786,10 @@ export default function MenuPage() {
   const nowPossible = merchant?.isOpen !== false && !cartHasTomorrow && !cartHasFutureOnly;
   const scheduleReason = !nowPossible
     ? merchant?.isOpen === false
-      ? `Hoy está cerrado: solo entrega programada${preorderLabel ? ` · ${preorderLabel}` : ''}`
+      ? t('wclimenu.menu.scheduleClosed', { extra: preorderLabel ? ` · ${preorderLabel}` : '' })
       : cartHasTomorrow
-        ? `Incluye productos de mañana: sale programado para mañana ${weekdayNameES(tomorrowKey)}`
-        : 'Incluye productos de otro día: elegí el día que toca'
+        ? t('wclimenu.menu.scheduleTomorrow', { weekday: weekdayNameES(tomorrowKey) })
+        : t('wclimenu.menu.scheduleOtherDay')
     : null;
 
   // Días en que se puede programar TODO el carrito (intersección de sus
@@ -817,25 +819,25 @@ export default function MenuPage() {
   // Motivo real del bloqueo (el botón lo muestra: "completá tus datos" cuando
   // ya están era la queja). null = se puede pedir.
   const checkoutBlockReason: string | null = !isPayMethodEnabled(paymentMethod)
-    ? 'Este comercio no tiene métodos de pago activos: no se puede pedir ahora'
+    ? t('wclimenu.menu.blockNoPay')
     : !deliveryInfo.name.trim() || !deliveryInfo.address.trim() || phoneDigits.length < 8
-      ? 'Completa nombre, dirección y teléfono para continuar'
+      ? t('wclimenu.menu.blockProfile')
       : !deliveryInfo.zone.trim()
-        ? 'Elegí tu barrio de entrega'
+        ? t('wclimenu.menu.blockZone')
         : merchant?.isOpen === false && schedule.mode !== 'scheduled'
-          ? 'Hoy está cerrado: solo entrega programada'
+          ? t('wclimenu.menu.blockClosed')
           : cartHasTomorrow && !(schedule.mode === 'scheduled' && schedule.date === tomorrowKey)
-            ? `Tu pedido incluye productos de mañana: programalo para mañana ${weekdayNameES(tomorrowKey)} y elegí la hora`
+            ? t('wclimenu.menu.blockTomorrow', { weekday: weekdayNameES(tomorrowKey) })
             : cartHasFutureOnly && schedule.mode !== 'scheduled'
-              ? 'Tu pedido incluye productos de otro día: programá la entrega'
+              ? t('wclimenu.menu.blockFuture')
               : scheduledAllowedDays !== null && scheduledAllowedDays.length === 0
-                ? 'Estos productos no comparten día de entrega: hacé un pedido por cada día'
+                ? t('wclimenu.menu.blockNoCommonDay')
                 : schedule.mode === 'scheduled' && !scheduledDayAllowed
-                  ? 'Ese día no hay entrega de estos productos: elegí un día marcado'
+                  ? t('wclimenu.menu.blockWrongDay')
                   : !isValidSchedule(schedule)
-                    ? 'Elegí el día de entrega'
+                    ? t('wclimenu.menu.blockPickDay')
                     : !cashCovers
-                      ? 'El monto en efectivo no cubre el total'
+                      ? t('wclimenu.menu.blockCashShort')
                       : null;
   const canCheckout = checkoutBlockReason === null;
   // Anti-duplicados (doble tap con wifi caído = N pedidos): el state
@@ -888,13 +890,11 @@ export default function MenuPage() {
         setOrderSuccess(pendingOrderId);
       }
     } catch (err) {
-      setCheckoutError(
-        err instanceof Error ? err.message : 'No se pudo reintentar el pago. Intentá de nuevo.',
-      );
+      setCheckoutError(err instanceof Error ? err.message : t('wclimenu.menu.retryPayFailed'));
     } finally {
       setCheckingOut(false);
     }
-  }, [pendingOrderId, paymentMethod, totalWithDelivery, phoneDigits, payWithAuthedEndpoint]);
+  }, [pendingOrderId, paymentMethod, totalWithDelivery, phoneDigits, payWithAuthedEndpoint, t]);
 
   // Checkout handler
   const handleCheckout = useCallback(async () => {
@@ -1023,11 +1023,7 @@ export default function MenuPage() {
         setOrderSuccess(order.id);
       }
     } catch (err) {
-      setCheckoutError(
-        err instanceof Error
-          ? err.message
-          : 'Error al crear el pedido. Tocá el botón una sola vez.',
-      );
+      setCheckoutError(err instanceof Error ? err.message : t('wclimenu.menu.createFailed'));
     } finally {
       checkingOutRef.current = false;
       setCheckingOut(false);
@@ -1046,6 +1042,7 @@ export default function MenuPage() {
     pendingOrderId,
     userRole,
     payWithAuthedEndpoint,
+    t,
   ]);
 
   // Payment success handler
@@ -1070,11 +1067,14 @@ export default function MenuPage() {
   );
 
   // Payment error handler
-  const handlePaymentError = useCallback((error: string) => {
-    setPaymentPending(false);
-    setPaymentIntent(null);
-    setCheckoutError(typeof error === 'string' ? error : 'Error en el pago.');
-  }, []);
+  const handlePaymentError = useCallback(
+    (error: string) => {
+      setPaymentPending(false);
+      setPaymentIntent(null);
+      setCheckoutError(typeof error === 'string' ? error : t('wclimenu.menu.payFailedGeneric'));
+    },
+    [t],
+  );
 
   // Order success screen
   if (orderSuccess) {
@@ -1091,33 +1091,39 @@ export default function MenuPage() {
             animate={{ scale: 1, rotate: 0 }}
             transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}
             role="img"
-            aria-label="Pedido confirmado"
+            aria-label={t('wclimenu.menu.orderConfirmedAria')}
           >
             <PartyPopper className="h-16 w-16 inline" aria-hidden />
           </motion.div>
           <h1 className="text-2xl font-display font-bold text-surface-800 dark:text-surface-100 mb-2">
-            ¡Pedido Creado!
+            {t('wclimenu.menu.orderCreatedTitle')}
           </h1>
           <p className="text-surface-500 dark:text-surface-400 mb-6">
-            Tu pedido está buscando repartidor
+            {t('wclimenu.menu.orderCreatedSub')}
           </p>
 
           <div className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-6 mb-6">
             <div className="space-y-3">
               <div className="flex justify-between">
-                <span className="text-surface-500 dark:text-surface-400">Número</span>
+                <span className="text-surface-500 dark:text-surface-400">
+                  {t('wclimenu.menu.receiptNumber')}
+                </span>
                 <span className="font-semibold text-surface-800 dark:text-surface-200">
                   #{orderSuccess.slice(0, 8)}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-surface-500 dark:text-surface-400">Entregar en</span>
+                <span className="text-surface-500 dark:text-surface-400">
+                  {t('wclimenu.menu.receiptAddress')}
+                </span>
                 <span className="font-medium text-surface-800 dark:text-surface-200 text-right max-w-[60%]">
                   {deliveryInfo.address}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-surface-500 dark:text-surface-400">Total</span>
+                <span className="text-surface-500 dark:text-surface-400">
+                  {t('wclimenu.menu.receiptTotal')}
+                </span>
                 <span className="font-bold text-kiwi-700 dark:text-kiwi-400">
                   ₡{placedTotal.toLocaleString()}
                 </span>
@@ -1128,12 +1134,12 @@ export default function MenuPage() {
           <div className="space-y-3">
             <Link href={`/tracking/${orderSuccess}`}>
               <AnimatedButton variant="gradient" className="w-full">
-                <MapPin className="h-4 w-4 inline" /> Rastrear Pedido
+                <MapPin className="h-4 w-4 inline" /> {t('wclimenu.menu.trackOrder')}
               </AnimatedButton>
             </Link>
             <Link href="/">
               <AnimatedButton variant="secondary" className="w-full">
-                <Home className="h-4 w-4 inline" /> Volver al inicio
+                <Home className="h-4 w-4 inline" /> {t('wclimenu.menu.backHomeBtn')}
               </AnimatedButton>
             </Link>
             <AnimatedButton
@@ -1141,7 +1147,7 @@ export default function MenuPage() {
               className="w-full"
               onClick={() => setOrderSuccess(null)}
             >
-              ➕ Hacer otro pedido
+              {t('wclimenu.menu.anotherOrder')}
             </AnimatedButton>
           </div>
         </motion.div>
@@ -1213,15 +1219,15 @@ export default function MenuPage() {
             😕
           </motion.div>
           <h2 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100 mb-2">
-            No pudimos cargar el menú
+            {t('wclimenu.menu.menuLoadFailedTitle')}
           </h2>
           <p className="text-surface-500 dark:text-surface-400 mb-6">{error}</p>
           <div className="flex gap-3 justify-center">
             <AnimatedButton variant="secondary" onClick={() => router.push('/')}>
-              ← Volver
+              {t('wclimenu.menu.backShort')}
             </AnimatedButton>
             <AnimatedButton variant="gradient" onClick={fetchData}>
-              <RefreshCw className="h-4 w-4 inline" /> Reintentar
+              <RefreshCw className="h-4 w-4 inline" /> {t('wclimenu.menu.retry')}
             </AnimatedButton>
           </div>
         </motion.div>
@@ -1237,9 +1243,11 @@ export default function MenuPage() {
           <span className="text-5xl mb-4 block">
             <X className="h-12 w-12 inline" />
           </span>
-          <p className="text-surface-500 dark:text-surface-400">Comercio no encontrado</p>
+          <p className="text-surface-500 dark:text-surface-400">
+            {t('wclimenu.menu.merchantNotFound')}
+          </p>
           <Link href="/" className="mt-4 inline-block text-kiwi-700 hover:text-kiwi-800">
-            ← Volver al inicio
+            {t('wclimenu.menu.backHome')}
           </Link>
         </div>
       </main>
@@ -1262,11 +1270,11 @@ export default function MenuPage() {
               className="flex min-h-[44px] items-center gap-2 text-surface-600 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200"
             >
               <span>←</span>
-              <span className="text-sm font-medium">Volver</span>
+              <span className="text-sm font-medium">{t('wclimenu.menu.back')}</span>
             </Link>
             <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100 flex items-center gap-2">
               <KiwiMark size={22} />
-              Menú
+              {t('wclimenu.menu.title')}
             </h1>
             <ThemeToggle />
           </div>
@@ -1315,11 +1323,15 @@ export default function MenuPage() {
                         : 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-400'
                   }`}
                 >
-                  {merchant.isOpen ? 'Abierto' : preorderLabel ? `📅 ${preorderLabel}` : 'Cerrado'}
+                  {merchant.isOpen
+                    ? t('wclimenu.menu.open')
+                    : preorderLabel
+                      ? `📅 ${preorderLabel}`
+                      : t('wclimenu.menu.closed')}
                 </span>
                 {merchant.isHomeCook && (
                   <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300">
-                    🧡 Cocina casera
+                    {t('wclimenu.menu.homeCook')}
                   </span>
                 )}
               </div>
@@ -1335,10 +1347,10 @@ export default function MenuPage() {
             }`}
           >
             {followBusy
-              ? '…'
+              ? t('wclimenu.menu.followLoading')
               : following === true
-                ? '✓ Siguiendo · te aviso ventas y stock'
-                : '🔔 Seguir · avisame ventas y stock'}
+                ? t('wclimenu.menu.followFollowing')
+                : t('wclimenu.menu.followFollow')}
           </TapButton>
           {(() => {
             const socials = (merchant as any)?.socials as Record<string, string> | null;
@@ -1364,7 +1376,10 @@ export default function MenuPage() {
                     href={l.href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    aria-label={`${merchant.businessName} en ${l.label}`}
+                    aria-label={t('wclimenu.menu.socialAria', {
+                      name: merchant.businessName,
+                      network: l.label,
+                    })}
                     className="inline-flex min-h-[40px] items-center gap-1.5 rounded-full bg-surface-100 dark:bg-surface-700 px-3 py-2 text-xs font-semibold text-surface-600 dark:text-surface-300"
                   >
                     {l.Icon ? (
@@ -1413,7 +1428,7 @@ export default function MenuPage() {
               }`}
               onClick={() => setSelectedCategory(cat)}
             >
-              {cat}
+              {cat === 'Todos' ? t('wclimenu.menu.all') : cat}
             </TapButton>
           ))}
         </div>
@@ -1430,12 +1445,12 @@ export default function MenuPage() {
           <div
             className={`rounded-2xl bg-kiwi-700 dark:bg-kiwi-800 p-5 shadow-soft dark:shadow-dark text-white ${hoverCard}`}
           >
-            <p className="font-display text-lg font-bold">Crea tu Bowl</p>
-            <p className="text-sm text-white/80 mt-1">
-              Elegí tamaño, base, 3 frutas, 3 toppings y extras
-            </p>
+            <p className="font-display text-lg font-bold">{t('wclimenu.menu.builderTitle')}</p>
+            <p className="text-sm text-white/80 mt-1">{t('wclimenu.menu.builderDesc')}</p>
             <div className="flex items-center justify-between mt-3">
-              <p className="text-lg font-bold">Desde ₡{builderItem.price.toLocaleString()}</p>
+              <p className="text-lg font-bold">
+                {t('wclimenu.menu.builderFrom')} ₡{builderItem.price.toLocaleString()}
+              </p>
               <TapButton
                 haptic
                 className="inline-flex min-h-[44px] items-center rounded-full bg-white px-5 py-2 text-sm font-semibold text-kiwi-800"
@@ -1444,7 +1459,7 @@ export default function MenuPage() {
                   !(merchant?.isOpen || (builderItem && isPreorderItem(builderItem as any)))
                 }
               >
-                Armar el mío +
+                {t('wclimenu.menu.builderCta')}
               </TapButton>
             </div>
           </div>
@@ -1488,7 +1503,11 @@ export default function MenuPage() {
                         : 'bg-surface-100 dark:bg-surface-700 text-surface-500 dark:text-surface-400'
                     }`}
                   >
-                    {count > 0 ? (count === 1 ? '1 producto' : `${count} productos`) : 'Pronto'}
+                    {count > 0
+                      ? count === 1
+                        ? t('wclimenu.menu.kioskOne')
+                        : t('wclimenu.menu.kioskMany', { count })
+                      : t('wclimenu.menu.kioskSoon')}
                   </span>
                 </button>
               );
@@ -1527,14 +1546,14 @@ export default function MenuPage() {
                   </p>
                   <p className="text-xs text-surface-500 dark:text-surface-400">
                     {selectedKioskItems.length === 1
-                      ? '1 producto hoy'
-                      : `${selectedKioskItems.length} productos hoy`}
+                      ? t('wclimenu.menu.kioskOneToday')
+                      : t('wclimenu.menu.kioskManyToday', { count: selectedKioskItems.length })}
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setSelectedKioskId(null)}
-                  aria-label="Cerrar ficha del puesto"
+                  aria-label={t('wclimenu.menu.kioskCloseAria')}
                   className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-surface-500 transition-colors hover:bg-surface-100 hover:text-surface-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-600/40 active:scale-95 dark:text-surface-400 dark:hover:bg-surface-700 dark:hover:text-surface-200"
                 >
                   <X className="h-4 w-4" />
@@ -1543,10 +1562,11 @@ export default function MenuPage() {
 
               <div className="mt-3">
                 <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-surface-500 dark:text-surface-400">
-                  <BookOpenText className="h-3.5 w-3.5" aria-hidden /> Su historia
+                  <BookOpenText className="h-3.5 w-3.5" aria-hidden />{' '}
+                  {t('wclimenu.menu.kioskStory')}
                 </p>
                 <p className="mt-1 text-sm leading-relaxed text-surface-600 dark:text-surface-300">
-                  {selectedKiosk.description || 'Este puesto todavía no contó su historia.'}
+                  {selectedKiosk.description || t('wclimenu.menu.kioskNoStory')}
                 </p>
               </div>
 
@@ -1559,14 +1579,14 @@ export default function MenuPage() {
                     {embed ? (
                       <iframe
                         src={embed}
-                        title={`Video de ${selectedKiosk.name}`}
+                        title={t('wclimenu.menu.kioskVideoTitle', { name: selectedKiosk.name })}
                         className="aspect-video w-full"
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                         allowFullScreen
                       />
                     ) : (
                       <video src={videoUrl} controls playsInline className="aspect-video w-full">
-                        Tu navegador no puede reproducir este video.
+                        {t('wclimenu.menu.kioskVideoFallback')}
                       </video>
                     )}
                   </div>
@@ -1576,7 +1596,7 @@ export default function MenuPage() {
               {selectedKioskItems.length > 0 && (
                 <div className="mt-3">
                   <p className="text-xs font-semibold uppercase tracking-wide text-surface-500 dark:text-surface-400">
-                    Lo que ofrece hoy
+                    {t('wclimenu.menu.kioskTodayOffer')}
                   </p>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {selectedKioskItems.map((it) => (
@@ -1598,7 +1618,7 @@ export default function MenuPage() {
                     onClick={() => scrollToKiosk(selectedKiosk.id)}
                     className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-kiwi-700 dark:text-kiwi-300 transition-colors [@media(hover:hover)]:hover:text-kiwi-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-600/40 rounded"
                   >
-                    Ver productos abajo <Play className="h-3 w-3" aria-hidden />
+                    {t('wclimenu.menu.kioskSeeBelow')} <Play className="h-3 w-3" aria-hidden />
                   </button>
                 </div>
               )}
@@ -1620,14 +1640,14 @@ export default function MenuPage() {
               <Utensils className="h-10 w-10 text-kiwi-600/70 dark:text-kiwi-400/70" />
             </div>
             <p className="font-display font-semibold text-surface-800 dark:text-surface-100">
-              Este restaurante aún no tiene productos aquí
+              {t('wclimenu.menu.emptyMenuTitle')}
             </p>
             <p className="text-sm text-surface-500 dark:text-surface-400 mt-1 mb-6">
-              Estamos esperando que cargue su menú. Probá con otro restaurante mientras tanto.
+              {t('wclimenu.menu.emptyMenuHint')}
             </p>
             <Link href="/">
               <AnimatedButton variant="gradient" className="w-full">
-                ← Ver restaurantes
+                {t('wclimenu.menu.viewRestaurants')}
               </AnimatedButton>
             </Link>
           </div>
@@ -1666,7 +1686,9 @@ export default function MenuPage() {
                           </p>
                         ) : (
                           <p className="text-xs text-surface-500 dark:text-surface-400">
-                            {count === 1 ? '1 producto' : `${count} productos`}
+                            {count === 1
+                              ? t('wclimenu.menu.kioskOne')
+                              : t('wclimenu.menu.kioskMany', { count })}
                           </p>
                         )}
                       </div>
@@ -1681,7 +1703,7 @@ export default function MenuPage() {
                     className="rounded-2xl border border-dashed border-surface-300 dark:border-surface-600 px-4 py-3 text-center"
                   >
                     <p className="text-xs text-surface-500 dark:text-surface-400">
-                      {row.kiosk.name} está preparando sus productos — volvé pronto.
+                      {t('wclimenu.menu.kioskPreparing', { name: row.kiosk.name })}
                     </p>
                   </div>
                 );
@@ -1719,7 +1741,8 @@ export default function MenuPage() {
                               </h3>
                               {item.isPopular && (
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gold-100 dark:bg-gold-900/50 text-xs font-medium text-gold-700 dark:text-gold-300">
-                                  <Flame className="h-3 w-3" aria-hidden /> Popular
+                                  <Flame className="h-3 w-3" aria-hidden />{' '}
+                                  {t('wclimenu.menu.badgePopular')}
                                 </span>
                               )}
                               {(item as any).kiosk?.name && (
@@ -1730,7 +1753,7 @@ export default function MenuPage() {
                               )}
                               {(item.variantGroups ?? []).some((g) => g.options.length > 0) && (
                                 <span className="px-2 py-0.5 rounded-full bg-kiwi-100 dark:bg-kiwi-900/50 text-xs font-medium text-kiwi-700 dark:text-kiwi-400">
-                                  Personalizable
+                                  {t('wclimenu.menu.badgeCustomizable')}
                                 </span>
                               )}
                             </div>
@@ -1741,13 +1764,13 @@ export default function MenuPage() {
                             )}
                             {(item as any).stockQty != null && (item as any).stockQty <= 10 && (
                               <p className="mt-1 text-xs font-semibold text-orange-600 dark:text-orange-300">
-                                ¡Solo quedan {(item as any).stockQty} hoy! · Hasta agotar stock
+                                {t('wclimenu.menu.stockFew', { count: (item as any).stockQty })}
                               </p>
                             )}
                             {((item as any).stockQty == null || (item as any).stockQty > 10) &&
                               (item as any).dailyQty != null && (
                                 <p className="mt-1 text-xs text-surface-500 dark:text-surface-400">
-                                  Hasta agotar stock del día
+                                  {t('wclimenu.menu.stockDaily')}
                                 </p>
                               )}
                           </div>
@@ -1813,11 +1836,9 @@ export default function MenuPage() {
         >
           <div className="rounded-2xl bg-orange-600 dark:bg-orange-700 p-4 shadow-soft text-white">
             <p className="font-display text-base font-bold">
-              📅 Mañana {weekdayNameES(tomorrowKey)} venden esto
+              {t('wclimenu.menu.tomorrowTitle', { weekday: weekdayNameES(tomorrowKey) })}
             </p>
-            <p className="text-xs text-white/85 mt-0.5">
-              Apartá el tuyo hoy en preventa — hasta agotar stock.
-            </p>
+            <p className="text-xs text-white/85 mt-0.5">{t('wclimenu.menu.tomorrowHint')}</p>
           </div>
           <div className="space-y-4 mt-4">
             {tomorrowItems.map((item, itemIndex) => {
@@ -1850,7 +1871,7 @@ export default function MenuPage() {
                             {item.name}
                           </h3>
                           <span className="px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-900/50 text-xs font-medium text-orange-700 dark:text-orange-300">
-                            📅 Mañana
+                            {t('wclimenu.menu.badgeTomorrow')}
                           </span>
                           {(item as any).kiosk?.name && (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-kiwi-50 dark:bg-kiwi-900/40 text-xs font-medium text-kiwi-700 dark:text-kiwi-300">
@@ -1866,9 +1887,9 @@ export default function MenuPage() {
                         <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">
                           {typeof stockLeft === 'number'
                             ? stockLeft > 0
-                              ? `Hasta agotar stock · quedan ${stockLeft}`
-                              : 'Agotado'
-                            : 'Hasta agotar stock'}
+                              ? t('wclimenu.menu.tomorrowStockLeft', { count: stockLeft })
+                              : t('wclimenu.menu.soldOut')
+                            : t('wclimenu.menu.untilStock')}
                         </p>
                         <div className="flex items-center justify-between mt-2">
                           <p className="text-lg font-bold text-kiwi-700 dark:text-kiwi-400">
@@ -1900,7 +1921,11 @@ export default function MenuPage() {
                               className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-600 text-white"
                               onClick={() => addToCart(item)}
                               disabled={stockCapped}
-                              title={stockCapped ? 'Sin stock' : 'Apartar para mañana'}
+                              title={
+                                stockCapped
+                                  ? t('wclimenu.menu.noStock')
+                                  : t('wclimenu.menu.reserveTomorrow')
+                              }
                             >
                               +
                             </TapButton>
@@ -1939,14 +1964,14 @@ export default function MenuPage() {
                 </h3>
                 <button
                   onClick={() => setPicking(null)}
-                  aria-label="Cerrar opciones del producto"
+                  aria-label={t('wclimenu.menu.pickerCloseAria')}
                   className={`text-surface-500 hover:text-surface-700 dark:text-surface-400 dark:hover:text-surface-200 px-2 ${hoverGhost}`}
                 >
                   ✕
                 </button>
               </div>
               <p className="text-sm text-surface-500 mb-4">
-                Base ₡{Number(picking.price).toLocaleString()}
+                {t('wclimenu.menu.pickerBase', { price: Number(picking.price).toLocaleString() })}
               </p>
               {(picking.variantGroups ?? []).map((g) => (
                 <div key={g.id} className="mb-4">
@@ -1956,8 +1981,11 @@ export default function MenuPage() {
                     {g.multiple && (
                       <span className="ml-1 text-xs font-normal text-surface-500 dark:text-surface-400">
                         {typeof g.maxSelections === 'number'
-                          ? `(${(picks[g.id] ?? []).length} de ${g.maxSelections})`
-                          : '(varias)'}
+                          ? t('wclimenu.menu.pickerCountOfMax', {
+                              count: (picks[g.id] ?? []).length,
+                              max: g.maxSelections,
+                            })
+                          : t('wclimenu.menu.pickerMultiple')}
                       </span>
                     )}
                   </p>
@@ -2004,22 +2032,23 @@ export default function MenuPage() {
                 onClick={confirmPick}
                 className="w-full rounded-2xl bg-kiwi-gradient py-3.5 font-semibold text-white shadow-kiwi-lg"
               >
-                Agregar • ₡
-                {unitPriceFor(
-                  Number(picking.price),
-                  (picking.variantGroups ?? []).flatMap((g) =>
-                    (picks[g.id] ?? []).map((oid) => {
-                      const o = g.options.find((x) => x.id === oid);
-                      return {
-                        groupId: g.id,
-                        groupName: g.name,
-                        optionId: oid,
-                        optionName: o?.name ?? '',
-                        priceDelta: Number(o?.priceDelta ?? 0),
-                      };
-                    }),
-                  ),
-                ).toLocaleString()}
+                {t('wclimenu.menu.pickerAdd', {
+                  total: unitPriceFor(
+                    Number(picking.price),
+                    (picking.variantGroups ?? []).flatMap((g) =>
+                      (picks[g.id] ?? []).map((oid) => {
+                        const o = g.options.find((x) => x.id === oid);
+                        return {
+                          groupId: g.id,
+                          groupName: g.name,
+                          optionId: oid,
+                          optionName: o?.name ?? '',
+                          priceDelta: Number(o?.priceDelta ?? 0),
+                        };
+                      }),
+                    ),
+                  ).toLocaleString(),
+                })}
               </button>
             </motion.div>
           </motion.div>
@@ -2062,10 +2091,10 @@ export default function MenuPage() {
                       {cartCount}
                     </motion.span>
                   </div>
-                  <span className="font-semibold">Ver carrito</span>
+                  <span className="font-semibold">{t('wclimenu.menu.cartView')}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-white/80">Total:</span>
+                  <span className="text-white/80">{t('wclimenu.menu.cartTotalLabel')}</span>
                   <span className="text-xl font-bold">₡{cartTotal.toLocaleString()}</span>
                 </div>
               </div>
@@ -2102,7 +2131,7 @@ export default function MenuPage() {
                 <div className="w-12 h-1 bg-surface-300 dark:bg-surface-600 rounded-full mx-auto mb-3" />
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100">
-                    <ShoppingCart className="h-4 w-4 inline" /> Tu Pedido
+                    <ShoppingCart className="h-4 w-4 inline" /> {t('wclimenu.menu.orderTitle')}
                   </h2>
                   <TapButton
                     onClick={() => setShowCheckout(false)}
@@ -2117,7 +2146,7 @@ export default function MenuPage() {
                 {/* Order Summary */}
                 <div>
                   <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-3">
-                    <Package className="h-4 w-4 inline" /> Resumen
+                    <Package className="h-4 w-4 inline" /> {t('wclimenu.menu.summary')}
                   </h3>
                   <div className="space-y-2">
                     {cart.map((item) => (
@@ -2156,7 +2185,7 @@ export default function MenuPage() {
                           <button
                             onClick={() => removeFromCart(item.lineId)}
                             className="text-surface-500 hover:text-red-500 text-sm px-1"
-                            aria-label={`Quitar ${item.name} del pedido`}
+                            aria-label={t('wclimenu.menu.removeAria', { name: item.name })}
                           >
                             ✕
                           </button>
@@ -2171,7 +2200,7 @@ export default function MenuPage() {
                 {(merchant.isHomeCook || tomorrowItems.length > 0 || acceptsPreorder) && (
                   <div>
                     <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-3">
-                      📅 ¿Para cuándo?
+                      {t('wclimenu.menu.scheduleTitle')}
                     </h3>
                     <SchedulePicker
                       value={schedule}
@@ -2188,7 +2217,7 @@ export default function MenuPage() {
                 {/* Delivery Address */}
                 <div>
                   <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-3">
-                    <MapPin className="h-4 w-4 inline" /> Dirección de entrega
+                    <MapPin className="h-4 w-4 inline" /> {t('wclimenu.menu.deliveryTitle')}
                   </h3>
                   {places.length > 0 && (
                     <div className="flex gap-2 overflow-x-auto pb-2 mb-1 scrollbar-hide">
@@ -2205,7 +2234,7 @@ export default function MenuPage() {
                         >
                           <span className="block text-xs font-bold text-surface-800 dark:text-surface-100">
                             📍 {p.label}
-                            {p.isDefault ? ' · Principal' : ''}
+                            {p.isDefault ? ` ${t('wclimenu.menu.placeMain')}` : ''}
                           </span>
                           <span className="block max-w-[160px] truncate text-[11px] text-surface-500">
                             {p.address}
@@ -2221,7 +2250,7 @@ export default function MenuPage() {
                       setSelectedPlaceId(null);
                       if (coordinates) setDeliveryCoords(coordinates);
                     }}
-                    placeholder="Buscar dirección en Nicoya..."
+                    placeholder={t('wclimenu.menu.searchAddressPh')}
                     nicoyaOnly={true}
                   />
                   <div className="mt-3">
@@ -2240,7 +2269,7 @@ export default function MenuPage() {
                     {(zoneAuto || (resolvedZone && resolvedZone.id === deliveryInfo.zone)) &&
                       deliveryInfo.zone && (
                         <p className="text-xs text-kiwi-700 dark:text-kiwi-300 mt-1.5">
-                          📍 Barrio por tu ubicación (podés cambiarlo).
+                          {t('wclimenu.menu.barrioAuto')}
                         </p>
                       )}
                     {resolvedZone &&
@@ -2248,9 +2277,10 @@ export default function MenuPage() {
                       deliveryInfo.zone &&
                       resolvedZone.id !== deliveryInfo.zone && (
                         <p className="mt-1.5 rounded-xl bg-amber-50 dark:bg-amber-900/30 px-3 py-2 text-xs font-medium text-amber-700 dark:text-amber-300">
-                          ⚠️ Tu GPS está en {resolvedZone.label} (₡
-                          {resolvedZone.price.toLocaleString()}): se cobrará esa zona aunque elijas
-                          otra.
+                          {t('wclimenu.menu.gpsMismatch', {
+                            label: resolvedZone.label,
+                            price: resolvedZone.price.toLocaleString(),
+                          })}
                         </p>
                       )}
                   </div>
@@ -2260,25 +2290,25 @@ export default function MenuPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-3">
-                      <User className="h-4 w-4 inline" /> Nombre
+                      <User className="h-4 w-4 inline" /> {t('wclimenu.menu.nameLabel')}
                     </h3>
                     <input
                       type="text"
                       value={deliveryInfo.name}
                       onChange={(e) => setDeliveryInfo({ ...deliveryInfo, name: e.target.value })}
-                      placeholder="Tu nombre"
+                      placeholder={t('wclimenu.menu.namePh')}
                       className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20 transition-all"
                     />
                   </div>
                   <div>
                     <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-3">
-                      <Smartphone className="h-4 w-4 inline" /> Teléfono
+                      <Smartphone className="h-4 w-4 inline" /> {t('wclimenu.menu.phoneLabel')}
                     </h3>
                     <input
                       type="tel"
                       value={deliveryInfo.phone}
                       onChange={(e) => setDeliveryInfo({ ...deliveryInfo, phone: e.target.value })}
-                      placeholder="8888-1234"
+                      placeholder={t('wclimenu.menu.phonePh')}
                       className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20 transition-all"
                     />
                   </div>
@@ -2287,14 +2317,14 @@ export default function MenuPage() {
                 {/* Special Instructions */}
                 <div>
                   <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-3">
-                    <FileText className="h-4 w-4 inline" /> Instrucciones (opcional)
+                    <FileText className="h-4 w-4 inline" /> {t('wclimenu.menu.notesLabel')}
                   </h3>
                   <textarea
                     value={deliveryInfo.instructions}
                     onChange={(e) =>
                       setDeliveryInfo({ ...deliveryInfo, instructions: e.target.value })
                     }
-                    placeholder="Ej: Tocar el timbre, dejar en recepción, sin cebolla..."
+                    placeholder={t('wclimenu.menu.notesPh')}
                     rows={2}
                     className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20 transition-all resize-none"
                   />
@@ -2303,12 +2333,11 @@ export default function MenuPage() {
                 {/* Payment Method */}
                 <div>
                   <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-3">
-                    <CreditCard className="h-4 w-4 inline" /> Método de pago
+                    <CreditCard className="h-4 w-4 inline" /> {t('wclimenu.menu.payTitle')}
                   </h3>
                   {!cardAllowed && (
                     <p className="mb-3 rounded-xl bg-surface-100 dark:bg-surface-700/60 px-3 py-2 text-xs text-surface-500 dark:text-surface-400">
-                      Este comercio cobra en efectivo. La tarjeta se habilita cuando complete su
-                      verificación.
+                      {t('wclimenu.menu.cashOnlyNotice')}
                     </p>
                   )}
                   <div className="grid grid-cols-3 gap-3">
@@ -2316,28 +2345,28 @@ export default function MenuPage() {
                       {
                         id: 'sinpe' as const,
                         icon: Smartphone,
-                        label: 'SINPE',
-                        desc: 'Aprobás en tu banco',
+                        label: t('wclimenu.menu.paySinpe'),
+                        desc: t('wclimenu.menu.paySinpeDesc'),
                       },
                       {
                         id: 'card' as const,
                         icon: CreditCard,
-                        label: 'Tarjeta',
-                        desc: 'Tarjeta, G Pay o  Pay',
+                        label: t('wclimenu.menu.payCard'),
+                        desc: t('wclimenu.menu.payCardDesc'),
                       },
                       {
                         id: 'cash' as const,
                         icon: DollarSign,
-                        label: 'Efectivo',
-                        desc: 'Al repartidor',
+                        label: t('wclimenu.menu.payCash'),
+                        desc: t('wclimenu.menu.payCashDesc'),
                       },
                     ].map((method) => {
                       const enabled = isPayMethodEnabled(method.id);
                       const platformOn = !!(payAvailability as Record<string, boolean>)[method.id];
                       const offReason = !platformOn
-                        ? 'No disponible'
+                        ? t('wclimenu.menu.payUnavailable')
                         : !enabled
-                          ? 'No activado'
+                          ? t('wclimenu.menu.payInactive')
                           : null;
                       const selected = paymentMethod === method.id;
                       const MethodIcon = method.icon as any;
@@ -2347,9 +2376,21 @@ export default function MenuPage() {
                           type="button"
                           disabled={!enabled}
                           aria-disabled={!enabled}
-                          title={enabled ? method.label : `${method.label}: ${offReason}`}
+                          title={
+                            enabled
+                              ? method.label
+                              : t('wclimenu.menu.payMethodTitle', {
+                                  label: method.label,
+                                  reason: offReason ?? '',
+                                })
+                          }
                           aria-label={
-                            enabled ? method.label : `${method.label} inactivo: ${offReason}`
+                            enabled
+                              ? method.label
+                              : t('wclimenu.menu.payMethodAria', {
+                                  label: method.label,
+                                  reason: offReason ?? '',
+                                })
                           }
                           className={`relative flex min-w-0 flex-col items-center gap-1.5 p-3 rounded-2xl transition-all ${
                             selected
@@ -2481,11 +2522,11 @@ export default function MenuPage() {
                         onChange={(e) =>
                           setDeliveryInfo({ ...deliveryInfo, phone: e.target.value })
                         }
-                        placeholder="Tu número (te contactamos acá)"
+                        placeholder={t('wclimenu.menu.sinpePhonePh')}
                         className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20 transition-all"
                       />
                       <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">
-                        Te llevamos al pago seguro: elegí SINPE y aprobá en la app de tu banco.
+                        {t('wclimenu.menu.sinpeHint')}
                       </p>
                     </motion.div>
                   )}
@@ -2498,12 +2539,11 @@ export default function MenuPage() {
                       className="mt-3 rounded-xl bg-gold-50 dark:bg-gold-900/30 p-3"
                     >
                       <p className="text-sm text-gold-700 dark:text-gold-400">
-                        <DollarSign className="h-4 w-4 inline" /> Paga en efectivo al repartidor
-                        cuando te entreguen tu pedido
+                        <DollarSign className="h-4 w-4 inline" /> {t('wclimenu.menu.cashHint')}
                       </p>
                       <label className="mt-2 block">
                         <span className="mb-1 block text-xs font-medium text-gold-700 dark:text-gold-400">
-                          ¿Con cuánto pagás? (para llevarte el vuelto listo)
+                          {t('wclimenu.menu.cashLabel')}
                         </span>
                         <div className="relative">
                           <span className="absolute left-4 top-1/2 -translate-y-1/2 text-surface-500">
@@ -2514,7 +2554,9 @@ export default function MenuPage() {
                             min={0}
                             value={cashTendered}
                             onChange={(e) => setCashTendered(e.target.value)}
-                            placeholder={`Ej: ${totalWithDelivery.toLocaleString()}`}
+                            placeholder={t('wclimenu.menu.cashExamplePh', {
+                              total: totalWithDelivery.toLocaleString(),
+                            })}
                             className="w-full rounded-xl border border-gold-200 dark:border-gold-800 bg-white dark:bg-surface-900 pl-8 pr-4 py-2.5 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20"
                           />
                         </div>
@@ -2523,12 +2565,16 @@ export default function MenuPage() {
                         Number(cashTendered) >= totalWithDelivery &&
                         Number(cashTendered) > totalWithDelivery && (
                           <p className="mt-1.5 text-xs font-semibold text-kiwi-700 dark:text-kiwi-300">
-                            Vuelto: ₡{(Number(cashTendered) - totalWithDelivery).toLocaleString()}
+                            {t('wclimenu.menu.changeDue', {
+                              amount: (Number(cashTendered) - totalWithDelivery).toLocaleString(),
+                            })}
                           </p>
                         )}
                       {cashTendered !== '' && Number(cashTendered) < totalWithDelivery && (
                         <p className="mt-1.5 text-xs font-semibold text-red-500">
-                          El monto no cubre el total de ₡{totalWithDelivery.toLocaleString()}
+                          {t('wclimenu.menu.cashShort', {
+                            total: totalWithDelivery.toLocaleString(),
+                          })}
                         </p>
                       )}
                     </motion.div>
@@ -2542,8 +2588,7 @@ export default function MenuPage() {
                       className="mt-3 rounded-xl bg-blue-50 dark:bg-blue-900/30 p-3"
                     >
                       <p className="text-sm text-blue-700 dark:text-blue-400">
-                        <CreditCard className="h-4 w-4 inline" /> Pago seguro: tarjeta, Google Pay o
-                        Apple Pay (en iPhone/Mac con Wallet).
+                        <CreditCard className="h-4 w-4 inline" /> {t('wclimenu.menu.cardHint')}
                       </p>
                     </motion.div>
                   )}
@@ -2553,7 +2598,9 @@ export default function MenuPage() {
                 <div className="rounded-xl bg-surface-50 dark:bg-surface-900 p-4">
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span className="text-surface-500 dark:text-surface-400">Subtotal</span>
+                      <span className="text-surface-500 dark:text-surface-400">
+                        {t('wclimenu.menu.subtotal')}
+                      </span>
                       <span className="text-surface-800 dark:text-surface-200">
                         ₡{cartTotal.toLocaleString()}
                       </span>
@@ -2561,7 +2608,7 @@ export default function MenuPage() {
                     {serviceFee > 0 && (
                       <div className="flex justify-between text-sm">
                         <span className="text-surface-500 dark:text-surface-400">
-                          Servicio Kiwi ({Math.round(servicePct * 100)}%)
+                          {t('wclimenu.menu.serviceFee', { pct: Math.round(servicePct * 100) })}
                         </span>
                         <span className="text-surface-800 dark:text-surface-200">
                           ₡{serviceFee.toLocaleString()}
@@ -2569,7 +2616,9 @@ export default function MenuPage() {
                       </div>
                     )}
                     <div className="flex justify-between text-sm">
-                      <span className="text-surface-500 dark:text-surface-400">Envío</span>
+                      <span className="text-surface-500 dark:text-surface-400">
+                        {t('wclimenu.menu.shipping')}
+                      </span>
                       <span
                         className={
                           deliveryFee === 0
@@ -2579,7 +2628,7 @@ export default function MenuPage() {
                       >
                         {deliveryFee === 0 ? (
                           <span className="inline-flex items-center gap-1">
-                            Gratis <PartyPopper className="h-4 w-4 inline" />
+                            {t('wclimenu.menu.free')} <PartyPopper className="h-4 w-4 inline" />
                           </span>
                         ) : (
                           `₡${deliveryFee.toLocaleString()}`
@@ -2589,7 +2638,7 @@ export default function MenuPage() {
                     <div className="border-t border-surface-200 dark:border-surface-700 pt-2 mt-2">
                       <div className="flex justify-between">
                         <span className="font-semibold text-surface-800 dark:text-surface-200">
-                          Total
+                          {t('wclimenu.menu.total')}
                         </span>
                         <span className="text-xl font-bold text-kiwi-700 dark:text-kiwi-400">
                           ₡{totalWithDelivery.toLocaleString()}
@@ -2626,10 +2675,10 @@ export default function MenuPage() {
                       >
                         <Clock className="h-5 w-5" />
                       </motion.span>
-                      Creando pedido...
+                      {t('wclimenu.menu.creatingOrder')}
                     </span>
                   ) : (
-                    `🚀 Pedir • ₡${totalWithDelivery.toLocaleString()}`
+                    t('wclimenu.menu.orderCta', { total: totalWithDelivery.toLocaleString() })
                   )}
                 </AnimatedButton>
 
@@ -2708,8 +2757,8 @@ export default function MenuPage() {
           initial={{ y: 100 }}
           animate={{ y: 0 }}
         >
-          <p className="font-semibold">🚫 Este negocio está cerrado ahora</p>
-          <p className="text-sm text-white/80">Intenta más tarde</p>
+          <p className="font-semibold">{t('wclimenu.menu.closedBannerTitle')}</p>
+          <p className="text-sm text-white/80">{t('wclimenu.menu.closedBannerSub')}</p>
         </motion.div>
       )}
     </main>

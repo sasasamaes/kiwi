@@ -4,7 +4,15 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useAuth, KiwiLogo, api, ZonePicker, useInviteReferral, WaitlistNotice } from '@kiwi/ui';
+import {
+  useAuth,
+  KiwiLogo,
+  api,
+  ZonePicker,
+  useInviteReferral,
+  WaitlistNotice,
+  useTranslations,
+} from '@kiwi/ui';
 import { findNearestZone } from '@kiwi/types';
 
 export default function RegisterPage() {
@@ -17,6 +25,7 @@ export default function RegisterPage() {
 
 function ClientRegisterForm() {
   const router = useRouter();
+  const { t } = useTranslations();
   const { register } = useAuth();
   // Link del correo del admin (?email=&invitation=) + referido (?referral=).
   const {
@@ -59,7 +68,7 @@ function ClientRegisterForm() {
     setLoading(true);
     try {
       if (!acceptedTerms) {
-        setError('Tenés que aceptar los Términos y la Política de Privacidad.');
+        setError(t('wclimisc.auth.termsRequired'));
         setLoading(false);
         return;
       }
@@ -97,7 +106,7 @@ function ClientRegisterForm() {
       if (next) window.sessionStorage.removeItem('kiwi_redirect_after_login');
       router.push(next && next.startsWith('/') ? next : '/');
     } catch (err: any) {
-      setError(err?.message || 'No se pudo crear la cuenta.');
+      setError(err?.message || t('wclimisc.auth.registerFailed'));
     } finally {
       setLoading(false);
     }
@@ -156,20 +165,22 @@ function ClientRegisterForm() {
           href="/"
           className="inline-flex items-center gap-2 text-sm text-surface-500 dark:text-surface-400 mb-6"
         >
-          <span>←</span> Volver al inicio
+          <span>←</span> {t('wclimisc.auth.backHome')}
         </Link>
         <div className="flex justify-center mb-6">
           <KiwiLogo size={40} />
         </div>
-        <h1 className="text-xl font-display font-bold text-center mb-1">Crear cuenta</h1>
+        <h1 className="text-xl font-display font-bold text-center mb-1">
+          {t('wclimisc.auth.registerTitle')}
+        </h1>
         <p className="text-sm text-center text-surface-500 mb-6">
-          Guardá tu dirección y pedí en 1 tap
+          {t('wclimisc.auth.registerSub')}
         </p>
         {waitlist ? (
           <WaitlistNotice
             city={waitlist.city}
             message={waitlist.message}
-            actionLabel="Ir a la app"
+            actionLabel={t('wclimisc.auth.waitlistAction')}
             onContinue={() => {
               const next =
                 typeof window !== 'undefined'
@@ -191,8 +202,8 @@ function ClientRegisterForm() {
                 }`}
               >
                 {inviteState === 'valid'
-                  ? '🥝 Te invitaron a pedir con Kiwi — completá el registro con este correo.'
-                  : 'Ese link de invitación venció o no es válido. Podés registrarte igual.'}
+                  ? t('wclimisc.auth.inviteValid')
+                  : t('wclimisc.auth.inviteInvalid')}
               </div>
             )}
             <form
@@ -202,7 +213,7 @@ function ClientRegisterForm() {
               <input
                 value={form.fullName}
                 onChange={set('fullName')}
-                placeholder="Tu nombre"
+                placeholder={t('wclimisc.auth.namePh')}
                 className="w-full rounded-xl bg-surface-100 dark:bg-surface-800 px-4 py-3 text-sm outline-none"
               />
               <input
@@ -210,7 +221,7 @@ function ClientRegisterForm() {
                 required
                 value={form.email}
                 onChange={set('email')}
-                placeholder="tu@correo.com"
+                placeholder={t('wclimisc.auth.emailPh')}
                 className="w-full rounded-xl bg-surface-100 dark:bg-surface-800 px-4 py-3 text-sm outline-none"
               />
               <input
@@ -219,29 +230,29 @@ function ClientRegisterForm() {
                 minLength={6}
                 value={form.password}
                 onChange={set('password')}
-                placeholder="Contraseña (mín 6)"
+                placeholder={t('wclimisc.auth.passwordMinPh')}
                 className="w-full rounded-xl bg-surface-100 dark:bg-surface-800 px-4 py-3 text-sm outline-none"
               />
               <input
                 value={form.phone}
                 onChange={set('phone')}
                 onBlur={() => setForm((f) => ({ ...f, phone: normalizePhone(f.phone) }))}
-                placeholder="Teléfono 8888-8888 (opcional)"
-                title="Acepta +506, espacios y guiones: lo dejamos en 8888-8888"
+                placeholder={t('wclimisc.auth.phonePh')}
+                title={t('wclimisc.auth.phoneTitle')}
                 className="w-full rounded-xl bg-surface-100 dark:bg-surface-800 px-4 py-3 text-sm outline-none"
               />
               {/* Ciudad: hoy operamos en Nicoya; si sos de otro lado te avisamos al llegar */}
               <input
                 value={form.citySlug}
                 onChange={set('citySlug')}
-                placeholder="Ciudad (ej. Nicoya)"
-                title="Hoy operamos en Nicoya. Si sos de otro lado, te avisamos cuando lleguemos."
+                placeholder={t('wclimisc.auth.cityPh')}
+                title={t('wclimisc.auth.cityTitle')}
                 className="w-full rounded-xl bg-surface-100 dark:bg-surface-800 px-4 py-3 text-sm outline-none"
               />
               <input
                 value={form.defaultAddress}
                 onChange={set('defaultAddress')}
-                placeholder="Dirección de entrega (opcional)"
+                placeholder={t('wclimisc.auth.addressPh')}
                 className="w-full rounded-xl bg-surface-100 dark:bg-surface-800 px-4 py-3 text-sm outline-none"
               />
               <button
@@ -255,15 +266,13 @@ function ClientRegisterForm() {
                 }`}
               >
                 {locating
-                  ? 'Ubicando…'
+                  ? t('wclimisc.auth.locating')
                   : gps
-                    ? '✓ Ubicación lista para tu entrega'
-                    : '📍 Usar mi ubicación GPS'}
+                    ? t('wclimisc.auth.gpsReadyLong')
+                    : t('wclimisc.auth.useGpsLong')}
               </button>
               {locDenied && !gps && (
-                <p className="text-xs text-surface-500">
-                  No pudimos usar el GPS; podés escribir tu dirección arriba.
-                </p>
+                <p className="text-xs text-surface-500">{t('wclimisc.auth.gpsDenied')}</p>
               )}
               <ZonePicker
                 value={form.deliveryZone}
@@ -274,7 +283,7 @@ function ClientRegisterForm() {
               />
               {gpsZoneAuto && form.deliveryZone && (
                 <p className="text-xs text-kiwi-700 dark:text-kiwi-300">
-                  📍 Elegimos tu barrio por tu ubicación (podés cambiarlo).
+                  {t('wclimisc.auth.zoneAuto')}
                 </p>
               )}
               <input
@@ -287,14 +296,14 @@ function ClientRegisterForm() {
                       .slice(0, 20),
                   )
                 }
-                placeholder="Código de referido (opcional)"
+                placeholder={t('wclimisc.auth.referralPh')}
                 autoComplete="off"
                 className="w-full rounded-xl bg-surface-100 dark:bg-surface-800 px-4 py-3 text-sm outline-none uppercase"
               />
               {referral.trim() !== '' && (
                 <div className="text-xs" role="status">
                   {referralChecking ? (
-                    <span className="text-surface-500">Verificando código…</span>
+                    <span className="text-surface-500">{t('wclimisc.auth.referralChecking')}</span>
                   ) : referralValid && referralOffer ? (
                     <span className="font-medium text-kiwi-700 dark:text-kiwi-300">
                       🎟️ {referralOffer.title}
@@ -302,10 +311,10 @@ function ClientRegisterForm() {
                     </span>
                   ) : referralValid ? (
                     <span className="font-medium text-kiwi-700 dark:text-kiwi-300">
-                      🎟️ Código válido
+                      {t('wclimisc.auth.referralValid')}
                     </span>
                   ) : (
-                    <span className="text-amber-600">Ese código no existe o venció.</span>
+                    <span className="text-amber-600">{t('wclimisc.auth.referralInvalid')}</span>
                   )}
                 </div>
               )}
@@ -317,13 +326,13 @@ function ClientRegisterForm() {
                   className="mt-0.5"
                 />
                 <span>
-                  Acepto los{' '}
+                  {t('wclimisc.auth.acceptPrefix')}{' '}
                   <a href="/terms" className="underline">
-                    Términos
+                    {t('wclimisc.auth.termsLink')}
                   </a>{' '}
-                  y la{' '}
+                  {t('wclimisc.auth.acceptAnd')}{' '}
                   <a href="/privacy" className="underline">
-                    Política de Privacidad
+                    {t('wclimisc.auth.privacyLink')}
                   </a>
                 </span>
               </label>
@@ -334,20 +343,20 @@ function ClientRegisterForm() {
                   onChange={(e) => setOffers(e.target.checked)}
                   className="mt-0.5"
                 />
-                Quiero recibir ofertas de comercios de mi ciudad (podés apagarlo cuando quieras)
+                {t('wclimisc.auth.offersOpt')}
               </label>
               {error && <p className="text-sm text-red-600">{error}</p>}
               <button
                 disabled={loading}
                 className="w-full rounded-xl bg-kiwi-600 text-white font-semibold py-3 disabled:opacity-60"
               >
-                {loading ? 'Creando…' : 'Crear cuenta'}
+                {loading ? t('wclimisc.auth.creating') : t('wclimisc.auth.createAccount')}
               </button>
             </form>
             <p className="text-sm text-center mt-4">
-              ¿Ya tenés cuenta?{' '}
+              {t('wclimisc.auth.hasAccount')}{' '}
               <Link href="/login" className="font-semibold text-kiwi-700">
-                Entrar
+                {t('wclimisc.auth.loginLink')}
               </Link>
             </p>
           </>

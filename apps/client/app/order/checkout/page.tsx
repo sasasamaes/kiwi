@@ -15,6 +15,7 @@ import {
   ConsentCheckbox,
   ConsentLink,
   useDeliveryZones,
+  useTranslations,
   api,
   useAuth,
   events,
@@ -43,6 +44,7 @@ function CheckoutContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { user } = useAuth();
+  const { t } = useTranslations();
 
   const [cart, setCart] = useState<CartItem[]>([]);
   const [merchantId, setMerchantId] = useState('');
@@ -285,7 +287,7 @@ function CheckoutContent() {
             if (safeNavigateToUrl(paymentResult.checkoutUrl)) {
               return;
             }
-            throw new Error('URL de pago inválida');
+            throw new Error(t('wcliord.checkout.invalidPayUrl'));
           }
         } catch (paymentError) {
           console.warn('Payment processing failed, order created:', paymentError);
@@ -319,9 +321,7 @@ function CheckoutContent() {
       }
 
       if (!paySetupOk) {
-        setPayError(
-          'Tu pedido se creó pero no pudimos iniciar el cobro. Te contactaremos para el pago.',
-        );
+        setPayError(t('wcliord.checkout.paySetupFailed'));
       }
       // For cash (or after payment setup), order is placed successfully
       setOrderPlaced(true);
@@ -330,7 +330,7 @@ function CheckoutContent() {
       idempotencyKeyRef.current = null;
     } catch (err: any) {
       console.error('Error placing order:', err);
-      setError(err.message || 'No se pudo crear el pedido. Tocá el botón una sola vez.');
+      setError(err.message || t('wcliord.checkout.createFailed'));
     } finally {
       placingRef.current = false;
       setLoading(false);
@@ -347,6 +347,7 @@ function CheckoutContent() {
     customerName,
     paymentMethod,
     total,
+    t,
   ]);
 
   // Order success screen
@@ -364,23 +365,23 @@ function CheckoutContent() {
             animate={{ scale: 1 }}
             transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}
             role="img"
-            aria-label="Pedido confirmado"
+            aria-label={t('wcliord.checkout.successAria')}
           >
             ✅
           </motion.div>
           <h1 className="text-2xl font-display font-bold text-surface-800 dark:text-surface-100 mb-2">
-            ¡Pedido creado!
+            {t('wcliord.checkout.successTitle')}
           </h1>
           <p className="text-surface-500 dark:text-surface-400 mb-2">
-            Tu pedido #{orderId?.slice(-8).toUpperCase()} fue enviado al comercio.
+            {t('wcliord.checkout.successSubtitle', { id: orderId?.slice(-8).toUpperCase() ?? '' })}
           </p>
           <p className="text-surface-500 dark:text-surface-400 text-sm mb-8">
-            Espera mientras un repartidor acepta tu pedido.
-            {paymentMethod === 'cash' && ' Pagas al repartidor al recibir.'}
+            {t('wcliord.checkout.successWaiting')}
+            {paymentMethod === 'cash' && t('wcliord.checkout.successCashHint')}
             {paymentMethod === 'sinpe' &&
               (payError
-                ? ' No pudimos enviarte el cobro SINPE todavía.'
-                : ' Recibirás un link de pago por SINPE.')}
+                ? t('wcliord.checkout.successSinpeFail')
+                : t('wcliord.checkout.successSinpeOk'))}
           </p>
           {payError && (
             <div className="mb-6 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
@@ -391,12 +392,14 @@ function CheckoutContent() {
           <div className="space-y-3">
             {orderId && (
               <Link href={`/tracking/${orderId}`}>
-                <AnimatedButton className="w-full">Rastrear pedido</AnimatedButton>
+                <AnimatedButton className="w-full">
+                  {t('wcliord.checkout.trackOrder')}
+                </AnimatedButton>
               </Link>
             )}
             <Link href="/">
               <AnimatedButton variant="secondary" className="w-full">
-                Volver al inicio
+                {t('wcliord.checkout.backHome')}
               </AnimatedButton>
             </Link>
           </div>
@@ -420,10 +423,10 @@ function CheckoutContent() {
               className="flex items-center gap-2 text-surface-600 dark:text-surface-400"
             >
               <span>←</span>
-              <span className="text-sm font-medium">Volver</span>
+              <span className="text-sm font-medium">{t('wcliord.checkout.back')}</span>
             </button>
             <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-              Checkout
+              {t('wcliord.checkout.title')}
             </h1>
             <div className="w-16" />
           </div>
@@ -438,7 +441,9 @@ function CheckoutContent() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <p className="text-sm text-kiwi-700 dark:text-kiwi-300">Pedido de</p>
+            <p className="text-sm text-kiwi-700 dark:text-kiwi-300">
+              {t('wcliord.checkout.orderFrom')}
+            </p>
             <p className="font-semibold text-kiwi-800 dark:text-kiwi-200">{merchantName}</p>
           </motion.div>
         )}
@@ -450,7 +455,9 @@ function CheckoutContent() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <h2 className="font-semibold text-surface-800 dark:text-surface-100 mb-3">Tu pedido</h2>
+          <h2 className="font-semibold text-surface-800 dark:text-surface-100 mb-3">
+            {t('wcliord.checkout.yourOrder')}
+          </h2>
           {cart.map((item, index) => (
             <div
               key={item.id || index}
@@ -466,7 +473,7 @@ function CheckoutContent() {
           ))}
           <div className="mt-3 pt-3 border-t border-surface-200 dark:border-surface-700">
             <div className="flex justify-between text-sm">
-              <span className="text-surface-500">Subtotal</span>
+              <span className="text-surface-500">{t('wcliord.checkout.subtotal')}</span>
               <span className="text-surface-700 dark:text-surface-300">
                 ₡{subtotal.toLocaleString()}
               </span>
@@ -474,7 +481,7 @@ function CheckoutContent() {
             {serviceFee > 0 && (
               <div className="flex justify-between text-sm mt-1">
                 <span className="text-surface-500">
-                  Servicio Kiwi ({Math.round(servicePct * 100)}%)
+                  {t('wcliord.checkout.serviceFee', { pct: Math.round(servicePct * 100) })}
                 </span>
                 <span className="text-surface-700 dark:text-surface-300">
                   ₡{serviceFee.toLocaleString()}
@@ -482,7 +489,7 @@ function CheckoutContent() {
               </div>
             )}
             <div className="flex justify-between text-sm mt-1">
-              <span className="text-surface-500">Envío</span>
+              <span className="text-surface-500">{t('wcliord.checkout.shipping')}</span>
               <span
                 className={
                   deliveryFee === 0
@@ -490,11 +497,15 @@ function CheckoutContent() {
                     : 'text-surface-700 dark:text-surface-300'
                 }
               >
-                {deliveryFee === 0 ? 'Gratis' : `₡${deliveryFee.toLocaleString()}`}
+                {deliveryFee === 0
+                  ? t('wcliord.checkout.free')
+                  : `₡${deliveryFee.toLocaleString()}`}
               </span>
             </div>
             <div className="flex justify-between font-bold text-lg mt-2">
-              <span className="text-surface-800 dark:text-surface-100">Total</span>
+              <span className="text-surface-800 dark:text-surface-100">
+                {t('wcliord.checkout.total')}
+              </span>
               <span className="text-kiwi-700">₡{total.toLocaleString()}</span>
             </div>
           </div>
@@ -508,20 +519,20 @@ function CheckoutContent() {
           transition={{ delay: 0.2 }}
         >
           <h2 className="font-semibold text-surface-800 dark:text-surface-100 mb-3">
-            Datos de entrega
+            {t('wcliord.checkout.deliveryTitle')}
           </h2>
 
           <div className="space-y-3">
             <div>
               <label htmlFor="checkout-name" className="block text-sm text-surface-500 mb-1">
-                Tu nombre *
+                {t('wcliord.checkout.nameLabel')}
               </label>
               <input
                 id="checkout-name"
                 type="text"
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
-                placeholder="Nombre completo"
+                placeholder={t('wcliord.checkout.namePlaceholder')}
                 autoComplete="name"
                 required
                 className="w-full px-3 py-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
@@ -529,14 +540,14 @@ function CheckoutContent() {
             </div>
             <div>
               <label htmlFor="checkout-phone" className="block text-sm text-surface-500 mb-1">
-                Teléfono *
+                {t('wcliord.checkout.phoneLabel')}
               </label>
               <input
                 id="checkout-phone"
                 type="tel"
                 value={phoneNumber}
                 onChange={(e) => setPhoneNumber(e.target.value)}
-                placeholder="8888-1234"
+                placeholder={t('wcliord.checkout.phonePlaceholder')}
                 autoComplete="tel"
                 inputMode="tel"
                 required
@@ -545,14 +556,14 @@ function CheckoutContent() {
             </div>
             <div>
               <label htmlFor="checkout-address" className="block text-sm text-surface-500 mb-1">
-                Dirección de entrega *
+                {t('wcliord.checkout.addressLabel')}
               </label>
               <input
                 id="checkout-address"
                 type="text"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                placeholder="Barrio, calle, referencia..."
+                placeholder={t('wcliord.checkout.addressPlaceholder')}
                 autoComplete="street-address"
                 required
                 className="w-full px-3 py-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
@@ -561,12 +572,12 @@ function CheckoutContent() {
             <DeliveryZoneSelect value={deliveryZone} onChange={setDeliveryZone} />
             <div>
               <label className="block text-sm text-surface-500 mb-1">
-                Instrucciones (opcional)
+                {t('wcliord.checkout.notesLabel')}
               </label>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Sin cebolla, portón azul, etc."
+                placeholder={t('wcliord.checkout.notesPlaceholder')}
                 rows={2}
                 className="w-full px-3 py-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 text-surface-800 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-kiwi-600 resize-none"
               />
@@ -583,13 +594,13 @@ function CheckoutContent() {
             transition={{ delay: 0.25 }}
           >
             <h2 className="font-semibold text-surface-800 dark:text-surface-100 mb-3">
-              📅 ¿Para cuándo?
+              {t('wcliord.checkout.whenTitle')}
             </h2>
             <SchedulePicker
               value={schedule}
               onChange={setSchedule}
               hideTime
-              hint="Cocina casera: podés pedir hoy aunque esté cerrada, programando su día de venta."
+              hint={t('wcliord.checkout.homeCookHint')}
             />
           </motion.div>
         )}
@@ -602,24 +613,43 @@ function CheckoutContent() {
           transition={{ delay: 0.3 }}
         >
           <h2 className="font-semibold text-surface-800 dark:text-surface-100 mb-3">
-            Método de pago
+            {t('wcliord.checkout.paymentTitle')}
           </h2>
 
           {!cardAllowed && (
             <p className="mb-3 rounded-xl bg-surface-100 dark:bg-surface-700/60 px-3 py-2 text-xs text-surface-500 dark:text-surface-400">
-              Este comercio cobra en efectivo. La tarjeta se habilita cuando complete su
-              verificación.
+              {t('wcliord.checkout.cashOnlyNote')}
             </p>
           )}
 
           <div className="grid grid-cols-2 gap-2">
             {(
               [
-                { id: 'cash', label: 'Efectivo', desc: 'Pagar al repartidor' },
-                { id: 'sinpe', label: 'SINPE', desc: 'Aprobás en tu banco' },
-                { id: 'card', label: 'Tarjeta', desc: 'Tarjeta, Google Pay o Apple Pay' },
-                { id: 'crypto_usdc', label: 'USDC', desc: 'Cripto' },
-                { id: 'crypto_usdt', label: 'USDT', desc: 'Cripto' },
+                {
+                  id: 'cash',
+                  label: t('wcliord.checkout.payCash'),
+                  desc: t('wcliord.checkout.payCashDesc'),
+                },
+                {
+                  id: 'sinpe',
+                  label: t('wcliord.checkout.paySinpe'),
+                  desc: t('wcliord.checkout.paySinpeDesc'),
+                },
+                {
+                  id: 'card',
+                  label: t('wcliord.checkout.payCard'),
+                  desc: t('wcliord.checkout.payCardDesc'),
+                },
+                {
+                  id: 'crypto_usdc',
+                  label: t('wcliord.checkout.payUsdc'),
+                  desc: t('wcliord.checkout.payCryptoDesc'),
+                },
+                {
+                  id: 'crypto_usdt',
+                  label: t('wcliord.checkout.payUsdt'),
+                  desc: t('wcliord.checkout.payCryptoDesc'),
+                },
               ] as const
             ).map((method) => {
               const isCrypto = method.id === 'crypto_usdc' || method.id === 'crypto_usdt';
@@ -629,7 +659,11 @@ function CheckoutContent() {
               // Sin KYC de Onvo el comercio no cobra tarjeta/SINPE (el backend lo rechaza).
               const merchantOff = (method.id === 'sinpe' || method.id === 'card') && !cardAllowed;
               const enabled = !platformOff && !merchantOff;
-              const offReason = platformOff ? 'No disponible' : merchantOff ? 'No activado' : null;
+              const offReason = platformOff
+                ? t('wcliord.checkout.unavailable')
+                : merchantOff
+                  ? t('wcliord.checkout.notEnabled')
+                  : null;
               const selected = paymentMethod === method.id;
               return (
                 <button
@@ -673,7 +707,8 @@ function CheckoutContent() {
           >
             <label className="block">
               <span className="mb-1 block text-sm font-medium text-gold-700 dark:text-gold-300">
-                ¿Con cuánto pagás? <span className="font-normal">(opcional)</span>
+                {t('wcliord.checkout.cashTenderedLabel')}{' '}
+                <span className="font-normal">{t('wcliord.checkout.optional')}</span>
               </span>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-surface-500">₡</span>
@@ -682,19 +717,23 @@ function CheckoutContent() {
                   min={0}
                   value={cashTendered}
                   onChange={(e) => setCashTendered(e.target.value)}
-                  placeholder={`Ej: ${total.toLocaleString()}`}
+                  placeholder={t('wcliord.checkout.cashPlaceholder', {
+                    total: total.toLocaleString(),
+                  })}
                   className="w-full rounded-xl border border-gold-200 dark:border-gold-800 bg-white dark:bg-surface-900 pl-8 pr-4 py-3 text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20"
                 />
               </div>
             </label>
             {cashTendered !== '' && Number(cashTendered) > total && (
               <p className="mt-1.5 text-xs font-semibold text-kiwi-700 dark:text-kiwi-300">
-                Vuelto: ₡{(Number(cashTendered) - total).toLocaleString()}
+                {t('wcliord.checkout.changeDue', {
+                  amount: (Number(cashTendered) - total).toLocaleString(),
+                })}
               </p>
             )}
             {cashTendered !== '' && Number(cashTendered) < total && (
               <p className="mt-1.5 text-xs font-semibold text-red-500">
-                El monto no cubre el total de ₡{total.toLocaleString()}
+                {t('wcliord.checkout.cashShortfall', { total: total.toLocaleString() })}
               </p>
             )}
           </motion.div>
@@ -709,11 +748,13 @@ function CheckoutContent() {
           error={consentError && !acceptedTerms}
           className="mb-4"
         >
-          Acepto los <ConsentLink href="/terms">términos</ConsentLink>, la{' '}
-          <ConsentLink href="/privacy">política de privacidad</ConsentLink> y la{' '}
-          <ConsentLink href="/refunds">política de reembolsos</ConsentLink>. Autorizo a Kiwi a usar
-          mi nombre, teléfono y dirección para tomar y entregar este pedido, compartiéndolos con el
-          comercio y el repartidor asignado.
+          {t('wcliord.checkout.consentLead')}{' '}
+          <ConsentLink href="/terms">{t('wcliord.checkout.consentTerms')}</ConsentLink>
+          {t('wcliord.checkout.consentSep1')}{' '}
+          <ConsentLink href="/privacy">{t('wcliord.checkout.consentPrivacy')}</ConsentLink>{' '}
+          {t('wcliord.checkout.consentSep2')}{' '}
+          <ConsentLink href="/refunds">{t('wcliord.checkout.consentRefunds')}</ConsentLink>
+          {t('wcliord.checkout.consentTail')}
         </ConsentCheckbox>
 
         {/* Error */}
@@ -751,38 +792,36 @@ function CheckoutContent() {
           >
             {loading ? (
               <span className="flex items-center justify-center gap-2">
-                <RefreshCw className="animate-spin h-5 w-5" /> Procesando...
+                <RefreshCw className="animate-spin h-5 w-5" /> {t('wcliord.checkout.processing')}
               </span>
             ) : (
-              `Ordenar — ₡${total.toLocaleString()}`
+              t('wcliord.checkout.placeOrder', { total: total.toLocaleString() })
             )}
           </TapButton>
           {!isPayMethodEnabled(paymentMethod) && (
             <p className="text-center text-xs font-medium text-red-500 mt-3">
-              Este comercio no tiene métodos de pago activos: no se puede pedir ahora
+              {t('wcliord.checkout.noPayMethods')}
             </p>
           )}
           <p className="text-center text-xs text-surface-500 dark:text-surface-400 mt-3">
             {paymentMethod === 'cash' && (
               <span>
-                <Coins className="h-3 w-3 inline" /> Pagas al repartidor al recibir tu pedido
+                <Coins className="h-3 w-3 inline" /> {t('wcliord.checkout.hintCash')}
               </span>
             )}{' '}
             {paymentMethod === 'sinpe' && (
               <span>
-                <Smartphone className="h-3 w-3 inline" /> Te llevamos al pago seguro: elegí SINPE y
-                aprobá en tu banco
+                <Smartphone className="h-3 w-3 inline" /> {t('wcliord.checkout.hintSinpe')}
               </span>
             )}
             {paymentMethod === 'card' && (
               <span>
-                <CreditCard className="h-3 w-3 inline" /> Pago seguro: tarjeta, Google Pay o Apple
-                Pay (en iPhone/Mac)
+                <CreditCard className="h-3 w-3 inline" /> {t('wcliord.checkout.hintCard')}
               </span>
             )}
             {paymentMethod === 'crypto_usdc' && (
               <>
-                <span>💎 Paga con USDC en la red Stellar</span>
+                <span>{t('wcliord.checkout.hintUsdc')}</span>
                 <CryptoRateNote amountCRC={total} coin="USDC" className="mt-2" />
               </>
             )}
@@ -791,15 +830,15 @@ function CheckoutContent() {
             )}
           </p>
           <p className="text-center text-xs text-surface-500 dark:text-surface-400 mt-2">
-            Al ordenar aceptás nuestros{' '}
+            {t('wcliord.checkout.footerLead')}{' '}
             <Link href="/terms" className="text-kiwi-700 hover:underline">
-              términos
+              {t('wcliord.checkout.footerTerms')}
             </Link>{' '}
-            y nuestra{' '}
+            {t('wcliord.checkout.footerAnd')}{' '}
             <Link href="/privacy" className="text-kiwi-700 hover:underline">
-              política de privacidad
+              {t('wcliord.checkout.footerPrivacy')}
             </Link>
-            : usamos tu nombre, teléfono y dirección solo para entregar tu pedido.
+            {t('wcliord.checkout.footerTail')}
           </p>
         </motion.div>
       </div>
@@ -807,15 +846,18 @@ function CheckoutContent() {
   );
 }
 
+function CheckoutFallback() {
+  const { t } = useTranslations();
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="animate-pulse text-surface-500">{t('wcliord.checkout.loading')}</div>
+    </div>
+  );
+}
+
 export default function CheckoutPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="animate-pulse text-surface-500">Cargando…</div>
-        </div>
-      }
-    >
+    <Suspense fallback={<CheckoutFallback />}>
       <CheckoutContent />
     </Suspense>
   );

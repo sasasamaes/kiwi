@@ -16,7 +16,14 @@ import {
   Heart,
   Navigation,
 } from 'lucide-react';
-import { api, useAuth, KiwiLogo, ZonePicker, addStreetsAndSatellite } from '@kiwi/ui';
+import {
+  api,
+  useAuth,
+  KiwiLogo,
+  ZonePicker,
+  addStreetsAndSatellite,
+  useTranslations,
+} from '@kiwi/ui';
 import { BottomNav } from '../components/BottomNav';
 import { AvatarEditor } from '../components/AvatarEditor';
 import { InstallAppButton } from '../components/InstallAppButton';
@@ -39,6 +46,7 @@ function PlaceMapPicker({
   lng: number | null;
   onPick: (lat: number, lng: number) => void;
 }) {
+  const { t } = useTranslations();
   const mapDivRef = useRef<HTMLDivElement>(null);
   const mapObj = useRef<any>(null);
   const markerObj = useRef<any>(null);
@@ -56,14 +64,14 @@ function PlaceMapPicker({
     }
     if (lat == null || lng == null) return;
     const icon = L.divIcon({
-      html: '<img src="/kiwi.svg" alt="Punto de entrega" style="width:34px;height:34px;display:block;border-radius:999px;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35);background:#fff;"/>',
+      html: `<img src="/kiwi.svg" alt="${t('wclimisc.profile.pinAlt')}" style="width:34px;height:34px;display:block;border-radius:999px;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35);background:#fff;"/>`,
       className: 'place-point',
       iconSize: [34, 34],
       iconAnchor: [17, 17],
     });
     const marker = L.marker([lat, lng], { draggable: true, icon })
       .addTo(map)
-      .bindTooltip('Tu punto de entrega — arrastrá para afinar');
+      .bindTooltip(t('wclimisc.profile.pinTooltip'));
     marker.on('dragend', () => {
       const p = marker.getLatLng();
       onPickRef.current(Number(p.lat.toFixed(6)), Number(p.lng.toFixed(6)));
@@ -125,6 +133,7 @@ function PlaceMapPicker({
 
 export default function ProfilePage() {
   const router = useRouter();
+  const { t } = useTranslations();
   const { user, loading, logout, updateUser } = useAuth();
   const [profile, setProfile] = useState<any>(null);
   const [offersOn, setOffersOn] = useState(true);
@@ -324,7 +333,7 @@ export default function ProfilePage() {
 
   const savePlace = async () => {
     if (!placeLabel.trim() || !placeAddress.trim()) {
-      setPlaceError('Poné nombre y dirección del lugar');
+      setPlaceError(t('wclimisc.profile.needNameAddress'));
       return;
     }
     setPlaceSaving(true);
@@ -352,7 +361,7 @@ export default function ProfilePage() {
       setShowPlaceForm(false);
       await reloadPlaces();
     } catch (e: any) {
-      setPlaceError(e?.message || 'No se pudo guardar el lugar');
+      setPlaceError(e?.message || t('wclimisc.profile.savePlaceFailed'));
     } finally {
       setPlaceSaving(false);
     }
@@ -393,7 +402,7 @@ export default function ProfilePage() {
   };
 
   const removePlace = async (id: string) => {
-    if (!window.confirm('¿Borrar este lugar?')) return;
+    if (!window.confirm(t('wclimisc.profile.deleteConfirm'))) return;
     setPlaceActing(id);
     try {
       await api.deleteAddress(id);
@@ -425,7 +434,7 @@ export default function ProfilePage() {
     try {
       const phone = normalizePhone(form.phone);
       if (form.phone.trim() !== '' && !/^\d{4}-\d{4}$/.test(phone)) {
-        throw new Error('Teléfono inválido (formato 8888-8888)');
+        throw new Error(t('wclimisc.profile.phoneInvalid'));
       }
       const [updated] = await Promise.all([
         api.updateCustomerProfile({
@@ -442,7 +451,7 @@ export default function ProfilePage() {
       setSavedTick(true);
       setTimeout(() => setSavedTick(false), 3000);
     } catch (err: any) {
-      setFormError(err?.message || 'No se pudo guardar.');
+      setFormError(err?.message || t('wclimisc.profile.saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -466,22 +475,20 @@ export default function ProfilePage() {
           <div className="flex justify-center mb-6">
             <KiwiLogo size={40} />
           </div>
-          <h1 className="text-xl font-display font-bold mb-1">Mi cuenta</h1>
-          <p className="text-sm text-surface-500 mb-6">
-            Entrá o creá tu cuenta para pedir más rápido y recibir ofertas
-          </p>
+          <h1 className="text-xl font-display font-bold mb-1">{t('wclimisc.profile.title')}</h1>
+          <p className="text-sm text-surface-500 mb-6">{t('wclimisc.profile.guestHint')}</p>
           <div className="flex flex-col gap-2">
             <Link
               href="/login"
               className="rounded-xl bg-kiwi-600 text-white font-semibold py-3 text-center"
             >
-              Entrar
+              {t('wclimisc.profile.login')}
             </Link>
             <Link
               href="/register"
               className="rounded-xl border border-kiwi-600/30 font-semibold py-3 text-center text-kiwi-700 dark:text-kiwi-300"
             >
-              Crear cuenta
+              {t('wclimisc.profile.createAccount')}
             </Link>
           </div>
         </div>
@@ -500,7 +507,7 @@ export default function ProfilePage() {
           />
           <div>
             <h1 className="text-xl font-display font-bold">
-              {profile?.fullName || (user as any)?.email || 'Mi cuenta'}
+              {profile?.fullName || (user as any)?.email || t('wclimisc.profile.title')}
             </h1>
             <p className="text-sm text-surface-500">{(user as any)?.email}</p>
           </div>
@@ -511,7 +518,7 @@ export default function ProfilePage() {
             <div className="flex items-center gap-3 min-w-0">
               <MapPin className="h-4 w-4 text-surface-500 dark:text-surface-400 shrink-0" />
               <span className="truncate">
-                {profile?.defaultAddress || 'Sin dirección guardada'}
+                {profile?.defaultAddress || t('wclimisc.profile.noAddress')}
                 {profile?.citySlug ? ` · ${profile.citySlug}` : ''}
               </span>
             </div>
@@ -520,7 +527,7 @@ export default function ProfilePage() {
                 onClick={startEditing}
                 className="flex shrink-0 items-center gap-1 rounded-full bg-surface-100 dark:bg-surface-700 px-3 py-1.5 text-xs font-semibold text-surface-600 dark:text-surface-300"
               >
-                <Pencil className="h-3.5 w-3.5" /> Editar
+                <Pencil className="h-3.5 w-3.5" /> {t('wclimisc.profile.edit')}
               </button>
             )}
           </div>
@@ -535,21 +542,21 @@ export default function ProfilePage() {
               <input
                 value={form.fullName}
                 onChange={(e) => setForm((f) => ({ ...f, fullName: e.target.value }))}
-                placeholder="Tu nombre"
+                placeholder={t('wclimisc.profile.namePh')}
                 className="w-full rounded-xl bg-surface-100 dark:bg-surface-800 px-4 py-3 text-sm outline-none"
               />
               <input
                 value={form.phone}
                 onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
                 onBlur={() => setForm((f) => ({ ...f, phone: normalizePhone(f.phone) }))}
-                placeholder="Teléfono 8888-8888"
+                placeholder={t('wclimisc.profile.phonePh')}
                 inputMode="tel"
                 className="w-full rounded-xl bg-surface-100 dark:bg-surface-800 px-4 py-3 text-sm outline-none"
               />
               <input
                 value={form.defaultAddress}
                 onChange={(e) => setForm((f) => ({ ...f, defaultAddress: e.target.value }))}
-                placeholder="Dirección de entrega"
+                placeholder={t('wclimisc.profile.addressPh')}
                 className="w-full rounded-xl bg-surface-100 dark:bg-surface-800 px-4 py-3 text-sm outline-none"
               />
               <button
@@ -559,7 +566,11 @@ export default function ProfilePage() {
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-surface-100 dark:bg-surface-800 px-4 py-3 text-sm font-semibold disabled:opacity-60"
               >
                 <Navigation className="h-4 w-4" aria-hidden />
-                {locating ? 'Ubicando…' : gps ? 'Ubicación lista' : 'Usar mi ubicación GPS'}
+                {locating
+                  ? t('wclimisc.profile.locating')
+                  : gps
+                    ? t('wclimisc.profile.gpsReady')
+                    : t('wclimisc.profile.useGps')}
               </button>
               <ZonePicker
                 value={form.deliveryZone}
@@ -574,14 +585,13 @@ export default function ProfilePage() {
               />
               {gpsZoneAuto && form.deliveryZone && (
                 <p className="flex items-center gap-1 text-xs text-kiwi-700 dark:text-kiwi-300">
-                  <MapPin className="h-3 w-3" aria-hidden /> Barrio por tu ubicación (podés
-                  cambiarlo).
+                  <MapPin className="h-3 w-3" aria-hidden /> {t('wclimisc.profile.zoneAutoHint')}
                 </p>
               )}
               {formError && <p className="text-xs text-red-600">{formError}</p>}
               {savedTick && (
                 <p className="flex items-center gap-1 text-xs text-kiwi-700 dark:text-kiwi-300">
-                  <Check className="h-3 w-3" aria-hidden /> Guardado
+                  <Check className="h-3 w-3" aria-hidden /> {t('wclimisc.profile.saved')}
                 </p>
               )}
               <div className="flex gap-2">
@@ -590,7 +600,8 @@ export default function ProfilePage() {
                   disabled={saving}
                   className="flex-1 flex items-center justify-center gap-1 rounded-xl bg-kiwi-600 px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
                 >
-                  <Check className="h-4 w-4" /> {saving ? 'Guardando…' : 'Guardar'}
+                  <Check className="h-4 w-4" />{' '}
+                  {saving ? t('wclimisc.profile.saving') : t('wclimisc.profile.save')}
                 </button>
                 <button
                   onClick={() => setEditing(false)}
@@ -604,13 +615,13 @@ export default function ProfilePage() {
           )}
           {savedTick && !editing && (
             <p className="flex items-center gap-1 text-xs text-kiwi-700 dark:text-kiwi-300">
-              <Check className="h-3 w-3" aria-hidden /> Datos actualizados
+              <Check className="h-3 w-3" aria-hidden /> {t('wclimisc.profile.updated')}
             </p>
           )}
           <label className="flex items-center justify-between gap-3 cursor-pointer">
             <span className="flex items-center gap-3">
               <Bell className="h-4 w-4 text-surface-500 dark:text-surface-400 shrink-0" />
-              Ofertas de comercios
+              {t('wclimisc.profile.offers')}
             </span>
             <input
               type="checkbox"
@@ -625,7 +636,7 @@ export default function ProfilePage() {
                 className="h-4 w-4 text-surface-500 dark:text-surface-400 shrink-0"
                 aria-hidden
               />
-              Avisos de comercios que sigo
+              {t('wclimisc.profile.followsNotif')}
             </span>
             <input
               type="checkbox"
@@ -640,7 +651,7 @@ export default function ProfilePage() {
         <div className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-5 mb-3">
           <div className="flex items-center justify-between mb-1">
             <p className="flex items-center gap-1.5 text-sm font-semibold text-surface-700 dark:text-surface-200">
-              <MapPin className="h-4 w-4" aria-hidden /> Mis lugares
+              <MapPin className="h-4 w-4" aria-hidden /> {t('wclimisc.places.title')}
             </p>
             <button
               onClick={() => {
@@ -654,26 +665,25 @@ export default function ProfilePage() {
               }}
               className="rounded-full bg-surface-100 dark:bg-surface-700 px-3 py-1.5 text-xs font-semibold text-surface-600 dark:text-surface-300"
             >
-              {showPlaceForm ? 'Cerrar' : '+ Agregar'}
+              {showPlaceForm ? t('wclimisc.places.close') : t('wclimisc.places.add')}
             </button>
           </div>
           <p className="text-xs text-surface-500 dark:text-surface-400 mb-3">
-            Guardá tus direcciones (casa, trabajo, casa de mamá…) y elegí dónde entregar en cada
-            pedido.
+            {t('wclimisc.places.hint')}
           </p>
           {showPlaceForm && (
             <div className="space-y-2 mb-3 rounded-xl bg-surface-50 dark:bg-surface-900 p-3">
               <input
                 value={placeLabel}
                 onChange={(e) => setPlaceLabel(e.target.value)}
-                placeholder="Nombre (ej. Casa de mamá)"
+                placeholder={t('wclimisc.places.namePh')}
                 maxLength={40}
                 className="w-full rounded-xl bg-white dark:bg-surface-800 px-4 py-3 text-sm outline-none"
               />
               <input
                 value={placeAddress}
                 onChange={(e) => setPlaceAddress(e.target.value)}
-                placeholder="Dirección"
+                placeholder={t('wclimisc.places.addressPh')}
                 maxLength={200}
                 className="w-full rounded-xl bg-white dark:bg-surface-800 px-4 py-3 text-sm outline-none"
               />
@@ -685,10 +695,10 @@ export default function ProfilePage() {
               >
                 <Navigation className="h-4 w-4" aria-hidden />
                 {placeLocating
-                  ? 'Ubicando…'
+                  ? t('wclimisc.places.locating')
                   : placeGps
-                    ? 'Ubicación lista'
-                    : 'Usar mi ubicación GPS'}
+                    ? t('wclimisc.places.gpsReady')
+                    : t('wclimisc.places.useGps')}
               </button>
               <PlaceMapPicker
                 key={editingPlaceId ?? 'new'}
@@ -710,8 +720,10 @@ export default function ProfilePage() {
               {placeGps ? (
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-xs text-surface-500 dark:text-surface-400">
-                    📍 {placeGps.lat.toFixed(6)}, {placeGps.lng.toFixed(6)} · arrastrá el kiwi para
-                    afinar.
+                    {t('wclimisc.places.pointWithCoords', {
+                      lat: placeGps.lat.toFixed(6),
+                      lng: placeGps.lng.toFixed(6),
+                    })}
                   </p>
                   <button
                     type="button"
@@ -721,13 +733,12 @@ export default function ProfilePage() {
                     }}
                     className="shrink-0 rounded-lg px-2 py-1.5 text-xs font-semibold text-red-500"
                   >
-                    Quitar punto
+                    {t('wclimisc.places.removePoint')}
                   </button>
                 </div>
               ) : (
                 <p className="text-xs text-surface-500 dark:text-surface-400">
-                  Sin punto marcado: tocá el mapa donde llegan los repartidores. Podés quitarlo si
-                  el lugar es raro o peligroso.
+                  {t('wclimisc.places.noPointHint')}
                 </p>
               )}
               <ZonePicker
@@ -746,7 +757,11 @@ export default function ProfilePage() {
                 disabled={placeSaving}
                 className="w-full rounded-xl bg-kiwi-600 px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
               >
-                {placeSaving ? 'Guardando…' : editingPlaceId ? 'Guardar cambios' : 'Guardar lugar'}
+                {placeSaving
+                  ? t('wclimisc.places.saving')
+                  : editingPlaceId
+                    ? t('wclimisc.places.saveChanges')
+                    : t('wclimisc.places.savePlace')}
               </button>
               {editingPlaceId && (
                 <button
@@ -756,14 +771,14 @@ export default function ProfilePage() {
                   }}
                   className="w-full rounded-xl px-4 py-2 text-xs font-semibold text-surface-500 dark:text-surface-400"
                 >
-                  Cancelar edición
+                  {t('wclimisc.places.cancelEdit')}
                 </button>
               )}
             </div>
           )}
           {places.length === 0 ? (
             <p className="text-xs text-surface-500 dark:text-surface-400">
-              Todavía no guardaste lugares.
+              {t('wclimisc.places.empty')}
             </p>
           ) : (
             <div className="space-y-2">
@@ -780,21 +795,23 @@ export default function ProfilePage() {
                       {p.label}
                       {p.isDefault && (
                         <span className="ml-2 rounded-full bg-kiwi-600/10 px-2 py-0.5 text-[10px] text-kiwi-700 dark:text-kiwi-300">
-                          Principal
+                          {t('wclimisc.places.main')}
                         </span>
                       )}
                     </p>
                     <p className="truncate text-xs text-surface-500">
                       {p.address}
-                      {p.latitude != null && p.longitude != null ? ' · 📍' : ''}
+                      {p.latitude != null && p.longitude != null
+                        ? t('wclimisc.places.pinnedSuffix')
+                        : ''}
                     </p>
                   </div>
                   <button
                     onClick={() => startEditPlace(p)}
                     disabled={placeActing === p.id}
                     className="shrink-0 rounded-lg px-2 py-1.5 text-xs font-semibold text-surface-500 dark:text-surface-400 disabled:opacity-50"
-                    title="Editar"
-                    aria-label={`Editar ${p.label}`}
+                    title={t('wclimisc.profile.editTitle')}
+                    aria-label={t('wclimisc.profile.editAria', { name: p.label })}
                   >
                     <Pencil className="h-3.5 w-3.5" aria-hidden />
                   </button>
@@ -803,16 +820,16 @@ export default function ProfilePage() {
                       onClick={() => void defaultPlace(p.id)}
                       disabled={placeActing === p.id}
                       className="shrink-0 rounded-lg px-2 py-1.5 text-xs font-semibold text-kiwi-700 dark:text-kiwi-300 disabled:opacity-50"
-                      title="Marcar como principal"
+                      title={t('wclimisc.profile.setDefaultTitle')}
                     >
-                      Principal
+                      {t('wclimisc.profile.setDefault')}
                     </button>
                   )}
                   <button
                     onClick={() => void removePlace(p.id)}
                     disabled={placeActing === p.id}
                     className="shrink-0 rounded-lg px-2 py-1.5 text-xs font-semibold text-red-500 disabled:opacity-50"
-                    title="Borrar"
+                    title={t('wclimisc.profile.deleteTitle')}
                   >
                     ✕
                   </button>
@@ -825,7 +842,7 @@ export default function ProfilePage() {
         {follows.length > 0 && (
           <div className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-5 mb-3">
             <p className="flex items-center gap-1.5 text-sm font-semibold text-surface-700 dark:text-surface-200 mb-3">
-              <Heart className="h-4 w-4" aria-hidden /> Comercios que sigo
+              <Heart className="h-4 w-4" aria-hidden /> {t('wclimisc.profile.followsTitle')}
             </p>
             <div className="space-y-2">
               {follows.map((f) => (
@@ -846,7 +863,7 @@ export default function ProfilePage() {
                   </Link>
                   <button
                     onClick={() => void removeFollow(f.id)}
-                    aria-label={`Dejar de seguir a ${f.businessName}`}
+                    aria-label={t('wclimisc.profile.unfollow', { name: f.businessName })}
                     className="shrink-0 rounded-full px-2 py-1 text-xs font-semibold text-surface-500 dark:text-surface-400 hover:text-red-500"
                   >
                     ✕
@@ -863,13 +880,13 @@ export default function ProfilePage() {
             href="/orders"
             className="flex items-center justify-center gap-2 rounded-xl bg-kiwi-600 px-4 py-3 text-sm font-semibold text-white"
           >
-            <ClipboardList className="h-4 w-4" /> Mis pedidos
+            <ClipboardList className="h-4 w-4" /> {t('wclimisc.profile.orders')}
           </Link>
           <button
             onClick={signOut}
             className="flex items-center justify-center gap-2 rounded-xl border border-surface-200 dark:border-surface-700 px-4 py-3 text-sm font-semibold text-surface-600 dark:text-surface-300"
           >
-            <LogOut className="h-4 w-4" /> Cerrar sesión
+            <LogOut className="h-4 w-4" /> {t('wclimisc.profile.logout')}
           </button>
         </div>
       </div>

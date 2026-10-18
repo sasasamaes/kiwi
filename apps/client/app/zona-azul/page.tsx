@@ -4,7 +4,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { api } from '@kiwi/ui';
+import { api, useTranslations } from '@kiwi/ui';
 
 const MERCHANT_ID = process.env.NEXT_PUBLIC_ZONA_AZUL_MERCHANT_ID;
 const CATEGORY = 'Mercadito Zona Azul';
@@ -18,11 +18,9 @@ interface MenuItem {
   stockQty?: number | null;
 }
 
-const BLUE_ZONE_COPY =
-  'Nicoya es una de las 5 Zonas Azules del mundo: aquí la gente vive más y mejor, en gran parte por su alimentación. El Mercadito Zona Azul de Kiwi reúne productos artesanales y locales —cuajada con leche, maíz de la zona— directo de manos de productores de Nicoya. Comprá local, comé como en la Zona Azul. 🥥';
-
 export default function ZonaAzulPage() {
-  const [businessName, setBusinessName] = useState<string>('Mercadito Zona Azul');
+  const { t } = useTranslations();
+  const [businessName, setBusinessName] = useState<string>(t('wclimisc.zona.title'));
   const [items, setItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -60,43 +58,43 @@ export default function ZonaAzulPage() {
             href="/"
             className="inline-flex items-center gap-1.5 text-sm text-surface-500 hover:text-surface-700 dark:text-surface-400 dark:hover:text-surface-200"
           >
-            ← Volver
+            {t('wclimisc.zona.back')}
           </Link>
           <motion.h1
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             className="mt-3 font-display text-2xl font-extrabold tracking-tight text-surface-900 sm:text-3xl dark:text-white"
           >
-            Mercadito Zona Azul
+            {t('wclimisc.zona.title')}
           </motion.h1>
           <p className="mt-1 text-sm text-surface-500 dark:text-surface-400">
-            De manos de productores de Nicoya, directo a tu mesa 🥝
+            {t('wclimisc.zona.subtitle')}
           </p>
         </header>
 
         <section className="mt-6">
           {loading ? (
             <p className="py-10 text-center text-sm text-surface-500 dark:text-surface-400">
-              Cargando…
+              {t('wclimisc.zona.loading')}
             </p>
           ) : !MERCHANT_ID ? (
             <div className="rounded-2xl border border-surface-200/70 bg-white/80 p-6 text-center dark:border-white/10 dark:bg-surface-800/70">
               <p className="text-4xl">🧀</p>
               <p className="mt-2 font-display font-bold text-surface-800 dark:text-surface-100">
-                Próximamente
+                {t('wclimisc.zona.soon')}
               </p>
               <p className="text-sm text-surface-500 dark:text-surface-400">
-                Estamos preparando el mercadito con productos de la Zona Azul.
+                {t('wclimisc.zona.soonHint')}
               </p>
             </div>
           ) : items.length === 0 ? (
             <div className="rounded-2xl border border-surface-200/70 bg-white/80 p-6 text-center dark:border-white/10 dark:bg-surface-800/70">
               <p className="text-4xl">🌱</p>
               <p className="mt-2 font-display font-bold text-surface-800 dark:text-surface-100">
-                En preparación en {businessName}
+                {t('wclimisc.zona.prepping', { name: businessName })}
               </p>
               <p className="text-sm text-surface-500 dark:text-surface-400">
-                Ya llegan las cuajadas de Nicoya.
+                {t('wclimisc.zona.preppingHint')}
               </p>
             </div>
           ) : (
@@ -130,11 +128,11 @@ export default function ZonaAzulPage() {
                         {money(item.price)}
                       </span>
                       <span className="rounded-full bg-gold-100 px-2 py-0.5 text-[10px] font-medium text-gold-700 dark:bg-gold-400/10 dark:text-gold-300">
-                        Par · 2 unidades
+                        {t('wclimisc.zona.pair')}
                       </span>
                       {typeof item.stockQty === 'number' && item.stockQty > 0 && (
                         <span className="text-[10px] text-surface-500 dark:text-surface-400">
-                          Stock: {item.stockQty}
+                          {t('wclimisc.zona.stock', { qty: item.stockQty })}
                         </span>
                       )}
                     </div>
@@ -146,7 +144,7 @@ export default function ZonaAzulPage() {
                 href={`/menu/${MERCHANT_ID}`}
                 className="mt-1 block w-full rounded-2xl bg-kiwi-600 py-3.5 text-center font-display font-bold text-white shadow-soft transition-colors hover:bg-kiwi-500"
               >
-                Ver menú completo y pedir →
+                {t('wclimisc.zona.fullMenu')}
               </Link>
             </div>
           )}
@@ -155,10 +153,10 @@ export default function ZonaAzulPage() {
         <section className="mt-6">
           <div className="rounded-2xl border border-kiwi-200/60 bg-kiwi-50/70 p-5 dark:border-kiwi-400/20 dark:bg-kiwi-400/5">
             <p className="font-display font-bold text-kiwi-800 dark:text-kiwi-200">
-              ¿Por qué Zona Azul? 🥥
+              {t('wclimisc.zona.whyTitle')}
             </p>
             <p className="mt-2 text-sm leading-relaxed text-surface-600 dark:text-surface-300">
-              {BLUE_ZONE_COPY}
+              {t('wclimisc.zona.story')}
             </p>
           </div>
         </section>

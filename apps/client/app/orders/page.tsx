@@ -17,7 +17,15 @@ import {
   Smartphone,
   MessageCircle,
 } from 'lucide-react';
-import { api, useAuth, Skeleton, hoverCard, ScrollToTop, ThemeToggle } from '@kiwi/ui';
+import {
+  api,
+  useAuth,
+  useTranslations,
+  Skeleton,
+  hoverCard,
+  ScrollToTop,
+  ThemeToggle,
+} from '@kiwi/ui';
 import { BottomNav } from '../components/BottomNav';
 
 interface OrderHistory {
@@ -44,68 +52,73 @@ interface OrderHistory {
   }>;
 }
 
-const STATUS_CONFIG: Record<string, { label: string; icon: any; color: string }> = {
-  delivered: {
-    label: 'Entregado',
-    icon: Check,
-    color: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400',
-  },
-  cancelled: {
-    label: 'Cancelado',
-    icon: X,
-    color: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400',
-  },
-  in_transit_to_delivery: {
-    label: 'En camino',
-    icon: '🚀',
-    color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400',
-  },
-  driver_proposals: {
-    label: 'Buscando repartidor',
-    icon: RefreshCw,
-    color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400',
-  },
-  pending_acceptance: {
-    label: 'Por aceptar',
-    icon: Clock,
-    color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400',
-  },
-  in_transit_to_pickup: {
-    label: 'Repartidor en camino',
-    icon: Bike,
-    color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400',
-  },
-  picked_up: {
-    label: 'Recogido',
-    icon: Bike,
-    color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400',
-  },
-  no_driver: {
-    label: 'Sin repartidor',
-    icon: X,
-    color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-400',
-  },
-  assigned: {
-    label: 'Asignado',
-    icon: Bike,
-    color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400',
-  },
-  pending: {
-    label: 'Pendiente',
-    icon: Clock,
-    color: 'bg-surface-100 text-surface-700 dark:bg-surface-700 dark:text-surface-300',
-  },
-};
-
-const FILTER_TABS = [
-  { id: 'all', label: 'Todos', icon: ClipboardList },
-  { id: 'active', label: 'Activos', icon: RefreshCw },
-  { id: 'delivered', label: 'Entregados', icon: Check },
-  { id: 'cancelled', label: 'Cancelados', icon: X },
-];
+function getStatusConfig(
+  t: (key: string) => string,
+): Record<string, { label: string; icon: any; color: string }> {
+  return {
+    delivered: {
+      label: t('wcliord.orders.statusDelivered'),
+      icon: Check,
+      color: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400',
+    },
+    cancelled: {
+      label: t('wcliord.orders.statusCancelled'),
+      icon: X,
+      color: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400',
+    },
+    in_transit_to_delivery: {
+      label: t('wcliord.orders.statusInTransit'),
+      icon: '🚀',
+      color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400',
+    },
+    driver_proposals: {
+      label: t('wcliord.orders.statusSearching'),
+      icon: RefreshCw,
+      color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400',
+    },
+    pending_acceptance: {
+      label: t('wcliord.orders.statusPendingAccept'),
+      icon: Clock,
+      color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400',
+    },
+    in_transit_to_pickup: {
+      label: t('wcliord.orders.statusToPickup'),
+      icon: Bike,
+      color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400',
+    },
+    picked_up: {
+      label: t('wcliord.orders.statusPickedUp'),
+      icon: Bike,
+      color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400',
+    },
+    no_driver: {
+      label: t('wcliord.orders.statusNoDriver'),
+      icon: X,
+      color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-400',
+    },
+    assigned: {
+      label: t('wcliord.orders.statusAssigned'),
+      icon: Bike,
+      color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400',
+    },
+    pending: {
+      label: t('wcliord.orders.statusPending'),
+      icon: Clock,
+      color: 'bg-surface-100 text-surface-700 dark:bg-surface-700 dark:text-surface-300',
+    },
+  };
+}
 
 export default function OrderHistoryPage() {
   const { user, loading: authLoading } = useAuth();
+  const { t } = useTranslations();
+  const STATUS_CONFIG = getStatusConfig(t);
+  const FILTER_TABS = [
+    { id: 'all', label: t('wcliord.orders.filterAll'), icon: ClipboardList },
+    { id: 'active', label: t('wcliord.orders.filterActive'), icon: RefreshCw },
+    { id: 'delivered', label: t('wcliord.orders.filterDelivered'), icon: Check },
+    { id: 'cancelled', label: t('wcliord.orders.filterCancelled'), icon: X },
+  ];
   const [orders, setOrders] = useState<OrderHistory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -119,11 +132,11 @@ export default function OrderHistoryPage() {
       setOrders(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Failed to fetch orders:', err);
-      setError(err instanceof Error ? err.message : 'No se pudieron cargar los pedidos');
+      setError(err instanceof Error ? err.message : t('wcliord.orders.loadFailed'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     // Ruta protegida: sin sesión se va a login (el login devuelve acá).
@@ -200,20 +213,20 @@ export default function OrderHistoryPage() {
             😕
           </motion.div>
           <h2 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100 mb-2">
-            No pudimos cargar tus pedidos
+            {t('wcliord.orders.errorTitle')}
           </h2>
           <p className="text-surface-500 dark:text-surface-400 mb-6">{error}</p>
           <div className="flex gap-3 justify-center">
             <Link href="/">
               <button className="px-6 py-3 rounded-xl bg-surface-100 dark:bg-surface-800 text-surface-700 dark:text-surface-300 font-medium">
-                ← Volver
+                {t('wcliord.orders.back')}
               </button>
             </Link>
             <button
               onClick={fetchOrders}
               className="px-6 py-3 rounded-xl bg-kiwi-gradient text-white font-medium shadow-kiwi-lg"
             >
-              <RefreshCw className="h-4 w-4 inline" /> Reintentar
+              <RefreshCw className="h-4 w-4 inline" /> {t('wcliord.orders.retry')}
             </button>
           </div>
         </motion.div>
@@ -237,10 +250,10 @@ export default function OrderHistoryPage() {
               className="flex items-center gap-2 text-surface-600 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200"
             >
               <span>←</span>
-              <span className="text-sm font-medium">Inicio</span>
+              <span className="text-sm font-medium">{t('wcliord.orders.home')}</span>
             </Link>
             <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-              <ClipboardList className="h-4 w-4 inline" /> Mis Pedidos
+              <ClipboardList className="h-4 w-4 inline" /> {t('wcliord.orders.title')}
             </h1>
             <ThemeToggle />
           </div>
@@ -291,16 +304,16 @@ export default function OrderHistoryPage() {
               📭
             </motion.div>
             <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-2">
-              No hay pedidos
+              {t('wcliord.orders.emptyTitle')}
             </h3>
             <p className="text-surface-500 dark:text-surface-400 mb-6">
               {activeFilter === 'all'
-                ? 'Escanea un QR para hacer tu primer pedido'
-                : 'No hay pedidos en esta categoría'}
+                ? t('wcliord.orders.emptyAll')
+                : t('wcliord.orders.emptyFiltered')}
             </p>
             <Link href="/">
               <button className="px-6 py-3 rounded-xl bg-kiwi-gradient text-white font-medium shadow-card transition-transform active:scale-[0.98]">
-                <Smartphone className="h-4 w-4 inline" /> Escanear QR
+                <Smartphone className="h-4 w-4 inline" /> {t('wcliord.orders.scanQr')}
               </button>
             </Link>
           </motion.div>
@@ -336,10 +349,11 @@ export default function OrderHistoryPage() {
                             </div>
                             <div>
                               <p className="font-semibold text-surface-800 dark:text-surface-100">
-                                {order.merchant?.businessName || 'Restaurante'}
+                                {order.merchant?.businessName ||
+                                  t('wcliord.orders.merchantFallback')}
                               </p>
                               <p className="text-sm text-surface-500 dark:text-surface-400">
-                                Pedido #{order.id.slice(0, 8)}
+                                {t('wcliord.orders.orderNumber', { id: order.id.slice(0, 8) })}
                               </p>
                             </div>
                           </div>
@@ -389,7 +403,12 @@ export default function OrderHistoryPage() {
                         {order.items && order.items.length > 0 && (
                           <div className="mt-3 pt-3 border-t border-surface-100 dark:border-surface-700">
                             <p className="text-xs text-surface-500 dark:text-surface-400 mb-1">
-                              {order.items.length} producto{order.items.length > 1 ? 's' : ''}
+                              {t(
+                                order.items.length === 1
+                                  ? 'wcliord.orders.itemOne'
+                                  : 'wcliord.orders.itemMany',
+                                { count: order.items.length },
+                              )}
                             </p>
                             <p className="text-sm text-surface-600 dark:text-surface-400 truncate">
                               {order.items
@@ -406,7 +425,8 @@ export default function OrderHistoryPage() {
                               href={`/tracking/${order.id}`}
                               className="inline-flex items-center gap-1.5 rounded-lg bg-kiwi-50 dark:bg-kiwi-900/20 px-3 py-1.5 text-xs font-semibold text-kiwi-700 dark:text-kiwi-300 transition-colors [@media(hover:hover)]:hover:bg-kiwi-100 dark:[@media(hover:hover)]:hover:bg-kiwi-900/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-600/40 active:scale-95"
                             >
-                              <MessageCircle className="h-3.5 w-3.5" /> Seguir y chatear
+                              <MessageCircle className="h-3.5 w-3.5" />{' '}
+                              {t('wcliord.orders.trackChat')}
                             </Link>
                           </div>
                         )}
@@ -418,7 +438,7 @@ export default function OrderHistoryPage() {
                               href={`/order/${order.id}/rate`}
                               className="inline-flex items-center gap-1 rounded-lg bg-yellow-50 dark:bg-yellow-900/30 px-3 py-1.5 text-xs font-semibold text-yellow-700 dark:text-yellow-400"
                             >
-                              <Star className="h-3.5 w-3.5" /> Calificar
+                              <Star className="h-3.5 w-3.5" /> {t('wcliord.orders.rate')}
                             </Link>
                           </div>
                         )}

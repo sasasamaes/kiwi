@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { Bell, X } from 'lucide-react';
-import { usePushNotifications } from '@kiwi/ui';
+import { usePushNotifications, useTranslations } from '@kiwi/ui';
 
 const DISMISS_KEY = 'kiwi-push-optin-dismissed';
 
@@ -14,6 +14,7 @@ const DISMISS_KEY = 'kiwi-push-optin-dismissed';
  */
 export function PushOptInCard() {
   const { isSupported, permission, needsInstall, requestPermission } = usePushNotifications();
+  const { t } = useTranslations();
   const [dismissed, setDismissed] = useState(true);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
@@ -59,8 +60,8 @@ export function PushOptInCard() {
     }
     setError(
       res.reason === 'unsupported'
-        ? 'Tu navegador no soporta notificaciones.'
-        : 'No se pudo activar. Revisá tu conexión e intentá de nuevo.',
+        ? t('wclihome.home.pushUnsupported')
+        : t('wclihome.home.pushFailed'),
     );
   };
 
@@ -68,7 +69,7 @@ export function PushOptInCard() {
     return (
       <div className="mb-6 rounded-2xl bg-kiwi-50 dark:bg-kiwi-400/10 border border-kiwi-600/20 p-4">
         <p className="text-sm text-kiwi-700 dark:text-kiwi-300 flex items-center gap-2">
-          <Bell className="h-4 w-4" /> ¡Avisos activados! Te avisaremos de tus pedidos.
+          <Bell className="h-4 w-4" /> {t('wclihome.home.pushDone')}
         </p>
       </div>
     );
@@ -82,12 +83,12 @@ export function PushOptInCard() {
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-surface-800 dark:text-surface-100 text-sm">
-            {needsInstall ? 'Instalá la app para avisos' : 'Activá los avisos de tus pedidos'}
+            {needsInstall
+              ? t('wclihome.home.pushTitleInstall')
+              : t('wclihome.home.pushTitleDefault')}
           </p>
           <p className="text-xs text-surface-500 dark:text-surface-400 mt-0.5">
-            {needsInstall
-              ? 'En iPhone: Compartir → Agregar a inicio, y volvé acá.'
-              : 'Te avisamos cuando tu pedido esté en camino y de las ofertas.'}
+            {needsInstall ? t('wclihome.home.pushDescInstall') : t('wclihome.home.pushDescDefault')}
           </p>
           {!needsInstall && (
             <button
@@ -95,14 +96,14 @@ export function PushOptInCard() {
               disabled={loading}
               className="mt-2 rounded-xl bg-kiwi-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
             >
-              {loading ? 'Activando…' : 'Activar notificaciones'}
+              {loading ? t('wclihome.home.pushActivating') : t('wclihome.home.pushCta')}
             </button>
           )}
           {error && <p className="text-xs text-red-600 mt-2">{error}</p>}
         </div>
         <button
           onClick={dismiss}
-          aria-label="Descartar"
+          aria-label={t('wclihome.home.pushDismiss')}
           className="rounded-full p-1 text-surface-500 dark:text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
         >
           <X className="h-4 w-4" />

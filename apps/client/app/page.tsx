@@ -17,6 +17,8 @@ import {
   isEmojiImage,
   isHttpUrl,
   hoverCard,
+  useTranslations,
+  LanguageSwitcher,
 } from '@kiwi/ui';
 import {
   Camera,
@@ -72,17 +74,17 @@ interface DiscoverItem {
 // WhatsApp comercial de Kiwi (ventas/adhesión). Se configura en Vercel con
 // NEXT_PUBLIC_SALES_WHATSAPP=506XXXXXXX. Fallback = placeholder visible.
 const CATEGORIES = [
-  { id: '', label: 'Todos', icon: LayoutGrid },
-  { id: 'restaurante', label: 'Restaurantes', icon: UtensilsCrossed },
-  { id: 'soda', label: 'Sodas', icon: Store },
-  { id: 'pizzeria', label: 'Pizzerías', icon: Pizza },
-  { id: 'cafe_brunch', label: 'Café & Brunch', icon: Coffee },
-  { id: 'panaderia', label: 'Panaderías', icon: Croissant },
-  { id: 'mariscos', label: 'Mariscos', icon: Fish },
-  { id: 'comida_rapida', label: 'Rápida', icon: Sandwich },
-  { id: 'saludable', label: 'Saludable', icon: Salad },
-  { id: 'cocina_casera', label: 'Cocina casera', icon: CookingPot },
-  { id: 'bar', label: 'Bares', icon: Beer },
+  { id: '', key: 'catAll', icon: LayoutGrid },
+  { id: 'restaurante', key: 'catRestaurante', icon: UtensilsCrossed },
+  { id: 'soda', key: 'catSoda', icon: Store },
+  { id: 'pizzeria', key: 'catPizzeria', icon: Pizza },
+  { id: 'cafe_brunch', key: 'catCafe', icon: Coffee },
+  { id: 'panaderia', key: 'catPanaderia', icon: Croissant },
+  { id: 'mariscos', key: 'catMariscos', icon: Fish },
+  { id: 'comida_rapida', key: 'catRapida', icon: Sandwich },
+  { id: 'saludable', key: 'catSaludable', icon: Salad },
+  { id: 'cocina_casera', key: 'catCasera', icon: CookingPot },
+  { id: 'bar', key: 'catBar', icon: Beer },
 ];
 
 const SALES_WA_NUMBER = process.env.NEXT_PUBLIC_SALES_WHATSAPP || '50672199768';
@@ -100,9 +102,17 @@ const formatRating = (v: unknown): string => {
   return Number.isFinite(n) ? (n as number).toFixed(1) : '5.0';
 };
 
+const STEPS = [
+  { icon: Smartphone, titleKey: 'stepScanTitle', descKey: 'stepScanDesc' },
+  { icon: ClipboardList, titleKey: 'stepFoodTitle', descKey: 'stepFoodDesc' },
+  { icon: CreditCard, titleKey: 'stepPayTitle', descKey: 'stepPayDesc' },
+  { icon: Bike, titleKey: 'stepHomeTitle', descKey: 'stepHomeDesc' },
+];
+
 export default function ClientHome() {
   const router = useRouter();
   const { user } = useAuth();
+  const { t } = useTranslations();
   const [showScanner, setShowScanner] = useState(false);
   const [scannerActive, setScannerActive] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
@@ -155,7 +165,7 @@ export default function ClientHome() {
         if (done?.merchant?.id || done?.merchantId) {
           setLastDelivered({
             id: done.merchant?.id ?? done.merchantId,
-            businessName: done.merchant?.businessName || 'tu pedido favorito',
+            businessName: done.merchant?.businessName || '',
           });
         }
       })
@@ -298,7 +308,7 @@ export default function ClientHome() {
             <div className="flex min-w-0 flex-col leading-tight">
               <KiwiLogo size={30} />
               <span className="mt-1 truncate font-display text-[11px] italic tracking-wide text-surface-500 dark:text-surface-400">
-                Delivery Blue Zone App
+                {t('wclihome.home.brandTagline')}
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -307,7 +317,7 @@ export default function ClientHome() {
                   href="/profile"
                   className="text-sm font-medium text-kiwi-700 dark:text-kiwi-300 flex items-center gap-1"
                 >
-                  <User className="h-4 w-4" /> Mi cuenta
+                  <User className="h-4 w-4" /> {t('wclihome.home.account')}
                 </Link>
               ) : (
                 <>
@@ -315,16 +325,17 @@ export default function ClientHome() {
                     href="/login"
                     className="whitespace-nowrap text-sm font-medium text-surface-600 dark:text-surface-300"
                   >
-                    Entrar
+                    {t('wclihome.home.login')}
                   </Link>
                   <Link
                     href="/register"
                     className="whitespace-nowrap text-sm font-semibold text-white bg-kiwi-700 rounded-full px-3 py-1.5"
                   >
-                    Crear cuenta
+                    {t('wclihome.home.register')}
                   </Link>
                 </>
               )}
+              <LanguageSwitcher />
               <ThemeToggle />
             </div>
           </div>
@@ -335,14 +346,15 @@ export default function ClientHome() {
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                placeholder="Buscar restaurantes…"
+                placeholder={t('wclihome.home.searchPlaceholder')}
+                aria-label={t('wclihome.home.searchAria')}
                 className="bg-transparent flex-1 py-2 text-sm outline-none placeholder:text-surface-400"
               />
             </div>
             <button
               onClick={useMyLocation}
               disabled={locating}
-              title={coords ? 'Ordenado por cercanía' : 'Ordenar por cercanía'}
+              title={coords ? t('wclihome.home.nearActiveTitle') : t('wclihome.home.nearTitle')}
               className={`flex items-center gap-1.5 rounded-full px-3 py-2 text-sm shrink-0 transition-colors ${
                 coords
                   ? 'bg-kiwi-600 text-white font-semibold'
@@ -350,13 +362,15 @@ export default function ClientHome() {
               }`}
             >
               <MapPin className="h-4 w-4" />
-              {locating ? '…' : coords ? 'Cerca' : 'Cerca de mí'}
+              {locating
+                ? '…'
+                : coords
+                  ? t('wclihome.home.nearActive')
+                  : t('wclihome.home.nearDefault')}
             </button>
           </div>
           {locDenied && !coords && (
-            <p className="text-xs text-surface-500 mt-2">
-              No pudimos usar tu ubicación; mostramos por destacados.
-            </p>
+            <p className="text-xs text-surface-500 mt-2">{t('wclihome.home.locDenied')}</p>
           )}
           {/* Categorías de negocios */}
           <div className="flex gap-2 overflow-x-auto pb-1 pt-3 -mx-4 px-4 scrollbar-hide">
@@ -375,7 +389,7 @@ export default function ClientHome() {
                   }`}
                 >
                   <Icon className="h-4 w-4" />
-                  {c.label}
+                  {t(`wclihome.home.${c.key}`)}
                 </button>
               );
             })}
@@ -395,10 +409,10 @@ export default function ClientHome() {
             </span>
             <span className="min-w-0 flex-1">
               <span className="block font-display text-[17px] font-bold leading-snug text-surface-900 dark:text-surface-100">
-                Enviar una encomienda
+                {t('wclihome.home.encomiendaTitle')}
               </span>
               <span className="block text-xs text-surface-500 dark:text-surface-400">
-                Un repartidor recoge y lleva tu paquete
+                {t('wclihome.home.encomiendaDesc')}
               </span>
             </span>
             <ChevronRight
@@ -415,10 +429,10 @@ export default function ClientHome() {
             </span>
             <span className="min-w-0 flex-1">
               <span className="block font-display text-[17px] font-bold leading-snug text-surface-900 dark:text-surface-100">
-                Mercadito Zona Azul
+                {t('wclihome.home.mercaditoTitle')}
               </span>
               <span className="block text-xs text-surface-500 dark:text-surface-400">
-                Cuajadas y productos de Nicoya · Zona Azul
+                {t('wclihome.home.mercaditoDesc')}
               </span>
             </span>
             <ChevronRight
@@ -438,10 +452,10 @@ export default function ClientHome() {
             </span>
             <span className="min-w-0 flex-1">
               <span className="block text-[11px] font-bold uppercase tracking-[0.14em] text-kiwi-700 dark:text-kiwi-300">
-                Pedir de nuevo
+                {t('wclihome.home.reorderTitle')}
               </span>
               <span className="block truncate font-display text-[17px] font-bold leading-snug text-surface-900 dark:text-surface-100">
-                {lastDelivered.businessName}
+                {lastDelivered.businessName || t('wclihome.home.reorderFallback')}
               </span>
             </span>
             <ChevronRight
@@ -461,7 +475,7 @@ export default function ClientHome() {
                 className="relative shrink-0 w-72 rounded-2xl overflow-hidden bg-gradient-to-r from-kiwi-600 to-kiwi-500 text-white p-4 text-left"
               >
                 <span className="absolute top-2 right-2 text-[10px] bg-black/30 rounded-full px-2 py-0.5 flex items-center gap-1">
-                  <Megaphone className="h-3 w-3" /> Patrocinado
+                  <Megaphone className="h-3 w-3" /> {t('wclihome.home.sponsored')}
                 </span>
                 {b.imageUrl ? (
                   // NOTE: <img> intencional — imágenes dinámicas de Cloudinary (sin dominio fijo).
@@ -481,61 +495,64 @@ export default function ClientHome() {
         {tomorrow.length > 0 && (
           <div className="mb-6">
             <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-orange-700 dark:text-orange-300">
-              Preventa
+              {t('wclihome.home.presaleEyebrow')}
             </p>
             <p className="font-display text-[19px] font-bold tracking-tight text-surface-900 dark:text-surface-100 mb-1 flex items-center gap-2">
               <CalendarDays className="h-5 w-5 text-orange-600 dark:text-orange-300" aria-hidden />
-              Mañana venden esto
+              {t('wclihome.home.presaleTitle')}
             </p>
             <p className="text-xs text-surface-500 dark:text-surface-400 mb-3">
-              Apartá hoy en preventa — hasta agotar stock.
+              {t('wclihome.home.presaleHint')}
             </p>
             <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4">
-              {tomorrow.map((t) => (
+              {tomorrow.map((tm) => (
                 <button
-                  key={t.merchantId}
-                  onClick={() => router.push(`/menu/${t.merchantId}`)}
+                  key={tm.merchantId}
+                  onClick={() => router.push(`/menu/${tm.merchantId}`)}
                   className="shrink-0 w-64 rounded-2xl overflow-hidden border-2 border-orange-500/40 dark:border-orange-400/30 bg-white dark:bg-surface-800 p-4 text-left shadow-soft"
                 >
                   <div className="flex items-center gap-2 mb-2">
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-orange-100 dark:bg-orange-900/40 overflow-hidden">
-                      {isHttpUrl(t.logoUrl) ? (
+                      {isHttpUrl(tm.logoUrl) ? (
                         // NOTE: <img> intencional — logos dinámicos de Cloudinary.
                         <img
-                          src={t.logoUrl}
-                          alt={t.businessName}
+                          src={tm.logoUrl}
+                          alt={tm.businessName}
                           className="h-9 w-9 object-cover"
                         />
-                      ) : isEmojiImage(t.logoUrl) ? (
-                        <span className="text-xl leading-none">{t.logoUrl}</span>
+                      ) : isEmojiImage(tm.logoUrl) ? (
+                        <span className="text-xl leading-none">{tm.logoUrl}</span>
                       ) : (
                         <span className="font-bold text-orange-700 dark:text-orange-300">
-                          {t.businessName.slice(0, 1).toUpperCase()}
+                          {tm.businessName.slice(0, 1).toUpperCase()}
                         </span>
                       )}
                     </div>
                     <div className="min-w-0">
                       <p className="font-semibold text-sm text-surface-800 dark:text-surface-100 truncate">
-                        {t.businessName}
+                        {tm.businessName}
                       </p>
-                      {t.isHomeCook && (
+                      {tm.isHomeCook && (
                         <p className="inline-flex items-center gap-1 text-[10px] font-semibold text-orange-700 dark:text-orange-300">
-                          <CookingPot className="h-3 w-3" aria-hidden /> Cocina casera
+                          <CookingPot className="h-3 w-3" aria-hidden />{' '}
+                          {t('wclihome.home.homeCook')}
                         </p>
                       )}
                     </div>
                   </div>
-                  {t.items.slice(0, 2).map((i) => (
+                  {tm.items.slice(0, 2).map((i) => (
                     <p
                       key={i.id}
                       className="text-xs text-surface-600 dark:text-surface-300 truncate"
                     >
                       • {i.name} — ₡{Number(i.price).toLocaleString()}
-                      {typeof i.stockQty === 'number' ? ` (quedan ${i.stockQty})` : ''}
+                      {typeof i.stockQty === 'number'
+                        ? ` ${t('wclihome.home.stockLeft', { count: i.stockQty })}`
+                        : ''}
                     </p>
                   ))}
                   <p className="mt-2 text-xs font-semibold text-orange-700 dark:text-orange-300">
-                    Apartar para mañana →
+                    {t('wclihome.home.reserveCta')}
                   </p>
                 </button>
               ))}
@@ -555,11 +572,11 @@ export default function ClientHome() {
               <div className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 flex items-center gap-2">
-                    <Camera className="h-5 w-5" /> Escanear QR
+                    <Camera className="h-5 w-5" /> {t('wclihome.home.scannerTitle')}
                   </h2>
                   <motion.button
                     onClick={stopScanner}
-                    aria-label="Cerrar escáner"
+                    aria-label={t('wclihome.home.scannerClose')}
                     whileTap={{ scale: 0.9 }}
                     className="rounded-full text-surface-500 dark:text-surface-400 hover:text-surface-600 dark:hover:text-surface-300 transition-colors"
                   >
@@ -594,7 +611,7 @@ export default function ClientHome() {
             <motion.div
               role="button"
               tabIndex={0}
-              aria-label="Escanear código QR del restaurante"
+              aria-label={t('wclihome.home.qrAria')}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') startScanner();
               }}
@@ -615,10 +632,8 @@ export default function ClientHome() {
                   <Camera className="h-8 w-8 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-display font-bold">Escanear QR</h2>
-                  <p className="text-white/80 text-sm">
-                    Escanea el código del restaurante para ver el menú
-                  </p>
+                  <h2 className="text-lg font-display font-bold">{t('wclihome.home.qrTitle')}</h2>
+                  <p className="text-white/80 text-sm">{t('wclihome.home.qrDesc')}</p>
                 </div>
               </div>
             </motion.div>
@@ -628,11 +643,11 @@ export default function ClientHome() {
         <PushOptInCard />
         <ScrollReveal index={0}>
           <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-kiwi-700 dark:text-kiwi-300">
-            Nicoya · Zona Azul
+            {t('wclihome.home.feedEyebrow')}
           </p>
           <h2 className="font-display text-[22px] font-bold tracking-tight text-surface-900 dark:text-surface-100 mb-4 flex items-center gap-2">
             <MapPin className="h-5 w-5 text-kiwi-700 dark:text-kiwi-300" aria-hidden />
-            Restaurantes cerca tuyo
+            {t('wclihome.home.feedTitle')}
           </h2>
           {loading ? (
             <div className="space-y-3">
@@ -652,19 +667,17 @@ export default function ClientHome() {
                 <PackageSearch className="h-8 w-8 text-kiwi-700 dark:text-kiwi-300" aria-hidden />
               </div>
               <p className="font-medium text-surface-800 dark:text-surface-200">
-                {feedError ? 'No se pudo cargar la lista' : 'Todavía no hay comercios por aquí'}
+                {feedError ? t('wclihome.home.emptyErrorTitle') : t('wclihome.home.emptyTitle')}
               </p>
               <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">
-                {feedError
-                  ? 'Revisá tu conexión e intentá de nuevo.'
-                  : 'Usá el botón de arriba para escanear el QR de tu restaurante favorito'}
+                {feedError ? t('wclihome.home.emptyErrorDesc') : t('wclihome.home.emptyDesc')}
               </p>
               {feedError && (
                 <button
                   onClick={() => setReloadKey((k) => k + 1)}
                   className="mt-3 rounded-xl bg-kiwi-600 px-4 py-2.5 text-sm font-semibold text-white"
                 >
-                  Reintentar
+                  {t('wclihome.home.retry')}
                 </button>
               )}
             </div>
@@ -698,12 +711,13 @@ export default function ClientHome() {
                         </p>
                         {it.isSponsored && (
                           <span className="text-[10px] font-semibold bg-gold-500/20 text-gold-700 dark:text-gold-400 rounded-full px-2 py-0.5 shrink-0">
-                            Patrocinado
+                            {t('wclihome.home.sponsored')}
                           </span>
                         )}
                         {it.isHomeCook && (
                           <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-orange-500/15 text-orange-700 dark:text-orange-300 rounded-full px-2 py-0.5 shrink-0">
-                            <CookingPot className="h-3 w-3" aria-hidden /> Casera
+                            <CookingPot className="h-3 w-3" aria-hidden />{' '}
+                            {t('wclihome.home.cardHomeCook')}
                           </span>
                         )}
                       </div>
@@ -717,7 +731,8 @@ export default function ClientHome() {
                         </span>
                         {it.distanceKm != null && (
                           <span className="flex items-center gap-1 text-surface-600 dark:text-surface-300">
-                            <MapPin className="h-3.5 w-3.5" />a {it.distanceKm} km
+                            <MapPin className="h-3.5 w-3.5" />
+                            {t('wclihome.home.distance', { count: it.distanceKm })}
                           </span>
                         )}
                         <span
@@ -727,7 +742,7 @@ export default function ClientHome() {
                             aria-hidden
                             className={`h-1.5 w-1.5 rounded-full ${it.isOpen ? 'bg-kiwi-600' : 'bg-surface-300'}`}
                           />
-                          {it.isOpen ? 'Abierto' : 'Cerrado'}
+                          {it.isOpen ? t('wclihome.home.open') : t('wclihome.home.closed')}
                         </span>
                       </div>
                     </div>
@@ -747,16 +762,15 @@ export default function ClientHome() {
                 </div>
                 <div>
                   <p className="font-display font-bold text-surface-800 dark:text-surface-100">
-                    Comunidad KiwiCR
+                    {t('wclihome.home.communityTitle')}
                   </p>
                   <p className="text-xs text-surface-500 dark:text-surface-400">
-                    Ofertas, pautas y novedades por WhatsApp
+                    {t('wclihome.home.communityDesc')}
                   </p>
                 </div>
               </div>
               <p className="text-sm text-surface-600 dark:text-surface-300 mb-4">
-                Unite para recibir las promos antes que nadie y pautar tu negocio. O escribinos
-                directo al {SALES_WA_DISPLAY}.
+                {t('wclihome.home.communityBody', { phone: SALES_WA_DISPLAY })}
               </p>
               <div className="flex flex-col sm:flex-row gap-2">
                 <a
@@ -765,7 +779,7 @@ export default function ClientHome() {
                   rel="noopener noreferrer"
                   className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-kiwi-600 px-4 py-3 text-sm font-semibold text-white"
                 >
-                  <MessageCircle className="h-4 w-4" /> Unirme a la comunidad
+                  <MessageCircle className="h-4 w-4" /> {t('wclihome.home.communityJoin')}
                 </a>
                 <a
                   href={`https://wa.me/${SALES_WA_NUMBER}`}
@@ -787,25 +801,24 @@ export default function ClientHome() {
                 </div>
                 <div>
                   <p className="font-display font-bold text-surface-800 dark:text-surface-100">
-                    ¿Tienes un restaurante?
+                    {t('wclihome.home.bizTitle')}
                   </p>
                   <p className="text-xs text-surface-500 dark:text-surface-400">
-                    Este espacio puede ser el tuyo
+                    {t('wclihome.home.bizDesc')}
                   </p>
                 </div>
               </div>
               <p className="text-sm text-surface-600 dark:text-surface-300 mb-4">
-                Aparecé primero, poné tu banner y mandá ofertas por push a los clientes de tu
-                ciudad. O usá Kiwi para recibir pedidos en tu negocio.
+                {t('wclihome.home.bizBody')}
               </p>
               <div className="flex flex-col gap-2">
                 <a
-                  href={waLink('Hola Kiwi, tengo un restaurante y quiero pautar en la app')}
+                  href={waLink(t('wclihome.home.bizWaMessage'))}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center justify-center gap-2 rounded-xl bg-kiwi-600 px-4 py-3 text-sm font-semibold text-white"
                 >
-                  <MessageCircle className="h-4 w-4" /> Quiero pautar mi restaurante
+                  <MessageCircle className="h-4 w-4" /> {t('wclihome.home.bizAdvertise')}
                 </a>
                 <a
                   href={COMMUNITY_URL}
@@ -813,7 +826,7 @@ export default function ClientHome() {
                   rel="noopener noreferrer"
                   className="flex items-center justify-center gap-2 rounded-xl border border-kiwi-600/30 px-4 py-3 text-sm font-semibold text-kiwi-700 dark:text-kiwi-300"
                 >
-                  <Store className="h-4 w-4" /> Usar Kiwi en mi negocio
+                  <Store className="h-4 w-4" /> {t('wclihome.home.bizUse')}
                 </a>
                 <a
                   href={COMMUNITY_URL}
@@ -821,7 +834,7 @@ export default function ClientHome() {
                   rel="noopener noreferrer"
                   className="flex items-center justify-center gap-2 rounded-xl border border-orange-500/40 bg-orange-500/10 px-4 py-3 text-sm font-semibold text-orange-700 dark:text-orange-300"
                 >
-                  <CookingPot className="h-4 w-4" /> Cocino en casa, quiero vender
+                  <CookingPot className="h-4 w-4" /> {t('wclihome.home.bizHomeCook')}
                 </a>
               </div>
             </div>
@@ -833,24 +846,21 @@ export default function ClientHome() {
             index={1}
           >
             <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100 mb-4 text-center">
-              ¿Cómo funciona?
+              {t('wclihome.home.howTitle')}
             </h3>
             <div className="space-y-4">
-              {[
-                { icon: Smartphone, title: 'Escanear QR', desc: 'En el restaurante o aqui' },
-                { icon: ClipboardList, title: 'Elige tu comida', desc: 'Selecciona del menu' },
-                { icon: CreditCard, title: 'Paga facil', desc: 'SINPE, tarjeta o efectivo' },
-                { icon: Bike, title: 'Recibe en casa', desc: 'Tracking en tiempo real' },
-              ].map((step, i) => (
-                <div key={i} className="flex items-center gap-4">
+              {STEPS.map((step) => (
+                <div key={step.titleKey} className="flex items-center gap-4">
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-kiwi-100 dark:bg-kiwi-400/10 dark:ring-1 dark:ring-kiwi-400/25">
                     <step.icon className="h-6 w-6 text-kiwi-700 dark:text-kiwi-300" />
                   </div>
                   <div>
                     <p className="font-medium text-surface-800 dark:text-surface-100">
-                      {step.title}
+                      {t(`wclihome.home.${step.titleKey}`)}
                     </p>
-                    <p className="text-sm text-surface-500 dark:text-surface-400">{step.desc}</p>
+                    <p className="text-sm text-surface-500 dark:text-surface-400">
+                      {t(`wclihome.home.${step.descKey}`)}
+                    </p>
                   </div>
                 </div>
               ))}
