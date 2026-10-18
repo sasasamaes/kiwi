@@ -6,7 +6,14 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Clock, X, ClipboardList, Printer, Smartphone, ShoppingCart, Bike } from 'lucide-react';
-import { QRCodeGenerator, useAuth, api, StaggerContainer, StaggerItem } from '@kiwi/ui';
+import {
+  QRCodeGenerator,
+  useAuth,
+  api,
+  StaggerContainer,
+  StaggerItem,
+  useTranslations,
+} from '@kiwi/ui';
 
 interface MerchantData {
   id: string;
@@ -17,6 +24,7 @@ interface MerchantData {
 }
 
 export default function MerchantQRPage() {
+  const { t } = useTranslations();
   const params = useParams();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
@@ -42,8 +50,8 @@ export default function MerchantQRPage() {
           // Otherwise try to fetch by ID (for admin or public view)
           setMerchant({
             id: merchantId,
-            businessName: 'Mi Negocio',
-            address: 'Nicoya, Guanacaste',
+            businessName: t('webshop2.qr.fallbackName'),
+            address: t('webshop2.qr.fallbackAddress'),
             isOpen: true,
           });
         }
@@ -78,12 +86,12 @@ export default function MerchantQRPage() {
           <span className="text-5xl mb-4 block">
             <X className="h-12 w-12" />
           </span>
-          <p className="text-surface-500 dark:text-surface-400">Comercio no encontrado</p>
+          <p className="text-surface-500 dark:text-surface-400">{t('webshop2.qr.notFound')}</p>
           <Link
             href="/dashboard"
             className="mt-4 inline-flex min-h-[44px] items-center text-kiwi-700 hover:text-kiwi-800"
           >
-            ← Volver al dashboard
+            {t('webshop2.qr.backDashboard')}
           </Link>
         </div>
       </div>
@@ -106,10 +114,10 @@ export default function MerchantQRPage() {
               className="flex items-center gap-2 text-surface-600 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200"
             >
               <motion.span whileHover={{ x: -4 }}>←</motion.span>
-              <span className="text-sm font-medium">Volver</span>
+              <span className="text-sm font-medium">{t('webshop2.qr.back')}</span>
             </Link>
             <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-              Mi Código QR
+              {t('webshop2.qr.title')}
             </h1>
             <div className="w-16" />
           </div>
@@ -155,39 +163,39 @@ export default function MerchantQRPage() {
           transition={{ delay: 0.2 }}
         >
           <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-            <ClipboardList className="h-5 w-5 inline" /> ¿Cómo usar tu QR?
+            <ClipboardList className="h-5 w-5 inline" /> {t('webshop2.qr.howTitle')}
           </h3>
           <div className="space-y-4">
             {[
               {
                 step: '1',
                 icon: Printer,
-                title: 'Imprime el QR',
-                desc: 'Descarga o imprime el código y ponlo en un lugar visible de tu negocio',
+                title: t('webshop2.qr.step1Title'),
+                desc: t('webshop2.qr.step1Desc'),
               },
               {
                 step: '2',
                 icon: Smartphone,
-                title: 'Cliente escanea',
-                desc: 'El cliente apunta su cámara al código QR con su teléfono',
+                title: t('webshop2.qr.step2Title'),
+                desc: t('webshop2.qr.step2Desc'),
               },
               {
                 step: '3',
                 icon: ClipboardList,
-                title: 'Ve el menú',
-                desc: 'Se abre tu menú digital con todos tus productos y precios',
+                title: t('webshop2.qr.step3Title'),
+                desc: t('webshop2.qr.step3Desc'),
               },
               {
                 step: '4',
                 icon: ShoppingCart,
-                title: 'Cliente pide',
-                desc: 'El cliente selecciona sus productos y paga directamente desde el celular',
+                title: t('webshop2.qr.step4Title'),
+                desc: t('webshop2.qr.step4Desc'),
               },
               {
                 step: '5',
                 icon: Bike,
-                title: 'Repartidor recoge',
-                desc: 'Recibes la comanda en tu sistema y un repartidor la lleva al cliente',
+                title: t('webshop2.qr.step5Title'),
+                desc: t('webshop2.qr.step5Desc'),
               },
             ].map((item) => {
               const StepIcon = item.icon as any;
@@ -216,28 +224,28 @@ export default function MerchantQRPage() {
           transition={{ delay: 0.3 }}
         >
           <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-            💡 Consejos para tu QR
+            {t('webshop2.qr.tipsTitle')}
           </h3>
           <ul className="space-y-3 text-sm text-surface-600 dark:text-surface-400">
             <li className="flex items-start gap-2">
               <span className="text-kiwi-500">✓</span>
-              Pon el QR en la mesa, en la caja, o en la puerta de entrada
+              {t('webshop2.qr.tip1')}
             </li>
             <li className="flex items-start gap-2">
               <span className="text-kiwi-500">✓</span>
-              Asegúrate de que esté bien iluminado para fácil escaneo
+              {t('webshop2.qr.tip2')}
             </li>
             <li className="flex items-start gap-2">
               <span className="text-kiwi-500">✓</span>
-              Imprime varios códigos si tienes múltiples mesas
+              {t('webshop2.qr.tip3')}
             </li>
             <li className="flex items-start gap-2">
               <span className="text-kiwi-500">✓</span>
-              Puedes pegarlo en paredes, vidrieras o mostradores
+              {t('webshop2.qr.tip4')}
             </li>
             <li className="flex items-start gap-2">
               <span className="text-kiwi-500">✓</span>
-              Actualiza tu menú cuando cambies precios o productos
+              {t('webshop2.qr.tip5')}
             </li>
           </ul>
         </motion.div>

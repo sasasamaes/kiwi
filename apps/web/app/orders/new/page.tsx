@@ -18,6 +18,7 @@ import {
   DeliveryZonesMap,
   safeNavigateToUrl,
   parseMapLink,
+  useTranslations,
 } from '@kiwi/ui';
 import { findDeliveryZone, detectDeliveryZoneFromText, findNearestZone } from '@kiwi/types';
 import { Driver, toDriverList } from '../../drivers/mappers';
@@ -72,6 +73,7 @@ function NewOrderInner({
   presetDriverName?: string | null;
 }) {
   const router = useRouter();
+  const { t } = useTranslations();
   const { user } = useAuth();
 
   const [step, setStep] = useState<Step>(1);
@@ -254,7 +256,9 @@ function NewOrderInner({
             if (!found || found.status !== 'available') {
               setSelectedDriverId(null);
               setDriverPresetNote(
-                `${presetDriverName || 'El repartidor'} ya no está disponible: elegí otro o mandalo a concurso.`,
+                t('webshop2.neworder.presetGone', {
+                  name: presetDriverName || t('webshop2.neworder.driverFallback'),
+                }),
               );
             }
           }
@@ -353,30 +357,32 @@ function NewOrderInner({
    * candidatas y el comercio confirma en la lista o el mapa.
    */
   const autoDetectZone = async (lat: number, lng: number, fixedLabel: string) => {
-    const base = `Ubicación fijada: ${fixedLabel}`;
+    const base = t('webshop2.neworder.zoneSet', { label: fixedLabel });
     const apply = (zoneId: string, zoneLabel: string, zonePrice: number, note: string) => {
       setDeliveryZone(zoneId);
-      setMapLinkMsg(`${base} · Zona: ${zoneLabel} — ₡${zonePrice.toLocaleString()}. ${note}`);
+      setMapLinkMsg(
+        `${base} · ${t('webshop2.neworder.zoneIs', { label: zoneLabel, price: zonePrice.toLocaleString() })} ${note}`,
+      );
     };
     const direct = detectDeliveryZoneFromText(fixedLabel, deliveryAddress);
     if (direct) {
-      apply(direct.id, direct.label, direct.price, 'Detectada por nombre. Revisala.');
+      apply(direct.id, direct.label, direct.price, t('webshop2.neworder.zoneByName'));
       return;
     }
     const near = findNearestZone(lat, lng);
     if (near?.confident) {
-      apply(
-        near.zone.id,
-        near.zone.label,
-        near.zone.price,
-        'Punto de referencia más cercano. Revisala.',
-      );
+      apply(near.zone.id, near.zone.label, near.zone.price, t('webshop2.neworder.zoneByNear'));
       return;
     }
     const candidatesMsg =
       near?.runnerUp != null
-        ? `Estás entre ${near.zone.label} (₡${near.zone.price.toLocaleString()}) y ${near.runnerUp.zone.label} (₡${near.runnerUp.zone.price.toLocaleString()}): elegí la zona en la lista o el mapa.`
-        : 'No pudimos detectar el barrio: elegilo manualmente.';
+        ? t('webshop2.neworder.zoneBetween', {
+            a: near.zone.label,
+            pa: near.zone.price.toLocaleString(),
+            b: near.runnerUp.zone.label,
+            pb: near.runnerUp.zone.price.toLocaleString(),
+          })
+        : t('webshop2.neworder.zoneManual');
     try {
       const rev: any = await api.reverseGeocode(lat, lng);
       const addr = rev?.address ?? {};
@@ -392,7 +398,7 @@ function NewOrderInner({
         rev?.shortName,
       );
       if (zone) {
-        apply(zone.id, zone.label, zone.price, 'Detectada por dirección. Revisala.');
+        apply(zone.id, zone.label, zone.price, t('webshop2.neworder.zoneByAddr'));
       } else {
         setMapLinkMsg(`${base}. ${candidatesMsg}`);
       }
@@ -407,7 +413,7 @@ function NewOrderInner({
     if (!parsed) {
       // El parser local no entendió el link: intentar resolver vía backend
       // (cubre acortados pegados con texto extra y formatos raros).
-      setMapLinkMsg('Abriendo link…');
+      setMapLinkMsg(t('webshop2.neworder.linkOpening'));
       try {
         const r: any = await api.resolveMapLink(mapLink);
         if (r && Number.isFinite(Number(r.lat)) && Number.isFinite(Number(r.lng))) {
@@ -425,11 +431,11 @@ function NewOrderInner({
       } catch {
         // cae al mensaje de ayuda
       }
-      setMapLinkMsg('Pega el link que te enviaron por WhatsApp (maps.google.com…)');
+      setMapLinkMsg(t('webshop2.neworder.linkPasteHint'));
       return;
     }
     if (parsed.kind === 'short') {
-      setMapLinkMsg('Abriendo link acortado…');
+      setMapLinkMsg(t('webshop2.neworder.linkOpeningShort'));
       try {
         const r: any = await api.resolveMapLink(mapLink);
         if (r && Number.isFinite(Number(r.lat)) && Number.isFinite(Number(r.lng))) {
@@ -444,11 +450,9 @@ function NewOrderInner({
           await autoDetectZone(lat, lng, label);
           return;
         }
-        setMapLinkMsg(
-          r?.error || 'No se pudo abrir ese link. Pedí el link completo de Google Maps.',
-        );
+        setMapLinkMsg(r?.error || t('webshop2.neworder.linkShortFailed'));
       } catch {
-        setMapLinkMsg('No se pudo abrir ese link. Pedí el link completo de Google Maps.');
+        setMapLinkMsg(t('webshop2.neworder.linkShortFailed'));
       }
       return;
     }
@@ -472,10 +476,10 @@ function NewOrderInner({
         setMapLink('');
         await autoDetectZone(Number(first.lat), Number(first.lng), first.displayName);
       } else {
-        setMapLinkMsg('No encontramos ese lugar. Escribí la dirección a mano.');
+        setMapLinkMsg(t('webshop2.neworder.linkNotFound'));
       }
     } catch {
-      setMapLinkMsg('No se pudo resolver el link. Escribí la dirección a mano.');
+      setMapLinkMsg(t('webshop2.neworder.linkResolveFailed'));
     }
   };
 
@@ -556,12 +560,12 @@ function NewOrderInner({
   // Las notas son opcionales y por eso no aparecen aquí.
   const step1Missing: string[] = [];
   if (kind === 'food' && items.length === 0) {
-    step1Missing.push('agregar productos');
+    step1Missing.push(t('webshop2.neworder.missItems'));
   }
-  if (deliveryName.trim().length === 0) step1Missing.push('nombre del cliente');
-  if (deliveryPhone.trim().length < 8) step1Missing.push('teléfono (8 dígitos)');
-  if (deliveryAddress.trim().length === 0) step1Missing.push('dirección de entrega');
-  if (deliveryZone.trim().length === 0) step1Missing.push('barrio de entrega');
+  if (deliveryName.trim().length === 0) step1Missing.push(t('webshop2.neworder.missName'));
+  if (deliveryPhone.trim().length < 8) step1Missing.push(t('webshop2.neworder.missPhone'));
+  if (deliveryAddress.trim().length === 0) step1Missing.push(t('webshop2.neworder.missAddress'));
+  if (deliveryZone.trim().length === 0) step1Missing.push(t('webshop2.neworder.missZone'));
 
   const toggleFavorite = async (driver: Driver) => {
     const isFav = favoriteDrivers.some((d) => d.id === driver.id);
@@ -572,7 +576,7 @@ function NewOrderInner({
       else await api.addFavoriteDriver(driver.id);
     } catch {
       setFavoriteDrivers(prev);
-      setFormError('No se pudo actualizar favoritos');
+      setFormError(t('webshop2.neworder.errFav'));
     }
   };
 
@@ -591,11 +595,11 @@ function NewOrderInner({
       });
       if (res?.checkoutUrl) {
         if (!safeNavigateToUrl(res.checkoutUrl)) {
-          throw new Error('URL de pago inválida');
+          throw new Error(t('webshop2.neworder.errPayUrl'));
         }
         return { redirected: true };
       }
-      throw new Error('Onvo no devolvió link de pago. Reintentá o elegí otro método.');
+      throw new Error(t('webshop2.neworder.errNoPayLink'));
     }
     if (method === 'crypto') {
       await api.createPayment({ orderId, method: 'crypto', amount: total, cryptoCoin: 'USDC' });
@@ -626,7 +630,7 @@ function NewOrderInner({
         }
       }
     } catch (err: any) {
-      setPayError(err?.message || 'No se pudo procesar el pago.');
+      setPayError(err?.message || t('webshop2.neworder.errPayGeneric'));
     } finally {
       setLoading(false);
     }
@@ -643,16 +647,14 @@ function NewOrderInner({
     setOrderNotice(null);
     if (!deliveryZone) {
       creatingRef.current = false;
-      setFormError('Elegí el barrio de entrega para calcular el envío');
+      setFormError(t('webshop2.neworder.errZoneRequired'));
       return;
     }
     // Las coords pueden venir de un link/GPS erróneo: el precio de zona lo
     // enmascara en pantalla y el backend recién lo rechaza al crear.
     if (routeKm != null && routeKm > 300) {
       creatingRef.current = false;
-      setFormError(
-        `La ubicación de entrega quedó a ${routeKm} km (máx 300 km). Revisá la dirección o volvé a fijar el punto en el mapa.`,
-      );
+      setFormError(t('webshop2.neworder.errTooFar', { km: routeKm }));
       return;
     }
     // Saldo fresco (el del mount puede estar viejo si hubo otra pestaña):
@@ -665,7 +667,10 @@ function NewOrderInner({
         if (Number.isFinite(fresh) && fresh < trip) {
           creatingRef.current = false;
           setFormError(
-            `Saldo insuficiente (₡${fresh.toLocaleString()}): este envío cuesta ₡${trip.toLocaleString()}. Recargá con tarjeta en Mi crédito o llamá a Kiwi.`,
+            t('webshop2.neworder.errCreditShort', {
+              balance: fresh.toLocaleString(),
+              trip: trip.toLocaleString(),
+            }),
           );
           return;
         }
@@ -675,14 +680,17 @@ function NewOrderInner({
       if (creditBalance != null && creditBalance < trip) {
         creatingRef.current = false;
         setFormError(
-          `Saldo insuficiente (₡${creditBalance.toLocaleString()}): este envío cuesta ₡${trip.toLocaleString()}. Recargá con tarjeta en Mi crédito o llamá a Kiwi.`,
+          t('webshop2.neworder.errCreditShort', {
+            balance: creditBalance.toLocaleString(),
+            trip: trip.toLocaleString(),
+          }),
         );
         return;
       }
     }
     if (isScheduled && (!scheduledDate || !scheduledTime)) {
       creatingRef.current = false;
-      setFormError('Elegí fecha y hora para programar el pedido');
+      setFormError(t('webshop2.neworder.errSchedRequired'));
       return;
     }
     if (isScheduled && scheduledDate && scheduledTime) {
@@ -691,7 +699,7 @@ function NewOrderInner({
       const when = new Date(`${scheduledDate}T${scheduledTime}:00-06:00`);
       if (!Number.isFinite(when.getTime()) || when.getTime() < Date.now()) {
         creatingRef.current = false;
-        setFormError('La fecha y hora programadas deben ser futuras');
+        setFormError(t('webshop2.neworder.errSchedFuture'));
         return;
       }
     }
@@ -699,7 +707,7 @@ function NewOrderInner({
     // misma key para que el reintento no duplique cuando vuelva la red.
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
       creatingRef.current = false;
-      setFormError('Sin internet: no se creó el pedido. Reconectá y tocá Crear una sola vez.');
+      setFormError(t('webshop2.neworder.errOffline'));
       return;
     }
     const idempotencyKey = ensureIdempotencyKey();
@@ -754,7 +762,7 @@ function NewOrderInner({
           /no está disponible|verificado|Repartidor no encontrado/i.test(msg)
         ) {
           console.warn('Direct driver unavailable, retrying as contest:', createErr);
-          setOrderNotice(`No se pudo asignar al repartidor elegido (${msg}): quedó en concurso.`);
+          setOrderNotice(t('webshop2.neworder.errAssignFallback', { msg }));
           setSelectedDriverId(null);
           result = await api.createOrder(
             {
@@ -818,10 +826,7 @@ function NewOrderInner({
         console.error('Failed to create payment:', paymentError);
         // El pedido SÍ existe: no mostrar éxito limpio, sino reintento.
         setPaymentFailed(true);
-        setPayError(
-          paymentError?.message ||
-            'No se pudo procesar el pago. Si pagás con crédito y no alcanza, recargá con tarjeta en Mi crédito o llamá a Kiwi.',
-        );
+        setPayError(paymentError?.message || t('webshop2.neworder.errPayFailed'));
       }
 
       setCreatedOrderId(result.id);
@@ -836,7 +841,7 @@ function NewOrderInner({
       // La key se conserva: si el pedido SÍ se creó en el server pero la
       // respuesta se perdió (timeout/wifi), el reintento devuelve el mismo
       // pedido en vez de duplicarlo.
-      setFormError(error?.message || 'Error al crear el pedido. Tocá Crear una sola vez.');
+      setFormError(error?.message || t('webshop2.neworder.errCreate'));
     } finally {
       creatingRef.current = false;
       setLoading(false);
@@ -844,9 +849,9 @@ function NewOrderInner({
   };
 
   const steps = [
-    { num: 1 as Step, label: 'Pedido' },
-    { num: 2 as Step, label: 'Repartidor' },
-    { num: 3 as Step, label: 'Confirmar' },
+    { num: 1 as Step, label: t('webshop2.neworder.stepOrder') },
+    { num: 2 as Step, label: t('webshop2.neworder.stepDriver') },
+    { num: 3 as Step, label: t('webshop2.neworder.stepConfirm') },
   ];
 
   if (orderCreated) {
@@ -858,10 +863,12 @@ function NewOrderInner({
           animate={{ opacity: 1, scale: 1 }}
         >
           <h1 className="text-2xl font-display font-bold text-surface-800 dark:text-surface-100 mb-2">
-            ¡Pedido Creado! 🎉
+            {t('webshop2.neworder.createdTitle')}
           </h1>
           <p className="text-surface-500 dark:text-surface-400 mb-4">
-            {selectedDriverId ? 'Repartidor asignado' : 'Tu pedido está buscando repartidor'}
+            {selectedDriverId
+              ? t('webshop2.neworder.assignedYes')
+              : t('webshop2.neworder.assignedNone')}
           </p>
           {orderNotice && (
             <div className="mb-4 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 px-4 py-3 text-sm text-amber-800 dark:text-amber-300">
@@ -871,7 +878,7 @@ function NewOrderInner({
           {paymentFailed && (
             <div className="mb-4 rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/30 px-4 py-3 text-left">
               <p className="text-sm font-semibold text-red-700 dark:text-red-300">
-                El pedido se creó pero el pago falló
+                {t('webshop2.neworder.payFailedTitle')}
               </p>
               {payError && (
                 <p className="mt-1 text-xs text-red-600 dark:text-red-400">{payError}</p>
@@ -881,17 +888,17 @@ function NewOrderInner({
                 disabled={loading}
                 className="mt-3 w-full rounded-xl bg-kiwi-700 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
               >
-                {loading ? 'Procesando…' : 'Reintentar pago'}
+                {loading ? t('webshop2.neworder.processing') : t('webshop2.neworder.retryPay')}
               </button>
             </div>
           )}
           <div className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-6 mb-6">
             <div className="flex justify-between">
-              <span className="text-surface-500">Número</span>
+              <span className="text-surface-500">{t('webshop2.neworder.number')}</span>
               <span className="font-semibold font-mono">#{createdOrderId?.slice(0, 8)}</span>
             </div>
             <div className="flex justify-between mt-2">
-              <span className="text-surface-500">Total</span>
+              <span className="text-surface-500">{t('webshop2.neworder.total')}</span>
               <span className="font-bold text-kiwi-700">₡{total.toLocaleString()}</span>
             </div>
           </div>
@@ -899,18 +906,18 @@ function NewOrderInner({
             {createdOrderId && (
               <ShareTrackingButton
                 orderId={createdOrderId}
-                label="Copiar link para el cliente"
+                label={t('webshop2.neworder.copyLink')}
                 className="w-full justify-center"
               />
             )}
             <Link href="/dashboard">
               <AnimatedButton variant="gradient" className="w-full">
-                <BarChart3 className="h-4 w-4 inline" /> Volver al Dashboard
+                <BarChart3 className="h-4 w-4 inline" /> {t('webshop2.neworder.backDashboard')}
               </AnimatedButton>
             </Link>
             <Link href="/orders">
               <AnimatedButton variant="secondary" className="w-full">
-                <Package className="h-4 w-4 inline" /> Seguir mis envíos en vivo
+                <Package className="h-4 w-4 inline" /> {t('webshop2.neworder.trackLive')}
               </AnimatedButton>
             </Link>
             <AnimatedButton
@@ -931,7 +938,7 @@ function NewOrderInner({
                 setStep(1);
               }}
             >
-              ➕ Crear otro pedido
+              {t('webshop2.neworder.createAnother')}
             </AnimatedButton>
           </div>
         </motion.div>
@@ -957,10 +964,10 @@ function NewOrderInner({
               className="flex min-h-[44px] items-center gap-2 text-surface-600 dark:text-surface-400"
             >
               <span>←</span>
-              <span className="text-sm font-medium">Cancelar</span>
+              <span className="text-sm font-medium">{t('webshop2.neworder.cancel')}</span>
             </Link>
             <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-              Nuevo Pedido
+              {t('webshop2.neworder.title')}
             </h1>
             <div className="w-16" />
           </div>
@@ -1008,8 +1015,16 @@ function NewOrderInner({
                 <div className="mb-4 grid grid-cols-2 gap-2">
                   {(
                     [
-                      { id: 'freight', label: '📦 Encomienda', desc: 'Paquete' },
-                      { id: 'food', label: '🍔 Comida', desc: 'Del menú' },
+                      {
+                        id: 'freight',
+                        label: t('webshop2.neworder.kindFreight'),
+                        desc: t('webshop2.neworder.kindFreightDesc'),
+                      },
+                      {
+                        id: 'food',
+                        label: t('webshop2.neworder.kindFood'),
+                        desc: t('webshop2.neworder.kindFoodDesc'),
+                      },
                     ] as const
                   ).map((k) => (
                     <button
@@ -1034,13 +1049,15 @@ function NewOrderInner({
               ) : (
                 <div className="mb-4 flex items-center justify-between rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2.5">
                   <span className="text-sm font-medium text-surface-800 dark:text-surface-200">
-                    {kind === 'food' ? '🍔 Comida — Del menú' : '📦 Encomienda — Paquete'}
+                    {kind === 'food'
+                      ? t('webshop2.neworder.kindCurrentFood')
+                      : t('webshop2.neworder.kindCurrentFreight')}
                   </span>
                   <button
                     onClick={() => setShowKindSelector(true)}
                     className="text-xs font-medium text-kiwi-700 dark:text-kiwi-400 underline"
                   >
-                    Cambiar
+                    {t('webshop2.neworder.change')}
                   </button>
                 </div>
               )}
@@ -1049,7 +1066,7 @@ function NewOrderInner({
                   <input
                     value={menuQuery}
                     onChange={(e) => setMenuQuery(e.target.value)}
-                    placeholder="Buscar en el menú…"
+                    placeholder={t('webshop2.neworder.searchMenu')}
                     className="mb-2 w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20"
                   />
                   <div className="mb-3 grid grid-cols-2 gap-2 max-h-64 overflow-y-auto">
@@ -1101,7 +1118,7 @@ function NewOrderInner({
                               }
                               className="h-7 flex-1 rounded-lg bg-kiwi-700 text-white text-sm font-medium"
                             >
-                              + Agregar
+                              {t('webshop2.neworder.add')}
                             </button>
                           </div>
                         </div>
@@ -1110,14 +1127,14 @@ function NewOrderInner({
                   </div>
                   {menuFiltered.length === 0 && (
                     <p className="text-sm text-surface-500 dark:text-surface-400 mb-3">
-                      Sin resultados. Agrega un producto personalizado:
+                      {t('webshop2.neworder.noResults')}
                     </p>
                   )}
                   <div className="mb-4 flex gap-2">
                     <input
                       value={newItem.name}
                       onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
-                      placeholder="Producto personalizado"
+                      placeholder={t('webshop2.neworder.customName')}
                       className="flex-1 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2 text-sm"
                     />
                     <input
@@ -1126,7 +1143,7 @@ function NewOrderInner({
                       onChange={(e) =>
                         setNewItem({ ...newItem, price: parseInt(e.target.value) || 0 })
                       }
-                      placeholder="₡"
+                      placeholder={t('webshop2.neworder.pricePh')}
                       className="w-24 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2 text-sm"
                     />
                     <button
@@ -1157,7 +1174,7 @@ function NewOrderInner({
                         </div>
                       ))}
                       <p className="text-right text-sm font-bold">
-                        Subtotal: ₡{subtotal.toLocaleString()}
+                        {t('webshop2.neworder.subtotal', { total: subtotal.toLocaleString() })}
                       </p>
                     </div>
                   )}
@@ -1167,7 +1184,7 @@ function NewOrderInner({
                   <textarea
                     value={packageDescription}
                     onChange={(e) => setPackageDescription(e.target.value)}
-                    placeholder="¿Qué hay que llevar? (opcional) Ej: Caja con repuestos"
+                    placeholder={t('webshop2.neworder.freightPh')}
                     rows={2}
                     className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-3 text-sm"
                   />
@@ -1193,31 +1210,31 @@ function NewOrderInner({
                       step="0.5"
                       value={weightKg || ''}
                       onChange={(e) => setWeightKg(parseFloat(e.target.value) || 0)}
-                      placeholder="Peso en kg"
+                      placeholder={t('webshop2.neworder.weightPh')}
                       className="flex-1 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm"
                     />
                     <span className="text-xs text-surface-500 dark:text-surface-400">
-                      5 kg incluidos · +₡500/kg extra
+                      {t('webshop2.neworder.weightHint')}
                     </span>
                   </div>
                 </div>
               )}
               {/* Entrega */}
               <h3 className="mb-2 text-sm font-semibold text-surface-600 dark:text-surface-400">
-                📍 Entrega
+                {t('webshop2.neworder.deliveryTitle')}
               </h3>
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-2">
                   <input
                     value={deliveryName}
                     onChange={(e) => setDeliveryName(e.target.value)}
-                    placeholder="Nombre del cliente"
+                    placeholder={t('webshop2.neworder.namePh')}
                     className="rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm"
                   />
                   <input
                     value={deliveryPhone}
                     onChange={(e) => setDeliveryPhone(e.target.value)}
-                    placeholder="Teléfono o WhatsApp"
+                    placeholder={t('webshop2.neworder.phonePh')}
                     type="tel"
                     className="rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm"
                   />
@@ -1225,7 +1242,7 @@ function NewOrderInner({
                 <textarea
                   value={deliveryAddress}
                   onChange={(e) => onDeliveryChange(e.target.value)}
-                  placeholder="Dirección de entrega"
+                  placeholder={t('webshop2.neworder.addressPh')}
                   rows={2}
                   className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm"
                 />
@@ -1235,7 +1252,9 @@ function NewOrderInner({
                     onClick={() => setShowZonesMap((v) => !v)}
                     className="text-xs font-medium text-kiwi-700 dark:text-kiwi-400 underline underline-offset-2"
                   >
-                    {showZonesMap ? 'Ocultar mapa de zonas' : 'Ver zonas y precios en mapa'}
+                    {showZonesMap
+                      ? t('webshop2.neworder.zonesHide')
+                      : t('webshop2.neworder.zonesShow')}
                   </button>
                   {showZonesMap && (
                     <div className="mt-2">
@@ -1245,8 +1264,7 @@ function NewOrderInner({
                         height={300}
                       />
                       <p className="mt-1 text-[11px] text-surface-500 dark:text-surface-400">
-                        Tocá un precio para elegir esa zona. Son puntos de referencia, no límites
-                        del barrio.
+                        {t('webshop2.neworder.zonesMapHint')}
                       </p>
                     </div>
                   )}
@@ -1266,36 +1284,37 @@ function NewOrderInner({
                 )}
                 <div className="rounded-xl bg-surface-50 dark:bg-surface-800 p-3">
                   <p className="mb-2 text-xs font-medium text-surface-500">
-                    ¿El cliente te pasó la ubicación por WhatsApp? Pegala acá:
+                    {t('webshop2.neworder.whatsappHint')}
                   </p>
                   <div className="flex gap-2">
                     <input
                       value={mapLink}
                       onChange={(e) => setMapLink(e.target.value)}
-                      placeholder="https://maps.google.com/…"
+                      placeholder={t('webshop2.neworder.mapPh')}
                       className="min-h-[44px] flex-1 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 text-sm"
                     />
                     <button
                       onClick={applyMapLink}
                       className="min-h-[44px] rounded-lg bg-kiwi-700 px-3 text-sm font-semibold text-white"
                     >
-                      Usar
+                      {t('webshop2.neworder.useBtn')}
                     </button>
                     <button
                       onClick={useCurrentLocation}
                       disabled={locating}
-                      title="Usar mi ubicación actual"
+                      title={t('webshop2.neworder.useLocationTitle')}
                       className="min-h-[44px] rounded-lg bg-surface-200 dark:bg-surface-700 px-3 text-sm"
                     >
-                      {locating ? '…' : '📍'}
+                      {locating ? t('webshop2.neworder.locating') : '📍'}
                     </button>
                   </div>
                   {mapLinkMsg && <p className="mt-1.5 text-xs text-surface-500">{mapLinkMsg}</p>}
                 </div>
                 {routeKm != null && (
                   <p className="text-xs text-surface-500">
-                    ~{routeKm} km{etaMin != null ? ` • ~${etaMin} min` : ''} • Se envía al
-                    repartidor con el pedido
+                    {t('webshop2.neworder.routeKm', { km: routeKm })}
+                    {etaMin != null ? t('webshop2.neworder.routeEta', { eta: etaMin }) : ''}
+                    {t('webshop2.neworder.routeNote')}
                   </p>
                 )}
               </div>
@@ -1318,10 +1337,10 @@ function NewOrderInner({
                     : 'border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800'
                 }`}
               >
-                <p className="font-medium">⏳ En concurso {selectedDriverId === null && '✓'}</p>
-                <p className="text-xs text-surface-500">
-                  Se avisa a todos los disponibles · el primero que lo acepte se lo lleva
+                <p className="font-medium">
+                  {t('webshop2.neworder.contestTitle')} {selectedDriverId === null && '✓'}
                 </p>
+                <p className="text-xs text-surface-500">{t('webshop2.neworder.contestDesc')}</p>
               </button>
               {driverPresetNote && (
                 <p className="mb-3 rounded-xl bg-gold-50 dark:bg-gold-900/20 border border-gold-200 dark:border-gold-800 px-3 py-2 text-xs text-gold-800 dark:text-gold-200">
@@ -1332,25 +1351,28 @@ function NewOrderInner({
                 selectedDriverId === presetDriverId &&
                 presetDriverId && (
                   <p className="mb-3 rounded-xl bg-kiwi-50 dark:bg-kiwi-900/20 border border-kiwi-200 dark:border-kiwi-800 px-3 py-2 text-xs text-kiwi-800 dark:text-kiwi-200">
-                    Pedido para {presetDriverName || 'el repartidor elegido'}: nace asignado, sin
-                    concurso.
+                    {t('webshop2.neworder.presetDirect', {
+                      name: presetDriverName || t('webshop2.neworder.driverFallback'),
+                    })}
                   </p>
                 )}
               {selectedDriverId !== null && selectedDriverId !== presetDriverId && (
                 <p className="mb-3 rounded-xl bg-kiwi-50 dark:bg-kiwi-900/20 border border-kiwi-200 dark:border-kiwi-800 px-3 py-2 text-xs text-kiwi-800 dark:text-kiwi-200">
-                  Solo se avisará al repartidor elegido. Nadie más recibirá este pedido.
+                  {t('webshop2.neworder.directOnly')}
                 </p>
               )}
               <h3 className="mb-2 text-sm font-semibold text-surface-600 dark:text-surface-400">
-                ⭐ Favoritos
+                {t('webshop2.neworder.favTitle')}
               </h3>
               {driversLoading ? (
-                <p className="text-sm text-surface-500 dark:text-surface-400">Cargando…</p>
+                <p className="text-sm text-surface-500 dark:text-surface-400">
+                  {t('webshop2.neworder.loading')}
+                </p>
               ) : (
                 <div className="space-y-2 mb-4">
                   {favoriteDrivers.length === 0 && (
                     <p className="text-xs text-surface-500 dark:text-surface-400">
-                      Sin favoritos todavía.
+                      {t('webshop2.neworder.noFavYet')}
                     </p>
                   )}
                   {favoriteDrivers.map((d) => (
@@ -1364,13 +1386,13 @@ function NewOrderInner({
                     />
                   ))}
                   <h3 className="pt-2 text-sm font-semibold text-surface-600 dark:text-surface-400">
-                    📍 Disponibles ahora
+                    {t('webshop2.neworder.availNow')}
                   </h3>
                   {availableDrivers.filter(
                     (d) => d.status === 'available' && !favoriteDrivers.some((f) => f.id === d.id),
                   ).length === 0 && (
                     <p className="text-xs text-surface-500 dark:text-surface-400">
-                      Nadie disponible ahora. Quedará en concurso.
+                      {t('webshop2.neworder.noneAvailable')}
                     </p>
                   )}
                   {availableDrivers
@@ -1392,8 +1414,7 @@ function NewOrderInner({
                     ))}
                   {favoriteDrivers.some((f) => f.status !== 'available') && (
                     <p className="mt-2 text-xs font-medium text-surface-500">
-                      Tus favoritos offline aparecen arriba deshabilitados: se podrán elegir cuando
-                      se conecten.
+                      {t('webshop2.neworder.offlineFavNote')}
                     </p>
                   )}
                 </div>
@@ -1411,46 +1432,50 @@ function NewOrderInner({
             >
               <div className="mb-4 rounded-xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4 text-sm space-y-1.5">
                 <div className="flex justify-between">
-                  <span className="text-surface-500">Entregar a</span>
+                  <span className="text-surface-500">{t('webshop2.neworder.sumDeliverTo')}</span>
                   <span className="font-medium text-right max-w-[60%]">
                     {deliveryName} · {deliveryAddress}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-surface-500">Contenido</span>
+                  <span className="text-surface-500">{t('webshop2.neworder.sumContent')}</span>
                   <span className="font-medium">
                     {kind === 'food'
-                      ? `${items.reduce((s, i) => s + i.quantity, 0)} uds (₡${subtotal.toLocaleString()})`
-                      : `${packageDescription || 'Encomienda'}${weightKg > 0 ? ` · ${weightKg} kg` : ''}`}
+                      ? t('webshop2.neworder.sumUnits', {
+                          count: items.reduce((s, i) => s + i.quantity, 0),
+                          total: subtotal.toLocaleString(),
+                        })
+                      : `${packageDescription || t('webshop2.neworder.sumFreightDefault')}${weightKg > 0 ? t('webshop2.neworder.sumKg', { kg: weightKg }) : ''}`}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-surface-500">Repartidor</span>
+                  <span className="text-surface-500">{t('webshop2.neworder.sumDriver')}</span>
                   <span className="font-medium">
                     {selectedDriverId
                       ? (favoriteDrivers
                           .concat(availableDrivers)
-                          .find((d) => d.id === selectedDriverId)?.fullName ?? 'Elegido')
-                      : 'En concurso'}
+                          .find((d) => d.id === selectedDriverId)?.fullName ??
+                        t('webshop2.neworder.sumDriverChosen'))
+                      : t('webshop2.neworder.sumContest')}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-surface-500">
-                    Envío
+                    {t('webshop2.neworder.sumShipping')}
                     {zoneLabel ? ` (${zoneLabel})` : routeKm != null ? ` (~${routeKm} km)` : ''}
                   </span>
                   <span className="text-kiwi-700 font-medium">₡{trip.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between text-lg font-bold pt-2 border-t border-surface-100 dark:border-surface-700">
-                  <span>Total</span>
+                  <span>{t('webshop2.neworder.sumTotal')}</span>
                   <span className="text-kiwi-700">₡{total.toLocaleString()}</span>
                 </div>
               </div>
 
               <div className="mb-4 flex items-center justify-between rounded-xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4">
                 <div>
-                  <p className="font-medium text-sm">📅 Programar</p>
-                  <p className="text-xs text-surface-500">Fecha y hora específica</p>
+                  <p className="font-medium text-sm">{t('webshop2.neworder.scheduleTitle')}</p>
+                  <p className="text-xs text-surface-500">{t('webshop2.neworder.scheduleDesc')}</p>
                 </div>
                 <button
                   onClick={() => setIsScheduled(!isScheduled)}
@@ -1481,28 +1506,38 @@ function NewOrderInner({
               )}
 
               <p className="mb-2 text-sm font-semibold text-surface-600 dark:text-surface-400">
-                Método de pago
+                {t('webshop2.neworder.payTitle')}
               </p>
               <input
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Notas (opcional)"
+                placeholder={t('webshop2.neworder.notesPh')}
                 className="mb-3 w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm"
               />
               <div className="mb-2 grid grid-cols-2 gap-2">
                 {(
                   [
-                    { id: 'sinpe', label: 'SINPE', on: payAvailability.sinpe },
-                    { id: 'card', label: 'Tarjeta', on: payAvailability.card },
-                    { id: 'crypto', label: 'USDC', on: payAvailability.crypto },
-                    { id: 'cash', label: 'Efectivo', on: payAvailability.cash },
+                    {
+                      id: 'sinpe',
+                      label: t('webshop2.neworder.paySinpe'),
+                      on: payAvailability.sinpe,
+                    },
+                    { id: 'card', label: t('webshop2.neworder.payCard'), on: payAvailability.card },
+                    {
+                      id: 'crypto',
+                      label: t('webshop2.neworder.payCrypto'),
+                      on: payAvailability.crypto,
+                    },
+                    { id: 'cash', label: t('webshop2.neworder.payCash'), on: payAvailability.cash },
                     {
                       id: 'credit',
                       on: true,
                       label:
                         creditBalance == null
-                          ? 'Crédito'
-                          : `Crédito (₡${creditBalance.toLocaleString()})`,
+                          ? t('webshop2.neworder.payCredit')
+                          : t('webshop2.neworder.payCreditBalance', {
+                              amount: creditBalance.toLocaleString(),
+                            }),
                     },
                   ] as const
                 )
@@ -1523,9 +1558,10 @@ function NewOrderInner({
               </div>
               {paymentMethod === 'credit' && (
                 <p className="mb-2 text-xs text-surface-500 dark:text-surface-400">
-                  Se descuenta solo el viaje (₡{trip.toLocaleString()}) de tu crédito. Vos no pagás
-                  comisión: el {commissionPct}% lo paga el repartidor. Si no alcanza, recargá con
-                  tarjeta en Mi crédito o llamá a Kiwi.
+                  {t('webshop2.neworder.creditNote', {
+                    trip: trip.toLocaleString(),
+                    pct: commissionPct,
+                  })}
                 </p>
               )}
             </motion.div>
@@ -1542,7 +1578,7 @@ function NewOrderInner({
           )}
           {step === 1 && !step1Valid && (
             <p className="mb-3 text-center text-xs text-surface-500 dark:text-surface-400">
-              Te falta: {step1Missing.join(' · ')}
+              {t('webshop2.neworder.missingPrefix', { missing: step1Missing.join(' · ') })}
             </p>
           )}
         </div>
@@ -1556,7 +1592,7 @@ function NewOrderInner({
               }}
               className="flex-1"
             >
-              ← Atrás
+              {t('webshop2.neworder.back')}
             </AnimatedButton>
           )}
           {step < 3 ? (
@@ -1564,7 +1600,7 @@ function NewOrderInner({
               variant="gradient"
               onClick={() => {
                 if (!step1Valid && step === 1) {
-                  setFormError('Completa pedido y datos de entrega para seguir');
+                  setFormError(t('webshop2.neworder.completeForm'));
                   return;
                 }
                 setFormError(null);
@@ -1573,7 +1609,7 @@ function NewOrderInner({
               disabled={step === 1 && !step1Valid}
               className="flex-1"
             >
-              Siguiente →
+              {t('webshop2.neworder.next')}
             </AnimatedButton>
           ) : (
             <AnimatedButton
@@ -1583,7 +1619,9 @@ function NewOrderInner({
               onClick={createOrderHandler}
               disabled={loading}
             >
-              {loading ? 'Creando…' : `🚀 Crear Pedido • ₡${total.toLocaleString()}`}
+              {loading
+                ? t('webshop2.neworder.creating')
+                : t('webshop2.neworder.createBtn', { total: total.toLocaleString() })}
             </AnimatedButton>
           )}
         </div>
@@ -1608,13 +1646,14 @@ function DriverRow({
   // Solo los repartidores activos (Disponible) se pueden elegir; el resto se
   // muestra deshabilitado para que el comercio sepa que existe pero aún no
   // está conectado.
+  const { t } = useTranslations();
   const selectable = driver.status === 'available';
   const vehicleLabels: Record<string, string> = {
-    motorcycle: 'Moto',
-    motorized_bike: 'Bici Moto',
-    bicycle: 'Bicicleta',
-    car: 'Carro',
-    truck: 'Camión',
+    motorcycle: t('webshop2.neworder.vehMotorcycle'),
+    motorized_bike: t('webshop2.neworder.vehMotorized'),
+    bicycle: t('webshop2.neworder.vehBicycle'),
+    car: t('webshop2.neworder.vehCar'),
+    truck: t('webshop2.neworder.vehTruck'),
   };
   return (
     <div
@@ -1646,7 +1685,7 @@ function DriverRow({
           {driver.vehiclePlate ? `· ${driver.vehiclePlate} ` : ''}
           {driver.rating != null ? `• ⭐ ${Number(driver.rating).toFixed(1)}` : ''}
           {!selectable &&
-            ` • ${driver.status === 'busy' ? 'Ocupado ahora' : driver.status === 'offline' ? 'Offline' : 'No disponible'}`}
+            ` • ${driver.status === 'busy' ? t('webshop2.neworder.driverBusy') : driver.status === 'offline' ? t('webshop2.neworder.driverOffline') : t('webshop2.neworder.driverUnavailable')}`}
         </p>
       </div>
       <button
@@ -1655,7 +1694,7 @@ function DriverRow({
           onFav();
         }}
         className="text-xl"
-        title={isFav ? 'Quitar de favoritos' : 'Marcar favorito'}
+        title={isFav ? t('webshop2.neworder.favRemove') : t('webshop2.neworder.favAdd')}
       >
         {isFav ? '⭐' : '☆'}
       </button>
@@ -1664,9 +1703,14 @@ function DriverRow({
 }
 
 export default function NewOrder() {
+  const { t } = useTranslations();
   return (
     <Suspense
-      fallback={<main className="min-h-[100dvh] flex items-center justify-center">Cargando…</main>}
+      fallback={
+        <main className="min-h-[100dvh] flex items-center justify-center">
+          {t('webshop2.neworder.loadingFallback')}
+        </main>
+      }
     >
       <NewOrderWithKind />
     </Suspense>

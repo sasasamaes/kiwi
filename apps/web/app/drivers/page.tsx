@@ -16,6 +16,7 @@ import {
   formatRating,
   isEmojiImage,
   isHttpUrl,
+  useTranslations,
 } from '@kiwi/ui';
 import { MerchantNav } from '../../components/MerchantNav';
 import { Driver, toDriverList } from './mappers';
@@ -64,43 +65,44 @@ const statusColor = (status?: string) => {
   }
 };
 
-const statusText = (status?: string) => {
+const statusKey = (status?: string) => {
   switch (status) {
     case 'available':
-      return 'Disponible';
+      return 'statusAvailable';
     case 'busy':
-      return 'Ocupado';
+      return 'statusBusy';
     case 'offline':
-      return 'Offline';
+      return 'statusOffline';
     default:
-      return 'Desconocido';
+      return 'statusUnknown';
   }
 };
 
-const orderStatusText = (status: string) => {
+const orderStatusKey = (status: string) => {
   switch (status) {
     case 'pending':
-      return 'En concurso';
+      return 'orderPending';
     case 'driver_proposals':
-      return 'Recibiendo propuestas';
+      return 'orderProposals';
     case 'assigned':
-      return 'Asignado';
+      return 'orderAssigned';
     case 'in_transit_to_pickup':
-      return 'Va a recoger';
+      return 'orderToPickup';
     case 'picked_up':
-      return 'Recogido';
+      return 'orderPickedUp';
     case 'in_transit_to_delivery':
-      return 'En camino';
+      return 'orderToDelivery';
     case 'delivered':
-      return 'Entregado';
+      return 'orderDelivered';
     case 'cancelled':
-      return 'Cancelado';
+      return 'orderCancelled';
     default:
-      return status;
+      return null;
   }
 };
 
 export default function DriversPage() {
+  const { t } = useTranslations();
   const { isConnected, on } = useSocket();
   const [tab, setTab] = useState<'available' | 'favorites' | 'contest'>('available');
   const [statusFilter, setStatusFilter] = useState<'all' | 'available'>('all');
@@ -143,11 +145,11 @@ export default function DriversPage() {
       const orders: OpenOrder[] = Array.isArray(ordersRaw) ? ordersRaw : [];
       setOpenOrders(orders.filter((o) => OPEN_STATUSES.includes(o.status)));
     } catch {
-      setError('No se pudieron cargar los repartidores');
+      setError(t('webshop2.driversweb.errLoad'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     loadAll();
@@ -220,7 +222,7 @@ export default function DriversPage() {
         else next.delete(driver.id);
         return next;
       });
-      setActionError('No se pudo actualizar favoritos');
+      setActionError(t('webshop2.driversweb.errFav'));
     }
   };
 
@@ -237,7 +239,7 @@ export default function DriversPage() {
       setAssignDriver(null);
       await loadAll();
     } catch (e: any) {
-      setActionError(e?.message || 'No se pudo asignar (quizás otro lo tomó primero)');
+      setActionError(e?.message || t('webshop2.driversweb.errAssign'));
     } finally {
       setAssigning(false);
     }
@@ -249,7 +251,7 @@ export default function DriversPage() {
       await api.updateOrderStatus(orderId, 'cancelled');
       await loadAll();
     } catch (e: any) {
-      setActionError(e?.message || 'No se pudo cancelar el pedido');
+      setActionError(e?.message || t('webshop2.driversweb.errCancel'));
     }
   };
 
@@ -294,7 +296,7 @@ export default function DriversPage() {
       }
       setDraft('');
     } catch (e: any) {
-      setActionError(e?.message || 'No se pudo enviar el mensaje');
+      setActionError(e?.message || t('webshop2.driversweb.errSend'));
     } finally {
       setSending(false);
     }
@@ -325,15 +327,17 @@ export default function DriversPage() {
               className="flex min-h-[44px] items-center gap-2 text-surface-600 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200"
             >
               <span>←</span>
-              <span className="text-sm font-medium">Dashboard</span>
+              <span className="text-sm font-medium">{t('webshop2.driversweb.dashboard')}</span>
             </Link>
             <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-              Repartidores
+              {t('webshop2.driversweb.title')}
             </h1>
             <div className="flex items-center gap-2">
               <span
                 className={`h-2 w-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}
-                title={isConnected ? 'En vivo' : 'Sin conexión'}
+                title={
+                  isConnected ? t('webshop2.driversweb.live') : t('webshop2.driversweb.offline')
+                }
               />
               <div className="w-8" />
             </div>
@@ -356,19 +360,19 @@ export default function DriversPage() {
         >
           <div className="rounded-xl bg-white dark:bg-surface-800 p-4 text-center shadow-soft">
             <p className="text-2xl font-bold text-kiwi-700">{loading ? '—' : availableCount}</p>
-            <p className="text-xs text-surface-500">Disponibles</p>
+            <p className="text-xs text-surface-500">{t('webshop2.driversweb.statAvailable')}</p>
           </div>
           <div className="rounded-xl bg-white dark:bg-surface-800 p-4 text-center shadow-soft">
             <p className="text-2xl font-bold text-gold-600">
               {loading ? '—' : contestOrders.length}
             </p>
-            <p className="text-xs text-surface-500">En concurso</p>
+            <p className="text-xs text-surface-500">{t('webshop2.driversweb.statContest')}</p>
           </div>
           <div className="rounded-xl bg-white dark:bg-surface-800 p-4 text-center shadow-soft">
             <p className="text-2xl font-bold text-surface-600 dark:text-surface-300">
               {loading ? '—' : favIds.size}
             </p>
-            <p className="text-xs text-surface-500">Favoritos</p>
+            <p className="text-xs text-surface-500">{t('webshop2.driversweb.statFav')}</p>
           </div>
         </motion.div>
 
@@ -376,21 +380,27 @@ export default function DriversPage() {
         <div className="mb-6 flex gap-2">
           {(
             [
-              { id: 'available', label: 'Disponibles' },
-              { id: 'favorites', label: `Favoritos (${favIds.size})` },
-              { id: 'contest', label: `Concursos (${contestOrders.length})` },
+              { id: 'available', label: t('webshop2.driversweb.tabAvailable') },
+              {
+                id: 'favorites',
+                label: t('webshop2.driversweb.tabFavorites', { count: favIds.size }),
+              },
+              {
+                id: 'contest',
+                label: t('webshop2.driversweb.tabContest', { count: contestOrders.length }),
+              },
             ] as const
-          ).map((t) => (
+          ).map((opt) => (
             <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
+              key={opt.id}
+              onClick={() => setTab(opt.id)}
               className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                tab === t.id
+                tab === opt.id
                   ? 'bg-kiwi-700 text-white'
                   : 'bg-white dark:bg-surface-800 text-surface-600 dark:text-surface-400 hover:bg-surface-100'
               }`}
             >
-              {t.label}
+              {opt.label}
             </button>
           ))}
         </div>
@@ -411,7 +421,7 @@ export default function DriversPage() {
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Buscar por nombre…"
+                  placeholder={t('webshop2.driversweb.searchPh')}
                   className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 pl-9 pr-4 py-2.5 text-sm text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20"
                 />
               </div>
@@ -424,7 +434,7 @@ export default function DriversPage() {
                       : 'text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-700'
                   }`}
                 >
-                  Todos
+                  {t('webshop2.driversweb.filterAll')}
                 </button>
                 <button
                   onClick={() => setStatusFilter('available')}
@@ -434,11 +444,13 @@ export default function DriversPage() {
                       : 'text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-700'
                   }`}
                 >
-                  Activos
+                  {t('webshop2.driversweb.filterActive')}
                 </button>
               </div>
               <AnimatedButton variant="secondary" onClick={() => setShowFilters(!showFilters)}>
-                {showFilters ? 'Ocultar' : 'Vehículo'}
+                {showFilters
+                  ? t('webshop2.driversweb.vehicleBtnHide')
+                  : t('webshop2.driversweb.vehicleBtnShow')}
               </AnimatedButton>
             </div>
 
@@ -454,32 +466,32 @@ export default function DriversPage() {
                     <FilterPill
                       active={filter === 'all'}
                       onClick={() => setFilter('all')}
-                      label="Todos"
+                      label={t('webshop2.driversweb.vehAll')}
                     />
                     <FilterPill
                       active={filter === 'motorcycle'}
                       onClick={() => setFilter('motorcycle')}
-                      label="Moto"
+                      label={t('webshop2.driversweb.vehMoto')}
                     />
                     <FilterPill
                       active={filter === 'motorized_bike'}
                       onClick={() => setFilter('motorized_bike')}
-                      label="Bici Moto"
+                      label={t('webshop2.driversweb.vehMotorized')}
                     />
                     <FilterPill
                       active={filter === 'bicycle'}
                       onClick={() => setFilter('bicycle')}
-                      label="Bici"
+                      label={t('webshop2.driversweb.vehBicycle')}
                     />
                     <FilterPill
                       active={filter === 'car'}
                       onClick={() => setFilter('car')}
-                      label="Carro"
+                      label={t('webshop2.driversweb.vehCar')}
                     />
                     <FilterPill
                       active={filter === 'truck'}
                       onClick={() => setFilter('truck')}
-                      label="Camión"
+                      label={t('webshop2.driversweb.vehTruck')}
                     />
                   </div>
                 </motion.div>
@@ -488,14 +500,14 @@ export default function DriversPage() {
 
             {loading ? (
               <p className="text-sm text-surface-500 dark:text-surface-400">
-                Cargando repartidores…
+                {t('webshop2.driversweb.loading')}
               </p>
             ) : error ? (
               <div className="rounded-2xl bg-white dark:bg-surface-800 p-8 text-center shadow-soft">
                 <p className="font-medium text-surface-600 dark:text-surface-300">{error}</p>
                 <div className="mt-4">
                   <AnimatedButton variant="secondary" onClick={loadAll}>
-                    Reintentar
+                    {t('webshop2.driversweb.retry')}
                   </AnimatedButton>
                 </div>
               </div>
@@ -547,7 +559,7 @@ export default function DriversPage() {
                               </span>
                               <span>
                                 <Package className="h-4 w-4 inline" /> {driver.totalTrips ?? 0}{' '}
-                                viajes
+                                {t('webshop2.driversweb.trips')}
                               </span>
                               {(driver as any).vehiclePlate && (
                                 <span className="rounded-md bg-surface-100 dark:bg-surface-700 px-2 py-0.5 font-mono text-xs font-semibold text-surface-700 dark:text-surface-200">
@@ -560,7 +572,7 @@ export default function DriversPage() {
                             <span
                               className={`inline-block rounded-full px-3 py-1 text-xs font-medium ${statusColor(driver.status)}`}
                             >
-                              {statusText(driver.status)}
+                              {t(`webshop2.driversweb.${statusKey(driver.status)}`)}
                             </span>
                             <div className="mt-2 flex gap-1 justify-end">
                               <button
@@ -568,7 +580,11 @@ export default function DriversPage() {
                                   e.stopPropagation();
                                   toggleFavorite(driver);
                                 }}
-                                title={isFav ? 'Quitar de favoritos' : 'Marcar favorito'}
+                                title={
+                                  isFav
+                                    ? t('webshop2.driversweb.favRemove')
+                                    : t('webshop2.driversweb.favAdd')
+                                }
                                 className="flex h-11 w-11 items-center justify-center rounded-full text-surface-500 dark:text-surface-400 transition-colors hover:bg-surface-100 hover:text-gold-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-500/50 active:scale-95 dark:hover:bg-surface-700 dark:hover:text-gold-400"
                               >
                                 <Star
@@ -581,7 +597,7 @@ export default function DriversPage() {
                                     e.stopPropagation();
                                     openChat(driver);
                                   }}
-                                  title="Chatear"
+                                  title={t('webshop2.driversweb.chatTitle')}
                                   className="flex h-11 w-11 items-center justify-center rounded-full text-surface-500 dark:text-surface-400 transition-colors hover:bg-surface-100 hover:text-kiwi-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-600/40 active:scale-95 dark:hover:bg-surface-700 dark:hover:text-kiwi-300"
                                 >
                                   <MessageCircle className="h-5 w-5" />
@@ -598,14 +614,14 @@ export default function DriversPage() {
                                     setAssignDriver(driver);
                                   }}
                                 >
-                                  Asignar
+                                  {t('webshop2.driversweb.assign')}
                                 </AnimatedButton>
                               ) : (
                                 <span
                                   className="inline-block rounded-lg bg-surface-100 dark:bg-surface-700 px-3 py-1.5 text-xs font-medium text-surface-500 dark:text-surface-400 cursor-not-allowed"
-                                  title="Se puede asignar cuando el repartidor esté conectado (Disponible)"
+                                  title={t('webshop2.driversweb.notAvailableTitle')}
                                 >
-                                  No disponible
+                                  {t('webshop2.driversweb.notAvailable')}
                                 </span>
                               )}
                             </div>
@@ -623,11 +639,11 @@ export default function DriversPage() {
                 <Search className="h-10 w-10 mx-auto text-surface-300" />
                 <p className="mt-4 font-medium text-surface-600 dark:text-surface-300">
                   {tab === 'favorites' && search === '' && filter === 'all'
-                    ? 'Aún no tienes favoritos — toca la estrella en un repartidor'
-                    : 'Sin resultados con ese filtro'}
+                    ? t('webshop2.driversweb.emptyFav')
+                    : t('webshop2.driversweb.emptyFilter')}
                 </p>
                 <p className="text-sm text-surface-500 dark:text-surface-400">
-                  Prueba con otra búsqueda
+                  {t('webshop2.driversweb.emptyHint')}
                 </p>
               </div>
             )}
@@ -733,35 +749,40 @@ function ContestPanel({
   onCancel: (id: string) => void;
   onRefresh: () => void;
 }) {
+  const { t } = useTranslations();
   if (loading)
-    return <p className="text-sm text-surface-500 dark:text-surface-400">Cargando concursos…</p>;
+    return (
+      <p className="text-sm text-surface-500 dark:text-surface-400">
+        {t('webshop2.driversweb.contestLoading')}
+      </p>
+    );
   return (
     <div className="space-y-4">
       <div className="rounded-2xl bg-kiwi-50 dark:bg-kiwi-900/20 border border-kiwi-200 dark:border-kiwi-800 p-4">
         <div className="flex items-center gap-2">
           <Trophy className="h-5 w-5 text-kiwi-700" />
           <p className="text-sm font-medium text-kiwi-800 dark:text-kiwi-200">
-            Estos pedidos están abiertos: el primer repartidor que los acepta se los lleva.
+            {t('webshop2.driversweb.contestHint')}
           </p>
         </div>
         <div className="mt-3 flex gap-2">
           <Link href="/orders/new">
             <AnimatedButton variant="primary" size="sm">
-              + Tirar pedido a concurso
+              {t('webshop2.driversweb.contestNew')}
             </AnimatedButton>
           </Link>
           <AnimatedButton variant="secondary" size="sm" onClick={onRefresh}>
-            Actualizar
+            {t('webshop2.driversweb.contestRefresh')}
           </AnimatedButton>
         </div>
       </div>
       {orders.length === 0 ? (
         <div className="rounded-2xl bg-white dark:bg-surface-800 p-8 text-center shadow-soft">
           <p className="font-medium text-surface-600 dark:text-surface-300">
-            No hay pedidos en concurso
+            {t('webshop2.driversweb.contestEmpty')}
           </p>
           <p className="text-sm text-surface-500 dark:text-surface-400">
-            Crea uno sin asignar repartidor y aparece aquí en vivo
+            {t('webshop2.driversweb.contestEmptyHint')}
           </p>
         </div>
       ) : (
@@ -778,9 +799,12 @@ function ContestPanel({
                   {o.deliveryAddress}
                 </p>
                 <p className="text-xs text-surface-500">
-                  #{o.id.slice(0, 8)} • {orderStatusText(o.status)}
+                  #{o.id.slice(0, 8)} •{' '}
+                  {orderStatusKey(o.status)
+                    ? t(`webshop2.driversweb.${orderStatusKey(o.status)}`)
+                    : o.status}
                   {o._count != null && o.status === 'driver_proposals'
-                    ? ` • ${o._count.proposals} propuesta(s)`
+                    ? t('webshop2.driversweb.proposalsCount', { count: o._count.proposals })
                     : ''}
                 </p>
               </div>
@@ -796,7 +820,7 @@ function ContestPanel({
                   onClick={() => onCancel(o.id)}
                   className="text-xs text-red-400 hover:text-red-600 px-2 py-1"
                 >
-                  Cancelar
+                  {t('webshop2.driversweb.cancel')}
                 </button>
               </div>
             </div>
@@ -826,6 +850,7 @@ function DriverDetailModal({
   onChat: () => void;
   onClose: () => void;
 }) {
+  const { t } = useTranslations();
   const [chatHint, setChatHint] = useState(false);
   const photo = driver.photoUrl as string | undefined;
   return (
@@ -879,7 +904,7 @@ function DriverDetailModal({
           </div>
           <button
             onClick={onClose}
-            aria-label="Cerrar detalle"
+            aria-label={t('webshop2.driversweb.detailClose')}
             className="rounded-lg p-1.5 text-surface-500 dark:text-surface-400 hover:text-surface-600 transition-colors shrink-0"
           >
             <X className="h-5 w-5" />
@@ -892,19 +917,19 @@ function DriverDetailModal({
               <Star className="h-4 w-4 inline text-gold-500" />{' '}
               {driver.rating != null ? formatRating(driver.rating, '—') : '—'}
             </p>
-            <p className="text-xs text-surface-500">Rating</p>
+            <p className="text-xs text-surface-500">{t('webshop2.driversweb.detailRating')}</p>
           </div>
           <div className="rounded-xl bg-surface-50 dark:bg-surface-700/50 p-3">
             <p className="text-lg font-bold text-surface-800 dark:text-surface-100">
               {driver.totalTrips ?? 0}
             </p>
-            <p className="text-xs text-surface-500">Viajes</p>
+            <p className="text-xs text-surface-500">{t('webshop2.driversweb.detailTrips')}</p>
           </div>
           <div className="rounded-xl bg-surface-50 dark:bg-surface-700/50 p-3">
             <p className="text-lg font-bold text-surface-800 dark:text-surface-100">
-              {statusText(driver.status)}
+              {t(`webshop2.driversweb.${statusKey(driver.status)}`)}
             </p>
-            <p className="text-xs text-surface-500">Estado</p>
+            <p className="text-xs text-surface-500">{t('webshop2.driversweb.detailStatus')}</p>
           </div>
         </div>
 
@@ -924,17 +949,17 @@ function DriverDetailModal({
               onClick={onClose}
               className="flex min-h-[48px] items-center justify-center rounded-xl bg-kiwi-700 px-4 text-sm font-semibold text-white shadow-card transition-colors hover:bg-kiwi-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-600/40 active:scale-[0.98]"
             >
-              Crear pedido para este repartidor
+              {t('webshop2.driversweb.detailCreate')}
             </Link>
           ) : (
             <div className="flex min-h-[48px] items-center justify-center rounded-xl bg-surface-100 dark:bg-surface-700 px-4 text-sm font-medium text-surface-500">
-              No disponible ahora
+              {t('webshop2.driversweb.detailUnavailable')}
             </div>
           )}
           <div className="flex gap-2">
             <button
               onClick={onToggleFav}
-              title={isFav ? 'Quitar de favoritos' : 'Marcar favorito'}
+              title={isFav ? t('webshop2.driversweb.favRemove') : t('webshop2.driversweb.favAdd')}
               className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-surface-200 dark:border-surface-700 text-surface-500 dark:text-surface-400 transition-colors hover:bg-surface-100 hover:text-gold-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-500/50 active:scale-95 dark:hover:bg-surface-700 dark:hover:text-gold-400"
             >
               <Star className={`h-5 w-5 ${isFav ? 'fill-gold-500 text-gold-500' : ''}`} />
@@ -944,21 +969,25 @@ function DriverDetailModal({
                 if (hasSharedOrder) onChat();
                 else setChatHint(true);
               }}
-              title={hasSharedOrder ? 'Chatear' : 'El chat se habilita con un pedido en común'}
+              title={
+                hasSharedOrder
+                  ? t('webshop2.driversweb.chatTitle')
+                  : t('webshop2.driversweb.chatDisabledTitle')
+              }
               aria-disabled={!hasSharedOrder}
               className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-surface-200 dark:border-surface-700 text-surface-500 dark:text-surface-400 transition-colors hover:bg-surface-100 hover:text-kiwi-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-600/40 active:scale-95 disabled:opacity-40 dark:hover:bg-surface-700 dark:hover:text-kiwi-300"
             >
               <MessageCircle className="h-5 w-5" />
             </button>
             <AnimatedButton variant="secondary" className="flex-1" onClick={onAssign}>
-              Asignar existente
+              {t('webshop2.driversweb.detailAssignExisting')}
             </AnimatedButton>
           </div>
           {!hasSharedOrder && (
             <p className="text-xs text-surface-500 dark:text-surface-400">
               {chatHint
-                ? 'El chat vive dentro de cada pedido: creá uno para este repartidor y podrán hablar ahí mismo.'
-                : 'El chat se habilita cuando tengan un pedido en común.'}
+                ? t('webshop2.driversweb.chatHintActive')
+                : t('webshop2.driversweb.chatHintDefault')}
             </p>
           )}
         </div>
@@ -980,6 +1009,7 @@ function AssignModal({
   onClose: () => void;
   onConfirm: (orderId: string) => void;
 }) {
+  const { t } = useTranslations();
   const [orderId, setOrderId] = useState<string>(orders[0]?.id ?? '');
   return (
     <motion.div
@@ -997,12 +1027,10 @@ function AssignModal({
         onClick={(e) => e.stopPropagation()}
       >
         <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-          Asignar a {driver.fullName}
+          {t('webshop2.driversweb.assignTo', { name: driver.fullName })}
         </h3>
         {orders.length === 0 ? (
-          <p className="mt-3 text-sm text-surface-500">
-            No tienes pedidos abiertos para asignar. Crea uno primero.
-          </p>
+          <p className="mt-3 text-sm text-surface-500">{t('webshop2.driversweb.assignEmpty')}</p>
         ) : (
           <>
             <div className="mt-3 space-y-2 max-h-64 overflow-y-auto">
@@ -1028,7 +1056,7 @@ function AssignModal({
             </div>
             <div className="mt-4 flex gap-2">
               <AnimatedButton variant="secondary" onClick={onClose} className="flex-1">
-                Cancelar
+                {t('webshop2.driversweb.assignCancel')}
               </AnimatedButton>
               <AnimatedButton
                 variant="primary"
@@ -1036,7 +1064,9 @@ function AssignModal({
                 className="flex-1"
                 disabled={!orderId || assigning}
               >
-                {assigning ? 'Asignando…' : 'Confirmar'}
+                {assigning
+                  ? t('webshop2.driversweb.assigning')
+                  : t('webshop2.driversweb.assignConfirm')}
               </AnimatedButton>
             </div>
           </>
@@ -1071,6 +1101,7 @@ function ChatDrawer({
   onSend: () => void;
   onClose: () => void;
 }) {
+  const { t } = useTranslations();
   return (
     <motion.div
       className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/50 p-4"
@@ -1089,7 +1120,9 @@ function ChatDrawer({
         <div className="flex items-center justify-between border-b border-surface-200 dark:border-surface-700 px-4 py-3">
           <div>
             <p className="font-semibold text-surface-800 dark:text-surface-100">{driverName}</p>
-            <p className="text-xs text-surface-500">Pedido #{orderId.slice(0, 8)}</p>
+            <p className="text-xs text-surface-500">
+              {t('webshop2.driversweb.chatOrder', { id: orderId.slice(0, 8) })}
+            </p>
           </div>
           <button
             onClick={onClose}
@@ -1100,10 +1133,12 @@ function ChatDrawer({
         </div>
         <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
           {loading ? (
-            <p className="text-sm text-surface-500 dark:text-surface-400">Cargando mensajes…</p>
+            <p className="text-sm text-surface-500 dark:text-surface-400">
+              {t('webshop2.driversweb.chatLoading')}
+            </p>
           ) : messages.length === 0 ? (
             <p className="text-sm text-surface-500 dark:text-surface-400 text-center mt-8">
-              Sin mensajes todavía. ¡Saluda! 👋
+              {t('webshop2.driversweb.chatEmpty')}
             </p>
           ) : (
             messages.map((m) => (
@@ -1124,14 +1159,14 @@ function ChatDrawer({
         </div>
         <div className="border-t border-surface-200 dark:border-surface-700 p-3">
           {!connected && (
-            <p className="mb-2 text-xs text-gold-600">Sin conexión en vivo — reconectando…</p>
+            <p className="mb-2 text-xs text-gold-600">{t('webshop2.driversweb.chatOffline')}</p>
           )}
           <div className="flex gap-2">
             <input
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && onSend()}
-              placeholder="Escribe un mensaje…"
+              placeholder={t('webshop2.driversweb.chatPh')}
               maxLength={1000}
               className="flex-1 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-2 text-sm text-surface-800 dark:text-surface-100 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20"
             />

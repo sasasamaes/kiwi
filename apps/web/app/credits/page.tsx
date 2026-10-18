@@ -5,16 +5,16 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Coins, CreditCard, History, RefreshCw, Check, X } from 'lucide-react';
-import { api, useAuth, safeNavigateToUrl } from '@kiwi/ui';
+import { api, useAuth, safeNavigateToUrl, useTranslations } from '@kiwi/ui';
 import { MerchantNav } from '../../components/MerchantNav';
 
 const PACKAGES = [10000, 20000, 30000, 50000];
 const MIN_TOPUP = 10000;
 
-const KIND_LABEL: Record<string, string> = {
-  recharge: 'Recarga',
-  spend: 'Gasto en envío',
-  refund: 'Devolución',
+const KIND_KEYS: Record<string, string> = {
+  recharge: 'webshop2.credits.kindRecharge',
+  spend: 'webshop2.credits.kindSpend',
+  refund: 'webshop2.credits.kindRefund',
 };
 
 type ReturnState =
@@ -25,6 +25,7 @@ type ReturnState =
   | null;
 
 function CreditsInner() {
+  const { t } = useTranslations();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, loading: authLoading } = useAuth();
@@ -105,7 +106,7 @@ function CreditsInner() {
   const payWithCard = async () => {
     const value = Math.round(Number(amount));
     if (!Number.isFinite(value) || value < MIN_TOPUP) {
-      setError(`La recarga mínima con tarjeta es ₡${MIN_TOPUP.toLocaleString()}`);
+      setError(t('webshop2.credits.errMin', { min: MIN_TOPUP.toLocaleString() }));
       return;
     }
     setCreating(true);
@@ -113,11 +114,11 @@ function CreditsInner() {
     try {
       const res = await api.createCreditTopup(value);
       if (!res?.checkoutUrl || !safeNavigateToUrl(res.checkoutUrl)) {
-        throw new Error('Onvo no devolvió link de pago. Probá de nuevo.');
+        throw new Error(t('webshop2.credits.errNoLink'));
       }
       // Vamos a Onvo: al volver, ?topup=&paid=1 confirma la acreditación.
     } catch (e: any) {
-      setError(e?.message || 'No se pudo iniciar el pago con tarjeta');
+      setError(e?.message || t('webshop2.credits.errStart'));
       setCreating(false);
     }
   };
@@ -143,11 +144,9 @@ function CreditsInner() {
       <MerchantNav />
       <main className="mx-auto max-w-3xl p-6 pb-20">
         <h1 className="flex items-center gap-2 text-2xl font-semibold">
-          <Coins className="h-6 w-6" /> Mi crédito
+          <Coins className="h-6 w-6" /> {t('webshop2.credits.title')}
         </h1>
-        <p className="mt-1 text-sm text-surface-500">
-          Cubre tus envíos (solo el viaje). Recargá con tarjeta cuando quieras.
-        </p>
+        <p className="mt-1 text-sm text-surface-500">{t('webshop2.credits.subtitle')}</p>
 
         <AnimatePresence>
           {returnState?.kind === 'polling' && (
@@ -159,7 +158,7 @@ function CreditsInner() {
             >
               <RefreshCw className="h-5 w-5 animate-spin text-kiwi-700" />
               <p className="text-sm font-medium text-kiwi-800 dark:text-kiwi-200">
-                Confirmando tu pago con el banco… no cierres esta pantalla.
+                {t('webshop2.credits.confirming')}
               </p>
             </motion.div>
           )}
@@ -171,14 +170,14 @@ function CreditsInner() {
               className="mt-4 rounded-2xl border border-kiwi-300 dark:border-kiwi-700 bg-kiwi-50 dark:bg-kiwi-900/30 p-4"
             >
               <p className="flex items-center gap-2 text-sm font-bold text-kiwi-800 dark:text-kiwi-200">
-                <Check className="h-5 w-5" /> ¡Recarga acreditada! +₡
-                {returnState.amount.toLocaleString()}
+                <Check className="h-5 w-5" />{' '}
+                {t('webshop2.credits.credited', { amount: returnState.amount.toLocaleString() })}
               </p>
               <button
                 onClick={() => setReturnState(null)}
                 className="mt-1 text-xs text-kiwi-700 underline underline-offset-2"
               >
-                Descartar
+                {t('webshop2.credits.dismiss')}
               </button>
             </motion.div>
           )}
@@ -190,13 +189,13 @@ function CreditsInner() {
               className="mt-4 rounded-2xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/30 p-4"
             >
               <p className="text-sm font-semibold text-red-700 dark:text-red-300">
-                No pudimos confirmar el pago. Si te lo cobraron, escribinos y lo revisamos.
+                {t('webshop2.credits.failed')}
               </p>
               <button
                 onClick={() => setReturnState(null)}
                 className="mt-1 text-xs text-red-600 underline underline-offset-2"
               >
-                Descartar
+                {t('webshop2.credits.dismiss')}
               </button>
             </motion.div>
           )}
@@ -208,11 +207,11 @@ function CreditsInner() {
               className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 p-4"
             >
               <p className="text-sm text-surface-600 dark:text-surface-300">
-                Pago cancelado: no se recargó nada.
+                {t('webshop2.credits.cancelled')}
               </p>
               <button
                 onClick={() => setReturnState(null)}
-                aria-label="Descartar aviso"
+                aria-label={t('webshop2.credits.dismissAria')}
                 className="text-surface-500 dark:text-surface-400"
               >
                 <X className="h-4 w-4" />
@@ -224,25 +223,23 @@ function CreditsInner() {
         {/* Saldo */}
         <div className="mt-4 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] p-6 text-center shadow-soft dark:shadow-dark">
           <p className="text-xs font-semibold uppercase tracking-widest text-surface-500 dark:text-surface-400">
-            Saldo disponible
+            {t('webshop2.credits.balance')}
           </p>
           <p className="mt-1 font-mono font-bold text-kiwi-700 dark:text-kiwi-400">
             <span className="text-2xl align-middle">₡</span>
             <span className="text-5xl">{Number(balance ?? 0).toLocaleString()}</span>
           </p>
           <p className="mt-1 text-xs text-surface-500 dark:text-surface-400">
-            Cubre solo el viaje de tus envíos
+            {t('webshop2.credits.balanceHint')}
           </p>
         </div>
 
         {/* Recarga con tarjeta */}
         <div className="mt-4 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] p-5 shadow-soft dark:shadow-dark">
           <p className="mb-1 flex items-center gap-2 text-sm font-bold">
-            <CreditCard className="h-4 w-4 text-kiwi-600" /> Recargar con tarjeta
+            <CreditCard className="h-4 w-4 text-kiwi-600" /> {t('webshop2.credits.topupTitle')}
           </p>
-          <p className="mb-3 text-xs text-surface-500">
-            Pago seguro con Onvo. Se acredita solo al confirmarse el cobro.
-          </p>
+          <p className="mb-3 text-xs text-surface-500">{t('webshop2.credits.topupHint')}</p>
           <div className="mb-3 grid grid-cols-2 sm:grid-cols-4 gap-2">
             {PACKAGES.map((p) => (
               <button
@@ -264,7 +261,7 @@ function CreditsInner() {
               min={MIN_TOPUP}
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              placeholder="Otro monto"
+              placeholder={t('webshop2.credits.otherAmount')}
               className="flex-1 min-w-0 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-2.5 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             />
             <button
@@ -272,7 +269,7 @@ function CreditsInner() {
               disabled={creating}
               className="rounded-xl bg-kiwi-700 px-5 text-sm font-bold text-white disabled:opacity-50"
             >
-              {creating ? 'Abriendo…' : 'Pagar'}
+              {creating ? t('webshop2.credits.opening') : t('webshop2.credits.pay')}
             </button>
           </div>
           {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
@@ -281,15 +278,15 @@ function CreditsInner() {
         {/* Movimientos */}
         <div className="mt-6">
           <p className="mb-2 flex items-center gap-1 text-sm font-semibold">
-            <History className="h-4 w-4" /> Movimientos
+            <History className="h-4 w-4" /> {t('webshop2.credits.history')}
           </p>
           {history.length === 0 ? (
             <div className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] p-6 text-center shadow-soft dark:shadow-dark">
               <p className="text-sm font-medium text-surface-700 dark:text-surface-200">
-                Todavía no hay movimientos.
+                {t('webshop2.credits.historyEmpty')}
               </p>
               <p className="mt-1 text-xs text-surface-500 dark:text-surface-400">
-                Tus recargas y gastos de envío aparecen aquí.
+                {t('webshop2.credits.historyEmptyHint')}
               </p>
             </div>
           ) : (
@@ -300,7 +297,9 @@ function CreditsInner() {
                   className="flex items-center justify-between rounded-xl bg-white dark:bg-surface-900 border border-surface-100 dark:border-surface-800 px-4 py-2.5 text-sm"
                 >
                   <div>
-                    <p className="font-medium">{KIND_LABEL[h.kind] ?? h.kind}</p>
+                    <p className="font-medium">
+                      {KIND_KEYS[h.kind] ? t(KIND_KEYS[h.kind]) : h.kind}
+                    </p>
                     <p className="text-xs text-surface-500 dark:text-surface-400">
                       {h.reason ?? ''} ·{' '}
                       {new Date(h.createdAt).toLocaleDateString('es-CR', {
@@ -324,7 +323,7 @@ function CreditsInner() {
           href="/dashboard"
           className="mt-6 inline-block text-sm font-medium text-kiwi-700 hover:underline"
         >
-          ← Volver al panel
+          {t('webshop2.credits.backPanel')}
         </Link>
       </main>
     </>
@@ -332,9 +331,14 @@ function CreditsInner() {
 }
 
 export default function CreditsPage() {
+  const { t } = useTranslations();
   return (
     <Suspense
-      fallback={<main className="min-h-[100dvh] flex items-center justify-center">Cargando…</main>}
+      fallback={
+        <main className="min-h-[100dvh] flex items-center justify-center">
+          {t('webshop2.credits.loading')}
+        </main>
+      }
     >
       <CreditsInner />
     </Suspense>

@@ -29,6 +29,7 @@ import {
   api,
   Order,
   KiwiLoader,
+  useTranslations,
 } from '@kiwi/ui';
 import { MerchantNav } from '../../components/MerchantNav';
 import { MerchantLogoEditor } from '../../components/MerchantLogoEditor';
@@ -43,24 +44,9 @@ import { QuickPickupSheet } from '../../components/QuickPickupSheet';
  * Saludo por hora local (el comercio opera en CR):
  * 05:00–11:59 días, 12:00–18:29 tardes, 18:30–04:59 noches.
  */
-function getGreeting(now: Date = new Date()): string {
-  const mins = now.getHours() * 60 + now.getMinutes();
-  if (mins >= 5 * 60 && mins < 12 * 60) return 'Buenos días';
-  if (mins >= 12 * 60 && mins < 18 * 60 + 30) return 'Buenas tardes';
-  return 'Buenas noches';
-}
-
-function getClientName(o: any): string {
-  const raw = typeof o?.customerName === 'string' ? o.customerName.trim() : '';
-  if (raw) return raw;
-  const instructions = typeof o?.specialInstructions === 'string' ? o.specialInstructions : '';
-  const m = instructions.match(/Cliente:\s*([^(()·]+?)\s*(?:\(([^)]+)\))?\s*(?:·|$)/i);
-  const name = (m?.[1] ?? '').trim();
-  return name || 'Cliente sin nombre';
-}
-
 export default function Dashboard() {
   const router = useRouter();
+  const { t } = useTranslations();
   const { user, loading: authLoading, updateUser } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,6 +67,31 @@ export default function Dashboard() {
   const [announceResult, setAnnounceResult] = useState<string | null>(null);
   const [quickOpen, setQuickOpen] = useState(false);
 
+  /**
+   * Saludo por hora local (el comercio opera en CR):
+   * 05:00–11:59 días, 12:00–18:29 tardes, 18:30–04:59 noches.
+   */
+  const getGreeting = (now: Date = new Date()): string => {
+    const mins = now.getHours() * 60 + now.getMinutes();
+    if (mins >= 5 * 60 && mins < 12 * 60) return t('webshop1.dash.greetingMorning');
+    if (mins >= 12 * 60 && mins < 18 * 60 + 30) return t('webshop1.dash.greetingAfternoon');
+    return t('webshop1.dash.greetingNight');
+  };
+
+  /**
+   * Nombre del cliente: campo estructurado (pedidos nuevos) o parseado de
+   * `specialInstructions` ("Cliente: Nombre (teléfono) · notas") para el
+   * historial viejo que se creó sin customerName.
+   */
+  const getClientName = (o: any): string => {
+    const raw = typeof o?.customerName === 'string' ? o.customerName.trim() : '';
+    if (raw) return raw;
+    const instructions = typeof o?.specialInstructions === 'string' ? o.specialInstructions : '';
+    const m = instructions.match(/Cliente:\s*([^(()·]+?)\s*(?:\(([^)]+)\))?\s*(?:·|$)/i);
+    const name = (m?.[1] ?? '').trim();
+    return name || t('webshop1.dash.unnamedClient');
+  };
+
   // Push notifications
   const { requestPermission } = usePushNotifications({
     enabled: true,
@@ -89,7 +100,10 @@ export default function Dashboard() {
         ...prev,
         {
           type: 'info',
-          message: payload.notification?.body || payload.data?.body || 'Nueva notificación',
+          message:
+            payload.notification?.body ||
+            payload.data?.body ||
+            t('webshop1.dash.newNotificationFallback'),
           time: new Date(),
         },
       ]);
@@ -153,8 +167,10 @@ export default function Dashboard() {
       });
       setAnnounceResult(
         res.reached > 0
-          ? `✓ Aviso enviado a ${res.reached} seguidor${res.reached === 1 ? '' : 'es'}`
-          : 'No tenés seguidores todavía — compartí tu QR para que te sigan.',
+          ? res.reached === 1
+            ? t('webshop1.dash.announceSentOne')
+            : t('webshop1.dash.announceSentMany', { count: res.reached })
+          : t('webshop1.dash.announceNoFollowers'),
       );
       if (res.reached > 0) {
         setAnnounceTitle('');
@@ -172,7 +188,7 @@ export default function Dashboard() {
         // el resultado del envío ya se mostró; el cupo se actualiza al entrar
       }
     } catch (e: any) {
-      setAnnounceResult(e?.message || 'No se pudo enviar el aviso');
+      setAnnounceResult(e?.message || t('webshop1.dash.announceFailed'));
     } finally {
       setAnnouncing(false);
     }
@@ -184,7 +200,7 @@ export default function Dashboard() {
       setOrdersError(null);
     } catch (error: any) {
       console.error('Failed to fetch orders:', error);
-      setOrdersError(error?.message || 'No se pudieron cargar los pedidos');
+      setOrdersError(error?.message || t('webshop1.dash.loadOrdersFailed'));
     }
   };
 
@@ -267,7 +283,7 @@ export default function Dashboard() {
               onClick={() => void fetchOrders()}
               className="shrink-0 rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white"
             >
-              Reintentar
+              {t('webshop1.dash.retry')}
             </button>
           </div>
         )}
@@ -296,7 +312,7 @@ export default function Dashboard() {
                 {getGreeting()} 👋 {user?.merchantProfile?.businessName || ''}
               </h2>
               <p className="text-surface-500 dark:text-surface-400">
-                Aquí está el resumen de tu negocio hoy
+                {t('webshop1.dash.subtitle')}
               </p>
             </div>
           </div>
@@ -310,27 +326,25 @@ export default function Dashboard() {
             transition={{ delay: 0.15 }}
           >
             <p className="font-display font-bold text-surface-800 dark:text-surface-100">
-              🧡 Sos cocina casera: vendé aunque no abras todos los días
+              {t('webshop1.dash.homeCookTitle')}
             </p>
             <ul className="mt-2 space-y-1 text-sm text-surface-600 dark:text-surface-300">
               <li>
-                • En{' '}
+                • {t('webshop1.dash.homeCookTip1Prefix')}{' '}
                 <Link href="/menu" className="font-semibold text-kiwi-700 hover:underline">
-                  Menú
+                  {t('webshop1.dash.homeCookTip1Menu')}
                 </Link>
-                , marcá en cada producto los <strong>Días disponibles</strong> (ej. rollos solo
-                jueves).
+                {t('webshop1.dash.homeCookTip1Middle')}{' '}
+                <strong>{t('webshop1.dash.homeCookTip1Strong')}</strong>{' '}
+                {t('webshop1.dash.homeCookTip1Suffix')}
               </li>
+              <li>• {t('webshop1.dash.homeCookTip2')}</li>
               <li>
-                • Tus clientes pueden pedir por adelantado: la preventa llega como pedido
-                programado.
-              </li>
-              <li>
-                • En{' '}
+                • {t('webshop1.dash.homeCookTip3Prefix')}{' '}
                 <Link href="/perfil" className="font-semibold text-kiwi-700 hover:underline">
-                  Perfil
+                  {t('webshop1.dash.homeCookTip3Profile')}
                 </Link>{' '}
-                definí tus horarios por día: cerrada igual recibís preventas futuras.
+                {t('webshop1.dash.homeCookTip3Suffix')}
               </li>
             </ul>
           </motion.div>
@@ -344,23 +358,29 @@ export default function Dashboard() {
         >
           <div className="flex items-center justify-between gap-2">
             <p className="font-display font-bold text-surface-800 dark:text-surface-100">
-              📣 Avisar a seguidores
+              {t('webshop1.dash.announceTitle')}
             </p>
             <span className="text-xs font-semibold text-orange-700 dark:text-orange-300">
-              {followersCount == null ? '' : `${followersCount} te siguen`}
+              {followersCount == null
+                ? ''
+                : t('webshop1.dash.followersCount', { count: followersCount })}
             </span>
           </div>
           <p className="mt-1 text-xs text-surface-500 dark:text-surface-400">
-            Ej. «Mañana vendo rollos de canela» o «Ya hay comida del día». Les llega push + campana.{' '}
+            {t('webshop1.dash.announceHint')}{' '}
             {announceQuota && (
               <span className="font-semibold">
-                {Math.max(announceQuota.freeTotal - announceQuota.freeUsed, 0)} de{' '}
-                {announceQuota.freeTotal} gratis esta semana
+                {t('webshop1.dash.quotaFree', {
+                  left: Math.max(announceQuota.freeTotal - announceQuota.freeUsed, 0),
+                  total: announceQuota.freeTotal,
+                })}
                 {announceQuota.extraCredits > 0 &&
-                  ` (+${announceQuota.extraCredits} extra${announceQuota.extraCredits === 1 ? '' : 's'})`}
+                  (announceQuota.extraCredits === 1
+                    ? t('webshop1.dash.quotaExtraOne', { count: announceQuota.extraCredits })
+                    : t('webshop1.dash.quotaExtraMany', { count: announceQuota.extraCredits }))}
                 {announceQuota.freeUsed >= announceQuota.freeTotal &&
                   announceQuota.extraCredits <= 0 &&
-                  ' — pedí más avisos al equipo Kiwi'}
+                  t('webshop1.dash.quotaEmpty')}
               </span>
             )}
           </p>
@@ -369,7 +389,7 @@ export default function Dashboard() {
               type="text"
               value={announceTitle}
               onChange={(e) => setAnnounceTitle(e.target.value)}
-              placeholder="Título (ej. Mañana hay rollos)"
+              placeholder={t('webshop1.dash.announceTitlePlaceholder')}
               maxLength={60}
               className="rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-2.5 text-sm"
             />
@@ -377,7 +397,7 @@ export default function Dashboard() {
               type="text"
               value={announceBody}
               onChange={(e) => setAnnounceBody(e.target.value)}
-              placeholder="Mensaje (ej. Se entregan el jueves a las 2:00 p. m.)"
+              placeholder={t('webshop1.dash.announceBodyPlaceholder')}
               maxLength={200}
               className="rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-2.5 text-sm"
             />
@@ -386,7 +406,7 @@ export default function Dashboard() {
               disabled={announcing || !announceTitle.trim() || !announceBody.trim()}
               className="rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"
             >
-              {announcing ? 'Enviando…' : 'Avisar'}
+              {announcing ? t('webshop1.dash.announceSending') : t('webshop1.dash.announceSend')}
             </button>
           </div>
           {announceResult && (
@@ -410,10 +430,10 @@ export default function Dashboard() {
                   </div>
                   <div>
                     <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-                      Encomienda
+                      {t('webshop1.dash.quickFreightTitle')}
                     </h3>
                     <p className="text-sm text-surface-500 dark:text-surface-400">
-                      Paquete o mandado
+                      {t('webshop1.dash.quickFreightDesc')}
                     </p>
                   </div>
                 </div>
@@ -434,10 +454,10 @@ export default function Dashboard() {
                   </div>
                   <div>
                     <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-                      Pedido Menú
+                      {t('webshop1.dash.quickMenuTitle')}
                     </h3>
                     <p className="text-sm text-surface-500 dark:text-surface-400">
-                      Comida del menú
+                      {t('webshop1.dash.quickMenuDesc')}
                     </p>
                   </div>
                 </div>
@@ -458,10 +478,10 @@ export default function Dashboard() {
                   </div>
                   <div>
                     <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-                      Mi Menú
+                      {t('webshop1.dash.quickMyMenuTitle')}
                     </h3>
                     <p className="text-sm text-surface-500 dark:text-surface-400">
-                      Administrar productos
+                      {t('webshop1.dash.quickMyMenuDesc')}
                     </p>
                   </div>
                 </div>
@@ -483,9 +503,11 @@ export default function Dashboard() {
                   </div>
                   <div>
                     <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-                      Repartidores
+                      {t('webshop1.dash.quickDriversTitle')}
                     </h3>
-                    <p className="text-sm text-surface-500 dark:text-surface-400">Ver y asignar</p>
+                    <p className="text-sm text-surface-500 dark:text-surface-400">
+                      {t('webshop1.dash.quickDriversDesc')}
+                    </p>
                   </div>
                 </div>
               </motion.div>
@@ -505,9 +527,11 @@ export default function Dashboard() {
                   </div>
                   <div>
                     <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-                      Programados
+                      {t('webshop1.dash.quickScheduledTitle')}
                     </h3>
-                    <p className="text-sm text-surface-500 dark:text-surface-400">Ver propuestas</p>
+                    <p className="text-sm text-surface-500 dark:text-surface-400">
+                      {t('webshop1.dash.quickScheduledDesc')}
+                    </p>
                   </div>
                 </div>
               </motion.div>
@@ -527,10 +551,10 @@ export default function Dashboard() {
                   </div>
                   <div>
                     <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-                      Analytics
+                      {t('webshop1.dash.quickAnalyticsTitle')}
                     </h3>
                     <p className="text-sm text-surface-500 dark:text-surface-400">
-                      Ver estadísticas
+                      {t('webshop1.dash.quickAnalyticsDesc')}
                     </p>
                   </div>
                 </div>
@@ -542,9 +566,9 @@ export default function Dashboard() {
         <StaggerContainer className="mb-8 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           <StaggerItem>
             <StatCard
-              title="Pedidos Hoy"
+              title={t('webshop1.dash.statsTodayTitle')}
               value={String(todayOrders.length)}
-              change={`${orders.length} total`}
+              change={t('webshop1.dash.statsTodayTotal', { count: orders.length })}
               changeType="neutral"
               icon={<Package className="h-6 w-6" />}
               color="kiwi"
@@ -552,9 +576,9 @@ export default function Dashboard() {
           </StaggerItem>
           <StaggerItem>
             <StatCard
-              title="Ingresos"
+              title={t('webshop1.dash.statsRevenueTitle')}
               value={`₡${totalRevenue.toLocaleString()}`}
-              change={`${deliveredOrders.length} entregados`}
+              change={t('webshop1.dash.statsRevenueSub', { count: deliveredOrders.length })}
               changeType="positive"
               icon={<Coins className="h-6 w-6" />}
               color="gold"
@@ -562,9 +586,13 @@ export default function Dashboard() {
           </StaggerItem>
           <StaggerItem>
             <StatCard
-              title="Pendientes"
+              title={t('webshop1.dash.statsPendingTitle')}
               value={String(pendingOrders.length)}
-              change={pendingOrders.length > 0 ? 'Esperando repartidor' : 'Todo al día'}
+              change={
+                pendingOrders.length > 0
+                  ? t('webshop1.dash.statsPendingWaiting')
+                  : t('webshop1.dash.statsPendingOk')
+              }
               changeType={pendingOrders.length > 0 ? 'negative' : 'positive'}
               icon={<Clock className="h-6 w-6" />}
               color="blue"
@@ -572,9 +600,9 @@ export default function Dashboard() {
           </StaggerItem>
           <StaggerItem>
             <StatCard
-              title="Tasa Éxito"
+              title={t('webshop1.dash.statsSuccessTitle')}
               value={`${orders.length > 0 ? Math.round((deliveredOrders.length / orders.length) * 100) : 100}%`}
-              change="de pedidos"
+              change={t('webshop1.dash.statsSuccessSub')}
               changeType="positive"
               icon={<Check className="h-6 w-6" />}
               color="bark"
@@ -594,12 +622,10 @@ export default function Dashboard() {
           >
             <div>
               <p className="text-sm font-semibold text-surface-800 dark:text-surface-100">
-                Crédito prepago: ₡{creditBalance.toLocaleString()}
+                {t('webshop1.dash.creditTitle', { amount: creditBalance.toLocaleString() })}
               </p>
               <p className="text-xs text-surface-500 dark:text-surface-400">
-                {creditBalance < 2000
-                  ? 'Te estás quedando sin saldo para envíos. Llamá a los encargados de Kiwi para recargar tu usuario.'
-                  : 'Cubre tus envíos (solo el viaje). Se recarga por semana con Kiwi.'}
+                {creditBalance < 2000 ? t('webshop1.dash.creditLow') : t('webshop1.dash.creditOk')}
               </p>
             </div>
             <div className="flex gap-2">
@@ -607,13 +633,13 @@ export default function Dashboard() {
                 href="/credits"
                 className="rounded-xl bg-kiwi-700 px-4 py-2 text-center text-sm font-semibold text-white hover:bg-kiwi-800"
               >
-                Recargar con tarjeta
+                {t('webshop1.dash.creditRecharge')}
               </Link>
               <Link
                 href="/orders/new"
                 className="rounded-xl border border-kiwi-700 px-4 py-2 text-center text-sm font-semibold text-kiwi-700 hover:bg-kiwi-50 dark:hover:bg-kiwi-900/20"
               >
-                Pedir con crédito
+                {t('webshop1.dash.creditOrder')}
               </Link>
             </div>
           </motion.div>
@@ -623,13 +649,13 @@ export default function Dashboard() {
           <div className="rounded-2xl bg-white dark:bg-surface-800 shadow-soft dark:shadow-dark p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100">
-                Pedidos Recientes
+                {t('webshop1.dash.recentTitle')}
               </h3>
               <Link
                 href="/orders"
                 className="text-sm font-medium text-kiwi-700 hover:text-kiwi-800"
               >
-                Ver todos →
+                {t('webshop1.dash.viewAll')}
               </Link>
             </div>
 
@@ -646,28 +672,45 @@ export default function Dashboard() {
                 >
                   <Package className="h-12 w-12 text-surface-300" />
                 </motion.div>
-                <p className="text-surface-500 dark:text-surface-400">Aún no hay pedidos</p>
+                <p className="text-surface-500 dark:text-surface-400">
+                  {t('webshop1.dash.emptyTitle')}
+                </p>
                 <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">
-                  Crea tu primer pedido para empezar
+                  {t('webshop1.dash.emptyHint')}
                 </p>
               </motion.div>
             ) : (
               <div className="space-y-4">
                 {orders.slice(0, 5).map((order: any, orderIndex) => {
                   const statusMap: Record<string, { label: string; color: string }> = {
-                    pending: { label: 'Pendiente', color: 'bg-gold-100 text-gold-700' },
-                    assigned: { label: 'Asignado', color: 'bg-blue-100 text-blue-700' },
+                    pending: {
+                      label: t('webshop1.dash.statusPending'),
+                      color: 'bg-gold-100 text-gold-700',
+                    },
+                    assigned: {
+                      label: t('webshop1.dash.statusAssigned'),
+                      color: 'bg-blue-100 text-blue-700',
+                    },
                     in_transit_to_pickup: {
-                      label: 'En camino',
+                      label: t('webshop1.dash.statusEnRoute'),
                       color: 'bg-kiwi-100 text-kiwi-700',
                     },
-                    picked_up: { label: 'Recogido', color: 'bg-kiwi-100 text-kiwi-700' },
+                    picked_up: {
+                      label: t('webshop1.dash.statusPickedUp'),
+                      color: 'bg-kiwi-100 text-kiwi-700',
+                    },
                     in_transit_to_delivery: {
-                      label: 'Entregando',
+                      label: t('webshop1.dash.statusDelivering'),
                       color: 'bg-kiwi-100 text-kiwi-700',
                     },
-                    delivered: { label: 'Entregado', color: 'bg-green-100 text-green-700' },
-                    cancelled: { label: 'Cancelado', color: 'bg-red-100 text-red-700' },
+                    delivered: {
+                      label: t('webshop1.dash.statusDelivered'),
+                      color: 'bg-green-100 text-green-700',
+                    },
+                    cancelled: {
+                      label: t('webshop1.dash.statusCancelled'),
+                      color: 'bg-red-100 text-red-700',
+                    },
                   };
                   const statusInfo = statusMap[order.status] || {
                     label: order.status,
@@ -682,7 +725,9 @@ export default function Dashboard() {
                     <ScrollReveal key={order.id} index={orderIndex} as="div">
                       <Link
                         href="/orders"
-                        aria-label={`Ver detalle del pedido de ${getClientName(order)}`}
+                        aria-label={t('webshop1.dash.orderDetailAria', {
+                          name: getClientName(order),
+                        })}
                       >
                         <motion.div
                           className="group flex items-center justify-between rounded-xl border border-surface-100 dark:border-surface-700 bg-surface-50/50 dark:bg-surface-900/50 p-4 transition-all hover:border-kiwi-200 hover:bg-white dark:hover:bg-surface-800 hover:shadow-soft-md cursor-pointer"
@@ -703,11 +748,12 @@ export default function Dashboard() {
                                 <p className="text-sm text-surface-500 dark:text-surface-400 flex items-center gap-1">
                                   {order.driver ? (
                                     <>
-                                      <Bike className="h-4 w-4" /> Asignado
+                                      <Bike className="h-4 w-4" />{' '}
+                                      {t('webshop1.dash.driverAssigned')}
                                     </>
                                   ) : (
                                     <>
-                                      <Clock className="h-4 w-4" /> Sin repartidor
+                                      <Clock className="h-4 w-4" /> {t('webshop1.dash.driverNone')}
                                     </>
                                   )}
                                 </p>
@@ -748,8 +794,8 @@ export default function Dashboard() {
       {/* Pedido rápido: la comida sale en minutos, el repartidor va a recoger */}
       <motion.button
         onClick={() => setQuickOpen(true)}
-        aria-label="Pedido rápido: pedir repartidor"
-        title="Pedido rápido"
+        aria-label={t('webshop1.dash.quickPickupAria')}
+        title={t('webshop1.dash.quickPickupTitle')}
         className="fixed bottom-6 right-6 z-40 flex h-16 w-16 items-center justify-center rounded-full bg-kiwi-700 text-white shadow-2xl hover:bg-kiwi-800"
         whileHover={{ scale: 1.08 }}
         whileTap={{ scale: 0.92 }}

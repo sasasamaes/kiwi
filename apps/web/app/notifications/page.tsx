@@ -5,11 +5,17 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Bell, Settings } from 'lucide-react';
-import { NotificationList, NotificationPreferences, AnimatedButton } from '@kiwi/ui';
+import {
+  NotificationList,
+  NotificationPreferences,
+  AnimatedButton,
+  useTranslations,
+} from '@kiwi/ui';
 
 type Tab = 'notifications' | 'preferences';
 
 export default function NotificationsPage() {
+  const { t } = useTranslations();
   const [activeTab, setActiveTab] = useState<Tab>('notifications');
 
   return (
@@ -27,10 +33,10 @@ export default function NotificationsPage() {
               className="flex min-h-[44px] items-center gap-2 text-surface-600 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200"
             >
               <span>←</span>
-              <span className="text-sm font-medium">Volver</span>
+              <span className="text-sm font-medium">{t('webshop2.notif.back')}</span>
             </Link>
             <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-              Notificaciones
+              {t('webshop2.notif.title')}
             </h1>
             <div className="w-16" />
           </div>
@@ -49,7 +55,7 @@ export default function NotificationsPage() {
             onClick={() => setActiveTab('notifications')}
             whileTap={{ scale: 0.98 }}
           >
-            <Bell className="h-4 w-4 inline" /> Notificaciones
+            <Bell className="h-4 w-4 inline" /> {t('webshop2.notif.tabNotif')}
           </motion.button>
           <motion.button
             className={`flex-1 py-3.5 rounded-xl text-sm font-medium transition-colors ${
@@ -60,7 +66,7 @@ export default function NotificationsPage() {
             onClick={() => setActiveTab('preferences')}
             whileTap={{ scale: 0.98 }}
           >
-            <Settings className="h-4 w-4 inline" /> Preferencias
+            <Settings className="h-4 w-4 inline" /> {t('webshop2.notif.tabPref')}
           </motion.button>
         </div>
 

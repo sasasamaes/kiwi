@@ -17,21 +17,16 @@ import {
   Check,
   Clock,
 } from 'lucide-react';
-import { api, useAuth, useSocket, type Order, ShareTrackingButton, ScrollReveal } from '@kiwi/ui';
+import {
+  api,
+  useAuth,
+  useSocket,
+  type Order,
+  ShareTrackingButton,
+  ScrollReveal,
+  useTranslations,
+} from '@kiwi/ui';
 import { MerchantNav } from '../../components/MerchantNav';
-
-const STATUS_LABEL: Record<string, string> = {
-  pending: 'Buscando repartidor',
-  driver_proposals: 'Recibiendo propuestas',
-  assigned: 'Repartidor asignado',
-  pending_acceptance: 'Esperando al repartidor',
-  in_transit_to_pickup: 'Va a recoger',
-  picked_up: 'Recogido',
-  in_transit_to_delivery: 'En camino a entregar',
-  delivered: 'Entregado',
-  cancelled: 'Cancelado',
-  no_driver: 'Sin repartidores',
-};
 
 const STATUS_COLOR: Record<string, string> = {
   pending: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300',
@@ -58,55 +53,76 @@ const ACTIVE = new Set([
   'no_driver',
 ]);
 
-const TABS = [
-  { id: 'active', label: 'En curso' },
-  { id: 'all', label: 'Todos' },
-  { id: 'delivered', label: 'Entregados' },
-  { id: 'cancelled', label: 'Cancelados' },
-] as const;
-
-function timelineOf(o: any) {
-  if (o.status === 'cancelled') {
-    return [
-      { label: 'Creado', at: o.createdAt, done: true },
-      { label: 'Cancelado', at: o.updatedAt ?? o.createdAt, done: true },
-    ];
-  }
-  return [
-    { label: 'Creado', at: o.createdAt, done: true },
-    {
-      label: o.driver?.fullName ? `Aceptado · ${o.driver.fullName}` : 'Aceptado',
-      at: o.assignedAt,
-      done: !!o.assignedAt,
-    },
-    { label: 'Recogido', at: o.pickedUpAt, done: !!o.pickedUpAt },
-    { label: 'Entregado', at: o.deliveredAt, done: !!o.deliveredAt },
-  ];
-}
-
-/**
- * Nombre del cliente: campo estructurado (pedidos nuevos) o parseado de
- * `specialInstructions` ("Cliente: Nombre (teléfono) · notas") para el
- * historial viejo que se creó sin customerName.
- */
-function getClientInfo(o: any): { name: string | null; phone: string | null } {
-  const rawName = typeof o?.customerName === 'string' ? o.customerName.trim() : '';
-  const rawPhone = typeof o?.customerPhone === 'string' ? o.customerPhone.trim() : '';
-  if (rawName) return { name: rawName, phone: rawPhone || null };
-  const instructions = typeof o?.specialInstructions === 'string' ? o.specialInstructions : '';
-  const m = instructions.match(/Cliente:\s*([^(()·]+?)\s*(?:\(([^)]+)\))?\s*(?:·|$)/i);
-  if (m) {
-    const name = (m[1] ?? '').trim();
-    const phone = (m[2] ?? '').trim();
-    if (name) return { name, phone: phone || rawPhone || null };
-  }
-  if (rawPhone) return { name: null, phone: rawPhone };
-  return { name: null, phone: null };
-}
-
 export default function OrdersPage() {
   const router = useRouter();
+  const { t } = useTranslations();
   const { user, loading: authLoading } = useAuth();
+
+  const STATUS_LABEL: Record<string, string> = {
+    pending: t('webshop1.orders.statusPending'),
+    driver_proposals: t('webshop1.orders.statusProposals'),
+    assigned: t('webshop1.orders.statusAssigned'),
+    pending_acceptance: t('webshop1.orders.statusWaiting'),
+    in_transit_to_pickup: t('webshop1.orders.statusToPickup'),
+    picked_up: t('webshop1.orders.statusPickedUp'),
+    in_transit_to_delivery: t('webshop1.orders.statusDelivering'),
+    delivered: t('webshop1.orders.statusDelivered'),
+    cancelled: t('webshop1.orders.statusCancelled'),
+    no_driver: t('webshop1.orders.statusNoDriver'),
+  };
+
+  const TABS = [
+    { id: 'active', label: t('webshop1.orders.tabActive') },
+    { id: 'all', label: t('webshop1.orders.tabAll') },
+    { id: 'delivered', label: t('webshop1.orders.tabDelivered') },
+    { id: 'cancelled', label: t('webshop1.orders.tabCancelled') },
+  ] as const;
+
+  const timelineOf = (o: any) => {
+    if (o.status === 'cancelled') {
+      return [
+        { label: t('webshop1.orders.timelineCreated'), at: o.createdAt, done: true },
+        {
+          label: t('webshop1.orders.timelineCancelled'),
+          at: o.updatedAt ?? o.createdAt,
+          done: true,
+        },
+      ];
+    }
+    return [
+      { label: t('webshop1.orders.timelineCreated'), at: o.createdAt, done: true },
+      {
+        label: o.driver?.fullName
+          ? t('webshop1.orders.timelineAcceptedWith', { name: o.driver.fullName })
+          : t('webshop1.orders.timelineAccepted'),
+        at: o.assignedAt,
+        done: !!o.assignedAt,
+      },
+      { label: t('webshop1.orders.timelinePickedUp'), at: o.pickedUpAt, done: !!o.pickedUpAt },
+      { label: t('webshop1.orders.timelineDelivered'), at: o.deliveredAt, done: !!o.deliveredAt },
+    ];
+  };
+
+  /**
+   * Nombre del cliente: campo estructurado (pedidos nuevos) o parseado de
+   * `specialInstructions` ("Cliente: Nombre (teléfono) · notas") para el
+   * historial viejo que se creó sin customerName.
+   */
+  const getClientInfo = (o: any): { name: string | null; phone: string | null } => {
+    const rawName = typeof o?.customerName === 'string' ? o.customerName.trim() : '';
+    const rawPhone = typeof o?.customerPhone === 'string' ? o.customerPhone.trim() : '';
+    if (rawName) return { name: rawName, phone: rawPhone || null };
+    const instructions = typeof o?.specialInstructions === 'string' ? o.specialInstructions : '';
+    const m = instructions.match(/Cliente:\s*([^(()·]+?)\s*(?:\(([^)]+)\))?\s*(?:·|$)/i);
+    if (m) {
+      const name = (m[1] ?? '').trim();
+      const phone = (m[2] ?? '').trim();
+      if (name) return { name, phone: phone || rawPhone || null };
+    }
+    if (rawPhone) return { name: null, phone: rawPhone };
+    return { name: null, phone: null };
+  };
+
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -125,18 +141,21 @@ export default function OrdersPage() {
   const [actingId, setActingId] = useState<string | null>(null);
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const fetchOrders = useCallback(async (silent = false) => {
-    try {
-      if (!silent) setError(null);
-      const data = await api.getMyOrders();
-      setOrders(Array.isArray(data) ? data : []);
-    } catch {
-      if (!silent) setError('No se pudieron cargar los pedidos');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
+  const fetchOrders = useCallback(
+    async (silent = false) => {
+      try {
+        if (!silent) setError(null);
+        const data = await api.getMyOrders();
+        setOrders(Array.isArray(data) ? data : []);
+      } catch {
+        if (!silent) setError(t('webshop1.orders.loadFailed'));
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [t],
+  );
 
   useEffect(() => {
     if (!authLoading && !user) router.push('/login');
@@ -207,7 +226,7 @@ export default function OrdersPage() {
     // Validación local: evita esperar la subida para un HEIC de iPhone o un
     // archivo gigante que el backend va a rechazar (magic bytes + 5 MB).
     if (file.size > 5 * 1024 * 1024) {
-      setError('La foto es muy grande (máx 5 MB). Probá con otra imagen.');
+      setError(t('webshop1.orders.photoTooBig'));
       return;
     }
     if (
@@ -216,7 +235,7 @@ export default function OrdersPage() {
         file.type,
       )
     ) {
-      setError('Formato no soportado. Usá JPG, PNG, WEBP, GIF o HEIC.');
+      setError(t('webshop1.orders.photoFormat'));
       return;
     }
     setUploadingId(orderId);
@@ -225,7 +244,7 @@ export default function OrdersPage() {
       setError(null);
       await fetchOrders(true);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo subir la foto');
+      setError(e instanceof Error ? e.message : t('webshop1.orders.photoFailed'));
     } finally {
       setUploadingId(null);
     }
@@ -240,7 +259,7 @@ export default function OrdersPage() {
       await api.updateOrderStatus(orderId, 'pending');
       await fetchOrders(true);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo reintentar el pedido');
+      setError(e instanceof Error ? e.message : t('webshop1.orders.retryFailed'));
     } finally {
       setActingId(null);
     }
@@ -253,7 +272,7 @@ export default function OrdersPage() {
       await api.updateOrderStatus(orderId, 'cancelled');
       await fetchOrders(true);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo cancelar el pedido');
+      setError(e instanceof Error ? e.message : t('webshop1.orders.cancelFailed'));
     } finally {
       setActingId(null);
     }
@@ -298,13 +317,13 @@ export default function OrdersPage() {
       <main className="mx-auto max-w-3xl p-6 pb-20">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold">Mis envíos</h1>
+            <h1 className="text-2xl font-semibold">{t('webshop1.orders.title')}</h1>
             <p className="flex items-center gap-1.5 text-xs text-surface-500">
               <span
                 className={`h-2 w-2 rounded-full ${isConnected ? 'bg-kiwi-500' : 'bg-surface-300'}`}
               />
-              {isConnected ? 'En vivo · se actualiza solo' : 'Reconectando…'}
-              {activeCount > 0 && ` · ${activeCount} en curso`}
+              {isConnected ? t('webshop1.orders.live') : t('webshop1.orders.reconnecting')}
+              {activeCount > 0 && t('webshop1.orders.activeCount', { count: activeCount })}
             </p>
           </div>
           <button
@@ -312,7 +331,7 @@ export default function OrdersPage() {
               setRefreshing(true);
               fetchOrders();
             }}
-            aria-label="Actualizar"
+            aria-label={t('webshop1.orders.refreshAria')}
             className="rounded-xl p-2.5 text-surface-500 hover:bg-surface-100 dark:hover:bg-surface-800"
           >
             <RefreshCw className={`h-5 w-5 ${refreshing ? 'animate-spin' : ''}`} />
@@ -323,8 +342,7 @@ export default function OrdersPage() {
 
         {uploadEnabled === false && (
           <p className="mt-4 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 px-4 py-3 text-sm text-amber-800 dark:text-amber-300">
-            La subida de fotos no está configurada en el servidor. Avisá al administrador para
-            activar las fotos de evidencia.
+            {t('webshop1.orders.uploadDisabled')}
           </p>
         )}
 
@@ -332,22 +350,26 @@ export default function OrdersPage() {
           <div className="mt-4 flex items-center gap-3 rounded-2xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 p-4">
             <div className="flex-1">
               <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">
-                {rejected.driverName ? `${rejected.driverName} rechazó` : 'Rechazaron'} el pedido #
-                {rejected.orderId.slice(0, 8).toUpperCase()}
+                {rejected.driverName
+                  ? t('webshop1.orders.rejectedWithName', { name: rejected.driverName })
+                  : t('webshop1.orders.rejectedGeneric')}{' '}
+                {t('webshop1.orders.rejectedOrderSuffix', {
+                  id: rejected.orderId.slice(0, 8).toUpperCase(),
+                })}
               </p>
               <p className="text-xs text-amber-700 dark:text-amber-300">
-                Volvió a concurso. Reasignalo a otro repartidor.
+                {t('webshop1.orders.rejectedHint')}
               </p>
             </div>
             <Link
               href="/drivers"
               className="shrink-0 rounded-xl bg-kiwi-700 px-4 py-2 text-sm font-semibold text-white"
             >
-              Reasignar
+              {t('webshop1.orders.reassign')}
             </Link>
             <button
               onClick={() => setRejected(null)}
-              aria-label="Descartar aviso"
+              aria-label={t('webshop1.orders.dismissAria')}
               className="shrink-0 rounded-xl p-2 text-amber-600 dark:text-amber-400"
             >
               ✕
@@ -357,17 +379,17 @@ export default function OrdersPage() {
 
         {/* Tabs */}
         <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
-          {TABS.map((t) => (
+          {TABS.map((tabItem) => (
             <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
+              key={tabItem.id}
+              onClick={() => setTab(tabItem.id)}
               className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                tab === t.id
+                tab === tabItem.id
                   ? 'bg-kiwi-700 text-white'
                   : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400'
               }`}
             >
-              {t.label}
+              {tabItem.label}
             </button>
           ))}
         </div>
@@ -378,7 +400,7 @@ export default function OrdersPage() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por cliente, dirección o repartidor…"
+            placeholder={t('webshop1.orders.searchPlaceholder')}
             className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 pl-10 pr-4 py-2.5 text-sm"
           />
         </div>
@@ -387,13 +409,13 @@ export default function OrdersPage() {
           <div className="mt-6 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-8 text-center">
             <Package className="mx-auto mb-2 h-10 w-10 text-surface-300" />
             <p className="text-sm text-surface-500">
-              {tab === 'active' ? 'Sin envíos en curso. Todo entregado.' : 'Nada por aquí.'}
+              {tab === 'active' ? t('webshop1.orders.emptyActive') : t('webshop1.orders.emptyNone')}
             </p>
             <Link
               href="/orders/new"
               className="mt-4 inline-block rounded-xl bg-kiwi-700 px-5 py-2.5 text-sm font-bold text-white"
             >
-              Crear envío
+              {t('webshop1.orders.createCta')}
             </Link>
           </div>
         )}
@@ -403,7 +425,7 @@ export default function OrdersPage() {
             const open = expanded === order.id;
             const driverPhone = order.driver?.user?.phone;
             const client = getClientInfo(order);
-            const clientName = client.name ?? 'Cliente sin nombre';
+            const clientName = client.name ?? t('webshop1.orders.unnamedClient');
             return (
               <ScrollReveal key={order.id} index={Math.min(i, 6)} as="li">
                 <motion.div
@@ -417,7 +439,7 @@ export default function OrdersPage() {
                   <button
                     onClick={() => setExpanded(open ? null : order.id)}
                     aria-expanded={open}
-                    aria-label={`Ver detalle del pedido de ${clientName}`}
+                    aria-label={t('webshop1.orders.detailAria', { name: clientName })}
                     className="flex w-full items-center justify-between gap-3 p-4 text-left"
                   >
                     <div className="min-w-0">
@@ -448,7 +470,7 @@ export default function OrdersPage() {
                           <div className="flex items-center justify-between rounded-xl bg-surface-50 dark:bg-surface-800 p-3">
                             <div className="min-w-0">
                               <p className="text-xs text-surface-500 dark:text-surface-400">
-                                Cliente
+                                {t('webshop1.orders.clientLabel')}
                               </p>
                               <p className="truncate text-sm font-semibold">{clientName}</p>
                               {client.phone && (
@@ -460,12 +482,14 @@ export default function OrdersPage() {
                                 href={`tel:${client.phone}`}
                                 className="flex shrink-0 items-center gap-1 rounded-lg bg-kiwi-700 px-3 py-1.5 text-xs font-bold text-white"
                               >
-                                <Phone className="h-3.5 w-3.5" /> Llamar
+                                <Phone className="h-3.5 w-3.5" /> {t('webshop1.orders.call')}
                               </a>
                             )}
                           </div>
                           <p className="font-mono text-xs text-surface-500 dark:text-surface-400">
-                            Pedido #{order.id.slice(-4).toUpperCase()}
+                            {t('webshop1.orders.orderNumber', {
+                              id: order.id.slice(-4).toUpperCase(),
+                            })}
                           </p>
                           {/* Timeline */}
                           <ol className="space-y-0">
@@ -532,14 +556,13 @@ export default function OrdersPage() {
                                   href={`tel:${driverPhone}`}
                                   className="flex items-center gap-1 rounded-lg bg-kiwi-700 px-3 py-1.5 text-xs font-bold text-white"
                                 >
-                                  <Phone className="h-3.5 w-3.5" /> Llamar
+                                  <Phone className="h-3.5 w-3.5" /> {t('webshop1.orders.call')}
                                 </a>
                               )}
                             </div>
                           ) : (
                             <p className="rounded-xl bg-yellow-50 dark:bg-yellow-900/20 px-3 py-2 text-xs text-yellow-700 dark:text-yellow-300">
-                              Todavía ningún repartidor lo toma. Te avisamos en cuanto alguien lo
-                              acepte.
+                              {t('webshop1.orders.waitingDriver')}
                             </p>
                           )}
 
@@ -550,25 +573,24 @@ export default function OrdersPage() {
                               {order.pickupProofPhotoUrl ? (
                                 <div>
                                   <p className="text-xs font-semibold text-kiwi-700 dark:text-kiwi-300">
-                                    ✓ Foto registrada: ya podés entregar al repartidor
+                                    {t('webshop1.orders.photoDone')}
                                   </p>
                                   <img
                                     src={order.pickupProofPhotoUrl}
-                                    alt="Foto del pedido al entregar"
+                                    alt={t('webshop1.orders.photoAlt')}
                                     className="mt-2 rounded-xl w-full object-cover"
                                   />
                                 </div>
                               ) : uploadEnabled === false ? (
                                 <p className="rounded-xl bg-amber-50 dark:bg-amber-900/20 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
-                                  Subida desactivada: pedile al administrador que configure las
-                                  fotos de evidencia.
+                                  {t('webshop1.orders.uploadDisabledShort')}
                                 </p>
                               ) : (
                                 <div>
                                   <label className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-kiwi-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-kiwi-800">
                                     {uploadingId === order.id
-                                      ? 'Subiendo…'
-                                      : '📷 Subir foto del pedido'}
+                                      ? t('webshop1.orders.uploading')
+                                      : t('webshop1.orders.uploadCta')}
                                     <input
                                       type="file"
                                       accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif"
@@ -584,7 +606,7 @@ export default function OrdersPage() {
                                     />
                                   </label>
                                   <p className="mt-1.5 text-xs text-amber-600 dark:text-amber-400">
-                                    Sin foto no se puede entregar al repartidor.
+                                    {t('webshop1.orders.photoRequired')}
                                   </p>
                                 </div>
                               )}
@@ -599,18 +621,18 @@ export default function OrdersPage() {
                             order.status !== 'in_transit_to_pickup' && (
                               <div className="rounded-xl bg-surface-50 dark:bg-surface-800 p-3">
                                 <p className="mb-2 text-xs font-semibold text-surface-600 dark:text-surface-300">
-                                  📷 Evidencia del pedido
+                                  {t('webshop1.orders.evidenceTitle')}
                                 </p>
                                 <div className="grid grid-cols-2 gap-2">
                                   {order.pickupProofPhotoUrl && (
                                     <div>
                                       <img
                                         src={order.pickupProofPhotoUrl}
-                                        alt="Foto al entregar al repartidor"
+                                        alt={t('webshop1.orders.photoAlt')}
                                         className="rounded-xl w-full object-cover"
                                       />
                                       <p className="mt-1 text-[11px] text-surface-500">
-                                        Entrega al repartidor
+                                        {t('webshop1.orders.evidencePickup')}
                                       </p>
                                     </div>
                                   )}
@@ -618,11 +640,11 @@ export default function OrdersPage() {
                                     <div>
                                       <img
                                         src={(order as any).deliveryProofPhotoUrl}
-                                        alt="Foto de entrega al cliente"
+                                        alt={t('webshop1.orders.deliveryAlt')}
                                         className="rounded-xl w-full object-cover"
                                       />
                                       <p className="mt-1 text-[11px] text-surface-500">
-                                        Entrega al cliente
+                                        {t('webshop1.orders.evidenceDelivery')}
                                       </p>
                                     </div>
                                   )}
@@ -634,7 +656,7 @@ export default function OrdersPage() {
                           {order.status === 'no_driver' && (
                             <div className="rounded-xl bg-red-50 dark:bg-red-900/20 p-3">
                               <p className="text-xs font-medium text-red-700 dark:text-red-300">
-                                Nadie pudo tomar este pedido. Reintentá el concurso o cancelalo.
+                                {t('webshop1.orders.noDriverHint')}
                               </p>
                               <div className="mt-2 flex gap-2">
                                 <button
@@ -642,14 +664,16 @@ export default function OrdersPage() {
                                   disabled={actingId === order.id}
                                   className="flex-1 rounded-xl bg-kiwi-700 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"
                                 >
-                                  {actingId === order.id ? 'Procesando…' : 'Reintentar'}
+                                  {actingId === order.id
+                                    ? t('webshop1.orders.processing')
+                                    : t('webshop1.orders.retry')}
                                 </button>
                                 <button
                                   onClick={() => void cancelOrder(order.id)}
                                   disabled={actingId === order.id}
                                   className="flex-1 rounded-xl border border-red-300 px-4 py-2.5 text-sm font-bold text-red-600 disabled:opacity-50"
                                 >
-                                  Cancelar
+                                  {t('webshop1.orders.cancel')}
                                 </button>
                               </div>
                             </div>
@@ -666,14 +690,16 @@ export default function OrdersPage() {
                           ].includes(order.status) && (
                             <div className="rounded-xl bg-surface-50 dark:bg-surface-800 p-3">
                               <p className="text-xs text-surface-500">
-                                ¿Pedido duplicado? Cancelá el de más acá. Solo se puede antes de que
-                                lo recojan.
+                                {t('webshop1.orders.dupHint')}
                               </p>
                               <button
                                 onClick={() => {
                                   if (
                                     window.confirm(
-                                      `Cancelar el pedido de ${clientName} (#${order.id.slice(-4).toUpperCase()})? Esta acción no se puede deshacer.`,
+                                      t('webshop1.orders.confirmCancel', {
+                                        name: clientName,
+                                        id: order.id.slice(-4).toUpperCase(),
+                                      }),
                                     )
                                   ) {
                                     void cancelOrder(order.id);
@@ -682,7 +708,9 @@ export default function OrdersPage() {
                                 disabled={actingId === order.id}
                                 className="mt-2 w-full rounded-xl border border-red-300 px-4 py-2 text-sm font-bold text-red-600 disabled:opacity-50"
                               >
-                                {actingId === order.id ? 'Cancelando…' : 'Cancelar este pedido'}
+                                {actingId === order.id
+                                  ? t('webshop1.orders.canceling')
+                                  : t('webshop1.orders.cancelThis')}
                               </button>
                             </div>
                           )}
@@ -702,23 +730,26 @@ export default function OrdersPage() {
                             </p>
                             {Array.isArray(order.items) && order.items.length > 0 && (
                               <p>
-                                Contenido:{' '}
+                                {t('webshop1.orders.contentsLabel')}{' '}
                                 {order.items
                                   .map((it: any) => `${it.quantity}x ${it.name}`)
                                   .join(', ')}
                               </p>
                             )}
                             <p className="font-mono">
-                              Envío ₡
-                              {Number(order.driverPayout ?? order.basePrice ?? 0).toLocaleString()}{' '}
-                              · Comisión ₡{Number(order.commission ?? 0).toLocaleString()} · Total ₡
-                              {Number(order.totalAmount).toLocaleString()}
+                              {t('webshop1.orders.fareLine', {
+                                ship: Number(
+                                  order.driverPayout ?? order.basePrice ?? 0,
+                                ).toLocaleString(),
+                                fee: Number(order.commission ?? 0).toLocaleString(),
+                                total: Number(order.totalAmount).toLocaleString(),
+                              })}
                             </p>
                           </div>
 
                           <ShareTrackingButton
                             orderId={order.id}
-                            label="Compartir seguimiento"
+                            label={t('webshop1.orders.shareTracking')}
                             className="w-full !py-2.5 !text-sm"
                           />
                         </div>

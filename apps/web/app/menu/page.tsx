@@ -27,6 +27,7 @@ import {
   useAuth,
   api,
   MenuItem,
+  useTranslations,
 } from '@kiwi/ui';
 import { MenuItemForm } from '../../components/ui/MenuItemForm';
 import { MerchantNav } from '../../components/MerchantNav';
@@ -44,7 +45,24 @@ const CATEGORIES = [
   'Otros',
 ];
 
+const CAT_KEY: Record<string, string> = {
+  Todos: 'catAll',
+  Bowls: 'catBowls',
+  Café: 'catCafe',
+  Bebidas: 'catBebidas',
+  Snacks: 'catSnacks',
+  Postres: 'catPostres',
+  'Platos Fuertes': 'catPlatos',
+  Ensaladas: 'catEnsaladas',
+  'Flete/Encomienda': 'catFlete',
+  Otros: 'catOtros',
+};
+
+const catLabel = (t: (k: string) => string, cat: string) =>
+  CAT_KEY[cat] ? t(`webshop2.menuweb.${CAT_KEY[cat]}`) : cat;
+
 export default function MenuManagementPage() {
+  const { t } = useTranslations();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
@@ -197,7 +215,7 @@ export default function MenuManagementPage() {
       setNewKioskDesc('');
       await fetchKiosks();
     } catch (e: any) {
-      setKioskError(e?.message || 'No se pudo crear el kiosko');
+      setKioskError(e?.message || t('webshop2.menuweb.errKioskCreate'));
     } finally {
       setSavingKiosk(false);
     }
@@ -216,20 +234,20 @@ export default function MenuManagementPage() {
       setEditingKiosk(null);
       await fetchKiosks();
     } catch (e: any) {
-      setKioskError(e?.message || 'No se pudo guardar');
+      setKioskError(e?.message || t('webshop2.menuweb.errKioskSave'));
     } finally {
       setSavingKiosk(false);
     }
   };
 
   const handleDeleteKiosk = async (id: string) => {
-    if (!window.confirm('¿Borrar este kiosko? Sus productos quedan sin kiosko.')) return;
+    if (!window.confirm(t('webshop2.menuweb.kioskConfirmDelete'))) return;
     try {
       await api.deleteKiosk(id);
       await fetchKiosks();
       await fetchMenuItems();
     } catch (e: any) {
-      setKioskError(e?.message || 'No se pudo borrar');
+      setKioskError(e?.message || t('webshop2.menuweb.errKioskDelete'));
     }
   };
 
@@ -238,14 +256,14 @@ export default function MenuManagementPage() {
       await api.updateKiosk(k.id, { active: !k.active });
       await fetchKiosks();
     } catch (e: any) {
-      setKioskError(e?.message || 'No se pudo cambiar');
+      setKioskError(e?.message || t('webshop2.menuweb.errKioskToggle'));
     }
   };
   const handleDuplicate = async (item: MenuItem) => {
     setDuplicatingItem(item.id);
     try {
       await api.createMenuItem({
-        name: `${item.name} (Copia)`,
+        name: `${item.name} ${t('webshop2.menuweb.dupSuffix')}`,
         description: item.description,
         price: item.price,
         category: item.category,
@@ -392,10 +410,10 @@ export default function MenuManagementPage() {
               className="flex items-center gap-2 text-surface-600 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200"
             >
               <motion.span whileHover={{ x: -4 }}>←</motion.span>
-              <span className="text-sm font-medium">Dashboard</span>
+              <span className="text-sm font-medium">{t('webshop2.menuweb.dashboard')}</span>
             </Link>
             <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-              <Utensils className="h-5 w-5 inline" /> Mi Menú
+              <Utensils className="h-5 w-5 inline" /> {t('webshop2.menuweb.title')}
             </h1>
             <div className="flex items-center gap-2">
               <motion.button
@@ -408,7 +426,7 @@ export default function MenuManagementPage() {
               <motion.button
                 className="p-2 rounded-xl bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400 hover:bg-surface-200 dark:hover:bg-surface-600 transition-colors"
                 onClick={() => setShowKioskManager(!showKioskManager)}
-                title="Kioskos del mercadito"
+                title={t('webshop2.menuweb.kioskBtnTitle')}
                 whileTap={{ scale: 0.95 }}
               >
                 <Store className="h-5 w-5" />
@@ -444,8 +462,10 @@ export default function MenuManagementPage() {
                     </span>
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-display font-bold text-lg">Mi Código QR</h3>
-                    <p className="text-white/80 text-sm">Descarga, imprime y ponlo en tu negocio</p>
+                    <h3 className="font-display font-bold text-lg">
+                      {t('webshop2.menuweb.qrTitle')}
+                    </h3>
+                    <p className="text-white/80 text-sm">{t('webshop2.menuweb.qrHint')}</p>
                   </div>
                   <motion.span
                     className="text-white/60"
@@ -471,7 +491,7 @@ export default function MenuManagementPage() {
             >
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-                  📂 Gestionar Categorías
+                  {t('webshop2.menuweb.catTitle')}
                 </h3>
                 <motion.button
                   onClick={() => setShowCategoryManager(false)}
@@ -488,7 +508,7 @@ export default function MenuManagementPage() {
                   type="text"
                   value={newCategoryName}
                   onChange={(e) => setNewCategoryName(e.target.value)}
-                  placeholder="Nueva categoría..."
+                  placeholder={t('webshop2.menuweb.catNewPh')}
                   className="flex-1 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-2 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20 transition-all"
                   onKeyPress={(e) => e.key === 'Enter' && addCategory()}
                 />
@@ -512,7 +532,7 @@ export default function MenuManagementPage() {
                         : 'bg-kiwi-100 dark:bg-kiwi-900/50 text-kiwi-700 dark:text-kiwi-400'
                     }`}
                   >
-                    {cat}
+                    {catLabel(t, cat)}
                     {!CATEGORIES.includes(cat) && (
                       <button
                         onClick={() => removeCategory(cat)}
@@ -537,7 +557,7 @@ export default function MenuManagementPage() {
             transition={{ delay: 0.1 }}
           >
             <AnimatedButton variant="gradient" className="w-full" onClick={() => setShowForm(true)}>
-              ➕ Agregar Nuevo Producto
+              {t('webshop2.menuweb.addProduct')}
             </AnimatedButton>
           </motion.div>
         )}
@@ -597,7 +617,7 @@ export default function MenuManagementPage() {
             >
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-kiwi-700 dark:text-kiwi-400">
-                  {selectedItems.size} seleccionados
+                  {t('webshop2.menuweb.selected', { count: selectedItems.size })}
                 </span>
                 <div className="flex gap-2">
                   <AnimatedButton
@@ -605,17 +625,17 @@ export default function MenuManagementPage() {
                     size="sm"
                     onClick={() => handleBulkToggleAvailability(true)}
                   >
-                    <Check className="h-4 w-4 inline" /> Disponible
+                    <Check className="h-4 w-4 inline" /> {t('webshop2.menuweb.bulkAvailable')}
                   </AnimatedButton>
                   <AnimatedButton
                     variant="secondary"
                     size="sm"
                     onClick={() => handleBulkToggleAvailability(false)}
                   >
-                    <X className="h-4 w-4 inline" /> Agotado
+                    <X className="h-4 w-4 inline" /> {t('webshop2.menuweb.bulkOut')}
                   </AnimatedButton>
                   <AnimatedButton variant="danger" size="sm" onClick={handleBulkDelete}>
-                    <Trash2 className="h-4 w-4 inline" /> Eliminar
+                    <Trash2 className="h-4 w-4 inline" /> {t('webshop2.menuweb.bulkDelete')}
                   </AnimatedButton>
                   <AnimatedButton
                     variant="ghost"
@@ -652,7 +672,7 @@ export default function MenuManagementPage() {
                 onClick={() => setSelectedCategory(cat)}
                 whileTap={{ scale: 0.95 }}
               >
-                {cat}
+                {catLabel(t, cat)}
               </motion.button>
             ))}
           </div>
@@ -667,7 +687,7 @@ export default function MenuManagementPage() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <h2 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100">
-                Productos ({filteredItems.length})
+                {t('webshop2.menuweb.products', { count: filteredItems.length })}
               </h2>
               {filteredItems.length > 0 && (
                 <motion.button
@@ -676,8 +696,8 @@ export default function MenuManagementPage() {
                   whileTap={{ scale: 0.95 }}
                 >
                   {selectedItems.size === filteredItems.length
-                    ? '☐ Deseleccionar'
-                    : '☑️ Seleccionar todo'}
+                    ? t('webshop2.menuweb.deselect')
+                    : t('webshop2.menuweb.selectAll')}
                 </motion.button>
               )}
             </div>
@@ -693,11 +713,11 @@ export default function MenuManagementPage() {
               >
                 {isReordering ? (
                   <>
-                    <Check className="h-4 w-4 inline" /> Listo
+                    <Check className="h-4 w-4 inline" /> {t('webshop2.menuweb.reorderDone')}
                   </>
                 ) : (
                   <>
-                    <RefreshCw className="h-4 w-4 inline" /> Reordenar
+                    <RefreshCw className="h-4 w-4 inline" /> {t('webshop2.menuweb.reorder')}
                   </>
                 )}
               </motion.button>
@@ -706,7 +726,7 @@ export default function MenuManagementPage() {
                   href={`/merchants/${user.merchantProfile.id}/qr`}
                   className="text-sm font-medium text-kiwi-700 hover:text-kiwi-800"
                 >
-                  <Smartphone className="h-4 w-4 inline" /> Ver mi QR →
+                  <Smartphone className="h-4 w-4 inline" /> {t('webshop2.menuweb.viewQr')}
                 </Link>
               )}
             </div>
@@ -727,16 +747,16 @@ export default function MenuManagementPage() {
               </motion.div>
               <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-2">
                 {selectedCategory === 'Todos'
-                  ? 'Tu menú está vacío'
-                  : `No hay productos en ${selectedCategory}`}
+                  ? t('webshop2.menuweb.emptyAll')
+                  : t('webshop2.menuweb.emptyCat', { cat: catLabel(t, selectedCategory) })}
               </h3>
               <p className="text-surface-500 dark:text-surface-400 mb-6">
                 {selectedCategory === 'Todos'
-                  ? 'Agrega productos para que los clientes puedan ver tu menú'
-                  : 'Agrega productos a esta categoría'}
+                  ? t('webshop2.menuweb.emptyHintAll')
+                  : t('webshop2.menuweb.emptyHintCat')}
               </p>
               <AnimatedButton variant="gradient" onClick={() => setShowForm(true)}>
-                ➕ Agregar Producto
+                {t('webshop2.menuweb.emptyAdd')}
               </AnimatedButton>
             </motion.div>
           ) : isReordering ? (
@@ -843,28 +863,30 @@ export default function MenuManagementPage() {
                               </h3>
                               {item.isPopular && (
                                 <span className="px-2 py-0.5 rounded-full bg-gold-100 dark:bg-gold-900/50 text-xs font-medium text-gold-700 dark:text-gold-400">
-                                  🔥 Popular
+                                  {t('webshop2.menuweb.popular')}
                                 </span>
                               )}
                               {!item.isAvailable && (
                                 <span className="px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/50 text-xs font-medium text-red-700 dark:text-red-400">
-                                  Agotado
+                                  {t('webshop2.menuweb.outOfStock')}
                                 </span>
                               )}
                               {((item as any).availableDays ?? []).length > 0 && (
                                 <span
                                   className="px-2 py-0.5 rounded-full bg-sky-100 dark:bg-sky-900/50 text-xs font-medium text-sky-700 dark:text-sky-400"
-                                  title="Días en que se muestra en la app de clientes"
+                                  title={t('webshop2.menuweb.daysTitle')}
                                 >
-                                  📅{' '}
-                                  {((item as any).availableDays as number[])
-                                    .slice()
-                                    .sort()
-                                    .map(
-                                      (d) =>
-                                        ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][d] ?? d,
-                                    )
-                                    .join(' · ')}
+                                  {t('webshop2.menuweb.days', {
+                                    days: ((item as any).availableDays as number[])
+                                      .slice()
+                                      .sort()
+                                      .map((d) =>
+                                        t(
+                                          `webshop2.perfil.day${['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][d] ?? ''}`,
+                                        ).slice(0, 3),
+                                      )
+                                      .join(' · '),
+                                  })}
                                 </span>
                               )}
                               {(item as any).stockQty != null && (
@@ -874,7 +896,7 @@ export default function MenuManagementPage() {
                                       ? 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-400'
                                       : 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400'
                                   }`}
-                                  title="Stock del día de venta"
+                                  title={t('webshop2.menuweb.stockTitle')}
                                 >
                                   📦 {(item as any).stockQty}
                                 </span>
@@ -893,27 +915,29 @@ export default function MenuManagementPage() {
                                           ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400'
                                           : 'bg-kiwi-100 dark:bg-kiwi-900/50 text-kiwi-700 dark:text-kiwi-400'
                                       }`}
-                                      title={(item.variantGroups ?? [])
-                                        .map(
-                                          (g) =>
-                                            `${g.name}: ${g.options
-                                              .map((o) =>
-                                                o.isAvailable === false
-                                                  ? `${o.name} (agotado)`
-                                                  : o.name,
-                                              )
-                                              .join(', ')}`,
-                                        )
-                                        .join(' · ')}
+                                      title={t('webshop2.menuweb.customizableTitle', {
+                                        detail: (item.variantGroups ?? [])
+                                          .map(
+                                            (g) =>
+                                              `${g.name}: ${g.options
+                                                .map((o) =>
+                                                  o.isAvailable === false
+                                                    ? `${o.name} (${t('webshop2.menuweb.outOfStock').toLowerCase()})`
+                                                    : o.name,
+                                                )
+                                                .join(', ')}`,
+                                          )
+                                          .join(' · '),
+                                      })}
                                     >
-                                      Personalizable (
-                                      {(item.variantGroups ?? []).reduce(
-                                        (n, g) => n + g.options.length,
-                                        0,
-                                      )}
-                                      )
+                                      {t('webshop2.menuweb.customizable', {
+                                        count: (item.variantGroups ?? []).reduce(
+                                          (n, g) => n + g.options.length,
+                                          0,
+                                        ),
+                                      })}
                                       {soldOut > 0 &&
-                                        ` · ${soldOut} agotada${soldOut === 1 ? '' : 's'}`}
+                                        t('webshop2.menuweb.customizableOut', { count: soldOut })}
                                     </span>
                                   );
                                 })()}
@@ -956,11 +980,12 @@ export default function MenuManagementPage() {
                                 <Clock className="h-4 w-4 inline" />
                               ) : item.isAvailable ? (
                                 <>
-                                  <Check className="h-4 w-4 inline" /> Disponible
+                                  <Check className="h-4 w-4 inline" />{' '}
+                                  {t('webshop2.menuweb.toggleAvailable')}
                                 </>
                               ) : (
                                 <>
-                                  <X className="h-4 w-4 inline" /> Agotado
+                                  <X className="h-4 w-4 inline" /> {t('webshop2.menuweb.toggleOut')}
                                 </>
                               )}
                             </motion.button>
@@ -971,7 +996,7 @@ export default function MenuManagementPage() {
                               onClick={() => handleDuplicate(item)}
                               disabled={duplicatingItem === item.id}
                               whileTap={{ scale: 0.95 }}
-                              title="Duplicar"
+                              title={t('webshop2.menuweb.dupTitle')}
                             >
                               {duplicatingItem === item.id ? (
                                 <Clock className="h-4 w-4" />
@@ -1013,7 +1038,7 @@ export default function MenuManagementPage() {
                         >
                           <div className="flex items-center justify-between">
                             <p className="text-sm text-surface-600 dark:text-surface-400">
-                              ¿Eliminar &quot;{item.name}&quot;?
+                              {t('webshop2.menuweb.deleteAsk', { name: item.name })}
                             </p>
                             <div className="flex gap-2">
                               <AnimatedButton
@@ -1021,14 +1046,14 @@ export default function MenuManagementPage() {
                                 size="sm"
                                 onClick={() => setDeleteConfirm(null)}
                               >
-                                Cancelar
+                                {t('webshop2.menuweb.cancel')}
                               </AnimatedButton>
                               <AnimatedButton
                                 variant="danger"
                                 size="sm"
                                 onClick={() => handleDelete(item.id)}
                               >
-                                <Trash2 className="h-4 w-4 inline" /> Eliminar
+                                <Trash2 className="h-4 w-4 inline" /> {t('webshop2.menuweb.delete')}
                               </AnimatedButton>
                             </div>
                           </div>
@@ -1047,7 +1072,7 @@ export default function MenuManagementPage() {
                         >
                           <div className="flex items-center justify-between mb-2">
                             <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-                              🏪 Kioskos del mercadito
+                              {t('webshop2.menuweb.kioskTitle')}
                             </h3>
                             <motion.button
                               onClick={() => setShowKioskManager(false)}
@@ -1059,15 +1084,14 @@ export default function MenuManagementPage() {
                             </motion.button>
                           </div>
                           <p className="text-xs text-surface-500 dark:text-surface-400 mb-4">
-                            Cada puesto con su historia (cómo hacen el producto día a día). El
-                            cliente pide de varios kioskos y todo te llega en un solo pedido.
+                            {t('webshop2.menuweb.kioskDesc')}
                           </p>
                           <div className="grid gap-2 sm:grid-cols-[1fr_2fr_auto] mb-4">
                             <input
                               type="text"
                               value={newKioskName}
                               onChange={(e) => setNewKioskName(e.target.value)}
-                              placeholder="Nombre (ej. Kiosko Doña Ana)"
+                              placeholder={t('webshop2.menuweb.kioskNamePh')}
                               maxLength={80}
                               className="rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-2 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20 transition-all"
                             />
@@ -1075,7 +1099,7 @@ export default function MenuManagementPage() {
                               type="text"
                               value={newKioskDesc}
                               onChange={(e) => setNewKioskDesc(e.target.value)}
-                              placeholder="Historia (ej. Cuajada artesanal con leche de Nicoya…)"
+                              placeholder={t('webshop2.menuweb.kioskStoryPh')}
                               maxLength={500}
                               className="rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-2 text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20 transition-all"
                               onKeyPress={(e) => e.key === 'Enter' && handleCreateKiosk()}
@@ -1093,7 +1117,7 @@ export default function MenuManagementPage() {
                           <div className="space-y-2">
                             {kiosks.length === 0 && (
                               <p className="text-sm text-surface-500 dark:text-surface-400">
-                                Sin kioskos todavía.
+                                {t('webshop2.menuweb.kioskEmpty')}
                               </p>
                             )}
                             {kiosks.map((k) => (
@@ -1124,7 +1148,7 @@ export default function MenuManagementPage() {
                                           description: e.target.value,
                                         })
                                       }
-                                      placeholder="Historia del puesto…"
+                                      placeholder={t('webshop2.menuweb.kioskStoryEditPh')}
                                       maxLength={2000}
                                       rows={2}
                                       className="rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-2 text-sm text-surface-800 dark:text-surface-100 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20"
@@ -1138,7 +1162,7 @@ export default function MenuManagementPage() {
                                           imageUrl: e.target.value,
                                         })
                                       }
-                                      placeholder="Foto del puesto (URL https, opcional)"
+                                      placeholder={t('webshop2.menuweb.kioskPhotoPh')}
                                       className="rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-2 text-sm text-surface-800 dark:text-surface-100 placeholder-surface-500 focus:border-kiwi-600 focus:ring-2 focus:ring-kiwi-600/20"
                                     />
                                     <div className="flex gap-2">
@@ -1148,14 +1172,14 @@ export default function MenuManagementPage() {
                                         onClick={handleSaveKioskEdit}
                                         disabled={savingKiosk}
                                       >
-                                        Guardar
+                                        {t('webshop2.menuweb.kioskSave')}
                                       </AnimatedButton>
                                       <AnimatedButton
                                         variant="ghost"
                                         size="sm"
                                         onClick={() => setEditingKiosk(null)}
                                       >
-                                        Cancelar
+                                        {t('webshop2.menuweb.kioskCancel')}
                                       </AnimatedButton>
                                     </div>
                                   </div>
@@ -1166,7 +1190,7 @@ export default function MenuManagementPage() {
                                         🏪 {k.name}
                                         {!k.active && (
                                           <span className="ml-2 text-xs text-surface-500 dark:text-surface-400">
-                                            (pausado)
+                                            {t('webshop2.menuweb.kioskPaused')}
                                           </span>
                                         )}
                                       </p>
@@ -1186,21 +1210,27 @@ export default function MenuManagementPage() {
                                         })
                                       }
                                       className="p-1.5 text-surface-500 dark:text-surface-400 hover:text-kiwi-600"
-                                      title="Editar"
+                                      title={t('webshop2.menuweb.kioskEdit')}
                                     >
                                       <Pencil className="h-4 w-4" />
                                     </button>
                                     <button
                                       onClick={() => handleToggleKiosk(k)}
                                       className="px-2 py-1 text-xs font-medium text-surface-500 hover:text-kiwi-700"
-                                      title={k.active ? 'Pausar' : 'Activar'}
+                                      title={
+                                        k.active
+                                          ? t('webshop2.menuweb.kioskPause')
+                                          : t('webshop2.menuweb.kioskActivate')
+                                      }
                                     >
-                                      {k.active ? 'Pausar' : 'Activar'}
+                                      {k.active
+                                        ? t('webshop2.menuweb.kioskPause')
+                                        : t('webshop2.menuweb.kioskActivate')}
                                     </button>
                                     <button
                                       onClick={() => handleDeleteKiosk(k.id)}
                                       className="p-1.5 text-surface-500 dark:text-surface-400 hover:text-red-500"
-                                      title="Borrar (los productos quedan)"
+                                      title={t('webshop2.menuweb.kioskDeleteTitle')}
                                     >
                                       <Trash2 className="h-4 w-4" />
                                     </button>
@@ -1228,28 +1258,36 @@ export default function MenuManagementPage() {
             transition={{ delay: 0.3 }}
           >
             <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-              <BarChart3 className="h-5 w-5 inline" /> Resumen del Menú
+              <BarChart3 className="h-5 w-5 inline" /> {t('webshop2.menuweb.summaryTitle')}
             </h3>
             <div className="grid grid-cols-4 gap-4">
               <div className="text-center">
                 <p className="text-2xl font-bold text-kiwi-700">{stats.total}</p>
-                <p className="text-xs text-surface-500 dark:text-surface-400">Productos</p>
+                <p className="text-xs text-surface-500 dark:text-surface-400">
+                  {t('webshop2.menuweb.summaryProducts')}
+                </p>
               </div>
               <div className="text-center">
                 <p className="text-2xl font-bold text-gold-600">{stats.popular}</p>
-                <p className="text-xs text-surface-500 dark:text-surface-400">Populares</p>
+                <p className="text-xs text-surface-500 dark:text-surface-400">
+                  {t('webshop2.menuweb.summaryPopular')}
+                </p>
               </div>
               <div className="text-center">
                 <p className="text-2xl font-bold text-surface-600 dark:text-surface-400">
                   {stats.available}
                 </p>
-                <p className="text-xs text-surface-500 dark:text-surface-400">Disponibles</p>
+                <p className="text-xs text-surface-500 dark:text-surface-400">
+                  {t('webshop2.menuweb.summaryAvailable')}
+                </p>
               </div>
               <div className="text-center">
                 <p className="text-2xl font-bold text-blue-600">
                   ₡{stats.avgPrice.toLocaleString()}
                 </p>
-                <p className="text-xs text-surface-500 dark:text-surface-400">Precio Prom.</p>
+                <p className="text-xs text-surface-500 dark:text-surface-400">
+                  {t('webshop2.menuweb.summaryAvg')}
+                </p>
               </div>
             </div>
           </motion.div>

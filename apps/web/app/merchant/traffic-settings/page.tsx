@@ -15,7 +15,7 @@ import {
   Clock,
   Settings,
 } from 'lucide-react';
-import { apiFetch } from '@kiwi/ui';
+import { apiFetch, useTranslations } from '@kiwi/ui';
 
 interface TrafficSettings {
   deliveryRadius: number;
@@ -38,6 +38,7 @@ interface TrafficSettings {
 }
 
 export default function MerchantTrafficSettings() {
+  const { t } = useTranslations();
   const [settings, setSettings] = useState<TrafficSettings>({
     deliveryRadius: 5,
     maxDeliveryTime: 30,
@@ -146,10 +147,10 @@ export default function MerchantTrafficSettings() {
               </Link>
               <div>
                 <h1 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100">
-                  <Settings className="h-6 w-6 inline" /> Configuración de Tráfico
+                  <Settings className="h-6 w-6 inline" /> {t('webshop2.trafficset.title')}
                 </h1>
                 <p className="text-sm text-surface-500 dark:text-surface-400">
-                  Personaliza las entregas según el tráfico
+                  {t('webshop2.trafficset.subtitle')}
                 </p>
               </div>
             </div>
@@ -164,7 +165,7 @@ export default function MerchantTrafficSettings() {
               }`}
               whileTap={{ scale: 0.95 }}
             >
-              {saving ? 'Guardando...' : 'Guardar'}
+              {saving ? t('webshop2.trafficset.saving') : t('webshop2.trafficset.save')}
             </motion.button>
           </div>
         </div>
@@ -179,7 +180,7 @@ export default function MerchantTrafficSettings() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 100 }}
           >
-            <Check className="h-4 w-4 inline" /> Configuración guardada
+            <Check className="h-4 w-4 inline" /> {t('webshop2.trafficset.saved')}
           </motion.div>
         )}
       </AnimatePresence>
@@ -194,17 +195,17 @@ export default function MerchantTrafficSettings() {
           transition={{ delay: 0.1 }}
         >
           <h2 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100 mb-4">
-            <MapPin className="h-5 w-5 inline" /> Radio de Entrega
+            <MapPin className="h-5 w-5 inline" /> {t('webshop2.trafficset.radiusTitle')}
           </h2>
 
           <div className="space-y-6">
             <div>
               <div className="flex justify-between mb-2">
                 <label className="text-sm font-medium text-surface-700 dark:text-surface-300">
-                  Radio máximo
+                  {t('webshop2.trafficset.radiusMax')}
                 </label>
                 <span className="text-sm font-bold text-kiwi-700 dark:text-kiwi-400">
-                  {settings.deliveryRadius} km
+                  {t('webshop2.trafficset.km', { n: settings.deliveryRadius })}
                 </span>
               </div>
               <input
@@ -225,10 +226,10 @@ export default function MerchantTrafficSettings() {
             <div>
               <div className="flex justify-between mb-2">
                 <label className="text-sm font-medium text-surface-700 dark:text-surface-300">
-                  Tiempo máximo de entrega
+                  {t('webshop2.trafficset.maxTime')}
                 </label>
                 <span className="text-sm font-bold text-kiwi-700 dark:text-kiwi-400">
-                  {settings.maxDeliveryTime} min
+                  {t('webshop2.trafficset.min', { n: settings.maxDeliveryTime })}
                 </span>
               </div>
               <input
@@ -256,7 +257,7 @@ export default function MerchantTrafficSettings() {
           transition={{ delay: 0.2 }}
         >
           <h2 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100 mb-4">
-            🚦 Preferencias de Tráfico
+            {t('webshop2.trafficset.trafficTitle')}
           </h2>
 
           <div className="space-y-4">
@@ -265,10 +266,10 @@ export default function MerchantTrafficSettings() {
                 <span className="text-2xl">🚫</span>
                 <div>
                   <p className="font-medium text-surface-800 dark:text-surface-200">
-                    Evitar tráfico pesado
+                    {t('webshop2.trafficset.avoidTitle')}
                   </p>
                   <p className="text-sm text-surface-500 dark:text-surface-400">
-                    No aceptar entregas en horas pico
+                    {t('webshop2.trafficset.avoidDesc')}
                   </p>
                 </div>
               </div>
@@ -291,10 +292,10 @@ export default function MerchantTrafficSettings() {
                 <span className="text-2xl">🛣️</span>
                 <div>
                   <p className="font-medium text-surface-800 dark:text-surface-200">
-                    Preferir caminos principales
+                    {t('webshop2.trafficset.mainTitle')}
                   </p>
                   <p className="text-sm text-surface-500 dark:text-surface-400">
-                    Usar rutas principales aunque sean más largas
+                    {t('webshop2.trafficset.mainDesc')}
                   </p>
                 </div>
               </div>
@@ -319,10 +320,10 @@ export default function MerchantTrafficSettings() {
                 </span>
                 <div>
                   <p className="font-medium text-surface-800 dark:text-surface-200">
-                    Permitir rutas alternativas
+                    {t('webshop2.trafficset.altTitle')}
                   </p>
                   <p className="text-sm text-surface-500 dark:text-surface-400">
-                    Mostrar rutas alternativas cuando hay tráfico
+                    {t('webshop2.trafficset.altDesc')}
                   </p>
                 </div>
               </div>
@@ -351,7 +352,7 @@ export default function MerchantTrafficSettings() {
         >
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100">
-              ⏰ Horas Pico
+              {t('webshop2.trafficset.peakTitle')}
             </h2>
             <button
               onClick={() => updateSetting('peakHoursEnabled', !settings.peakHoursEnabled)}
@@ -379,10 +380,10 @@ export default function MerchantTrafficSettings() {
                   <div>
                     <div className="flex justify-between mb-2">
                       <label className="text-sm font-medium text-surface-700 dark:text-surface-300">
-                        Multiplicador de precio en horas pico
+                        {t('webshop2.trafficset.peakMult')}
                       </label>
                       <span className="text-sm font-bold text-kiwi-700 dark:text-kiwi-400">
-                        x{settings.peakHoursMultiplier}
+                        {t('webshop2.trafficset.peakMultVal', { n: settings.peakHoursMultiplier })}
                       </span>
                     </div>
                     <input
@@ -404,13 +405,13 @@ export default function MerchantTrafficSettings() {
 
                   <div>
                     <label className="text-sm font-medium text-surface-700 dark:text-surface-300 mb-3 block">
-                      Seleccionar horas pico
+                      {t('webshop2.trafficset.peakPick')}
                     </label>
                     <div className="flex flex-wrap gap-2">
                       {[
-                        { id: 'morning', label: 'Mañana 7-9', icon: '🌅' },
-                        { id: 'lunch', label: 'Mediodía 12-2', icon: '☀️' },
-                        { id: 'evening', label: 'Tarde 5-7', icon: '🌇' },
+                        { id: 'morning', label: t('webshop2.trafficset.peakMorning'), icon: '🌅' },
+                        { id: 'lunch', label: t('webshop2.trafficset.peakLunch'), icon: '☀️' },
+                        { id: 'evening', label: t('webshop2.trafficset.peakEvening'), icon: '🌇' },
                       ].map((period) => (
                         <button
                           key={period.id}
@@ -445,14 +446,14 @@ export default function MerchantTrafficSettings() {
           transition={{ delay: 0.4 }}
         >
           <h2 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100 mb-4">
-            <Coins className="h-5 w-5 inline" /> Configuración de Precios
+            <Coins className="h-5 w-5 inline" /> {t('webshop2.trafficset.priceTitle')}
           </h2>
 
           <div className="space-y-4">
             <div>
               <div className="flex justify-between mb-2">
                 <label className="text-sm font-medium text-surface-700 dark:text-surface-300">
-                  Envío gratis desde
+                  {t('webshop2.trafficset.freeFrom')}
                 </label>
                 <span className="text-sm font-bold text-kiwi-700 dark:text-kiwi-400">
                   ₡{settings.freeDeliveryThreshold.toLocaleString()}
@@ -476,7 +477,7 @@ export default function MerchantTrafficSettings() {
             <div>
               <div className="flex justify-between mb-2">
                 <label className="text-sm font-medium text-surface-700 dark:text-surface-300">
-                  Pedido mínimo
+                  {t('webshop2.trafficset.minOrder')}
                 </label>
                 <span className="text-sm font-bold text-kiwi-700 dark:text-kiwi-400">
                   ₡{settings.minimumOrder.toLocaleString()}
@@ -502,10 +503,10 @@ export default function MerchantTrafficSettings() {
                 <span className="text-2xl">📈</span>
                 <div>
                   <p className="font-medium text-surface-800 dark:text-surface-200">
-                    Precios dinámicos
+                    {t('webshop2.trafficset.dynamicTitle')}
                   </p>
                   <p className="text-sm text-surface-500 dark:text-surface-400">
-                    Ajustar precios según demanda y tráfico
+                    {t('webshop2.trafficset.dynamicDesc')}
                   </p>
                 </div>
               </div>
@@ -534,7 +535,7 @@ export default function MerchantTrafficSettings() {
         >
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100">
-              <Bell className="h-5 w-5 inline" /> Notificaciones
+              <Bell className="h-5 w-5 inline" /> {t('webshop2.trafficset.notifTitle')}
             </h2>
             <button
               onClick={() => updateSetting('notificationsEnabled', !settings.notificationsEnabled)}
@@ -563,32 +564,32 @@ export default function MerchantTrafficSettings() {
                     {
                       key: 'predictionAlerts',
                       icon: '🔮',
-                      label: 'Alertas de predicción',
-                      desc: 'Niveles de tráfico actuales',
+                      label: t('webshop2.trafficset.alertPrediction'),
+                      desc: t('webshop2.trafficset.alertPredictionDesc'),
                     },
                     {
                       key: 'bestTimeAlerts',
                       icon: '💡',
-                      label: 'Mejores horas',
-                      desc: 'Momentos óptimos para entregas',
+                      label: t('webshop2.trafficset.alertBest'),
+                      desc: t('webshop2.trafficset.alertBestDesc'),
                     },
                     {
                       key: 'peakHourWarnings',
                       icon: AlertTriangle,
-                      label: 'Aviso de hora pico',
-                      desc: 'Cuando se acerca una hora pico',
+                      label: t('webshop2.trafficset.alertPeak'),
+                      desc: t('webshop2.trafficset.alertPeakDesc'),
                     },
                     {
                       key: 'delayWarnings',
                       icon: '⏱️',
-                      label: 'Avisos de retraso',
-                      desc: 'Cuando un pedido se retrasa',
+                      label: t('webshop2.trafficset.alertDelay'),
+                      desc: t('webshop2.trafficset.alertDelayDesc'),
                     },
                     {
                       key: 'routeRecommendations',
                       icon: Map,
-                      label: 'Recomendaciones de ruta',
-                      desc: 'Mejores rutas disponibles',
+                      label: t('webshop2.trafficset.alertRoute'),
+                      desc: t('webshop2.trafficset.alertRouteDesc'),
                     },
                   ].map((item) => {
                     const ItemIcon = item.icon as any;
@@ -667,10 +668,10 @@ export default function MerchantTrafficSettings() {
                 >
                   <Clock className="h-5 w-5" />
                 </motion.span>
-                Guardando...
+                {t('webshop2.trafficset.saving')}
               </span>
             ) : (
-              '💾 Guardar Configuración'
+              t('webshop2.trafficset.saveMobile')
             )}
           </motion.button>
         </motion.div>

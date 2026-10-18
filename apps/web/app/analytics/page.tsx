@@ -20,7 +20,7 @@ import {
   Utensils,
   Trophy,
 } from 'lucide-react';
-import { api, Skeleton, StaggerContainer, StaggerItem, useAuth } from '@kiwi/ui';
+import { api, Skeleton, StaggerContainer, StaggerItem, useAuth, useTranslations } from '@kiwi/ui';
 import { MerchantNav } from '../../components/MerchantNav';
 
 interface MerchantAnalytics {
@@ -73,21 +73,22 @@ interface MerchantAnalytics {
 }
 
 const PERIODS = [
-  { id: 'today', label: 'Hoy', icon: Calendar },
-  { id: 'week', label: 'Semana', icon: '📆' },
-  { id: 'month', label: 'Mes', icon: CalendarDays },
-  { id: 'quarter', label: 'Trimestre', icon: BarChart3 },
-  { id: 'year', label: 'Año', icon: '📈' },
-];
+  { id: 'today', key: 'today', icon: Calendar },
+  { id: 'week', key: 'week', icon: '📆' },
+  { id: 'month', key: 'month', icon: CalendarDays },
+  { id: 'quarter', key: 'quarter', icon: BarChart3 },
+  { id: 'year', key: 'year', icon: '📈' },
+] as const;
 
-const PAYMENT_METHODS: Record<string, { label: string; icon: any; color: string }> = {
-  sinpe: { label: 'SINPE', icon: Smartphone, color: 'bg-green-100 text-green-700' },
-  card: { label: 'Tarjeta', icon: CreditCard, color: 'bg-blue-100 text-blue-700' },
-  cash: { label: 'Efectivo', icon: DollarSign, color: 'bg-yellow-100 text-yellow-700' },
-  crypto: { label: 'Crypto', icon: '₿', color: 'bg-purple-100 text-purple-700' },
+const PAYMENT_METHODS: Record<string, { key: string; icon: any; color: string }> = {
+  sinpe: { key: 'sinpe', icon: Smartphone, color: 'bg-green-100 text-green-700' },
+  card: { key: 'card', icon: CreditCard, color: 'bg-blue-100 text-blue-700' },
+  cash: { key: 'cash', icon: DollarSign, color: 'bg-yellow-100 text-yellow-700' },
+  crypto: { key: 'crypto', icon: '₿', color: 'bg-purple-100 text-purple-700' },
 };
 
 export default function MerchantAnalyticsPage() {
+  const { t, locale } = useTranslations();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const [analytics, setAnalytics] = useState<MerchantAnalytics | null>(null);
@@ -95,19 +96,22 @@ export default function MerchantAnalyticsPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState('week');
 
-  const fetchAnalytics = useCallback(async (period: string) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await api.getMerchantAnalytics(period);
-      setAnalytics(data);
-    } catch (err) {
-      console.error('Failed to fetch analytics:', err);
-      setError(err instanceof Error ? err.message : 'No se pudieron cargar las analíticas');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const fetchAnalytics = useCallback(
+    async (period: string) => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await api.getMerchantAnalytics(period);
+        setAnalytics(data);
+      } catch (err) {
+        console.error('Failed to fetch analytics:', err);
+        setError(err instanceof Error ? err.message : t('webshop1.analytics.loadError'));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [t],
+  );
 
   useEffect(() => {
     if (!authLoading && !user) router.push('/login');
@@ -179,7 +183,7 @@ export default function MerchantAnalyticsPage() {
                 😕
               </motion.div>
               <h2 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100 mb-2">
-                No pudimos cargar las analíticas
+                {t('webshop1.analytics.loadError')}
               </h2>
               <p className="text-surface-500 dark:text-surface-400 mb-6">{error}</p>
               <motion.button
@@ -188,7 +192,7 @@ export default function MerchantAnalyticsPage() {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
-                <RefreshCw className="h-4 w-4 inline" /> Reintentar
+                <RefreshCw className="h-4 w-4 inline" /> {t('webshop1.analytics.retry')}
               </motion.button>
             </motion.div>
           </div>
@@ -206,10 +210,10 @@ export default function MerchantAnalyticsPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-display font-bold text-surface-800 dark:text-surface-100">
-                <BarChart3 className="h-6 w-6 inline" /> Mis Analíticas
+                <BarChart3 className="h-6 w-6 inline" /> {t('webshop1.analytics.title')}
               </h1>
               <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">
-                Rendimiento de tu negocio
+                {t('webshop1.analytics.subtitle')}
               </p>
             </div>
             <motion.button
@@ -217,7 +221,7 @@ export default function MerchantAnalyticsPage() {
               className="px-4 py-2 text-sm font-medium bg-surface-100 dark:bg-surface-800 text-surface-700 dark:text-surface-300 rounded-lg hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors"
               whileTap={{ scale: 0.95 }}
             >
-              <RefreshCw className="h-4 w-4 inline" /> Actualizar
+              <RefreshCw className="h-4 w-4 inline" /> {t('webshop1.analytics.refresh')}
             </motion.button>
           </div>
 
@@ -245,7 +249,7 @@ export default function MerchantAnalyticsPage() {
                   ) : (
                     <PeriodIcon className="mr-1 h-4 w-4 inline" />
                   )}
-                  {period.label}
+                  {t(`webshop1.analytics.periods.${period.key}`)}
                 </motion.button>
               );
             })}
@@ -272,7 +276,9 @@ export default function MerchantAnalyticsPage() {
                 <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
                   {analytics?.overview?.totalOrders || 0}
                 </p>
-                <p className="text-sm text-surface-500 dark:text-surface-400">Total Pedidos</p>
+                <p className="text-sm text-surface-500 dark:text-surface-400">
+                  {t('webshop1.analytics.totalOrders')}
+                </p>
               </motion.div>
             </StaggerItem>
 
@@ -295,7 +301,9 @@ export default function MerchantAnalyticsPage() {
                 <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
                   {formatCurrency(analytics?.overview?.totalRevenue || 0)}
                 </p>
-                <p className="text-sm text-surface-500 dark:text-surface-400">Ingresos</p>
+                <p className="text-sm text-surface-500 dark:text-surface-400">
+                  {t('webshop1.analytics.revenue')}
+                </p>
               </motion.div>
             </StaggerItem>
 
@@ -309,13 +317,15 @@ export default function MerchantAnalyticsPage() {
                     <BarChart3 className="h-6 w-6" />
                   </span>
                   <span className="text-xs font-medium text-surface-500 dark:text-surface-400">
-                    Promedio
+                    {t('webshop1.analytics.average')}
                   </span>
                 </div>
                 <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
                   {formatCurrency(analytics?.overview?.averageOrderValue || 0)}
                 </p>
-                <p className="text-sm text-surface-500 dark:text-surface-400">Por Pedido</p>
+                <p className="text-sm text-surface-500 dark:text-surface-400">
+                  {t('webshop1.analytics.perOrder')}
+                </p>
               </motion.div>
             </StaggerItem>
 
@@ -335,7 +345,9 @@ export default function MerchantAnalyticsPage() {
                 <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
                   {analytics?.orders?.completed || 0}
                 </p>
-                <p className="text-sm text-surface-500 dark:text-surface-400">Completados</p>
+                <p className="text-sm text-surface-500 dark:text-surface-400">
+                  {t('webshop1.analytics.completed')}
+                </p>
               </motion.div>
             </StaggerItem>
 
@@ -347,13 +359,15 @@ export default function MerchantAnalyticsPage() {
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-2xl">⏱️</span>
                   <span className="text-xs font-medium text-surface-500 dark:text-surface-400">
-                    min
+                    {t('webshop1.analytics.minutes')}
                   </span>
                 </div>
                 <p className="text-2xl font-bold text-surface-800 dark:text-surface-100">
                   {analytics?.overview?.averageDeliveryTime || 0}
                 </p>
-                <p className="text-sm text-surface-500 dark:text-surface-400">Tiempo Promedio</p>
+                <p className="text-sm text-surface-500 dark:text-surface-400">
+                  {t('webshop1.analytics.avgTime')}
+                </p>
               </motion.div>
             </StaggerItem>
 
@@ -367,13 +381,15 @@ export default function MerchantAnalyticsPage() {
                     <Star className="h-6 w-6" />
                   </span>
                   <span className="text-xs font-medium text-kiwi-700 dark:text-kiwi-400">
-                    Rating
+                    {t('webshop1.analytics.rating')}
                   </span>
                 </div>
                 <p className="text-2xl font-bold text-kiwi-700 dark:text-kiwi-300">
                   {analytics?.overview?.customerSatisfaction || 0}
                 </p>
-                <p className="text-sm text-kiwi-700 dark:text-kiwi-400">Satisfacción</p>
+                <p className="text-sm text-kiwi-700 dark:text-kiwi-400">
+                  {t('webshop1.analytics.satisfaction')}
+                </p>
               </motion.div>
             </StaggerItem>
           </StaggerContainer>
@@ -388,7 +404,7 @@ export default function MerchantAnalyticsPage() {
               transition={{ delay: 0.3 }}
             >
               <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-                <BarChart3 className="h-5 w-5 inline" /> Pedidos Diarios
+                <BarChart3 className="h-5 w-5 inline" /> {t('webshop1.analytics.dailyOrders')}
               </h3>
               <div className="flex items-end gap-1 h-40">
                 {(analytics?.orders?.daily || []).slice(-7).map((day, index) => (
@@ -409,7 +425,9 @@ export default function MerchantAnalyticsPage() {
                       />
                     </div>
                     <p className="mt-2 text-[10px] text-surface-500 dark:text-surface-400">
-                      {new Date(day.date).toLocaleDateString('es-CR', { weekday: 'short' })}
+                      {new Date(day.date).toLocaleDateString(locale === 'es' ? 'es-CR' : 'en-US', {
+                        weekday: 'short',
+                      })}
                     </p>
                     <p className="text-[10px] font-medium text-surface-600 dark:text-surface-300">
                       {day.value}
@@ -427,15 +445,19 @@ export default function MerchantAnalyticsPage() {
               transition={{ delay: 0.4 }}
             >
               <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-                <CreditCard className="h-5 w-5 inline" /> Métodos de Pago
+                <CreditCard className="h-5 w-5 inline" /> {t('webshop1.analytics.payMethods')}
               </h3>
               <div className="space-y-4">
                 {(analytics?.revenue?.byPaymentMethod || []).map((method) => {
-                  const config = PAYMENT_METHODS[method.method] || {
-                    label: method.method,
+                  const known = PAYMENT_METHODS[method.method];
+                  const config = known || {
+                    key: '',
                     icon: Coins,
                     color: 'bg-surface-100 text-surface-700',
                   };
+                  const displayLabel = known
+                    ? t(`webshop1.analytics.pay.${config.key}`)
+                    : method.method;
                   const percentage = analytics?.revenue?.total
                     ? (method.amount / analytics.revenue.total) * 100
                     : 0;
@@ -453,7 +475,7 @@ export default function MerchantAnalyticsPage() {
                             ) : (
                               <MethodIcon className="h-4 w-4 inline" />
                             )}{' '}
-                            {config.label}
+                            {displayLabel}
                           </span>
                         </div>
                         <span className="text-sm font-medium text-surface-800 dark:text-surface-200">
@@ -485,7 +507,7 @@ export default function MerchantAnalyticsPage() {
               transition={{ delay: 0.5 }}
             >
               <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-                <Trophy className="h-5 w-5 inline" /> Top Productos
+                <Trophy className="h-5 w-5 inline" /> {t('webshop1.analytics.topProducts')}
               </h3>
               <div className="space-y-3">
                 {(analytics?.topItems || []).slice(0, 5).map((item, index) => (
@@ -503,7 +525,7 @@ export default function MerchantAnalyticsPage() {
                           {item.name}
                         </p>
                         <p className="text-sm text-surface-500 dark:text-surface-400">
-                          {item.orders} pedidos
+                          {t('webshop1.analytics.ordersCount', { count: item.orders })}
                         </p>
                       </div>
                     </div>
@@ -523,7 +545,7 @@ export default function MerchantAnalyticsPage() {
               transition={{ delay: 0.6 }}
             >
               <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-                ⏰ Horas Pico
+                {t('webshop1.analytics.peakHours')}
               </h3>
               <div className="flex items-end gap-1 h-40">
                 {(analytics?.peakHours || []).slice(7, 20).map((hour, index) => {
@@ -573,33 +595,39 @@ export default function MerchantAnalyticsPage() {
             transition={{ delay: 0.7 }}
           >
             <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-              👥 Estadísticas de Clientes
+              {t('webshop1.analytics.customers')}
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50">
                 <p className="text-3xl font-bold text-surface-800 dark:text-surface-100">
                   {analytics?.customerStats?.totalOrders || 0}
                 </p>
-                <p className="text-sm text-surface-500 dark:text-surface-400">Pedidos</p>
+                <p className="text-sm text-surface-500 dark:text-surface-400">
+                  {t('webshop1.analytics.custOrders')}
+                </p>
               </div>
               <div className="text-center p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50">
                 <p className="text-3xl font-bold text-kiwi-700 dark:text-kiwi-400">
                   {analytics?.customerStats?.totalReviews || 0}
                 </p>
-                <p className="text-sm text-surface-500 dark:text-surface-400">Reseñas</p>
+                <p className="text-sm text-surface-500 dark:text-surface-400">
+                  {t('webshop1.analytics.custReviews')}
+                </p>
               </div>
               <div className="text-center p-4 rounded-xl bg-yellow-50 dark:bg-yellow-900/30">
                 <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">
                   <Star className="h-6 w-6 inline" /> {analytics?.customerStats?.averageRating || 0}
                 </p>
-                <p className="text-sm text-surface-500 dark:text-surface-400">Rating Promedio</p>
+                <p className="text-sm text-surface-500 dark:text-surface-400">
+                  {t('webshop1.analytics.custAvgRating')}
+                </p>
               </div>
             </div>
 
             {/* Rating Distribution */}
             <div className="mt-6 pt-6 border-t border-surface-100 dark:border-surface-700">
               <h4 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-3">
-                Distribución de Calificaciones
+                {t('webshop1.analytics.ratingDist')}
               </h4>
               <div className="space-y-2">
                 {(analytics?.customerStats?.ratingDistribution || []).map((rating) => {
@@ -641,7 +669,7 @@ export default function MerchantAnalyticsPage() {
             transition={{ delay: 0.8 }}
           >
             <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-4">
-              ⚡ Acciones Rápidas
+              {t('webshop1.analytics.quickActions')}
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Link href="/dashboard">
@@ -653,7 +681,7 @@ export default function MerchantAnalyticsPage() {
                   <span className="text-2xl block mb-2">
                     <BarChart3 className="h-6 w-6" />
                   </span>
-                  <span className="text-sm font-medium">Dashboard</span>
+                  <span className="text-sm font-medium">{t('webshop1.analytics.goDashboard')}</span>
                 </motion.button>
               </Link>
               <Link href="/menu">
@@ -665,7 +693,7 @@ export default function MerchantAnalyticsPage() {
                   <span className="text-2xl block mb-2">
                     <Utensils className="h-6 w-6" />
                   </span>
-                  <span className="text-sm font-medium">Mi Menú</span>
+                  <span className="text-sm font-medium">{t('webshop1.analytics.goMenu')}</span>
                 </motion.button>
               </Link>
               <Link href="/orders/scheduled">
@@ -677,7 +705,7 @@ export default function MerchantAnalyticsPage() {
                   <span className="text-2xl block mb-2">
                     <Calendar className="h-6 w-6" />
                   </span>
-                  <span className="text-sm font-medium">Programados</span>
+                  <span className="text-sm font-medium">{t('webshop1.analytics.goScheduled')}</span>
                 </motion.button>
               </Link>
               {user?.merchantProfile?.id ? (
@@ -690,12 +718,12 @@ export default function MerchantAnalyticsPage() {
                     <span className="text-2xl block mb-2">
                       <Smartphone className="h-6 w-6" />
                     </span>
-                    <span className="text-sm font-medium">Mi QR</span>
+                    <span className="text-sm font-medium">{t('webshop1.analytics.goQr')}</span>
                   </motion.button>
                 </Link>
               ) : (
                 <div className="w-full p-4 rounded-xl bg-surface-100 dark:bg-surface-800 text-surface-500 dark:text-surface-400 text-sm font-medium text-center">
-                  Mi QR
+                  {t('webshop1.analytics.goQr')}
                 </div>
               )}
               <Link href="/analytics/traffic">
@@ -705,7 +733,7 @@ export default function MerchantAnalyticsPage() {
                   whileTap={{ scale: 0.95 }}
                 >
                   <span className="text-2xl block mb-2">🚦</span>
-                  <span className="text-sm font-medium">Tráfico</span>
+                  <span className="text-sm font-medium">{t('webshop1.analytics.goTraffic')}</span>
                 </motion.button>
               </Link>
             </div>

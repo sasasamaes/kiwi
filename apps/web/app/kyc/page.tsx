@@ -6,9 +6,17 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { MapPin } from 'lucide-react';
-import { KYCVerification, KYCStatusBadge, DiditVerifyButton, useAuth, api } from '@kiwi/ui';
+import {
+  KYCVerification,
+  KYCStatusBadge,
+  DiditVerifyButton,
+  useAuth,
+  api,
+  useTranslations,
+} from '@kiwi/ui';
 
 export default function MerchantKYCPage() {
+  const { t } = useTranslations();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -43,7 +51,7 @@ export default function MerchantKYCPage() {
       });
       setKycStatus(res?.status ?? 'documents_submitted');
     } catch (error: any) {
-      setSubmitError(error?.message || 'No se pudo enviar. Intentá de nuevo.');
+      setSubmitError(error?.message || t('webshop2.kycweb.errSubmit'));
     } finally {
       setLoading(false);
     }
@@ -64,9 +72,11 @@ export default function MerchantKYCPage() {
               className="flex items-center gap-2 text-surface-600 hover:text-surface-800"
             >
               <span>←</span>
-              <span className="text-sm font-medium">Dashboard</span>
+              <span className="text-sm font-medium">{t('webshop2.kycweb.dashboard')}</span>
             </Link>
-            <h1 className="font-display font-semibold text-surface-800">Verificación KYC</h1>
+            <h1 className="font-display font-semibold text-surface-800">
+              {t('webshop2.kycweb.title')}
+            </h1>
             <div className="w-16" />
           </div>
         </div>
@@ -82,11 +92,10 @@ export default function MerchantKYCPage() {
           <div className="flex items-start gap-4">
             <span className="text-4xl">🪪</span>
             <div>
-              <h2 className="text-xl font-display font-bold mb-2">Verifica tu Negocio</h2>
-              <p className="text-white/80 text-sm">
-                Para usar Kiwi como comerciante, necesitamos verificar tu identidad y la existencia
-                de tu negocio. Esto genera confianza entre los repartidores y clientes.
-              </p>
+              <h2 className="text-xl font-display font-bold mb-2">
+                {t('webshop2.kycweb.bannerTitle')}
+              </h2>
+              <p className="text-white/80 text-sm">{t('webshop2.kycweb.bannerDesc')}</p>
             </div>
           </div>
         </motion.div>
@@ -99,33 +108,33 @@ export default function MerchantKYCPage() {
           transition={{ delay: 0.1 }}
         >
           <h3 className="font-display font-semibold text-surface-800 mb-4">
-            Documentos Requeridos
+            {t('webshop2.kycweb.docsTitle')}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex items-start gap-3 p-4 rounded-xl bg-surface-50">
               <span className="text-2xl">🪪</span>
               <div>
-                <p className="font-medium text-surface-700">Identificación Personal</p>
+                <p className="font-medium text-surface-700">{t('webshop2.kycweb.docId')}</p>
                 <p className="text-xs text-surface-500 dark:text-surface-400">
-                  Cédula o pasaporte (frente y reverso)
+                  {t('webshop2.kycweb.docIdDesc')}
                 </p>
               </div>
             </div>
             <div className="flex items-start gap-3 p-4 rounded-xl bg-surface-50">
               <span className="text-2xl">🤳</span>
               <div>
-                <p className="font-medium text-surface-700">Selfie con Documento</p>
+                <p className="font-medium text-surface-700">{t('webshop2.kycweb.docSelfie')}</p>
                 <p className="text-xs text-surface-500 dark:text-surface-400">
-                  Rostro visible sosteniendo tu ID
+                  {t('webshop2.kycweb.docSelfieDesc')}
                 </p>
               </div>
             </div>
             <div className="flex items-start gap-3 p-4 rounded-xl bg-surface-50">
               <span className="text-2xl">🏪</span>
               <div>
-                <p className="font-medium text-surface-700">Licencia Comercial</p>
+                <p className="font-medium text-surface-700">{t('webshop2.kycweb.docLicense')}</p>
                 <p className="text-xs text-surface-500 dark:text-surface-400">
-                  Patente municipal o cédula jurídica
+                  {t('webshop2.kycweb.docLicenseDesc')}
                 </p>
               </div>
             </div>
@@ -134,9 +143,9 @@ export default function MerchantKYCPage() {
                 <MapPin className="h-6 w-6" />
               </span>
               <div>
-                <p className="font-medium text-surface-700">Foto del Local</p>
+                <p className="font-medium text-surface-700">{t('webshop2.kycweb.docLocal')}</p>
                 <p className="text-xs text-surface-500 dark:text-surface-400">
-                  Exterior del negocio con letrero visible
+                  {t('webshop2.kycweb.docLocalDesc')}
                 </p>
               </div>
             </div>
@@ -152,11 +161,9 @@ export default function MerchantKYCPage() {
           {kycStatus !== 'approved' && kycStatus !== 'under_review' && (
             <div className="mb-4 rounded-2xl bg-white p-6 shadow-soft">
               <h3 className="font-display font-semibold text-surface-800 mb-1">
-                Verificación instantánea
+                {t('webshop2.kycweb.instantTitle')}
               </h3>
-              <p className="text-sm text-surface-500 mb-4">
-                Con tu cédula y un selfie, en menos de un minuto.
-              </p>
+              <p className="text-sm text-surface-500 mb-4">{t('webshop2.kycweb.instantDesc')}</p>
               <DiditVerifyButton
                 onStatus={(s) => {
                   if (s === 'approved' || s === 'rejected' || s === 'under_review') {
@@ -166,7 +173,7 @@ export default function MerchantKYCPage() {
               />
               <div className="my-4 flex items-center gap-3 text-xs text-surface-500 dark:text-surface-400">
                 <span className="h-px flex-1 bg-surface-200" />
-                o subí tus documentos
+                {t('webshop2.kycweb.orUpload')}
                 <span className="h-px flex-1 bg-surface-200" />
               </div>
             </div>
@@ -194,26 +201,20 @@ export default function MerchantKYCPage() {
           transition={{ delay: 0.3 }}
         >
           <h3 className="font-display font-semibold text-surface-800 mb-4">
-            ❓ Preguntas Frecuentes
+            {t('webshop2.kycweb.faqTitle')}
           </h3>
           <div className="space-y-4">
             <div>
-              <p className="font-medium text-surface-700">
-                ¿Por qué necesito verificar mi identidad?
-              </p>
-              <p className="text-sm text-surface-500">
-                Para garantizar la seguridad de todos los usuarios de la plataforma.
-              </p>
+              <p className="font-medium text-surface-700">{t('webshop2.kycweb.q1')}</p>
+              <p className="text-sm text-surface-500">{t('webshop2.kycweb.a1')}</p>
             </div>
             <div>
-              <p className="font-medium text-surface-700">¿Cuánto tiempo toma la verificación?</p>
-              <p className="text-sm text-surface-500">Normalmente 24-48 horas hábiles.</p>
+              <p className="font-medium text-surface-700">{t('webshop2.kycweb.q2')}</p>
+              <p className="text-sm text-surface-500">{t('webshop2.kycweb.a2')}</p>
             </div>
             <div>
-              <p className="font-medium text-surface-700">¿Mis datos están seguros?</p>
-              <p className="text-sm text-surface-500">
-                Sí, utilizamos encriptación de grado bancario para proteger tu información.
-              </p>
+              <p className="font-medium text-surface-700">{t('webshop2.kycweb.q3')}</p>
+              <p className="text-sm text-surface-500">{t('webshop2.kycweb.a3')}</p>
             </div>
           </div>
         </motion.div>
@@ -226,9 +227,9 @@ export default function MerchantKYCPage() {
           transition={{ delay: 0.4 }}
         >
           <p className="text-sm text-surface-500 dark:text-surface-400">
-            ¿Necesitas ayuda?{' '}
+            {t('webshop2.kycweb.needHelp')}{' '}
             <a href="https://wa.me/50688888888" className="text-kiwi-700 hover:underline">
-              Contáctanos por WhatsApp
+              {t('webshop2.kycweb.contactWa')}
             </a>
           </p>
         </motion.div>

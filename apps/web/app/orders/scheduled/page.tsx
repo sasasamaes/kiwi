@@ -20,10 +20,12 @@ import {
   DriverProposal,
   VehicleBadge,
   formatRating,
+  useTranslations,
 } from '@kiwi/ui';
 
 export default function ScheduledOrdersPage() {
   const router = useRouter();
+  const { t } = useTranslations();
   const { user, loading: authLoading } = useAuth();
   const [scheduledOrders, setScheduledOrders] = useState<Order[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -107,7 +109,7 @@ export default function ScheduledOrdersPage() {
         setProposals([]);
       } catch (error) {
         console.error('Failed to accept proposal:', error);
-        alert('Error al aceptar la propuesta');
+        alert(t('webshop1.scheduled.acceptFailed'));
       } finally {
         setAcceptingProposal(null);
       }
@@ -160,10 +162,10 @@ export default function ScheduledOrdersPage() {
               className="flex items-center gap-2 text-surface-600 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200"
             >
               <motion.span whileHover={{ x: -4 }}>←</motion.span>
-              <span className="text-sm font-medium">Dashboard</span>
+              <span className="text-sm font-medium">{t('webshop1.scheduled.backDashboard')}</span>
             </Link>
             <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-              <Calendar className="h-5 w-5 inline" /> Pedidos Programados
+              <Calendar className="h-5 w-5 inline" /> {t('webshop1.scheduled.title')}
             </h1>
             <div className="w-16" />
           </div>
@@ -181,11 +183,10 @@ export default function ScheduledOrdersPage() {
             <span className="text-2xl">💡</span>
             <div>
               <h3 className="font-medium text-surface-800 dark:text-surface-200">
-                ¿Cómo funciona?
+                {t('webshop1.scheduled.howTitle')}
               </h3>
               <p className="text-sm text-surface-600 dark:text-surface-400 mt-1">
-                Los pedidos programados muestran propuestas de repartidores. Tú eliges al que mejor
-                se adapte a tus necesidades — no compiten por precio, sino por servicio.
+                {t('webshop1.scheduled.howBody')}
               </p>
             </div>
           </div>
@@ -206,13 +207,15 @@ export default function ScheduledOrdersPage() {
               <Calendar className="h-16 w-16" />
             </motion.div>
             <h3 className="text-lg font-display font-semibold text-surface-800 dark:text-surface-100 mb-2">
-              No hay pedidos programados
+              {t('webshop1.scheduled.emptyTitle')}
             </h3>
             <p className="text-surface-500 dark:text-surface-400 mb-6">
-              Crea un pedido programado y los repartidores enviarán propuestas
+              {t('webshop1.scheduled.emptyHint')}
             </p>
             <Link href="/orders/new">
-              <AnimatedButton variant="gradient">➕ Crear Pedido Programado</AnimatedButton>
+              <AnimatedButton variant="gradient">
+                {t('webshop1.scheduled.createCta')}
+              </AnimatedButton>
             </Link>
           </motion.div>
         ) : (
@@ -236,7 +239,7 @@ export default function ScheduledOrdersPage() {
                       <div className="flex items-start justify-between">
                         <div>
                           <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-                            Pedido Programado
+                            {t('webshop1.scheduled.cardTitle')}
                           </h3>
                           <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">
                             {order.pickupAddress} → {order.deliveryAddress}
@@ -263,7 +266,8 @@ export default function ScheduledOrdersPage() {
 
                         {/* Status Badge */}
                         <span className="px-3 py-1 rounded-full bg-gold-100 dark:bg-gold-900/50 text-xs font-medium text-gold-700 dark:text-gold-400">
-                          <Clock className="h-4 w-4 inline" /> Esperando propuestas
+                          <Clock className="h-4 w-4 inline" />{' '}
+                          {t('webshop1.scheduled.waitingBadge')}
                         </span>
                       </div>
                     </div>
@@ -306,7 +310,8 @@ export default function ScheduledOrdersPage() {
                 <div className="w-12 h-1 bg-surface-300 dark:bg-surface-600 rounded-full mx-auto mb-3" />
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100">
-                    <ClipboardList className="h-5 w-5 inline" /> Propuestas
+                    <ClipboardList className="h-5 w-5 inline" />{' '}
+                    {t('webshop1.scheduled.proposalsTitle')}
                   </h2>
                   <motion.button
                     onClick={() => {
@@ -328,7 +333,7 @@ export default function ScheduledOrdersPage() {
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-surface-500 dark:text-surface-400">
-                        <MapPin className="h-4 w-4 inline" /> Recoger:
+                        <MapPin className="h-4 w-4 inline" /> {t('webshop1.scheduled.pickupLabel')}
                       </span>
                       <span className="font-medium text-surface-800 dark:text-surface-200 text-right max-w-[60%]">
                         {selectedOrder.pickupAddress}
@@ -336,7 +341,7 @@ export default function ScheduledOrdersPage() {
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-surface-500 dark:text-surface-400">
-                        <Home className="h-4 w-4 inline" /> Entregar:
+                        <Home className="h-4 w-4 inline" /> {t('webshop1.scheduled.dropoffLabel')}
                       </span>
                       <span className="font-medium text-surface-800 dark:text-surface-200 text-right max-w-[60%]">
                         {selectedOrder.deliveryAddress}
@@ -345,7 +350,8 @@ export default function ScheduledOrdersPage() {
                     {selectedOrder.scheduledDate && (
                       <div className="flex justify-between text-sm">
                         <span className="text-surface-500 dark:text-surface-400">
-                          <Calendar className="h-4 w-4 inline" /> Fecha:
+                          <Calendar className="h-4 w-4 inline" />{' '}
+                          {t('webshop1.scheduled.dateLabel')}
                         </span>
                         <span className="font-medium text-gold-600 dark:text-gold-400">
                           {new Date(selectedOrder.scheduledDate).toLocaleDateString('es-CR', {
@@ -353,13 +359,14 @@ export default function ScheduledOrdersPage() {
                             month: 'long',
                             day: 'numeric',
                           })}
-                          {selectedOrder.scheduledTime && ` a las ${selectedOrder.scheduledTime}`}
+                          {selectedOrder.scheduledTime &&
+                            t('webshop1.scheduled.atTime', { time: selectedOrder.scheduledTime })}
                         </span>
                       </div>
                     )}
                     <div className="flex justify-between text-sm">
                       <span className="text-surface-500 dark:text-surface-400">
-                        <Coins className="h-4 w-4 inline" /> Total:
+                        <Coins className="h-4 w-4 inline" /> {t('webshop1.scheduled.totalLabel')}
                       </span>
                       <span className="font-bold text-kiwi-700 dark:text-kiwi-400">
                         ₡{Number(selectedOrder.totalAmount).toLocaleString()}
@@ -370,7 +377,7 @@ export default function ScheduledOrdersPage() {
 
                 {/* Proposals */}
                 <h3 className="text-sm font-semibold text-surface-600 dark:text-surface-400 mb-3">
-                  Propuestas de repartidores
+                  {t('webshop1.scheduled.proposalsHeading')}
                 </h3>
 
                 {loadingProposals ? (
@@ -397,10 +404,10 @@ export default function ScheduledOrdersPage() {
                       <Clock className="h-10 w-10" />
                     </motion.div>
                     <p className="text-surface-500 dark:text-surface-400">
-                      Esperando propuestas de repartidores...
+                      {t('webshop1.scheduled.waitingProposals')}
                     </p>
                     <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">
-                      Los repartidores verán tu pedido y enviarán propuestas
+                      {t('webshop1.scheduled.waitingHint')}
                     </p>
                   </div>
                 ) : (
@@ -417,7 +424,10 @@ export default function ScheduledOrdersPage() {
                               // NOTE: <img> intencional — foto dinámica externa
                               <img
                                 src={(proposal.driver as any).photoUrl}
-                                alt={proposal.driver?.fullName || 'Repartidor'}
+                                alt={
+                                  proposal.driver?.fullName ||
+                                  t('webshop1.scheduled.driverFallback')
+                                }
                                 className="h-12 w-12 rounded-full object-cover flex-shrink-0"
                               />
                             ) : (
@@ -430,7 +440,8 @@ export default function ScheduledOrdersPage() {
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between">
                                 <h4 className="font-semibold text-surface-800 dark:text-surface-100">
-                                  {proposal.driver?.fullName || 'Repartidor'}
+                                  {proposal.driver?.fullName ||
+                                    t('webshop1.scheduled.driverFallback')}
                                 </h4>
                                 <div className="flex items-center gap-1">
                                   <span className="text-sm">
@@ -448,7 +459,9 @@ export default function ScheduledOrdersPage() {
                                   size="sm"
                                 />
                                 <span className="text-xs text-surface-500 dark:text-surface-400">
-                                  {proposal.driver?.totalTrips || 0} viajes
+                                  {t('webshop1.scheduled.trips', {
+                                    count: proposal.driver?.totalTrips || 0,
+                                  })}
                                 </span>
                                 {(proposal.driver as any)?.vehiclePlate && (
                                   <span className="rounded-md bg-surface-100 dark:bg-surface-700 px-2 py-0.5 font-mono text-xs font-semibold text-surface-700 dark:text-surface-200">
@@ -460,8 +473,9 @@ export default function ScheduledOrdersPage() {
                               {/* Estimated Arrival */}
                               <div className="mt-2 flex items-center gap-2">
                                 <span className="text-sm font-medium text-kiwi-700 dark:text-kiwi-400">
-                                  <Clock className="h-4 w-4 inline" /> Llega en:{' '}
-                                  {proposal.estimatedArrival || 'No especificado'}
+                                  <Clock className="h-4 w-4 inline" />{' '}
+                                  {t('webshop1.scheduled.arrivesIn')}{' '}
+                                  {proposal.estimatedArrival || t('webshop1.scheduled.etaUnknown')}
                                 </span>
                               </div>
 
@@ -487,12 +501,16 @@ export default function ScheduledOrdersPage() {
                                     >
                                       <Clock className="h-4 w-4" />
                                     </motion.span>
-                                    Aceptando...
+                                    {t('webshop1.scheduled.accepting')}
                                   </span>
                                 ) : (
                                   <>
-                                    <Check className="h-4 w-4 inline" /> Elegir a{' '}
-                                    {proposal.driver?.fullName || 'este repartidor'}
+                                    <Check className="h-4 w-4 inline" />{' '}
+                                    {t('webshop1.scheduled.chooseDriver', {
+                                      name:
+                                        proposal.driver?.fullName ||
+                                        t('webshop1.scheduled.chooseFallback'),
+                                    })}
                                   </>
                                 )}
                               </motion.button>
