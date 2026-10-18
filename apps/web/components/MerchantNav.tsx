@@ -18,17 +18,25 @@ import {
   Utensils,
   X,
 } from 'lucide-react';
-import { useAuth, ThemeToggle, KiwiLogo, isHttpUrl, isEmojiImage } from '@kiwi/ui';
+import {
+  useAuth,
+  ThemeToggle,
+  KiwiLogo,
+  isHttpUrl,
+  isEmojiImage,
+  LanguageSwitcher,
+  useTranslations,
+} from '@kiwi/ui';
 
 const LINKS = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/comandas', label: 'Comandas', icon: Receipt },
-  { href: '/orders', label: 'Pedidos', icon: ShoppingBag },
-  { href: '/menu', label: 'Menú', icon: Utensils },
-  { href: '/drivers', label: 'Repartidores', icon: Bike },
-  { href: '/analytics', label: 'Analytics', icon: BarChart3 },
-  { href: '/perfil', label: 'Perfil', icon: User },
-];
+  { href: '/dashboard', key: 'dashboard', icon: LayoutDashboard },
+  { href: '/comandas', key: 'comandas', icon: Receipt },
+  { href: '/orders', key: 'orders', icon: ShoppingBag },
+  { href: '/menu', key: 'menu', icon: Utensils },
+  { href: '/drivers', key: 'drivers', icon: Bike },
+  { href: '/analytics', key: 'analytics', icon: BarChart3 },
+  { href: '/perfil', key: 'profile', icon: User },
+] as const;
 
 interface MerchantNavProps {
   /** Si se pasa, muestra el punto En vivo/Desconectado. */
@@ -43,10 +51,12 @@ interface MerchantNavProps {
  * avatar. Las páginas NO deben agregar otro header con logo encima.
  */
 export function MerchantNav({ isConnected, unreadCount = 0, businessName }: MerchantNavProps = {}) {
+  const { t } = useTranslations();
   const pathname = usePathname();
   const router = useRouter();
   const { logout, user } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const labelFor = (key: (typeof LINKS)[number]['key']) => t(`webnav.links.${key}`);
   // Logo del comercio (foto subida o emoji). Vive en el perfil del user
   // logueado, así se actualiza solo al cambiarlo en el dashboard.
   const logoUrl = (user as any)?.merchantProfile?.logoUrl as string | undefined;
@@ -71,6 +81,7 @@ export function MerchantNav({ isConnected, unreadCount = 0, businessName }: Merc
             {LINKS.map((l) => {
               const active = isActive(l.href);
               const Icon = l.icon;
+              const label = labelFor(l.key);
               return (
                 <Link
                   key={l.href}
@@ -82,7 +93,7 @@ export function MerchantNav({ isConnected, unreadCount = 0, businessName }: Merc
                   }`}
                 >
                   <Icon className="h-4 w-4" />
-                  <span>{l.label}</span>
+                  <span>{label}</span>
                 </Link>
               );
             })}
@@ -93,14 +104,16 @@ export function MerchantNav({ isConnected, unreadCount = 0, businessName }: Merc
                   animate={isConnected ? { scale: [1, 1.2, 1] } : {}}
                   transition={{ duration: 1.5, repeat: Infinity }}
                 />
-                <span className="hidden lg:inline">{isConnected ? 'En vivo' : 'Desconectado'}</span>
+                <span className="hidden lg:inline">
+                  {isConnected ? t('webnav.live') : t('webnav.offline')}
+                </span>
               </span>
             )}
             {businessName !== undefined && (
               <>
                 <Link
                   href="/notifications"
-                  aria-label="Notificaciones"
+                  aria-label={t('webnav.notifications')}
                   className="relative rounded-full p-2 text-surface-500 hover:bg-surface-100 hover:text-surface-700 transition-colors dark:hover:bg-surface-800"
                 >
                   <Bell className="h-5 w-5" />
@@ -112,14 +125,14 @@ export function MerchantNav({ isConnected, unreadCount = 0, businessName }: Merc
                 </Link>
                 <span className="hidden items-center gap-2 lg:flex">
                   <span className="text-sm font-medium text-surface-600 dark:text-surface-400">
-                    {businessName || 'Mi Negocio'}
+                    {businessName || t('webnav.fallbackBusiness')}
                   </span>
                   <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-kiwi-gradient text-white text-sm font-semibold ring-2 ring-white shadow-sm dark:ring-surface-800">
                     {isHttpUrl(logoUrl) ? (
                       // NOTE: <img> intencional — logo dinámico de Cloudinary.
                       <img
                         src={logoUrl}
-                        alt={businessName || 'Logo del comercio'}
+                        alt={businessName || t('webnav.businessLogoAlt')}
                         className="h-9 w-9 object-cover"
                       />
                     ) : isEmojiImage(logoUrl) ? (
@@ -131,10 +144,11 @@ export function MerchantNav({ isConnected, unreadCount = 0, businessName }: Merc
                 </span>
               </>
             )}
+            <LanguageSwitcher />
             <ThemeToggle />
             <button
               onClick={handleLogout}
-              title="Cerrar sesión"
+              title={t('webnav.logout')}
               className="flex items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-2 text-sm font-medium text-surface-500 dark:text-surface-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 transition-colors"
             >
               <LogOut className="h-4 w-4" />
@@ -144,12 +158,15 @@ export function MerchantNav({ isConnected, unreadCount = 0, businessName }: Merc
           {/* Mobile: página actual + hamburguesa */}
           <div className="flex md:hidden items-center gap-2">
             <span className="text-sm font-medium text-surface-600 dark:text-surface-300">
-              {LINKS.find((l) => isActive(l.href))?.label ?? 'Kiwi'}
+              {(() => {
+                const found = LINKS.find((l) => isActive(l.href));
+                return found ? labelFor(found.key) : t('webnav.currentPage');
+              })()}
             </span>
             {businessName !== undefined && (
               <Link
                 href="/notifications"
-                aria-label="Notificaciones"
+                aria-label={t('webnav.notifications')}
                 className="relative rounded-xl p-2 text-surface-600 dark:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
               >
                 <Bell className="h-5 w-5" />
@@ -162,7 +179,7 @@ export function MerchantNav({ isConnected, unreadCount = 0, businessName }: Merc
             )}
             <button
               onClick={() => setMobileOpen((v) => !v)}
-              aria-label={mobileOpen ? 'Cerrar menú' : 'Abrir menú'}
+              aria-label={mobileOpen ? t('webnav.closeMenu') : t('webnav.openMenu')}
               aria-expanded={mobileOpen}
               className="rounded-xl p-2 text-surface-600 dark:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
             >
@@ -198,7 +215,7 @@ export function MerchantNav({ isConnected, unreadCount = 0, businessName }: Merc
                     }`}
                   >
                     <Icon className="h-5 w-5" />
-                    {l.label}
+                    {labelFor(l.key)}
                   </Link>
                 );
               })}
@@ -207,13 +224,16 @@ export function MerchantNav({ isConnected, unreadCount = 0, businessName }: Merc
                 className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
               >
                 <LogOut className="h-5 w-5" />
-                Cerrar sesión
+                {t('webnav.logout')}
               </button>
               <div className="flex items-center justify-between rounded-xl px-3 py-1.5">
                 <span className="text-sm font-medium text-surface-600 dark:text-surface-300">
-                  Tema
+                  {t('webnav.theme')}
                 </span>
-                <ThemeToggle />
+                <div className="flex items-center gap-2">
+                  <LanguageSwitcher />
+                  <ThemeToggle />
+                </div>
               </div>
             </div>
           </motion.nav>

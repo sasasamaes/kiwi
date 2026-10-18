@@ -25,40 +25,47 @@ import {
   MapPin,
   Globe,
 } from 'lucide-react';
-import { ThemeToggle, useAuth, KiwiLogo, KiwiSlice } from '@kiwi/ui';
+import {
+  ThemeToggle,
+  useAuth,
+  KiwiLogo,
+  KiwiSlice,
+  LanguageSwitcher,
+  useTranslations,
+} from '@kiwi/ui';
 
 const menuItems = [
-  { href: '/admin', icon: BarChart3, label: 'Dashboard', exact: true },
-  { href: '/admin/users', icon: Users, label: 'Usuarios' },
-  { href: '/admin/invitaciones', icon: Mail, label: 'Invitaciones' },
-  { href: '/admin/visitas', icon: MapPin, label: 'Visitas' },
-  { href: '/admin/difusion', icon: Megaphone, label: 'Difusión' },
-  { href: '/admin/referidos', icon: TicketPercent, label: 'Referidos' },
-  { href: '/admin/orders', icon: Package, label: 'Pedidos' },
-  { href: '/admin/credits', icon: Wallet, label: 'Crédito prepago' },
-  { href: '/admin/ratings', icon: Star, label: 'Comentarios' },
-  { href: '/admin/kyc', icon: BadgeCheck, label: 'Verificaciones KYC' },
-  { href: '/admin/payments', icon: Coins, label: 'Pagos' },
-  { href: '/admin/payments/crypto', icon: Link2, label: 'Cripto pendientes' },
-  { href: '/admin/simulador', icon: Calculator, label: 'Simulador' },
-  { href: '/admin/reportes', icon: BarChart3, label: 'Real vs Proyección' },
-  { href: '/admin/zones', icon: MapPinned, label: 'Zonas' },
-  { href: '/admin/cobertura', icon: Globe, label: 'Cobertura' },
-  { href: '/admin/settings', icon: Settings, label: 'Configuración' },
-];
+  { href: '/admin', icon: BarChart3, key: 'dashboard', exact: true },
+  { href: '/admin/users', icon: Users, key: 'users' },
+  { href: '/admin/invitaciones', icon: Mail, key: 'invitaciones' },
+  { href: '/admin/visitas', icon: MapPin, key: 'visitas' },
+  { href: '/admin/difusion', icon: Megaphone, key: 'difusion' },
+  { href: '/admin/referidos', icon: TicketPercent, key: 'referidos' },
+  { href: '/admin/orders', icon: Package, key: 'orders' },
+  { href: '/admin/credits', icon: Wallet, key: 'credits' },
+  { href: '/admin/ratings', icon: Star, key: 'ratings' },
+  { href: '/admin/kyc', icon: BadgeCheck, key: 'kyc' },
+  { href: '/admin/payments', icon: Coins, key: 'payments' },
+  { href: '/admin/payments/crypto', icon: Link2, key: 'crypto' },
+  { href: '/admin/simulador', icon: Calculator, key: 'simulador' },
+  { href: '/admin/reportes', icon: BarChart3, key: 'reportes' },
+  { href: '/admin/zones', icon: MapPinned, key: 'zones' },
+  { href: '/admin/cobertura', icon: Globe, key: 'cobertura' },
+  { href: '/admin/settings', icon: Settings, key: 'settings' },
+] as const;
 
 /** Agrupación de la sidebar por jornada operativa (antes 17 ítems planos). */
-const menuGroups: Array<{ title: string; hrefs: string[] }> = [
+const menuGroups: Array<{ titleKey: string; hrefs: string[] }> = [
   {
-    title: 'Operación',
+    titleKey: 'ops',
     hrefs: ['/admin', '/admin/orders', '/admin/zones', '/admin/cobertura', '/admin/visitas'],
   },
   {
-    title: 'Personas',
+    titleKey: 'people',
     hrefs: ['/admin/users', '/admin/invitaciones', '/admin/kyc', '/admin/ratings'],
   },
   {
-    title: 'Finanzas',
+    titleKey: 'finance',
     hrefs: [
       '/admin/payments',
       '/admin/payments/crypto',
@@ -67,11 +74,12 @@ const menuGroups: Array<{ title: string; hrefs: string[] }> = [
       '/admin/simulador',
     ],
   },
-  { title: 'Crecimiento', hrefs: ['/admin/difusion', '/admin/referidos'] },
-  { title: 'Sistema', hrefs: ['/admin/settings'] },
+  { titleKey: 'growth', hrefs: ['/admin/difusion', '/admin/referidos'] },
+  { titleKey: 'system', hrefs: ['/admin/settings'] },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  const { t } = useTranslations();
   const pathname = usePathname();
   const router = useRouter();
   const { user, loading, logout } = useAuth();
@@ -98,9 +106,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="text-center">
           <ShieldAlert className="h-12 w-12 mx-auto mb-3 text-red-500" />
           <h1 className="text-lg font-bold text-surface-800 dark:text-surface-100">
-            Acceso restringido
+            {t('adminnav.restricted')}
           </h1>
-          <p className="text-sm text-surface-500">Solo usuarios con rol admin.</p>
+          <p className="text-sm text-surface-500">{t('adminnav.restrictedHint')}</p>
         </div>
       </div>
     );
@@ -110,6 +118,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (exact) return pathname === href;
     return pathname.startsWith(href);
   };
+  type MenuItem = (typeof menuItems)[number];
+  const isItemActive = (item: MenuItem) =>
+    isActive(
+      item.href,
+      'exact' in item ? (item as unknown as { exact?: boolean }).exact : undefined,
+    );
+  const itemLabel = (key: MenuItem['key']) => t(`adminnav.items.${key}`);
+  const groupTitle = (key: string) => t(`adminnav.groups.${key}`);
+  const headerItem = menuItems.find((item) => isItemActive(item));
 
   return (
     <div className="min-h-[100dvh] bg-bg-light dark:bg-surface-950 flex">
@@ -146,15 +163,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto p-4">
           {menuGroups.map((group) => {
-            const items = group.hrefs
+            const items: MenuItem[] = group.hrefs
               .map((h) => menuItems.find((m) => m.href === h))
-              .filter(Boolean) as typeof menuItems;
+              .filter((m): m is MenuItem => Boolean(m));
             if (items.length === 0) return null;
             return (
-              <div key={group.title} className="mb-5">
+              <div key={group.titleKey} className="mb-5">
                 {sidebarOpen ? (
                   <p className="mb-2 px-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-surface-400 dark:text-surface-500">
-                    {group.title}
+                    {groupTitle(group.titleKey)}
                   </p>
                 ) : (
                   <div className="mx-4 mb-2 h-px bg-surface-200 dark:bg-surface-700" aria-hidden />
@@ -162,13 +179,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <ul className="space-y-1">
                   {items.map((item) => {
                     const ItemIcon = item.icon as any;
-                    const active = isActive(item.href, item.exact);
+                    const active = isItemActive(item);
+                    const label = itemLabel(item.key);
                     return (
                       <li key={item.href}>
                         <Link
                           href={item.href}
                           aria-current={active ? 'page' : undefined}
-                          title={sidebarOpen ? undefined : item.label}
+                          title={sidebarOpen ? undefined : label}
                           className={`relative flex items-center gap-3 rounded-xl px-4 py-2.5 transition-colors duration-200 ${
                             active
                               ? 'bg-zona-50 font-medium text-zona-800 dark:bg-zona-900/40 dark:text-zona-200'
@@ -183,7 +201,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                             />
                           )}
                           <ItemIcon className="h-[18px] w-[18px] shrink-0" aria-hidden />
-                          {sidebarOpen && <span className="truncate text-sm">{item.label}</span>}
+                          {sidebarOpen && <span className="truncate text-sm">{label}</span>}
                         </Link>
                       </li>
                     );
@@ -198,7 +216,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="border-t border-surface-200 dark:border-surface-700 p-3 flex justify-center">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            aria-label={sidebarOpen ? 'Contraer menú' : 'Expandir menú'}
+            aria-label={sidebarOpen ? t('adminnav.collapse') : t('adminnav.expand')}
             className="p-2 rounded-full bg-surface-100 dark:bg-surface-800 hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors"
           >
             <motion.span animate={{ rotate: sidebarOpen ? 0 : 180 }} className="text-xl block">
@@ -215,10 +233,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="flex items-center justify-between px-6 py-4">
             <div>
               <h2 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100">
-                {menuItems.find((item) => isActive(item.href, item.exact))?.label || 'Admin'}
+                {(headerItem && itemLabel(headerItem.key)) || t('adminnav.title')}
               </h2>
             </div>
             <div className="flex items-center gap-4">
+              <LanguageSwitcher />
               <ThemeToggle />
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-kiwi-gradient flex items-center justify-center text-white font-semibold ring-2 ring-white shadow-sm dark:ring-surface-800">
@@ -226,9 +245,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 </div>
                 <div className="hidden sm:block">
                   <p className="text-sm font-medium text-surface-800 dark:text-surface-100">
-                    Admin
+                    {t('adminnav.title')}
                   </p>
-                  <p className="text-xs text-surface-500 dark:text-surface-400">Super Admin</p>
+                  <p className="text-xs text-surface-500 dark:text-surface-400">
+                    {t('adminnav.roleLabel')}
+                  </p>
                 </div>
               </div>
               <button
@@ -236,7 +257,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   logout();
                   router.replace('/login');
                 }}
-                title="Cerrar sesión"
+                title={t('adminnav.logout')}
                 className="rounded-xl p-2.5 text-surface-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 transition-colors"
               >
                 <LogOut className="h-5 w-5" />
