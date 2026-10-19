@@ -650,6 +650,33 @@ function NewOrderInner({
       setFormError(t('webshop2.neworder.errZoneRequired'));
       return;
     }
+    // El id elegido puede venir viejo (UUID de zona borrada/renombrada en el
+    // admin): re-resolver contra la lista fresca y mandar el UUID vigente.
+    // Si no matchea nada se manda tal cual y el backend decide (con mensaje
+    // diagnóstico). Misma normalización que el servidor.
+    const normZone = (s: string) =>
+      s
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[_-]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    let zoneForServer = deliveryZone;
+    try {
+      const fresh = await api.getDeliveryZones().catch(() => []);
+      if (Array.isArray(fresh)) {
+        const hit =
+          fresh.find((z: any) => z.id === deliveryZone) ??
+          fresh.find((z: any) => normZone(String(z.label ?? '')) === normZone(deliveryZone));
+        if (hit) {
+          zoneForServer = hit.id;
+          if (hit.id !== deliveryZone) setDeliveryZone(hit.id);
+        }
+      }
+    } catch {
+      // Sin red no se puede revalidar: se manda tal cual y el backend decide.
+    }
     // Las coords pueden venir de un link/GPS erróneo: el precio de zona lo
     // enmascara en pantalla y el backend recién lo rechaza al crear.
     if (routeKm != null && routeKm > 300) {
@@ -722,7 +749,7 @@ function NewOrderInner({
           {
             pickupAddress: pickupAddress || profileAddress || 'Nicoya Centro',
             deliveryAddress,
-            deliveryZone,
+            deliveryZone: zoneForServer,
             payWithCredit: paymentMethod === 'credit',
             paymentMethod,
             deliveryLat,
@@ -769,7 +796,7 @@ function NewOrderInner({
             {
               pickupAddress: pickupAddress || profileAddress || 'Nicoya Centro',
               deliveryAddress,
-              deliveryZone,
+              deliveryZone: zoneForServer,
               payWithCredit: paymentMethod === 'credit',
               paymentMethod,
               deliveryLat,

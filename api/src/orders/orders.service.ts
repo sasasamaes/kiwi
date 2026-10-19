@@ -628,7 +628,12 @@ export class OrdersService {
       const zone =
         source.find((z) => z.id === wanted) ?? source.find((z) => norm(z.label) === wantedNorm);
       if (!zone) {
-        throw new BadRequestException('Barrio de entrega inválido');
+        // Diagnóstico: el valor viaja en el 400 para verlo en el banner del
+        // comercio y cazar UUIDs viejos/slugs que no matchean.
+        this.logger.warn(
+          `Zona inválida en pedido: "${wanted.slice(0, 80)}" (${source.length} zonas en catálogo)`,
+        );
+        throw new BadRequestException(`Barrio de entrega inválido ("${wanted.slice(0, 60)}")`);
       }
       deliveryZone = zone.id;
       zoneBase = Number(zone.price);
