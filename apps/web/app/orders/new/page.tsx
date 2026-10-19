@@ -16,6 +16,7 @@ import {
   ShareTrackingButton,
   ZonePicker,
   DeliveryZonesMap,
+  useDeliveryZones,
   safeNavigateToUrl,
   parseMapLink,
   useTranslations,
@@ -103,7 +104,8 @@ function NewOrderInner({
   const [paymentFailed, setPaymentFailed] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
   const [orderNotice, setOrderNotice] = useState<string | null>(null);
-  // % que Kiwi suma sobre el viaje (el comercio lo paga; el repartidor recibe el viaje base).
+  // % que Kiwi descuenta del payout del repartidor (el comercio NO lo paga:
+  // paga productos + viaje de la zona). Solo espejo visual: el backend manda.
   const [tripPct, setTripPct] = useState(0.15);
   useEffect(() => {
     api
@@ -532,20 +534,24 @@ function NewOrderInner({
   };
 
   // ---- Precio espejo del backend ----
-  // Si hay barrio elegido, manda el catálogo (el servidor revalida).
+  // La fuente es la tabla de zonas del admin (DB, vía useDeliveryZones); el
+  // catálogo en código es solo fallback. El servidor revalida y cobra.
   // Sin barrio, fallback a la lógica anterior por distancia.
   const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
-  const zonePrice = findDeliveryZone(deliveryZone)?.price ?? null;
+  const dbZones = useDeliveryZones();
+  const dbZone = dbZones.find((z) => z.id === deliveryZone) ?? null;
+  const zonePrice = dbZone?.price ?? findDeliveryZone(deliveryZone)?.price ?? null;
   const inZone =
     deliveryLat != null ? inNicoyaZone(deliveryLat, deliveryLng) : (routeKm ?? 0) <= NICOYA_ZONE_KM;
   const baseTrip =
     zonePrice ?? (inZone ? NICOYA_FLAT : routeKm != null ? tripPriceForKm(routeKm) : NICOYA_FLAT);
-  const zoneLabel = findDeliveryZone(deliveryZone)?.label ?? null;
+  const zoneLabel = dbZone?.label ?? findDeliveryZone(deliveryZone)?.label ?? null;
   const weightSurcharge = kind === 'freight' && weightKg > 5 ? Math.ceil(weightKg - 5) * 500 : 0;
   const trip = baseTrip + weightSurcharge;
-  // El comercio (dashboard) paga productos + envío + 15% de Kiwi sobre el viaje.
-  const tripFee = Math.round(trip * tripPct);
-  const total = subtotal + trip + tripFee;
+  // El comercio paga productos + viaje, SIN recargo: el 15% lo paga el
+  // repartidor (payout = viaje − 15%). Igual que el backend.
+  const driverPayout = trip - Math.round(trip * tripPct);
+  const total = subtotal + trip;
   const etaMin = routeKm != null ? Math.max(5, Math.round((routeKm / 25) * 60)) : null;
 
   // Encomienda: la descripción es opcional — solo pide los datos de entrega.
@@ -1494,6 +1500,14 @@ function NewOrderInner({
                     {zoneLabel ? ` (${zoneLabel})` : routeKm != null ? ` (~${routeKm} km)` : ''}
                   </span>
                   <span className="text-kiwi-700 font-medium">₡{trip.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-surface-500">
+                    {t('webshop2.neworder.sumDriverGets', { pct: Math.round(tripPct * 100) })}
+                  </span>
+                  <span className="font-medium text-surface-600 dark:text-surface-300">
+                    ₡{driverPayout.toLocaleString()}
+                  </span>
                 </div>
                 <div className="flex justify-between text-lg font-bold pt-2 border-t border-surface-100 dark:border-surface-700">
                   <span>{t('webshop2.neworder.sumTotal')}</span>

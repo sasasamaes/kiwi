@@ -181,7 +181,8 @@ function CheckoutContent() {
   }, [searchParams]);
 
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  // Cargo por servicio Kiwi: % extra sobre productos (standard/cocina casera).
+  // El cliente paga productos + envío a precio de zona, sin recargos: el 15%
+  // del viaje lo paga el repartidor y el 15% del ticket lo paga el comercio.
   // El backend cobra el total real; esto es espejo para el desglose.
   const [feeRates, setFeeRates] = useState({ standardPct: 15, homeCookPct: 10 });
   useEffect(() => {
@@ -199,9 +200,9 @@ function CheckoutContent() {
     deliveryZones.find((z) => z.id === deliveryZone)?.price ??
     findDeliveryZone(deliveryZone)?.price ??
     null;
-  // El envío se cobra con +15% de Kiwi; el repartidor recibe el viaje base.
-  const tripPct = feeRates.standardPct / 100;
-  const deliveryFee = Math.round((zoneTrip ?? 500) * (1 + tripPct));
+  // El envío es el precio del barrio a valor nominal (sin recargo: el 15%
+  // sale del payout del repartidor). El backend cobra el total real.
+  const deliveryFee = zoneTrip ?? 500;
   const total = subtotal + deliveryFee;
   const phoneDigits = phoneNumber.replace(/\D/g, '');
 

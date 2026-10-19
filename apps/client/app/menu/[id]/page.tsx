@@ -631,10 +631,9 @@ export default function MenuPage() {
 
   const cartTotal = cart.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
-  // Cargo por servicio Kiwi: % extra sobre productos (15% standard, 10%
-  // cocina casera). El envío es SIEMPRE el precio del barrio (sin
-  // "gratis +₡5000": el servidor no tiene esa regla). El backend cobra el
-  // total real; esto es espejo para mostrar el desglose.
+  // El cliente paga productos + envío a precio de zona, sin recargos: el 15%
+  // del viaje lo paga el repartidor y el 15% del ticket lo paga el comercio.
+  // El backend cobra el total real; esto es espejo para mostrar el desglose.
   const [feeRates, setFeeRates] = useState({ standardPct: 15, homeCookPct: 10 });
   useEffect(() => {
     api
@@ -647,13 +646,13 @@ export default function MenuPage() {
   // Kiwi ya no le cobra "servicio" al cliente: la comisión de productos la paga
   // el comercio (por factura, en pedidos de la app).
   const serviceFee = 0;
-  // El envío se cobra con +15% de Kiwi; el repartidor recibe el viaje base.
-  const tripPct = feeRates.standardPct / 100;
+  // El envío es SIEMPRE el precio del barrio a valor nominal (sin recargo:
+  // el 15% sale del payout del repartidor). El backend cobra el total real.
   const zoneTrip =
     deliveryZones.find((z) => z.id === deliveryInfo.zone)?.price ??
     findDeliveryZone(deliveryInfo.zone)?.price ??
     null;
-  const deliveryFee = Math.round((zoneTrip ?? 500) * (1 + tripPct));
+  const deliveryFee = zoneTrip ?? 500;
   const totalWithDelivery = cartTotal + deliveryFee;
 
   /** Solo dígitos para validar y para el email invitado. */

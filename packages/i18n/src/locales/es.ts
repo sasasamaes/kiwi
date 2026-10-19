@@ -476,7 +476,8 @@ export default {
     cartEmpty: 'Tu carrito está vacío.',
     yourOrder: 'Tu pedido',
     subtotalProducts: 'Subtotal productos',
-    serviceNote: 'Kiwi le suma el servicio y el envío al confirmar el pedido.',
+    serviceNote:
+      'Pagás productos + envío a precio de zona, sin recargos: el 15% del viaje lo paga el repartidor y el 15% del ticket lo paga el comercio.',
     deliveryTitle: 'Entrega',
     homeDelivery: 'A domicilio',
     storePickup: 'Retiro en tienda',

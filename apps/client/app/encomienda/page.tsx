@@ -137,9 +137,9 @@ export default function EncomiendaPage() {
     null;
   const extraKg = weightSurcharge(weightKg);
   const tripBase = (zoneTrip ?? 500) + extraKg;
-  // El envío lleva el % de Kiwi encima; el repartidor recibe el viaje base.
-  const kiwiFee = Math.round(tripBase * (feePct / 100));
-  const total = tripBase + kiwiFee;
+  // El cliente paga el viaje a valor nominal (sin recargo: el 15% sale del
+  // payout del repartidor). El backend cobra el total real.
+  const total = tripBase;
   const senderDigits = senderPhone.replace(/\D/g, '');
   const recipientDigits = recipientPhone.replace(/\D/g, '');
 
@@ -644,8 +644,10 @@ export default function EncomiendaPage() {
                 </div>
               )}
               <div className="flex items-center justify-between text-white/80">
-                <span>{t('wclimisc.enco.kiwiFee', { pct: feePct })}</span>
-                <span className="tabular-nums">{money(kiwiFee)}</span>
+                <span>{t('wclimisc.enco.driverGets', { pct: feePct })}</span>
+                <span className="tabular-nums">
+                  {money(tripBase - Math.round(tripBase * (feePct / 100)))}
+                </span>
               </div>
               <div className="flex items-center justify-between border-t border-white/15 pt-2">
                 <span className="flex items-center gap-1.5 font-semibold">

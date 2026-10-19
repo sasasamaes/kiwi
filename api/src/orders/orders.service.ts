@@ -704,13 +704,16 @@ export class OrdersService {
           { lat: data.deliveryLat, lng: data.deliveryLng },
         )) + weightSurcharge,
     );
-    // Cargo por servicio de Kiwi: % EXTRA sobre el precio del comercio
-    // (lo paga el cliente). 15% standard, 10% cocina casera (emprendedores).
+    // Cargo por servicio de Kiwi — 2 vías, sin recargos al que paga:
+    // - VÍA COMERCIO (dashboard negocios, pedido o encomienda): el comercio
+    //   paga productos + viaje de la zona. Solo se le cobra al repartidor.
+    // - VÍA CLIENTE (app): el cliente paga toda la factura con viaje incluido
+    //   (productos + viaje, a valor nominal). Se cobra 15% al repartidor por
+    //   el viaje y 15% al comercio por el ticket; cada uno recibe su ganancia
+    //   (driver: viaje − 15%; comercio: ticket − 15%).
     // % configurable por el admin (/admin/settings). El medio de pago solo
-    // elige cómo paga el comercio, no cambia la tasa. La tasa queda guardada
+    // elige cómo se paga, no cambia la tasa. La tasa queda guardada
     // por pedido (commissionRate): cambiar el setting solo afecta NUEVOS.
-    // Aparte: el corte del viaje al repartidor sigue igual (15% del viaje,
-    // tasa standard, no toca la de cocina casera).
     // El servidor pone el monto, el cliente nunca lo decide.
     const isHomeCook = (merchantProfile as any).isHomeCook === true;
     const [standardPct, servicePct] = await Promise.all([
@@ -719,18 +722,22 @@ export class OrdersService {
         ? this.settingsService.getHomeCookCommissionPct()
         : this.settingsService.getDriverCommissionPct(),
     ]);
-    const commissionRate = servicePct / 100;
-    // Kiwi cobra un % EXTRA sobre el viaje (se le suma al envío). El repartidor
-    // recibe el viaje base COMPLETO (100%) — no se le descuenta nada.
+    // Pedidos del cliente (app): llevan cargo de servicio sobre productos
+    // (lo absorbe el comercio). Pedidos del comercio (dashboard): sin cargo
+    // sobre productos. En ambos, la tasa guardada es la del corte del viaje.
+    const isClientOrder = (data as any)?.origin === 'client_app';
+    const commissionRate = standardPct / 100;
+    // Corte de Kiwi sobre el viaje (15% standard): SIEMPRE se le descuenta al
+    // repartidor (payout = viaje − corte). A nadie se le suma encima.
     const tripFee = Math.round(tripPrice * (standardPct / 100));
     // Comisión de Kiwi sobre la FACTURA (productos): SOLO en pedidos del cliente
-    // (app). El comercio que pide desde el dashboard paga solo el envío.
-    const isClientOrder = (data as any)?.origin === 'client_app';
-    const serviceFee = isClientOrder ? Math.round(productsTotal * commissionRate) : 0;
+    // (app); la absorbe el comercio (recibe ticket − 15%).
+    const serviceFee = isClientOrder ? Math.round(productsTotal * (servicePct / 100)) : 0;
     const commission = serviceFee + tripFee;
-    const driverPayout = tripPrice;
-    // Total que paga quien ordena: productos + envío (+15% de Kiwi sobre el viaje).
-    const totalAmount = productsTotal + tripPrice + tripFee;
+    const driverPayout = tripPrice - tripFee;
+    // Total que paga quien ordena (siempre a valor nominal, sin recargos):
+    // productos + viaje. La comisión sale de las ganancias, no del que paga.
+    const totalAmount = productsTotal + tripPrice;
     // Efectivo: con cuánto paga el cliente (para llevar el vuelto listo).
     // Opcional; si viene debe cubrir el total. Se guarda en el pedido.
     let cashTendered: number | null = null;

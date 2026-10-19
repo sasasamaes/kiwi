@@ -475,7 +475,8 @@ export default {
     cartEmpty: 'Your cart is empty.',
     yourOrder: 'Your order',
     subtotalProducts: 'Product subtotal',
-    serviceNote: 'Kiwi adds service and delivery when you confirm the order.',
+    serviceNote:
+      'You pay products + zone delivery, no markups: the driver pays 15% of the trip and the merchant pays 15% of the ticket.',
     deliveryTitle: 'Delivery',
     homeDelivery: 'Home delivery',
     storePickup: 'Store pickup',
