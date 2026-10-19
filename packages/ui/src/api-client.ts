@@ -1925,12 +1925,20 @@ class ApiClient {
   }
 
   /** Feature flags públicos (ej. encomiendas visible o no). Default true. */
-  async getFeatureFlags(): Promise<{ encomiendaEnabled: boolean }> {
+  async getFeatureFlags(): Promise<{
+    encomiendaEnabled: boolean;
+    mercaditoEnabled: boolean;
+    bannersEnabled: boolean;
+  }> {
     try {
       const r = await this.request<any>('/settings/features');
-      return { encomiendaEnabled: r?.encomiendaEnabled !== false };
+      return {
+        encomiendaEnabled: r?.encomiendaEnabled !== false,
+        mercaditoEnabled: r?.mercaditoEnabled !== false,
+        bannersEnabled: r?.bannersEnabled !== false,
+      };
     } catch {
-      return { encomiendaEnabled: true };
+      return { encomiendaEnabled: true, mercaditoEnabled: true, bannersEnabled: true };
     }
   }
 

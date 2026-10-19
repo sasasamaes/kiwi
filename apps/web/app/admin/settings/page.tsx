@@ -32,6 +32,8 @@ export default function SettingsPage() {
       maximumDeliveryDistance: 20,
       freeDeliveryThreshold: 10000,
       encomiendaEnabled: true,
+      mercaditoEnabled: true,
+      bannersEnabled: true,
     },
     payments: {
       sinpeEnabled: true,
@@ -338,6 +340,62 @@ export default function SettingsPage() {
                       platform: {
                         ...settings.platform,
                         encomiendaEnabled: e.target.checked,
+                      } as any,
+                    })
+                  }
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-surface-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-kiwi-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-surface-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-kiwi-500"></div>
+              </label>
+            </div>
+
+            <div className="flex items-center justify-between gap-4 rounded-xl border border-surface-200 dark:border-surface-700 px-4 py-3">
+              <div>
+                <p className="text-sm font-medium text-surface-700 dark:text-surface-300">
+                  {t('webadmin2.asettings.mercadito')}
+                </p>
+                <p className="mt-0.5 text-xs text-surface-500 dark:text-surface-400">
+                  {t('webadmin2.asettings.mercaditoHint')}
+                </p>
+              </div>
+              <label className="relative inline-flex shrink-0 items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={(settings.platform as any).mercaditoEnabled !== false}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      platform: {
+                        ...settings.platform,
+                        mercaditoEnabled: e.target.checked,
+                      } as any,
+                    })
+                  }
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-surface-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-kiwi-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-surface-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-kiwi-500"></div>
+              </label>
+            </div>
+
+            <div className="flex items-center justify-between gap-4 rounded-xl border border-surface-200 dark:border-surface-700 px-4 py-3">
+              <div>
+                <p className="text-sm font-medium text-surface-700 dark:text-surface-300">
+                  {t('webadmin2.asettings.banners')}
+                </p>
+                <p className="mt-0.5 text-xs text-surface-500 dark:text-surface-400">
+                  {t('webadmin2.asettings.bannersHint')}
+                </p>
+              </div>
+              <label className="relative inline-flex shrink-0 items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={(settings.platform as any).bannersEnabled !== false}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      platform: {
+                        ...settings.platform,
+                        bannersEnabled: e.target.checked,
                       } as any,
                     })
                   }

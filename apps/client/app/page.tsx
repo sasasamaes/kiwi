@@ -139,15 +139,20 @@ export default function ClientHome() {
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [locating, setLocating] = useState(false);
   const [locDenied, setLocDenied] = useState(false);
-  /** Feature flag del admin: muestra u oculta la tarjeta de encomiendas. */
+  /** Feature flags del admin: muestran u ocultan secciones del inicio. */
   const [showEncomienda, setShowEncomienda] = useState(true);
+  const [showMercadito, setShowMercadito] = useState(true);
+  const [showBanners, setShowBanners] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
     api
       .getFeatureFlags()
       .then((f) => {
-        if (!cancelled) setShowEncomienda(f.encomiendaEnabled !== false);
+        if (cancelled) return;
+        setShowEncomienda(f.encomiendaEnabled !== false);
+        setShowMercadito((f as any).mercaditoEnabled !== false);
+        setShowBanners((f as any).bannersEnabled !== false);
       })
       .catch(() => undefined);
     return () => {
@@ -437,26 +442,28 @@ export default function ClientHome() {
               />
             </Link>
           )}
-          <Link
-            href="/zona-azul"
-            className={`flex items-center gap-3 rounded-2xl border border-gold-500/25 bg-gradient-to-r from-gold-50 via-white to-white p-4 shadow-card dark:border-gold-400/20 dark:from-gold-400/10 dark:via-surface-800 dark:to-surface-800 ${hoverCard} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-500/40 active:scale-[0.99]`}
-          >
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gold-100 text-gold-700 dark:bg-gold-400/10 dark:text-gold-300">
-              <Sprout className="h-6 w-6" aria-hidden />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block font-display text-[17px] font-bold leading-snug text-surface-900 dark:text-surface-100">
-                {t('wclihome.home.mercaditoTitle')}
+          {showMercadito && (
+            <Link
+              href="/zona-azul"
+              className={`flex items-center gap-3 rounded-2xl border border-gold-500/25 bg-gradient-to-r from-gold-50 via-white to-white p-4 shadow-card dark:border-gold-400/20 dark:from-gold-400/10 dark:via-surface-800 dark:to-surface-800 ${hoverCard} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-500/40 active:scale-[0.99]`}
+            >
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gold-100 text-gold-700 dark:bg-gold-400/10 dark:text-gold-300">
+                <Sprout className="h-6 w-6" aria-hidden />
               </span>
-              <span className="block text-xs text-surface-500 dark:text-surface-400">
-                {t('wclihome.home.mercaditoDesc')}
+              <span className="min-w-0 flex-1">
+                <span className="block font-display text-[17px] font-bold leading-snug text-surface-900 dark:text-surface-100">
+                  {t('wclihome.home.mercaditoTitle')}
+                </span>
+                <span className="block text-xs text-surface-500 dark:text-surface-400">
+                  {t('wclihome.home.mercaditoDesc')}
+                </span>
               </span>
-            </span>
-            <ChevronRight
-              className="h-5 w-5 shrink-0 text-gold-700 dark:text-gold-300"
-              aria-hidden
-            />
-          </Link>
+              <ChevronRight
+                className="h-5 w-5 shrink-0 text-gold-700 dark:text-gold-300"
+                aria-hidden
+              />
+            </Link>
+          )}
         </div>
         {/* Pedir de nuevo: el hábito más común, al frente */}
         {lastDelivered && (
@@ -483,7 +490,7 @@ export default function ClientHome() {
         )}
         {lastDelivered === null && <div className="mb-6" aria-hidden />}
         {/* Banners patrocinados */}{' '}
-        {banners.length > 0 && (
+        {showBanners && banners.length > 0 && (
           <div className="mb-6 flex gap-3 overflow-x-auto pb-2 -mx-4 px-4">
             {banners.map((b) => (
               <button

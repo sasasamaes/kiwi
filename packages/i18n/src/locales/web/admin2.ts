@@ -36,6 +36,10 @@ export const admin2Es = {
     encomienda: '📦 Encomiendas',
     encomiendaHint:
       'Muestra la tarjeta de encomiendas en la app cliente. Apagala para esconderla (lanzamiento, pausas o temporadas).',
+    mercadito: '🧺 Mercadito Zona Azul',
+    mercaditoHint: 'Muestra la tarjeta del mercadito en la app cliente. Apagala para esconderla.',
+    banners: '📣 Banners patrocinados',
+    bannersHint: 'Muestra el carrusel de publicidad en la app cliente. Apagalo para esconderlo.',
     opsTitle: 'Costos operativos reales',
     opsSub:
       'Alimentan la ganancia neta del reporte «Real vs Proyección». Se aplican a cada mes según sus viajes y su GMV.',
@@ -519,6 +523,10 @@ export const admin2En = {
     encomienda: '📦 Parcels',
     encomiendaHint:
       'Shows the parcels card in the customer app. Turn it off to hide it (launch, pauses or seasons).',
+    mercadito: '🧺 Blue Zone Market',
+    mercaditoHint: 'Shows the market card in the customer app. Turn it off to hide it.',
+    banners: '📣 Sponsored banners',
+    bannersHint: 'Shows the ads carousel in the customer app. Turn it off to hide it.',
     opsTitle: 'Real operating costs',
     opsSub:
       'They feed the net profit in the "Actual vs Projection" report. Applied to each month by its trips and GMV.',

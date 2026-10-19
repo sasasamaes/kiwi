@@ -14,6 +14,10 @@ export interface PlatformSettings {
     freeDeliveryThreshold: number;
     /** Feature flag: muestra/oculta Encomiendas en la app cliente. */
     encomiendaEnabled: boolean;
+    /** Feature flag: muestra/oculta el Mercadito Zona Azul en la app cliente. */
+    mercaditoEnabled: boolean;
+    /** Feature flag: muestra/oculta los banners patrocinados en la app cliente. */
+    bannersEnabled: boolean;
   };
   payments: {
     sinpeEnabled: boolean;
@@ -70,6 +74,8 @@ export const DEFAULT_SETTINGS: PlatformSettings = {
     maximumDeliveryDistance: 20,
     freeDeliveryThreshold: 10000,
     encomiendaEnabled: true,
+    mercaditoEnabled: true,
+    bannersEnabled: true,
   },
   payments: {
     sinpeEnabled: true,
@@ -184,6 +190,8 @@ export class SettingsService {
     );
     next.platform.minimumOrder = Math.max(Math.round(Number(next.platform.minimumOrder) || 0), 0);
     next.platform.encomiendaEnabled = next.platform.encomiendaEnabled !== false;
+    next.platform.mercaditoEnabled = next.platform.mercaditoEnabled !== false;
+    next.platform.bannersEnabled = next.platform.bannersEnabled !== false;
     next.security.sessionTimeout = Math.min(
       Math.max(Math.round(Number(next.security.sessionTimeout) || 30), 5),
       480,
@@ -275,6 +283,18 @@ export class SettingsService {
   async getEncomiendaEnabled(): Promise<boolean> {
     const all = await this.getAll();
     return all.platform?.encomiendaEnabled !== false;
+  }
+
+  /** Feature flag del Mercadito Zona Azul (default true: visible). */
+  async getMercaditoEnabled(): Promise<boolean> {
+    const all = await this.getAll();
+    return all.platform?.mercaditoEnabled !== false;
+  }
+
+  /** Feature flag de banners patrocinados (default true: visibles). */
+  async getBannersEnabled(): Promise<boolean> {
+    const all = await this.getAll();
+    return all.platform?.bannersEnabled !== false;
   }
   async getAssignmentTimeouts(): Promise<{ acceptanceMinutes: number; contestMinutes: number }> {
     const all = await this.getAll();
