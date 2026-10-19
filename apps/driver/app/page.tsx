@@ -4,6 +4,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { BottomNav } from './components/BottomNav';
+import DriverLanding from './landing/page';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -253,11 +254,9 @@ export default function Home() {
 
   useEffect(() => {
     if (authLoading) return;
-    if (!user) {
-      router.push('/login');
-      return;
-    }
-    // App del repartidor: otras cuentas (comercio/admin) no entran.
+    // Sin sesión se muestra el landing (página pública de lanzamiento).
+    // Otras cuentas (comercio/admin) no entran a la app del repartidor.
+    if (!user) return;
     if ((user as any).role && (user as any).role !== 'driver') {
       router.push('/login');
     }
@@ -438,6 +437,9 @@ export default function Home() {
   };
 
   if (authLoading || loading) {
+    // Invitados: landing público de lanzamiento (no spinner eterno: sin
+    // sesión nunca se apaga `loading` porque no hay datos que traer).
+    if (!authLoading && !user) return <DriverLanding />;
     return (
       <div className="min-h-[100dvh] bg-bg-light dark:bg-surface-950 flex items-center justify-center">
         <KiwiLoader size={56} />
