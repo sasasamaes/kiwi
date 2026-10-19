@@ -41,12 +41,14 @@ export class SettingsController {
   @Get('features')
   @ApiOperation({ summary: 'Feature flags públicos (público)' })
   async features() {
-    const [encomiendaEnabled, mercaditoEnabled, bannersEnabled] = await Promise.all([
-      this.settingsService.getEncomiendaEnabled(),
-      this.settingsService.getMercaditoEnabled(),
-      this.settingsService.getBannersEnabled(),
-    ]);
-    return { encomiendaEnabled, mercaditoEnabled, bannersEnabled };
+    const [encomiendaEnabled, mercaditoEnabled, bannersEnabled, clientAppEnabled] =
+      await Promise.all([
+        this.settingsService.getEncomiendaEnabled(),
+        this.settingsService.getMercaditoEnabled(),
+        this.settingsService.getBannersEnabled(),
+        this.settingsService.getClientAppEnabled(),
+      ]);
+    return { encomiendaEnabled, mercaditoEnabled, bannersEnabled, clientAppEnabled };
   }
 
   @Get('admin')

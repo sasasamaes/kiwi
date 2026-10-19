@@ -40,6 +40,9 @@ export const admin2Es = {
     mercaditoHint: 'Muestra la tarjeta del mercadito en la app cliente. Apagala para esconderla.',
     banners: '📣 Banners patrocinados',
     bannersHint: 'Muestra el carrusel de publicidad en la app cliente. Apagalo para esconderlo.',
+    clientApp: '📱 App de clientes abierta',
+    clientAppHint:
+      'Apagala y la app cliente muestra Próximamente (lanzamiento 23 oct): solo registro y aviso por correo.',
     opsTitle: 'Costos operativos reales',
     opsSub:
       'Alimentan la ganancia neta del reporte «Real vs Proyección». Se aplican a cada mes según sus viajes y su GMV.',
@@ -527,6 +530,9 @@ export const admin2En = {
     mercaditoHint: 'Shows the market card in the customer app. Turn it off to hide it.',
     banners: '📣 Sponsored banners',
     bannersHint: 'Shows the ads carousel in the customer app. Turn it off to hide it.',
+    clientApp: '📱 Customer app open',
+    clientAppHint:
+      'Turn it off and the customer app shows Coming Soon (Oct 23 launch): only signup and email notice.',
     opsTitle: 'Real operating costs',
     opsSub:
       'They feed the net profit in the "Actual vs Projection" report. Applied to each month by its trips and GMV.',

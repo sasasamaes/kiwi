@@ -16,7 +16,12 @@ export interface InterestInput {
   zone?: string;
   latitude?: number;
   longitude?: number;
-  source: 'register-customer' | 'register-merchant' | 'register-driver' | 'order-blocked';
+  source:
+    | 'register-customer'
+    | 'register-merchant'
+    | 'register-driver'
+    | 'order-blocked'
+    | 'launch-waitlist';
 }
 
 /**

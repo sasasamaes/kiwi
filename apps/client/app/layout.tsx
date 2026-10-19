@@ -13,6 +13,7 @@ import {
   SkipToContent,
 } from '@kiwi/ui';
 import { UnauthorizedHandler } from './components/UnauthorizedHandler';
+import { AppGate } from '../components/AppGate';
 
 const fraunces = Fraunces({
   subsets: ['latin'],
@@ -58,7 +59,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <NotificationProvider>
                 <SkipToContent />
                 <UnauthorizedHandler />
-                {children}
+                <AppGate>{children}</AppGate>
                 <CookieConsentBanner />
                 <ServiceWorkerUpdater />
               </NotificationProvider>

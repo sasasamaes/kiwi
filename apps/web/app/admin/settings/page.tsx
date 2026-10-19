@@ -34,6 +34,7 @@ export default function SettingsPage() {
       encomiendaEnabled: true,
       mercaditoEnabled: true,
       bannersEnabled: true,
+      clientAppEnabled: true,
     },
     payments: {
       sinpeEnabled: true,
@@ -396,6 +397,34 @@ export default function SettingsPage() {
                       platform: {
                         ...settings.platform,
                         bannersEnabled: e.target.checked,
+                      } as any,
+                    })
+                  }
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-surface-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-kiwi-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-surface-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-kiwi-500"></div>
+              </label>
+            </div>
+
+            <div className="flex items-center justify-between gap-4 rounded-xl border-2 border-kiwi-600/40 dark:border-kiwi-400/30 bg-kiwi-50/60 dark:bg-kiwi-900/20 px-4 py-3">
+              <div>
+                <p className="text-sm font-medium text-surface-700 dark:text-surface-300">
+                  {t('webadmin2.asettings.clientApp')}
+                </p>
+                <p className="mt-0.5 text-xs text-surface-500 dark:text-surface-400">
+                  {t('webadmin2.asettings.clientAppHint')}
+                </p>
+              </div>
+              <label className="relative inline-flex shrink-0 items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={(settings.platform as any).clientAppEnabled !== false}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      platform: {
+                        ...settings.platform,
+                        clientAppEnabled: e.target.checked,
                       } as any,
                     })
                   }

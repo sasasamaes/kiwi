@@ -1929,6 +1929,7 @@ class ApiClient {
     encomiendaEnabled: boolean;
     mercaditoEnabled: boolean;
     bannersEnabled: boolean;
+    clientAppEnabled: boolean;
   }> {
     try {
       const r = await this.request<any>('/settings/features');
@@ -1936,10 +1937,24 @@ class ApiClient {
         encomiendaEnabled: r?.encomiendaEnabled !== false,
         mercaditoEnabled: r?.mercaditoEnabled !== false,
         bannersEnabled: r?.bannersEnabled !== false,
+        clientAppEnabled: r?.clientAppEnabled !== false,
       };
     } catch {
-      return { encomiendaEnabled: true, mercaditoEnabled: true, bannersEnabled: true };
+      return {
+        encomiendaEnabled: true,
+        mercaditoEnabled: true,
+        bannersEnabled: true,
+        clientAppEnabled: true,
+      };
     }
+  }
+
+  /** Anotarse a la lista de espera del lanzamiento (público). */
+  async joinLaunchWaitlist(email: string): Promise<{ ok: boolean }> {
+    return this.request<{ ok: boolean }>('/coverage/interest', {
+      method: 'POST',
+      body: { email },
+    });
   }
 
   /**
