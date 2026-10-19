@@ -32,7 +32,7 @@ export function ComingSoon() {
   };
 
   return (
-    <main className="mx-auto flex min-h-[100dvh] w-full max-w-lg flex-col items-center px-6 pb-16 pt-14 text-center">
+    <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col items-center justify-center px-6 py-10 text-center">
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
         <KiwiLogo size={64} />
         <p className="mt-4 inline-block rounded-full bg-gold-100 dark:bg-gold-400/10 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-gold-700 dark:text-gold-300">
