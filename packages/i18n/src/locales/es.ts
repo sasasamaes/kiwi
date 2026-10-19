@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 /**
  * 🥝 KIWI - Traducciones al español tico (Guanacaste)
- * Voseo + calidez guanacasteca: ¡pura vida, mae!
+ * Voseo + tono claro y cálido
  */
 
 import { navEs as webnav, adminNavEs as adminnav } from './web/nav';
@@ -23,7 +23,7 @@ export default {
   // General
   app: {
     name: 'Kiwi',
-    tagline: 'Pedí fácil, ¡pura vida!',
+    tagline: 'Pedí fácil y rápido',
     loading: 'Cargando...',
     error: 'Ups, algo pasó',
     success: '¡Buenísimo!',
@@ -77,7 +77,7 @@ export default {
     loginAsMerchant: 'Entrar como comercio',
     registerAsDriver: 'Registrarme como repartidor',
     registerAsMerchant: 'Registrar mi comercio',
-    loginFailed: 'No pudimos ingresarte. Revisá tus datos, mae.',
+    loginFailed: 'No pudimos ingresarte. Revisá tus datos.',
     registerFailed: 'No pudimos crearte la cuenta. Probá con otro correo.',
     continueAsGuest: 'Seguir como invitado',
     fullName: 'Nombre completo',
@@ -178,7 +178,7 @@ export default {
     freeDelivery: 'Gratis',
     placeOrder: 'Hacer el pedido',
     processing: 'Procesando...',
-    orderReceived: '¡Pedido recibido, pura vida!',
+    orderReceived: '¡Pedido recibido!',
     orderBeingPrepared: 'Ya te lo están preparando',
     estimatedDelivery: 'Te llega como en',
     trackOrder: 'Seguir mi pedido',
@@ -209,7 +209,7 @@ export default {
     cvv: 'CVV',
     walletAddress: 'Dirección de la billetera',
     processingPayment: 'Procesando el pago...',
-    paymentSuccess: '¡Pago listo, pura vida!',
+    paymentSuccess: '¡Pago listo!',
     paymentFailed: 'No se pudo hacer el pago',
   },
 
@@ -225,7 +225,7 @@ export default {
     selectAll: 'Marcar todo',
     clear: 'Limpiar',
     saveSchedule: 'Guardar horario',
-    scheduleSaved: 'Horario guardado, ¡buena nota!',
+    scheduleSaved: 'Horario guardado',
     tips: 'Consejos',
     peakHours: 'Trabajá en horas pico y ganás más',
     consistency: 'Sé constante y mantenés tus bonos',
@@ -387,7 +387,7 @@ export default {
 
   // Errors
   errors: {
-    required: 'Esto es obligatorio, mae',
+    required: 'Esto es obligatorio',
     invalidEmail: 'Ese correo no se ve bien',
     invalidPhone: 'Ese teléfono no se ve bien',
     passwordTooShort: 'La contraseña ocupa al menos 6 caracteres',
@@ -401,11 +401,11 @@ export default {
 
   // Success messages
   success: {
-    saved: 'Guardado, ¡pura vida!',
-    updated: 'Actualizado, ¡buena nota!',
+    saved: 'Guardado',
+    updated: 'Actualizado',
     deleted: 'Eliminado',
-    orderPlaced: '¡Pedido hecho, pura vida!',
-    orderAccepted: '¡Pedido aceptado, a darle!',
+    orderPlaced: '¡Pedido hecho!',
+    orderAccepted: '¡Pedido aceptado!',
     orderCompleted: '¡Pedido entregado, qué bueno!',
     profileUpdated: 'Perfil actualizado',
     scheduleSaved: 'Horario guardado',
@@ -416,12 +416,12 @@ export default {
   // Common phrases
   phrases: {
     hello: '¡Pura vida!',
-    welcome: 'Bienvenido, mae',
+    welcome: 'Bienvenido',
     welcomeBack: '¡Qué bueno verte de nuevo!',
     goodMorning: 'Buenos días',
     goodAfternoon: 'Buenas tardes',
     goodNight: 'Buenas noches',
-    seeYouSoon: '¡Nos vemos pronto, pura vida!',
+    seeYouSoon: '¡Nos vemos pronto!',
     thankYou: '¡Muchas gracias!',
     pleaseWait: 'Dame un toquecito...',
     connecting: 'Conectando...',
@@ -445,7 +445,7 @@ export default {
     account: 'Cuenta',
     viewMyOrders: 'Ver mis pedidos →',
     saveAddressHint: 'Guardá tu dirección pa pedir más rápido.',
-    noOrdersYet: 'Todavía no tenés pedidos, mae.',
+    noOrdersYet: 'Todavía no tenés pedidos.',
     track: 'Seguir',
     rate: 'Calificar',
     orderNumber: '#{{id}}',
@@ -473,7 +473,7 @@ export default {
   // ===== Checkout =====
   checkout: {
     title: 'Checkout',
-    cartEmpty: 'Tu carrito está vacío, mae.',
+    cartEmpty: 'Tu carrito está vacío.',
     yourOrder: 'Tu pedido',
     subtotalProducts: 'Subtotal productos',
     serviceNote: 'Kiwi le suma el servicio y el envío al confirmar el pedido.',
@@ -506,7 +506,7 @@ export default {
     subtotal: 'Subtotal',
     pickupFallback: 'Retiro en tienda',
     defaultPickup: 'Nicoya Centro',
-    locationPermission: 'Ocupamos permiso de ubicación, mae.',
+    locationPermission: 'Ocupamos permiso de ubicación.',
     locationFailed: 'No pudimos agarrar tu ubicación.',
     createFailed: 'No se pudo crear el pedido.',
     noOrderId: 'El pedido no devolvió identificador.',
@@ -516,7 +516,7 @@ export default {
   tracking: {
     title: 'Seguimiento',
     loadFailed: 'No pudimos cargar el pedido.',
-    delivered: '¡Entregado, pura vida!',
+    delivered: '¡Entregado!',
     calculating: 'Calculando tiempo…',
     arrivesIn: 'Llega como en ~{{minutes}} min',
     driverComing: '🛵 El repartidor ya viene en camino',
@@ -531,7 +531,7 @@ export default {
   // ===== Calificación =====
   rating: {
     title: 'Calificá tu pedido',
-    thanks: '¡Gracias por calificar, mae!',
+    thanks: '¡Gracias por calificar!',
     backHome: 'Volver al inicio',
     driverHow: '¿Cómo estuvo el repartidor?',
     onTime: '¿Llegó a tiempo?',
@@ -576,7 +576,7 @@ export default {
     favorites: 'Favoritos · {{count}}',
     proposals: 'Propuestas · {{count}}',
     assign: 'Asignar',
-    assigned: 'Repartidor asignado, ¡buena nota!',
+    assigned: 'Repartidor asignado',
     assignFailed: 'No se pudo asignar',
     favoriteFailed: 'No se pudo actualizar favorito',
     chooseOrder: 'Elegí un pedido',
@@ -596,7 +596,7 @@ export default {
     cancelOrder: 'Cancelar pedido',
     updateFailed: 'No se pudo actualizar',
     cameraForPickup: 'Ocupamos permiso de cámara pa la foto de retiro',
-    pickupUploaded: '¡Foto de retiro subida, pura vida!',
+    pickupUploaded: '¡Foto de retiro subida!',
     photoFailed: 'No se pudo subir la foto',
     pickupRegistered: 'Foto de retiro registrada',
     proposals: 'Propuestas ({{count}})',
@@ -679,7 +679,7 @@ export default {
     alertDismissed: 'Alerta cerrada',
     routeSuggestion: 'Sugerencia de ruta',
     alternativeRoute: 'Ruta alterna',
-    fasterRoute: 'Hay una ruta más rápida, mae',
+    fasterRoute: 'Hay una ruta más rápida',
     estimatedTimeSaved: 'Te ahorrás como',
     trafficDelay: 'Retraso por presa',
     noDelay: 'Sin retraso',
@@ -724,7 +724,7 @@ export default {
     settingsSaved: 'Ajustes guardados',
     minutes: 'min',
     kilometers: 'km',
-    trafficFree: 'Calle libre - ¡a darle con los pedidos!',
+    trafficFree: 'Calle libre - buen momento para los pedidos',
     trafficLight: 'Poca presa - buen momento pa repartir',
     trafficModerate: 'Presa media - salí con tiempo',
     trafficHeavy: 'Mucha presa - se va a atrasar',
@@ -747,7 +747,7 @@ export default {
     // Network
     network: {
       connected: 'Conectado a internet',
-      disconnected: 'Sin internet, mae',
+      disconnected: 'Sin internet',
       slowConnection: 'Conexión lenta',
       autoSync: 'Se sincroniza solito',
       waitingForConnection: 'Esperando conexión...',
@@ -820,7 +820,7 @@ export default {
       turnByTurn: 'Indicaciones paso a paso',
       distance: 'Distancia',
       estimatedTime: 'Tiempo estimado',
-      startNavigation: '¡A darle!',
+      startNavigation: 'Iniciar',
       stopNavigation: 'Parar navegación',
     },
 
@@ -899,7 +899,7 @@ export default {
       pending: '{{count}} pendientes',
       resolved: 'Resueltos',
       dismissed: 'Descartados',
-      noConflicts: 'Sin conflictos, ¡pura vida!',
+      noConflicts: 'Sin conflictos',
       keepLocal: 'Usar lo mío',
       keepRemote: 'Usar lo del servidor',
       merge: 'Combinar',

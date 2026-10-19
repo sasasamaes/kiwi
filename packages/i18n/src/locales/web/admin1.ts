@@ -265,7 +265,7 @@ export const admin1Es = {
       description: 'Descripción',
       descPh: 'Contanos qué ofrecen…',
       save: 'Guardar datos',
-      saved: 'Datos guardados, ¡buena nota!',
+      saved: 'Datos guardados',
       saveError: 'No se pudo guardar',
     },
     lockTitle: 'Bloqueo de login',

@@ -529,7 +529,7 @@ export const drvWorkEn = {
     insufficient: 'Insufficient balance',
     sinpeRequired: 'The SINPE number is required',
     bankRequired: 'Bank details are required',
-    requestOk: 'Withdrawal request sent. Pura vida!',
+    requestOk: 'Withdrawal request sent.',
     requestFailed: "Couldn't process the withdrawal",
     cancelConfirm: 'Are you sure you want to cancel this withdrawal?',
     cancelFailed: "Couldn't cancel the withdrawal",
