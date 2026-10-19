@@ -229,6 +229,7 @@ describe('OrdersService targeting de order:new', () => {
       deliveryAddress: 'y',
       pickupLat: 10.1483,
       pickupLng: -85.4527,
+      paymentMethod: 'cash',
     });
 
     // El comercio también recibe el pedido nuevo (socket 1:1) además de los drivers.
@@ -264,6 +265,7 @@ describe('OrdersService targeting de order:new', () => {
       deliveryAddress: 'y',
       pickupLat: 10.1483,
       pickupLng: -85.4527,
+      paymentMethod: 'cash',
     });
 
     expect(gateway.sendToRole).toHaveBeenCalledWith(
@@ -290,7 +292,7 @@ describe('OrdersService targeting de order:new', () => {
     // El created order (mock) define si hay coords — sin ellas, broadcast.
     prisma.order.create.mockResolvedValue({ ...ORDER, pickupLat: null, pickupLng: null });
 
-    await service.create('m1', { pickupAddress: 'x', deliveryAddress: 'y' });
+    await service.create('m1', { pickupAddress: 'x', deliveryAddress: 'y', paymentMethod: 'cash' });
 
     expect(proximity.findNearbyDrivers).not.toHaveBeenCalled();
     expect(gateway.sendToRole).toHaveBeenCalled();
@@ -304,6 +306,7 @@ describe('OrdersService targeting de order:new', () => {
       deliveryAddress: 'y',
       pickupLat: 10.1,
       pickupLng: -85.4,
+      paymentMethod: 'cash',
     });
 
     expect(gateway.sendToRole).toHaveBeenCalledWith(

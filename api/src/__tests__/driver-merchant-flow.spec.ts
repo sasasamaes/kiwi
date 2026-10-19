@@ -279,6 +279,7 @@ describe('Driver/merchant lifecycle regressions', () => {
       pickupAddress: 'Parque Nicoya',
       deliveryAddress: 'Barrio San Martín',
       distanceKm: 2,
+      paymentMethod: 'cash',
     });
 
     expect(order.status).toBe('driver_proposals');

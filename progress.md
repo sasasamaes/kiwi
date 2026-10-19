@@ -1,5 +1,13 @@
 # Session Progress
 
+## 2026-10-19
+
+- Verificación completa pedida por el usuario (tests + type-check + build).
+- Hallazgo: 5 suites en rojo (7 tests). Causa: commit 882d83b (pago primero, repartidor después) gatea todo pedido no-efectivo en `awaiting_payment`, pero `proximity.spec`, `orders.integration.spec` y `driver-merchant-flow.spec` creaban pedidos sin `paymentMethod` y seguían esperando alerta inmediata; `marketplace-charge/express.spec` crasheaban al cargar el gateway real por mock de `@nestjs/websockets` vacío.
+- Fix mínimo en tests (sin tocar producto): `paymentMethod: 'cash'` en los creates que prueban alerta inmediata (4 en proximity, 2 en integration, 1 en driver-merchant-flow); mock con decoradores no-op en los 2 specs de marketplace.
+- Verificación final: API 56 suites / 579 tests PASS; UI 7 archivos / 54 tests PASS; tsc --noEmit limpio en api, ui, web, driver, client; builds green en api, web, driver, client.
+- No se commiteó. Queda a tu decisión.
+
 ## 2026-09-30
 
 - Audited merchant ↔ driver order lifecycle (create → assign/accept → pickup evidence → delivery).

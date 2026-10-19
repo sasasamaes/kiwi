@@ -210,6 +210,7 @@ describe('Orders Integration: Full Lifecycle', () => {
         distanceKm: 2.5,
         items: [{ menuItemId: 'item-1', quantity: 1 }],
         specialInstructions: 'Sin cebolla',
+        paymentMethod: 'cash',
       });
 
       expect(result.id).toBe(ORDER_ID);
@@ -415,6 +416,7 @@ describe('Orders Integration: Full Lifecycle', () => {
         pickupAddress: 'Bowl & Café',
         deliveryAddress: 'Hotel Guanacaste',
         items: [{ menuItemId: 'item-1', quantity: 2 }],
+        paymentMethod: 'cash',
       });
 
       expect(result.status).toBe('driver_proposals');

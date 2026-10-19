@@ -1,5 +1,15 @@
 // Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
-jest.mock('@nestjs/websockets', () => ({}), { virtual: true });
+jest.mock(
+  '@nestjs/websockets',
+  () => ({
+    WebSocketGateway: () => () => {},
+    WebSocketServer: () => () => {},
+    SubscribeMessage: () => () => {},
+    ConnectedSocket: () => () => {},
+    MessageBody: () => () => {},
+  }),
+  { virtual: true },
+);
 jest.mock('socket.io', () => ({ Server: jest.fn() }), { virtual: true });
 
 import { Test } from '@nestjs/testing';
