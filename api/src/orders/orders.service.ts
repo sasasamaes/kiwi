@@ -613,10 +613,20 @@ export class OrdersService {
         ? dbZones
         : NICOYA_DELIVERY_ZONES;
       const wanted = String(data.deliveryZone).trim();
-      const wantedLower = wanted.toLowerCase();
+      // El frontend manda ids UUID (lista DB) o slugs del catálogo
+      // ('los-angeles'). Normalizar (sin tildes, guiones≅espacios) para que
+      // el slug matchee el label de la DB ('Los Ángeles').
+      const norm = (s: string) =>
+        s
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .toLowerCase()
+          .replace(/[_-]+/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+      const wantedNorm = norm(wanted);
       const zone =
-        source.find((z) => z.id === wanted) ??
-        source.find((z) => z.label.trim().toLowerCase() === wantedLower);
+        source.find((z) => z.id === wanted) ?? source.find((z) => norm(z.label) === wantedNorm);
       if (!zone) {
         throw new BadRequestException('Barrio de entrega inválido');
       }
@@ -808,25 +818,25 @@ export class OrdersService {
       }
     }
 
+    // Pago primero, repartidor después: todo lo que no es efectivo nace en
+    // `awaiting_payment`, invisible para drivers (ningún filtro de
+    // disponibles/incoming lo incluye) y sin ventana de concurso. Solo al
+    // confirmarse el cobro se libera a concurso/asignación
+    // (releaseAwaitingPayment). El efectivo no se gatea: no hay nada que
+    // esperar y su flujo nunca tuvo este problema.
+    const gatedForPayment = data.paymentMethod !== 'cash';
     // Concurso con vencimiento: el pedido a concurso nace con ventana para
     // que el sweeper lo marque no_driver si nadie lo toma. Antes nacía sin
     // contestEndsAt y quedaba en pending para siempre, invisible y sin aviso.
-    // (Asignación directa y programados no concursan: sin ventana.)
-    const isContest = !directDriver && orderType !== 'scheduled';
+    // (Asignación directa y programados no concursan: sin ventana. Los
+    // gateados tampoco: la ventana arranca al liberarse, no al crearse.)
+    const isContest = !gatedForPayment && !directDriver && orderType !== 'scheduled';
     let contestStartedAt: Date | null = null;
     let contestEndsAt: Date | null = null;
     if (isContest) {
-      let contestMinutes = 10;
-      try {
-        const t = await (this.settingsService as any).getAssignmentTimeouts?.();
-        if (t && Number.isFinite(Number(t.contestMinutes))) {
-          contestMinutes = t.contestMinutes;
-        }
-      } catch {
-        // default admin (10); jamás bloquea la creación.
-      }
-      contestStartedAt = new Date();
-      contestEndsAt = new Date(contestStartedAt.getTime() + contestMinutes * 60_000);
+      const window = await this.buildContestWindow();
+      contestStartedAt = window.contestStartedAt;
+      contestEndsAt = window.contestEndsAt;
     }
 
     let order: any;
@@ -835,11 +845,13 @@ export class OrdersService {
         data: {
           merchantId: merchantProfile.id,
           ...(idempotencyKey ? { idempotencyKey } : {}),
-          status: directDriver
-            ? 'assigned'
-            : orderType === 'scheduled'
-              ? 'driver_proposals'
-              : 'pending',
+          status: gatedForPayment
+            ? 'awaiting_payment'
+            : directDriver
+              ? 'assigned'
+              : orderType === 'scheduled'
+                ? 'driver_proposals'
+                : 'pending',
           ...(isContest ? { contestStartedAt, contestEndsAt } : {}),
           orderType,
           scheduledDate,
@@ -936,6 +948,109 @@ export class OrdersService {
       await this.ensureCashPayment(order.id, Number(order.totalAmount));
     }
 
+    // Anuncios (socket + push) al comercio y a drivers. Los pedidos gateados
+    // por pago NO se anuncian al nacer: se anuncian al liberarse
+    // (releaseAwaitingPayment) para que ningún repartidor los vea sin pago.
+    if (!gatedForPayment) {
+      this.announceOrderCreated(order, { merchantId, merchantProfile, directDriver, deliveryZone });
+    }
+
+    return order;
+  }
+
+  /**
+   * Ventana de concurso (inicio ahora + N minutos de settings). Se calcula
+   * al liberar el pedido, no al crearlo, para que el tiempo no corra
+   * mientras el cliente paga.
+   */
+  private async buildContestWindow(): Promise<{
+    contestStartedAt: Date;
+    contestEndsAt: Date;
+  }> {
+    let contestMinutes = 10;
+    try {
+      const t = await (this.settingsService as any).getAssignmentTimeouts?.();
+      if (t && Number.isFinite(Number(t.contestMinutes))) {
+        contestMinutes = t.contestMinutes;
+      }
+    } catch {
+      // default admin (10); jamás bloquea.
+    }
+    const contestStartedAt = new Date();
+    return {
+      contestStartedAt,
+      contestEndsAt: new Date(contestStartedAt.getTime() + contestMinutes * 60_000),
+    };
+  }
+
+  /**
+   * Libera un pedido gateado por pago al confirmarse el cobro: lo pasa a su
+   * estado operativo (concurso / propuestas / asignado) y recién ahí avisa
+   * a drivers. Atómico e idempotente: solo el primer claim gana.
+   */
+  async releaseAwaitingPayment(orderId: string): Promise<any | null> {
+    const order: any = await this.prisma.order.findUnique({ where: { id: orderId } });
+    if (!order || order.status !== 'awaiting_payment') return null;
+
+    let directDriver: any = null;
+    if (order.driverId) {
+      directDriver = await this.prisma.driverProfile.findUnique({
+        where: { id: order.driverId },
+      });
+      // Si el elegido ya no está disponible, cae a concurso normal.
+      if (!directDriver || directDriver.status !== 'available') directDriver = null;
+    }
+    const merchantProfile: any = await this.prisma.merchantProfile.findUnique({
+      where: { id: order.merchantId },
+    });
+    if (!merchantProfile) return null;
+
+    const isContest = !directDriver && order.orderType !== 'scheduled';
+    const targetStatus = directDriver
+      ? 'assigned'
+      : order.orderType === 'scheduled'
+        ? 'driver_proposals'
+        : 'pending';
+    let window: { contestStartedAt?: Date; contestEndsAt?: Date } = {};
+    if (isContest) {
+      const w = await this.buildContestWindow();
+      window = { contestStartedAt: w.contestStartedAt, contestEndsAt: w.contestEndsAt };
+    }
+    const claimed = await this.prisma.order.updateMany({
+      where: { id: orderId, status: 'awaiting_payment' },
+      data: {
+        status: targetStatus as any,
+        ...window,
+        ...(directDriver ? { driverId: directDriver.id, assignedAt: new Date() } : {}),
+      },
+    });
+    if (!claimed.count) return null;
+
+    const fresh = { ...order, status: targetStatus, ...window };
+    this.announceOrderCreated(fresh, {
+      merchantId: merchantProfile.id,
+      merchantProfile,
+      directDriver,
+      deliveryZone: (order as any).deliveryZone ?? null,
+    });
+    return fresh;
+  }
+
+  /**
+   * Anuncios de pedido nuevo: comercio (siempre) + drivers (concurso,
+   * propuestas o asignación directa). Extraído para reusar en create() y en
+   * releaseAwaitingPayment() con la misma forma canónica.
+   */
+  private announceOrderCreated(
+    order: any,
+    deps: {
+      merchantId: string;
+      merchantProfile: any;
+      directDriver: any;
+      deliveryZone: any;
+    },
+  ): void {
+    const { merchantId, merchantProfile, directDriver, deliveryZone } = deps;
     // El comercio recibe el pedido nuevo en vivo (socket 1:1 a `user:{id}` +
     // push). Antes solo lo veía por polling/refresh: los eventos de pedido
     // nuevo iban únicamente a `role:driver`. Cubre inmediatos, programados y
@@ -992,7 +1107,7 @@ export class OrdersService {
         driverName: directDriver.fullName,
         message: `${directDriver.fullName} fue asignado a tu pedido`,
       });
-      return order;
+      return;
     }
 
     // Concurso: alerta a los drivers con probabilidad real de tomarlo
@@ -1036,8 +1151,6 @@ export class OrdersService {
 
       void this.alertNearbyDrivers(order, payload, 'order:scheduledNew');
     }
-
-    return order;
   }
 
   /**
@@ -2639,6 +2752,11 @@ export class OrdersService {
       include: { driver: { select: { fullName: true } } },
     });
     if (!order) throw new NotFoundException('Pedido no encontrado');
+    // Defensa en profundidad: sin pago confirmado no hay entrega (el gate
+    // normal es que ni siquiera aparece en disponibles).
+    if (order.status === 'awaiting_payment') {
+      throw new BadRequestException('El pedido aún no está pagado');
+    }
 
     const driverProfile = await this.prisma.driverProfile.findUnique({
       where: { userId: driverUserId },

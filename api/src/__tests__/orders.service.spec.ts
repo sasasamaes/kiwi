@@ -236,6 +236,7 @@ describe('OrdersService', () => {
         pickupAddress: 'Nicoya',
         deliveryAddress: 'Barrio Los Ángeles',
         items: [{ menuItemId: 'item-1', quantity: 1 }],
+        paymentMethod: 'cash',
       });
 
       expect(mockEventsGateway.sendToUser).toHaveBeenCalledWith(
@@ -322,6 +323,7 @@ describe('OrdersService', () => {
         orderType: 'scheduled',
         scheduledDate: f.day,
         scheduledTime: f.time,
+        paymentMethod: 'cash',
       });
       expect(res.status).toBe('driver_proposals');
       expect(prisma.order.create).toHaveBeenCalled();
@@ -357,6 +359,7 @@ describe('OrdersService', () => {
         deliveryZone: 'centro',
         distanceKm: 1,
         readyInMinutes: 20,
+        paymentMethod: 'cash',
       });
       const ms = new Date(order.readyAt).getTime() - before;
       expect(ms).toBeGreaterThanOrEqual(20 * 60 * 1000 - 5000);
@@ -487,6 +490,131 @@ describe('OrdersService', () => {
         }),
       ).rejects.toThrow('Barrio de entrega inválido');
       expect(prisma.order.create).not.toHaveBeenCalled();
+    });
+
+    it('should match catalog slugs against DB labels (los-angeles → Los Ángeles)', async () => {
+      prisma.merchantProfile.findUnique.mockResolvedValue({
+        id: 'merchant-1',
+        userId: 'user-1',
+        businessName: 'Bowl & Café',
+      });
+      prisma.order.create.mockImplementation(async ({ data }: any) => ({
+        id: 'order-1',
+        status: 'pending',
+        ...data,
+      }));
+      zonesMock.list.mockResolvedValueOnce([
+        { id: 'uuid-los-angeles', label: 'Los Ángeles', price: 1500 },
+      ]);
+
+      const order: any = await service.create('user-1', {
+        pickupAddress: 'Nicoya Centro',
+        deliveryAddress: 'Los Ángeles, frente a la plaza',
+        deliveryZone: 'los-angeles',
+        distanceKm: 3,
+      });
+
+      expect(order.deliveryZone).toBe('uuid-los-angeles');
+    });
+
+    it('gates non-cash orders in awaiting_payment without alerting drivers', async () => {
+      prisma.merchantProfile.findUnique.mockResolvedValue({
+        id: 'merchant-1',
+        userId: 'user-1',
+        businessName: 'Bowl & Café',
+      });
+      prisma.order.create.mockImplementation(async ({ data }: any) => ({
+        id: 'order-1',
+        ...data,
+      }));
+      mockEventsGateway.sendToUser.mockClear();
+
+      const order: any = await service.create('user-1', {
+        pickupAddress: 'Nicoya Centro',
+        deliveryAddress: 'Barrio Los Ángeles',
+        distanceKm: 1,
+        paymentMethod: 'card',
+      });
+
+      expect(order.status).toBe('awaiting_payment');
+      expect(order.contestStartedAt).toBeUndefined();
+      expect(mockEventsGateway.sendToUser).not.toHaveBeenCalled();
+    });
+
+    it('cash orders skip the payment gate', async () => {
+      prisma.merchantProfile.findUnique.mockResolvedValue({
+        id: 'merchant-1',
+        userId: 'user-1',
+        businessName: 'Bowl & Café',
+      });
+      prisma.order.create.mockImplementation(async ({ data }: any) => ({
+        id: 'order-1',
+        ...data,
+      }));
+
+      const order: any = await service.create('user-1', {
+        pickupAddress: 'Nicoya Centro',
+        deliveryAddress: 'Barrio Los Ángeles',
+        distanceKm: 1,
+        paymentMethod: 'cash',
+      });
+
+      expect(order.status).toBe('pending');
+      expect(order.contestStartedAt).toBeInstanceOf(Date);
+    });
+
+    it('releaseAwaitingPayment moves a paid order to contest and alerts', async () => {
+      const gated = {
+        id: 'order-9',
+        status: 'awaiting_payment',
+        merchantId: 'merchant-1',
+        driverId: null,
+        orderType: 'immediate',
+        pickupAddress: 'A',
+        deliveryAddress: 'B',
+        totalAmount: 3000,
+        driverPayout: 1500,
+        distanceKm: 2,
+        createdAt: new Date(),
+      };
+      prisma.order.findUnique.mockResolvedValue(gated);
+      prisma.merchantProfile.findUnique.mockResolvedValue({
+        id: 'merchant-1',
+        userId: 'user-1',
+        businessName: 'Bowl & Café',
+      });
+      prisma.order.updateMany.mockResolvedValue({ count: 1 });
+      mockEventsGateway.sendToUser.mockClear();
+
+      const out: any = await service.releaseAwaitingPayment('order-9');
+
+      expect(prisma.order.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'order-9', status: 'awaiting_payment' },
+        }),
+      );
+      expect(out.status).toBe('pending');
+      expect(mockEventsGateway.sendToUser).toHaveBeenCalledWith(
+        'merchant-1',
+        'order:new',
+        expect.objectContaining({ orderId: 'order-9' }),
+      );
+    });
+
+    it('releaseAwaitingPayment is a no-op when already released', async () => {
+      prisma.order.findUnique.mockResolvedValue({ id: 'order-9', status: 'pending' });
+      prisma.order.updateMany.mockClear();
+
+      expect(await service.releaseAwaitingPayment('order-9')).toBeNull();
+      expect(prisma.order.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('drivers cannot accept awaiting_payment orders', async () => {
+      prisma.order.findUnique.mockResolvedValue({ id: 'order-9', status: 'awaiting_payment' });
+
+      await expect(service.acceptOrderAsDriver('order-9', 'user-d')).rejects.toThrow(
+        'aún no está pagado',
+      );
     });
   });
 

@@ -1,5 +1,5 @@
 // Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
 import { PaymentsController } from './payments.controller';
 import { OnvoPayProvider } from './providers/onvopay.provider';
@@ -8,9 +8,11 @@ import { DriverMarketplaceService } from './marketplace/driver-marketplace.servi
 import { StellarProvider } from './providers/stellar.provider';
 import { FxRateProvider } from './providers/fx-rate.provider';
 import { CreditsModule } from '../credits/credits.module';
+import { OrdersModule } from '../orders/orders.module';
 
 @Module({
-  imports: [CreditsModule],
+  // forwardRef: OrdersModule → DriversModule → PaymentsModule (ciclo).
+  imports: [CreditsModule, forwardRef(() => OrdersModule)],
   providers: [
     PaymentsService,
     OnvoPayProvider,

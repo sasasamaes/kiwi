@@ -21,6 +21,7 @@ import { ArrowLeft, Clock, Check, Bike, Package, Rocket, PartyPopper, X, Star } 
 
 type OrderStatus =
   | 'pending'
+  | 'awaiting_payment'
   | 'assigned'
   | 'pending_acceptance'
   | 'in_transit_to_pickup'
@@ -38,6 +39,11 @@ function getStatusConfig(
       label: t('wcliord.tracking.statusPending'),
       description: t('wcliord.tracking.statusPendingDesc'),
       progress: 10,
+    },
+    awaiting_payment: {
+      label: t('wcliord.tracking.statusAwaiting'),
+      description: t('wcliord.tracking.statusAwaitingDesc'),
+      progress: 5,
     },
     assigned: {
       label: t('wcliord.tracking.statusAssigned'),
@@ -180,6 +186,7 @@ function TrackingContent() {
 
   const STATUS_LABELS: Record<string, string> = {
     pending: t('wcliord.tracking.histPending'),
+    awaiting_payment: t('wcliord.tracking.histAwaiting'),
     assigned: t('wcliord.tracking.histAssigned'),
     pending_acceptance: t('wcliord.tracking.histPendingAccept'),
     in_transit_to_pickup: t('wcliord.tracking.histToPickup'),
@@ -257,7 +264,7 @@ function TrackingContent() {
           if (isNaN(t.getTime())) return;
           seed.push({ status, timestamp: t, message: STATUS_LABELS[status] ?? status });
         };
-        push('pending', data.createdAt);
+        push(data.status === 'awaiting_payment' ? 'awaiting_payment' : 'pending', data.createdAt);
         push('assigned', data.assignedAt);
         push('in_transit_to_pickup', (data as any).inTransitToPickupAt);
         push('picked_up', data.pickedUpAt);

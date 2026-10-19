@@ -3,6 +3,7 @@ import { tokens } from '../theme';
 
 const DEFAULT_LABELS: Record<string, string> = {
   pending: 'Pendiente',
+  awaiting_payment: 'Esperando pago',
   assigned: 'Asignado',
   in_transit_to_pickup: 'En camino a retiro',
   picked_up: 'Retirado',

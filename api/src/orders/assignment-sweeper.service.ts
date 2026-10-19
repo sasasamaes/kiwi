@@ -38,14 +38,19 @@ export class AssignmentSweeper implements OnModuleInit, OnModuleDestroy {
     if (this.timer) clearInterval(this.timer);
   }
 
-  async sweepOnce(): Promise<{ acceptanceExpired: number; contestsExpired: number }> {
-    if (this.running) return { acceptanceExpired: 0, contestsExpired: 0 };
+  async sweepOnce(): Promise<{
+    acceptanceExpired: number;
+    contestsExpired: number;
+    paymentExpired: number;
+  }> {
+    if (this.running) return { acceptanceExpired: 0, contestsExpired: 0, paymentExpired: 0 };
     this.running = true;
     try {
       const { contestMinutes } = await this.settings.getAssignmentTimeouts();
       const now = new Date();
       let acceptanceExpired = 0;
       let contestsExpired = 0;
+      let paymentExpired = 0;
 
       const expired = await this.prisma.order.findMany({
         where: { status: 'pending_acceptance', acceptanceExpiresAt: { lt: now } },
@@ -131,7 +136,43 @@ export class AssignmentSweeper implements OnModuleInit, OnModuleDestroy {
             .catch(() => undefined);
         }
       }
-      return { acceptanceExpired, contestsExpired };
+
+      // Pagos abandonados: el cliente creó el pedido pero nunca completó el
+      // checkout (cerró Onvo, se quedó sin internet). Sin esto quedarían en
+      // awaiting_payment para siempre, invisibles. 30 min de gracia.
+      const unpaid = await this.prisma.order.findMany({
+        where: {
+          status: 'awaiting_payment',
+          createdAt: { lt: new Date(Date.now() - 30 * 60_000) },
+        },
+        select: { id: true },
+      });
+      for (const o of unpaid) {
+        const claimed = await this.prisma.order.updateMany({
+          where: {
+            id: o.id,
+            status: 'awaiting_payment',
+            createdAt: { lt: new Date(Date.now() - 30 * 60_000) },
+          },
+          data: { status: 'cancelled' },
+        });
+        if (claimed.count === 0) continue;
+        paymentExpired++;
+        await this.prisma.orderEvent.create({
+          data: { orderId: o.id, type: 'payment_expired' },
+        });
+        const full: any = await this.prisma.order.findUnique({
+          where: { id: o.id },
+          include: { merchant: true },
+        });
+        if (full?.merchant?.userId) {
+          this.events.sendToUser(full.merchant.userId, 'order:cancelled', {
+            orderId: o.id,
+            message: 'El pedido se canceló: el pago no se completó a tiempo.',
+          });
+        }
+      }
+      return { acceptanceExpired, contestsExpired, paymentExpired };
     } finally {
       this.running = false;
     }

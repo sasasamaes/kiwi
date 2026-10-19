@@ -5,11 +5,15 @@ import {
   BadRequestException,
   ForbiddenException,
   UnauthorizedException,
+  Inject,
+  Optional,
+  forwardRef,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { OnvoPayProvider } from './providers/onvopay.provider';
 import { StellarProvider } from './providers/stellar.provider';
 import { CreditsService } from '../credits/credits.service';
+import { OrdersService } from '../orders/orders.service';
 import { PaymentMethod, PaymentStatus } from '@prisma/client';
 
 export interface CreatePaymentDTO {
@@ -44,7 +48,24 @@ export class PaymentsService {
     private onvopayProvider: OnvoPayProvider,
     private stellarProvider: StellarProvider,
     private creditsService: CreditsService,
+    @Inject(forwardRef(() => OrdersService))
+    @Optional()
+    private readonly ordersService?: OrdersService,
   ) {}
+
+  /**
+   * Libera un pedido gateado por pago (awaiting_payment → concurso). Se
+   * llama en cada camino que deja un pago en completed (webhook, polling,
+   * crédito, cripto). Idempotente y best-effort: jamás tumba el pago.
+   */
+  private async releaseOrderIfPaid(orderId: string): Promise<void> {
+    if (!this.ordersService) return;
+    try {
+      await this.ordersService.releaseAwaitingPayment(orderId);
+    } catch (e: any) {
+      this.logger.warn(`releaseAwaitingPayment(${orderId}) falló: ${e?.message ?? e}`);
+    }
+  }
 
   async createPayment(
     dto: CreatePaymentDTO,
@@ -542,6 +563,7 @@ export class PaymentsService {
       });
 
       this.logger.log(`Credit payment for order ${orderId}: spent=${spend} balance=${balance}`);
+      await this.releaseOrderIfPaid(orderId);
       return { success: true, paymentId: payment.id };
     } catch (e: any) {
       if (e instanceof BadRequestException) throw e;
@@ -909,6 +931,9 @@ export class PaymentsService {
       }
     }
 
+    if (payment.status === PaymentStatus.completed) {
+      await this.releaseOrderIfPaid(orderId);
+    }
     return payment;
   }
 
@@ -1135,6 +1160,7 @@ export class PaymentsService {
         // (status != pending) while belonging to nobody — a lost order.
 
         this.logger.log(`Payment completed for order ${orderId}`);
+        await this.releaseOrderIfPaid(orderId);
       }
     } else if (type === 'checkout-session.succeeded') {
       // Checkout hospedado: la sesión trae metadata.orderId y el intent real.
@@ -1167,6 +1193,7 @@ export class PaymentsService {
           return { received: true, unknownOrder: true };
         }
         this.logger.log(`Checkout session completed for order ${orderId}`);
+        await this.releaseOrderIfPaid(orderId);
       } else if (paymentIntentId) {
         // Sin orderId en metadata: puede ser una recarga cuyo intent se
         // guardó al reconciliar — probar topup antes de descartar.
@@ -1291,6 +1318,7 @@ export class PaymentsService {
           ...(txHash ? { cryptoTxHash: txHash } : {}),
         },
       });
+      if (res.count > 0) await this.releaseOrderIfPaid(orderId);
       return res.count > 0;
     } catch (e: any) {
       // Índice único en crypto_tx_hash: otra orden ganó la carrera por esta tx

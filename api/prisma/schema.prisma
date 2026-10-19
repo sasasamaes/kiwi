@@ -821,6 +821,7 @@ model Order {
 
 enum OrderStatus {
   pending
+  awaiting_payment
   driver_proposals
   assigned
   pending_acceptance

@@ -242,7 +242,7 @@ describe('Assignment contest (Task 6): 10 criterios', () => {
 
     const res = await sweeper.sweepOnce();
 
-    expect(res).toEqual({ acceptanceExpired: 1, contestsExpired: 0 });
+    expect(res).toEqual({ acceptanceExpired: 1, contestsExpired: 0, paymentExpired: 0 });
     expect(prisma.order.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({ id: 'order-1', status: 'pending_acceptance' }),
@@ -347,7 +347,7 @@ describe('Assignment contest (Task 6): 10 criterios', () => {
 
     const res = await sweeper.sweepOnce();
 
-    expect(res).toEqual({ acceptanceExpired: 0, contestsExpired: 1 });
+    expect(res).toEqual({ acceptanceExpired: 0, contestsExpired: 1, paymentExpired: 0 });
     expect(prisma.order.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({ id: 'order-2', status: 'pending', driverId: null }),
@@ -378,7 +378,7 @@ describe('Assignment contest (Task 6): 10 criterios', () => {
 
     const res = await sweeper.sweepOnce();
 
-    expect(res).toEqual({ acceptanceExpired: 0, contestsExpired: 0 });
+    expect(res).toEqual({ acceptanceExpired: 0, contestsExpired: 0, paymentExpired: 0 });
     expect(prisma.order.updateMany).not.toHaveBeenCalled();
     expect(notifications.notifyContestStarted).not.toHaveBeenCalled();
     expect(notifications.notifyNoDriverAvailable).not.toHaveBeenCalled();
@@ -416,7 +416,7 @@ describe('Assignment contest (Task 6): 10 criterios', () => {
 
     const res = await sweeper.sweepOnce();
 
-    expect(res).toEqual({ acceptanceExpired: 1, contestsExpired: 1 });
+    expect(res).toEqual({ acceptanceExpired: 1, contestsExpired: 1, paymentExpired: 0 });
     expect(notifications.notifyContestStarted).toHaveBeenCalledTimes(1);
     expect(notifications.notifyNoDriverAvailable).toHaveBeenCalledTimes(1);
   });
@@ -442,7 +442,7 @@ describe('Assignment contest (Task 6): 10 criterios', () => {
 
     prisma.order.updateMany.mockResolvedValueOnce({ count: 1 });
     const first = await sweeper.sweepOnce();
-    expect(first).toEqual({ acceptanceExpired: 1, contestsExpired: 0 });
+    expect(first).toEqual({ acceptanceExpired: 1, contestsExpired: 0, paymentExpired: 0 });
     expect(notifications.notifyContestStarted).toHaveBeenCalledTimes(1);
 
     // El claim ya no matchea: segunda barrida sin cambios ni avisos.
@@ -452,9 +452,38 @@ describe('Assignment contest (Task 6): 10 criterios', () => {
     ordersMock.alertNearbyDrivers.mockClear();
 
     const second = await sweeper.sweepOnce();
-    expect(second).toEqual({ acceptanceExpired: 0, contestsExpired: 0 });
+    expect(second).toEqual({ acceptanceExpired: 0, contestsExpired: 0, paymentExpired: 0 });
     expect(notifications.notifyContestStarted).not.toHaveBeenCalled();
     expect(ordersMock.alertNearbyDrivers).not.toHaveBeenCalled();
+  });
+
+  it('11. sweepOnce cancela awaiting_payment viejo (pago abandonado) y no toca recientes', async () => {
+    prisma.order.findMany.mockImplementation(async (args: any) => {
+      if (args?.where?.status === 'awaiting_payment') {
+        return [{ id: 'unpaid-old' }];
+      }
+      return [];
+    });
+    prisma.order.updateMany.mockResolvedValue({ count: 1 });
+    prisma.order.findUnique.mockResolvedValue({
+      id: 'unpaid-old',
+      merchant: { userId: 'merchant-user-1', businessName: 'Soda' },
+    });
+
+    const res = await sweeper.sweepOnce();
+
+    expect(res).toEqual({ acceptanceExpired: 0, contestsExpired: 0, paymentExpired: 1 });
+    expect(prisma.order.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ id: 'unpaid-old', status: 'awaiting_payment' }),
+        data: { status: 'cancelled' },
+      }),
+    );
+    expect(mockEventsGateway.sendToUser).toHaveBeenCalledWith(
+      'merchant-user-1',
+      'order:cancelled',
+      expect.objectContaining({ orderId: 'unpaid-old' }),
+    );
   });
 
   it('10. acceptOrderAsDriver en pending clásico sin contestEndsAt → assigned', async () => {
