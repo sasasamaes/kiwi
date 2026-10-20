@@ -145,4 +145,15 @@ describe('SettingsService', () => {
     ]);
     await expect(service.getDriverCommissionPct()).resolves.toBe(15);
   });
+
+  it('getMandadosEnabled default true y respeta el apagado', async () => {
+    prisma.platformSetting.findMany.mockResolvedValue([]);
+    await expect(service.getMandadosEnabled()).resolves.toBe(true);
+
+    service.clearCache();
+    prisma.platformSetting.findMany.mockResolvedValue([
+      { key: 'platform', value: { mandadosEnabled: false } },
+    ]);
+    await expect(service.getMandadosEnabled()).resolves.toBe(false);
+  });
 });

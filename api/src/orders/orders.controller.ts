@@ -98,6 +98,38 @@ export class OrdersController {
     return this.ordersService.createEncomiendaOrder(user.sub, dto);
   }
 
+  @Post('mandado')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('customer')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Pedir un mandado (compra presencial) a un repartidor (cliente registrado)',
+  })
+  async createMandado(
+    @CurrentUser() user: any,
+    @Body() createOrderDto: any,
+    @Headers('idempotency-key') idempotencyKey?: string,
+  ) {
+    const dto =
+      idempotencyKey && !createOrderDto?.idempotencyKey
+        ? { ...createOrderDto, idempotencyKey }
+        : createOrderDto;
+    return this.ordersService.createMandadoOrder(user.sub, dto);
+  }
+
+  @Put(':id/receipt')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('driver')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Registrar el monto de la factura de un mandado' })
+  async setReceipt(
+    @Param('id') id: string,
+    @Body('amount') amount: unknown,
+    @CurrentUser() user: any,
+  ) {
+    return this.ordersService.setReceiptAmount(id, user.sub, amount);
+  }
+
   @Get('my')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()

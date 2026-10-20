@@ -755,6 +755,15 @@ model Order {
   declaredValue      Decimal? @map("declared_value") @db.Decimal(10, 2)
   weightKg           Decimal? @map("weight_kg") @db.Decimal(8, 2)
 
+  // Mandados (cliente pide compra presencial): estimado, factura real,
+  // fee 10% (mitad bonus repartidor, mitad Kiwi). productsTotal lleva la
+  // compra (estimado → factura) para que total y reembolso cuadren.
+  isMandado        Boolean  @default(false) @map("is_mandado")
+  purchaseStore    String?  @map("purchase_store")
+  purchaseEstimate Decimal? @map("purchase_estimate") @db.Decimal(10, 2)
+  receiptAmount    Decimal? @map("receipt_amount") @db.Decimal(10, 2)
+  extraFee         Decimal  @default(0) @map("extra_fee") @db.Decimal(10, 2)
+
   // Instructions
   specialInstructions String? @map("special_instructions")
 

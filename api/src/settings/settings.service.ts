@@ -18,6 +18,8 @@ export interface PlatformSettings {
     mercaditoEnabled: boolean;
     /** Feature flag: muestra/oculta los banners patrocinados en la app cliente. */
     bannersEnabled: boolean;
+    /** Feature flag: muestra/oculta los Mandados en la app cliente. */
+    mandadosEnabled: boolean;
     /** Feature flag: app cliente abierta o en "próximamente" (lanzamiento). */
     clientAppEnabled: boolean;
   };
@@ -78,6 +80,7 @@ export const DEFAULT_SETTINGS: PlatformSettings = {
     encomiendaEnabled: true,
     mercaditoEnabled: true,
     bannersEnabled: true,
+    mandadosEnabled: true,
     clientAppEnabled: true,
   },
   payments: {
@@ -195,6 +198,7 @@ export class SettingsService {
     next.platform.encomiendaEnabled = next.platform.encomiendaEnabled !== false;
     next.platform.mercaditoEnabled = next.platform.mercaditoEnabled !== false;
     next.platform.bannersEnabled = next.platform.bannersEnabled !== false;
+    next.platform.mandadosEnabled = next.platform.mandadosEnabled !== false;
     next.platform.clientAppEnabled = next.platform.clientAppEnabled !== false;
     next.security.sessionTimeout = Math.min(
       Math.max(Math.round(Number(next.security.sessionTimeout) || 30), 5),
@@ -299,6 +303,12 @@ export class SettingsService {
   async getBannersEnabled(): Promise<boolean> {
     const all = await this.getAll();
     return all.platform?.bannersEnabled !== false;
+  }
+
+  /** Feature flag de Mandados (default true: visible). */
+  async getMandadosEnabled(): Promise<boolean> {
+    const all = await this.getAll();
+    return all.platform?.mandadosEnabled !== false;
   }
 
   /** Feature flag de app cliente abierta (default true: abierta). */

@@ -207,6 +207,153 @@ export class OrdersService {
 
   private encomiendaSystemUserId: string | null = null;
 
+  /**
+   * Tope de lo que el repartidor adelanta de su bolsillo en un mandado.
+   * El estimado de compra no puede superarlo (se valida al crear).
+   */
+  private static readonly MAX_PURCHASE_ESTIMATE = 15000;
+  /** Fee del mandado: 10% sobre (compra + viaje). Mitad bonus al repartidor. */
+  private static readonly MANDADO_EXTRA_PCT = 10;
+
+  /**
+   * Mandado pedido por un cliente registrado (app cliente). Como la
+   * encomienda, cuelga del perfil sistema ("Kiwi Encomiendas") porque
+   * `merchantId` es obligatorio. Diferencia: el repartidor compra
+   * presencial (tienda + lista) y se le reembolsa contra factura.
+   *
+   * Plata (todo en colones enteros, igual que create):
+   * - productsTotal = compra (estimado al crear, factura al cerrarla)
+   * - extraFee = 10% de (compra + viaje); bonus = mitad al repartidor
+   * - driverPayout = viaje − corte 15% + bonus + compra (reembolso)
+   * - commission = corte del viaje + mitad de Kiwi del extraFee
+   * - totalAmount = compra + viaje + extraFee (el cliente paga nominal)
+   */
+  async createMandadoOrder(customerId: string, data: any) {
+    const customer = await this.prisma.user.findUnique({
+      where: { id: customerId },
+      select: { id: true, role: true, status: true },
+    });
+    if (!customer || customer.role !== 'customer' || customer.status !== 'active') {
+      throw new ForbiddenException('Cuenta de cliente no válida');
+    }
+
+    const phone = normalizeCRPhone(data?.customerPhone ?? '');
+    if (!phone) {
+      throw new BadRequestException('customerPhone es requerido (formato 8888-8888)');
+    }
+    const senderName = String(data?.customerName ?? '').trim();
+    if (!senderName) {
+      throw new BadRequestException('customerName es requerido');
+    }
+    const store = String(data?.purchaseStore ?? '').trim();
+    if (!store) {
+      throw new BadRequestException('purchaseStore es requerido (dónde comprar)');
+    }
+    if (!data?.pickupAddress || !data?.deliveryAddress) {
+      throw new BadRequestException('pickupAddress y deliveryAddress son requeridos');
+    }
+    const list = String(data?.packageDescription ?? '').trim();
+    if (!list) {
+      throw new BadRequestException('packageDescription es requerido (qué comprar)');
+    }
+    const estimate = Math.round(Number(data?.purchaseEstimate));
+    if (
+      !Number.isFinite(estimate) ||
+      estimate <= 0 ||
+      estimate > OrdersService.MAX_PURCHASE_ESTIMATE
+    ) {
+      throw new BadRequestException(
+        `purchaseEstimate inválido (máx ₡${OrdersService.MAX_PURCHASE_ESTIMATE.toLocaleString()})`,
+      );
+    }
+
+    const systemUserId = await this.ensureEncomiendaSystemUser();
+    const order: any = await this.create(systemUserId, {
+      ...data,
+      kind: 'freight',
+      origin: 'client_app',
+      orderType: 'immediate',
+      paymentMethod: 'cash',
+      items: [],
+      customerName: senderName,
+      customerPhone: phone,
+      packageDescription: `Mandado en ${store}: ${list}`,
+      productsTotal: estimate,
+      isMandado: true,
+      purchaseStore: store,
+      purchaseEstimate: estimate,
+    });
+
+    if (!order.customerId) {
+      await this.prisma.order.update({
+        where: { id: order.id },
+        data: { customerId },
+      });
+      order.customerId = customerId;
+    }
+    return this.applyMandadoPricing(order.id);
+  }
+
+  /** Calcula (o recalcula) el fee del mandado sobre la fila. Idempotente. */
+  private async applyMandadoPricing(orderId: string) {
+    const row: any = await this.prisma.order.findUnique({ where: { id: orderId } });
+    if (!row || !row.isMandado) return row;
+    const purchase = Math.round(Number(row.receiptAmount ?? row.productsTotal ?? 0));
+    const trip = Math.round(Number(row.basePrice ?? 0));
+    const rate = Number(row.commissionRate ?? 0.15);
+    const tripFee = Math.round(trip * rate);
+    const extraFee = Math.round((purchase + trip) * (OrdersService.MANDADO_EXTRA_PCT / 100));
+    const bonus = Math.round(extraFee / 2);
+    const kiwiShare = extraFee - bonus;
+    return this.prisma.order.update({
+      where: { id: orderId },
+      data: {
+        productsTotal: purchase,
+        extraFee,
+        commission: tripFee + kiwiShare,
+        driverPayout: trip - tripFee + bonus + purchase,
+        totalAmount: purchase + trip + extraFee,
+      },
+    });
+  }
+
+  /**
+   * El repartidor asignado registra el monto real de la factura. Recalcula
+   * compra, fee, comisión, payout y total; actualiza la fila de pago cash.
+   * Solo antes de entregar (el entregado ya cerró cuentas).
+   */
+  async setReceiptAmount(orderId: string, driverUserId: string, amount: unknown) {
+    const receipt = Math.round(Number(amount));
+    if (!Number.isFinite(receipt) || receipt <= 0 || receipt > 100000) {
+      throw new BadRequestException('receiptAmount inválido');
+    }
+    const order: any = await this.prisma.order.findUnique({ where: { id: orderId } });
+    if (!order || !order.isMandado) {
+      throw new NotFoundException('Mandado no encontrado');
+    }
+    if (['delivered', 'cancelled'].includes(String(order.status))) {
+      throw new BadRequestException('El pedido ya se cerró');
+    }
+    const profile = await this.prisma.driverProfile.findUnique({
+      where: { userId: driverUserId },
+      select: { id: true },
+    });
+    if (!profile || order.driverId !== profile.id) {
+      throw new ForbiddenException('Solo el repartidor asignado registra la factura');
+    }
+    await this.prisma.order.update({ where: { id: orderId }, data: { receiptAmount: receipt } });
+    const updated: any = await this.applyMandadoPricing(orderId);
+    try {
+      await this.prisma.payment.update({
+        where: { orderId },
+        data: { amount: Number(updated.totalAmount) },
+      });
+    } catch {
+      // best-effort: el pedido ya quedó bien igual
+    }
+    return updated;
+  }
+
   /** Perfil sistema para encomiendas de cliente (idempotente, cacheado). */
   private async ensureEncomiendaSystemUser(): Promise<string> {
     if (this.encomiendaSystemUserId) return this.encomiendaSystemUserId;
@@ -889,6 +1036,15 @@ export class OrdersService {
           declaredValue: data.declaredValue ?? null,
           weightKg: weightKg != null ? weightKg : null,
           specialInstructions: data.specialInstructions,
+          // Mandados: marca + tienda + estimado (el fee se calcula después).
+          ...(data.isMandado === true
+            ? {
+                isMandado: true,
+                purchaseStore: data.purchaseStore ?? null,
+                purchaseEstimate:
+                  data.purchaseEstimate != null ? Math.round(Number(data.purchaseEstimate)) : null,
+              }
+            : {}),
           customerName: data.customerName != null ? String(data.customerName).trim() || null : null,
           customerPhone:
             data.customerPhone != null ? String(data.customerPhone).trim() || null : null,

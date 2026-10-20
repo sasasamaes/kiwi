@@ -1865,4 +1865,156 @@ describe('OrdersService', () => {
       expect(order.items).toBeUndefined();
     });
   });
+
+  describe('createMandadoOrder (cliente pide compra presencial)', () => {
+    const customer = { id: 'cust-1', role: 'customer', status: 'active' };
+    const base = {
+      customerName: 'Ana',
+      customerPhone: '8888-7777',
+      pickupAddress: 'Súper La Amistad, Nicoya',
+      pickupLat: 10.1467,
+      pickupLng: -85.452,
+      deliveryAddress: 'Barrio San Martín',
+      deliveryLat: 10.15,
+      deliveryLng: -85.455,
+      distanceKm: 2,
+      purchaseStore: 'Súper La Amistad',
+      packageDescription: '2 leches, pan y queso',
+      purchaseEstimate: 5000,
+    };
+    let created: any;
+
+    beforeEach(() => {
+      prisma.user = {
+        findUnique: jest.fn().mockResolvedValue(customer),
+        upsert: jest.fn().mockResolvedValue({ id: 'sys-user' }),
+      };
+      prisma.merchantProfile.upsert = jest.fn().mockResolvedValue({ id: 'sys-merchant' });
+      prisma.merchantProfile.findUnique.mockImplementation(async ({ where }: any) =>
+        where.userId === 'sys-user'
+          ? { id: 'sys-merchant', userId: 'sys-user', businessName: 'Kiwi Encomiendas' }
+          : null,
+      );
+      // create() real con prisma mockeado: devuelve la fila tal cual.
+      prisma.order.create.mockImplementation(async ({ data }: any) => {
+        created = { id: 'order-man-1', status: 'pending', ...data };
+        return created;
+      });
+      prisma.order.findUnique.mockImplementation(async () => created);
+      prisma.order.update = jest.fn().mockImplementation(async ({ data }: any) => {
+        created = { ...created, ...data };
+        return created;
+      });
+      prisma.payment.update = jest.fn().mockResolvedValue({});
+    });
+
+    it('cobra 10% extra (5% bonus repartidor + 5% Kiwi) sobre compra + viaje', async () => {
+      const order: any = await service.createMandadoOrder('cust-1', base);
+
+      expect(order.isMandado).toBe(true);
+      expect(order.purchaseStore).toBe('Súper La Amistad');
+      expect(order.productsTotal).toBe(5000);
+      const trip = Number(order.basePrice);
+      const extra = Math.round((5000 + trip) * 0.1);
+      const bonus = Math.round(extra / 2);
+      const tripFee = Math.round(trip * Number(order.commissionRate));
+      expect(order.extraFee).toBe(extra);
+      expect(order.commission).toBe(tripFee + (extra - bonus));
+      expect(order.driverPayout).toBe(trip - tripFee + bonus + 5000);
+      expect(order.totalAmount).toBe(5000 + trip + extra);
+    });
+
+    it('valida tienda, lista y tope de estimado (₡15000)', async () => {
+      await expect(
+        service.createMandadoOrder('cust-1', { ...base, purchaseStore: '  ' }),
+      ).rejects.toThrow('purchaseStore');
+      await expect(
+        service.createMandadoOrder('cust-1', { ...base, packageDescription: '' }),
+      ).rejects.toThrow('packageDescription');
+      await expect(
+        service.createMandadoOrder('cust-1', { ...base, purchaseEstimate: 0 }),
+      ).rejects.toThrow('purchaseEstimate');
+      await expect(
+        service.createMandadoOrder('cust-1', { ...base, purchaseEstimate: 15001 }),
+      ).rejects.toThrow('purchaseEstimate');
+      await expect(
+        service.createMandadoOrder('cust-1', { ...base, customerPhone: 'x' }),
+      ).rejects.toThrow('customerPhone');
+    });
+
+    it('rechaza cuentas que no son cliente activo', async () => {
+      prisma.user.findUnique.mockResolvedValue({ id: 'x', role: 'driver', status: 'active' });
+      await expect(service.createMandadoOrder('x', base)).rejects.toThrow(
+        'Cuenta de cliente no válida',
+      );
+    });
+  });
+
+  describe('setReceiptAmount (factura del mandado)', () => {
+    beforeEach(() => {
+      prisma.payment.update = jest.fn().mockResolvedValue({});
+      prisma.order.update = jest.fn().mockImplementation(async ({ data }: any) => data);
+    });
+
+    const row = () => ({
+      id: 'order-man-1',
+      isMandado: true,
+      status: 'assigned',
+      driverId: 'drv-1',
+      basePrice: 1500,
+      commissionRate: 0.15,
+      productsTotal: 5000,
+      receiptAmount: null,
+    });
+
+    it('recalcula con la factura y actualiza el pago cash', async () => {
+      let current: any = row();
+      prisma.order.findUnique.mockImplementation(async () => current);
+      prisma.order.update.mockImplementation(async ({ data }: any) => {
+        current = { ...current, ...data };
+        return current;
+      });
+      prisma.driverProfile = {
+        findUnique: jest.fn().mockResolvedValue({ id: 'drv-1' }),
+      };
+
+      const updated: any = await service.setReceiptAmount('order-man-1', 'user-drv', 6200);
+
+      // extra = 10% de (6200+1500) = 770; bonus = 385; tripFee = 225
+      expect(updated.extraFee).toBe(770);
+      expect(updated.productsTotal).toBe(6200);
+      expect(updated.driverPayout).toBe(1500 - 225 + 385 + 6200);
+      expect(updated.totalAmount).toBe(6200 + 1500 + 770);
+      expect(updated.commission).toBe(225 + (770 - 385));
+      expect(prisma.payment.update).toHaveBeenCalledWith({
+        where: { orderId: 'order-man-1' },
+        data: { amount: 6200 + 1500 + 770 },
+      });
+    });
+
+    it('solo el repartidor asignado y antes de cerrar', async () => {
+      prisma.order.findUnique.mockResolvedValue(row());
+      prisma.driverProfile = { findUnique: jest.fn().mockResolvedValue({ id: 'otro' }) };
+      await expect(service.setReceiptAmount('order-man-1', 'user-x', 6200)).rejects.toThrow(
+        'asignado',
+      );
+
+      prisma.driverProfile = { findUnique: jest.fn().mockResolvedValue({ id: 'drv-1' }) };
+      prisma.order.findUnique.mockResolvedValue({ ...row(), status: 'delivered' });
+      await expect(service.setReceiptAmount('order-man-1', 'user-drv', 6200)).rejects.toThrow(
+        'cerró',
+      );
+    });
+
+    it('rechaza lo que no es mandado y montos inválidos', async () => {
+      prisma.order.findUnique.mockResolvedValue({ ...row(), isMandado: false });
+      prisma.driverProfile = { findUnique: jest.fn().mockResolvedValue({ id: 'drv-1' }) };
+      await expect(service.setReceiptAmount('order-man-1', 'user-drv', 6200)).rejects.toThrow(
+        'Mandado no encontrado',
+      );
+      await expect(service.setReceiptAmount('order-man-1', 'user-drv', -5)).rejects.toThrow(
+        'receiptAmount',
+      );
+    });
+  });
 });
