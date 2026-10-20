@@ -80,6 +80,8 @@ export const shop2Es = {
     sumShipping: 'Envío',
     sumDriverGets: 'Repartidor recibe (viaje − {{pct}}%)',
     sumTotal: 'Total',
+    feeNote:
+      'Vos pagás productos + viaje a valor nominal, sin recargo: el {{pct}}% sale de la ganancia del repartidor. Cuando la app de clientes abra, esos pedidos llevan 15% del ticket.',
     scheduleTitle: '📅 Programar',
     scheduleDesc: 'Fecha y hora específica',
     payTitle: 'Método de pago',
@@ -634,6 +636,8 @@ export const shop2En = {
     sumShipping: 'Delivery',
     sumDriverGets: 'Driver gets (trip − {{pct}}%)',
     sumTotal: 'Total',
+    feeNote:
+      'You pay products + trip at face value, no markup: the {{pct}}% comes out of the driver earnings. When the customer app opens, those orders carry 15% of the ticket.',
     scheduleTitle: '📅 Schedule',
     scheduleDesc: 'Specific date and time',
     payTitle: 'Payment method',

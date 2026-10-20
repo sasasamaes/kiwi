@@ -17,6 +17,10 @@ export const shop1Es = {
     announceFailed: 'No se pudo enviar el aviso',
     retry: 'Reintentar',
     subtitle: 'Aquí está el resumen de tu negocio hoy',
+    feesTitle: '💰 Cómo cobra Kiwi',
+    feesClient: 'Pedidos de la app de clientes: 15% del ticket. Te traemos clientes y pedidos.',
+    feesMerchant:
+      'Pedidos desde acá (solo pedís repartidor): pagás solo el viaje. El 15% del viaje lo paga el repartidor.',
     homeCookTitle: '🧡 Sos cocina casera: vendé aunque no abras todos los días',
     homeCookTip1Prefix: 'En',
     homeCookTip1Menu: 'Menú',
@@ -293,6 +297,10 @@ export const shop1En = {
     announceFailed: 'Could not send the announcement',
     retry: 'Retry',
     subtitle: "Here's your business summary for today",
+    feesTitle: '💰 How Kiwi charges',
+    feesClient: 'Customer-app orders: 15% of the ticket. We bring you customers and orders.',
+    feesMerchant:
+      'Orders from here (you just request a driver): you only pay the trip. The driver pays 15% of the trip.',
     homeCookTitle: "🧡 You're a home kitchen: sell even on days you don't open",
     homeCookTip1Prefix: 'In',
     homeCookTip1Menu: 'Menu',

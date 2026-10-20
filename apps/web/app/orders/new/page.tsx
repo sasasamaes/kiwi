@@ -1514,6 +1514,9 @@ function NewOrderInner({
                   <span className="text-kiwi-700">₡{total.toLocaleString()}</span>
                 </div>
               </div>
+              <p className="mb-4 text-xs leading-relaxed text-surface-500 dark:text-surface-400">
+                {t('webshop2.neworder.feeNote', { pct: Math.round(tripPct * 100) })}
+              </p>
 
               <div className="mb-4 flex items-center justify-between rounded-xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4">
                 <div>

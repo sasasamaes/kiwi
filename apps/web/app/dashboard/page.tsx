@@ -644,6 +644,20 @@ export default function Dashboard() {
             </div>
           </motion.div>
         )}
+        {/* Cómo cobra Kiwi: los 2 casos, siempre a la vista */}
+        <motion.div
+          className="mb-8 rounded-2xl border border-gold-500/30 dark:border-gold-500/20 bg-white dark:bg-surface-800 p-4 shadow-soft"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <p className="text-sm font-semibold text-surface-800 dark:text-surface-100">
+            {t('webshop1.dash.feesTitle')}
+          </p>
+          <ul className="mt-2 space-y-1 text-xs text-surface-600 dark:text-surface-300">
+            <li>• {t('webshop1.dash.feesClient')}</li>
+            <li>• {t('webshop1.dash.feesMerchant')}</li>
+          </ul>
+        </motion.div>
         {/* Recent Orders */}
         <ScrollReveal as="section">
           <div className="rounded-2xl bg-white dark:bg-surface-800 shadow-soft dark:shadow-dark p-6">
