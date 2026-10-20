@@ -21,6 +21,30 @@ test('signIn stores tokens and user', async () => {
   expect(store.getState().user).toMatchObject({ id: 'u1' });
 });
 
+test('signUp registers as driver and stores tokens', async () => {
+  const storage = {
+    getAccess: async () => null,
+    getRefresh: async () => null,
+    setTokens: jest.fn(async () => {}),
+    clear: jest.fn(async () => {}),
+  } as any;
+  const api = {
+    register: jest.fn(async () => ({
+      accessToken: 'a',
+      refreshToken: 'r',
+      user: { id: 'u1', role: 'driver' },
+    })),
+    profile: jest.fn(),
+  } as any;
+  const store = createSessionStore({ storage, api });
+  await store.getState().signUp({ email: 'j@kiwi.app', password: '123456' });
+  expect(api.register).toHaveBeenCalledWith(
+    expect.objectContaining({ role: 'driver', email: 'j@kiwi.app' }),
+  );
+  expect(storage.setTokens).toHaveBeenCalledWith({ access: 'a', refresh: 'r' });
+  expect(store.getState().user).toMatchObject({ id: 'u1' });
+});
+
 test('hydrate without a token leaves the user null', async () => {
   const storage = {
     getAccess: async () => null,

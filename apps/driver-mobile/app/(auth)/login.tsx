@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { TextInput, Text, View, Alert } from 'react-native';
+import { Pressable, TextInput, Text, View, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Screen, Button, tokens } from '@kiwi/mobile-ui';
 import { useTranslation } from '@kiwi/i18n';
@@ -62,6 +62,11 @@ export default function Login() {
             }
           }}
         />
+        <Pressable onPress={() => router.push('/(auth)/register')} style={{ marginTop: 4 }}>
+          <Text style={{ color: tokens.color.kiwi, textAlign: 'center', fontWeight: '600' }}>
+            {t.driverRegister.noAccount}
+          </Text>
+        </Pressable>
       </View>
     </Screen>
   );

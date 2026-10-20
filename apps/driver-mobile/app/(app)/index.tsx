@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { FlatList, Switch, Text, View } from 'react-native';
+import { FlatList, Pressable, Switch, Text, View } from 'react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { Screen, Button, StatusBadge, tokens } from '@kiwi/mobile-ui';
@@ -61,6 +61,32 @@ export default function Home() {
           {online ? t.driverHome.online : t.driverHome.offline}
         </Text>
         <Switch value={online} onValueChange={setOnline} />
+      </View>
+      <View style={{ flexDirection: 'row', gap: 8, marginBottom: tokens.space[3] }}>
+        <Pressable
+          onPress={() => router.push('/(app)/earnings')}
+          style={{
+            flex: 1,
+            backgroundColor: tokens.color.surface,
+            borderRadius: tokens.radius.md,
+            paddingVertical: 10,
+            alignItems: 'center',
+          }}
+        >
+          <Text style={{ color: tokens.color.ink, fontWeight: '600' }}>{t.earnings.title}</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => router.push('/(app)/profile')}
+          style={{
+            flex: 1,
+            backgroundColor: tokens.color.surface,
+            borderRadius: tokens.radius.md,
+            paddingVertical: 10,
+            alignItems: 'center',
+          }}
+        >
+          <Text style={{ color: tokens.color.ink, fontWeight: '600' }}>{t.profile.title}</Text>
+        </Pressable>
       </View>
       <FlatList
         data={orders}

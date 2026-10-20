@@ -8,6 +8,13 @@ export function createSessionStore({ storage, api }: Deps) {
     online: boolean;
     hydrated: boolean;
     signIn(e: string, p: string): Promise<void>;
+    signUp(body: {
+      email: string;
+      password: string;
+      fullName?: string;
+      phone?: string;
+      vehicleType?: string;
+    }): Promise<void>;
     hydrate(): Promise<void>;
     setOnline(b: boolean): void;
     signOut(): Promise<void>;
@@ -17,6 +24,11 @@ export function createSessionStore({ storage, api }: Deps) {
     hydrated: false,
     async signIn(email, password) {
       const r = await api.login(email, password);
+      await storage.setTokens({ access: r.accessToken, refresh: r.refreshToken });
+      set({ user: r.user });
+    },
+    async signUp(body) {
+      const r = await api.register({ ...body, role: 'driver' });
       await storage.setTokens({ access: r.accessToken, refresh: r.refreshToken });
       set({ user: r.user });
     },
