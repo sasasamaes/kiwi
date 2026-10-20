@@ -8,6 +8,7 @@ export function BottomNav({ active }: { active: string }) {
   const router = useRouter();
   const ITEMS: { key: string; label: string; href: Href }[] = [
     { key: 'comandas', label: t.merchantBoard.title, href: '/(app)/comandas' },
+    { key: 'menu', label: t.merchantMenu.title, href: '/(app)/menu' },
     { key: 'drivers', label: t.merchantDrivers.title, href: '/(app)/drivers' },
     { key: 'notifications', label: t.merchantNotifications.title, href: '/(app)/notifications' },
     { key: 'profile', label: t.nav.profile, href: '/(app)/profile' },

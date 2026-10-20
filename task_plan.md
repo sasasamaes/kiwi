@@ -1,3 +1,31 @@
+# Paridad móvil nativa (Expo) — 2026-10-20
+
+## Goal
+
+Llevar las 3 apps nativas (`merchant-mobile`, `driver-mobile`, `client-mobile`) a paridad funcional con sus webs antes del lanzamiento. Admin/backoffice (`apps/web/app/admin/*`) queda solo web por decisión explícita.
+
+## Scope por app
+
+- **merchant-mobile**: menú (CRUD + disponibilidad), crédito prepago (saldo/historial/recarga), analytics, avisos a seguidores, perfil del negocio, KYC (estado + verificación), programados/crear pedido. Ya tiene: login, comandas KDS, detalle, repartidores, notificaciones, perfil básico.
+- **driver-mobile**: ganancias + retiro, KYC, registro. Ya tiene: login, ofertas en vivo, detalle, perfil.
+- **client-mobile**: encomiendas, zona azul, feature flags + ComingSoon, banners. Ya tiene: auth, comercios, QR, menú, checkout, tracking, rate, pedidos, perfil.
+- **Fase D (requiere al usuario)**: `eas init` (cuenta Expo), `buildType: apk` en preview, `EXPO_PUBLIC_API_URL` prod, build + QA en Android físico.
+
+## Fases
+
+1. **Fase A merchant-mobile** — menu, credits, analytics, announce, profile extendido, kyc. Status: complete (6 módulos api + tests 34/34, 6 pantallas, BottomNav + hub, i18n ES/EN).
+2. **Fase B driver-mobile** — earnings/withdraw, kyc, register, nav. Status: complete (2 módulos api + tests 21/21, 3 pantallas, profile hub, i18n ES/EN).
+3. **Fase C client-mobile** — encomienda, zona-azul, flags/ComingSoon, banners. Status: complete (2 módulos api + tests 48/48, 3 pantallas, gate, comercios, i18n ES/EN).
+4. **Fase D EAS APK + QA físico** — bloqueado hasta tener cuenta Expo del usuario. Status: pendiente.
+
+## Decisiones
+
+- Reutilizar endpoints existentes (ya envueltos en `packages/ui/api-client`); en móvil solo wrappers finos sobre `mobile-core` + pantallas con `mobile-ui`.
+- i18n: namespaces planos existentes en `packages/i18n` (`menu`, `earnings`, `analytics`, `kyc`, `credits` nuevo, etc.), ES + EN siempre a la par.
+- Convenciones: `Stack` sin header, `mobile-ui` (`Screen`, `Header`, `Button`, `Field`), token en secure-store, tests en `__tests__` junto a cada api.
+
+---
+
 # Merchant–Driver Workflow Audit
 
 ## Goal
