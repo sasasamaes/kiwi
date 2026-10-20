@@ -87,15 +87,15 @@ const CATEGORIES = [
   { id: 'bar', key: 'catBar', icon: Beer },
 ];
 
-const SALES_WA_NUMBER = process.env.NEXT_PUBLIC_SALES_WHATSAPP || '50672199768';
+const SALES_WA_NUMBER = process.env.NEXT_PUBLIC_SALES_WHATSAPP || '50688264007';
 const waLink = (text: string) =>
   `https://wa.me/${SALES_WA_NUMBER}?text=${encodeURIComponent(text)}`;
 
 /** Comunidad de WhatsApp de KiwiCR (ofertas, pautas y novedades). */
 const COMMUNITY_URL =
   process.env.NEXT_PUBLIC_WA_COMMUNITY || 'https://chat.whatsapp.com/IY4TzyYBWij1MO7Nz61UGt';
-/** Número comercial visible (506 7219-9768). */
-const SALES_WA_DISPLAY = '+506 7219-9768';
+/** Número comercial visible (+506 8826 4007). */
+const SALES_WA_DISPLAY = '+506 8826 4007';
 
 const formatRating = (v: unknown): string => {
   const n = typeof v === 'string' ? Number(v) : (v as number);

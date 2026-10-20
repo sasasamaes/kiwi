@@ -11,10 +11,10 @@ export const business = {
   legalEntity:
     'operado por su titular como persona física (sin cédula jurídica), con domicilio en Nicoya, Guanacaste, Costa Rica',
   email: 'contacto@kiwicr.express',
-  phone: '+506 8722-7217',
+  phone: '+506 8826 4007',
   /** Número sin espacios para enlaces tel:/wa.me. */
-  phoneDial: '+50687227217',
-  whatsapp: 'https://wa.me/50687227217',
+  phoneDial: '+50688264007',
+  whatsapp: 'https://wa.me/50688264007',
   instagram: {
     handle: '@kiwi_cr_express',
     url: 'https://www.instagram.com/kiwi_cr_express/',

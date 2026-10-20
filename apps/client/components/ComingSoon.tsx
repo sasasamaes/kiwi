@@ -4,8 +4,8 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Store, Bike, Instagram, Mail, Check, Loader2 } from 'lucide-react';
-import { api, useTranslations, KiwiLogo } from '@kiwi/ui';
+import { Store, Bike, Instagram, Mail, Check, Loader2, MessageCircle } from 'lucide-react';
+import { api, useTranslations, KiwiLogo, business } from '@kiwi/ui';
 
 /**
  * Pantalla de prelanzamiento: la app de clientes abre después del 23 oct
@@ -130,6 +130,16 @@ export function ComingSoon() {
           </Link>
         </p>
       </div>
+
+      <a
+        href={business.whatsapp}
+        target="_blank"
+        rel="noreferrer"
+        className="mt-4 inline-flex items-center gap-2 rounded-full bg-green-500/15 px-5 py-2.5 text-sm font-semibold text-green-700 dark:text-green-300"
+      >
+        <MessageCircle className="h-5 w-5" aria-hidden />
+        {t('wclihome.coming.whatsapp')} · {business.phone}
+      </a>
 
       <a
         href="https://www.instagram.com/kiwi_cr_express/"

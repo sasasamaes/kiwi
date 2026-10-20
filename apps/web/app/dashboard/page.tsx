@@ -267,7 +267,7 @@ export default function Dashboard() {
   const deliveredOrders = orders.filter((o) => o.status === 'delivered');
 
   return (
-    <div className="min-h-[100dvh] bg-bg-light">
+    <div className="min-h-[100dvh] overflow-x-clip bg-bg-light">
       <MerchantNav
         isConnected={isConnected}
         unreadCount={unreadCount}
@@ -307,7 +307,7 @@ export default function Dashboard() {
                 } as any)
               }
             />
-            <div>
+            <div className="min-w-0">
               <h2 className="text-2xl font-display font-bold text-surface-800 dark:text-surface-100">
                 {getGreeting()} 👋 {user?.merchantProfile?.businessName || ''}
               </h2>
@@ -628,16 +628,16 @@ export default function Dashboard() {
                 {creditBalance < 2000 ? t('webshop1.dash.creditLow') : t('webshop1.dash.creditOk')}
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2 min-[420px]:flex-row">
               <Link
                 href="/credits"
-                className="rounded-xl bg-kiwi-700 px-4 py-2 text-center text-sm font-semibold text-white hover:bg-kiwi-800"
+                className="whitespace-nowrap rounded-xl bg-kiwi-700 px-4 py-2 text-center text-sm font-semibold text-white hover:bg-kiwi-800"
               >
                 {t('webshop1.dash.creditRecharge')}
               </Link>
               <Link
                 href="/orders/new"
-                className="rounded-xl border border-kiwi-700 px-4 py-2 text-center text-sm font-semibold text-kiwi-700 hover:bg-kiwi-50 dark:hover:bg-kiwi-900/20"
+                className="whitespace-nowrap rounded-xl border border-kiwi-700 px-4 py-2 text-center text-sm font-semibold text-kiwi-700 hover:bg-kiwi-50 dark:hover:bg-kiwi-900/20"
               >
                 {t('webshop1.dash.creditOrder')}
               </Link>
@@ -730,18 +730,18 @@ export default function Dashboard() {
                         })}
                       >
                         <motion.div
-                          className="group flex items-center justify-between rounded-xl border border-surface-100 dark:border-surface-700 bg-surface-50/50 dark:bg-surface-900/50 p-4 transition-all hover:border-kiwi-200 hover:bg-white dark:hover:bg-surface-800 hover:shadow-soft-md cursor-pointer"
+                          className="group flex flex-col gap-3 rounded-xl border border-surface-100 dark:border-surface-700 bg-surface-50/50 dark:bg-surface-900/50 p-4 transition-all hover:border-kiwi-200 hover:bg-white dark:hover:bg-surface-800 hover:shadow-soft-md cursor-pointer sm:flex-row sm:items-center sm:justify-between"
                           whileHover={{ x: 4 }}
                         >
-                          <div className="flex items-center gap-4">
+                          <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-4">
                             <motion.div
-                              className="flex h-12 w-12 items-center justify-center rounded-xl bg-kiwi-100 text-kiwi-700 transition-colors group-hover:bg-kiwi-700 group-hover:text-white"
+                              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-kiwi-100 text-kiwi-700 transition-colors group-hover:bg-kiwi-700 group-hover:text-white"
                               whileHover={{ rotate: 10 }}
                             >
                               <span className="text-lg font-bold">#{order.id.slice(-4)}</span>
                             </motion.div>
-                            <div>
-                              <p className="font-medium text-surface-800 dark:text-surface-200">
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate font-medium text-surface-800 dark:text-surface-200">
                                 {getClientName(order)}
                               </p>
                               <div className="flex items-center gap-2">
@@ -766,17 +766,17 @@ export default function Dashboard() {
                               </div>
                             </div>
                           </div>
-                          <div className="flex items-center gap-4">
-                            <span className="text-lg font-semibold text-surface-700 dark:text-surface-300">
+                          <div className="flex shrink-0 items-center gap-2 pl-[60px] sm:gap-4 sm:pl-0">
+                            <span className="whitespace-nowrap text-lg font-semibold text-surface-700 dark:text-surface-300">
                               ₡{Number(order.totalAmount).toLocaleString()}
                             </span>
                             <motion.span
-                              className={`rounded-full px-3 py-1 text-xs font-medium ${statusInfo.color}`}
+                              className={`whitespace-nowrap rounded-full px-3 py-1 text-xs font-medium ${statusInfo.color}`}
                               whileHover={{ scale: 1.05 }}
                             >
                               {statusInfo.label}
                             </motion.span>
-                            <span className="text-sm text-surface-500 dark:text-surface-400">
+                            <span className="whitespace-nowrap text-xs text-surface-500 dark:text-surface-400 sm:text-sm">
                               {time}
                             </span>
                           </div>

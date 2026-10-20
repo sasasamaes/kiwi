@@ -22,6 +22,10 @@ export interface ScrollToTopProps {
  *
  * En prefers-reduced-motion: window.scrollTo con behavior 'instant' — el
  * navegador ya lo respeta si pedimos 'smooth', pero lo hacemos explícito.
+ *
+ * El offset inferior (104px) deja libre la franja de los FAB de página
+ * (ej. pedido rápido del dashboard: h-16 a bottom-6 → ocupa hasta 88px),
+ * así ambos botones forman una columna alineada a la derecha sin solaparse.
  */
 export function ScrollToTop({
   threshold = 400,
@@ -67,7 +71,7 @@ export function ScrollToTop({
             marginBottom: 'env(safe-area-inset-bottom, 0px)',
             marginRight: 'env(safe-area-inset-right, 0px)',
           }}
-          className={`fixed bottom-20 right-4 z-40 flex h-11 w-11 items-center justify-center rounded-full bg-kiwi-700 text-white shadow-kiwi-lg hover:bg-kiwi-800 focus:outline-none focus:ring-2 focus:ring-kiwi-400 md:bottom-6 ${className}`}
+          className={`fixed bottom-[104px] right-6 z-40 flex h-11 w-11 items-center justify-center rounded-full bg-kiwi-700 text-white shadow-kiwi-lg hover:bg-kiwi-800 focus:outline-none focus:ring-2 focus:ring-kiwi-400 md:bottom-[104px] md:right-6 ${className}`}
         >
           <ArrowUp className="h-5 w-5" />
         </motion.button>

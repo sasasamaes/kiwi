@@ -111,6 +111,7 @@ export const cliHomeEs = {
     hasAccount: '¿Ya tenés cuenta?',
     createAccount: 'Crear cuenta',
     instagram: 'Seguinos en Instagram',
+    whatsapp: 'Escribinos por WhatsApp',
   },
 };
 
@@ -219,5 +220,6 @@ export const cliHomeEn = {
     hasAccount: 'Already have an account?',
     createAccount: 'Create account',
     instagram: 'Follow us on Instagram',
+    whatsapp: 'Chat with us on WhatsApp',
   },
 };
