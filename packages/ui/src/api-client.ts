@@ -742,6 +742,24 @@ class ApiClient {
     });
   }
 
+  /** Mandado de cliente registrado (compra presencial + 10% fee). */
+  async createMandado(data: any, opts?: { idempotencyKey?: string }) {
+    const idempotencyKey = opts?.idempotencyKey || (data as any)?.idempotencyKey;
+    return this.request<any>('/orders/mandado', {
+      method: 'POST',
+      body: idempotencyKey ? { ...data, idempotencyKey } : data,
+      headers: idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined,
+    });
+  }
+
+  /** Registrar el monto de la factura de un mandado (repartidor asignado). */
+  async setReceiptAmount(orderId: string, amount: number) {
+    return this.request<any>(`/orders/${orderId}/receipt`, {
+      method: 'PUT',
+      body: { amount },
+    });
+  }
+
   async createCustomerOrder(data: any, opts?: { idempotencyKey?: string }) {
     const idempotencyKey = opts?.idempotencyKey || (data as any)?.idempotencyKey;
     return this.request<any>('/orders/mine', {
@@ -1929,6 +1947,7 @@ class ApiClient {
     encomiendaEnabled: boolean;
     mercaditoEnabled: boolean;
     bannersEnabled: boolean;
+    mandadosEnabled: boolean;
     clientAppEnabled: boolean;
   }> {
     try {
@@ -1937,6 +1956,7 @@ class ApiClient {
         encomiendaEnabled: r?.encomiendaEnabled !== false,
         mercaditoEnabled: r?.mercaditoEnabled !== false,
         bannersEnabled: r?.bannersEnabled !== false,
+        mandadosEnabled: r?.mandadosEnabled !== false,
         clientAppEnabled: r?.clientAppEnabled !== false,
       };
     } catch {
@@ -1944,6 +1964,7 @@ class ApiClient {
         encomiendaEnabled: true,
         mercaditoEnabled: true,
         bannersEnabled: true,
+        mandadosEnabled: true,
         clientAppEnabled: true,
       };
     }

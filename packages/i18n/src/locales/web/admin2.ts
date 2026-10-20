@@ -40,6 +40,9 @@ export const admin2Es = {
     mercaditoHint: 'Muestra la tarjeta del mercadito en la app cliente. Apagala para esconderla.',
     banners: '📣 Banners patrocinados',
     bannersHint: 'Muestra el carrusel de publicidad en la app cliente. Apagalo para esconderlo.',
+    mandados: '🛒 Mandados',
+    mandadosHint:
+      'Muestra la tarjeta de mandados en la app cliente (compra presencial + 10% fee). Apagala para esconderla.',
     clientApp: '📱 App de clientes abierta',
     clientAppHint:
       'Apagala y la app cliente muestra Próximamente (lanzamiento 23 oct): solo registro y aviso por correo.',
@@ -530,6 +533,9 @@ export const admin2En = {
     mercaditoHint: 'Shows the market card in the customer app. Turn it off to hide it.',
     banners: '📣 Sponsored banners',
     bannersHint: 'Shows the ads carousel in the customer app. Turn it off to hide it.',
+    mandados: '🛒 Errands',
+    mandadosHint:
+      'Shows the errands card in the customer app (in-person shopping + 10% fee). Turn it off to hide it.',
     clientApp: '📱 Customer app open',
     clientAppHint:
       'Turn it off and the customer app shows Coming Soon (Oct 23 launch): only signup and email notice.',

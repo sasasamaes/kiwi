@@ -16,7 +16,8 @@ Llevar las 3 apps nativas (`merchant-mobile`, `driver-mobile`, `client-mobile`) 
 1. **Fase A merchant-mobile** — menu, credits, analytics, announce, profile extendido, kyc. Status: complete (6 módulos api + tests 34/34, 6 pantallas, BottomNav + hub, i18n ES/EN).
 2. **Fase B driver-mobile** — earnings/withdraw, kyc, register, nav. Status: complete (2 módulos api + tests 21/21, 3 pantallas, profile hub, i18n ES/EN).
 3. **Fase C client-mobile** — encomienda, zona-azul, flags/ComingSoon, banners. Status: complete (2 módulos api + tests 48/48, 3 pantallas, gate, comercios, i18n ES/EN).
-4. **Fase D EAS APK + QA físico** — Status: en curso (3 apps linkeadas a org KiWi, build APK comercios lanzado; faltan APKs repartidor/cliente + QA en físico).
+4. **Fase D EAS APK + QA físico** — Status: en curso (3 apps linkeadas a org KiWi; builds APK comercios + repartidor + cliente lanzados; falta QA en físico).
+5. **Mandados** — Status: complete (backend: migración, `POST /orders/mandado`, `PUT /orders/:id/receipt`, flag `mandadosEnabled`; web cliente: tarjeta + página; móvil cliente: entrada + pantalla + gate; repartidor web + móvil: tarjeta de compra + registro de factura; i18n ES/EN; tests api 599/599).
 
 ## Decisiones
 

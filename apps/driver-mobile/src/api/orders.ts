@@ -13,5 +13,8 @@ export function ordersApi(http: Http) {
       http.put<any>(`/orders/${id}/status`, { status }),
     uploadProof: (id: string, form: FormData) =>
       http.postMultipart<any>(`/orders/${id}/proof-photo`, form),
+    get: (id: string) => http.get<any>(`/orders/${id}`),
+    // Registrar el monto de la factura de un mandado (`PUT /orders/:id/receipt`).
+    setReceipt: (id: string, amount: number) => http.put<any>(`/orders/${id}/receipt`, { amount }),
   };
 }

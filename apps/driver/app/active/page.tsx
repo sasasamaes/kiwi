@@ -28,6 +28,7 @@ import {
   Inbox,
   AlertTriangle,
   Flag,
+  ShoppingBag,
 } from 'lucide-react';
 import {
   useAuth,
@@ -206,6 +207,27 @@ export default function ActiveOrders() {
   const [celebration, setCelebration] = useState<{ payout: number } | null>(null);
   // Reloj vivo para "hace X min"
   const [, setTick] = useState(0);
+  // Factura del mandado: el driver registra lo que pagó en la tienda.
+  const [receiptInput, setReceiptInput] = useState('');
+  const [savingReceipt, setSavingReceipt] = useState(false);
+  const saveReceipt = async (orderId: string) => {
+    const amount = Math.round(Number(receiptInput));
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setNotice(t('wdrvwork.active.mandaReceiptError'));
+      return;
+    }
+    setSavingReceipt(true);
+    try {
+      await api.setReceiptAmount(orderId, amount);
+      setReceiptInput('');
+      setNotice(t('wdrvwork.active.mandaReceiptSaved'));
+      await fetchActiveOrders();
+    } catch {
+      setNotice(t('wdrvwork.active.mandaReceiptError'));
+    } finally {
+      setSavingReceipt(false);
+    }
+  };
   // orderId -> estado al que se quiere avanzar mientras está encolado
   const [queuedTransitions, setQueuedTransitions] = useState<Record<string, string>>({});
   const queuedTransitionsRef = useRef(queuedTransitions);
@@ -1182,6 +1204,59 @@ export default function ActiveOrders() {
               </button>
             </div>
           </div>
+
+          {/* Mandado: qué comprar + factura */}
+          {(order as any).isMandado && (
+            <div className="flex gap-3">
+              <div className="flex flex-col items-center">
+                <motion.div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-orange-100 text-orange-600 dark:bg-orange-400/10 dark:text-orange-300">
+                  <ShoppingBag className="h-5 w-5" aria-hidden />
+                </motion.div>
+              </div>
+              <div className="min-w-0 flex-1 rounded-2xl border border-orange-500/30 dark:border-orange-400/20 bg-orange-50/60 dark:bg-orange-400/[0.06] p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-orange-700 dark:text-orange-300">
+                  {t('wdrvwork.active.mandaTitle')}
+                </p>
+                <p className="mt-1 break-words text-base font-semibold text-surface-800 dark:text-surface-100">
+                  {t('wdrvwork.active.mandaStore')}:{' '}
+                  {String((order as any).purchaseStore ?? order.pickupAddress)}
+                </p>
+                {(order as any).packageDescription && (
+                  <p className="mt-1 break-words text-sm text-surface-600 dark:text-surface-300">
+                    {t('wdrvwork.active.mandaList')}:{' '}
+                    {String((order as any).packageDescription).replace(/^Mandado en [^:]+:\s*/, '')}
+                  </p>
+                )}
+                <p className="mt-1 text-xs text-surface-500 dark:text-surface-400">
+                  {t('wdrvwork.active.mandaEstimate')}: ₡
+                  {Number(
+                    (order as any).receiptAmount ?? (order as any).purchaseEstimate ?? 0,
+                  ).toLocaleString()}
+                  {' · '}
+                  {t('wdrvwork.active.mandaBonus')}
+                </p>
+                {order.status !== 'delivered' && order.status !== 'cancelled' && (
+                  <div className="mt-3 flex gap-2">
+                    <input
+                      value={receiptInput}
+                      onChange={(e) => setReceiptInput(e.target.value.replace(/[^0-9]/g, ''))}
+                      inputMode="numeric"
+                      placeholder={t('wdrvwork.active.mandaReceiptPh')}
+                      aria-label={t('wdrvwork.active.mandaReceipt')}
+                      className="min-w-0 flex-1 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-2 text-sm"
+                    />
+                    <button
+                      onClick={() => void saveReceipt(order.id)}
+                      disabled={savingReceipt}
+                      className="shrink-0 rounded-xl bg-orange-500 px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
+                    >
+                      {t('wdrvwork.active.mandaReceiptSave')}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Entregar */}
           <div className="flex gap-3">

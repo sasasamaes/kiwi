@@ -32,6 +32,7 @@ export default function Comercios() {
     retry: 1,
   });
   const showEncomienda = (feat as any)?.encomiendaEnabled !== false;
+  const showMandados = (feat as any)?.mandadosEnabled !== false;
   const showMercadito = (feat as any)?.mercaditoEnabled !== false;
   const showBanners = (feat as any)?.bannersEnabled !== false;
 
@@ -99,15 +100,24 @@ export default function Comercios() {
         ))}
       </View>
 
-      {(showEncomienda || showMercadito) && (
-        <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+      {(showEncomienda || showMandados || showMercadito) && (
+        <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
           {showEncomienda && (
             <Pressable
               accessibilityRole="button"
               onPress={() => router.push('/(public)/encomienda')}
-              style={styles.entry}
+              style={[styles.entry, { flexBasis: '48%', flexGrow: 1 }]}
             >
               <Text style={styles.entryTitle}>📦 {t.encomienda.title}</Text>
+            </Pressable>
+          )}
+          {showMandados && (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push('/(public)/mandados')}
+              style={[styles.entry, { flexBasis: '48%', flexGrow: 1 }]}
+            >
+              <Text style={styles.entryTitle}>🛒 {t.mandados.title}</Text>
             </Pressable>
           )}
           {showMercadito && (

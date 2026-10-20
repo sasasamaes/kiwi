@@ -18,6 +18,7 @@ export default function PublicLayout() {
   }, [hydrated, hydrate]);
 
   // Gate de prelanzamiento: espejo del AppGate web (fail-open sin API).
+  // El seguimiento siempre pasa: el pedido ya existe y solo se mira.
   const { data } = useQuery({
     queryKey: ['flags'],
     queryFn: () => api.features(),
@@ -25,7 +26,8 @@ export default function PublicLayout() {
   });
 
   useEffect(() => {
-    if (data && (data as any).clientAppEnabled === false && pathname !== '/closed') {
+    const isTracking = pathname === '/tracking' || /(^|\/)tracking(\/|$)/.test(pathname ?? '');
+    if (data && (data as any).clientAppEnabled === false && pathname !== '/closed' && !isTracking) {
       router.replace('/(public)/closed');
     }
   }, [data, pathname, router]);

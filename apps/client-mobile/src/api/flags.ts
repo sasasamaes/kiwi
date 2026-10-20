@@ -8,6 +8,7 @@ export function flagsApi(http: Http) {
         encomiendaEnabled: boolean;
         mercaditoEnabled: boolean;
         bannersEnabled: boolean;
+        mandadosEnabled: boolean;
         clientAppEnabled: boolean;
       }>('/settings/features'),
     // Banners patrocinados (`GET /ads/banners?city=`).

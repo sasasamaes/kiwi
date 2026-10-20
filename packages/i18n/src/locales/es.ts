@@ -575,6 +575,30 @@ export default {
     loginRequired: 'Entrá a tu cuenta pa mandar paquetes.',
   },
 
+  // ===== Mandados (cliente) =====
+  mandados: {
+    title: 'Pedí un mandado',
+    subtitle: 'Un repartidor compra por vos y te lo lleva.',
+    store: 'Tienda o lugar',
+    storePh: 'Ej: Súper La Amistad, farmacia…',
+    address: 'Dirección de la tienda',
+    list: '¿Qué compramos?',
+    listPh: 'Ej: 2 leches, pan, queso…',
+    estimate: 'Estimado de compra ₡',
+    estimateHint: 'Tope ₡15,000 · fee 10% (5% extra pal repartidor + 5% Kiwi).',
+    estimateError: 'Tiene que ser entre ₡1 y ₡15,000.',
+    senderName: 'Tu nombre',
+    senderPhone: 'Tu teléfono',
+    delivery: 'Dirección de entrega',
+    notes: 'Notas (opcional)',
+    feeNote: 'Fee 10% sobre compra + viaje · se ajusta con la factura.',
+    submit: 'Pedir mandado',
+    sending: 'Pidiendo…',
+    success: '¡Mandado pedido! Te avisamos cuando un repartidor lo tome.',
+    failed: 'No se pudo crear el mandado',
+    loginRequired: 'Entrá a tu cuenta pa pedir mandados.',
+  },
+
   // ===== Mercadito Zona Azul (cliente) =====
   zonazul: {
     title: 'Mercadito Zona Azul',
@@ -749,6 +773,16 @@ export default {
     finished: 'El pedido ya terminó',
     cameraForDelivery: 'Ocupamos permiso de cámara pa la foto de entrega',
     updateFailed: 'No se pudo actualizar',
+    mandaTitle: '🛒 Mandado: compra presencial',
+    mandaStore: 'Comprar en',
+    mandaList: 'Lista',
+    mandaEstimate: 'Estimado',
+    mandaReceipt: 'Monto de la factura',
+    mandaReceiptPh: 'Ej: 6250',
+    mandaReceiptSave: 'Guardar factura',
+    mandaReceiptSaved: 'Factura registrada.',
+    mandaReceiptError: 'No se pudo guardar la factura.',
+    mandaBonus: 'Tu extra por la compra',
   },
 
   // ===== Login repartidor =====

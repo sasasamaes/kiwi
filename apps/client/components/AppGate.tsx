@@ -7,11 +7,28 @@ import { api } from '@kiwi/ui';
 import { ComingSoon } from './ComingSoon';
 
 /** Rutas que siguen abiertas cuando la app está en modo Próximamente. */
-const OPEN_PATHS = ['/register', '/login', '/privacy', '/terms', '/cookies', '/refunds'];
+const OPEN_PATHS = [
+  '/register',
+  '/login',
+  '/privacy',
+  '/terms',
+  '/cookies',
+  '/refunds',
+  '/tracking',
+];
+
+/** El link de seguimiento siempre funciona: el pedido ya existe y el
+ *  cliente solo mira su estado (no usa la app). Cubre /tracking/[id] y
+ *  /order/[id]/tracking. */
+function isTrackingPath(pathname: string | null): boolean {
+  if (!pathname) return false;
+  return pathname === '/tracking' || /(^|\/)tracking(\/|$)/.test(pathname);
+}
 
 /**
  * Bloquea la app cliente en prelanzamiento: todo redirige a Próximamente
- * salvo registro/login/legales. Fail-open: sin respuesta del API, la app abre.
+ * salvo registro/login/legales y seguimiento de pedidos.
+ * Fail-open: sin respuesta del API, la app abre.
  */
 export function AppGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -32,7 +49,11 @@ export function AppGate({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  if (blocked === true && !OPEN_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
+  if (
+    blocked === true &&
+    !isTrackingPath(pathname) &&
+    !OPEN_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))
+  ) {
     return <ComingSoon />;
   }
   return <>{children}</>;

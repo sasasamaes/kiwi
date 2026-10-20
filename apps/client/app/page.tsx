@@ -43,6 +43,7 @@ import {
   Sandwich,
   Salad,
   Beer,
+  ShoppingBag,
   CookingPot,
   Package,
   Sprout,
@@ -141,6 +142,7 @@ export default function ClientHome() {
   const [locDenied, setLocDenied] = useState(false);
   /** Feature flags del admin: muestran u ocultan secciones del inicio. */
   const [showEncomienda, setShowEncomienda] = useState(true);
+  const [showMandados, setShowMandados] = useState(true);
   const [showMercadito, setShowMercadito] = useState(true);
   const [showBanners, setShowBanners] = useState(true);
 
@@ -151,6 +153,7 @@ export default function ClientHome() {
       .then((f) => {
         if (cancelled) return;
         setShowEncomienda(f.encomiendaEnabled !== false);
+        setShowMandados((f as any).mandadosEnabled !== false);
         setShowMercadito((f as any).mercaditoEnabled !== false);
         setShowBanners((f as any).bannersEnabled !== false);
       })
@@ -438,6 +441,28 @@ export default function ClientHome() {
               </span>
               <ChevronRight
                 className="h-5 w-5 shrink-0 text-kiwi-700 dark:text-kiwi-300"
+                aria-hidden
+              />
+            </Link>
+          )}
+          {showMandados && (
+            <Link
+              href="/mandados"
+              className={`flex items-center gap-3 rounded-2xl border border-orange-500/30 bg-gradient-to-r from-orange-50 via-white to-white p-4 shadow-card dark:border-orange-400/20 dark:from-orange-400/10 dark:via-surface-800 dark:to-surface-800 ${hoverCard} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40 active:scale-[0.99]`}
+            >
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-orange-100 text-orange-700 dark:bg-orange-400/10 dark:text-orange-300">
+                <ShoppingBag className="h-6 w-6" aria-hidden />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block font-display text-[17px] font-bold leading-snug text-surface-900 dark:text-surface-100">
+                  {t('wclihome.home.mandadosTitle')}
+                </span>
+                <span className="block text-xs text-surface-500 dark:text-surface-400">
+                  {t('wclihome.home.mandadosDesc')}
+                </span>
+              </span>
+              <ChevronRight
+                className="h-5 w-5 shrink-0 text-orange-700 dark:text-orange-300"
                 aria-hidden
               />
             </Link>

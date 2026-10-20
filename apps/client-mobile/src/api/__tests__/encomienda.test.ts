@@ -19,3 +19,23 @@ test('create POSTs /orders/encomienda with idempotency', async () => {
     },
   );
 });
+
+test('createMandado POSTs /orders/mandado with store and estimate', async () => {
+  const body = {
+    customerName: 'Ana',
+    customerPhone: '88888888',
+    pickupAddress: 'Súper La Amistad',
+    deliveryAddress: 'Barrio San Martín',
+    packageDescription: '2 leches, pan y queso',
+    purchaseStore: 'Súper La Amistad',
+    purchaseEstimate: 5000,
+  };
+  await encomiendaApi(fake).createMandado(body, 'k2');
+  expect(fake.post).toHaveBeenCalledWith(
+    '/orders/mandado',
+    { ...body, idempotencyKey: 'k2' },
+    {
+      headers: { 'Idempotency-Key': 'k2' },
+    },
+  );
+});

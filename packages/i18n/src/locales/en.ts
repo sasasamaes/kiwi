@@ -574,6 +574,30 @@ export default {
     loginRequired: 'Sign in to send parcels.',
   },
 
+  // ===== Errands (customer) =====
+  mandados: {
+    title: 'Send an errand',
+    subtitle: 'A driver shops for you and brings it over.',
+    store: 'Store or place',
+    storePh: 'E.g. La Amistad market, pharmacy…',
+    address: 'Store address',
+    list: 'What do we buy?',
+    listPh: 'E.g. 2 milks, bread, cheese…',
+    estimate: 'Purchase estimate ₡',
+    estimateHint: 'Cap ₡15,000 · 10% fee (5% extra for the driver + 5% Kiwi).',
+    estimateError: 'Must be between ₡1 and ₡15,000.',
+    senderName: 'Your name',
+    senderPhone: 'Your phone',
+    delivery: 'Delivery address',
+    notes: 'Notes (optional)',
+    feeNote: '10% fee on purchase + trip · adjusted with the receipt.',
+    submit: 'Send errand',
+    sending: 'Requesting…',
+    success: 'Errand requested! We will tell you when a driver takes it.',
+    failed: 'Could not create the errand',
+    loginRequired: 'Sign in to send errands.',
+  },
+
   // ===== Blue Zone Market (customer) =====
   zonazul: {
     title: 'Blue Zone Market',
@@ -748,6 +772,16 @@ export default {
     finished: 'The order is already done',
     cameraForDelivery: 'We need camera permission for the delivery photo',
     updateFailed: 'Could not update',
+    mandaTitle: '🛒 Errand: in-person shopping',
+    mandaStore: 'Shop at',
+    mandaList: 'List',
+    mandaEstimate: 'Estimate',
+    mandaReceipt: 'Receipt amount',
+    mandaReceiptPh: 'E.g. 6250',
+    mandaReceiptSave: 'Save receipt',
+    mandaReceiptSaved: 'Receipt saved.',
+    mandaReceiptError: 'Could not save the receipt.',
+    mandaBonus: 'Your extra for shopping',
   },
 
   // ===== Driver login =====
