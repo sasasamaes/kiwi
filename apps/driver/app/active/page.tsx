@@ -44,6 +44,7 @@ import {
   playNotificationSound,
   OrderChat,
   LanguageSwitcherCompact,
+  useDeliveryZones,
   useTranslations,
 } from '@kiwi/ui';
 
@@ -205,6 +206,8 @@ export default function ActiveOrders() {
   const [rejecting, setRejecting] = useState(false);
   const [accepting, setAccepting] = useState(false);
   const [celebration, setCelebration] = useState<{ payout: number } | null>(null);
+  // Zonas con label legible (hook arriba: hay returns tempranos abajo).
+  const deliveryZones = useDeliveryZones();
   // Reloj vivo para "hace X min"
   const [, setTick] = useState(0);
   // Factura del mandado: el driver registra lo que pagó en la tienda.
@@ -734,6 +737,16 @@ export default function ActiveOrders() {
   }
 
   const order = orders.find((o) => o.id === selectedId) ?? orders[0];
+  // El pedido puede traer la zona como id crudo (UUID de la DB). Se resuelve
+  // contra el catálogo; si sigue pareciendo UUID, se oculta el chip.
+  const zoneLabel = (() => {
+    const raw = String((order as any).deliveryZone ?? '').trim();
+    if (!raw) return '';
+    const found = deliveryZones.find((z) => z.id === raw || z.label === raw);
+    if (found) return found.label;
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(raw)) return '';
+    return raw;
+  })();
   const stepIndex = Math.max(0, FLOW_ORDER.indexOf(order.status as (typeof FLOW_ORDER)[number]));
   const meta = STEP_META[order.status];
   // La barra de acción fija es dueña del borde inferior en todos los pasos:
@@ -1283,13 +1296,12 @@ export default function ActiveOrders() {
                 {order.deliveryAddress}
               </p>
               <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-surface-500">
-                {(order as any).deliveryZone && (
+                {zoneLabel ? (
                   <span className="rounded-full bg-kiwi-100 dark:bg-kiwi-900/50 px-2.5 py-0.5 font-medium text-kiwi-700 dark:text-kiwi-300">
-                    <MapPin className="h-3 w-3 inline" /> {String((order as any).deliveryZone)}
+                    <MapPin className="h-3 w-3 inline" /> {zoneLabel}
                   </span>
-                )}
+                ) : null}
                 {distanceKm > 0 && <span>{distanceKm} km</span>}
-                {customer.name && <span>· {customer.name}</span>}
               </div>
               <button
                 onClick={() => copyAddress('delivery', order.deliveryAddress)}
@@ -1550,17 +1562,14 @@ export default function ActiveOrders() {
           <div className="mx-auto max-w-lg px-4 pb-4">
             <motion.div
               layout
-              className="rounded-3xl glass-strong p-3 shadow-kiwi-lg flex items-center gap-3"
+              className="rounded-3xl glass-strong p-2.5 shadow-kiwi-lg flex items-center gap-3"
             >
               <div className="pl-2">
-                <p className="text-[11px] text-surface-500 dark:text-surface-400">
-                  {t('wdrvwork.active.gainLabel')}
-                </p>
                 <p className="font-mono text-lg font-bold text-kiwi-700">
-                  ₡{driverPayout.toLocaleString()}
-                </p>
-                <p className="text-[10px] text-surface-500 dark:text-surface-400">
-                  {t('wdrvwork.active.netSuffix', { pct: feePct })}
+                  ₡{driverPayout.toLocaleString()}{' '}
+                  <span className="font-sans text-[10px] font-medium text-surface-500 dark:text-surface-400">
+                    {t('wdrvwork.active.netSuffix', { pct: feePct })}
+                  </span>
                 </p>
               </div>
               <div className="flex-1">
