@@ -329,6 +329,10 @@ export default {
     takePhoto: 'Tomar foto',
     uploadPhoto: 'Subir foto',
     selectFromGallery: 'Elegir de la galería',
+    verifyNow: 'Verificar ahora',
+    openVerification: 'Abrir verificación',
+    refresh: 'Actualizar estado',
+    loadFailed: 'No se pudo cargar el estado',
   },
 
   // Notifications
@@ -552,6 +556,41 @@ export default {
     hint: 'Apuntá la cámara al QR del comercio',
   },
 
+  // ===== Encomiendas (cliente) =====
+  encomienda: {
+    title: 'Enviá un paquete',
+    subtitle: 'Un repartidor lo recoge y lo lleva.',
+    pickup: 'Dirección de retiro',
+    delivery: 'Dirección de entrega',
+    description: '¿Qué mandás?',
+    senderName: 'Tu nombre',
+    senderPhone: 'Tu teléfono',
+    recipientName: '¿Quién recibe?',
+    recipientPhone: 'Teléfono del que recibe',
+    notes: 'Notas (opcional)',
+    submit: 'Pedir repartidor',
+    sending: 'Pidiendo…',
+    success: '¡Pedido! Te avisamos cuando un repartidor lo tome.',
+    failed: 'No se pudo crear el envío',
+    loginRequired: 'Entrá a tu cuenta pa mandar paquetes.',
+  },
+
+  // ===== Mercadito Zona Azul (cliente) =====
+  zonazul: {
+    title: 'Mercadito Zona Azul',
+    subtitle: 'Antojos y productos de Nicoya.',
+    empty: 'Ahorita no hay nada publicado.',
+    order: 'Ver menú y pedir',
+  },
+
+  // ===== App cerrada / prelanzamiento (cliente) =====
+  closed: {
+    badge: 'Próximamente',
+    title: 'La app de clientes llega pronto',
+    body: 'Primero lanzamos comercios y repartidores. Dejanos tu correo y te avisamos el día uno.',
+    whatsapp: 'Escribinos por WhatsApp',
+  },
+
   // ===== Comandas (comercio) =====
   merchantBoard: {
     title: 'Comandas',
@@ -617,6 +656,81 @@ export default {
     empty: 'Sin avisos por ahora.',
   },
 
+  // ===== Menú del comercio (móvil) =====
+  merchantMenu: {
+    title: 'Mi menú',
+    empty: 'Todavía no tenés platos. Agregá el primero.',
+    add: 'Agregar plato',
+    edit: 'Editar plato',
+    name: 'Nombre',
+    description: 'Descripción (opcional)',
+    price: 'Precio ₡',
+    category: 'Categoría (opcional)',
+    available: 'Disponible',
+    save: 'Guardar',
+    saving: 'Guardando…',
+    delete: 'Eliminar',
+    confirmDelete: '¿Eliminar "{{name}}"?',
+    cancel: 'Cancelar',
+    loadFailed: 'No se pudo cargar el menú',
+    saveFailed: 'No se pudo guardar',
+    deleteFailed: 'No se pudo eliminar',
+    saved: '¡Guardado!',
+    stock: 'Stock (vacío = ilimitado)',
+  },
+
+  // ===== Crédito prepago (comercio) =====
+  credits: {
+    title: 'Crédito prepago',
+    balance: 'Saldo: ₡{{amount}}',
+    low: 'Saldo bajo: recargá pa seguir enviando.',
+    ok: 'Cubre tus envíos (solo el viaje).',
+    recharge: 'Recargar con tarjeta',
+    amount: 'Monto ₡',
+    minAmount: 'Mínimo ₡{{amount}}',
+    history: 'Movimientos',
+    empty: 'Sin movimientos todavía.',
+    topupFailed: 'No se pudo crear la recarga',
+    openCheckout: 'Abrir pago',
+    pending: 'Pendiente',
+    completed: 'Completada',
+    failed: 'Fallida',
+    verifyPayment: 'Ya pagué, verificar',
+  },
+
+  // ===== Avisos a seguidores (comercio) =====
+  announce: {
+    title: 'Avisar a seguidores',
+    followers: '{{count}} seguidores',
+    quota: 'Gratis esta semana: {{left}}/{{total}}',
+    extra: '+{{count}} extra',
+    empty: 'Se te acabaron los gratis. Recargá extras en la web.',
+    subject: 'Título',
+    body: 'Mensaje',
+    send: 'Enviar aviso',
+    sending: 'Enviando…',
+    sentOne: '¡Llegó a 1 seguidor!',
+    sentMany: '¡Llegó a {{count}} seguidores!',
+    noFollowers: 'Todavía no tenés seguidores.',
+    failed: 'No se pudo enviar',
+  },
+
+  // ===== Perfil del negocio (móvil) =====
+  merchantProfile: {
+    title: 'Mi negocio',
+    businessName: 'Nombre del negocio',
+    description: 'Descripción',
+    address: 'Dirección',
+    phone: 'Teléfono',
+    listed: 'Visible en la app',
+    save: 'Guardar',
+    saving: 'Guardando…',
+    saved: '¡Guardado!',
+    loadFailed: 'No se pudo cargar el perfil',
+    saveFailed: 'No se pudo guardar',
+    signOut: 'Cerrar sesión',
+  },
+
   // ===== Repartidor: home =====
   driverHome: {
     online: 'En línea',
@@ -641,6 +755,44 @@ export default {
   driverAuth: {
     loginTitle: 'Kiwi Repartidor',
     loginFailed: 'No se pudo iniciar sesión',
+  },
+
+  // ===== Registro repartidor =====
+  driverRegister: {
+    title: 'Manejá con Kiwi',
+    name: 'Nombre completo',
+    email: 'Correo',
+    password: 'Contraseña',
+    phone: 'Teléfono',
+    vehicle: '¿En qué andás?',
+    register: 'Crear cuenta',
+    registering: 'Creando…',
+    haveAccount: '¿Ya tenés cuenta? Entrá',
+    noAccount: '¿No tenés cuenta? Creá la tuya',
+    failed: 'No se pudo crear la cuenta',
+  },
+
+  // ===== Retiros (repartidor) =====
+  withdraw: {
+    title: 'Retirar plata',
+    balance: 'Disponible: ₡{{amount}}',
+    amount: 'Monto ₡',
+    method: '¿A dónde?',
+    sinpe: 'SINPE',
+    bank: 'Transferencia',
+    sinpePhone: 'Teléfono SINPE',
+    sinpeName: 'Nombre del titular',
+    accountNumber: 'Cuenta IBAN',
+    accountHolder: 'Titular de la cuenta',
+    request: 'Pedir retiro',
+    requesting: 'Pidiendo…',
+    requested: '¡Retiro pedido!',
+    failed: 'No se pudo pedir el retiro',
+    history: 'Historial',
+    empty: 'Sin retiros todavía.',
+    cancel: 'Cancelar',
+    cancelled: 'Retiro cancelado',
+    cancelFailed: 'No se pudo cancelar',
   },
 
   // ===== Login comercio =====

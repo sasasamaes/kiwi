@@ -328,6 +328,10 @@ export default {
     takePhoto: 'Take photo',
     uploadPhoto: 'Upload photo',
     selectFromGallery: 'Choose from gallery',
+    verifyNow: 'Verify now',
+    openVerification: 'Open verification',
+    refresh: 'Refresh status',
+    loadFailed: 'Could not load the status',
   },
 
   // Notifications
@@ -551,6 +555,41 @@ export default {
     hint: 'Point the camera at the store QR',
   },
 
+  // ===== Parcels (customer) =====
+  encomienda: {
+    title: 'Send a parcel',
+    subtitle: 'A driver picks it up and delivers it.',
+    pickup: 'Pickup address',
+    delivery: 'Delivery address',
+    description: 'What are you sending?',
+    senderName: 'Your name',
+    senderPhone: 'Your phone',
+    recipientName: 'Who receives?',
+    recipientPhone: 'Recipient phone',
+    notes: 'Notes (optional)',
+    submit: 'Request driver',
+    sending: 'Requesting…',
+    success: 'Requested! We will tell you when a driver takes it.',
+    failed: 'Could not create the shipment',
+    loginRequired: 'Sign in to send parcels.',
+  },
+
+  // ===== Blue Zone Market (customer) =====
+  zonazul: {
+    title: 'Blue Zone Market',
+    subtitle: 'Treats and products from Nicoya.',
+    empty: 'Nothing published right now.',
+    order: 'See menu and order',
+  },
+
+  // ===== App closed / prelaunch (customer) =====
+  closed: {
+    badge: 'Coming soon',
+    title: 'The customer app is coming soon',
+    body: 'We launch stores and drivers first. Leave your email and we will tell you on day one.',
+    whatsapp: 'Chat with us on WhatsApp',
+  },
+
   // ===== Board (merchant) =====
   merchantBoard: {
     title: 'Orders board',
@@ -616,6 +655,81 @@ export default {
     empty: 'No notifications for now.',
   },
 
+  // ===== Store menu (mobile) =====
+  merchantMenu: {
+    title: 'My menu',
+    empty: 'No dishes yet. Add the first one.',
+    add: 'Add dish',
+    edit: 'Edit dish',
+    name: 'Name',
+    description: 'Description (optional)',
+    price: 'Price ₡',
+    category: 'Category (optional)',
+    available: 'Available',
+    save: 'Save',
+    saving: 'Saving…',
+    delete: 'Delete',
+    confirmDelete: 'Delete "{{name}}"?',
+    cancel: 'Cancel',
+    loadFailed: 'Could not load the menu',
+    saveFailed: 'Could not save',
+    deleteFailed: 'Could not delete',
+    saved: 'Saved!',
+    stock: 'Stock (empty = unlimited)',
+  },
+
+  // ===== Prepaid credit (merchant) =====
+  credits: {
+    title: 'Prepaid credit',
+    balance: 'Balance: ₡{{amount}}',
+    low: 'Low balance: top up to keep shipping.',
+    ok: 'Covers your shipments (trip only).',
+    recharge: 'Top up with card',
+    amount: 'Amount ₡',
+    minAmount: 'Minimum ₡{{amount}}',
+    history: 'Activity',
+    empty: 'No activity yet.',
+    topupFailed: 'Could not start the top-up',
+    openCheckout: 'Open payment',
+    pending: 'Pending',
+    completed: 'Completed',
+    failed: 'Failed',
+    verifyPayment: 'I already paid, verify',
+  },
+
+  // ===== Follower announcements (merchant) =====
+  announce: {
+    title: 'Notify followers',
+    followers: '{{count}} followers',
+    quota: 'Free this week: {{left}}/{{total}}',
+    extra: '+{{count}} extra',
+    empty: 'Out of free ones. Buy extras on the web.',
+    subject: 'Title',
+    body: 'Message',
+    send: 'Send',
+    sending: 'Sending…',
+    sentOne: 'Reached 1 follower!',
+    sentMany: 'Reached {{count}} followers!',
+    noFollowers: 'No followers yet.',
+    failed: 'Could not send',
+  },
+
+  // ===== Store profile (mobile) =====
+  merchantProfile: {
+    title: 'My store',
+    businessName: 'Store name',
+    description: 'Description',
+    address: 'Address',
+    phone: 'Phone',
+    listed: 'Visible in the app',
+    save: 'Save',
+    saving: 'Saving…',
+    saved: 'Saved!',
+    loadFailed: 'Could not load the profile',
+    saveFailed: 'Could not save',
+    signOut: 'Sign out',
+  },
+
   // ===== Driver: home =====
   driverHome: {
     online: 'Online',
@@ -640,6 +754,42 @@ export default {
   driverAuth: {
     loginTitle: 'Kiwi Drivers',
     loginFailed: 'Could not log in',
+  },
+
+  driverRegister: {
+    title: 'Drive with Kiwi',
+    name: 'Full name',
+    email: 'Email',
+    password: 'Password',
+    phone: 'Phone',
+    vehicle: 'What do you ride?',
+    register: 'Create account',
+    registering: 'Creating…',
+    haveAccount: 'Already have an account? Sign in',
+    noAccount: 'No account yet? Create one',
+    failed: 'Could not create the account',
+  },
+
+  withdraw: {
+    title: 'Withdraw money',
+    balance: 'Available: ₡{{amount}}',
+    amount: 'Amount ₡',
+    method: 'Where to?',
+    sinpe: 'SINPE',
+    bank: 'Bank transfer',
+    sinpePhone: 'SINPE phone',
+    sinpeName: 'Account holder name',
+    accountNumber: 'IBAN account',
+    accountHolder: 'Account holder',
+    request: 'Request withdrawal',
+    requesting: 'Requesting…',
+    requested: 'Withdrawal requested!',
+    failed: 'Could not request the withdrawal',
+    history: 'History',
+    empty: 'No withdrawals yet.',
+    cancel: 'Cancel',
+    cancelled: 'Withdrawal cancelled',
+    cancelFailed: 'Could not cancel',
   },
 
   // ===== Merchant login =====
