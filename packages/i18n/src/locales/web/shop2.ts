@@ -94,6 +94,10 @@ export const shop2Es = {
     payCreditBalance: 'Crédito (₡{{amount}})',
     creditNote:
       'Se descuenta solo el viaje (₡{{trip}}) de tu crédito. Vos no pagás comisión: el {{pct}}% lo paga el repartidor. Si no alcanza, recargá con tarjeta en Mi crédito o llamá a Kiwi.',
+    cashTenderTitle: '¿Con cuánto pagan en efectivo?',
+    cashTenderPh: 'Ej: 5000',
+    cashTenderHint:
+      'Opcional. El repartidor solo cobra el viaje (₡{{amount}}): con esto lleva el vuelto listo.',
     missingPrefix: 'Te falta: {{missing}}',
     back: '← Atrás',
     next: 'Siguiente →',
@@ -650,6 +654,10 @@ export const shop2En = {
     payCreditBalance: 'Credit (₡{{amount}})',
     creditNote:
       'Only the trip (₡{{trip}}) is taken from your credit. You pay no fee: the {{pct}}% is paid by the driver. If it is not enough, top up by card in My credit or call Kiwi.',
+    cashTenderTitle: 'How much will they pay in cash?',
+    cashTenderPh: 'E.g. 5000',
+    cashTenderHint:
+      'Optional. The driver only collects the trip (₡{{amount}}): with this they bring exact change.',
     missingPrefix: 'Missing: {{missing}}',
     back: '← Back',
     next: 'Next →',

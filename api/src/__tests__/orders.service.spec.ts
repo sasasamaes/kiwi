@@ -1251,7 +1251,7 @@ describe('OrdersService', () => {
       );
     });
 
-    it('efectivo con monto menor al total se rechaza', async () => {
+    it('efectivo con monto menor a lo cobrable se rechaza', async () => {
       prisma.merchantProfile.findUnique.mockResolvedValue({ id: 'merchant-1', userId: 'user-1' });
       prisma.menuItem.findMany.mockResolvedValue([]);
       prisma.payment.upsert = jest.fn().mockResolvedValue({});
@@ -1266,9 +1266,34 @@ describe('OrdersService', () => {
           paymentMethod: 'cash',
           cashTendered: 1000,
         }),
-      ).rejects.toThrow('no cubre el total');
+      ).rejects.toThrow('no cubre lo que se cobra en efectivo');
       expect(prisma.order.create).not.toHaveBeenCalled();
       expect(prisma.payment.upsert).not.toHaveBeenCalled();
+    });
+
+    it('pedido del comercio en efectivo: el tendered cubre solo el viaje', async () => {
+      prisma.merchantProfile.findUnique.mockResolvedValue({ id: 'merchant-1', userId: 'user-1' });
+      prisma.menuItem.findMany.mockResolvedValue([]);
+      prisma.payment.upsert = jest.fn().mockResolvedValue({});
+      prisma.order.create.mockImplementation((args: any) =>
+        Promise.resolve({ id: 'o-cash-trip', ...args.data }),
+      );
+
+      // Total 7000 pero el viaje son 2000: con 2500 alcanza (solo se cobra el viaje).
+      const order: any = await service.create('user-1', {
+        pickupAddress: 'Parque Nicoya',
+        deliveryAddress: 'Barrio San Martín',
+        distanceKm: 2.5,
+        kind: 'food',
+        productsTotal: 5000,
+        paymentMethod: 'cash',
+        cashTendered: 2500,
+      });
+
+      expect(order.totalAmount).toBe(7000);
+      expect(prisma.order.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ cashTendered: 2500 }) }),
+      );
     });
 
     it('sin cashTendered no guarda monto pero igual crea fila cash', async () => {
@@ -1922,6 +1947,19 @@ describe('OrdersService', () => {
       expect(order.commission).toBe(tripFee + (extra - bonus));
       expect(order.driverPayout).toBe(trip - tripFee + bonus + 5000);
       expect(order.totalAmount).toBe(5000 + trip + extra);
+    });
+
+    it('en efectivo el cliente cubre el total (compra + viaje + fee)', async () => {
+      // Total real = 5000 + viaje + 10%: con 100 no alcanza.
+      await expect(
+        service.createMandadoOrder('cust-1', { ...base, cashTendered: 100 }),
+      ).rejects.toThrow('no cubre lo que se cobra en efectivo');
+
+      const order: any = await service.createMandadoOrder('cust-1', {
+        ...base,
+        cashTendered: 20000,
+      });
+      expect(order.cashTendered).toBe(20000);
     });
 
     it('valida tienda, lista y tope de estimado (₡15000)', async () => {

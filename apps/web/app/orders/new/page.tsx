@@ -152,6 +152,8 @@ function NewOrderInner({
   >('sinpe');
   // Crédito prepago: solo cubre el viaje. Se descuenta al crear.
   const [creditBalance, setCreditBalance] = useState<number | null>(null);
+  // Efectivo: con cuánto pagan (para que el repartidor lleve el vuelto listo).
+  const [cashTendered, setCashTendered] = useState('');
   // % de comisión del repartidor (admin). Solo espejo visual: el backend manda.
   const [commissionPct, setCommissionPct] = useState(15);
 
@@ -749,6 +751,8 @@ function NewOrderInner({
       // Asignación directa en la creación: el backend crea el pedido YA
       // asignado y avisa SOLO al elegido. Sin esto, el pedido nacía en
       // concurso (alertando a toda la flota) y recién después se asignaba.
+      // Efectivo: con cuánto pagan, para el vuelto del repartidor.
+      const cashTenderedNum = cashTendered.trim() ? Number(cashTendered) : undefined;
       let result: any = null;
       try {
         result = await api.createOrder(
@@ -758,6 +762,7 @@ function NewOrderInner({
             deliveryZone: zoneForServer,
             payWithCredit: paymentMethod === 'credit',
             paymentMethod,
+            cashTendered: cashTenderedNum,
             deliveryLat,
             deliveryLng,
             orderType: isScheduled ? 'scheduled' : 'immediate',
@@ -805,6 +810,7 @@ function NewOrderInner({
               deliveryZone: zoneForServer,
               payWithCredit: paymentMethod === 'credit',
               paymentMethod,
+              cashTendered: cashTenderedNum,
               deliveryLat,
               deliveryLng,
               orderType: isScheduled ? 'scheduled' : 'immediate',
@@ -1609,6 +1615,24 @@ function NewOrderInner({
                     pct: commissionPct,
                   })}
                 </p>
+              )}
+              {paymentMethod === 'cash' && (
+                <div className="mb-2">
+                  <label className="mb-1 block text-xs font-medium text-surface-600 dark:text-surface-300">
+                    {t('webshop2.neworder.cashTenderTitle')}
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={cashTendered}
+                    onChange={(e) => setCashTendered(e.target.value.replace(/[^0-9]/g, ''))}
+                    placeholder={t('webshop2.neworder.cashTenderPh')}
+                    className="w-full max-w-xs rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-2 text-sm"
+                  />
+                  <p className="mt-1 text-xs text-surface-500 dark:text-surface-400">
+                    {t('webshop2.neworder.cashTenderHint', { amount: trip.toLocaleString() })}
+                  </p>
+                </div>
               )}
             </motion.div>
           )}

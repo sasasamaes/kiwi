@@ -23,6 +23,12 @@ export default function ActiveOrder() {
   });
   const order: any = detail.data ?? {};
   const isMandado = order.isMandado === true;
+  const isClientOrder = order.origin === 'client_app';
+  const collectable = Math.round(
+    isClientOrder ? Number(order.totalAmount ?? 0) : Number(order.basePrice ?? 0),
+  );
+  const tendered = order.cashTendered != null ? Number(order.cashTendered) : null;
+  const showCash = (order as any)?.payment?.method === 'cash' || tendered != null;
   // Avance optimista local; el servidor manda cuando llega (remount por pedido).
   const [advanced, setAdvanced] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -173,6 +179,38 @@ export default function ActiveOrder() {
                 onPress={() => void saveReceipt()}
               />
             </View>
+          )}
+        </View>
+      )}
+
+      {showCash && (
+        <View
+          style={{
+            backgroundColor: tokens.color.surface,
+            borderRadius: tokens.radius.lg,
+            padding: tokens.space[4],
+            marginBottom: tokens.space[3],
+          }}
+        >
+          <Text style={{ color: tokens.color.ink, fontWeight: '700' }}>
+            {translate('driverOrder.cashTitle', { amount: collectable.toLocaleString() })}
+          </Text>
+          {!isClientOrder && (
+            <Text style={{ color: tokens.color.muted, marginTop: 2 }}>
+              {t.driverOrder.cashTripNote}
+            </Text>
+          )}
+          {tendered != null ? (
+            <Text style={{ color: tokens.color.ink, marginTop: 4 }}>
+              {translate('driverOrder.cashChange', {
+                tendered: tendered.toLocaleString(),
+                change: Math.max(0, tendered - collectable).toLocaleString(),
+              })}
+            </Text>
+          ) : (
+            <Text style={{ color: tokens.color.muted, marginTop: 4 }}>
+              {t.driverOrder.cashNoTender}
+            </Text>
           )}
         </View>
       )}

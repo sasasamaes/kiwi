@@ -756,6 +756,14 @@ export default function ActiveOrders() {
   const driverPayout = netPayout(order);
   // % real del pedido (el admin la puede cambiar; el backend la guarda).
   const feePct = Math.round(Number((order as any).commissionRate ?? 0.15) * 100);
+  // Efectivo a cobrar en mano: el total en pedidos de la app cliente,
+  // solo el viaje en pedidos del comercio (los productos ya los cobró
+  // el comercio). Igual que la validación del backend.
+  const isClientOrder = (order as any).origin === 'client_app';
+  const collectable = Math.round(
+    isClientOrder ? Number(order.totalAmount ?? 0) : Number(order.basePrice ?? 0),
+  );
+  const tendered = (order as any).cashTendered != null ? Number((order as any).cashTendered) : null;
   const distanceKm = Number(order.distanceKm ?? 0);
   // Contacto del cliente: primero los campos del pedido (siempre vienen para
   // el asignado), fallback al parseo de instrucciones viejas ("Cliente: …").
@@ -1080,23 +1088,24 @@ export default function ActiveOrders() {
                   </p>
                 </div>
               </div>
-              {/* Efectivo: cuánto cobrar y vuelto listo */}
-              {((order as any).payment?.method === 'cash' ||
-                (order as any).cashTendered != null) && (
+              {/* Efectivo: cuánto cobrar y cuánto dar de vuelto */}
+              {((order as any).payment?.method === 'cash' || tendered != null) && (
                 <div className="mt-4 rounded-2xl bg-gold-400/90 p-4 text-surface-900">
                   <p className="text-sm font-bold">
                     {t('wdrvwork.active.cashTitle', {
-                      amount: Number(order.totalAmount ?? 0).toLocaleString(),
+                      amount: collectable.toLocaleString(),
                     })}
                   </p>
-                  {(order as any).cashTendered != null ? (
+                  {!isClientOrder && (
+                    <p className="mt-0.5 text-xs font-medium">
+                      {t('wdrvwork.active.cashTripOnly')}
+                    </p>
+                  )}
+                  {tendered != null ? (
                     <p className="mt-0.5 text-sm font-semibold">
                       {t('wdrvwork.active.cashChange', {
-                        tendered: Number((order as any).cashTendered).toLocaleString(),
-                        change: Math.max(
-                          0,
-                          Number((order as any).cashTendered) - Number(order.totalAmount ?? 0),
-                        ).toLocaleString(),
+                        tendered: tendered.toLocaleString(),
+                        change: Math.max(0, tendered - collectable).toLocaleString(),
                       })}
                     </p>
                   ) : (

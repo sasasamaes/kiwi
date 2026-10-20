@@ -782,6 +782,10 @@ export default {
     mandaReceiptSaved: 'Receipt saved.',
     mandaReceiptError: 'Could not save the receipt.',
     mandaBonus: 'Your extra for shopping',
+    cashTitle: '💵 Cash: collect ₡{{amount}}',
+    cashTripNote: 'Store order: trip only.',
+    cashChange: 'Pays with ₡{{tendered}} · Change ₡{{change}}',
+    cashNoTender: 'No amount set: bring small bills.',
   },
 
   // ===== Driver login =====

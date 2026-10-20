@@ -80,6 +80,8 @@ export const drvWorkEs = {
     currencyCode: 'CRC',
     tripNet: 'Viaje ₡{{amount}} − {{pct}}% Kiwi',
     cashTitle: '💵 Efectivo: cobrá ₡{{amount}}',
+    cashTripOnly:
+      'Pedido del comercio: solo cobrás el viaje. Los productos ya los cobró el comercio.',
     cashChange: 'Paga con ₡{{tendered}} · Vuelto ₡{{change}} listo',
     cashNoTender: 'El cliente no indicó con cuánto paga: llevá sencillo.',
     stepAccepted: 'Aceptado',
@@ -388,6 +390,8 @@ export const drvWorkEn = {
     currencyCode: 'CRC',
     tripNet: 'Trip ₡{{amount}} − {{pct}}% Kiwi',
     cashTitle: '💵 Cash: collect ₡{{amount}}',
+    cashTripOnly:
+      'Store order: you only collect the trip. The store already collected the products.',
     cashChange: 'Pays with ₡{{tendered}} · Change ₡{{change}} ready',
     cashNoTender: 'The customer did not say how much they pay with: bring small bills.',
     stepAccepted: 'Accepted',

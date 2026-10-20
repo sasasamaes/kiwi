@@ -783,6 +783,10 @@ export default {
     mandaReceiptSaved: 'Factura registrada.',
     mandaReceiptError: 'No se pudo guardar la factura.',
     mandaBonus: 'Tu extra por la compra',
+    cashTitle: '💵 Efectivo: cobrá ₡{{amount}}',
+    cashTripNote: 'Pedido del comercio: solo el viaje.',
+    cashChange: 'Paga con ₡{{tendered}} · Vuelto ₡{{change}}',
+    cashNoTender: 'Sin monto indicado: llevá sencillo.',
   },
 
   // ===== Login repartidor =====

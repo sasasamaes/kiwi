@@ -885,17 +885,20 @@ export class OrdersService {
     // Total que paga quien ordena (siempre a valor nominal, sin recargos):
     // productos + viaje. La comisión sale de las ganancias, no del que paga.
     const totalAmount = productsTotal + tripPrice;
-    // Efectivo: con cuánto paga el cliente (para llevar el vuelto listo).
-    // Opcional; si viene debe cubrir el total. Se guarda en el pedido.
+    // Efectivo: con cuánto pagan (para llevar el vuelto listo). Opcional;
+    // si viene debe cubrir lo que el repartidor cobra en mano: el total en
+    // pedidos de la app cliente, solo el viaje en pedidos del comercio
+    // (los productos ya los cobró el comercio). Se guarda en el pedido.
+    const collectable = (data as any)?.origin === 'client_app' ? totalAmount : tripPrice;
     let cashTendered: number | null = null;
     if (data.cashTendered != null && data.cashTendered !== '') {
       const ct = Math.round(Number(data.cashTendered) * 100) / 100;
       if (!Number.isFinite(ct) || ct < 0 || ct > 99999999.99) {
         throw new BadRequestException('cashTendered inválido');
       }
-      if (ct < totalAmount) {
+      if (ct < collectable) {
         throw new BadRequestException(
-          `El monto (₡${ct.toLocaleString()}) no cubre el total (₡${totalAmount.toLocaleString()})`,
+          `El monto (₡${ct.toLocaleString()}) no cubre lo que se cobra en efectivo (₡${collectable.toLocaleString()})`,
         );
       }
       cashTendered = ct;
