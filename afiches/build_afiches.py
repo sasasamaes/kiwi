@@ -152,7 +152,7 @@ def main():
     page(
         c, "01", "PARA COMERCIOS · LANZAMIENTO 23 OCT", "VENDÉ MÁS",
         "tu menú en un QR",
-        ["Tu carta siempre actualizada", "Pedidos entrando en vivo", "SINPE · tarjeta · efectivo"],
+        ["Cocina casera y menú con stock", "Pedidos entrando en vivo", "Cobrá SINPE y tarjeta"],
         "negocios.kiwicr.express", "el dashboard de tu comercio",
         "WhatsApp +506 8826 4007",
         GOLD, (W - 100, 215),
