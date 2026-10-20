@@ -77,7 +77,7 @@ def kiwi_slice(c, cx, cy, r, accent):
         c.restoreState()
 
 
-def page(c, num, eyebrow, verb, sub, benefits, url, tagline, accent, slice_xy):
+def page(c, num, eyebrow, verb, sub, benefits, url, tagline, contact, accent, slice_xy):
     c.setFillColor(GREEN)
     c.rect(0, 0, W, H, stroke=0, fill=1)
 
@@ -130,16 +130,18 @@ def page(c, num, eyebrow, verb, sub, benefits, url, tagline, accent, slice_xy):
         c.drawString(M + 56, y, b)
         y -= 44
 
-    # franja pie
-    band_h = 108
+    # franja pie: url + contacto + tagline
+    band_h = 132
     c.setFillColor(CREAM)
     c.rect(0, 0, W, band_h, stroke=0, fill=1)
     c.setFillColor(GREEN_DEEP)
-    c.setFont("Outfit-Black", 26)
-    c.drawCentredString(W / 2, 62, url)
-    c.setFont("Outfit", 13)
+    c.setFont("Outfit-Black", 24)
+    c.drawCentredString(W / 2, 88, url)
+    c.setFont("Outfit-Bold", 14)
+    c.drawCentredString(W / 2, 62, contact)
+    c.setFont("Outfit", 12)
     c.setFillColor(HexColor("#4A5A4C"))
-    c.drawCentredString(W / 2, 36, tagline)
+    c.drawCentredString(W / 2, 38, tagline)
     c.showPage()
 
 
@@ -148,24 +150,27 @@ def main():
     c.setTitle("Kiwi — Afiches comercios, clientes y repartidores")
     c.setAuthor("Kiwi")
     page(
-        c, "01", "PARA COMERCIOS", "VENDÉ MÁS",
+        c, "01", "PARA COMERCIOS · LANZAMIENTO 23 OCT", "VENDÉ MÁS",
         "tu menú en un QR",
         ["Tu carta siempre actualizada", "Pedidos entrando en vivo", "SINPE · tarjeta · efectivo"],
         "negocios.kiwicr.express", "el dashboard de tu comercio",
+        "WhatsApp +506 8826 4007",
         GOLD, (W - 100, 215),
     )
     page(
-        c, "02", "PARA CLIENTES", "PEDÍ YA",
-        "sin filas, sin llamadas",
-        ["Escaneá el QR de tu local", "Pagá como quieras", "Seguí tu pedido en vivo"],
-        "kiwicr.express", "tu menú QR a un escaneo",
+        c, "02", "PARA CLIENTES · MUY PRONTO", "PRÓXIMAMENTE",
+        "la app de clientes llega pronto",
+        ["Dejá tu correo y te avisamos", "Comercios desde el 23 de octubre", "Mientras tanto, pedí por WhatsApp"],
+        "www.kiwicr.express", "avisame del lanzamiento en la app",
+        "WhatsApp +506 8826 4007",
         CLAY, (W - 100, 215),
     )
     page(
-        c, "03", "PARA REPARTIDORES", "REPARTÍ",
+        c, "03", "PARA REPARTIDORES · LANZAMIENTO 23 OCT", "REPARTÍ",
         "a tu ritmo, cerca tuyo",
         ["Aceptá pedidos cuando quieras", "Mapa y rutas incluidos", "Retiros de tus ganancias"],
         "repartidores.kiwicr.express", "ganá con cada entrega",
+        "WhatsApp +506 8826 4007",
         LIME, (W - 100, 215),
     )
     c.save()
