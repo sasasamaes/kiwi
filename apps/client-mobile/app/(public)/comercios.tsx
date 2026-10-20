@@ -5,11 +5,13 @@ import { useRouter } from 'expo-router';
 import { Screen, tokens } from '@kiwi/mobile-ui';
 import { useTranslation } from '@kiwi/i18n';
 import { menuApi } from '../../src/api/menu';
+import { flagsApi } from '../../src/api/flags';
 import { http } from '../../src/api/http';
 import { useSession } from '../../src/session/useSession';
 import { Card, Field, Pill, ui } from '../../src/components/ui';
 
 const api = menuApi(http);
+const flags = flagsApi(http);
 
 export default function Comercios() {
   const { t } = useTranslation();
@@ -22,6 +24,32 @@ export default function Comercios() {
     queryKey: ['discover', q, category],
     queryFn: () => api.discover({ q: q.trim() || undefined, category: category ?? undefined }),
   });
+
+  // Feature flags (fail-open: sin API se muestra todo, igual que la web).
+  const { data: feat } = useQuery({
+    queryKey: ['flags'],
+    queryFn: () => flags.features(),
+    retry: 1,
+  });
+  const showEncomienda = (feat as any)?.encomiendaEnabled !== false;
+  const showMercadito = (feat as any)?.mercaditoEnabled !== false;
+  const showBanners = (feat as any)?.bannersEnabled !== false;
+
+  const { data: banners } = useQuery({
+    queryKey: ['banners'],
+    queryFn: () => flags.banners(),
+    enabled: showBanners,
+    retry: 1,
+  });
+  const bannerItems: any[] = Array.isArray((banners as any)?.items)
+    ? (banners as any).items
+    : Array.isArray(banners)
+      ? (banners as any[])
+      : [];
+
+  const recordTap = (campaignId?: string) => {
+    if (campaignId) flags.recordAdEvent({ campaignId, type: 'click' }).catch(() => {});
+  };
 
   const merchants: any[] = Array.isArray(data) ? data : [];
   const categories = useMemo(() => {
@@ -70,6 +98,52 @@ export default function Comercios() {
           />
         ))}
       </View>
+
+      {(showEncomienda || showMercadito) && (
+        <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+          {showEncomienda && (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push('/(public)/encomienda')}
+              style={styles.entry}
+            >
+              <Text style={styles.entryTitle}>📦 {t.encomienda.title}</Text>
+            </Pressable>
+          )}
+          {showMercadito && (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push('/(public)/zonazul')}
+              style={styles.entry}
+            >
+              <Text style={styles.entryTitle}>🧺 {t.zonazul.title}</Text>
+            </Pressable>
+          )}
+        </View>
+      )}
+
+      {showBanners && bannerItems.length > 0 && (
+        <FlatList
+          data={bannerItems}
+          keyExtractor={(b, i) => b?.campaignId ?? String(i)}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: 8, marginBottom: 12 }}
+          renderItem={({ item }) => (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                recordTap(item.campaignId);
+                router.push({ pathname: '/(public)/menu/[id]', params: { id: item.merchantId } });
+              }}
+              style={styles.banner}
+            >
+              <Text style={styles.bannerTitle}>{item.title || item.businessName}</Text>
+              <Text style={[ui.muted, { color: '#fff' }]}>{item.businessName}</Text>
+            </Pressable>
+          )}
+        />
+      )}
 
       {isLoading ? (
         <ActivityIndicator color={tokens.color.kiwi} style={{ marginTop: 24 }} />
@@ -132,4 +206,18 @@ const styles = {
   },
   brand: { color: tokens.color.ink, fontSize: 22, fontWeight: '800' as const },
   pillRow: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, marginBottom: 12 },
+  entry: {
+    flex: 1 as const,
+    backgroundColor: tokens.color.surface,
+    borderRadius: 12,
+    padding: 12,
+  },
+  entryTitle: { color: tokens.color.ink, fontWeight: '700' as const },
+  banner: {
+    backgroundColor: tokens.color.kiwi,
+    borderRadius: 12,
+    padding: 12,
+    width: 220,
+  },
+  bannerTitle: { color: '#fff', fontWeight: '800' as const, fontSize: 15 },
 };
