@@ -20,7 +20,7 @@ def main():
     page(
         c, "01", "PARA COMERCIOS · COMISIONES", "CUENTAS CLARAS",
         "dos casos, nada más",
-        ["App de clientes: 15% del ticket", "Desde acá: solo pagás el viaje", "El 15% lo paga el repartidor"],
+        ["App de clientes: 15% del ticket", "Desde acá: solo pagás el viaje"],
         "negocios.kiwicr.express", "preguntanos por WhatsApp",
         "WhatsApp +506 8826 4007",
         GOLD, (W - 100, 215),
