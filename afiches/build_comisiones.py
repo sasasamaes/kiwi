@@ -34,9 +34,9 @@ def main():
         LIME, (W - 100, 215),
     )
     page(
-        c, "03", "PARA CLIENTES · COMISIONES", "SIN RECARGO",
-        "pagás productos + viaje",
-        ["Precio de carta, siempre", "El envío a tarifa de zona", "Sin letra pequeña"],
+        c, "03", "PARA CLIENTES · COMISIONES", "15% TRANSPARENTE",
+        "pedir en la app sostiene a Kiwi",
+        ["15% del ticket del comercio", "15% del viaje del repartidor", "Vos pagás carta + envío"],
         "www.kiwicr.express", "precio nominal, sin sorpresas",
         "WhatsApp +506 8826 4007",
         CLAY, (W - 100, 215),
