@@ -57,7 +57,10 @@ describe('Assignment contest (Task 6): 10 criterios', () => {
         updateMany: jest.fn(),
         findMany: jest.fn(),
       },
-      orderEvent: { create: jest.fn().mockResolvedValue({}) },
+      orderEvent: {
+        create: jest.fn().mockResolvedValue({}),
+        createMany: jest.fn().mockResolvedValue({ count: 0 }),
+      },
       notification: { create: jest.fn().mockResolvedValue({}) },
       $transaction: jest.fn((fn: any) => fn(prisma)),
     };
@@ -222,6 +225,19 @@ describe('Assignment contest (Task 6): 10 criterios', () => {
 
   it('3. sweepOnce con pending_acceptance vencida → pending en concurso + notifyContestStarted 1 vez', async () => {
     prisma.order.findMany.mockImplementation(async (args: any) => {
+      if (args?.where?.id?.in) {
+        return (args.where.id.in as string[]).map((id) => ({
+          id,
+          pickupAddress: 'A',
+          deliveryAddress: 'B',
+          deliveryZone: null,
+          totalAmount: 5000,
+          driverPayout: 4000,
+          distanceKm: 2,
+          createdAt: new Date(),
+          merchant: { userId: 'merchant-user-1', businessName: 'Soda' },
+        }));
+      }
       if (args?.where?.status === 'pending_acceptance') {
         return [{ id: 'order-1', driverId: 'dp-1', merchantId: 'mp-1' }];
       }
@@ -334,6 +350,12 @@ describe('Assignment contest (Task 6): 10 criterios', () => {
 
   it('6. sweepOnce con pending + contestEndsAt pasada + driverId null → no_driver + notifyNoDriverAvailable', async () => {
     prisma.order.findMany.mockImplementation(async (args: any) => {
+      if (args?.where?.id?.in) {
+        return (args.where.id.in as string[]).map((id) => ({
+          id,
+          merchant: { userId: 'merchant-user-9' },
+        }));
+      }
       if (args?.where?.status === 'pending') {
         return [{ id: 'order-2' }];
       }
@@ -354,7 +376,9 @@ describe('Assignment contest (Task 6): 10 criterios', () => {
         data: expect.objectContaining({ status: 'no_driver' }),
       }),
     );
-    const types = prisma.orderEvent.create.mock.calls.map((c: any) => c[0].data.type);
+    const types = prisma.orderEvent.createMany.mock.calls.flatMap((c: any) =>
+      (c[0].data as any[]).map((d: any) => d.type),
+    );
     expect(types).toContain('contest_expired');
     expect(types).toContain('no_driver');
     expect(notifications.notifyNoDriverAvailable).toHaveBeenCalledTimes(1);
@@ -393,6 +417,19 @@ describe('Assignment contest (Task 6): 10 criterios', () => {
 
   it('8. sweepOnce procesa vencidos de antes del reinicio (fechas pasadas) → transiciona igual', async () => {
     prisma.order.findMany.mockImplementation(async (args: any) => {
+      if (args?.where?.id?.in) {
+        return (args.where.id.in as string[]).map((id) => ({
+          id,
+          pickupAddress: 'A',
+          deliveryAddress: 'B',
+          deliveryZone: null,
+          totalAmount: 3000,
+          driverPayout: 2500,
+          distanceKm: 1,
+          createdAt: new Date(Date.now() - 2 * 3600_000),
+          merchant: { userId: 'merchant-old', businessName: 'Soda Vieja' },
+        }));
+      }
       if (args?.where?.status === 'pending_acceptance') {
         return [{ id: 'old-accept', driverId: 'dp-9', merchantId: 'mp-9' }];
       }
@@ -423,6 +460,19 @@ describe('Assignment contest (Task 6): 10 criterios', () => {
 
   it('9. sweepOnce con el mismo vencido dos veces → segunda 0 cambios y sin notificar', async () => {
     prisma.order.findMany.mockImplementation(async (args: any) => {
+      if (args?.where?.id?.in) {
+        return (args.where.id.in as string[]).map((id) => ({
+          id,
+          pickupAddress: 'A',
+          deliveryAddress: 'B',
+          deliveryZone: null,
+          totalAmount: 5000,
+          driverPayout: 4000,
+          distanceKm: 2,
+          createdAt: new Date(),
+          merchant: { userId: 'merchant-user-1', businessName: 'Soda' },
+        }));
+      }
       if (args?.where?.status === 'pending_acceptance') {
         return [{ id: 'order-1', driverId: 'dp-1', merchantId: 'mp-1' }];
       }
@@ -459,6 +509,12 @@ describe('Assignment contest (Task 6): 10 criterios', () => {
 
   it('11. sweepOnce cancela awaiting_payment viejo (pago abandonado) y no toca recientes', async () => {
     prisma.order.findMany.mockImplementation(async (args: any) => {
+      if (args?.where?.id?.in) {
+        return (args.where.id.in as string[]).map((id) => ({
+          id,
+          merchant: { userId: 'merchant-user-1', businessName: 'Soda' },
+        }));
+      }
       if (args?.where?.status === 'awaiting_payment') {
         return [{ id: 'unpaid-old' }];
       }

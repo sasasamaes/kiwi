@@ -11,6 +11,11 @@ import { OrdersService } from './orders.service';
  * un reinicio no pierde nada; el próximo barrido continúa. Cada transición
  * es un claim atómico (estado exacto + deadline) así que N instancias no
  * duplican trabajo ni notificaciones: solo el ganador notifica.
+ *
+ * Rendimiento: los claims siguen siendo por pedido (baratos, por PK), pero
+ * los eventos se escriben con UN createMany por fase y las notificaciones
+ * fan-out van en paralelo (Promise.allSettled). Antes era ~4 round-trips
+ * serializados por pedido.
  */
 @Injectable()
 export class AssignmentSweeper implements OnModuleInit, OnModuleDestroy {
@@ -52,10 +57,12 @@ export class AssignmentSweeper implements OnModuleInit, OnModuleDestroy {
       let contestsExpired = 0;
       let paymentExpired = 0;
 
+      // ---- Fase 1: aceptaciones vencidas → vuelven a concurso ----
       const expired = await this.prisma.order.findMany({
         where: { status: 'pending_acceptance', acceptanceExpiresAt: { lt: now } },
         select: { id: true, driverId: true, merchantId: true },
       });
+      const claimedAccept: typeof expired = [];
       for (const o of expired) {
         const claimed = await this.prisma.order.updateMany({
           where: {
@@ -73,68 +80,91 @@ export class AssignmentSweeper implements OnModuleInit, OnModuleDestroy {
           },
         });
         if (claimed.count === 0) continue;
+        claimedAccept.push(o);
         acceptanceExpired++;
-        await this.prisma.orderEvent.create({
-          data: { orderId: o.id, type: 'acceptance_expired', driverId: o.driverId },
+      }
+      if (claimedAccept.length > 0) {
+        await this.prisma.orderEvent.createMany({
+          data: claimedAccept.flatMap((o) => [
+            { orderId: o.id, type: 'acceptance_expired', driverId: o.driverId },
+            { orderId: o.id, type: 'contest_started', meta: { reason: 'timeout' } },
+          ]),
         });
-        await this.prisma.orderEvent.create({
-          data: { orderId: o.id, type: 'contest_started', meta: { reason: 'timeout' } },
-        });
-        const full: any = await this.prisma.order.findUnique({
-          where: { id: o.id },
+        const fulls: any[] = await this.prisma.order.findMany({
+          where: { id: { in: claimedAccept.map((o) => o.id) } },
           include: { merchant: true },
         });
-        if (full?.merchant?.userId) {
-          this.events.sendToUser(full.merchant.userId, 'order:contestStarted', {
-            orderId: o.id,
-            message: 'El repartidor no aceptó a tiempo: el pedido entró en concurso.',
-          });
-          void this.notifications
-            .notifyContestStarted(o.id, full.merchant.userId)
-            .catch(() => undefined);
-        }
-        if (full) {
-          void this.orders.alertNearbyDrivers(full, {
-            id: full.id,
-            orderId: full.id,
-            pickupAddress: full.pickupAddress,
-            deliveryAddress: full.deliveryAddress,
-            deliveryZone: full.deliveryZone ?? null,
-            totalAmount: Number(full.totalAmount),
-            driverPayout: full.driverPayout != null ? Number(full.driverPayout) : null,
-            distanceKm: Number(full.distanceKm),
-            merchantName: full.merchant?.businessName,
-            createdAt: full.createdAt,
-          });
-        }
+        await Promise.allSettled(
+          fulls.map(async (full) => {
+            if (full?.merchant?.userId) {
+              this.events.sendToUser(full.merchant.userId, 'order:contestStarted', {
+                orderId: full.id,
+                message: 'El repartidor no aceptó a tiempo: el pedido entró en concurso.',
+              });
+              await this.notifications
+                .notifyContestStarted(full.id, full.merchant.userId)
+                .catch(() => undefined);
+            }
+            if (full) {
+              await this.orders
+                .alertNearbyDrivers(full, {
+                  id: full.id,
+                  orderId: full.id,
+                  pickupAddress: full.pickupAddress,
+                  deliveryAddress: full.deliveryAddress,
+                  deliveryZone: full.deliveryZone ?? null,
+                  totalAmount: Number(full.totalAmount),
+                  driverPayout: full.driverPayout != null ? Number(full.driverPayout) : null,
+                  distanceKm: Number(full.distanceKm),
+                  merchantName: full.merchant?.businessName,
+                  createdAt: full.createdAt,
+                })
+                .catch(() => undefined);
+            }
+          }),
+        );
       }
 
+      // ---- Fase 2: concursos vencidos → no_driver ----
       const stale = await this.prisma.order.findMany({
         where: { status: 'pending', driverId: null, contestEndsAt: { lt: now } },
         select: { id: true },
       });
+      const claimedStale: typeof stale = [];
       for (const o of stale) {
         const claimed = await this.prisma.order.updateMany({
           where: { id: o.id, status: 'pending', driverId: null, contestEndsAt: { lt: new Date() } },
           data: { status: 'no_driver', contestStartedAt: null, contestEndsAt: null },
         });
         if (claimed.count === 0) continue;
+        claimedStale.push(o);
         contestsExpired++;
-        await this.prisma.orderEvent.create({ data: { orderId: o.id, type: 'contest_expired' } });
-        await this.prisma.orderEvent.create({ data: { orderId: o.id, type: 'no_driver' } });
-        const full: any = await this.prisma.order.findUnique({
-          where: { id: o.id },
+      }
+      if (claimedStale.length > 0) {
+        await this.prisma.orderEvent.createMany({
+          data: claimedStale.flatMap((o) => [
+            { orderId: o.id, type: 'contest_expired' },
+            { orderId: o.id, type: 'no_driver' },
+          ]),
+        });
+        const fulls: any[] = await this.prisma.order.findMany({
+          where: { id: { in: claimedStale.map((o) => o.id) } },
           include: { merchant: true },
         });
-        if (full?.merchant?.userId) {
-          this.events.sendToUser(full.merchant.userId, 'order:noDriver', {
-            orderId: o.id,
-            message: 'No hay repartidores disponibles para aceptar este pedido en este momento.',
-          });
-          void this.notifications
-            .notifyNoDriverAvailable(o.id, full.merchant.userId)
-            .catch(() => undefined);
-        }
+        await Promise.allSettled(
+          fulls.map(async (full) => {
+            if (full?.merchant?.userId) {
+              this.events.sendToUser(full.merchant.userId, 'order:noDriver', {
+                orderId: full.id,
+                message:
+                  'No hay repartidores disponibles para aceptar este pedido en este momento.',
+              });
+              await this.notifications
+                .notifyNoDriverAvailable(full.id, full.merchant.userId)
+                .catch(() => undefined);
+            }
+          }),
+        );
       }
 
       // Pagos abandonados: el cliente creó el pedido pero nunca completó el
@@ -147,6 +177,7 @@ export class AssignmentSweeper implements OnModuleInit, OnModuleDestroy {
         },
         select: { id: true },
       });
+      const claimedUnpaid: typeof unpaid = [];
       for (const o of unpaid) {
         const claimed = await this.prisma.order.updateMany({
           where: {
@@ -157,19 +188,24 @@ export class AssignmentSweeper implements OnModuleInit, OnModuleDestroy {
           data: { status: 'cancelled' },
         });
         if (claimed.count === 0) continue;
+        claimedUnpaid.push(o);
         paymentExpired++;
-        await this.prisma.orderEvent.create({
-          data: { orderId: o.id, type: 'payment_expired' },
+      }
+      if (claimedUnpaid.length > 0) {
+        await this.prisma.orderEvent.createMany({
+          data: claimedUnpaid.map((o) => ({ orderId: o.id, type: 'payment_expired' })),
         });
-        const full: any = await this.prisma.order.findUnique({
-          where: { id: o.id },
+        const fulls: any[] = await this.prisma.order.findMany({
+          where: { id: { in: claimedUnpaid.map((o) => o.id) } },
           include: { merchant: true },
         });
-        if (full?.merchant?.userId) {
-          this.events.sendToUser(full.merchant.userId, 'order:cancelled', {
-            orderId: o.id,
-            message: 'El pedido se canceló: el pago no se completó a tiempo.',
-          });
+        for (const full of fulls) {
+          if (full?.merchant?.userId) {
+            this.events.sendToUser(full.merchant.userId, 'order:cancelled', {
+              orderId: full.id,
+              message: 'El pedido se canceló: el pago no se completó a tiempo.',
+            });
+          }
         }
       }
       return { acceptanceExpired, contestsExpired, paymentExpired };

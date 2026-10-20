@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -129,6 +129,31 @@ function parseCustomer(special?: string | null): { name?: string; phone?: string
   return phone ? { phone: phone[1].trim() } : {};
 }
 
+/**
+ * Cuenta regresiva aislada: el intervalo de 1s vive ACÁ, no en la página.
+ * Antes el tick estaba en el state de la página y cada segundo re-renderizaba
+ * TODO (mapa, lista, botones). Ahora solo este texto se actualiza.
+ */
+function Countdown({
+  targetMs,
+  children,
+}: {
+  targetMs: number | null;
+  children: (remainingMs: number | null) => ReactNode;
+}) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (targetMs == null || targetMs <= Date.now()) return;
+    const t = setInterval(() => {
+      const n = Date.now();
+      if (n >= targetMs) clearInterval(t);
+      setNow(n);
+    }, 1000);
+    return () => clearInterval(t);
+  }, [targetMs]);
+  return <>{children(targetMs == null ? null : Math.max(0, targetMs - now))}</>;
+}
+
 function toWaLink(phone: string): string {
   const digits = phone.replace(/\D/g, '');
   const normalized = digits.length === 8 ? `506${digits}` : digits;
@@ -178,7 +203,6 @@ export default function ActiveOrders() {
   const [rejectArmed, setRejectArmed] = useState(false);
   const [rejecting, setRejecting] = useState(false);
   const [accepting, setAccepting] = useState(false);
-  const [nowMs, setNowMs] = useState(() => Date.now());
   const [celebration, setCelebration] = useState<{ payout: number } | null>(null);
   // Reloj vivo para "hace X min"
   const [, setTick] = useState(0);
@@ -345,48 +369,52 @@ export default function ActiveOrders() {
     }
   };
 
-  // Cuenta regresiva de aceptación: tick de 1s solo si hay oferta pendiente.
-  // Recogidas rápidas con readyAt futuro usan el mismo tick.
+  // Cuenta regresiva de aceptación y readyAt: el tick de 1s vive dentro del
+  // componente <Countdown> (solo se re-renderiza el texto). Acá queda un poll
+  // sin setState que solo dispara sonido/vibración cuando un readyAt se cumple.
+  const ordersRef = useRef(orders);
   useEffect(() => {
-    const needsTick =
-      orders.some((o) => o.status === 'pending_acceptance') ||
-      orders.some((o) => {
-        const t = new Date(String((o as any).readyAt ?? '')).getTime();
-        return (
-          Number.isFinite(t) &&
-          t > Date.now() &&
-          (o.status === 'assigned' || o.status === 'in_transit_to_pickup')
-        );
-      });
-    if (!needsTick) return;
-    const t = setInterval(() => setNowMs(Date.now()), 1000);
-    return () => clearInterval(t);
+    ordersRef.current = orders;
   }, [orders]);
 
   // readyAt alcanzado → sonido + vibración una vez por pedido (ir a recoger).
   const readyNotifiedRef = useRef<Set<string>>(new Set());
   useEffect(() => {
-    for (const o of orders) {
-      const t = new Date(String((o as any).readyAt ?? '')).getTime();
-      if (
-        !Number.isFinite(t) ||
-        t > Date.now() ||
-        (o.status !== 'assigned' && o.status !== 'in_transit_to_pickup') ||
-        readyNotifiedRef.current.has(o.id)
-      ) {
-        continue;
-      }
-      readyNotifiedRef.current.add(o.id);
-      playNotificationSound('order_update');
-      try {
-        if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-          navigator.vibrate([200, 100, 200]);
+    const checkReady = () => {
+      for (const o of ordersRef.current) {
+        const t = new Date(String((o as any).readyAt ?? '')).getTime();
+        if (
+          !Number.isFinite(t) ||
+          t > Date.now() ||
+          (o.status !== 'assigned' && o.status !== 'in_transit_to_pickup') ||
+          readyNotifiedRef.current.has(o.id)
+        ) {
+          continue;
         }
-      } catch {
-        // sin vibración: el sonido y el banner alcanzan
+        readyNotifiedRef.current.add(o.id);
+        playNotificationSound('order_update');
+        try {
+          if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+            navigator.vibrate([200, 100, 200]);
+          }
+        } catch {
+          // sin vibración: el sonido y el banner alcanzan
+        }
       }
-    }
-  }, [orders, nowMs]);
+    };
+    checkReady();
+    const needsPoll = ordersRef.current.some((o) => {
+      const t = new Date(String((o as any).readyAt ?? '')).getTime();
+      return (
+        Number.isFinite(t) &&
+        t > Date.now() &&
+        (o.status === 'assigned' || o.status === 'in_transit_to_pickup')
+      );
+    });
+    if (!needsPoll) return;
+    const timer = setInterval(checkReady, 1000);
+    return () => clearInterval(timer);
+  }, [orders]);
 
   const advanceStatus = async (order: Order) => {
     const flow = NEXT_STATUS[order.status];
@@ -796,104 +824,115 @@ export default function ActiveOrders() {
           </div>
         )}
         {/* Aceptación: el comercio te eligió, confirmá antes de que vuelva a concurso */}
-        {order.status === 'pending_acceptance' &&
-          (() => {
-            const expires = (order as any).acceptanceExpiresAt
-              ? new Date((order as any).acceptanceExpiresAt).getTime()
-              : null;
-            const remaining = expires != null ? Math.max(0, expires - nowMs) : null;
-            const mm =
-              remaining != null ? String(Math.floor(remaining / 60000)).padStart(2, '0') : '--';
-            const ss =
-              remaining != null
-                ? String(Math.floor((remaining % 60000) / 1000)).padStart(2, '0')
-                : '--';
-            return (
-              <div className="mb-4 rounded-3xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-5">
-                <p className="flex items-center gap-2 text-base font-semibold text-surface-800 dark:text-surface-100">
-                  <Timer className="h-5 w-5 text-kiwi-600" />
-                  {t('wdrvwork.active.acceptTitle')}
-                </p>
-                <p className="mt-1 text-sm text-surface-500 dark:text-surface-400">
-                  {remaining != null && remaining <= 0
-                    ? t('wdrvwork.active.acceptExpired')
-                    : t('wdrvwork.active.acceptCountdown', { time: `${mm}:${ss}` })}
-                </p>
-                <p className="mt-2 font-mono text-3xl font-bold text-kiwi-700 dark:text-kiwi-300">
-                  {mm}:{ss}
-                </p>
-                <div className="mt-4 grid grid-cols-2 gap-3">
-                  <TapButton
-                    haptic
-                    variant="gradient"
-                    className="h-12 w-full rounded-2xl text-sm font-bold"
-                    onClick={acceptAssignment}
-                    disabled={accepting || rejecting}
-                  >
-                    {accepting ? t('wdrvwork.active.accepting') : t('wdrvwork.active.acceptCta')}
-                  </TapButton>
-                  <TapButton
-                    haptic
-                    variant="secondary"
-                    className="h-12 w-full rounded-2xl text-sm font-bold"
-                    onClick={rejectOrder}
-                    disabled={accepting || rejecting}
-                  >
-                    {rejecting
-                      ? t('wdrvwork.active.rejecting')
-                      : rejectArmed
-                        ? t('wdrvwork.active.rejectConfirm')
-                        : t('wdrvwork.active.rejectCta')}
-                  </TapButton>
+        {order.status === 'pending_acceptance' && (
+          <Countdown
+            targetMs={
+              (order as any).acceptanceExpiresAt
+                ? new Date((order as any).acceptanceExpiresAt).getTime()
+                : null
+            }
+          >
+            {(remaining) => {
+              const mm =
+                remaining != null ? String(Math.floor(remaining / 60000)).padStart(2, '0') : '--';
+              const ss =
+                remaining != null
+                  ? String(Math.floor((remaining % 60000) / 1000)).padStart(2, '0')
+                  : '--';
+              return (
+                <div className="mb-4 rounded-3xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-5">
+                  <p className="flex items-center gap-2 text-base font-semibold text-surface-800 dark:text-surface-100">
+                    <Timer className="h-5 w-5 text-kiwi-600" />
+                    {t('wdrvwork.active.acceptTitle')}
+                  </p>
+                  <p className="mt-1 text-sm text-surface-500 dark:text-surface-400">
+                    {remaining != null && remaining <= 0
+                      ? t('wdrvwork.active.acceptExpired')
+                      : t('wdrvwork.active.acceptCountdown', { time: `${mm}:${ss}` })}
+                  </p>
+                  <p className="mt-2 font-mono text-3xl font-bold text-kiwi-700 dark:text-kiwi-300">
+                    {mm}:{ss}
+                  </p>
+                  <div className="mt-4 grid grid-cols-2 gap-3">
+                    <TapButton
+                      haptic
+                      variant="gradient"
+                      className="h-12 w-full rounded-2xl text-sm font-bold"
+                      onClick={acceptAssignment}
+                      disabled={accepting || rejecting}
+                    >
+                      {accepting ? t('wdrvwork.active.accepting') : t('wdrvwork.active.acceptCta')}
+                    </TapButton>
+                    <TapButton
+                      haptic
+                      variant="secondary"
+                      className="h-12 w-full rounded-2xl text-sm font-bold"
+                      onClick={rejectOrder}
+                      disabled={accepting || rejecting}
+                    >
+                      {rejecting
+                        ? t('wdrvwork.active.rejecting')
+                        : rejectArmed
+                          ? t('wdrvwork.active.rejectConfirm')
+                          : t('wdrvwork.active.rejectCta')}
+                    </TapButton>
+                  </div>
                 </div>
-              </div>
-            );
-          })()}
+              );
+            }}
+          </Countdown>
+        )}
         {/* Recogida rápida: cuenta atrás hasta que la comida está lista */}
         {(order.status === 'assigned' || order.status === 'in_transit_to_pickup') &&
           (() => {
             const readyMs = new Date(String((order as any).readyAt ?? '')).getTime();
             if (!Number.isFinite(readyMs)) return null;
-            const remaining = Math.max(0, readyMs - nowMs);
-            const mm = String(Math.floor(remaining / 60000)).padStart(2, '0');
-            const ss = String(Math.floor((remaining % 60000) / 1000)).padStart(2, '0');
-            const ready = remaining <= 0;
-            const hh = new Date(readyMs).toLocaleTimeString('es-CR', {
-              hour: '2-digit',
-              minute: '2-digit',
-            });
             return (
-              <div
-                className={`mb-4 rounded-3xl border p-5 shadow-soft dark:shadow-dark ${
-                  ready
-                    ? 'bg-kiwi-700 text-white border-kiwi-700'
-                    : 'bg-white dark:bg-surface-800 border-surface-200/60 dark:border-white/[0.06]'
-                }`}
-              >
-                <p
-                  className={`flex items-center gap-2 text-base font-semibold ${
-                    ready ? 'text-white' : 'text-surface-800 dark:text-surface-100'
-                  }`}
-                >
-                  <Timer className="h-5 w-5" />
-                  {ready
-                    ? t('wdrvwork.active.readyToGo')
-                    : t('wdrvwork.active.readyAt', { time: hh })}
-                </p>
-                {ready ? (
-                  <p className="mt-1 text-sm text-white/90">
-                    {t('wdrvwork.active.pickupAt', {
-                      name:
-                        (order as any).merchant?.businessName ||
-                        t('wdrvwork.active.merchantFallback'),
-                    })}
-                  </p>
-                ) : (
-                  <p className="mt-2 font-mono text-3xl font-bold text-kiwi-700 dark:text-kiwi-300">
-                    {mm}:{ss}
-                  </p>
-                )}
-              </div>
+              <Countdown targetMs={readyMs}>
+                {(remaining) => {
+                  const left = remaining ?? 0;
+                  const mm = String(Math.floor(left / 60000)).padStart(2, '0');
+                  const ss = String(Math.floor((left % 60000) / 1000)).padStart(2, '0');
+                  const ready = left <= 0;
+                  const hh = new Date(readyMs).toLocaleTimeString('es-CR', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  });
+                  return (
+                    <div
+                      className={`mb-4 rounded-3xl border p-5 shadow-soft dark:shadow-dark ${
+                        ready
+                          ? 'bg-kiwi-700 text-white border-kiwi-700'
+                          : 'bg-white dark:bg-surface-800 border-surface-200/60 dark:border-white/[0.06]'
+                      }`}
+                    >
+                      <p
+                        className={`flex items-center gap-2 text-base font-semibold ${
+                          ready ? 'text-white' : 'text-surface-800 dark:text-surface-100'
+                        }`}
+                      >
+                        <Timer className="h-5 w-5" />
+                        {ready
+                          ? t('wdrvwork.active.readyToGo')
+                          : t('wdrvwork.active.readyAt', { time: hh })}
+                      </p>
+                      {ready ? (
+                        <p className="mt-1 text-sm text-white/90">
+                          {t('wdrvwork.active.pickupAt', {
+                            name:
+                              (order as any).merchant?.businessName ||
+                              t('wdrvwork.active.merchantFallback'),
+                          })}
+                        </p>
+                      ) : (
+                        <p className="mt-2 font-mono text-3xl font-bold text-kiwi-700 dark:text-kiwi-300">
+                          {mm}:{ss}
+                        </p>
+                      )}
+                    </div>
+                  );
+                }}
+              </Countdown>
             );
           })()}
         {/* Cola de entregas: todos los activos en orden, se toca para cambiar */}{' '}
