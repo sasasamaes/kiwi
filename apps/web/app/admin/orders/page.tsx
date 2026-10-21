@@ -500,20 +500,43 @@ export default function AdminOrders() {
                   >
                     {STATUS_LABEL[o.status] ?? o.status}
                   </span>
+                  <span className="text-xs text-surface-400 dark:text-surface-500">
+                    {new Date(o.createdAt).toLocaleString('es-CR', {
+                      day: 'numeric',
+                      month: 'short',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </span>
                 </div>
                 <p className="mt-1 truncate text-sm font-medium text-surface-800 dark:text-surface-100">
                   {o.merchant?.businessName ?? '—'} → {o.deliveryAddress}
                 </p>
-                <p className="text-xs text-surface-500 dark:text-surface-400">
-                  {new Date(o.createdAt).toLocaleString('es-CR', {
-                    day: 'numeric',
-                    month: 'short',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                  {o.driver?.fullName
-                    ? ` · ${o.driver.fullName}`
-                    : ` · ${t('webadmin1.aorders.noDriver')}`}
+                <p className="mt-0.5 truncate text-xs text-surface-500 dark:text-surface-400">
+                  {o.driver?.fullName ?? t('webadmin1.aorders.noDriverAssigned')}
+                  {' · '}
+                  {(() => {
+                    const m = o.payment?.method ?? null;
+                    const label =
+                      m === 'cash'
+                        ? t('webadmin1.aorders.payCash')
+                        : m === 'card'
+                          ? t('webadmin1.aorders.payCard')
+                          : m === 'sinpe'
+                            ? t('webadmin1.aorders.paySinpe')
+                            : m === 'crypto'
+                              ? t('webadmin1.aorders.payCrypto')
+                              : m === 'credit'
+                                ? t('webadmin1.aorders.payCredit')
+                                : t('webadmin1.aorders.payUnknown');
+                    const st =
+                      o.payment?.status === 'collected'
+                        ? t('webadmin1.aorders.payDone')
+                        : o.payment?.status
+                          ? t('webadmin1.aorders.payPending')
+                          : null;
+                    return st ? `${label} (${st})` : label;
+                  })()}
                 </p>
               </div>
               <div className="shrink-0 text-right">
