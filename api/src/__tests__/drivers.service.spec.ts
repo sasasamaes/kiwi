@@ -208,4 +208,53 @@ describe('DriversService', () => {
       ).resolves.toMatchObject({ driverId: 'dp-1' });
     });
   });
+
+  describe('driverOrders', () => {
+    it('devuelve el historial con total y mapea montos', async () => {
+      prisma.driverProfile.findUnique.mockResolvedValue({ id: 'dp-1' });
+      prisma.order.count.mockResolvedValue(3);
+      prisma.order.findMany.mockResolvedValue([
+        {
+          id: 'o1',
+          status: 'delivered',
+          orderType: 'immediate',
+          merchant: { businessName: 'Soda' },
+          pickupAddress: 'A',
+          deliveryAddress: 'B',
+          driverPayout: 1275,
+          totalAmount: 1500,
+          createdAt: new Date(),
+          deliveredAt: new Date(),
+        },
+      ]);
+      const res = await service.driverOrders('u-1', { status: 'delivered', take: 20 });
+      expect(res.total).toBe(3);
+      expect(res.items[0]).toMatchObject({ id: 'o1', merchantName: 'Soda', driverPayout: 1275 });
+      expect(prisma.order.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { driverId: 'dp-1', status: 'delivered' },
+          take: 20,
+          skip: 0,
+        }),
+      );
+    });
+
+    it('sin perfil lanza 404 y con estado inválido lanza 400', async () => {
+      prisma.driverProfile.findUnique.mockResolvedValue(null);
+      await expect(service.driverOrders('u-x', {})).rejects.toThrow(NotFoundException);
+      prisma.driverProfile.findUnique.mockResolvedValue({ id: 'dp-1' });
+      await expect(service.driverOrders('u-1', { status: 'volando' })).rejects.toThrow(
+        'Estado inválido',
+      );
+    });
+
+    it('adminList devuelve id y nombre ordenados', async () => {
+      prisma.driverProfile.findMany.mockResolvedValue([{ id: 'dp-1', fullName: 'Luis Espinoza' }]);
+      const res = await service.adminList();
+      expect(res).toEqual([{ id: 'dp-1', fullName: 'Luis Espinoza' }]);
+      expect(prisma.driverProfile.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ orderBy: { fullName: 'asc' } }),
+      );
+    });
+  });
 });

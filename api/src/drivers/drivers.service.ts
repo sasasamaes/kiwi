@@ -441,4 +441,75 @@ export class DriversService {
       },
     };
   }
+
+  /**
+   * Historial del repartidor: TODOS sus pedidos (entregados, cancelados,
+   * en curso…) con filtro opcional por estado. Lo que Ganancias no muestra
+   * (no entregados) vive acá.
+   */
+  async driverOrders(userId: string, opts: { status?: string; take?: number; skip?: number } = {}) {
+    const driver = await this.prisma.driverProfile.findUnique({
+      where: { userId },
+    });
+
+    if (!driver) {
+      throw new NotFoundException('Perfil de repartidor no encontrado');
+    }
+
+    if (opts.status) {
+      const valid = new Set([
+        'pending',
+        'driver_proposals',
+        'pending_acceptance',
+        'assigned',
+        'in_transit_to_pickup',
+        'picked_up',
+        'in_transit_to_delivery',
+        'delivered',
+        'cancelled',
+        'no_driver',
+      ]);
+      if (!valid.has(opts.status)) throw new BadRequestException('Estado inválido');
+    }
+    const take = Math.min(Math.max(Number(opts.take ?? 20), 1), 100);
+    const skip = Math.max(Number(opts.skip ?? 0), 0);
+
+    const where: any = { driverId: driver.id };
+    if (opts.status) where.status = opts.status;
+
+    const [total, orders] = await Promise.all([
+      this.prisma.order.count({ where }),
+      this.prisma.order.findMany({
+        where,
+        include: { merchant: { select: { businessName: true } } },
+        orderBy: { createdAt: 'desc' },
+        take,
+        skip,
+      }),
+    ]);
+
+    return {
+      total,
+      items: orders.map((order: any) => ({
+        id: order.id,
+        status: order.status,
+        orderType: order.orderType,
+        merchantName: order.merchant?.businessName ?? null,
+        pickupAddress: order.pickupAddress,
+        deliveryAddress: order.deliveryAddress,
+        driverPayout: Number(order.driverPayout ?? 0),
+        totalAmount: Number(order.totalAmount ?? 0),
+        createdAt: order.createdAt,
+        deliveredAt: order.deliveredAt ?? null,
+      })),
+    };
+  }
+
+  /** Lista corta de repartidores para filtros del admin (id + nombre). */
+  async adminList() {
+    return this.prisma.driverProfile.findMany({
+      select: { id: true, fullName: true },
+      orderBy: { fullName: 'asc' },
+    });
+  }
 }

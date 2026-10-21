@@ -1374,6 +1374,21 @@ class ApiClient {
     return this.request<any>(`/drivers/me/earnings?period=${period}`);
   }
 
+  /** Historial del repartidor: todos sus pedidos con filtro por estado. */
+  async getDriverOrders(params?: { status?: string; take?: number; skip?: number }) {
+    const q = new URLSearchParams();
+    if (params?.status) q.append('status', params.status);
+    if (params?.take != null) q.append('take', String(params.take));
+    if (params?.skip != null) q.append('skip', String(params.skip));
+    const s = q.toString();
+    return this.request<any>(`/drivers/me/orders${s ? `?${s}` : ''}`);
+  }
+
+  /** Repartidores para filtros del admin. */
+  async getDriversAdminList() {
+    return this.request<any>('/drivers/admin/list');
+  }
+
   async getAvailableDrivers(lat?: number, lng?: number) {
     const params = new URLSearchParams();
     if (lat != null) params.append('lat', String(lat));
@@ -2104,12 +2119,14 @@ class ApiClient {
     skip?: number;
     status?: string;
     search?: string;
+    driverId?: string;
   }) {
     const q = new URLSearchParams();
     if (params?.take != null) q.append('take', String(params.take));
     if (params?.skip != null) q.append('skip', String(params.skip));
     if (params?.status) q.append('status', params.status);
     if (params?.search) q.append('search', params.search);
+    if (params?.driverId) q.append('driverId', params.driverId);
     const s = q.toString();
     return this.request<any>(`/orders/admin/all${s ? `?${s}` : ''}`);
   }
@@ -2315,6 +2332,79 @@ class ApiClient {
   /** Repartidores para el selector de aportes. */
   async getDebtDrivers() {
     return this.request<any>('/debts/drivers');
+  }
+
+  async addDebtParticipant(debtId: string, driverId: string) {
+    return this.request<any>(`/debts/${debtId}/participants`, {
+      method: 'POST',
+      body: { driverId },
+    });
+  }
+
+  async removeDebtParticipant(debtId: string, driverId: string) {
+    return this.request<any>(`/debts/${debtId}/participants/${driverId}`, { method: 'DELETE' });
+  }
+
+  async addDebtExpense(
+    debtId: string,
+    data: { amount: number; kind?: string; driverId?: string; note?: string; spentAt?: string },
+  ) {
+    return this.request<any>(`/debts/${debtId}/expenses`, { method: 'POST', body: data });
+  }
+
+  async deleteDebtExpense(debtId: string, expenseId: string) {
+    return this.request<any>(`/debts/${debtId}/expenses/${expenseId}`, { method: 'DELETE' });
+  }
+
+  // ============================================
+  // 🛵 ALQUILERES (admin, tras flag RENTALS_ENABLED)
+  // ============================================
+
+  async getRentalsStatus() {
+    return this.request<any>('/rentals/status');
+  }
+
+  async getRentalContracts() {
+    return this.request<any>('/rentals/contracts');
+  }
+
+  async getRentalContract(id: string) {
+    return this.request<any>(`/rentals/contracts/${id}`);
+  }
+
+  async createRentalContract(data: {
+    driverId: string;
+    debtId?: string;
+    weeklyPrice: number;
+    deposit?: number;
+    startDate: string;
+    notes?: string;
+  }) {
+    return this.request<any>('/rentals/contracts', { method: 'POST', body: data });
+  }
+
+  async finishRentalContract(id: string) {
+    return this.request<any>(`/rentals/contracts/${id}/finish`, { method: 'POST' });
+  }
+
+  async cancelRentalContract(id: string) {
+    return this.request<any>(`/rentals/contracts/${id}/cancel`, { method: 'POST' });
+  }
+
+  async addRentalPayment(
+    contractId: string,
+    data: { amount: number; paidAt?: string; note?: string },
+  ) {
+    return this.request<any>(`/rentals/contracts/${contractId}/payments`, {
+      method: 'POST',
+      body: data,
+    });
+  }
+
+  async deleteRentalPayment(contractId: string, paymentId: string) {
+    return this.request<any>(`/rentals/contracts/${contractId}/payments/${paymentId}`, {
+      method: 'DELETE',
+    });
   }
 
   // ============================================

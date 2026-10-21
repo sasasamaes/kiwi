@@ -201,12 +201,14 @@ export class OrdersController {
     @Query('skip') skip?: string,
     @Query('status') status?: string,
     @Query('search') search?: string,
+    @Query('driverId') driverId?: string,
   ) {
     return this.ordersService.listForAdmin({
       take: take != null ? Number(take) : undefined,
       skip: skip != null ? Number(skip) : undefined,
       status,
       search,
+      driverId,
     });
   }
 

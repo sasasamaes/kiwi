@@ -1764,7 +1764,13 @@ export class OrdersService {
    * Todos los pedidos para el admin: paginado, filtro por estado y búsqueda
    * por id/direcciones/nombres. Incluye stats globales del mismo filtro.
    */
-  async listForAdmin(opts: { take?: number; skip?: number; status?: string; search?: string }) {
+  async listForAdmin(opts: {
+    take?: number;
+    skip?: number;
+    status?: string;
+    search?: string;
+    driverId?: string;
+  }) {
     if (opts.status) this.validateOrderStatus(opts.status);
     const take = Math.min(Math.max(Number(opts.take ?? 30), 1), 100);
     const skip = Math.max(Number(opts.skip ?? 0), 0);
@@ -1772,6 +1778,7 @@ export class OrdersService {
 
     const where: any = {};
     if (opts.status) where.status = opts.status;
+    if (opts.driverId) where.driverId = opts.driverId;
     if (q) {
       where.OR = [
         { id: { contains: q, mode: 'insensitive' } },

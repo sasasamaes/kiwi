@@ -787,6 +787,22 @@ describe('OrdersService', () => {
       await expect(service.listForAdmin({ status: 'volando' })).rejects.toThrow('Estado inválido');
     });
 
+    it('listForAdmin filtra por repartidor cuando se pide', async () => {
+      prisma.order.count.mockResolvedValue(1);
+      prisma.order.findMany.mockResolvedValue([{ id: 'o9' }]);
+      prisma.order.aggregate.mockResolvedValue({
+        _count: { id: 1 },
+        _sum: { totalAmount: 1500, commission: 225 },
+      });
+      prisma.order.groupBy = jest.fn().mockResolvedValue([]);
+
+      await service.listForAdmin({ driverId: 'dp-luis' });
+
+      expect(prisma.order.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: expect.objectContaining({ driverId: 'dp-luis' }) }),
+      );
+    });
+
     it('should return available orders for drivers', async () => {
       prisma.order.findMany.mockResolvedValue([
         { id: 'order-1', status: 'pending', totalAmount: 5000 },

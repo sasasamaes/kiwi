@@ -70,6 +70,8 @@ export default function AdminOrders() {
   } | null>(null);
   const [filter, setFilter] = useState('');
   const [search, setSearch] = useState('');
+  const [driverId, setDriverId] = useState('');
+  const [drivers, setDrivers] = useState<Array<{ id: string; fullName: string }>>([]);
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -96,8 +98,8 @@ export default function AdminOrders() {
   const [liveEvents, setLiveEvents] = useState<LiveEvent[]>([]);
   const [pendingLive, setPendingLive] = useState(0);
   const liveKey = useRef(0);
-  const listCtx = useRef({ page, filter, search });
-  listCtx.current = { page, filter, search };
+  const listCtx = useRef({ page, filter, search, driverId });
+  listCtx.current = { page, filter, search, driverId };
 
   const STATUS_LABEL: Record<string, string> = {
     pending: t('webadmin1.aorders.status.pending'),
@@ -146,7 +148,7 @@ export default function AdminOrders() {
       await api.updateOrderStatus(selected.id, nextStatus);
       setSelected(null);
       setNextStatus('');
-      await load(filter, search, page);
+      await load(filter, search, page, driverId);
     } catch (e: any) {
       setCancelError(e?.message || t('webadmin1.aorders.statusChangeError'));
     } finally {
@@ -173,7 +175,7 @@ export default function AdminOrders() {
       await api.updateOrderStatus(selected.id, 'delivered');
       setSelected(null);
       setNextStatus('');
-      await load(filter, search, page);
+      await load(filter, search, page, driverId);
     } catch (e: any) {
       setCancelError(e?.message || t('webadmin1.aorders.markDeliveredError'));
     } finally {
@@ -198,7 +200,7 @@ export default function AdminOrders() {
     try {
       await api.updateOrderStatus(selected.id, 'cancelled');
       setSelected(null);
-      await load(filter, search, page);
+      await load(filter, search, page, driverId);
     } catch (e: any) {
       setCancelError(e?.message || t('webadmin1.aorders.cancelError'));
     } finally {
@@ -208,7 +210,7 @@ export default function AdminOrders() {
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const load = useCallback(
-    async (status: string, q: string, p: number) => {
+    async (status: string, q: string, p: number, dId?: string) => {
       setLoading(true);
       setError(null);
       try {
@@ -217,6 +219,7 @@ export default function AdminOrders() {
           skip: p * PAGE_SIZE,
           status: status || undefined,
           search: q.trim() || undefined,
+          driverId: dId || undefined,
         });
         setOrders(Array.isArray(res?.items) ? res.items : []);
         setTotal(Number(res?.total ?? 0));
@@ -232,11 +235,18 @@ export default function AdminOrders() {
 
   useEffect(() => {
     if (searchTimer.current) clearTimeout(searchTimer.current);
-    searchTimer.current = setTimeout(() => load(filter, search, page), 400);
+    searchTimer.current = setTimeout(() => load(filter, search, page, driverId), 400);
     return () => {
       if (searchTimer.current) clearTimeout(searchTimer.current);
     };
-  }, [filter, search, page, load]);
+  }, [filter, search, page, driverId, load]);
+
+  useEffect(() => {
+    api
+      .getDriversAdminList()
+      .then((res: any) => setDrivers(Array.isArray(res) ? res : []))
+      .catch(() => setDrivers([]));
+  }, []);
 
   const pushLive = useCallback((kind: 'new' | 'status', orderId: string, message: string) => {
     liveKey.current += 1;
@@ -281,7 +291,7 @@ export default function AdminOrders() {
         // sonido decorativo: nunca tumba el feed
       }
       const ctx = listCtx.current;
-      if (ctx.page === 0 && !ctx.filter && !ctx.search) {
+      if (ctx.page === 0 && !ctx.filter && !ctx.search && !ctx.driverId) {
         setOrders((prev) => {
           if (prev.some((o) => o.id === id)) return prev;
           const row: AdminOrder = {
@@ -353,6 +363,7 @@ export default function AdminOrders() {
             setPage(0);
             setFilter('');
             setSearch('');
+            setDriverId('');
             load('', '', 0);
           }}
           className="w-full rounded-xl bg-kiwi-700 px-4 py-2.5 text-sm font-semibold text-white"
@@ -416,6 +427,30 @@ export default function AdminOrders() {
             placeholder={t('webadmin1.aorders.searchPh')}
             className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 pl-10 pr-4 py-2.5 text-sm"
           />
+        </div>
+        <div>
+          <label
+            htmlFor="driver-filter"
+            className="mb-1 block text-xs font-medium text-surface-600 dark:text-surface-400"
+          >
+            {t('webadmin1.aorders.driverFilter')}
+          </label>
+          <select
+            id="driver-filter"
+            value={driverId}
+            onChange={(e) => {
+              setDriverId(e.target.value);
+              setPage(0);
+            }}
+            className="min-h-[44px] w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 text-sm"
+          >
+            <option value="">{t('webadmin1.aorders.driverAll')}</option>
+            {drivers.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.fullName}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 

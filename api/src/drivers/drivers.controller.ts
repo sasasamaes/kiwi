@@ -161,6 +161,33 @@ export class DriversController {
     return this.driversService.getEarnings(user.sub, period || 'all');
   }
 
+  @Get('me/orders')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('driver')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Historial de pedidos del repartidor (todos los estados)' })
+  async getMyOrders(
+    @CurrentUser() user: any,
+    @Query('status') status?: string,
+    @Query('take') take?: string,
+    @Query('skip') skip?: string,
+  ) {
+    return this.driversService.driverOrders(user.sub, {
+      status,
+      take: take != null ? Number(take) : undefined,
+      skip: skip != null ? Number(skip) : undefined,
+    });
+  }
+
+  @Get('admin/list')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Repartidores para filtros del admin (id + nombre)' })
+  async adminList() {
+    return this.driversService.adminList();
+  }
+
   @Get('me/schedule')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('driver')

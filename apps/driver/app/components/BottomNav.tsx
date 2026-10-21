@@ -4,18 +4,19 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Calendar, Coins, Home as HomeIcon, Package, User } from 'lucide-react';
+import { Calendar, Coins, History, Home as HomeIcon, Package, User } from 'lucide-react';
 
 /**
  * Navegación inferior única del driver. Antes cada página tenía su propia
  * copia con DESTINOS DISTINTOS (una mostraba "Programados", otra "Horario",
  * otra "Analytics") — el repartidor perdía rutas al cambiar de pantalla.
- * Ahora: los mismos 5 destinos en todas las páginas, con estado activo real
+ * Ahora: los mismos destinos en todas las páginas, con estado activo real
  * por ruta (usePathname, no un booleano hardcodeado por página).
  */
 const ITEMS = [
   { href: '/', label: 'Inicio', icon: HomeIcon, exact: true },
   { href: '/active', label: 'Activos', icon: Package, exact: false },
+  { href: '/history', label: 'Historial', icon: History, exact: false },
   { href: '/earnings', label: 'Ganancias', icon: Coins, exact: false },
   { href: '/schedule', label: 'Horario', icon: Calendar, exact: false },
   { href: '/profile', label: 'Perfil', icon: User, exact: false },
