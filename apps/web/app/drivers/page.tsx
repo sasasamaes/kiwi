@@ -1030,7 +1030,16 @@ function AssignModal({
           {t('webshop2.driversweb.assignTo', { name: driver.fullName })}
         </h3>
         {orders.length === 0 ? (
-          <p className="mt-3 text-sm text-surface-500">{t('webshop2.driversweb.assignEmpty')}</p>
+          <>
+            <p className="mt-3 text-sm text-surface-500">{t('webshop2.driversweb.assignEmpty')}</p>
+            <Link
+              href={`/orders/new?driverId=${driver.id}&driverName=${encodeURIComponent(driver.fullName)}`}
+              onClick={onClose}
+              className="mt-4 flex min-h-[48px] items-center justify-center rounded-xl bg-kiwi-700 px-4 text-sm font-semibold text-white shadow-card transition-colors hover:bg-kiwi-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-600/40 active:scale-[0.98]"
+            >
+              {t('webshop2.driversweb.detailCreate')}
+            </Link>
+          </>
         ) : (
           <>
             <div className="mt-3 space-y-2 max-h-64 overflow-y-auto">
