@@ -16,12 +16,16 @@ const DEFAULT_STATEMENT_TIMEOUT_MS = '30000';
  * Vars: DB_POOL_LIMIT, DB_POOL_TIMEOUT, DB_CONNECT_TIMEOUT,
  * DB_STATEMENT_TIMEOUT_MS. Se documentan en api/.env.example.
  */
-export function buildDatabaseUrl(raw?: string): string {
+export function buildDatabaseUrl(raw?: string, overrides?: { connectionLimit?: string }): string {
   const base = raw ?? process.env.DATABASE_URL ?? '';
   if (!base) return base;
   const url = new URL(base);
   const params = url.searchParams;
-  if (!params.has('connection_limit')) {
+  // Override explícito (ej. boot: migrate/sonda con pool mínimo) > URL > env > default.
+  const forced = overrides?.connectionLimit;
+  if (forced != null && forced !== '') {
+    params.set('connection_limit', forced);
+  } else if (!params.has('connection_limit')) {
     params.set('connection_limit', process.env.DB_POOL_LIMIT ?? DEFAULT_POOL_LIMIT);
   }
   if (!params.has('pool_timeout')) {
@@ -71,7 +75,27 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   }
 
   async onModuleInit() {
-    await this.$connect();
+    // El pooler (Supabase, modo sesión, 15 clientes) se llena en deploys con
+    // 2 instancias vivas + migrate: en vez de morir al primer EMAXCONNSESSION,
+    // se reintenta con backoff mientras se liberan las sesiones colgadas.
+    const attempts = Math.max(1, Number(process.env.DB_CONNECT_ATTEMPTS ?? 6) || 6);
+    const baseDelayMs = Math.max(0, Number(process.env.DB_CONNECT_DELAY_MS ?? 2000) || 2000);
+    let lastError: unknown = null;
+    for (let i = 1; i <= attempts; i++) {
+      try {
+        await this.$connect();
+        if (i > 1) this.logger.log(`DB conectada al intento ${i}/${attempts}`);
+        return;
+      } catch (error) {
+        lastError = error;
+        if (i >= attempts) break;
+        this.logger.warn(
+          `DB no disponible (intento ${i}/${attempts}): ${(error as any)?.message?.split('\n')[0] ?? error}. Reintentando...`,
+        );
+        await new Promise((resolve) => setTimeout(resolve, baseDelayMs * i));
+      }
+    }
+    throw lastError;
   }
 
   async onModuleDestroy() {

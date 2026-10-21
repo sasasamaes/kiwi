@@ -9,6 +9,7 @@ import { execSync } from 'node:child_process';
 import { join } from 'node:path';
 import * as express from 'express';
 import { AppModule } from './app.module';
+import { buildDatabaseUrl } from './prisma/prisma.service';
 
 // Initialize Sentry before anything else
 if (process.env.SENTRY_DSN) {
@@ -68,7 +69,10 @@ async function ensureDatabaseReady(): Promise<void> {
   }
 
   const { PrismaClient } = await import('@prisma/client');
-  const prisma = new PrismaClient();
+  // Boot con pool mínimo (2): la sonda y el migrate comparten el pooler
+  // chico con la app ya corriendo; con el default abrirían ~10 cada uno.
+  const bootUrl = buildDatabaseUrl(databaseUrl, { connectionLimit: '2' });
+  const prisma = new PrismaClient({ datasourceUrl: bootUrl });
   const apiRoot = join(__dirname, '..'); // prisma/ and package.json live at the api root
 
   // Lock de migraciones entre boots concurrentes (deploy con 2+ instancias
@@ -84,6 +88,7 @@ async function ensureDatabaseReady(): Promise<void> {
     execSync('npx prisma migrate deploy', {
       stdio: 'inherit',
       cwd: apiRoot,
+      env: { ...process.env, DATABASE_URL: bootUrl },
     });
 
     // 1. Reachability + schema probe.
