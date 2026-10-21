@@ -311,6 +311,7 @@ export { useDeliveryZones } from './useDeliveryZones';
 export { parseMapLink } from './map-link';
 export type { GeoPoint } from './map-link';
 export { DeliveryZonesMap } from './DeliveryZonesMap';
+export { DeliveryPointMap } from './DeliveryPointMap';
 export {
   SchedulePicker,
   EMPTY_SCHEDULE,

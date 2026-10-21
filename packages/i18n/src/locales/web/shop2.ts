@@ -49,6 +49,12 @@ export const shop2Es = {
     zonesMapHint:
       'Tocá un precio para elegir esa zona. Son puntos de referencia, no límites del barrio.',
     whatsappHint: '¿El cliente te pasó la ubicación por WhatsApp? Pegala acá:',
+    pinShow: 'Marcar punto exacto en mapa',
+    pinHide: 'Ocultar mapa del punto',
+    pinHint:
+      'Tocá el mapa para poner el pin donde recibe el cliente. Podés arrastrarlo para ajustar.',
+    pinSet: 'Pin: {lat}, {lng} · le llega al repartidor para navegar',
+    pinClear: 'Quitar pin',
     mapPh: 'https://maps.google.com/…',
     useBtn: 'Usar',
     useLocationTitle: 'Usar mi ubicación actual',
@@ -609,6 +615,11 @@ export const shop2En = {
     zonesMapHint:
       'Tap a price to pick that zone. They are reference points, not neighborhood limits.',
     whatsappHint: 'Did the customer send you the location on WhatsApp? Paste it here:',
+    pinShow: 'Pin exact point on map',
+    pinHide: 'Hide point map',
+    pinHint: 'Tap the map to drop the pin where the customer receives. Drag it to adjust.',
+    pinSet: 'Pin: {lat}, {lng} · sent to the driver for navigation',
+    pinClear: 'Remove pin',
     mapPh: 'https://maps.google.com/…',
     useBtn: 'Use',
     useLocationTitle: 'Use my current location',

@@ -16,6 +16,7 @@ import {
   ShareTrackingButton,
   ZonePicker,
   DeliveryZonesMap,
+  DeliveryPointMap,
   useDeliveryZones,
   safeNavigateToUrl,
   parseMapLink,
@@ -139,6 +140,7 @@ function NewOrderInner({
   const [deliverySuggest, setDeliverySuggest] = useState<GeoSuggestion[]>([]);
   const [locating, setLocating] = useState(false);
   const [showZonesMap, setShowZonesMap] = useState(false);
+  const [showPointMap, setShowPointMap] = useState(false);
 
   const [packageDescription, setPackageDescription] = useState('');
   const [notes, setNotes] = useState('');
@@ -508,6 +510,14 @@ function NewOrderInner({
       () => setLocating(false),
       { enableHighAccuracy: true, timeout: 10000 },
     );
+  };
+
+  /** Pin manual en el mapa: fija lat/lng y revalida zona/tarifa. */
+  const pickPointOnMap = (plat: number, plng: number) => {
+    setDeliveryLat(plat);
+    setDeliveryLng(plng);
+    setDeliverySuggest([]);
+    void autoDetectZone(plat, plng, deliveryAddress || `${plat.toFixed(5)}, ${plng.toFixed(5)}`);
   };
 
   // ---- Items ----
@@ -1314,6 +1324,46 @@ function NewOrderInner({
                     </button>
                   </div>
                   {mapLinkMsg && <p className="mt-1.5 text-xs text-surface-500">{mapLinkMsg}</p>}
+                </div>
+                <div>
+                  <button
+                    onClick={() => setShowPointMap((v) => !v)}
+                    className="text-xs font-medium text-kiwi-700 dark:text-kiwi-400 underline underline-offset-2"
+                  >
+                    {showPointMap ? t('webshop2.neworder.pinHide') : t('webshop2.neworder.pinShow')}
+                  </button>
+                  {showPointMap && (
+                    <div className="mt-2">
+                      <DeliveryPointMap
+                        lat={deliveryLat}
+                        lng={deliveryLng}
+                        onPick={pickPointOnMap}
+                        height={280}
+                      />
+                      <p className="mt-1 text-[11px] text-surface-500 dark:text-surface-400">
+                        {t('webshop2.neworder.pinHint')}
+                      </p>
+                      {deliveryLat != null && deliveryLng != null && (
+                        <p className="mt-1 flex items-center justify-between text-[11px] text-surface-500 dark:text-surface-400">
+                          <span>
+                            {t('webshop2.neworder.pinSet', {
+                              lat: deliveryLat.toFixed(5),
+                              lng: deliveryLng.toFixed(5),
+                            })}
+                          </span>
+                          <button
+                            onClick={() => {
+                              setDeliveryLat(undefined);
+                              setDeliveryLng(undefined);
+                            }}
+                            className="ml-2 shrink-0 underline underline-offset-2"
+                          >
+                            {t('webshop2.neworder.pinClear')}
+                          </button>
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
                 {routeKm != null && (
                   <p className="text-xs text-surface-500">
