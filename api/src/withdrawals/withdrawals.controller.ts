@@ -1,5 +1,16 @@
 // Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
-import { Controller, Get, Post, Put, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Request,
+  BadRequestException,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -104,6 +115,29 @@ export class WithdrawalsController {
   @ApiOperation({ summary: 'Generate weekly withdrawals with receipts (admin)' })
   async generatePayroll(@Body() body: { week?: string; driverIds?: string[] }) {
     return this.withdrawalsService.generatePayroll(body?.week, body?.driverIds);
+  }
+
+  @Get('admin/balances')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Unsettled balances per driver (admin)' })
+  async getUnsettledBalances() {
+    return this.withdrawalsService.getUnsettledBalances();
+  }
+
+  @Post('admin/zero-out')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Zero out a driver balance with receipt (admin)' })
+  async zeroOutDriver(@Request() req, @Body() body: { driverId: string; reason?: string }) {
+    if (!body?.driverId) throw new BadRequestException('driverId es requerido');
+    return this.withdrawalsService.zeroOutDriver(
+      body.driverId,
+      req.user.sub ?? req.user.id,
+      body.reason ?? '',
+    );
   }
 
   @Get('admin/receipt/:id')

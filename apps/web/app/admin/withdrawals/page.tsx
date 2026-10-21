@@ -78,6 +78,10 @@ export default function AdminWithdrawalsPage() {
   const [payrollLoading, setPayrollLoading] = useState(false);
   const [payrollMsg, setPayrollMsg] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
+  const [balances, setBalances] = useState<any[]>([]);
+  const [balancesLoading, setBalancesLoading] = useState(false);
+  const [zeroingId, setZeroingId] = useState<string | null>(null);
+  const [balancesMsg, setBalancesMsg] = useState<string | null>(null);
   // Recibo del retiro seleccionado
   const [receipt, setReceipt] = useState<any>(null);
   const [receiptLoading, setReceiptLoading] = useState(false);
@@ -133,6 +137,34 @@ export default function AdminWithdrawalsPage() {
     },
     [t],
   );
+
+  const fetchBalances = useCallback(async () => {
+    try {
+      setBalancesLoading(true);
+      setBalancesMsg(null);
+      const data = await api.getUnsettledBalances();
+      setBalances(Array.isArray(data) ? data : []);
+    } catch {
+      setBalancesMsg(t('webadmin1.awith.balancesLoadError'));
+    } finally {
+      setBalancesLoading(false);
+    }
+  }, [t]);
+
+  const handleZeroOut = async (driverId: string, fullName: string) => {
+    if (!window.confirm(t('webadmin1.awith.zeroOutConfirm', { name: fullName }))) return;
+    try {
+      setZeroingId(driverId);
+      await api.zeroOutDriver(driverId, t('webadmin1.awith.zeroOutReason'));
+      setBalancesMsg(t('webadmin1.awith.zeroedOk', { name: fullName }));
+      void fetchBalances();
+      void fetchPayroll(payrollWeek);
+    } catch (e: any) {
+      setBalancesMsg(e?.message || t('webadmin1.awith.zeroOutError'));
+    } finally {
+      setZeroingId(null);
+    }
+  };
 
   const shiftWeek = (days: number) => {
     const base = payrollWeek ? new Date(`${payrollWeek}T12:00:00Z`) : new Date();
@@ -199,7 +231,8 @@ export default function AdminWithdrawalsPage() {
 
   useEffect(() => {
     void fetchPayroll(null);
-  }, [fetchPayroll]);
+    void fetchBalances();
+  }, [fetchPayroll, fetchBalances]);
 
   useEffect(() => {
     if (selectedWithdrawal) void fetchReceipt(selectedWithdrawal.id);
@@ -484,6 +517,62 @@ export default function AdminWithdrawalsPage() {
             ? t('webadmin1.awith.payrollGenerating')
             : t('webadmin1.awith.payrollGenerate')}
         </button>
+      </motion.div>
+
+      {/* Saldos sin liquidar (limpieza pre-lanzamiento) */}
+      <motion.div
+        className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <p className="font-display font-bold text-surface-800 dark:text-surface-100">
+          {t('webadmin1.awith.balancesTitle')}
+        </p>
+        <p className="text-xs text-surface-500 dark:text-surface-400">
+          {t('webadmin1.awith.balancesHint')}
+        </p>
+        {balancesMsg && (
+          <p className="mt-2 text-sm font-medium text-kiwi-700 dark:text-kiwi-300">{balancesMsg}</p>
+        )}
+        <div className="mt-3 space-y-2">
+          {balancesLoading ? (
+            <p className="text-sm text-surface-500">…</p>
+          ) : balances.length === 0 ? (
+            <p className="text-sm text-surface-500 dark:text-surface-400">
+              {t('webadmin1.awith.balancesEmpty')}
+            </p>
+          ) : (
+            balances.map((b: any) => (
+              <div
+                key={b.driverId}
+                className="flex items-center justify-between gap-2 rounded-xl bg-surface-50 dark:bg-surface-700/50 px-4 py-3"
+              >
+                <div className="min-w-0">
+                  <p className="truncate font-medium text-surface-800 dark:text-surface-100">
+                    {b.fullName || b.driverId.slice(0, 8)}
+                  </p>
+                  <p className="text-xs text-surface-500 dark:text-surface-400">
+                    {t('webadmin1.awith.balancesTrips', { n: b.tripCount ?? 0 })} · ₡
+                    {Number(b.totalPayout ?? 0).toLocaleString()}
+                    {(b.pendingCount ?? 0) > 0 &&
+                      ` · ${t('webadmin1.awith.balancesPending', { n: b.pendingCount })}`}
+                  </p>
+                </div>
+                <button
+                  onClick={() =>
+                    void handleZeroOut(b.driverId, b.fullName || b.driverId.slice(0, 8))
+                  }
+                  disabled={zeroingId === b.driverId || (b.pendingCount ?? 0) > 0}
+                  className="shrink-0 rounded-lg bg-surface-200 dark:bg-surface-600 px-3 py-2 text-xs font-semibold text-surface-700 dark:text-surface-200 hover:bg-surface-300 dark:hover:bg-surface-500 disabled:opacity-50"
+                >
+                  {zeroingId === b.driverId
+                    ? t('webadmin1.awith.zeroing')
+                    : t('webadmin1.awith.zeroOut')}
+                </button>
+              </div>
+            ))
+          )}
+        </div>
       </motion.div>
 
       {/* Filter Tabs */}

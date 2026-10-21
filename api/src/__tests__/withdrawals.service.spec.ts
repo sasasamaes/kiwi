@@ -328,3 +328,117 @@ describe('WithdrawalsService payroll', () => {
     });
   });
 });
+
+describe('WithdrawalsService saldos y puesta en 0', () => {
+  let service: WithdrawalsService;
+  let prisma: any;
+
+  const order = (over: any = {}) => ({
+    id: 'o1',
+    driverId: 'drv-1',
+    deliveredAt: new Date('2026-10-21T12:00:00Z'),
+    basePrice: 1500,
+    driverPayout: 1275,
+    merchant: { businessName: 'Soda' },
+    ...over,
+  });
+
+  beforeEach(async () => {
+    prisma = {
+      order: { findMany: jest.fn().mockResolvedValue([]) },
+      withdrawalItem: {
+        findMany: jest.fn().mockResolvedValue([]),
+        findFirst: jest.fn().mockResolvedValue(null),
+        createMany: jest.fn().mockResolvedValue({ count: 0 }),
+        count: jest.fn().mockResolvedValue(0),
+      },
+      withdrawal: {
+        findMany: jest.fn().mockResolvedValue([]),
+        findUnique: jest.fn().mockResolvedValue(null),
+        findFirst: jest.fn().mockResolvedValue(null),
+        create: jest.fn().mockImplementation(async ({ data }: any) => ({ id: 'w0', ...data })),
+        update: jest.fn(),
+        updateMany: jest.fn(),
+        count: jest.fn().mockResolvedValue(0),
+        groupBy: jest.fn().mockResolvedValue([]),
+        aggregate: jest.fn(),
+      },
+      driverProfile: {
+        findMany: jest.fn().mockResolvedValue([]),
+        findUnique: jest.fn().mockResolvedValue(null),
+      },
+      $transaction: jest.fn(async (fn: any) => fn(prisma)),
+      $executeRaw: jest.fn(),
+    };
+    prisma.$transaction.mockImplementation(async (fn: any) => fn(prisma));
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        WithdrawalsService,
+        { provide: PrismaService, useValue: prisma },
+        {
+          provide: NotificationsService,
+          useValue: { notifyWithdrawalStatus: jest.fn().mockResolvedValue({}) },
+        },
+      ],
+    }).compile();
+
+    service = module.get(WithdrawalsService);
+  });
+
+  it('getUnsettledBalances agrupa no liquidados y cuenta pendientes', async () => {
+    prisma.order.findMany.mockResolvedValue([
+      order({ id: 'o1' }),
+      order({ id: 'o2', driverPayout: 2000 }),
+      order({ id: 'o3', driverId: null }),
+    ]);
+    prisma.withdrawalItem.findMany.mockResolvedValue([{ orderId: 'o2' }]);
+    prisma.driverProfile.findMany.mockResolvedValue([
+      { id: 'drv-1', fullName: 'Luis', user: { phone: '8888', email: 'l@x.com' } },
+    ]);
+    prisma.withdrawal.groupBy.mockResolvedValue([{ driverId: 'drv-1', _count: { id: 2 } }]);
+
+    const res: any = await service.getUnsettledBalances();
+    expect(res).toHaveLength(1);
+    expect(res[0].driverId).toBe('drv-1');
+    expect(res[0].tripCount).toBe(1);
+    expect(res[0].totalPayout).toBe(1275);
+    expect(res[0].pendingCount).toBe(2);
+  });
+
+  it('zeroOut crea retiro completed con recibo y deja saldo en 0', async () => {
+    prisma.driverProfile.findUnique.mockResolvedValue({ id: 'drv-1' });
+    prisma.withdrawal.count.mockResolvedValue(0);
+    prisma.order.findMany.mockResolvedValue([order({}), order({ id: 'o2' })]);
+
+    const res: any = await service.zeroOutDriver('drv-1', 'admin-1', 'cierre pre-lanzamiento');
+
+    expect(prisma.withdrawal.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          driverId: 'drv-1',
+          amount: 2550,
+          status: 'completed',
+          transactionId: expect.stringContaining('AJUSTE'),
+        }),
+      }),
+    );
+    expect(prisma.withdrawalItem.createMany).toHaveBeenCalledWith({
+      data: [
+        expect.objectContaining({ orderId: 'o1', amount: 1275 }),
+        expect.objectContaining({ orderId: 'o2', amount: 1275 }),
+      ],
+    });
+    expect(res.tripCount).toBe(2);
+  });
+
+  it('zeroOut exige resolver pendientes primero y rechaza sin saldo', async () => {
+    prisma.driverProfile.findUnique.mockResolvedValue({ id: 'drv-1' });
+    prisma.withdrawal.count.mockResolvedValue(1);
+    await expect(service.zeroOutDriver('drv-1', 'a', 'x')).rejects.toThrow('pendientes');
+
+    prisma.withdrawal.count.mockResolvedValue(0);
+    prisma.order.findMany.mockResolvedValue([]);
+    await expect(service.zeroOutDriver('drv-1', 'a', 'x')).rejects.toThrow('No hay saldo');
+  });
+});

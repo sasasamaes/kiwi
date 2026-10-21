@@ -289,7 +289,11 @@ export class WithdrawalsService {
 
   /** Viajes entregados sin recibo (no están en líneas de retiros vigentes). */
   private async unreceiptedDelivered(driverId: string, cutoff: Date) {
-    const used = await this.prisma.withdrawalItem.findMany({
+    return this.unreceiptedDeliveredTx(this.prisma, driverId, cutoff);
+  }
+
+  private async unreceiptedDeliveredTx(db: any, driverId: string, cutoff: Date) {
+    const used = await db.withdrawalItem.findMany({
       where: {
         withdrawal: {
           driverId,
@@ -299,7 +303,7 @@ export class WithdrawalsService {
       select: { orderId: true },
     });
     const usedIds = new Set(used.map((u) => u.orderId));
-    const orders = await this.prisma.order.findMany({
+    const orders = await db.order.findMany({
       where: {
         driverId,
         status: 'delivered',
@@ -593,6 +597,120 @@ export class WithdrawalsService {
         amount: Math.round(Number(o.driverPayout ?? 0)),
         deliveredAt: o.deliveredAt,
       })),
+    });
+  }
+
+  /**
+   * Saldos sin liquidar por repartidor: viajes entregados sin recibo,
+   * más conteo de retiros pendientes (esos bloquean el ajuste).
+   */
+  async getUnsettledBalances() {
+    const now = new Date();
+    const trips = await this.prisma.order.findMany({
+      where: { status: 'delivered', driverId: { not: null } },
+      select: { id: true, driverId: true, deliveredAt: true, driverPayout: true },
+      orderBy: { deliveredAt: 'asc' },
+    });
+    const used = await this.prisma.withdrawalItem.findMany({
+      where: {
+        withdrawal: { status: { in: ['pending', 'processing', 'completed'] } },
+        orderId: { in: trips.map((o) => o.id) },
+      },
+      select: { orderId: true },
+    });
+    const usedIds = new Set(used.map((u) => u.orderId));
+    const byDriver = new Map<string, typeof trips>();
+    for (const o of trips) {
+      if (!o.driverId || usedIds.has(o.id)) continue;
+      const list = byDriver.get(o.driverId) ?? [];
+      list.push(o);
+      byDriver.set(o.driverId, list);
+    }
+    if (byDriver.size === 0) return [];
+    const [drivers, pendings] = await Promise.all([
+      this.prisma.driverProfile.findMany({
+        where: { id: { in: [...byDriver.keys()] } },
+        select: {
+          id: true,
+          fullName: true,
+          user: { select: { phone: true, email: true } },
+        },
+      }),
+      this.prisma.withdrawal.groupBy({
+        by: ['driverId'],
+        where: { status: 'pending' },
+        _count: { id: true },
+      }),
+    ]);
+    const pendingByDriver = new Map(pendings.map((r: any) => [r.driverId, r._count.id]));
+    return [...byDriver.entries()].map(([driverId, list]) => {
+      const p = drivers.find((d) => d.id === driverId);
+      return {
+        driverId,
+        fullName: p?.fullName ?? '',
+        phone: p?.user?.phone ?? null,
+        email: p?.user?.email ?? null,
+        tripCount: list.length,
+        totalPayout: Math.round(list.reduce((s, o) => s + Number(o.driverPayout ?? 0), 0)),
+        pendingCount: pendingByDriver.get(driverId) ?? 0,
+      };
+    });
+  }
+
+  /**
+   * Pone en 0 el saldo de un repartidor: crea un retiro 'completed' por el
+   * total pendiente con recibo de todos sus viajes sin liquidar. Auditable
+   * (processedBy + transactionId AJUSTE). No toca retiros pendientes: si
+   * tiene, hay que resolverlos primero.
+   */
+  async zeroOutDriver(driverId: string, adminId: string, reason: string) {
+    const profile = await this.prisma.driverProfile.findUnique({
+      where: { id: driverId },
+      select: { id: true },
+    });
+    if (!profile) throw new NotFoundException('Repartidor no encontrado');
+    const pending = await this.prisma.withdrawal.count({
+      where: { driverId, status: 'pending' },
+    });
+    if (pending > 0) {
+      throw new BadRequestException(
+        'El repartidor tiene retiros pendientes: resolvelos antes de poner en 0',
+      );
+    }
+    const trips = await this.unreceiptedDelivered(driverId, new Date());
+    const total = Math.round(trips.reduce((s, o) => s + Number(o.driverPayout ?? 0), 0));
+    if (trips.length === 0 || total <= 0) {
+      throw new BadRequestException('No hay saldo pendiente para poner en 0');
+    }
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${driverId})::bigint)`;
+      // Recalcular dentro del lock: un doble clic no duplica el ajuste.
+      const fresh = await this.unreceiptedDeliveredTx(tx, driverId, new Date());
+      const freshTotal = Math.round(fresh.reduce((sum, o) => sum + Number(o.driverPayout ?? 0), 0));
+      if (fresh.length === 0 || freshTotal <= 0) {
+        throw new BadRequestException('Ya no hay saldo pendiente (otro ajuste lo cubrió)');
+      }
+      const withdrawal = await tx.withdrawal.create({
+        data: {
+          driverId,
+          amount: freshTotal,
+          currency: 'CRC',
+          status: 'completed',
+          paymentMethod: 'sinpe',
+          processedAt: new Date(),
+          processedBy: adminId,
+          transactionId: `AJUSTE - ${reason || 'saldo inicial'}`.slice(0, 120),
+        },
+      });
+      await tx.withdrawalItem.createMany({
+        data: fresh.map((o) => ({
+          withdrawalId: withdrawal.id,
+          orderId: o.id,
+          amount: Math.round(Number(o.driverPayout ?? 0)),
+          deliveredAt: o.deliveredAt,
+        })),
+      });
+      return { ...withdrawal, tripCount: fresh.length };
     });
   }
 

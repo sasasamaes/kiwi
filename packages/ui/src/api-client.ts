@@ -2264,6 +2264,19 @@ class ApiClient {
     return this.request<any>(`/withdrawals/admin/receipt/${id}`);
   }
 
+  /** Saldos sin liquidar por repartidor (admin). */
+  async getUnsettledBalances() {
+    return this.request<any>('/withdrawals/admin/balances');
+  }
+
+  /** Pone en 0 el saldo de un repartidor con recibo de ajuste (admin). */
+  async zeroOutDriver(driverId: string, reason?: string) {
+    return this.request<any>('/withdrawals/admin/zero-out', {
+      method: 'POST',
+      body: { driverId, reason },
+    });
+  }
+
   // ============================================
   // 🗺️ GEOCODING
   // ============================================
