@@ -5,7 +5,7 @@ import { Suspense, useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BarChart3, Package } from 'lucide-react';
+import { BarChart3, MapPin, MessageCircle, Package, Pencil } from 'lucide-react';
 import {
   AnimatedButton,
   useAuth,
@@ -131,7 +131,9 @@ function NewOrderInner({
   const [deliverySuggest, setDeliverySuggest] = useState<GeoSuggestion[]>([]);
   const [locating, setLocating] = useState(false);
   const [showZonesMap, setShowZonesMap] = useState(false);
-  const [showPointMap, setShowPointMap] = useState(false);
+  // Cómo se fija el punto de entrega: escribir (dirección + sugerencias),
+  // link de WhatsApp, o pin en el mapa. Solo una opción a la vista.
+  const [locMethod, setLocMethod] = useState<'manual' | 'link' | 'pin'>('manual');
 
   const [packageDescription, setPackageDescription] = useState('');
   const [notes, setNotes] = useState('');
@@ -508,6 +510,8 @@ function NewOrderInner({
     setDeliveryLat(plat);
     setDeliveryLng(plng);
     setDeliverySuggest([]);
+    // El pin también completa la dirección si está vacía (el paso la exige).
+    setDeliveryAddress((prev) => prev || `${plat.toFixed(5)}, ${plng.toFixed(5)}`);
     void autoDetectZone(plat, plng, deliveryAddress || `${plat.toFixed(5)}, ${plng.toFixed(5)}`);
   };
 
@@ -1261,25 +1265,101 @@ function NewOrderInner({
                     />
                   </div>
                 </div>
-                <div>
-                  <label
-                    htmlFor="delivery-address"
-                    className="mb-1 block text-xs font-medium text-surface-600 dark:text-surface-400"
-                  >
-                    {t('webshop2.neworder.addressPh')}
-                  </label>
-                  <textarea
-                    id="delivery-address"
-                    value={deliveryAddress}
-                    onChange={(e) => onDeliveryChange(e.target.value)}
-                    placeholder={t('webshop2.neworder.addressPh')}
-                    rows={2}
-                    autoComplete="street-address"
-                    className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm"
-                  />
+                <div
+                  role="radiogroup"
+                  aria-label={t('webshop2.neworder.methodTitle')}
+                  className="grid grid-cols-3 gap-2"
+                >
+                  {(
+                    [
+                      {
+                        id: 'manual',
+                        icon: Pencil,
+                        label: t('webshop2.neworder.methodManual'),
+                        desc: t('webshop2.neworder.methodManualDesc'),
+                      },
+                      {
+                        id: 'link',
+                        icon: MessageCircle,
+                        label: t('webshop2.neworder.methodLink'),
+                        desc: t('webshop2.neworder.methodLinkDesc'),
+                      },
+                      {
+                        id: 'pin',
+                        icon: MapPin,
+                        label: t('webshop2.neworder.methodPin'),
+                        desc: t('webshop2.neworder.methodPinDesc'),
+                      },
+                    ] as const
+                  ).map((m) => (
+                    <button
+                      key={m.id}
+                      type="button"
+                      role="radio"
+                      aria-checked={locMethod === m.id}
+                      aria-controls={`method-${m.id}`}
+                      onClick={() => setLocMethod(m.id)}
+                      className={`rounded-xl p-3 text-left transition-all ${
+                        locMethod === m.id
+                          ? 'border-2 border-kiwi-600 bg-kiwi-50 dark:bg-kiwi-900/30'
+                          : 'border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800'
+                      }`}
+                    >
+                      <m.icon className="mb-1 h-5 w-5 text-kiwi-700 dark:text-kiwi-400" />
+                      <p className="text-sm font-medium text-surface-800 dark:text-surface-200">
+                        {m.label}
+                      </p>
+                      <p className="text-[11px] text-surface-500">{m.desc}</p>
+                    </button>
+                  ))}
                 </div>
+                {locMethod === 'manual' && (
+                  <div
+                    id="method-manual"
+                    role="region"
+                    aria-label={t('webshop2.neworder.methodManual')}
+                  >
+                    <label
+                      htmlFor="delivery-address"
+                      className="mb-1 block text-xs font-medium text-surface-600 dark:text-surface-400"
+                    >
+                      {t('webshop2.neworder.addressPh')}
+                    </label>
+                    <textarea
+                      id="delivery-address"
+                      value={deliveryAddress}
+                      onChange={(e) => onDeliveryChange(e.target.value)}
+                      placeholder={t('webshop2.neworder.addressPh')}
+                      rows={2}
+                      autoComplete="street-address"
+                      className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm"
+                    />
+                    {deliverySuggest.length > 0 && (
+                      <div
+                        role="listbox"
+                        aria-label={t('webshop2.neworder.addressPh')}
+                        className="mt-2 overflow-hidden rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800"
+                      >
+                        {deliverySuggest.map((s, i) => (
+                          <button
+                            key={`${s.lat}-${s.lng}-${i}`}
+                            type="button"
+                            role="option"
+                            aria-selected="false"
+                            onClick={() => pickSuggestion(s)}
+                            className="min-h-[44px] w-full text-left px-4 py-2.5 text-sm hover:bg-kiwi-50 dark:hover:bg-kiwi-900/20"
+                          >
+                            📍 {s.shortName || s.displayName}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
                 <ZonePicker
                   value={deliveryZone}
+                  detectedLabel={zoneLabel}
+                  detectedPrice={zonePrice}
                   onChange={(id) => {
                     setDeliveryZone(id);
                     // La zona manual manda: el aviso previo del auto-detect
@@ -1320,119 +1400,95 @@ function NewOrderInner({
                     </div>
                   )}
                 </div>
-                {deliverySuggest.length > 0 && (
+                {locMethod === 'link' && (
                   <div
-                    role="listbox"
-                    aria-label={t('webshop2.neworder.addressPh')}
-                    className="overflow-hidden rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800"
+                    id="method-link"
+                    role="region"
+                    aria-label={t('webshop2.neworder.methodLink')}
+                    className="rounded-xl bg-surface-50 dark:bg-surface-800 p-3"
                   >
-                    {deliverySuggest.map((s, i) => (
+                    <label
+                      htmlFor="map-link"
+                      className="mb-2 block text-xs font-medium text-surface-500"
+                    >
+                      {t('webshop2.neworder.whatsappHint')}
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        id="map-link"
+                        value={mapLink}
+                        onChange={(e) => setMapLink(e.target.value)}
+                        placeholder={t('webshop2.neworder.mapPh')}
+                        inputMode="url"
+                        autoComplete="off"
+                        className="min-h-[44px] flex-1 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 text-sm"
+                      />
                       <button
-                        key={`${s.lat}-${s.lng}-${i}`}
                         type="button"
-                        role="option"
-                        aria-selected="false"
-                        onClick={() => pickSuggestion(s)}
-                        className="min-h-[44px] w-full text-left px-4 py-2.5 text-sm hover:bg-kiwi-50 dark:hover:bg-kiwi-900/20"
+                        onClick={applyMapLink}
+                        className="min-h-[44px] rounded-lg bg-kiwi-700 px-3 text-sm font-semibold text-white"
                       >
-                        📍 {s.shortName || s.displayName}
+                        {t('webshop2.neworder.useBtn')}
                       </button>
-                    ))}
+                      <button
+                        type="button"
+                        onClick={useCurrentLocation}
+                        disabled={locating}
+                        title={t('webshop2.neworder.useLocationTitle')}
+                        aria-label={t('webshop2.neworder.useLocationTitle')}
+                        className="min-h-[44px] min-w-[44px] rounded-lg bg-surface-200 dark:bg-surface-700 px-3 text-sm"
+                      >
+                        {locating ? t('webshop2.neworder.locating') : '📍'}
+                      </button>
+                    </div>
+                    {mapLinkMsg && (
+                      <p aria-live="polite" className="mt-1.5 text-xs text-surface-500">
+                        {mapLinkMsg}
+                      </p>
+                    )}
                   </div>
                 )}
-                <div className="rounded-xl bg-surface-50 dark:bg-surface-800 p-3">
-                  <label
-                    htmlFor="map-link"
-                    className="mb-2 block text-xs font-medium text-surface-500"
+                {locMethod === 'pin' && (
+                  <div
+                    className="mt-2"
+                    id="method-pin"
+                    role="region"
+                    aria-label={t('webshop2.neworder.methodPin')}
                   >
-                    {t('webshop2.neworder.whatsappHint')}
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      id="map-link"
-                      value={mapLink}
-                      onChange={(e) => setMapLink(e.target.value)}
-                      placeholder={t('webshop2.neworder.mapPh')}
-                      inputMode="url"
-                      autoComplete="off"
-                      className="min-h-[44px] flex-1 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 text-sm"
+                    <DeliveryPointMap
+                      lat={deliveryLat}
+                      lng={deliveryLng}
+                      onPick={pickPointOnMap}
+                      zoneLabel={zoneLabel}
+                      zonePrice={zonePrice}
+                      height={280}
                     />
-                    <button
-                      type="button"
-                      onClick={applyMapLink}
-                      className="min-h-[44px] rounded-lg bg-kiwi-700 px-3 text-sm font-semibold text-white"
-                    >
-                      {t('webshop2.neworder.useBtn')}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={useCurrentLocation}
-                      disabled={locating}
-                      title={t('webshop2.neworder.useLocationTitle')}
-                      aria-label={t('webshop2.neworder.useLocationTitle')}
-                      className="min-h-[44px] min-w-[44px] rounded-lg bg-surface-200 dark:bg-surface-700 px-3 text-sm"
-                    >
-                      {locating ? t('webshop2.neworder.locating') : '📍'}
-                    </button>
-                  </div>
-                  {mapLinkMsg && (
-                    <p aria-live="polite" className="mt-1.5 text-xs text-surface-500">
-                      {mapLinkMsg}
+                    <p className="mt-1 text-[11px] text-surface-500 dark:text-surface-400">
+                      {t('webshop2.neworder.pinHint')}
                     </p>
-                  )}
-                </div>
-                <div>
-                  <button
-                    type="button"
-                    onClick={() => setShowPointMap((v) => !v)}
-                    aria-expanded={showPointMap}
-                    aria-controls="delivery-point-map"
-                    className="flex min-h-[44px] items-center text-xs font-medium text-kiwi-700 dark:text-kiwi-400 underline underline-offset-2"
-                  >
-                    {showPointMap ? t('webshop2.neworder.pinHide') : t('webshop2.neworder.pinShow')}
-                  </button>
-                  {showPointMap && (
-                    <div
-                      className="mt-2"
-                      id="delivery-point-map"
-                      role="region"
-                      aria-label={t('webshop2.neworder.pinShow')}
-                    >
-                      <DeliveryPointMap
-                        lat={deliveryLat}
-                        lng={deliveryLng}
-                        onPick={pickPointOnMap}
-                        zoneLabel={zoneLabel}
-                        zonePrice={zonePrice}
-                        height={280}
-                      />
-                      <p className="mt-1 text-[11px] text-surface-500 dark:text-surface-400">
-                        {t('webshop2.neworder.pinHint')}
+                    {deliveryLat != null && deliveryLng != null && (
+                      <p className="mt-1 flex min-h-[44px] flex-wrap items-center justify-between gap-2 text-[11px] text-surface-500 dark:text-surface-400">
+                        <span aria-live="polite">
+                          {t('webshop2.neworder.pinSet', {
+                            lat: deliveryLat.toFixed(5),
+                            lng: deliveryLng.toFixed(5),
+                          })}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDeliveryLat(undefined);
+                            setDeliveryLng(undefined);
+                          }}
+                          aria-label={t('webshop2.neworder.pinClear')}
+                          className="flex min-h-[44px] shrink-0 items-center underline underline-offset-2"
+                        >
+                          {t('webshop2.neworder.pinClear')}
+                        </button>
                       </p>
-                      {deliveryLat != null && deliveryLng != null && (
-                        <p className="mt-1 flex min-h-[44px] flex-wrap items-center justify-between gap-2 text-[11px] text-surface-500 dark:text-surface-400">
-                          <span aria-live="polite">
-                            {t('webshop2.neworder.pinSet', {
-                              lat: deliveryLat.toFixed(5),
-                              lng: deliveryLng.toFixed(5),
-                            })}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setDeliveryLat(undefined);
-                              setDeliveryLng(undefined);
-                            }}
-                            aria-label={t('webshop2.neworder.pinClear')}
-                            className="flex min-h-[44px] shrink-0 items-center underline underline-offset-2"
-                          >
-                            {t('webshop2.neworder.pinClear')}
-                          </button>
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
+                    )}
+                  </div>
+                )}
                 {routeKm != null && (
                   <p className="text-xs text-surface-500">
                     {t('webshop2.neworder.routeKm', { km: routeKm })}

@@ -16,6 +16,8 @@ interface ZonePickerProps {
    * muestra lo detectado.
    */
   detectedLabel?: string | null;
+  /** Precio de esa zona detectada (para que la tarjeta no quede muda). */
+  detectedPrice?: number | null;
 }
 
 /**
@@ -23,7 +25,7 @@ interface ZonePickerProps {
  * Botón compacto + hoja modal con la lista alfabética (es-CR).
  * El precio es informativo: el servidor revalida la zona al cobrar.
  */
-export function ZonePicker({ value, onChange, detectedLabel }: ZonePickerProps) {
+export function ZonePicker({ value, onChange, detectedLabel, detectedPrice }: ZonePickerProps) {
   const [open, setOpen] = useState(false);
   const zones = [...useDeliveryZones()].sort((a, b) => a.label.localeCompare(b.label, 'es-CR'));
   const selected = zones.find((z) => z.id === value);
@@ -57,6 +59,11 @@ export function ZonePicker({ value, onChange, detectedLabel }: ZonePickerProps) 
         {selected && (
           <span className="shrink-0 rounded-full bg-kiwi-600/10 px-2.5 py-1 text-xs font-bold text-kiwi-700 dark:text-kiwi-300">
             ₡{selected.price.toLocaleString()}
+          </span>
+        )}
+        {!selected && detected != null && detectedPrice != null && (
+          <span className="shrink-0 rounded-full bg-kiwi-600/10 px-2.5 py-1 text-xs font-bold text-kiwi-700 dark:text-kiwi-300">
+            ₡{Number(detectedPrice).toLocaleString()}
           </span>
         )}
       </button>
