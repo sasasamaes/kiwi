@@ -194,6 +194,11 @@ export function DeliveryPointMap({
 
   return (
     <div className={`relative overflow-hidden rounded-2xl ${className}`} style={{ height }}>
+      <style>{`.kiwi-delivery-pin{background:none;border:none;}
+.kiwi-pin-tip{background:#1f2937!important;color:#fff!important;border:2px solid #fff!important;
+border-radius:999px!important;font-size:11px!important;font-weight:800!important;
+box-shadow:0 4px 12px rgba(0,0,0,.35)!important;padding:3px 10px!important;}
+.kiwi-pin-tip::before{display:none!important;}`}</style>
       <div ref={mapRef} className="h-full w-full" />
       {!ready && (
         <div className="absolute inset-0 flex items-center justify-center bg-surface-100 dark:bg-surface-800">

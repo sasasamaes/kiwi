@@ -996,11 +996,7 @@ function NewOrderInner({
 
   return (
     <main className="min-h-[100dvh] flex flex-col bg-bg-light dark:bg-surface-950">
-      <motion.header
-        className="sticky top-0 z-50 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl"
-        initial={{ y: -100 }}
-        animate={{ y: 0 }}
-      >
+      <header className="sticky top-0 z-50 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl">
         <div className="mx-auto max-w-lg px-4 py-4">
           <div className="flex items-center justify-between">
             <Link
@@ -1016,7 +1012,7 @@ function NewOrderInner({
             <div className="w-16" />
           </div>
         </div>
-      </motion.header>
+      </header>
 
       <div className="mx-auto w-full max-w-lg px-4 py-4">
         <div className="flex items-center justify-between">
@@ -1239,43 +1235,93 @@ function NewOrderInner({
                 {t('webshop2.neworder.deliveryTitle')}
               </h3>
               <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-2">
-                  <input
-                    value={deliveryName}
-                    onChange={(e) => setDeliveryName(e.target.value)}
-                    placeholder={t('webshop2.neworder.namePh')}
-                    className="rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm"
-                  />
-                  <input
-                    value={deliveryPhone}
-                    onChange={(e) => setDeliveryPhone(e.target.value)}
-                    placeholder={t('webshop2.neworder.phonePh')}
-                    type="tel"
-                    className="rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm"
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <div>
+                    <label
+                      htmlFor="delivery-name"
+                      className="mb-1 block text-xs font-medium text-surface-600 dark:text-surface-400"
+                    >
+                      {t('webshop2.neworder.namePh')}
+                    </label>
+                    <input
+                      id="delivery-name"
+                      value={deliveryName}
+                      onChange={(e) => setDeliveryName(e.target.value)}
+                      placeholder={t('webshop2.neworder.namePh')}
+                      autoComplete="name"
+                      className="min-h-[44px] w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="delivery-phone"
+                      className="mb-1 block text-xs font-medium text-surface-600 dark:text-surface-400"
+                    >
+                      {t('webshop2.neworder.phonePh')}
+                    </label>
+                    <input
+                      id="delivery-phone"
+                      value={deliveryPhone}
+                      onChange={(e) => setDeliveryPhone(e.target.value)}
+                      placeholder={t('webshop2.neworder.phonePh')}
+                      type="tel"
+                      inputMode="tel"
+                      autoComplete="tel"
+                      className="min-h-[44px] w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label
+                    htmlFor="delivery-address"
+                    className="mb-1 block text-xs font-medium text-surface-600 dark:text-surface-400"
+                  >
+                    {t('webshop2.neworder.addressPh')}
+                  </label>
+                  <textarea
+                    id="delivery-address"
+                    value={deliveryAddress}
+                    onChange={(e) => onDeliveryChange(e.target.value)}
+                    placeholder={t('webshop2.neworder.addressPh')}
+                    rows={2}
+                    autoComplete="street-address"
+                    className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm"
                   />
                 </div>
-                <textarea
-                  value={deliveryAddress}
-                  onChange={(e) => onDeliveryChange(e.target.value)}
-                  placeholder={t('webshop2.neworder.addressPh')}
-                  rows={2}
-                  className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm"
+                <ZonePicker
+                  value={deliveryZone}
+                  onChange={(id) => {
+                    setDeliveryZone(id);
+                    // La zona manual manda: el aviso previo del auto-detect
+                    // quedaría contradiciéndola (ej. Los Ángeles vs USJ).
+                    setMapLinkMsg(null);
+                  }}
                 />
-                <ZonePicker value={deliveryZone} onChange={setDeliveryZone} />
                 <div>
                   <button
+                    type="button"
                     onClick={() => setShowZonesMap((v) => !v)}
-                    className="text-xs font-medium text-kiwi-700 dark:text-kiwi-400 underline underline-offset-2"
+                    aria-expanded={showZonesMap}
+                    aria-controls="zones-map"
+                    className="flex min-h-[44px] items-center text-xs font-medium text-kiwi-700 dark:text-kiwi-400 underline underline-offset-2"
                   >
                     {showZonesMap
                       ? t('webshop2.neworder.zonesHide')
                       : t('webshop2.neworder.zonesShow')}
                   </button>
                   {showZonesMap && (
-                    <div className="mt-2">
+                    <div
+                      className="mt-2"
+                      id="zones-map"
+                      role="region"
+                      aria-label={t('webshop2.neworder.zonesShow')}
+                    >
                       <DeliveryZonesMap
                         selectedId={deliveryZone}
-                        onSelect={setDeliveryZone}
+                        onSelect={(id) => {
+                          setDeliveryZone(id);
+                          setMapLinkMsg(null);
+                        }}
                         height={300}
                       />
                       <p className="mt-1 text-[11px] text-surface-500 dark:text-surface-400">
@@ -1285,12 +1331,19 @@ function NewOrderInner({
                   )}
                 </div>
                 {deliverySuggest.length > 0 && (
-                  <div className="overflow-hidden rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800">
+                  <div
+                    role="listbox"
+                    aria-label={t('webshop2.neworder.addressPh')}
+                    className="overflow-hidden rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800"
+                  >
                     {deliverySuggest.map((s, i) => (
                       <button
                         key={`${s.lat}-${s.lng}-${i}`}
+                        type="button"
+                        role="option"
+                        aria-selected="false"
                         onClick={() => pickSuggestion(s)}
-                        className="w-full text-left px-4 py-2.5 text-sm hover:bg-kiwi-50 dark:hover:bg-kiwi-900/20"
+                        className="min-h-[44px] w-full text-left px-4 py-2.5 text-sm hover:bg-kiwi-50 dark:hover:bg-kiwi-900/20"
                       >
                         📍 {s.shortName || s.displayName}
                       </button>
@@ -1298,42 +1351,63 @@ function NewOrderInner({
                   </div>
                 )}
                 <div className="rounded-xl bg-surface-50 dark:bg-surface-800 p-3">
-                  <p className="mb-2 text-xs font-medium text-surface-500">
+                  <label
+                    htmlFor="map-link"
+                    className="mb-2 block text-xs font-medium text-surface-500"
+                  >
                     {t('webshop2.neworder.whatsappHint')}
-                  </p>
+                  </label>
                   <div className="flex gap-2">
                     <input
+                      id="map-link"
                       value={mapLink}
                       onChange={(e) => setMapLink(e.target.value)}
                       placeholder={t('webshop2.neworder.mapPh')}
+                      inputMode="url"
+                      autoComplete="off"
                       className="min-h-[44px] flex-1 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 text-sm"
                     />
                     <button
+                      type="button"
                       onClick={applyMapLink}
                       className="min-h-[44px] rounded-lg bg-kiwi-700 px-3 text-sm font-semibold text-white"
                     >
                       {t('webshop2.neworder.useBtn')}
                     </button>
                     <button
+                      type="button"
                       onClick={useCurrentLocation}
                       disabled={locating}
                       title={t('webshop2.neworder.useLocationTitle')}
-                      className="min-h-[44px] rounded-lg bg-surface-200 dark:bg-surface-700 px-3 text-sm"
+                      aria-label={t('webshop2.neworder.useLocationTitle')}
+                      className="min-h-[44px] min-w-[44px] rounded-lg bg-surface-200 dark:bg-surface-700 px-3 text-sm"
                     >
                       {locating ? t('webshop2.neworder.locating') : '📍'}
                     </button>
                   </div>
-                  {mapLinkMsg && <p className="mt-1.5 text-xs text-surface-500">{mapLinkMsg}</p>}
+                  {mapLinkMsg && (
+                    <p aria-live="polite" className="mt-1.5 text-xs text-surface-500">
+                      {mapLinkMsg}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <button
+                    type="button"
                     onClick={() => setShowPointMap((v) => !v)}
-                    className="text-xs font-medium text-kiwi-700 dark:text-kiwi-400 underline underline-offset-2"
+                    aria-expanded={showPointMap}
+                    aria-controls="delivery-point-map"
+                    className="flex min-h-[44px] items-center text-xs font-medium text-kiwi-700 dark:text-kiwi-400 underline underline-offset-2"
                   >
                     {showPointMap ? t('webshop2.neworder.pinHide') : t('webshop2.neworder.pinShow')}
                   </button>
                   {showPointMap && (
-                    <div className="mt-2">
+                    <div
+                      className="mt-2"
+                      id="delivery-point-map"
+                      role="region"
+                      aria-label={t('webshop2.neworder.pinShow')}
+                    >
                       <DeliveryPointMap
                         lat={deliveryLat}
                         lng={deliveryLng}
@@ -1346,19 +1420,21 @@ function NewOrderInner({
                         {t('webshop2.neworder.pinHint')}
                       </p>
                       {deliveryLat != null && deliveryLng != null && (
-                        <p className="mt-1 flex items-center justify-between text-[11px] text-surface-500 dark:text-surface-400">
-                          <span>
+                        <p className="mt-1 flex min-h-[44px] flex-wrap items-center justify-between gap-2 text-[11px] text-surface-500 dark:text-surface-400">
+                          <span aria-live="polite">
                             {t('webshop2.neworder.pinSet', {
                               lat: deliveryLat.toFixed(5),
                               lng: deliveryLng.toFixed(5),
                             })}
                           </span>
                           <button
+                            type="button"
                             onClick={() => {
                               setDeliveryLat(undefined);
                               setDeliveryLng(undefined);
                             }}
-                            className="ml-2 shrink-0 underline underline-offset-2"
+                            aria-label={t('webshop2.neworder.pinClear')}
+                            className="flex min-h-[44px] shrink-0 items-center underline underline-offset-2"
                           >
                             {t('webshop2.neworder.pinClear')}
                           </button>
