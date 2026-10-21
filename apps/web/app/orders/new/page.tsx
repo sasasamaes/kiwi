@@ -141,8 +141,6 @@ function NewOrderInner({
   const [showZonesMap, setShowZonesMap] = useState(false);
 
   const [packageDescription, setPackageDescription] = useState('');
-  const [packageSize, setPackageSize] = useState<'' | 'S' | 'M' | 'L'>('');
-  const [weightKg, setWeightKg] = useState(0);
   const [notes, setNotes] = useState('');
   const [isScheduled, setIsScheduled] = useState(false);
   const [scheduledDate, setScheduledDate] = useState('');
@@ -548,8 +546,7 @@ function NewOrderInner({
   const baseTrip =
     zonePrice ?? (inZone ? NICOYA_FLAT : routeKm != null ? tripPriceForKm(routeKm) : NICOYA_FLAT);
   const zoneLabel = dbZone?.label ?? findDeliveryZone(deliveryZone)?.label ?? null;
-  const weightSurcharge = kind === 'freight' && weightKg > 5 ? Math.ceil(weightKg - 5) * 500 : 0;
-  const trip = baseTrip + weightSurcharge;
+  const trip = baseTrip;
   // El comercio paga productos + viaje, SIN recargo: el 15% lo paga el
   // repartidor (payout = viaje − 15%). Igual que el backend.
   const driverPayout = trip - Math.round(trip * tripPct);
@@ -786,8 +783,6 @@ function NewOrderInner({
                   }))
                 : [],
             packageDescription: kind === 'freight' ? packageDescription : undefined,
-            packageSize: kind === 'freight' && packageSize !== '' ? packageSize : undefined,
-            weightKg: kind === 'freight' && weightKg > 0 ? weightKg : undefined,
             ...(selectedDriverId ? { driverId: selectedDriverId } : {}),
           },
           { idempotencyKey },
@@ -834,8 +829,6 @@ function NewOrderInner({
                     }))
                   : [],
               packageDescription: kind === 'freight' ? packageDescription : undefined,
-              packageSize: kind === 'freight' && packageSize !== '' ? packageSize : undefined,
-              weightKg: kind === 'freight' && weightKg > 0 ? weightKg : undefined,
             },
             { idempotencyKey },
           );
@@ -1229,35 +1222,6 @@ function NewOrderInner({
                     rows={2}
                     className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-3 text-sm"
                   />
-                  <div className="grid grid-cols-3 gap-2">
-                    {(['S', 'M', 'L'] as const).map((s) => (
-                      <button
-                        key={s}
-                        onClick={() => setPackageSize(packageSize === s ? '' : s)}
-                        className={`rounded-xl p-2.5 text-center font-medium text-sm ${
-                          packageSize === s
-                            ? 'border-2 border-kiwi-600 bg-kiwi-50 dark:bg-kiwi-900/30'
-                            : 'border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800'
-                        }`}
-                      >
-                        {s}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.5"
-                      value={weightKg || ''}
-                      onChange={(e) => setWeightKg(parseFloat(e.target.value) || 0)}
-                      placeholder={t('webshop2.neworder.weightPh')}
-                      className="flex-1 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm"
-                    />
-                    <span className="text-xs text-surface-500 dark:text-surface-400">
-                      {t('webshop2.neworder.weightHint')}
-                    </span>
-                  </div>
                 </div>
               )}
               {/* Entrega */}
@@ -1486,7 +1450,7 @@ function NewOrderInner({
                           count: items.reduce((s, i) => s + i.quantity, 0),
                           total: subtotal.toLocaleString(),
                         })
-                      : `${packageDescription || t('webshop2.neworder.sumFreightDefault')}${weightKg > 0 ? t('webshop2.neworder.sumKg', { kg: weightKg }) : ''}`}
+                      : `${packageDescription || t('webshop2.neworder.sumFreightDefault')}`}
                   </span>
                 </div>
                 <div className="flex justify-between">
