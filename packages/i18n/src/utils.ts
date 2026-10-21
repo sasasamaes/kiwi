@@ -14,14 +14,19 @@ export function getNestedValue(obj: any, path: string): string {
 }
 
 /**
- * Interpolate variables in translation string
- * Example: interpolate('Hello {{name}}', { name: 'World' }) => 'Hello World'
+ * Interpolate variables in translation string.
+ * Accepts both {{name}} and {name} — the web catalogs were written with
+ * single braces, mobile ones with double. Doubles are replaced first so a
+ * '{{name}}' never degrades into a leftover '{name}'.
+ * Example: interpolate('Hola {{name}}', { name: 'Mundo' }) => 'Hola Mundo'
  */
 export function interpolate(template: string, variables: Record<string, string | number>): string {
-  return Object.entries(variables).reduce(
-    (result, [key, value]) => result.replace(new RegExp(`{{${key}}}`, 'g'), String(value)),
-    template,
-  );
+  return Object.entries(variables).reduce((result, [key, value]) => {
+    const v = String(value);
+    return result
+      .replace(new RegExp(`{{${key}}}`, 'g'), () => v)
+      .replace(new RegExp(`{${key}}`, 'g'), () => v);
+  }, template);
 }
 
 /**
