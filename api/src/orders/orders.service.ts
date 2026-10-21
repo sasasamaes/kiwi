@@ -1237,6 +1237,22 @@ export class OrdersService {
       totalAmount: Number(order.totalAmount),
       createdAt: order.createdAt,
     });
+    // Hub logístico admin: el rol admin recibe cada pedido nuevo en vivo
+    // (socket role:admin + entrada en el feed del panel de pedidos).
+    // Evento propio `admin:orderNew`: los drivers distinguen
+    // order:new vs order:scheduledNew y esa semántica no se toca.
+    this.eventsGateway.sendToRole('admin', 'admin:orderNew', {
+      id: order.id,
+      orderId: order.id,
+      status: order.status,
+      orderType: order.orderType,
+      pickupAddress: order.pickupAddress,
+      deliveryAddress: order.deliveryAddress,
+      deliveryZone: (order as any).deliveryZone ?? null,
+      totalAmount: Number(order.totalAmount),
+      merchantName: merchantProfile.businessName ?? null,
+      createdAt: order.createdAt,
+    });
     void this.notificationsService
       .notifyMerchantNewOrder?.(order.id, merchantId, {
         total: Number(order.totalAmount),
@@ -2511,6 +2527,12 @@ export class OrdersService {
         .notifyOrderStatusUpdate(orderId, order.driver.userId, status, 'driver', statusContext)
         .catch(() => undefined);
     }
+
+    // Hub logístico admin: cada cambio de estado llega al panel en vivo.
+    this.eventsGateway.sendToRole('admin', 'order:statusChanged', {
+      ...baseNotification,
+      message: merchantLabels[status] || `Estado: ${status}`,
+    });
 
     return updatedOrder;
   }

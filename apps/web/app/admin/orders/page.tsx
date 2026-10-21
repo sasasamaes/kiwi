@@ -15,7 +15,7 @@ import {
   ChevronRight,
   Navigation,
 } from 'lucide-react';
-import { api, buildTrackingUrl, useTranslations } from '@kiwi/ui';
+import { api, buildTrackingUrl, useTranslations, useSocket, playNotificationSound } from '@kiwi/ui';
 
 interface AdminOrder {
   id: string;
@@ -83,6 +83,21 @@ export default function AdminOrders() {
   // si hace falta, la foto — queda auditado en el log del servidor).
   const [advancing, setAdvancing] = useState(false);
   const [nextStatus, setNextStatus] = useState('');
+  // Hub logístico en vivo: el backend emite order:new y order:statusChanged
+  // al rol admin. En primera página sin filtros la lista se actualiza sola;
+  // con filtros/paginación se acumula contador + feed con botón Recargar.
+  interface LiveEvent {
+    key: number;
+    kind: 'new' | 'status';
+    orderId: string;
+    message: string;
+    at: number;
+  }
+  const [liveEvents, setLiveEvents] = useState<LiveEvent[]>([]);
+  const [pendingLive, setPendingLive] = useState(0);
+  const liveKey = useRef(0);
+  const listCtx = useRef({ page, filter, search });
+  listCtx.current = { page, filter, search };
 
   const STATUS_LABEL: Record<string, string> = {
     pending: t('webadmin1.aorders.status.pending'),
@@ -223,6 +238,88 @@ export default function AdminOrders() {
     };
   }, [filter, search, page, load]);
 
+  const pushLive = useCallback((kind: 'new' | 'status', orderId: string, message: string) => {
+    liveKey.current += 1;
+    const evt: LiveEvent = { key: liveKey.current, kind, orderId, message, at: Date.now() };
+    setLiveEvents((prev) => [evt, ...prev].slice(0, 15));
+  }, []);
+
+  const { isConnected, on } = useSocket({
+    onOrderStatusChanged: useCallback(
+      (data: any) => {
+        const id = String(data?.orderId ?? data?.id ?? '');
+        if (!id) return;
+        pushLive(
+          'status',
+          id,
+          String(data?.message ?? `${id.slice(0, 8).toUpperCase()}: ${data?.status ?? ''}`),
+        );
+        setOrders((prev) =>
+          prev.map((o) =>
+            o.id === id && data?.status ? { ...o, status: String(data.status) } : o,
+          ),
+        );
+        setSelected((sel) =>
+          sel && sel.id === id && data?.status ? { ...sel, status: String(data.status) } : sel,
+        );
+      },
+      [pushLive],
+    ),
+  });
+
+  // Altas del hub: canal propio admin:orderNew (cubre inmediatos,
+  // programados y asignación directa sin tocar la semántica driver).
+  const handleAdminNew = useCallback(
+    (data: any) => {
+      const id = String(data?.id ?? data?.orderId ?? '');
+      if (!id) return;
+      const msg = `#${id.slice(0, 8).toUpperCase()} · ${data?.merchantName ?? ''} → ${data?.deliveryAddress ?? ''} · ₡${Number(data?.totalAmount ?? 0).toLocaleString()}`;
+      pushLive('new', id, msg);
+      try {
+        playNotificationSound('new_order');
+      } catch {
+        // sonido decorativo: nunca tumba el feed
+      }
+      const ctx = listCtx.current;
+      if (ctx.page === 0 && !ctx.filter && !ctx.search) {
+        setOrders((prev) => {
+          if (prev.some((o) => o.id === id)) return prev;
+          const row: AdminOrder = {
+            id,
+            status: String(data?.status ?? 'pending'),
+            orderType: String(data?.orderType ?? 'immediate'),
+            pickupAddress: String(data?.pickupAddress ?? ''),
+            deliveryAddress: String(data?.deliveryAddress ?? ''),
+            deliveryZone: data?.deliveryZone ?? null,
+            distanceKm: data?.distanceKm ?? null,
+            basePrice: Number(data?.totalAmount ?? 0),
+            commission: 0,
+            commissionRate: null,
+            driverPayout: data?.driverPayout ?? 0,
+            totalAmount: Number(data?.totalAmount ?? 0),
+            productsTotal: null,
+            cashTendered: null,
+            payment: null,
+            createdAt: data?.createdAt ?? new Date().toISOString(),
+            merchant: data?.merchantName ? { businessName: data.merchantName } : null,
+            driver: null,
+            items: [],
+          };
+          return [row, ...prev].slice(0, PAGE_SIZE);
+        });
+        setTotal((n) => n + 1);
+      } else {
+        setPendingLive((n) => n + 1);
+      }
+    },
+    [pushLive],
+  );
+
+  useEffect(() => {
+    const off = on('admin:orderNew', handleAdminNew);
+    return off;
+  }, [on, handleAdminNew]);
+
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
@@ -238,7 +335,54 @@ export default function AdminOrders() {
             fee: Number(stats?.platformFee ?? 0).toLocaleString(),
           })}
         </p>
+        <p className="mt-1 flex items-center gap-1.5 text-xs" aria-live="polite">
+          <span
+            className={`inline-block h-2 w-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-surface-300 dark:bg-surface-600'}`}
+          />
+          <span className="text-surface-500 dark:text-surface-400">
+            {isConnected ? t('webadmin1.aorders.liveOn') : t('webadmin1.aorders.liveOff')}
+          </span>
+        </p>
       </div>
+
+      {/* Hub en vivo: últimos eventos + aviso cuando hay nuevos fuera de vista */}
+      {pendingLive > 0 && (
+        <button
+          onClick={() => {
+            setPendingLive(0);
+            setPage(0);
+            setFilter('');
+            setSearch('');
+            load('', '', 0);
+          }}
+          className="w-full rounded-xl bg-kiwi-700 px-4 py-2.5 text-sm font-semibold text-white"
+        >
+          {t('webadmin1.aorders.liveRefresh', { count: pendingLive })}
+        </button>
+      )}
+      {liveEvents.length > 0 && (
+        <div className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] p-3">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-surface-500 dark:text-surface-400">
+            {t('webadmin1.aorders.liveFeed')}
+          </p>
+          <ul className="max-h-36 space-y-1 overflow-y-auto" aria-live="polite">
+            {liveEvents.map((e) => (
+              <li key={e.key} className="flex items-center gap-2 text-xs">
+                <span>{e.kind === 'new' ? '🆕' : '🔄'}</span>
+                <span className="min-w-0 flex-1 truncate text-surface-700 dark:text-surface-300">
+                  {e.message}
+                </span>
+                <span className="shrink-0 text-surface-400">
+                  {new Date(e.at).toLocaleTimeString('es-CR', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Filtros */}
       <div className="flex flex-col gap-3">

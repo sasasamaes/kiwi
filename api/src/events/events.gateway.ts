@@ -152,10 +152,11 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     // Re-emitir con la forma canónica de order:new (id + payout reales desde
     // la DB, no los del cliente). El service ya emite al crear: esto cubre
-    // reintentos sin duplicar datos distintos.
+    // reintentos sin duplicar datos distintos. El hub admin (role:admin)
+    // escucha lo mismo que la flota para el control logístico.
     const stored = await this.prisma.order.findUnique({ where: { id: orderId } });
     if (stored && (stored as any).status === 'pending' && !(stored as any).driverId) {
-      this.server.to('role:driver').emit('order:new', {
+      const payload = {
         id: stored.id,
         orderId: stored.id,
         pickupAddress: (stored as any).pickupAddress,
@@ -165,11 +166,15 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
           (stored as any).driverPayout != null ? Number((stored as any).driverPayout) : null,
         distanceKm: Number((stored as any).distanceKm),
         createdAt: (stored as any).createdAt,
-      });
+      };
+      this.server.to('role:driver').emit('order:new', payload);
+      // Hub admin: mismo aviso en su canal propio (no interfiere con la
+      // semántica order:new vs order:scheduledNew de la flota).
+      this.server.to('role:admin').emit('admin:orderNew', payload);
     } else if (!stored) {
       // La orden aún no existe (carrera REST/socket): re-emitir parcial pero
       // con `id` para que Aceptar apunte a la URL correcta al reintentar.
-      this.server.to('role:driver').emit('order:new', {
+      const payload = {
         id: orderId,
         orderId,
         pickupAddress,
@@ -177,7 +182,11 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
         totalAmount,
         driverPayout: null,
         distanceKm,
-      });
+      };
+      this.server.to('role:driver').emit('order:new', payload);
+      // Hub admin: mismo aviso en su canal propio (no interfiere con la
+      // semántica order:new vs order:scheduledNew de la flota).
+      this.server.to('role:admin').emit('admin:orderNew', payload);
     }
 
     return { success: true };
@@ -296,6 +305,14 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
         message: statusLabels[data.status] || 'Estado actualizado',
       });
     }
+
+    // Hub logístico admin: ve todos los cambios de estado en vivo sin
+    // estar en el hilo comercio↔repartidor.
+    this.server.to('role:admin').emit('order:statusChanged', {
+      orderId: data.orderId,
+      status: data.status,
+      message: `#${String(data.orderId).slice(0, 8).toUpperCase()}: ${statusLabels[data.status] || 'Estado actualizado'}`,
+    });
 
     // Notify driver if assigned
     if (driverUserId) {
