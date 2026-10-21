@@ -9,11 +9,18 @@ interface DeliveryPointMapProps {
   lat?: number | null;
   lng?: number | null;
   onPick: (lat: number, lng: number) => void;
+  /** Zona detectada por el formulario: se muestra junto al pin con su precio. */
+  zoneLabel?: string | null;
+  zonePrice?: number | null;
   height?: number;
   className?: string;
 }
 
 const OSM_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+
+/** Escapa el nombre de la zona antes de meterlo en el HTML del pin. */
+const escHtml = (s: string) =>
+  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 let L: any = null;
 
@@ -26,6 +33,8 @@ export function DeliveryPointMap({
   lat,
   lng,
   onPick,
+  zoneLabel,
+  zonePrice,
   height = 280,
   className = '',
 }: DeliveryPointMapProps) {
@@ -109,8 +118,29 @@ export function DeliveryPointMap({
     if (!mapInstanceRef.current || !L || !ready) return;
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
     const point: [number, number] = [lat as number, lng as number];
+    // Pin propio de Kiwi (divIcon: sin imágenes externas que se rompan con
+    // el bundler como el marcador default de Leaflet).
+    const kiwiIcon = L.divIcon({
+      html:
+        '<div style="display:flex;flex-direction:column;align-items:center;">' +
+        '<div style="background:linear-gradient(135deg,#4ade80,#15803d);width:40px;height:40px;' +
+        'border-radius:9999px;border:3px solid #fff;box-shadow:0 4px 12px rgba(0,0,0,.35);' +
+        'display:flex;align-items:center;justify-content:center;font-size:22px;line-height:1;">🥝</div>' +
+        '<div style="width:4px;height:10px;background:#15803d;border-radius:2px;"></div></div>',
+      className: 'kiwi-delivery-pin',
+      iconSize: [44, 52],
+      iconAnchor: [22, 50],
+    });
+    const tip =
+      zoneLabel && zonePrice != null
+        ? `${zoneLabel} · ₡${Number(zonePrice).toLocaleString()}`
+        : zoneLabel
+          ? zoneLabel
+          : null;
     if (!markerRef.current) {
-      markerRef.current = L.marker(point, { draggable: true }).addTo(mapInstanceRef.current);
+      markerRef.current = L.marker(point, { draggable: true, icon: kiwiIcon }).addTo(
+        mapInstanceRef.current,
+      );
       markerRef.current.on('dragend', () => {
         const p = markerRef.current?.getLatLng();
         if (p && Number.isFinite(p.lat) && Number.isFinite(p.lng))
@@ -118,11 +148,26 @@ export function DeliveryPointMap({
       });
     } else {
       markerRef.current.setLatLng(point);
+      markerRef.current.setIcon(kiwiIcon);
+    }
+    // Etiqueta de zona/precio pegada al pin (se actualiza con cada pick).
+    try {
+      markerRef.current.unbindTooltip();
+    } catch {
+      // sin tooltip previo: nada que soltar
+    }
+    if (tip) {
+      markerRef.current.bindTooltip(escHtml(tip), {
+        permanent: true,
+        direction: 'top',
+        offset: [0, -52],
+        className: 'kiwi-pin-tip',
+      });
     }
     mapInstanceRef.current.setView(point, Math.max(mapInstanceRef.current.getZoom(), 15), {
       animate: true,
     });
-  }, [ready, lat, lng]);
+  }, [ready, lat, lng, zoneLabel, zonePrice]);
 
   if (mapError) {
     return (
@@ -153,6 +198,12 @@ export function DeliveryPointMap({
       {!ready && (
         <div className="absolute inset-0 flex items-center justify-center bg-surface-100 dark:bg-surface-800">
           <p className="text-sm text-surface-500">Cargando mapa…</p>
+        </div>
+      )}
+      {zoneLabel != null && zoneLabel !== '' && (
+        <div className="absolute left-1/2 top-2 -translate-x-1/2 rounded-full bg-surface-900/90 dark:bg-white/95 px-3 py-1 text-[11px] font-bold text-white dark:text-surface-900 shadow">
+          📍 {zoneLabel}
+          {zonePrice != null ? ` · ₡${Number(zonePrice).toLocaleString()}` : ''}
         </div>
       )}
       <p className="absolute bottom-2 left-2 rounded-lg bg-white/85 dark:bg-surface-900/85 px-2 py-0.5 text-[10px] text-surface-500 backdrop-blur">

@@ -1338,6 +1338,8 @@ function NewOrderInner({
                         lat={deliveryLat}
                         lng={deliveryLng}
                         onPick={pickPointOnMap}
+                        zoneLabel={zoneLabel}
+                        zonePrice={zonePrice}
                         height={280}
                       />
                       <p className="mt-1 text-[11px] text-surface-500 dark:text-surface-400">
