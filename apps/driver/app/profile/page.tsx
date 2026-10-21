@@ -429,8 +429,7 @@ export default function Profile() {
           <input
             ref={photoInputRef}
             type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif"
-            capture="user"
+            accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif"
             className="hidden"
             aria-label={t('wdrvmisc.profile.photoInputAria')}
             onChange={(e) => handlePhotoSelect(e.target.files?.[0])}
