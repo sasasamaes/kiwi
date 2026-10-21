@@ -248,7 +248,10 @@ describe('OrdersService targeting de order:new', () => {
       id: 'order-9',
       distanceToPickupKm: 0.4,
     });
-    expect(gateway.sendToRole).not.toHaveBeenCalled();
+    // Sin broadcast a la flota: los candidatos van 1:1. El hub admin sí
+    // recibe su copia (canal propio admin:orderNew, no spam a drivers).
+    const roleCalls = gateway.sendToRole.mock.calls.filter((c: any[]) => c[0] === 'driver');
+    expect(roleCalls).toHaveLength(0);
     expect(notifications.notifyDriverNewOrderTargeted).toHaveBeenCalledTimes(2);
     expect(notifications.notifyNewOrderTopic).not.toHaveBeenCalled();
   });

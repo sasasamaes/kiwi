@@ -610,6 +610,7 @@ model DriverProfile {
   ratings         Rating[]
   incentives      DriverIncentive[]
   withdrawals     Withdrawal[]
+  debtPayments    DebtPayment[]
 
   @@index([status, lastLat, lastLng], map: "driver_profiles_targeting_idx")
   @@map("driver_profiles")
@@ -1344,4 +1345,52 @@ model DeliveryZone {
 
   @@index([active])
   @@map("delivery_zones")
+}
+
+// Deudas del negocio (ej. la moto sacada a mensualidades). Los pagos van a
+// DebtPayment: cuotas normales, aportes de repartidores (Luis, Francisco…)
+// y abonos extra a capital. Sin seed con montos: la deuda real la crea el
+// admin en /admin/deudas con los números del contrato.
+model Debt {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  // Costo total financiado (precio + intereses del contrato).
+  totalAmount   Decimal @db.Decimal(12, 2) @map("total_amount")
+  // Cuota mensual pactada.
+  monthlyAmount Decimal @db.Decimal(10, 2) @map("monthly_amount")
+  // Prima o abono inicial ya pagado al sacarla (no va en DebtPayment).
+  downPayment Decimal @default(0) @db.Decimal(10, 2) @map("down_payment")
+  startDate   DateTime @map("start_date")
+  termMonths  Int?     @map("term_months")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  payments DebtPayment[]
+
+  @@map("debts")
+}
+
+model DebtPayment {
+  id        String          @id @default(uuid())
+  debtId    String          @map("debt_id")
+  debt      Debt            @relation(fields: [debtId], references: [id], onDelete: Cascade)
+  amount    Decimal         @db.Decimal(10, 2)
+  kind      DebtPaymentKind @default(cuota)
+  // Aporte de repartidor: quién lo puso (opcional, ej. Luis o Francisco).
+  driverId  String?         @map("driver_id")
+  driver    DriverProfile?  @relation(fields: [driverId], references: [id])
+  note      String?
+  paidAt    DateTime        @default(now()) @map("paid_at")
+  createdBy String?         @map("created_by")
+  createdAt DateTime        @default(now()) @map("created_at")
+
+  @@index([debtId, paidAt], map: "debt_payments_debt_paid_idx")
+  @@map("debt_payments")
+}
+
+enum DebtPaymentKind {
+  cuota // mensualidad normal
+  aporte // aporte extra de repartidor/socio
+  extra // abono extra a capital
 }

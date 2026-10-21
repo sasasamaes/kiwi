@@ -2278,6 +2278,46 @@ class ApiClient {
   }
 
   // ============================================
+  // 💳 DEUDAS DEL NEGOCIO (admin)
+  // ============================================
+
+  async getDebts() {
+    return this.request<any>('/debts');
+  }
+
+  async getDebt(id: string) {
+    return this.request<any>(`/debts/${id}`);
+  }
+
+  async createDebt(data: {
+    title: string;
+    description?: string;
+    totalAmount: number;
+    monthlyAmount: number;
+    downPayment?: number;
+    startDate: string;
+    termMonths?: number;
+  }) {
+    return this.request<any>('/debts', { method: 'POST', body: data });
+  }
+
+  async addDebtPayment(
+    debtId: string,
+    data: { amount: number; kind?: string; driverId?: string; note?: string; paidAt?: string },
+  ) {
+    return this.request<any>(`/debts/${debtId}/payments`, { method: 'POST', body: data });
+  }
+
+  async deleteDebtPayment(debtId: string, paymentId: string) {
+    return this.request<any>(`/debts/${debtId}/payments/${paymentId}`, { method: 'DELETE' });
+  }
+
+  /** Repartidores para el selector de aportes. */
+  async getDebtDrivers() {
+    return this.request<any>('/debts/drivers');
+  }
+
+  // ============================================
   // 🗺️ GEOCODING
   // ============================================
 
