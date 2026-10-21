@@ -831,6 +831,9 @@ export default {
     cancel: 'Cancelar',
     cancelled: 'Retiro cancelado',
     cancelFailed: 'No se pudo cancelar',
+    receiptShow: 'Ver recibo',
+    receiptTitle: 'Recibo',
+    receiptEmpty: 'Sin viajes en el recibo.',
   },
 
   // ===== Login comercio =====

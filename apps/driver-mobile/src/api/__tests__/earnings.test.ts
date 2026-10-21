@@ -25,3 +25,8 @@ test('cancelWithdrawal PUTs cancel', async () => {
   await earningsApi(fake).cancelWithdrawal('w1');
   expect(fake.put).toHaveBeenCalledWith('/withdrawals/my/w1/cancel');
 });
+
+test('receipt GETs my withdrawal receipt', async () => {
+  await earningsApi(fake).receipt('w1');
+  expect(fake.get).toHaveBeenCalledWith('/withdrawals/my/w1/receipt');
+});

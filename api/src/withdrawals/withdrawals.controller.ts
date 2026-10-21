@@ -64,6 +64,17 @@ export class WithdrawalsController {
     return this.withdrawalsService.getWithdrawalById(id, req.user.sub ?? req.user.id);
   }
 
+  @Get('my/:id/receipt')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('driver')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Receipt with trips of my withdrawal' })
+  async getMyReceipt(@Param('id') id: string, @Request() req) {
+    return this.withdrawalsService.getReceipt(id, {
+      driverUserId: req.user.sub ?? req.user.id,
+    });
+  }
+
   @Put('my/:id/cancel')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('driver')
@@ -76,6 +87,33 @@ export class WithdrawalsController {
   // ============================================
   // 🛡️ ADMIN ENDPOINTS
   // ============================================
+
+  @Get('admin/payroll')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Payroll preview for a Tue–Mon week (admin)' })
+  async getPayroll(@Query('week') week?: string) {
+    return this.withdrawalsService.getPayroll(week);
+  }
+
+  @Post('admin/payroll/generate')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Generate weekly withdrawals with receipts (admin)' })
+  async generatePayroll(@Body() body: { week?: string; driverIds?: string[] }) {
+    return this.withdrawalsService.generatePayroll(body?.week, body?.driverIds);
+  }
+
+  @Get('admin/receipt/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Receipt with trips of a withdrawal (admin)' })
+  async getReceiptAdmin(@Param('id') id: string) {
+    return this.withdrawalsService.getReceipt(id, { isAdmin: true });
+  }
 
   @Get('admin/pending')
   @UseGuards(JwtAuthGuard, RolesGuard)

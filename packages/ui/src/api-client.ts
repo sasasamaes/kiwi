@@ -2214,6 +2214,11 @@ class ApiClient {
     });
   }
 
+  /** Recibo con los viajes de un retiro (repartidor dueño). */
+  async getMyWithdrawalReceipt(id: string) {
+    return this.request<any>(`/withdrawals/my/${id}/receipt`);
+  }
+
   // Admin withdrawal endpoints
   async getPendingWithdrawals() {
     return this.request<any>('/withdrawals/admin/pending');
@@ -2238,6 +2243,25 @@ class ApiClient {
       method: 'PUT',
       body: { reason },
     });
+  }
+
+  /** Vista previa de la planilla semanal mar–lun (admin). */
+  async getPayroll(week?: string) {
+    const params = week ? `?week=${encodeURIComponent(week)}` : '';
+    return this.request<any>(`/withdrawals/admin/payroll${params}`);
+  }
+
+  /** Genera los retiros de la semana con sus recibos (admin). */
+  async generatePayroll(week?: string, driverIds?: string[]) {
+    return this.request<any>('/withdrawals/admin/payroll/generate', {
+      method: 'POST',
+      body: { week, driverIds },
+    });
+  }
+
+  /** Recibo con los viajes de un retiro (admin). */
+  async getWithdrawalReceipt(id: string) {
+    return this.request<any>(`/withdrawals/admin/receipt/${id}`);
   }
 
   // ============================================

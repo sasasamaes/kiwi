@@ -812,6 +812,7 @@ model Order {
   items     OrderItem[]
   payment   Payment?
   ratings   Rating[]
+  withdrawalItems WithdrawalItem[]
 
   @@index([merchantId, origin, status, createdAt], map: "orders_merchant_origin_status_created_idx")
   @@unique([merchantId, idempotencyKey], map: "orders_merchant_idempotency_uk")
@@ -1017,16 +1018,40 @@ model Withdrawal {
   rejectionReason String?   @map("rejection_reason")
   transactionId   String?   @map("transaction_id")
 
+  // Liquidación semanal (corte mar–lun, pago martes). Null = retiro manual
+  // del repartidor fuera de planilla.
+  periodStart DateTime? @map("period_start")
+  periodEnd   DateTime? @map("period_end")
+
   // Timestamps
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  driver DriverProfile @relation(fields: [driverId], references: [id])
+  driver DriverProfile   @relation(fields: [driverId], references: [id])
+  items  WithdrawalItem[]
 
   @@index([driverId, status, createdAt], map: "withdrawals_driver_status_created_idx")
   @@index([status, createdAt], map: "withdrawals_status_created_idx")
+  @@index([periodStart], map: "withdrawals_period_start_idx")
   @@map("withdrawals")
+}
+
+// Líneas del recibo: qué viajes componen el retiro (monto congelado).
+model WithdrawalItem {
+  id           String   @id @default(uuid())
+  withdrawalId String   @map("withdrawal_id")
+  withdrawal   Withdrawal @relation(fields: [withdrawalId], references: [id], onDelete: Cascade)
+  orderId      String   @map("order_id")
+  order        Order    @relation(fields: [orderId], references: [id])
+  // Snapshot del payout al generar el recibo (no cambia si el pedido cambia).
+  amount       Decimal  @db.Decimal(10, 2)
+  deliveredAt  DateTime? @map("delivered_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@unique([withdrawalId, orderId], map: "withdrawal_items_withdrawal_order_uk")
+  @@index([withdrawalId], map: "withdrawal_items_withdrawal_idx")
+  @@map("withdrawal_items")
 }
 
 enum WithdrawalStatus {

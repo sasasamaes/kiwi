@@ -9,6 +9,40 @@ import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { isKycRequired } from '../feature-flags/feature-flags';
 
+/**
+ * Liquidación semanal de repartidores (corte: martes 00:00 → lunes 24:00,
+ * pago: martes). Costa Rica no tiene horario de verano: UTC-6 todo el año,
+ * así que el desfase es una constante segura.
+ */
+const CR_OFFSET_MS = -6 * 3600 * 1000;
+const WEEK_MS = 7 * 24 * 3600 * 1000;
+
+/** Martes 00:00 CR (inclusive) de la semana mar–lun que contiene a ref. */
+export function payWeekStart(ref: Date = new Date()): Date {
+  const cr = new Date(ref.getTime() + CR_OFFSET_MS);
+  const dow = cr.getUTCDay(); // 0 dom … 2 mar … 6 sáb
+  const daysSinceTue = (dow - 2 + 7) % 7;
+  const tueCrMidnightUtc =
+    Date.UTC(cr.getUTCFullYear(), cr.getUTCMonth(), cr.getUTCDate()) -
+    CR_OFFSET_MS -
+    daysSinceTue * 86400_000;
+  return new Date(tueCrMidnightUtc);
+}
+
+/** Última semana mar–lun ya cerrada (la que se liquida el martes). */
+export function lastClosedWeek(ref: Date = new Date()): { weekStart: Date; weekEnd: Date } {
+  const weekStart = payWeekStart(new Date(ref.getTime() - WEEK_MS));
+  return { weekStart, weekEnd: new Date(weekStart.getTime() + WEEK_MS) };
+}
+
+/** 'YYYY-MM-DD' interpretado como fecha de Costa Rica → inicio de su semana. */
+export function payWeekStartFromISO(iso: string): Date {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso.trim());
+  if (!m) throw new BadRequestException('week inválido (AAAA-MM-DD)');
+  // Mediodía UTC = mañana en CR: cae seguro dentro del día tico.
+  return payWeekStart(new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12)));
+}
+
 @Injectable()
 export class WithdrawalsService {
   constructor(
@@ -249,6 +283,319 @@ export class WithdrawalsService {
     });
   }
 
+  // ============================================
+  // 🧾 Planilla semanal (corte mar–lun, pago martes)
+  // ============================================
+
+  /** Viajes entregados sin recibo (no están en líneas de retiros vigentes). */
+  private async unreceiptedDelivered(driverId: string, cutoff: Date) {
+    const used = await this.prisma.withdrawalItem.findMany({
+      where: {
+        withdrawal: {
+          driverId,
+          status: { in: ['pending', 'processing', 'completed'] },
+        },
+      },
+      select: { orderId: true },
+    });
+    const usedIds = new Set(used.map((u) => u.orderId));
+    const orders = await this.prisma.order.findMany({
+      where: {
+        driverId,
+        status: 'delivered',
+        deliveredAt: { lte: cutoff },
+      },
+      select: {
+        id: true,
+        deliveredAt: true,
+        basePrice: true,
+        driverPayout: true,
+        merchant: { select: { businessName: true } },
+      },
+      orderBy: { deliveredAt: 'asc' },
+    });
+    return orders.filter((o) => !usedIds.has(o.id));
+  }
+
+  /** Vista previa de la planilla de una semana (mar 00:00 → mar 00:00). */
+  async getPayroll(weekISO?: string) {
+    const weekStart = weekISO ? payWeekStartFromISO(weekISO) : lastClosedWeek().weekStart;
+    const weekEnd = new Date(weekStart.getTime() + WEEK_MS);
+
+    const orders = await this.prisma.order.findMany({
+      where: {
+        status: 'delivered',
+        deliveredAt: { gte: weekStart, lt: weekEnd },
+        driverId: { not: null },
+      },
+      select: {
+        id: true,
+        driverId: true,
+        deliveredAt: true,
+        basePrice: true,
+        driverPayout: true,
+        totalAmount: true,
+        merchant: { select: { businessName: true } },
+      },
+      orderBy: { deliveredAt: 'asc' },
+    });
+
+    const receipted = await this.prisma.withdrawalItem.findMany({
+      where: {
+        withdrawal: { status: { in: ['pending', 'processing', 'completed'] } },
+        orderId: { in: orders.map((o) => o.id) },
+      },
+      select: { orderId: true },
+    });
+    const receiptedIds = new Set(receipted.map((r) => r.orderId));
+    const fresh = orders.filter((o) => o.driverId != null && !receiptedIds.has(o.id));
+
+    const byDriver = new Map<string, typeof fresh>();
+    for (const o of fresh) {
+      const list = byDriver.get(o.driverId as string) ?? [];
+      list.push(o);
+      byDriver.set(o.driverId as string, list);
+    }
+    if (byDriver.size === 0) {
+      return { weekStart, weekEnd, drivers: [] };
+    }
+
+    const profiles = await this.prisma.driverProfile.findMany({
+      where: { id: { in: [...byDriver.keys()] } },
+      select: {
+        id: true,
+        fullName: true,
+        user: { select: { phone: true, email: true } },
+      },
+    });
+    const profileById = new Map(profiles.map((p) => [p.id, p]));
+
+    const existing = await this.prisma.withdrawal.findMany({
+      where: {
+        periodStart: weekStart,
+        status: { in: ['pending', 'processing', 'completed'] },
+      },
+      select: { id: true, driverId: true, status: true, amount: true },
+    });
+    const existingByDriver = new Map(existing.map((w) => [w.driverId, w]));
+
+    const drivers = [...byDriver.entries()].map(([driverId, trips]) => {
+      const totalPayout = trips.reduce((s, o) => s + Number(o.driverPayout ?? 0), 0);
+      const totalTrip = trips.reduce((s, o) => s + Number(o.basePrice ?? 0), 0);
+      const p = profileById.get(driverId);
+      return {
+        driverId,
+        fullName: p?.fullName ?? '',
+        phone: p?.user?.phone ?? null,
+        email: p?.user?.email ?? null,
+        tripCount: trips.length,
+        totalPayout: Math.round(totalPayout),
+        totalTrip: Math.round(totalTrip),
+        existingWithdrawal: existingByDriver.get(driverId) ?? null,
+        trips: trips.map((o) => ({
+          id: o.id,
+          deliveredAt: o.deliveredAt,
+          merchant: o.merchant?.businessName ?? null,
+          trip: Math.round(Number(o.basePrice ?? 0)),
+          payout: Math.round(Number(o.driverPayout ?? 0)),
+        })),
+      };
+    });
+
+    return { weekStart, weekEnd, drivers };
+  }
+
+  /**
+   * Genera los retiros de la semana (uno por repartidor con viajes
+   * pendientes), con sus líneas de recibo congeladas. Idempotente por
+   * repartidor+semana: no duplica si ya existe un retiro vigente.
+   */
+  async generatePayroll(weekISO: string | undefined, driverIds: string[] | undefined) {
+    const payroll: any = await this.getPayroll(weekISO);
+    const wanted = new Set(driverIds ?? []);
+    const eligible = payroll.drivers.filter(
+      (d: any) =>
+        (wanted.size === 0 || wanted.has(d.driverId)) && !d.existingWithdrawal && d.totalPayout > 0,
+    );
+    if (eligible.length === 0) {
+      throw new BadRequestException('No hay nada que liquidar en esa semana');
+    }
+
+    const created: any[] = [];
+    const skipped: Array<{ driverId: string; reason: string }> = [];
+    for (const d of eligible) {
+      try {
+        const w = await this.prisma.$transaction(async (tx) => {
+          const dupe = await tx.withdrawal.findFirst({
+            where: {
+              driverId: d.driverId,
+              periodStart: payroll.weekStart,
+              status: { in: ['pending', 'processing', 'completed'] },
+            },
+            select: { id: true },
+          });
+          if (dupe) throw new BadRequestException('duplicate');
+          // Destino del pago: último método usado; si no, SINPE al teléfono.
+          const last = await tx.withdrawal.findFirst({
+            where: {
+              driverId: d.driverId,
+              status: { in: ['pending', 'processing', 'completed'] },
+            },
+            orderBy: { createdAt: 'desc' },
+          });
+          const paymentMethod = (last?.paymentMethod as any) ?? 'sinpe';
+          const dest =
+            paymentMethod === 'bank_transfer'
+              ? {
+                  bankName: (last as any)?.bankName ?? undefined,
+                  accountNumber: (last as any)?.accountNumber ?? undefined,
+                  accountHolder: (last as any)?.accountHolder ?? undefined,
+                }
+              : {
+                  sinpePhone: (last as any)?.sinpePhone ?? d.phone ?? undefined,
+                  sinpeName: (last as any)?.sinpeName ?? d.fullName ?? undefined,
+                };
+          if (paymentMethod === 'bank_transfer' && !(dest as any).accountNumber) {
+            throw new BadRequestException('no-bank-data');
+          }
+          const withdrawal = await tx.withdrawal.create({
+            data: {
+              driverId: d.driverId,
+              amount: d.totalPayout,
+              currency: 'CRC',
+              status: 'pending',
+              paymentMethod,
+              ...dest,
+              periodStart: payroll.weekStart,
+              periodEnd: payroll.weekEnd,
+            },
+          });
+          await tx.withdrawalItem.createMany({
+            data: d.trips.map((t: any) => ({
+              withdrawalId: withdrawal.id,
+              orderId: t.id,
+              amount: t.payout,
+              deliveredAt: t.deliveredAt,
+            })),
+          });
+          return withdrawal;
+        });
+        created.push(w);
+      } catch (e: any) {
+        if (String(e?.message ?? '').includes('duplicate')) {
+          skipped.push({ driverId: d.driverId, reason: 'duplicate' });
+        } else {
+          skipped.push({ driverId: d.driverId, reason: String(e?.message ?? 'error') });
+        }
+      }
+    }
+    return { weekStart: payroll.weekStart, weekEnd: payroll.weekEnd, created, skipped };
+  }
+
+  /** Recibo de un retiro: líneas de viajes + totales. */
+  async getReceipt(id: string, opts: { driverUserId?: string; isAdmin?: boolean }) {
+    const withdrawal: any = await this.prisma.withdrawal.findUnique({
+      where: { id },
+      include: {
+        items: {
+          include: {
+            order: {
+              select: {
+                id: true,
+                deliveredAt: true,
+                basePrice: true,
+                driverPayout: true,
+                totalAmount: true,
+                merchant: { select: { businessName: true } },
+              },
+            },
+          },
+          orderBy: { createdAt: 'asc' },
+        },
+        driver: {
+          select: {
+            id: true,
+            fullName: true,
+            user: { select: { phone: true, email: true } },
+          },
+        },
+      },
+    });
+    if (!withdrawal) throw new NotFoundException('Retiro no encontrado');
+    if (!opts.isAdmin) {
+      const profile = await this.prisma.driverProfile.findUnique({
+        where: { userId: opts.driverUserId },
+        select: { id: true },
+      });
+      if (!profile || withdrawal.driverId !== profile.id) {
+        throw new ForbiddenException('No tienes acceso a este retiro');
+      }
+    }
+    const tripsTotal = withdrawal.items.reduce(
+      (s: number, it: any) => s + Number(it.amount ?? 0),
+      0,
+    );
+    return {
+      id: withdrawal.id,
+      amount: Number(withdrawal.amount),
+      currency: withdrawal.currency,
+      status: withdrawal.status,
+      paymentMethod: withdrawal.paymentMethod,
+      sinpePhone: withdrawal.sinpePhone,
+      sinpeName: withdrawal.sinpeName,
+      bankName: withdrawal.bankName,
+      accountNumber: withdrawal.accountNumber,
+      accountHolder: withdrawal.accountHolder,
+      periodStart: withdrawal.periodStart,
+      periodEnd: withdrawal.periodEnd,
+      transactionId: withdrawal.transactionId,
+      createdAt: withdrawal.createdAt,
+      driver: {
+        fullName: withdrawal.driver?.fullName,
+        phone: withdrawal.driver?.user?.phone,
+        email: withdrawal.driver?.user?.email,
+      },
+      trips: withdrawal.items.map((it: any) => ({
+        orderId: it.orderId,
+        deliveredAt: it.deliveredAt ?? it.order?.deliveredAt,
+        merchant: it.order?.merchant?.businessName ?? null,
+        trip: it.order?.basePrice != null ? Math.round(Number(it.order.basePrice)) : null,
+        payout: Math.round(Number(it.amount ?? 0)),
+      })),
+      tripsTotal: Math.round(tripsTotal),
+      tripCount: withdrawal.items.length,
+    };
+  }
+
+  /** Adjunta recibo FIFO a un retiro manual (al aprobar): viajes entregados
+   *  sin recibo hasta cubrir el monto. No toca retiros que ya traen líneas. */
+  private async attachFifoReceipt(withdrawalId: string) {
+    const existing = await this.prisma.withdrawalItem.count({ where: { withdrawalId } });
+    if (existing > 0) return;
+    const withdrawal: any = await this.prisma.withdrawal.findUnique({
+      where: { id: withdrawalId },
+    });
+    if (!withdrawal) return;
+    const trips = await this.unreceiptedDelivered(withdrawal.driverId, withdrawal.createdAt);
+    let acc = 0;
+    const target = Number(withdrawal.amount ?? 0);
+    const picked: typeof trips = [];
+    for (const o of trips) {
+      picked.push(o);
+      acc += Number(o.driverPayout ?? 0);
+      if (acc >= target) break;
+    }
+    if (picked.length === 0) return;
+    await this.prisma.withdrawalItem.createMany({
+      data: picked.map((o) => ({
+        withdrawalId,
+        orderId: o.id,
+        amount: Math.round(Number(o.driverPayout ?? 0)),
+        deliveredAt: o.deliveredAt,
+      })),
+    });
+  }
+
   // Admin methods
   async getAllPendingWithdrawals() {
     return this.prisma.withdrawal.findMany({
@@ -291,6 +638,13 @@ export class WithdrawalsService {
       where: { id },
       include: { driver: true },
     });
+
+    // Recibo automático para retiros manuales (los de planilla ya traen líneas).
+    try {
+      await this.attachFifoReceipt(id);
+    } catch {
+      // best-effort: la aprobación ya quedó y no se revierte por el recibo
+    }
 
     // Notify driver (push + inbox vía notifications service)
     await this.notificationsService

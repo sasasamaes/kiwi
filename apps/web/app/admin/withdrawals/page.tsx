@@ -72,6 +72,15 @@ export default function AdminWithdrawalsPage() {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [transactionId, setTransactionId] = useState('');
+  // Planilla semanal mar–lun
+  const [payrollWeek, setPayrollWeek] = useState<string | null>(null);
+  const [payroll, setPayroll] = useState<any>(null);
+  const [payrollLoading, setPayrollLoading] = useState(false);
+  const [payrollMsg, setPayrollMsg] = useState<string | null>(null);
+  const [generating, setGenerating] = useState(false);
+  // Recibo del retiro seleccionado
+  const [receipt, setReceipt] = useState<any>(null);
+  const [receiptLoading, setReceiptLoading] = useState(false);
 
   const STATUS_LABEL: Record<string, string> = {
     pending: t('webadmin1.awith.status.pending'),
@@ -106,9 +115,96 @@ export default function AdminWithdrawalsPage() {
     }
   }, [t]);
 
+  const fetchPayroll = useCallback(
+    async (week?: string | null) => {
+      try {
+        setPayrollLoading(true);
+        setPayrollMsg(null);
+        const data = await api.getPayroll(week ?? undefined);
+        setPayroll(data ?? null);
+        if (data?.weekStart && !week) {
+          setPayrollWeek(new Date(data.weekStart).toISOString().slice(0, 10));
+        }
+      } catch {
+        setPayrollMsg(t('webadmin1.awith.payrollLoadError'));
+      } finally {
+        setPayrollLoading(false);
+      }
+    },
+    [t],
+  );
+
+  const shiftWeek = (days: number) => {
+    const base = payrollWeek ? new Date(`${payrollWeek}T12:00:00Z`) : new Date();
+    const next = new Date(base.getTime() + days * 24 * 3600 * 1000);
+    const iso = next.toISOString().slice(0, 10);
+    setPayrollWeek(iso);
+    void fetchPayroll(iso);
+  };
+
+  const handleGeneratePayroll = async () => {
+    try {
+      setGenerating(true);
+      setPayrollMsg(null);
+      const res: any = await api.generatePayroll(payrollWeek ?? undefined);
+      const n = Array.isArray(res?.created) ? res.created.length : 0;
+      const m = Array.isArray(res?.skipped) ? res.skipped.length : 0;
+      setPayrollMsg(
+        m > 0
+          ? t('webadmin1.awith.payrollPartial', { n, m })
+          : t('webadmin1.awith.payrollCreated', { n }),
+      );
+      void fetchPayroll(payrollWeek);
+      fetchWithdrawals();
+    } catch {
+      setPayrollMsg(t('webadmin1.awith.payrollGenError'));
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const fetchReceipt = useCallback(async (id: string) => {
+    try {
+      setReceiptLoading(true);
+      setReceipt(null);
+      const data = await api.getWithdrawalReceipt(id);
+      setReceipt(data ?? null);
+    } catch {
+      setReceipt({ error: true });
+    } finally {
+      setReceiptLoading(false);
+    }
+  }, []);
+
+  const printReceipt = (r: any) => {
+    const rows = (r?.trips ?? [])
+      .map(
+        (tr: any) =>
+          `<tr><td>${new Date(tr.deliveredAt).toLocaleString('es-CR')}</td><td>${tr.merchant ?? ''}</td><td style="text-align:right">₡${Number(tr.trip ?? 0).toLocaleString('es-CR')}</td><td style="text-align:right">₡${Number(tr.payout ?? 0).toLocaleString('es-CR')}</td></tr>`,
+      )
+      .join('');
+    const w = window.open('', '_blank', 'width=560');
+    if (!w) return;
+    w.document.write(
+      `<html><head><title>Recibo ${r?.id ?? ''}</title><style>body{font-family:sans-serif;padding:24px;color:#111}table{width:100%;border-collapse:collapse;margin-top:12px}td,th{border-bottom:1px solid #ddd;padding:6px 4px;font-size:13px;text-align:left}tfoot td{font-weight:bold}</style></head><body><h2>Kiwi · Recibo de pago</h2><p>${r?.driver?.fullName ?? ''} · ${r?.driver?.phone ?? ''}</p><table><thead><tr><th>Fecha</th><th>Comercio</th><th>Viaje</th><th>Ganancia</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td colspan="3">Viajes: ${r?.tripCount ?? 0}</td><td>₡${Number(r?.tripsTotal ?? 0).toLocaleString('es-CR')}</td></tr><tr><td colspan="3">Monto pagado</td><td>₡${Number(r?.amount ?? 0).toLocaleString('es-CR')}</td></tr></tfoot></table></body></html>`,
+    );
+    w.document.close();
+    w.focus();
+    w.print();
+  };
+
   useEffect(() => {
     fetchWithdrawals();
   }, [fetchWithdrawals]);
+
+  useEffect(() => {
+    void fetchPayroll(null);
+  }, [fetchPayroll]);
+
+  useEffect(() => {
+    if (selectedWithdrawal) void fetchReceipt(selectedWithdrawal.id);
+    else setReceipt(null);
+  }, [selectedWithdrawal, fetchReceipt]);
 
   const handleApprove = async (id: string) => {
     try {
@@ -285,6 +381,110 @@ export default function AdminWithdrawalsPage() {
           </p>
         </motion.div>
       </div>
+
+      {/* Planilla semanal mar–lun (pago martes) */}
+      <motion.div
+        className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <p className="font-display font-bold text-surface-800 dark:text-surface-100">
+              {t('webadmin1.awith.payrollTitle')}
+            </p>
+            <p className="text-sm text-surface-500 dark:text-surface-400">
+              {payroll?.weekStart && payroll?.weekEnd
+                ? t('webadmin1.awith.payrollWeek', {
+                    from: new Date(payroll.weekStart).toLocaleDateString('es-CR', {
+                      day: 'numeric',
+                      month: 'short',
+                    }),
+                    to: new Date(payroll.weekEnd).toLocaleDateString('es-CR', {
+                      day: 'numeric',
+                      month: 'short',
+                    }),
+                  })
+                : '…'}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => shiftWeek(-7)}
+              className="px-3 py-2 text-sm font-medium rounded-lg bg-surface-100 dark:bg-surface-700 text-surface-700 dark:text-surface-200"
+            >
+              {t('webadmin1.awith.payrollPrev')}
+            </button>
+            <button
+              onClick={() => {
+                setPayrollWeek(null);
+                void fetchPayroll(null);
+              }}
+              className="px-3 py-2 text-sm font-medium rounded-lg bg-surface-100 dark:bg-surface-700 text-surface-700 dark:text-surface-200"
+            >
+              {t('webadmin1.awith.payrollCurrent')}
+            </button>
+            <button
+              onClick={() => shiftWeek(7)}
+              className="px-3 py-2 text-sm font-medium rounded-lg bg-surface-100 dark:bg-surface-700 text-surface-700 dark:text-surface-200"
+            >
+              {t('webadmin1.awith.payrollNext')}
+            </button>
+          </div>
+        </div>
+
+        {payrollMsg && (
+          <p className="mt-2 text-sm font-medium text-kiwi-700 dark:text-kiwi-300">{payrollMsg}</p>
+        )}
+
+        <div className="mt-3 space-y-2">
+          {payrollLoading ? (
+            <p className="text-sm text-surface-500">…</p>
+          ) : !payroll || (payroll.drivers ?? []).length === 0 ? (
+            <p className="text-sm text-surface-500 dark:text-surface-400">
+              {t('webadmin1.awith.payrollEmpty')}
+            </p>
+          ) : (
+            (payroll.drivers ?? []).map((d: any) => (
+              <div
+                key={d.driverId}
+                className="flex items-center justify-between gap-3 rounded-xl bg-surface-50 dark:bg-surface-700/50 px-4 py-3"
+              >
+                <div className="min-w-0">
+                  <p className="truncate font-medium text-surface-800 dark:text-surface-100">
+                    {d.fullName || d.driverId.slice(0, 8)}
+                  </p>
+                  <p className="text-xs text-surface-500 dark:text-surface-400">
+                    {t('webadmin1.awith.payrollTrips', { n: d.tripCount })} · ₡
+                    {Number(d.totalPayout ?? 0).toLocaleString()}
+                  </p>
+                </div>
+                {d.existingWithdrawal ? (
+                  <span className="shrink-0 rounded-full bg-blue-100 dark:bg-blue-900/50 px-3 py-1 text-xs font-medium text-blue-700 dark:text-blue-300">
+                    {t('webadmin1.awith.payrollExisting')} · {d.existingWithdrawal.status}
+                  </span>
+                ) : (
+                  <span className="shrink-0 rounded-full bg-kiwi-100 dark:bg-kiwi-900/50 px-3 py-1 text-xs font-medium text-kiwi-700 dark:text-kiwi-300">
+                    {t('webadmin1.awith.payrollTotal', {
+                      amount: Number(d.totalPayout ?? 0).toLocaleString(),
+                    })}
+                  </span>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+
+        <button
+          onClick={handleGeneratePayroll}
+          disabled={generating || !(payroll?.drivers ?? []).some((d: any) => !d.existingWithdrawal)}
+          className="mt-3 w-full rounded-xl bg-kiwi-700 py-3 text-sm font-bold text-white hover:bg-kiwi-800 disabled:opacity-50"
+        >
+          {generating
+            ? t('webadmin1.awith.payrollGenerating')
+            : t('webadmin1.awith.payrollGenerate')}
+        </button>
+      </motion.div>
 
       {/* Filter Tabs */}
       <div className="flex gap-2 overflow-x-auto pb-2">
@@ -541,6 +741,68 @@ export default function AdminWithdrawalsPage() {
                         </span>
                         <span className="font-medium text-surface-800 dark:text-surface-100">
                           {selectedWithdrawal.accountHolder || t('webadmin1.awith.notSpecified')}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Recibo: viajes pagados */}
+                <div className="p-4 rounded-xl bg-surface-50 dark:bg-surface-700/50">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm text-surface-500 dark:text-surface-400">
+                      {t('webadmin1.awith.receiptTitle')}
+                    </p>
+                    {receipt && !receipt.error && (receipt.trips ?? []).length > 0 && (
+                      <button
+                        onClick={() => printReceipt(receipt)}
+                        className="text-xs font-semibold text-kiwi-700 dark:text-kiwi-300 hover:underline"
+                      >
+                        {t('webadmin1.awith.receiptPrint')}
+                      </button>
+                    )}
+                  </div>
+                  {receiptLoading ? (
+                    <p className="text-sm text-surface-500">…</p>
+                  ) : !receipt || receipt.error || (receipt.trips ?? []).length === 0 ? (
+                    <p className="text-sm text-surface-500 dark:text-surface-400">
+                      {t('webadmin1.awith.receiptEmpty')}
+                    </p>
+                  ) : (
+                    <div className="space-y-1.5">
+                      {(receipt.trips ?? []).slice(0, 30).map((tr: any) => (
+                        <div
+                          key={tr.orderId}
+                          className="flex items-center justify-between gap-2 text-sm"
+                        >
+                          <span className="min-w-0 truncate text-surface-700 dark:text-surface-200">
+                            {tr.deliveredAt
+                              ? new Date(tr.deliveredAt).toLocaleDateString('es-CR', {
+                                  day: 'numeric',
+                                  month: 'short',
+                                })
+                              : ''}{' '}
+                            · {tr.merchant ?? tr.orderId.slice(0, 8)}
+                          </span>
+                          <span className="shrink-0 font-medium text-surface-800 dark:text-surface-100">
+                            ₡{Number(tr.payout ?? 0).toLocaleString()}
+                          </span>
+                        </div>
+                      ))}
+                      <div className="flex items-center justify-between border-t border-surface-200 dark:border-surface-600 pt-2 text-sm font-bold">
+                        <span>
+                          {t('webadmin1.awith.receiptTrips', { n: receipt.tripCount ?? 0 })}
+                        </span>
+                        <span className="text-kiwi-700 dark:text-kiwi-300">
+                          ₡{Number(receipt.tripsTotal ?? 0).toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-surface-500 dark:text-surface-400">
+                          {t('webadmin1.awith.receiptAmount')}
+                        </span>
+                        <span className="font-bold text-surface-800 dark:text-surface-100">
+                          ₡{Number(receipt.amount ?? 0).toLocaleString()}
                         </span>
                       </div>
                     </div>

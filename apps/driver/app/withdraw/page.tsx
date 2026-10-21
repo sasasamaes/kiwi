@@ -67,6 +67,10 @@ export default function WithdrawPage() {
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  // Recibos por retiro (se cargan al expandir)
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [receipts, setReceipts] = useState<Record<string, any>>({});
+  const [receiptLoading, setReceiptLoading] = useState<string | null>(null);
 
   // Form state
   const [amount, setAmount] = useState('');
@@ -98,6 +102,24 @@ export default function WithdrawPage() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  const toggleReceipt = async (id: string) => {
+    if (expandedId === id) {
+      setExpandedId(null);
+      return;
+    }
+    setExpandedId(id);
+    if (receipts[id]) return;
+    try {
+      setReceiptLoading(id);
+      const data = await api.getMyWithdrawalReceipt(id);
+      setReceipts((prev) => ({ ...prev, [id]: data ?? null }));
+    } catch {
+      setReceipts((prev) => ({ ...prev, [id]: { error: true } }));
+    } finally {
+      setReceiptLoading(null);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -552,54 +574,104 @@ export default function WithdrawPage() {
                 const StatusIcon = statusConfig.icon as any;
 
                 return (
-                  <motion.div
-                    key={withdrawal.id}
-                    className="flex items-center justify-between p-3 rounded-xl bg-surface-50 dark:bg-surface-700/50"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.3 + index * 0.05 }}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`flex h-10 w-10 items-center justify-center rounded-full ${statusConfig.color}`}
-                      >
-                        {typeof StatusIcon === 'string' ? (
-                          <span className="text-lg">{StatusIcon}</span>
-                        ) : (
-                          <StatusIcon className="h-5 w-5" />
+                  <div key={withdrawal.id}>
+                    <motion.div
+                      className="flex items-center justify-between p-3 rounded-xl bg-surface-50 dark:bg-surface-700/50"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.3 + index * 0.05 }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`flex h-10 w-10 items-center justify-center rounded-full ${statusConfig.color}`}
+                        >
+                          {typeof StatusIcon === 'string' ? (
+                            <span className="text-lg">{StatusIcon}</span>
+                          ) : (
+                            <StatusIcon className="h-5 w-5" />
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-medium text-surface-800 dark:text-surface-100">
+                            {formatCurrency(withdrawal.amount)}
+                          </p>
+                          <p className="text-xs text-surface-500 dark:text-surface-400">
+                            {withdrawal.paymentMethod === 'sinpe'
+                              ? t('wdrvwork.withdraw.methodSinpe')
+                              : t('wdrvwork.withdraw.methodBank')}{' '}
+                            {formatDate(withdrawal.createdAt)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs font-medium ${statusConfig.color}`}
+                        >
+                          {t(`wdrvwork.withdraw.${statusConfig.labelKey}`)}
+                        </span>
+                        <button
+                          onClick={() => void toggleReceipt(withdrawal.id)}
+                          className="text-xs font-semibold text-kiwi-700 dark:text-kiwi-300 hover:underline"
+                        >
+                          {expandedId === withdrawal.id
+                            ? t('wdrvwork.withdraw.receiptHide')
+                            : t('wdrvwork.withdraw.receiptShow')}
+                        </button>
+                        {withdrawal.status === 'pending' && (
+                          <button
+                            onClick={() => handleCancel(withdrawal.id)}
+                            aria-label={t('wdrvwork.withdraw.cancelAria', {
+                              amount: formatCurrency(withdrawal.amount),
+                            })}
+                            className="text-red-500 hover:text-red-600 text-xs"
+                          >
+                            ✕
+                          </button>
                         )}
                       </div>
-                      <div>
-                        <p className="font-medium text-surface-800 dark:text-surface-100">
-                          {formatCurrency(withdrawal.amount)}
-                        </p>
-                        <p className="text-xs text-surface-500 dark:text-surface-400">
-                          {withdrawal.paymentMethod === 'sinpe'
-                            ? t('wdrvwork.withdraw.methodSinpe')
-                            : t('wdrvwork.withdraw.methodBank')}{' '}
-                          {formatDate(withdrawal.createdAt)}
-                        </p>
+                    </motion.div>
+                    {expandedId === withdrawal.id && (
+                      <div className="rounded-xl bg-surface-50 dark:bg-surface-700/50 px-4 py-3 text-sm">
+                        {receiptLoading === withdrawal.id ? (
+                          <p className="text-surface-500">…</p>
+                        ) : !receipts[withdrawal.id] || receipts[withdrawal.id].error ? (
+                          <p className="text-surface-500 dark:text-surface-400">
+                            {t('wdrvwork.withdraw.receiptEmpty')}
+                          </p>
+                        ) : (
+                          <div className="space-y-1.5">
+                            <p className="font-semibold text-surface-800 dark:text-surface-100">
+                              {t('wdrvwork.withdraw.receiptTitle', {
+                                n: receipts[withdrawal.id].tripCount ?? 0,
+                                total: Number(
+                                  receipts[withdrawal.id].tripsTotal ?? 0,
+                                ).toLocaleString(),
+                              })}
+                            </p>
+                            {(receipts[withdrawal.id].trips ?? []).slice(0, 30).map((tr: any) => (
+                              <div
+                                key={tr.orderId}
+                                className="flex items-center justify-between gap-2"
+                              >
+                                <span className="min-w-0 truncate text-surface-600 dark:text-surface-300">
+                                  {tr.deliveredAt
+                                    ? new Date(tr.deliveredAt).toLocaleDateString('es-CR', {
+                                        day: 'numeric',
+                                        month: 'short',
+                                      })
+                                    : ''}{' '}
+                                  · {tr.merchant ?? tr.orderId.slice(0, 8)}
+                                </span>
+                                <span className="shrink-0 font-medium text-surface-800 dark:text-surface-100">
+                                  ₡{Number(tr.payout ?? 0).toLocaleString()}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${statusConfig.color}`}
-                      >
-                        {t(`wdrvwork.withdraw.${statusConfig.labelKey}`)}
-                      </span>
-                      {withdrawal.status === 'pending' && (
-                        <button
-                          onClick={() => handleCancel(withdrawal.id)}
-                          aria-label={t('wdrvwork.withdraw.cancelAria', {
-                            amount: formatCurrency(withdrawal.amount),
-                          })}
-                          className="text-red-500 hover:text-red-600 text-xs"
-                        >
-                          ✕
-                        </button>
-                      )}
-                    </div>
-                  </motion.div>
+                    )}
+                  </div>
                 );
               })}
             </div>

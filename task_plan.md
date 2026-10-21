@@ -18,6 +18,7 @@ Llevar las 3 apps nativas (`merchant-mobile`, `driver-mobile`, `client-mobile`) 
 3. **Fase C client-mobile** — encomienda, zona-azul, flags/ComingSoon, banners. Status: complete (2 módulos api + tests 48/48, 3 pantallas, gate, comercios, i18n ES/EN).
 4. **Fase D EAS APK + QA físico** — Status: en curso (3 apps linkeadas a org KiWi; builds APK comercios + repartidor + cliente lanzados; falta QA en físico).
 5. **Mandados** — Status: complete (backend: migración, `POST /orders/mandado`, `PUT /orders/:id/receipt`, flag `mandadosEnabled`; web cliente: tarjeta + página; móvil cliente: entrada + pantalla + gate; repartidor web + móvil: tarjeta de compra + registro de factura; i18n ES/EN; tests api 599/599).
+6. **Liquidación mar–lun + recibos** — Status: complete (backend: migración WithdrawalItem + periodStart/End, planilla semanal, generación con recibo, recibo en approve, `GET/POST admin/payroll`, recibos admin/driver; admin web: sección planilla + recibo imprimible; repartidor web + móvil: ver recibo; i18n ES/EN; tests api 613/613).
 
 ## Decisiones
 

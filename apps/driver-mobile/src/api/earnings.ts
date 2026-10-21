@@ -22,5 +22,7 @@ export function earningsApi(http: Http) {
     }) => http.post<any>('/withdrawals/request', data),
     // Cancelar retiro pendiente (`PUT /withdrawals/my/:id/cancel`).
     cancelWithdrawal: (id: string) => http.put<any>(`/withdrawals/my/${id}/cancel`),
+    // Recibo con los viajes del retiro (`GET /withdrawals/my/:id/receipt`).
+    receipt: (id: string) => http.get<any>(`/withdrawals/my/${id}/receipt`),
   };
 }

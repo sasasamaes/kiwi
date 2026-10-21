@@ -828,6 +828,9 @@ export default {
     cancel: 'Cancel',
     cancelled: 'Withdrawal cancelled',
     cancelFailed: 'Could not cancel',
+    receiptShow: 'View receipt',
+    receiptTitle: 'Receipt',
+    receiptEmpty: 'No trips in the receipt.',
   },
 
   // ===== Merchant login =====

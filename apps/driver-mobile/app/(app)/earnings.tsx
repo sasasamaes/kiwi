@@ -26,6 +26,9 @@ export default function Earnings() {
   const [sinpePhone, setSinpePhone] = useState('');
   const [sinpeName, setSinpeName] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [receipts, setReceipts] = useState<Record<string, any>>({});
+  const [receiptLoading, setReceiptLoading] = useState<string | null>(null);
 
   const earn = useQuery({
     queryKey: ['earnings', period],
@@ -63,6 +66,24 @@ export default function Earnings() {
     },
     onError: () => Alert.alert(t.withdraw.cancelFailed),
   });
+
+  const toggleReceipt = async (id: string) => {
+    if (expandedId === id) {
+      setExpandedId(null);
+      return;
+    }
+    setExpandedId(id);
+    if (receipts[id]) return;
+    setReceiptLoading(id);
+    try {
+      const data = await api.receipt(id);
+      setReceipts((prev) => ({ ...prev, [id]: data ?? null }));
+    } catch {
+      setReceipts((prev) => ({ ...prev, [id]: { error: true } }));
+    } finally {
+      setReceiptLoading(null);
+    }
+  };
 
   const refreshing = earn.isRefetching || bal.isRefetching || hist.isRefetching;
   const refetchAll = () => {
@@ -209,28 +230,77 @@ export default function Earnings() {
           <Text style={{ color: tokens.color.muted }}>{t.withdraw.empty}</Text>
         ) : (
           moves.map((w: any) => (
-            <View
-              key={w.id}
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                backgroundColor: tokens.color.surface,
-                borderRadius: tokens.radius.md,
-                padding: 12,
-                marginBottom: 8,
-              }}
-            >
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: tokens.color.ink, fontWeight: '700' }}>
-                  ₡{Number(w.amount ?? 0).toLocaleString()}
-                </Text>
-                <Text style={{ color: tokens.color.muted, fontSize: 12 }}>{w.status ?? ''}</Text>
-              </View>
-              {w.status === 'pending' && (
-                <Pressable onPress={() => cancel.mutate(w.id)} style={{ padding: 6 }}>
-                  <Text style={{ color: '#ef4444', fontWeight: '600' }}>{t.withdraw.cancel}</Text>
+            <View key={w.id}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  backgroundColor: tokens.color.surface,
+                  borderRadius: tokens.radius.md,
+                  padding: 12,
+                  marginBottom: 8,
+                }}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: tokens.color.ink, fontWeight: '700' }}>
+                    ₡{Number(w.amount ?? 0).toLocaleString()}
+                  </Text>
+                  <Text style={{ color: tokens.color.muted, fontSize: 12 }}>{w.status ?? ''}</Text>
+                </View>
+                <Pressable onPress={() => void toggleReceipt(w.id)} style={{ padding: 6 }}>
+                  <Text style={{ color: tokens.color.kiwi, fontWeight: '600' }}>
+                    {t.withdraw.receiptShow}
+                  </Text>
                 </Pressable>
+                {w.status === 'pending' && (
+                  <Pressable onPress={() => cancel.mutate(w.id)} style={{ padding: 6 }}>
+                    <Text style={{ color: '#ef4444', fontWeight: '600' }}>{t.withdraw.cancel}</Text>
+                  </Pressable>
+                )}
+              </View>
+              {expandedId === w.id && (
+                <View
+                  style={{
+                    backgroundColor: tokens.color.surface,
+                    borderRadius: tokens.radius.md,
+                    padding: 12,
+                    marginTop: -4,
+                    marginBottom: 8,
+                  }}
+                >
+                  {receiptLoading === w.id ? (
+                    <Text style={{ color: tokens.color.muted }}>…</Text>
+                  ) : !receipts[w.id] || receipts[w.id].error ? (
+                    <Text style={{ color: tokens.color.muted }}>{t.withdraw.receiptEmpty}</Text>
+                  ) : (
+                    <View>
+                      <Text style={{ color: tokens.color.ink, fontWeight: '700', marginBottom: 4 }}>
+                        {t.withdraw.receiptTitle} ({receipts[w.id].tripCount ?? 0})
+                      </Text>
+                      {(receipts[w.id].trips ?? []).slice(0, 30).map((tr: any) => (
+                        <View
+                          key={tr.orderId}
+                          style={{
+                            flexDirection: 'row',
+                            justifyContent: 'space-between',
+                            marginBottom: 2,
+                          }}
+                        >
+                          <Text style={{ color: tokens.color.muted, flex: 1 }} numberOfLines={1}>
+                            {tr.merchant ?? tr.orderId.slice(0, 8)}
+                          </Text>
+                          <Text style={{ color: tokens.color.ink }}>
+                            ₡{Number(tr.payout ?? 0).toLocaleString()}
+                          </Text>
+                        </View>
+                      ))}
+                      <Text style={{ color: tokens.color.ink, fontWeight: '700', marginTop: 4 }}>
+                        Total: ₡{Number(receipts[w.id].tripsTotal ?? 0).toLocaleString()}
+                      </Text>
+                    </View>
+                  )}
+                </View>
               )}
             </View>
           ))
