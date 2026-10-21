@@ -12,6 +12,7 @@ import {
   LayoutDashboard,
   LogOut,
   Menu as MenuIcon,
+  MessageCircle,
   Receipt,
   ShoppingBag,
   User,
@@ -22,6 +23,7 @@ import {
   useAuth,
   ThemeToggle,
   KiwiLogo,
+  business,
   isHttpUrl,
   isEmojiImage,
   LanguageSwitcherCompact,
@@ -57,6 +59,8 @@ export function MerchantNav({ isConnected, unreadCount = 0, businessName }: Merc
   const { logout, user } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const labelFor = (key: (typeof LINKS)[number]['key']) => t(`webnav.links.${key}`);
+  // Soporte por WhatsApp al teléfono de Kiwi, con mensaje pre-llenado.
+  const supportHref = `${business.whatsapp}?text=${encodeURIComponent(t('webnav.supportMsg'))}`;
   // Logo del comercio (foto subida o emoji). Vive en el perfil del user
   // logueado, así se actualiza solo al cambiarlo en el dashboard.
   const logoUrl = (user as any)?.merchantProfile?.logoUrl as string | undefined;
@@ -146,6 +150,16 @@ export function MerchantNav({ isConnected, unreadCount = 0, businessName }: Merc
             )}
             <LanguageSwitcherCompact />
             <ThemeToggle />
+            <a
+              href={supportHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={t('webnav.support')}
+              aria-label={t('webnav.support')}
+              className="flex items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-2 text-sm font-medium text-surface-500 dark:text-surface-400 hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-700 dark:hover:text-green-300 transition-colors"
+            >
+              <MessageCircle className="h-4 w-4" />
+            </a>
             <button
               onClick={handleLogout}
               title={t('webnav.logout')}
@@ -219,6 +233,16 @@ export function MerchantNav({ isConnected, unreadCount = 0, businessName }: Merc
                   </Link>
                 );
               })}
+              <a
+                href={supportHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setMobileOpen(false)}
+                className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-green-700 dark:text-green-300 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
+              >
+                <MessageCircle className="h-5 w-5" />
+                {t('webnav.support')}
+              </a>
               <button
                 onClick={handleLogout}
                 className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"

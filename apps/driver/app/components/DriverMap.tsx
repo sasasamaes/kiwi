@@ -3,7 +3,7 @@
 
 import 'leaflet/dist/leaflet.css';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AlertTriangle, LocateFixed, Navigation } from 'lucide-react';
+import { AlertTriangle, LocateFixed, Maximize2, Navigation, X } from 'lucide-react';
 
 export interface DriverMapPoint {
   lat: number;
@@ -87,6 +87,8 @@ export function DriverMap({
   const [mapError, setMapError] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
   const [mapReady, setMapReady] = useState(false);
+  // Mapa en grande: el mismo mapa pasa a pantalla completa (estilo Uber).
+  const [expanded, setExpanded] = useState(false);
 
   const activeDest = target === 'pickup' ? pickup : delivery;
 
@@ -331,6 +333,25 @@ export function DriverMap({
     );
   }, [activeDest]);
 
+  // Pantalla completa: bloquear el scroll de fondo, cerrar con Escape y
+  // avisarle a Leaflet del nuevo tamaño (sin esto los tiles quedan grises).
+  useEffect(() => {
+    if (!expanded) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setExpanded(false);
+    };
+    window.addEventListener('keydown', onKey);
+    const id = setTimeout(() => mapInstanceRef.current?.invalidateSize(), 80);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener('keydown', onKey);
+      clearTimeout(id);
+      setTimeout(() => mapInstanceRef.current?.invalidateSize(), 80);
+    };
+  }, [expanded]);
+
   if (mapError) {
     return (
       <div
@@ -368,8 +389,24 @@ export function DriverMap({
   }
 
   return (
-    <div className={`relative overflow-hidden rounded-3xl ${className}`} style={{ height }}>
+    <div
+      className={
+        expanded ? 'fixed inset-0 z-[70]' : `relative overflow-hidden rounded-3xl ${className}`
+      }
+      style={{ height: expanded ? '100dvh' : height }}
+    >
       <div ref={mapRef} className="h-full w-full" />
+      {/* Pantalla completa (debajo del banner de próxima parada, si hay) */}
+      <button
+        onClick={() => setExpanded((v) => !v)}
+        aria-label={expanded ? 'Cerrar mapa en grande' : 'Ver mapa en grande'}
+        aria-expanded={expanded}
+        className={`absolute right-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-white dark:bg-surface-800 shadow-lg text-surface-700 dark:text-surface-200 ${
+          activeDest ? 'top-[76px]' : 'top-3'
+        }`}
+      >
+        {expanded ? <X className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
+      </button>
 
       {/* Banner Uber: próxima parada + distancia/ETA */}
       {activeDest && (

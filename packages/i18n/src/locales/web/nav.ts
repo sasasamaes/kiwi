@@ -24,6 +24,8 @@ export const navEs = {
   openMenu: 'Abrir menú',
   closeMenu: 'Cerrar menú',
   currentPage: 'Kiwi',
+  support: 'Soporte por WhatsApp',
+  supportMsg: 'Hola Kiwi, necesito ayuda con mi negocio',
 };
 
 export const navEn = {
@@ -46,6 +48,8 @@ export const navEn = {
   openMenu: 'Open menu',
   closeMenu: 'Close menu',
   currentPage: 'Kiwi',
+  support: 'WhatsApp support',
+  supportMsg: 'Hi Kiwi, I need help with my store',
 };
 
 export const adminNavEs = {
@@ -74,6 +78,7 @@ export const adminNavEs = {
     simulador: 'Simulador',
     reportes: 'Real vs Proyección',
     deudas: 'Deudas',
+    alquileres: 'Alquileres',
     zones: 'Zonas',
     cobertura: 'Cobertura',
     settings: 'Configuración',
@@ -112,6 +117,7 @@ export const adminNavEn = {
     simulador: 'Simulator',
     reportes: 'Actual vs Projection',
     deudas: 'Debts',
+    alquileres: 'Rentals',
     zones: 'Zones',
     cobertura: 'Coverage',
     settings: 'Settings',
