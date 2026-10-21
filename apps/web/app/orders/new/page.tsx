@@ -105,15 +105,6 @@ function NewOrderInner({
   const [paymentFailed, setPaymentFailed] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
   const [orderNotice, setOrderNotice] = useState<string | null>(null);
-  // % que Kiwi descuenta del payout del repartidor (el comercio NO lo paga:
-  // paga productos + viaje de la zona). Solo espejo visual: el backend manda.
-  const [tripPct, setTripPct] = useState(0.15);
-  useEffect(() => {
-    api
-      .getPlatformFees()
-      .then((f) => setTripPct((Number(f?.standardPct) || 15) / 100))
-      .catch(() => undefined);
-  }, []);
 
   const [kind, setKind] = useState<'food' | 'freight'>(presetKind);
   // Si el tipo llega preseleccionado por la URL y la URL cambia (nav entre los
@@ -558,8 +549,7 @@ function NewOrderInner({
   const zoneLabel = dbZone?.label ?? findDeliveryZone(deliveryZone)?.label ?? null;
   const trip = baseTrip;
   // El comercio paga productos + viaje, SIN recargo: el 15% lo paga el
-  // repartidor (payout = viaje − 15%). Igual que el backend.
-  const driverPayout = trip - Math.round(trip * tripPct);
+  // repartidor (igual que el backend). No se muestra en UI: dato interno.
   const total = subtotal + trip;
   const etaMin = routeKm != null ? Math.max(5, Math.round((routeKm / 25) * 60)) : null;
 
@@ -1599,22 +1589,11 @@ function NewOrderInner({
                   </span>
                   <span className="text-kiwi-700 font-medium">₡{trip.toLocaleString()}</span>
                 </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-surface-500">
-                    {t('webshop2.neworder.sumDriverGets', { pct: Math.round(tripPct * 100) })}
-                  </span>
-                  <span className="font-medium text-surface-600 dark:text-surface-300">
-                    ₡{driverPayout.toLocaleString()}
-                  </span>
-                </div>
                 <div className="flex justify-between text-lg font-bold pt-2 border-t border-surface-100 dark:border-surface-700">
                   <span>{t('webshop2.neworder.sumTotal')}</span>
                   <span className="text-kiwi-700">₡{total.toLocaleString()}</span>
                 </div>
               </div>
-              <p className="mb-4 text-xs leading-relaxed text-surface-500 dark:text-surface-400">
-                {t('webshop2.neworder.feeNote', { pct: Math.round(tripPct * 100) })}
-              </p>
 
               <div className="mb-4 flex items-center justify-between rounded-xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4">
                 <div>
