@@ -84,6 +84,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter();
   const { user, loading, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  // Drawer en móvil (el sidebar fijo de 256px no cabe en un teléfono).
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   // Solo rol admin: sin login → /login; logueado sin rol → /dashboard.
   useEffect(() => {
@@ -91,6 +93,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (!user) router.replace('/login');
     else if ((user as any).role !== 'admin') router.replace('/dashboard');
   }, [user, loading, router]);
+
+  // Al navegar en móvil se cierra el drawer.
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
 
   if (loading || !user) {
     return (
@@ -130,13 +137,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="min-h-[100dvh] bg-bg-light dark:bg-surface-950 flex">
-      {/* Sidebar */}
+      {/* Fondo del drawer en móvil */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 md:hidden"
+          onClick={() => setMobileOpen(false)}
+          aria-hidden
+        />
+      )}
+      {/* Sidebar: drawer en móvil, fija/colapsable en desktop */}
       <motion.aside
-        className={`fixed left-0 top-0 h-full flex flex-col bg-white dark:bg-surface-900 border-r border-surface-200 dark:border-surface-700 z-50 ${
-          sidebarOpen ? 'w-64' : 'w-20'
-        } transition-all duration-300`}
-        initial={{ x: -100 }}
-        animate={{ x: 0 }}
+        className={`fixed left-0 top-0 h-full flex flex-col bg-white dark:bg-surface-900 border-r border-surface-200 dark:border-surface-700 z-50 w-64 ${
+          mobileOpen ? 'translate-x-0' : '-translate-x-full'
+        } md:translate-x-0 ${sidebarOpen ? 'md:w-64' : 'md:w-20'} transition-all duration-300`}
       >
         {/* Logo: completo con sidebar abierto; solo la rebanada cuando está
             colapsado (el lockup icono + "Kiwi" no cabe en 80px y se recorta). */}
@@ -227,16 +240,29 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </motion.aside>
 
       {/* Main Content */}
-      <div className={`flex-1 ${sidebarOpen ? 'ml-64' : 'ml-20'} transition-all duration-300`}>
+      <div
+        className={`flex-1 min-w-0 ${sidebarOpen ? 'md:ml-64' : 'md:ml-20'} transition-all duration-300`}
+      >
         {/* Top Header */}
         <header className="sticky top-0 z-40 border-b border-surface-200/50 dark:border-surface-700/50 bg-white/70 dark:bg-surface-900/70 backdrop-blur-xl">
-          <div className="flex items-center justify-between px-6 py-4">
-            <div>
-              <h2 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100">
+          <div className="flex items-center justify-between gap-2 px-4 py-4 sm:px-6">
+            <div className="flex min-w-0 items-center gap-2">
+              <button
+                onClick={() => setMobileOpen(true)}
+                aria-label={t('adminnav.expand')}
+                className="rounded-xl p-2.5 text-surface-600 hover:bg-surface-100 dark:text-surface-300 dark:hover:bg-surface-800 md:hidden"
+              >
+                <span className="block h-5 w-5" aria-hidden>
+                  <span className="mt-1 block h-0.5 rounded bg-current" />
+                  <span className="mt-1 block h-0.5 rounded bg-current" />
+                  <span className="mt-1 block h-0.5 rounded bg-current" />
+                </span>
+              </button>
+              <h2 className="truncate text-lg font-display font-bold text-surface-800 dark:text-surface-100 sm:text-xl">
                 {(headerItem && itemLabel(headerItem.key)) || t('adminnav.title')}
               </h2>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex shrink-0 items-center gap-1.5 sm:gap-4">
               <LanguageSwitcher />
               <ThemeToggle />
               <div className="flex items-center gap-3">
@@ -267,7 +293,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </header>
 
         {/* Page Content */}
-        <main className="p-6">{children}</main>
+        <main className="p-4 sm:p-6">{children}</main>
       </div>
     </div>
   );

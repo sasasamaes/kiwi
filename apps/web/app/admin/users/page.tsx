@@ -696,7 +696,7 @@ export default function UsersPage() {
           )}
 
           <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {[
                 { value: 'all', label: t('webadmin1.ausers.tabs.all') },
                 { value: 'driver', label: t('webadmin1.ausers.tabs.drivers') },

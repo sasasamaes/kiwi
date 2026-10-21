@@ -620,8 +620,8 @@ export default function AdminZonesPage() {
         <ZonesOverviewMap zones={zones} merchants={merchants} drivers={liveDrivers} />
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-surface-200/60 dark:border-white/10">
-        <table className="w-full text-sm">
+      <div className="overflow-x-auto rounded-2xl border border-surface-200/60 dark:border-white/10">
+        <table className="w-full min-w-[560px] text-sm">
           <thead className="bg-surface-50 dark:bg-surface-800/60 text-surface-500">
             <tr>
               <th className="px-4 py-3 text-left font-medium">{t('webadmin1.azones.col.zone')}</th>

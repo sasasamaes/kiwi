@@ -163,7 +163,7 @@ export default function SettingsPage() {
       )}
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-surface-200 dark:border-surface-700 pb-2">
+      <div className="flex gap-2 overflow-x-auto border-b border-surface-200 dark:border-surface-700 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {[
           { id: 'platform', label: t('webadmin2.asettings.tabs.platform'), icon: Settings },
           { id: 'operations', label: t('webadmin2.asettings.tabs.operations'), icon: Calculator },
@@ -181,7 +181,7 @@ export default function SettingsPage() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+              className={`flex shrink-0 items-center gap-2 whitespace-nowrap px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
                 activeTab === tab.id
                   ? 'bg-kiwi-50 dark:bg-kiwi-900/30 text-kiwi-700 dark:text-kiwi-400'
                   : 'text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800'
