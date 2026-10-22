@@ -88,4 +88,41 @@ describe('ZonesService', () => {
     expect((await svc.list()).length).toBe(0);
     expect((await svc.listAll()).length).toBe(1);
   });
+
+  it('priceModel: ajusta base + tarifa con zonas a distinta distancia', async () => {
+    // 10.1467,-85.452 = centro (d≈0). 0.09° lat ≈ 10 km al norte.
+    await svc.create({ label: 'Centro', price: 1000, latitude: 10.1467, longitude: -85.452 });
+    await svc.create({ label: 'Lejos', price: 6000, latitude: 10.2367, longitude: -85.452 });
+    const m = await svc.priceModel();
+    expect(m.samples).toBe(2);
+    expect(m.ratePerKm).toBeGreaterThan(400);
+    expect(m.ratePerKm).toBeLessThan(600);
+    expect(m.base).toBeGreaterThanOrEqual(0);
+    expect(m.minPrice).toBe(1000);
+    expect(m.maxPrice).toBe(6000);
+  });
+
+  it('priceModel: sin puntos suficientes → tarifa 0 y base = mínimo', async () => {
+    await svc.create({ label: 'SinPunto', price: 1500 });
+    const m = await svc.priceModel();
+    expect(m).toMatchObject({ ratePerKm: 0, samples: 0, minPrice: 0, maxPrice: 0 });
+  });
+
+  it('suggestPrice: interpola, redondea a ₡500 y acota al rango', async () => {
+    await svc.create({ label: 'Centro', price: 1000, latitude: 10.1467, longitude: -85.452 });
+    await svc.create({ label: 'Lejos', price: 6000, latitude: 10.2367, longitude: -85.452 });
+    const mid = await svc.suggestPrice(10.1917, -85.452); // ≈5 km
+    expect(mid.distanceKm).toBeGreaterThan(4);
+    expect(mid.distanceKm).toBeLessThan(6);
+    expect(mid.price % 500).toBe(0);
+    expect(mid.price).toBeGreaterThan(1000);
+    expect(mid.price).toBeLessThan(6000);
+    const far = await svc.suggestPrice(11.0, -85.452); // muy lejos → tope
+    expect(far.price).toBe(6000);
+  });
+
+  it('suggestPrice: rechaza coordenadas inválidas', async () => {
+    await expect(svc.suggestPrice(Number.NaN, -85.452)).rejects.toThrow();
+    await expect(svc.suggestPrice(100, -85.452)).rejects.toThrow();
+  });
 });

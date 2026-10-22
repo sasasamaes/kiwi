@@ -96,6 +96,12 @@ export default function AdminZonesPage() {
   const [liveDrivers, setLiveDrivers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [suggesting, setSuggesting] = useState(false);
+  const [model, setModel] = useState<{
+    base: number;
+    ratePerKm: number;
+    samples: number;
+  } | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [vertices, setVertices] = useState<Ring>([]); // [[lng,lat]]
@@ -171,6 +177,11 @@ export default function AdminZonesPage() {
     setLoading(true);
     try {
       setZones((await api.adminListZones()) ?? []);
+      try {
+        setModel((await api.adminZonePriceModel()) ?? null);
+      } catch {
+        setModel(null);
+      }
       // Negocios para la capa del mapa general (una vez por carga).
       try {
         const feed = await api.discoverMerchants({ city: 'nicoya', take: 50 });
@@ -498,6 +509,38 @@ export default function AdminZonesPage() {
     }
   };
 
+  // Precio sugerido para la zona en edición según distancia al centro
+  // (modelo base + tarifa/km de las zonas vigentes). Lo propone, no lo impone.
+  const suggest = async () => {
+    const lat = Number(form.latitude);
+    const lng = Number(form.longitude);
+    if (
+      form.latitude === '' ||
+      form.longitude === '' ||
+      !Number.isFinite(lat) ||
+      !Number.isFinite(lng)
+    ) {
+      setMsg(t('webadmin1.azones.suggestNeedPoint'));
+      return;
+    }
+    setSuggesting(true);
+    setMsg(null);
+    try {
+      const r = await api.adminSuggestZonePrice(lat, lng);
+      setForm((f) => ({ ...f, price: Number(r.price) }));
+      setMsg(
+        t('webadmin1.azones.suggested', {
+          price: Number(r.price).toLocaleString(),
+          km: r.distanceKm,
+        }),
+      );
+    } catch (err: any) {
+      setMsg(err?.message || t('webadmin1.azones.saveError'));
+    } finally {
+      setSuggesting(false);
+    }
+  };
+
   // Pre-marca el polígono de UNA zona (con punto pero sin geometría): abre el
   // editor con el anillo generado para corregir vértices y guardar.
   const autofillRow = (z: Zone) => {
@@ -567,6 +610,15 @@ export default function AdminZonesPage() {
           <Plus className="h-4 w-4" /> {t('webadmin1.azones.newZone')}
         </button>
       </div>
+      {model && (
+        <p className="mb-4 rounded-xl bg-kiwi-50 dark:bg-kiwi-900/20 border border-kiwi-200 dark:border-kiwi-800 px-3 py-2 text-xs font-medium text-kiwi-800 dark:text-kiwi-200">
+          {t('webadmin1.azones.modelLine', {
+            base: Number(model.base).toLocaleString(),
+            rate: Number(model.ratePerKm).toLocaleString(),
+            n: model.samples,
+          })}
+        </p>
+      )}
       {missingCount > 0 && (
         <button
           onClick={() => void bulkAutofill()}
@@ -621,13 +673,14 @@ export default function AdminZonesPage() {
       </div>
 
       <div className="overflow-x-auto rounded-2xl border border-surface-200/60 dark:border-white/10">
-        <table className="w-full min-w-[560px] text-sm">
+        <table className="w-full min-w-[680px] text-sm">
           <thead className="bg-surface-50 dark:bg-surface-800/60 text-surface-500">
             <tr>
               <th className="px-4 py-3 text-left font-medium">{t('webadmin1.azones.col.zone')}</th>
               <th className="px-4 py-3 text-right font-medium">
                 {t('webadmin1.azones.col.price')}
               </th>
+              <th className="px-4 py-3 text-right font-medium">{t('webadmin1.azones.perKm')}</th>
               <th className="px-4 py-3 text-center font-medium">
                 {t('webadmin1.azones.col.polygon')}
               </th>
@@ -642,7 +695,7 @@ export default function AdminZonesPage() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={5} className="py-8 text-center text-surface-500 dark:text-surface-400">
+                <td colSpan={6} className="py-8 text-center text-surface-500 dark:text-surface-400">
                   {t('webadmin1.azones.loading')}
                 </td>
               </tr>
@@ -673,6 +726,22 @@ export default function AdminZonesPage() {
                   </td>
                   <td className="px-4 py-3 text-right font-mono">
                     ₡{Number(z.price).toLocaleString()}
+                  </td>
+                  <td className="px-4 py-3 text-right font-mono text-surface-500 dark:text-surface-400">
+                    {hasPoint(z)
+                      ? `₡${Math.round(
+                          Number(z.price) /
+                            Math.max(
+                              haversineKm(
+                                NICoya[0],
+                                NICoya[1],
+                                Number(z.latitude),
+                                Number(z.longitude),
+                              ),
+                              0.05,
+                            ),
+                        ).toLocaleString()}`
+                      : '—'}
                   </td>
                   <td className="px-4 py-3 text-center">
                     {hasPolygon(z) ? (
@@ -744,12 +813,23 @@ export default function AdminZonesPage() {
               </label>
               <label className="text-sm">
                 <span className="text-surface-500">{t('webadmin1.azones.priceLabel')}</span>
-                <input
-                  type="number"
-                  value={form.price}
-                  onChange={(e) => setForm({ ...form, price: Number(e.target.value) })}
-                  className="mt-1 w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 px-3 py-2"
-                />
+                <div className="mt-1 flex gap-2">
+                  <input
+                    type="number"
+                    value={form.price}
+                    onChange={(e) => setForm({ ...form, price: Number(e.target.value) })}
+                    className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 px-3 py-2"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void suggest()}
+                    disabled={suggesting}
+                    title={t('webadmin1.azones.suggestTip')}
+                    className="shrink-0 rounded-xl bg-purple-600 px-3 py-2 text-xs font-semibold text-white hover:bg-purple-700 disabled:opacity-50"
+                  >
+                    {t('webadmin1.azones.suggest')}
+                  </button>
+                </div>
               </label>
               <label className="text-sm">
                 <span className="text-surface-500">{t('webadmin1.azones.latLabel')}</span>

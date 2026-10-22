@@ -11,6 +11,27 @@ import {
 
 const TTL_MS = 30_000;
 
+/** Centro de Nicoya: origen para el modelo precio-vs-distancia. */
+export const NICOYA_CENTER = { lat: 10.1467, lng: -85.452 } as const;
+
+/** Haversine en km (local: zone-geometry no lo exporta). */
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const t = (d: number) => (d * Math.PI) / 180;
+  const h =
+    Math.sin(t(lat2 - lat1) / 2) ** 2 +
+    Math.cos(t(lat1)) * Math.cos(t(lat2)) * Math.sin(t(lng2 - lng1) / 2) ** 2;
+  return 2 * 6371 * Math.asin(Math.sqrt(h));
+}
+
+export interface ZonePriceModel {
+  base: number;
+  ratePerKm: number;
+  samples: number;
+  minPrice: number;
+  maxPrice: number;
+  center: { lat: number; lng: number };
+}
+
 export interface ZoneInput {
   label: string;
   price: number;
@@ -148,5 +169,85 @@ export class ZonesService {
   async resolvePriceAt(lat: number, lng: number): Promise<PriceResolution | null> {
     const zones = await this.list();
     return resolveZonePrice(zones, { lat, lng } as LatLng);
+  }
+
+  /**
+   * Modelo precio-vs-distancia (mínimos cuadrados sobre las zonas activas
+   * con punto): precio ≈ base + tarifa × km desde el centro de Nicoya.
+   * Sirve para estimar cuánto cobrar al ABRIR una zona nueva, no para
+   * re-preciar las existentes.
+   */
+  async priceModel(): Promise<ZonePriceModel> {
+    const zones = await this.list();
+    const pts = zones
+      .map((z) => {
+        if (z.latitude == null || z.longitude == null) return null;
+        const la = Number(z.latitude);
+        const ln = Number(z.longitude);
+        if (!Number.isFinite(la) || !Number.isFinite(ln)) return null;
+        return { d: haversineKm(NICOYA_CENTER.lat, NICOYA_CENTER.lng, la, ln), p: Number(z.price) };
+      })
+      .filter((p): p is { d: number; p: number } => p != null && Number.isFinite(p.p));
+    const prices = pts.map((p) => p.p);
+    const minPrice = prices.length ? Math.min(...prices) : 0;
+    const maxPrice = prices.length ? Math.max(...prices) : 0;
+    if (pts.length < 2) {
+      return {
+        base: minPrice,
+        ratePerKm: 0,
+        samples: pts.length,
+        minPrice,
+        maxPrice,
+        center: { ...NICOYA_CENTER },
+      };
+    }
+    const n = pts.length;
+    const sumD = pts.reduce((s, p) => s + p.d, 0);
+    const sumP = pts.reduce((s, p) => s + p.p, 0);
+    const sumDP = pts.reduce((s, p) => s + p.d * p.p, 0);
+    const sumD2 = pts.reduce((s, p) => s + p.d * p.d, 0);
+    const denom = n * sumD2 - sumD * sumD;
+    const rate = denom === 0 ? 0 : (n * sumDP - sumD * sumP) / denom;
+    const base = (sumP - rate * sumD) / n;
+    return {
+      base: Math.max(0, Math.round(base)),
+      ratePerKm: Math.max(0, Math.round(rate)),
+      samples: n,
+      minPrice,
+      maxPrice,
+      center: { ...NICOYA_CENTER },
+    };
+  }
+
+  /**
+   * Precio sugerido para abrir una zona en (lat,lng): aplica el modelo y
+   * lo acota al rango de precios vigentes, redondeado a ₡500 (el paso del
+   * catálogo). Es punto de partida — el admin lo confirma al guardar.
+   */
+  async suggestPrice(
+    lat: number,
+    lng: number,
+  ): Promise<{ price: number; distanceKm: number; base: number; ratePerKm: number }> {
+    if (
+      !Number.isFinite(lat) ||
+      !Number.isFinite(lng) ||
+      lat < -90 ||
+      lat > 90 ||
+      lng < -180 ||
+      lng > 180
+    ) {
+      throw new BadRequestException('Coordenadas inválidas');
+    }
+    const m = await this.priceModel();
+    const distanceKm = haversineKm(NICOYA_CENTER.lat, NICOYA_CENTER.lng, lat, lng);
+    const raw = m.base + m.ratePerKm * distanceKm;
+    const rounded = Math.round(raw / 500) * 500;
+    const price = Math.min(m.maxPrice, Math.max(m.minPrice, rounded));
+    return {
+      price,
+      distanceKm: Math.round(distanceKm * 100) / 100,
+      base: m.base,
+      ratePerKm: m.ratePerKm,
+    };
   }
 }

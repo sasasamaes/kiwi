@@ -921,6 +921,24 @@ class ApiClient {
     return this.request<any>(`/delivery-zones/${id}`, { method: 'DELETE' });
   }
 
+  /** Modelo precio-vs-distancia para abrir zonas (admin). */
+  async adminZonePriceModel() {
+    return this.request<{
+      base: number;
+      ratePerKm: number;
+      samples: number;
+      minPrice: number;
+      maxPrice: number;
+    }>(`/delivery-zones/price-model`);
+  }
+
+  /** Precio sugerido para una zona nueva en (lat,lng) (admin). */
+  async adminSuggestZonePrice(lat: number, lng: number) {
+    return this.request<{ price: number; distanceKm: number; base: number; ratePerKm: number }>(
+      `/delivery-zones/suggest-price?lat=${lat}&lng=${lng}`,
+    );
+  }
+
   /** Repartidores con GPS reciente (mapa vivo admin). */
   async adminLiveDrivers() {
     return this.request<any[]>(`/drivers/live`);

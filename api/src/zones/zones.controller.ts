@@ -59,6 +59,24 @@ export class ZonesController {
     return this.zones.listAll();
   }
 
+  @Get('price-model')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Modelo precio-vs-distancia para abrir zonas — admin' })
+  priceModel() {
+    return this.zones.priceModel();
+  }
+
+  @Get('suggest-price')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Precio sugerido para una zona nueva — admin' })
+  suggestPrice(@Query('lat') lat: string, @Query('lng') lng: string) {
+    return this.zones.suggestPrice(Number(lat), Number(lng));
+  }
+
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
