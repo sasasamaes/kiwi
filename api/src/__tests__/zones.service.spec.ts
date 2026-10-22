@@ -2,7 +2,22 @@
 import { Test } from '@nestjs/testing';
 import { ZonesService } from '../zones/zones.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { SettingsService } from '../settings/settings.service';
 import type { ZoneGeometry } from '../orders/zone-geometry';
+
+const settingsMock = {
+  getAll: jest.fn(async () => ({
+    costing: {
+      fuelPricePerLiter: 720,
+      kmPerLiter: { motorcycle: 42, motorized_bike: 60, bicycle: 0, car: 13, truck: 9 },
+      maintenancePerKm: { motorcycle: 45, motorized_bike: 35, bicycle: 10, car: 85, truck: 120 },
+      driverPayPerHour: 2800,
+      avgSpeedKmh: 27,
+      fixedMinutesPerTrip: 12,
+      kiwiMarginPct: 15,
+    },
+  })),
+};
 
 describe('ZonesService', () => {
   let svc: ZonesService;
@@ -43,7 +58,11 @@ describe('ZonesService', () => {
     store.length = 0;
     jest.clearAllMocks();
     const m = await Test.createTestingModule({
-      providers: [ZonesService, { provide: PrismaService, useValue: prisma }],
+      providers: [
+        ZonesService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: SettingsService, useValue: settingsMock },
+      ],
     }).compile();
     svc = m.get(ZonesService);
   });

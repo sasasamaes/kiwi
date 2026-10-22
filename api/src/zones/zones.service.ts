@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { SettingsService } from '../settings/settings.service';
 import {
   resolveZonePrice,
   type LatLng,
@@ -68,7 +69,10 @@ export class ZonesService {
   // pedido se revalida contra esto (fuente de verdad), no contra el catálogo.
   private cache: { at: number; zones: PriceZone[] } | null = null;
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private settings: SettingsService,
+  ) {}
 
   private toPriceZone(z: any): PriceZone {
     return {
@@ -227,7 +231,13 @@ export class ZonesService {
   async suggestPrice(
     lat: number,
     lng: number,
-  ): Promise<{ price: number; distanceKm: number; base: number; ratePerKm: number }> {
+  ): Promise<{
+    price: number;
+    distanceKm: number;
+    base: number;
+    ratePerKm: number;
+    costBased: number;
+  }> {
     if (
       !Number.isFinite(lat) ||
       !Number.isFinite(lng) ||
@@ -243,11 +253,163 @@ export class ZonesService {
     const raw = m.base + m.ratePerKm * distanceKm;
     const rounded = Math.round(raw / 500) * 500;
     const price = Math.min(m.maxPrice, Math.max(m.minPrice, rounded));
+    // Piso por costo real (moto): lo que NO se puede cobrar por debajo.
+    const cost = await this.costModel();
+    const moto = cost.perVehicle['motorcycle'] ?? cost.perVehicle[Object.keys(cost.perVehicle)[0]];
+    const costBased = this.priceForKm(
+      distanceKm,
+      cost.fixedCost,
+      moto.totalPerKm,
+      cost.params.kiwiMarginPct,
+    );
     return {
       price,
       distanceKm: Math.round(distanceKm * 100) / 100,
       base: m.base,
       ratePerKm: m.ratePerKm,
+      costBased,
+    };
+  }
+
+  private priceForKm(
+    distanceKm: number,
+    fixedCost: number,
+    perKm: number,
+    marginPct: number,
+  ): number {
+    const margin = Math.min(Math.max(Number(marginPct) || 0, 0), 90) / 100;
+    const raw = (fixedCost + perKm * Math.max(0, distanceKm)) / (1 - margin);
+    return Math.round(raw / 100) * 100;
+  }
+
+  /**
+   * Modelo de costo real por km (base del cobro inteligente).
+   * Fórmulas (todas visibles en la UI de zonas):
+   * - combustible/km = precioLitro ÷ kmPorLitro (0 si no usa gasolina)
+   * - min/km = 60 ÷ velocidadPromedio; costoTiempo/km = pagoHora ÷ velocidad
+   * - costo/km = combustible + mantenimiento + tiempo
+   * - costoFijo = pagoHora × minutosFijos ÷ 60
+   * - precio(d) = (costoFijo + costo/km × d) ÷ (1 − margen)
+   * Además mide la velocidad REAL con los últimos entregados
+   * (distanceKm ÷ assignedAt→deliveredAt) para calibrar el parámetro.
+   */
+  async costModel() {
+    const all = await this.settings.getAll();
+    const c = all.costing;
+    const speed = Math.max(5, Number(c.avgSpeedKmh) || 27);
+    const payPerHour = Math.max(0, Number(c.driverPayPerHour) || 0);
+    const fuel = Math.max(0, Number(c.fuelPricePerLiter) || 0);
+    const margin = Math.min(Math.max(Number(c.kiwiMarginPct) || 0, 0), 90);
+    const fixedMinutes = Math.max(0, Number(c.fixedMinutesPerTrip) || 0);
+
+    const vehicles = ['motorcycle', 'motorized_bike', 'bicycle', 'car', 'truck'] as const;
+    const perVehicle: Record<
+      string,
+      {
+        fuelPerKm: number;
+        maintenancePerKm: number;
+        timeMinPerKm: number;
+        driverPerKm: number;
+        totalPerKm: number;
+        priceAt1km: number;
+        priceAt3km: number;
+        priceAt5km: number;
+        priceAt10km: number;
+      }
+    > = {};
+    for (const v of vehicles) {
+      const kml = Number(c.kmPerLiter?.[v] ?? 0);
+      const fuelPerKm = kml > 0 ? fuel / kml : 0;
+      const maintenancePerKm = Math.max(0, Number(c.maintenancePerKm?.[v] ?? 0));
+      const timeMinPerKm = 60 / speed;
+      const driverPerKm = payPerHour / speed;
+      const totalPerKm = fuelPerKm + maintenancePerKm + driverPerKm;
+      perVehicle[v] = {
+        fuelPerKm: Math.round(fuelPerKm * 100) / 100,
+        maintenancePerKm: Math.round(maintenancePerKm * 100) / 100,
+        timeMinPerKm: Math.round(timeMinPerKm * 100) / 100,
+        driverPerKm: Math.round(driverPerKm * 100) / 100,
+        totalPerKm: Math.round(totalPerKm * 100) / 100,
+        priceAt1km: 0,
+        priceAt3km: 0,
+        priceAt5km: 0,
+        priceAt10km: 0,
+      };
+    }
+    const fixedCost = Math.round(((payPerHour * fixedMinutes) / 60) * 100) / 100;
+    for (const v of vehicles) {
+      const t = perVehicle[v].totalPerKm;
+      perVehicle[v].priceAt1km = this.priceForKm(1, fixedCost, t, margin);
+      perVehicle[v].priceAt3km = this.priceForKm(3, fixedCost, t, margin);
+      perVehicle[v].priceAt5km = this.priceForKm(5, fixedCost, t, margin);
+      perVehicle[v].priceAt10km = this.priceForKm(10, fixedCost, t, margin);
+    }
+
+    // Velocidad real medida: últimos entregados con distancia y tiempos.
+    let measured: {
+      trips: number;
+      avgSpeedKmh: number | null;
+      avgMinPerKm: number | null;
+      avgPricePerKm: number | null;
+    } = { trips: 0, avgSpeedKmh: null, avgMinPerKm: null, avgPricePerKm: null };
+    try {
+      const rows = await (this.prisma as any).order.findMany({
+        where: {
+          status: 'delivered',
+          assignedAt: { not: null },
+          deliveredAt: { not: null },
+          distanceKm: { not: null },
+        },
+        select: { distanceKm: true, assignedAt: true, deliveredAt: true, basePrice: true },
+        orderBy: { deliveredAt: 'desc' },
+        take: 500,
+      });
+      let speedSum = 0;
+      let speedN = 0;
+      let priceSum = 0;
+      let priceN = 0;
+      for (const r of rows) {
+        const d = Number(r.distanceKm);
+        const secs = (new Date(r.deliveredAt).getTime() - new Date(r.assignedAt).getTime()) / 1000;
+        if (
+          Number.isFinite(d) &&
+          d > 0.1 &&
+          Number.isFinite(secs) &&
+          secs > 120 &&
+          secs < 4 * 3600
+        ) {
+          speedSum += d / (secs / 3600);
+          speedN += 1;
+        }
+        const p = Number(r.basePrice);
+        if (Number.isFinite(d) && d > 0.1 && Number.isFinite(p)) {
+          priceSum += p / d;
+          priceN += 1;
+        }
+      }
+      measured = {
+        trips: rows.length,
+        avgSpeedKmh: speedN > 0 ? Math.round((speedSum / speedN) * 10) / 10 : null,
+        avgMinPerKm: speedN > 0 ? Math.round((60 / (speedSum / speedN)) * 100) / 100 : null,
+        avgPricePerKm: priceN > 0 ? Math.round(priceSum / priceN) : null,
+      };
+    } catch {
+      // sin datos: el modelo igual sirve con el parámetro manual
+    }
+
+    return {
+      params: {
+        fuelPricePerLiter: fuel,
+        kmPerLiter: { ...c.kmPerLiter },
+        maintenancePerKm: { ...c.maintenancePerKm },
+        driverPayPerHour: payPerHour,
+        avgSpeedKmh: speed,
+        fixedMinutesPerTrip: fixedMinutes,
+        kiwiMarginPct: margin,
+      },
+      fixedCost: Math.round(fixedCost),
+      perVehicle,
+      measured,
     };
   }
 }

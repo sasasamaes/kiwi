@@ -77,6 +77,15 @@ export class ZonesController {
     return this.zones.suggestPrice(Number(lat), Number(lng));
   }
 
+  @Get('cost-model')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Costo real por km + fórmulas del cobro inteligente — admin' })
+  costModel() {
+    return this.zones.costModel();
+  }
+
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')

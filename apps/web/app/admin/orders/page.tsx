@@ -77,6 +77,9 @@ export default function AdminOrders() {
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<AdminOrder | null>(null);
   const [copiedTrack, setCopiedTrack] = useState(false);
+  // Reasignación admin: el aceptado no puede hacerlo y se pasa a otro.
+  const [reassignTo, setReassignTo] = useState('');
+  const [reassigning, setReassigning] = useState(false);
   // Cancelación de duplicados/trabados (ej. chofer con 20 en curso por
   // reintentos sin internet). Solo estados cancelables por transición.
   const [cancelling, setCancelling] = useState(false);
@@ -205,6 +208,33 @@ export default function AdminOrders() {
       setCancelError(e?.message || t('webadmin1.aorders.cancelError'));
     } finally {
       setCancelling(false);
+    }
+  };
+
+  const reassignSelected = async () => {
+    if (!selected || !reassignTo || reassigning) return;
+    const target = drivers.find((d) => d.id === reassignTo);
+    if (
+      !window.confirm(
+        t('webadmin1.aorders.confirmReassign', {
+          id: selected.id.slice(0, 8).toUpperCase(),
+          name: target?.fullName ?? '',
+        }),
+      )
+    ) {
+      return;
+    }
+    setReassigning(true);
+    setCancelError(null);
+    try {
+      await api.reassignDriver(selected.id, reassignTo);
+      setSelected(null);
+      setReassignTo('');
+      await load(filter, search, page, driverId);
+    } catch (e: any) {
+      setCancelError(e?.message || t('webadmin1.aorders.reassignError'));
+    } finally {
+      setReassigning(false);
     }
   };
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -482,6 +512,7 @@ export default function AdminOrders() {
               key={o.id}
               onClick={() => {
                 setSelected(o);
+                setReassignTo('');
                 setCopiedTrack(false);
               }}
               className="flex w-full items-center gap-3 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4 text-left"
@@ -809,6 +840,44 @@ export default function AdminOrders() {
                             ? t('webadmin1.aorders.applying')
                             : t('webadmin1.aorders.apply')}
                         </button>
+                      </div>
+                    )}
+                    {[
+                      'assigned',
+                      'pending_acceptance',
+                      'in_transit_to_pickup',
+                      'picked_up',
+                      'in_transit_to_delivery',
+                    ].includes(selected.status) && (
+                      <div className="rounded-xl border border-surface-200 dark:border-surface-700 p-3">
+                        <p className="mb-2 text-xs font-semibold text-surface-600 dark:text-surface-300">
+                          {t('webadmin1.aorders.reassignTitle')}
+                        </p>
+                        <div className="flex gap-2">
+                          <select
+                            value={reassignTo}
+                            onChange={(e) => setReassignTo(e.target.value)}
+                            className="min-w-0 flex-1 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-2.5 text-sm"
+                          >
+                            <option value="">{t('webadmin1.aorders.reassignPick')}</option>
+                            {drivers
+                              .filter((d) => d.id !== (selected as any).driverId)
+                              .map((d) => (
+                                <option key={d.id} value={d.id}>
+                                  {d.fullName}
+                                </option>
+                              ))}
+                          </select>
+                          <button
+                            onClick={() => void reassignSelected()}
+                            disabled={!reassignTo || reassigning}
+                            className="shrink-0 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"
+                          >
+                            {reassigning
+                              ? t('webadmin1.aorders.reassigning')
+                              : t('webadmin1.aorders.reassignCta')}
+                          </button>
+                        </div>
                       </div>
                     )}
                     <button

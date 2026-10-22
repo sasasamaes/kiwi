@@ -88,6 +88,216 @@ function autoRingFor(zone: Zone, zones: Zone[], sides = 8): Ring | null {
   return pts;
 }
 
+type CostData = {
+  params: {
+    fuelPricePerLiter: number;
+    kmPerLiter: Record<string, number>;
+    maintenancePerKm: Record<string, number>;
+    driverPayPerHour: number;
+    avgSpeedKmh: number;
+    fixedMinutesPerTrip: number;
+    kiwiMarginPct: number;
+  };
+  fixedCost: number;
+  perVehicle: Record<
+    string,
+    {
+      fuelPerKm: number;
+      maintenancePerKm: number;
+      timeMinPerKm: number;
+      driverPerKm: number;
+      totalPerKm: number;
+      priceAt1km: number;
+      priceAt3km: number;
+      priceAt5km: number;
+      priceAt10km: number;
+    }
+  >;
+  measured: {
+    trips: number;
+    avgSpeedKmh: number | null;
+    avgMinPerKm: number | null;
+    avgPricePerKm: number | null;
+  };
+};
+
+const VEHICLE_LABEL: Record<string, string> = {
+  motorcycle: 'Moto',
+  motorized_bike: 'Bici moto',
+  bicycle: 'Bici',
+  car: 'Carro',
+  truck: 'Camión',
+};
+
+/** Panel de costo real por km: fórmulas visibles + parámetros editables. */
+function CostPanel({
+  cost,
+  draft,
+  setDraft,
+  onSave,
+  saving,
+}: {
+  cost: CostData;
+  draft: string | null;
+  setDraft: (v: string | null) => void;
+  onSave: () => void;
+  saving: boolean;
+}) {
+  const p = cost.params;
+  const moto = cost.perVehicle['motorcycle'];
+  const draftObj = (() => {
+    if (draft == null) return null;
+    try {
+      return JSON.parse(draft);
+    } catch {
+      return null;
+    }
+  })();
+  const cur = (path: string, fallback: number) => {
+    const [sec, key] = path.split('.');
+    if (draftObj?.[sec]?.[key] !== undefined) return draftObj[sec][key];
+    if (sec === 'root') return draftObj?.[key] ?? (p as any)[key] ?? fallback;
+    return (p as any)[sec]?.[key] ?? fallback;
+  };
+  const set = (path: string, value: number) => {
+    const [sec, key] = path.split('.');
+    const base = draftObj ?? {
+      fuelPricePerLiter: p.fuelPricePerLiter,
+      kmPerLiter: { ...p.kmPerLiter },
+      maintenancePerKm: { ...p.maintenancePerKm },
+      driverPayPerHour: p.driverPayPerHour,
+      avgSpeedKmh: p.avgSpeedKmh,
+      fixedMinutesPerTrip: p.fixedMinutesPerTrip,
+      kiwiMarginPct: p.kiwiMarginPct,
+    };
+    if (sec === 'root') base[key] = value;
+    else base[sec] = { ...(base[sec] ?? {}), [key]: value };
+    setDraft(JSON.stringify(base));
+  };
+  const num = (label: string, path: string, fallback: number, step = 1) => (
+    <label className="block">
+      <span className="mb-1 block text-[11px] font-medium text-surface-500 dark:text-surface-400">
+        {label}
+      </span>
+      <input
+        type="number"
+        min={0}
+        step={step}
+        value={cur(path, fallback)}
+        onChange={(e) => set(path, Number(e.target.value))}
+        className="w-full rounded-xl border border-surface-200 bg-white px-3 py-1.5 text-sm dark:border-surface-700 dark:bg-surface-900"
+      />
+    </label>
+  );
+  return (
+    <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50/60 p-4 dark:border-amber-800/40 dark:bg-amber-900/10">
+      <p className="text-sm font-bold text-surface-800 dark:text-surface-100">
+        ⛽ Costo real por km — base del cobro inteligente
+      </p>
+      <div className="mt-2 grid gap-1 font-mono text-[11px] leading-relaxed text-surface-600 dark:text-surface-300">
+        <p>
+          combustible/km = ₡{p.fuelPricePerLiter}/L ÷ autonomía (moto {p.kmPerLiter['motorcycle']}{' '}
+          km/L → ₡{moto?.fuelPerKm}/km)
+        </p>
+        <p>
+          tiempo: {p.avgSpeedKmh} km/h → {moto?.timeMinPerKm} min/km · costo tiempo/km = ₡
+          {p.driverPayPerHour}/h ÷ {p.avgSpeedKmh} = ₡{moto?.driverPerKm}/km
+        </p>
+        <p>
+          costo/km moto = ₡{moto?.fuelPerKm} + ₡{moto?.maintenancePerKm} + ₡{moto?.driverPerKm} ={' '}
+          <b>₡{moto?.totalPerKm}/km</b>
+        </p>
+        <p>
+          fijo/viaje = ₡{p.driverPayPerHour}/h × {p.fixedMinutesPerTrip} min ={' '}
+          <b>₡{cost.fixedCost}</b>
+        </p>
+        <p>
+          precio(d) = (₡{cost.fixedCost} + ₡{moto?.totalPerKm} × d) ÷ (1 − {p.kiwiMarginPct}%) →
+          3km: <b>₡{moto?.priceAt3km}</b> · 5km: <b>₡{moto?.priceAt5km}</b>
+        </p>
+      </div>
+      {cost.measured.trips > 0 && (
+        <p className="mt-2 text-[11px] text-surface-500 dark:text-surface-400">
+          Medido en {cost.measured.trips} entregados: {cost.measured.avgSpeedKmh ?? '—'} km/h real (
+          {cost.measured.avgMinPerKm ?? '—'} min/km) · cobrado hoy ≈ ₡
+          {cost.measured.avgPricePerKm ?? '—'}/km.
+          {cost.measured.avgSpeedKmh != null &&
+            Math.abs(cost.measured.avgSpeedKmh - p.avgSpeedKmh) > 5 &&
+            ` ⚠️ difiere del parámetro (${p.avgSpeedKmh} km/h): considerá actualizarlo.`}
+        </p>
+      )}
+      <div className="mt-3 overflow-x-auto">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="text-left text-surface-500">
+              <th className="py-1 pr-2 font-medium">Vehículo</th>
+              <th className="py-1 pr-2 text-right font-medium">Combus/km</th>
+              <th className="py-1 pr-2 text-right font-medium">Manten/km</th>
+              <th className="py-1 pr-2 text-right font-medium">Tiempo/km</th>
+              <th className="py-1 pr-2 text-right font-medium">Total/km</th>
+              <th className="py-1 text-right font-medium">1 / 3 / 5 / 10 km</th>
+            </tr>
+          </thead>
+          <tbody>
+            {Object.entries(cost.perVehicle).map(([v, r]) => (
+              <tr key={v} className="border-t border-amber-200/60 dark:border-amber-800/30">
+                <td className="py-1 pr-2 font-medium">{VEHICLE_LABEL[v] ?? v}</td>
+                <td className="py-1 pr-2 text-right font-mono">₡{r.fuelPerKm}</td>
+                <td className="py-1 pr-2 text-right font-mono">₡{r.maintenancePerKm}</td>
+                <td className="py-1 pr-2 text-right font-mono">₡{r.driverPerKm}</td>
+                <td className="py-1 pr-2 text-right font-mono font-bold">₡{r.totalPerKm}</td>
+                <td className="py-1 text-right font-mono">
+                  ₡{r.priceAt1km} / ₡{r.priceAt3km} / ₡{r.priceAt5km} / ₡{r.priceAt10km}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <details className="mt-3">
+        <summary className="cursor-pointer text-xs font-semibold text-surface-600 dark:text-surface-300">
+          Calibrar parámetros (gasolina, autonomía, rapidez, pago, margen)
+        </summary>
+        <div className="mt-2 grid grid-cols-2 gap-2 md:grid-cols-4">
+          {num('Gasolina ₡/L', 'root.fuelPricePerLiter', p.fuelPricePerLiter)}
+          {num('Pago repartidor ₡/h', 'root.driverPayPerHour', p.driverPayPerHour, 50)}
+          {num('Velocidad km/h', 'root.avgSpeedKmh', p.avgSpeedKmh)}
+          {num('Min fijos/viaje', 'root.fixedMinutesPerTrip', p.fixedMinutesPerTrip)}
+          {num('Margen Kiwi %', 'root.kiwiMarginPct', p.kiwiMarginPct)}
+          {num('Moto km/L', 'kmPerLiter.motorcycle', p.kmPerLiter['motorcycle'])}
+          {num('Bici moto km/L', 'kmPerLiter.motorized_bike', p.kmPerLiter['motorized_bike'])}
+          {num('Carro km/L', 'kmPerLiter.car', p.kmPerLiter['car'])}
+          {num('Moto manten ₡/km', 'maintenancePerKm.motorcycle', p.maintenancePerKm['motorcycle'])}
+          {num('Bici manten ₡/km', 'maintenancePerKm.bicycle', p.maintenancePerKm['bicycle'])}
+          {num('Carro manten ₡/km', 'maintenancePerKm.car', p.maintenancePerKm['car'])}
+          {num(
+            'Bici moto manten ₡/km',
+            'maintenancePerKm.motorized_bike',
+            p.maintenancePerKm['motorized_bike'],
+          )}
+        </div>
+        <div className="mt-2 flex items-center gap-2">
+          <button
+            onClick={onSave}
+            disabled={saving || draft == null}
+            className="rounded-xl bg-kiwi-700 px-4 py-2 text-xs font-semibold text-white disabled:opacity-40"
+          >
+            {saving ? 'Guardando…' : 'Guardar costos'}
+          </button>
+          {draft != null && (
+            <button
+              onClick={() => setDraft(null)}
+              className="rounded-xl px-3 py-2 text-xs text-surface-500"
+            >
+              Descartar
+            </button>
+          )}
+        </div>
+      </details>
+    </div>
+  );
+}
+
 export default function AdminZonesPage() {
   const { t } = useTranslations();
   const { user, loading: authLoading } = useAuth();
@@ -102,6 +312,40 @@ export default function AdminZonesPage() {
     ratePerKm: number;
     samples: number;
   } | null>(null);
+  const [cost, setCost] = useState<{
+    params: {
+      fuelPricePerLiter: number;
+      kmPerLiter: Record<string, number>;
+      maintenancePerKm: Record<string, number>;
+      driverPayPerHour: number;
+      avgSpeedKmh: number;
+      fixedMinutesPerTrip: number;
+      kiwiMarginPct: number;
+    };
+    fixedCost: number;
+    perVehicle: Record<
+      string,
+      {
+        fuelPerKm: number;
+        maintenancePerKm: number;
+        timeMinPerKm: number;
+        driverPerKm: number;
+        totalPerKm: number;
+        priceAt1km: number;
+        priceAt3km: number;
+        priceAt5km: number;
+        priceAt10km: number;
+      }
+    >;
+    measured: {
+      trips: number;
+      avgSpeedKmh: number | null;
+      avgMinPerKm: number | null;
+      avgPricePerKm: number | null;
+    };
+  } | null>(null);
+  const [costDraft, setCostDraft] = useState<string | null>(null);
+  const [savingCost, setSavingCost] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [vertices, setVertices] = useState<Ring>([]); // [[lng,lat]]
@@ -181,6 +425,13 @@ export default function AdminZonesPage() {
         setModel((await api.adminZonePriceModel()) ?? null);
       } catch {
         setModel(null);
+      }
+      try {
+        const c = await api.adminZoneCostModel();
+        setCost(c ?? null);
+        setCostDraft(null);
+      } catch {
+        setCost(null);
       }
       // Negocios para la capa del mapa general (una vez por carga).
       try {
@@ -532,12 +783,34 @@ export default function AdminZonesPage() {
         t('webadmin1.azones.suggested', {
           price: Number(r.price).toLocaleString(),
           km: r.distanceKm,
-        }),
+        }) + (r.costBased ? ` · Piso por costo: ₡${Number(r.costBased).toLocaleString()}` : ''),
       );
     } catch (err: any) {
       setMsg(err?.message || t('webadmin1.azones.saveError'));
     } finally {
       setSuggesting(false);
+    }
+  };
+
+  const saveCost = async () => {
+    if (!cost || costDraft == null) return;
+    let parsed: any;
+    try {
+      parsed = JSON.parse(costDraft);
+    } catch {
+      setMsg('Revisá los números: hay un valor inválido.');
+      return;
+    }
+    setSavingCost(true);
+    setMsg(null);
+    try {
+      await api.saveAdminSettings({ costing: parsed });
+      await load();
+      setMsg('Costos guardados ✓ Las fórmulas ya usan los valores nuevos.');
+    } catch (err: any) {
+      setMsg(err?.message || t('webadmin1.azones.saveError'));
+    } finally {
+      setSavingCost(false);
     }
   };
 
@@ -618,6 +891,15 @@ export default function AdminZonesPage() {
             n: model.samples,
           })}
         </p>
+      )}
+      {cost && (
+        <CostPanel
+          cost={cost}
+          draft={costDraft}
+          setDraft={setCostDraft}
+          onSave={saveCost}
+          saving={savingCost}
+        />
       )}
       {missingCount > 0 && (
         <button

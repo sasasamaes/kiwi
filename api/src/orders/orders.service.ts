@@ -1798,7 +1798,7 @@ export class OrdersService {
         skip,
         include: {
           merchant: { select: { businessName: true } },
-          driver: { select: { fullName: true } },
+          driver: { select: { id: true, fullName: true } },
           items: { select: { name: true, quantity: true, kioskName: true } },
           payment: { select: { method: true, status: true } },
         },
@@ -2701,8 +2701,10 @@ export class OrdersService {
     return updatedOrder;
   }
 
-  /** El driver asignado acepta dentro del plazo: pending_acceptance → assigned. */
-  async acceptAssignment(orderId: string, driverUserId: string) {
+  /** El driver asignado acepta dentro del plazo: pending_acceptance → assigned. */ async acceptAssignment(
+    orderId: string,
+    driverUserId: string,
+  ) {
     const driverProfile = await this.prisma.driverProfile.findUnique({
       where: { userId: driverUserId },
     });
@@ -2738,6 +2740,124 @@ export class OrdersService {
         orderId,
         driverName: driverProfile.fullName,
         message: `${driverProfile.fullName} aceptó tu pedido`,
+      });
+    }
+    return updated;
+  }
+
+  /**
+   * Reasignación admin: el pedido ya tiene repartidor (aceptado o en ruta)
+   * pero no lo puede hacer y se pasa a otro. Solo estados con driver
+   * asignado y no terminales. El nuevo nace en pending_acceptance (debe
+   * aceptar) salvo programados, igual que la asignación directa.
+   */
+  async reassignDriver(orderId: string, newDriverId: string, adminUserId: string) {
+    const order: any = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { driver: { select: { id: true, fullName: true, userId: true } } },
+    });
+    if (!order) throw new NotFoundException('Pedido no encontrado');
+    if (!order.driverId) {
+      throw new BadRequestException('El pedido no tiene repartidor: usá asignar, no reasignar');
+    }
+    if (['delivered', 'cancelled', 'no_driver'].includes(String(order.status))) {
+      throw new BadRequestException(`No se puede reasignar un pedido ${order.status}`);
+    }
+    if (order.driverId === newDriverId) {
+      throw new BadRequestException('Ya es el repartidor de este pedido');
+    }
+    const next = await this.prisma.driverProfile.findUnique({ where: { id: newDriverId } });
+    if (!next) throw new NotFoundException('Repartidor no encontrado');
+    if (next.status !== 'available') {
+      throw new BadRequestException(
+        `${next.fullName} no está disponible ahora (estado: ${next.status})`,
+      );
+    }
+    if (isKycRequired() && (next as any).kycStatus !== 'approved') {
+      throw new BadRequestException(`${next.fullName} aún no está verificado`);
+    }
+
+    let acceptanceMinutes = 5;
+    try {
+      const t = await (this.settingsService as any).getAssignmentTimeouts?.();
+      if (t && Number.isFinite(Number(t.acceptanceMinutes)))
+        acceptanceMinutes = t.acceptanceMinutes;
+    } catch {
+      // default; jamás bloquea.
+    }
+    const isScheduled = order.orderType === 'scheduled';
+    const oldDriverId = order.driverId as string;
+    const oldDriverUserId = order.driver?.userId as string | undefined;
+
+    const claimed = await this.prisma.order.updateMany({
+      where: { id: orderId, driverId: oldDriverId, status: order.status },
+      data: isScheduled
+        ? {
+            driverId: newDriverId,
+            status: 'assigned',
+            assignedAt: new Date(),
+            acceptanceExpiresAt: null,
+          }
+        : {
+            driverId: newDriverId,
+            status: 'pending_acceptance',
+            assignedAt: new Date(),
+            acceptanceExpiresAt: new Date(Date.now() + acceptanceMinutes * 60_000),
+            contestStartedAt: null,
+            contestEndsAt: null,
+          },
+    });
+    if (claimed.count === 0) {
+      throw new ConflictException(
+        'El pedido cambió mientras lo reasignabas. Recargá e intentá de nuevo.',
+      );
+    }
+    try {
+      await (this.prisma as any).orderEvent?.create?.({
+        data: {
+          orderId,
+          type: 'reassigned',
+          actorId: adminUserId,
+          driverId: newDriverId,
+          meta: { from: oldDriverId, to: newDriverId },
+        },
+      });
+    } catch {
+      // auditoría best-effort.
+    }
+
+    const updated: any = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { merchant: true, driver: true },
+    });
+
+    // El anterior: aviso explícito (no silencioso) para que suelte el pedido.
+    if (oldDriverUserId) {
+      this.eventsGateway.sendToUser(oldDriverUserId, 'order:taken', {
+        id: orderId,
+        orderId,
+        status: updated?.status ?? 'pending_acceptance',
+        driverName: next.fullName,
+        message: `${next.fullName} tomó tu pedido (reasignado por el admin)`,
+      });
+      this.eventsGateway.sendToUser(oldDriverUserId, 'order:statusChanged', {
+        id: orderId,
+        orderId,
+        status: updated?.status ?? 'pending_acceptance',
+      });
+    }
+    this.eventsGateway.sendToUser(next.userId, 'order:assignmentOffered', {
+      orderId,
+      message: `Te reasignaron un pedido (${acceptanceMinutes} min para aceptar)`,
+    });
+    void this.notificationsService
+      .notifyAssignmentOffered(orderId, next.userId, acceptanceMinutes)
+      .catch(() => undefined);
+    if (updated?.merchant?.userId) {
+      this.eventsGateway.sendToUser(updated.merchant.userId, 'order:driverAssigned', {
+        orderId,
+        driverName: next.fullName,
+        message: `${next.fullName} fue asignado a tu pedido (reasignación admin)`,
       });
     }
     return updated;

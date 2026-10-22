@@ -132,6 +132,13 @@ export const admin1Es = {
     marking: 'Marcando…',
     cancelOrder: 'Cancelar este pedido',
     cancelling: 'Cancelando…',
+    reassignTitle: 'Reasignar a otro repartidor',
+    reassignPick: 'Elegir repartidor…',
+    reassignCta: 'Reasignar',
+    reassigning: 'Reasignando…',
+    reassignError: 'No se pudo reasignar',
+    confirmReassign:
+      'Pasar el pedido #{{id}} a {{name}}? El anterior es liberado y el nuevo debe aceptar.',
     status: {
       pending: 'Pendiente',
       proposals: 'Propuestas',
@@ -788,6 +795,13 @@ export const admin1En = {
     marking: 'Marking…',
     cancelOrder: 'Cancel this order',
     cancelling: 'Cancelling…',
+    reassignTitle: 'Reassign to another driver',
+    reassignPick: 'Pick a driver…',
+    reassignCta: 'Reassign',
+    reassigning: 'Reassigning…',
+    reassignError: "Couldn't reassign",
+    confirmReassign:
+      'Move order #{{id}} to {{name}}? The previous driver is released and the new one must accept.',
     status: {
       pending: 'Pending',
       proposals: 'Proposals',

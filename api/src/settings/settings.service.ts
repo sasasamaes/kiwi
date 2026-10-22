@@ -64,6 +64,30 @@ export interface PlatformSettings {
     acceptanceMinutes: number;
     contestMinutes: number;
   };
+  /**
+   * Costo real por km (el admin lo calibra; base del cobro inteligente).
+   * Fórmulas que usa /delivery-zones/cost-model:
+   * - combustible/km = fuelPricePerLiter ÷ kmPerLiter[vehículo]
+   * - tiempo: min/km = 60 ÷ avgSpeedKmh; costo tiempo/km = driverPayPerHour ÷ avgSpeedKmh
+   * - costo/km = combustible + mantenimiento + tiempo
+   * - precio(d) = (costoFijo + costo/km × d) ÷ (1 − margen)
+   */
+  costing: {
+    /** Precio del litro de gasolina en colones (RECOPE súper). */
+    fuelPricePerLiter: number;
+    /** Autonomía km por litro según vehículo (0 = no usa gasolina). */
+    kmPerLiter: Record<string, number>;
+    /** Mantenimiento por km en colones (llantas, aceite, frenos). */
+    maintenancePerKm: Record<string, number>;
+    /** Cuánto debe ganar el repartidor por hora (meta, colones). */
+    driverPayPerHour: number;
+    /** Velocidad promedio real en ciudad (km/h, se calibra con viajes). */
+    avgSpeedKmh: number;
+    /** Minutos fijos por viaje (espera en comercio + entrega). */
+    fixedMinutesPerTrip: number;
+    /** Margen de Kiwi para el piso de precio (%). */
+    kiwiMarginPct: number;
+  };
 }
 
 /** Valores con los que nace la plataforma (y fallback si algo falta). */
@@ -113,6 +137,27 @@ export const DEFAULT_SETTINGS: PlatformSettings = {
     digitalPct: 40,
   },
   assignment: { acceptanceMinutes: 5, contestMinutes: 10 },
+  costing: {
+    fuelPricePerLiter: 720,
+    kmPerLiter: {
+      motorcycle: 42,
+      motorized_bike: 60,
+      bicycle: 0,
+      car: 13,
+      truck: 9,
+    },
+    maintenancePerKm: {
+      motorcycle: 45,
+      motorized_bike: 35,
+      bicycle: 10,
+      car: 85,
+      truck: 120,
+    },
+    driverPayPerHour: 2800,
+    avgSpeedKmh: 27,
+    fixedMinutesPerTrip: 12,
+    kiwiMarginPct: 15,
+  },
 };
 
 const KNOWN_KEYS = [
@@ -122,6 +167,7 @@ const KNOWN_KEYS = [
   'security',
   'operations',
   'assignment',
+  'costing',
 ] as const;
 
 @Injectable()
@@ -169,6 +215,18 @@ export class SettingsService {
       security: { ...DEFAULT_SETTINGS.security, ...(stored.security ?? {}) },
       operations: { ...DEFAULT_SETTINGS.operations, ...(stored.operations ?? {}) },
       assignment: { ...DEFAULT_SETTINGS.assignment, ...(stored.assignment ?? {}) },
+      costing: {
+        ...DEFAULT_SETTINGS.costing,
+        ...(stored.costing ?? {}),
+        kmPerLiter: {
+          ...DEFAULT_SETTINGS.costing.kmPerLiter,
+          ...(stored.costing?.kmPerLiter ?? {}),
+        },
+        maintenancePerKm: {
+          ...DEFAULT_SETTINGS.costing.maintenancePerKm,
+          ...(stored.costing?.maintenancePerKm ?? {}),
+        },
+      },
     };
   }
 
@@ -187,6 +245,18 @@ export class SettingsService {
       security: { ...current.security, ...(input.security ?? {}) },
       operations: { ...current.operations, ...(input.operations ?? {}) },
       assignment: { ...current.assignment, ...(input.assignment ?? {}) },
+      costing: {
+        ...current.costing,
+        ...(input.costing ?? {}),
+        kmPerLiter: {
+          ...current.costing.kmPerLiter,
+          ...(input.costing?.kmPerLiter ?? {}),
+        },
+        maintenancePerKm: {
+          ...current.costing.maintenancePerKm,
+          ...(input.costing?.maintenancePerKm ?? {}),
+        },
+      },
     };
     // Saneos numéricos mínimos
     next.platform.commission = Math.min(Math.max(Number(next.platform.commission) || 0, 0), 100);
@@ -224,6 +294,25 @@ export class SettingsService {
       Math.min(Math.max(Math.round(Number(v) || dflt), 1), 60);
     next.assignment.acceptanceMinutes = clampMin(next.assignment.acceptanceMinutes, 5);
     next.assignment.contestMinutes = clampMin(next.assignment.contestMinutes, 10);
+    // Costos por km: saneos 0+ (precios, pagos, velocidades, minutos).
+    const nonNeg = (v: unknown, dflt: number) => {
+      const n = Number(v);
+      return Number.isFinite(n) ? Math.max(0, n) : dflt;
+    };
+    next.costing.fuelPricePerLiter = nonNeg(next.costing.fuelPricePerLiter, 720);
+    next.costing.driverPayPerHour = nonNeg(next.costing.driverPayPerHour, 2800);
+    next.costing.avgSpeedKmh = Math.min(Math.max(nonNeg(next.costing.avgSpeedKmh, 27), 5), 120);
+    next.costing.fixedMinutesPerTrip = Math.min(
+      Math.max(nonNeg(next.costing.fixedMinutesPerTrip, 12), 0),
+      120,
+    );
+    next.costing.kiwiMarginPct = Math.min(Math.max(nonNeg(next.costing.kiwiMarginPct, 15), 0), 90);
+    for (const k of Object.keys(next.costing.kmPerLiter)) {
+      next.costing.kmPerLiter[k] = nonNeg(next.costing.kmPerLiter[k], 0);
+    }
+    for (const k of Object.keys(next.costing.maintenancePerKm)) {
+      next.costing.maintenancePerKm[k] = nonNeg(next.costing.maintenancePerKm[k], 0);
+    }
     await this.prisma.$transaction(
       (Object.entries(next) as [string, unknown][]).map(([key, value]) =>
         this.prisma.platformSetting.upsert({

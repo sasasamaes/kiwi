@@ -934,9 +934,49 @@ class ApiClient {
 
   /** Precio sugerido para una zona nueva en (lat,lng) (admin). */
   async adminSuggestZonePrice(lat: number, lng: number) {
-    return this.request<{ price: number; distanceKm: number; base: number; ratePerKm: number }>(
-      `/delivery-zones/suggest-price?lat=${lat}&lng=${lng}`,
-    );
+    return this.request<{
+      price: number;
+      distanceKm: number;
+      base: number;
+      ratePerKm: number;
+      costBased: number;
+    }>(`/delivery-zones/suggest-price?lat=${lat}&lng=${lng}`);
+  }
+
+  /** Costo real por km + fórmulas del cobro inteligente (admin). */
+  async adminZoneCostModel() {
+    return this.request<{
+      params: {
+        fuelPricePerLiter: number;
+        kmPerLiter: Record<string, number>;
+        maintenancePerKm: Record<string, number>;
+        driverPayPerHour: number;
+        avgSpeedKmh: number;
+        fixedMinutesPerTrip: number;
+        kiwiMarginPct: number;
+      };
+      fixedCost: number;
+      perVehicle: Record<
+        string,
+        {
+          fuelPerKm: number;
+          maintenancePerKm: number;
+          timeMinPerKm: number;
+          driverPerKm: number;
+          totalPerKm: number;
+          priceAt1km: number;
+          priceAt3km: number;
+          priceAt5km: number;
+          priceAt10km: number;
+        }
+      >;
+      measured: {
+        trips: number;
+        avgSpeedKmh: number | null;
+        avgMinPerKm: number | null;
+        avgPricePerKm: number | null;
+      };
+    }>(`/delivery-zones/cost-model`);
   }
 
   /** Repartidores con GPS reciente (mapa vivo admin). */
@@ -1544,6 +1584,14 @@ class ApiClient {
 
   async assignDriver(orderId: string, driverId: string) {
     return this.request<any>(`/orders/${orderId}/assign`, {
+      method: 'PUT',
+      body: { driverId },
+    });
+  }
+
+  /** Admin: reasigna un pedido con repartidor a otro (aceptado que no puede hacerlo). */
+  async reassignDriver(orderId: string, driverId: string) {
+    return this.request<any>(`/orders/${orderId}/reassign`, {
       method: 'PUT',
       body: { driverId },
     });

@@ -353,6 +353,19 @@ export class OrdersController {
     return this.ordersService.rejectOrderAsDriver(id, user.sub);
   }
 
+  @Put(':id/reassign')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Admin reassigns an active order to another driver' })
+  async reassignDriver(
+    @Param('id') id: string,
+    @Body('driverId') driverId: string,
+    @CurrentUser() user: any,
+  ) {
+    return this.ordersService.reassignDriver(id, driverId, user.sub);
+  }
+
   @Post(':id/proposals')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('driver')
