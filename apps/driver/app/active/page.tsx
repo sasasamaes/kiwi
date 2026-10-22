@@ -333,11 +333,43 @@ export default function ActiveOrders() {
       );
     };
 
+    // Wake Lock: con la pantalla encendida el navegador no suspende los
+    // pings de GPS mientras se lleva el pedido. Sin soporte, todo sigue igual.
+    let wakeLock: any = null;
+    const lockScreen = async () => {
+      try {
+        if ('wakeLock' in navigator && !document.hidden && !wakeLock) {
+          wakeLock = await (navigator as any).wakeLock.request('screen');
+          wakeLock?.addEventListener?.('release', () => {
+            wakeLock = null;
+          });
+        }
+      } catch {
+        wakeLock = null;
+      }
+    };
+    // Al volver de Maps (u otra app) el GPS puede llevar minutos muerto:
+    // ping inmediato + reintentar el lock en vez de esperar el intervalo.
+    const onVisible = () => {
+      if (document.hidden || cancelled) return;
+      void lockScreen();
+      ping();
+    };
+
+    void lockScreen();
+    document.addEventListener('visibilitychange', onVisible);
     ping();
     const t = setInterval(ping, 30_000);
     return () => {
       cancelled = true;
       clearInterval(t);
+      document.removeEventListener('visibilitychange', onVisible);
+      try {
+        wakeLock?.release?.();
+      } catch {
+        // ya liberado por el sistema
+      }
+      wakeLock = null;
     };
   }, [user]);
 

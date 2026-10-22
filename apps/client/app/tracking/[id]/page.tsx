@@ -321,15 +321,23 @@ function TrackingContent() {
     fetchLocation();
   }, [fetchOrder, fetchLocation]);
 
-  // Invitados sin socket: polling honesto cada 15s en vez de "en vivo".
+  // Polling de respaldo SIEMPRE (no solo sin socket): el servidor no le
+  // emite ubicación al cliente por socket (solo al comercio), así que un
+  // cliente logueado con socket conectado se quedaría congelado sin esto.
+  // Se detiene en estados terminales. Sin socket: cada 15s; con socket
+  // (ya llegan estados en vivo): cada 30s como red de seguridad.
+  const isTerminal = currentStatus === 'delivered' || currentStatus === 'cancelled';
   useEffect(() => {
-    if (isConnected || !orderId) return;
-    const interval = setInterval(() => {
-      fetchOrder(true);
-      fetchLocation();
-    }, 15000);
+    if (!orderId || isTerminal) return;
+    const interval = setInterval(
+      () => {
+        fetchOrder(true);
+        fetchLocation();
+      },
+      isConnected ? 30000 : 15000,
+    );
     return () => clearInterval(interval);
-  }, [isConnected, orderId, fetchOrder, fetchLocation]);
+  }, [isConnected, orderId, isTerminal, fetchOrder, fetchLocation]);
 
   useEffect(() => {
     if (driverId) fetchLocation();
@@ -348,10 +356,13 @@ function TrackingContent() {
         // La evidencia (pickup/delivery URLs) vive en `order`: sin este
         // refetch silencioso el tracking nunca muestra la foto hasta recargar.
         fetchOrder(true).catch(() => undefined);
+        // El repartidor se movió (cambió de estado): refrescar su punto ya,
+        // sin esperar al próximo tick del polling.
+        fetchLocation();
       }
     });
     return cleanup;
-  }, [on, orderId, order, refreshEta, fetchOrder]);
+  }, [on, orderId, order, refreshEta, fetchOrder, fetchLocation]);
 
   useEffect(() => {
     const cleanup = on('driver:location', (data: any) => {
