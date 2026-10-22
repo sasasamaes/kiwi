@@ -3,6 +3,22 @@ import { Injectable, BadRequestException, NotFoundException } from '@nestjs/comm
 import { PrismaService } from '../prisma/prisma.service';
 
 const KINDS = ['cuota', 'aporte', 'extra'] as const;
+const EXPENSE_KINDS = [
+  'mantenimiento',
+  'seguro',
+  'gasolina',
+  'repuesto',
+  'marchamo',
+  'otro',
+] as const;
+
+/** Inicio del día en CR (UTC-6 fijo, como la planilla). */
+function startOfDayCR(d: Date): Date {
+  const d2 = new Date(d);
+  d2.setUTCHours(6, 0, 0, 0);
+  if (d2 > d) d2.setUTCDate(d2.getUTCDate() - 1);
+  return d2;
+}
 
 /**
  * Deudas del negocio (ej. la moto a mensualidades) y sus pagos: cuotas,
@@ -79,15 +95,34 @@ export class DebtsService {
   async detail(id: string) {
     const debt = await this.prisma.debt.findUnique({ where: { id } });
     if (!debt) throw new NotFoundException('Deuda no encontrada');
-    const payments = await this.prisma.debtPayment.findMany({
-      where: { debtId: id },
-      include: { driver: { select: { id: true, fullName: true } } },
-      orderBy: { paidAt: 'desc' },
-    });
+    const [payments, parts, expRows] = await Promise.all([
+      this.prisma.debtPayment.findMany({
+        where: { debtId: id },
+        include: { driver: { select: { id: true, fullName: true } } },
+        orderBy: { paidAt: 'desc' },
+      }),
+      this.prisma.debtParticipant.findMany({
+        where: { debtId: id },
+        include: { driver: { select: { id: true, fullName: true } } },
+        orderBy: { joinedAt: 'asc' },
+      }),
+      this.prisma.debtExpense.findMany({
+        where: { debtId: id },
+        include: { driver: { select: { id: true, fullName: true } } },
+        orderBy: { spentAt: 'desc' },
+      }),
+    ]);
     return {
       ...this.shape(debt),
       summary: this.summarize(debt, payments),
       payments: payments.map(this.shapePayment),
+      participants: parts.map((r) => ({
+        driverId: r.driverId,
+        name: r.driver?.fullName ?? 'Repartidor',
+        joinedAt: r.joinedAt,
+      })),
+      expenses: expRows.map((r) => this.shapeExpense(r)),
+      expenseSummary: this.summarizeExpenses(expRows),
     };
   }
 
@@ -199,6 +234,157 @@ export class DebtsService {
       orderBy: { fullName: 'asc' },
     });
     return list;
+  }
+
+  // ---- Participantes: quiénes pagan la deuda con sus viajes ----
+
+  async participants(debtId: string) {
+    await this.requireDebt(debtId);
+    const rows = await this.prisma.debtParticipant.findMany({
+      where: { debtId },
+      include: { driver: { select: { id: true, fullName: true } } },
+      orderBy: { joinedAt: 'asc' },
+    });
+    return rows.map((r) => ({
+      driverId: r.driverId,
+      name: r.driver?.fullName ?? 'Repartidor',
+      joinedAt: r.joinedAt,
+    }));
+  }
+
+  async addParticipant(debtId: string, driverId: string) {
+    await this.requireDebt(debtId);
+    const driver = await this.prisma.driverProfile.findUnique({
+      where: { id: driverId },
+      select: { id: true },
+    });
+    if (!driver) throw new NotFoundException('Repartidor no encontrado');
+    await this.prisma.debtParticipant.upsert({
+      where: { debtId_driverId: { debtId, driverId } },
+      update: {},
+      create: { debtId, driverId },
+    });
+    return this.participants(debtId);
+  }
+
+  async removeParticipant(debtId: string, driverId: string) {
+    await this.prisma.debtParticipant.deleteMany({ where: { debtId, driverId } });
+    return this.participants(debtId);
+  }
+
+  // ---- Gastos: mantenimiento, seguro, gasolina, repuestos, marchamo ----
+
+  private shapeExpense(e: any) {
+    return {
+      id: e.id,
+      debtId: e.debtId,
+      amount: Number(e.amount),
+      kind: e.kind,
+      driverId: e.driverId,
+      driverName: e.driver?.fullName ?? null,
+      note: e.note,
+      spentAt: e.spentAt,
+      createdAt: e.createdAt,
+    };
+  }
+
+  async expenses(debtId: string) {
+    await this.requireDebt(debtId);
+    const rows = await this.prisma.debtExpense.findMany({
+      where: { debtId },
+      include: { driver: { select: { id: true, fullName: true } } },
+      orderBy: { spentAt: 'desc' },
+    });
+    return {
+      items: rows.map((r) => this.shapeExpense(r)),
+      summary: this.summarizeExpenses(rows),
+    };
+  }
+
+  /** Totales por tipo + gasolina hoy / últimos 7 días / este mes. */
+  summarizeExpenses(rows: any[]) {
+    const byKind: Record<string, number> = {};
+    let fuelToday = 0;
+    let fuelWeek = 0;
+    let fuelMonth = 0;
+    const now = new Date();
+    const dayStart = startOfDayCR(now);
+    const weekStart = new Date(dayStart);
+    weekStart.setUTCDate(weekStart.getUTCDate() - 6);
+    const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 6, 0, 0, 0));
+    let total = 0;
+    for (const e of rows) {
+      const amt = this.toNum(e.amount);
+      total = Math.round((total + amt) * 100) / 100;
+      const k = String(e.kind ?? 'otro');
+      byKind[k] = Math.round(((byKind[k] ?? 0) + amt) * 100) / 100;
+      if (k === 'gasolina' && e.spentAt) {
+        const d = new Date(e.spentAt);
+        if (d >= dayStart) fuelToday = Math.round((fuelToday + amt) * 100) / 100;
+        if (d >= weekStart) fuelWeek = Math.round((fuelWeek + amt) * 100) / 100;
+        if (d >= monthStart) fuelMonth = Math.round((fuelMonth + amt) * 100) / 100;
+      }
+    }
+    return { total: Math.round(total * 100) / 100, byKind, fuelToday, fuelWeek, fuelMonth };
+  }
+
+  async addExpense(
+    debtId: string,
+    data: { amount: number; kind?: string; driverId?: string; note?: string; spentAt?: string },
+    createdBy?: string,
+  ) {
+    await this.requireDebt(debtId);
+    const amount = Number(data?.amount);
+    if (!Number.isFinite(amount) || amount <= 0)
+      throw new BadRequestException('El monto debe ser mayor a 0');
+    const kind = String(data?.kind ?? 'otro');
+    if (!(EXPENSE_KINDS as readonly string[]).includes(kind))
+      throw new BadRequestException('Tipo de gasto inválido');
+    let driverId: string | null = null;
+    if (data?.driverId) {
+      const driver = await this.prisma.driverProfile.findUnique({
+        where: { id: String(data.driverId) },
+        select: { id: true },
+      });
+      if (!driver) throw new NotFoundException('Repartidor no encontrado');
+      driverId = driver.id;
+    }
+    let spentAt = new Date();
+    if (data?.spentAt) {
+      spentAt = new Date(data.spentAt);
+      if (Number.isNaN(spentAt.getTime())) throw new BadRequestException('Fecha inválida');
+      if (spentAt.getTime() > Date.now() + 24 * 60 * 60 * 1000)
+        throw new BadRequestException('La fecha no puede ser futura');
+    }
+    const row = await this.prisma.debtExpense.create({
+      data: {
+        debtId,
+        amount: Math.round(amount * 100) / 100,
+        kind: kind as any,
+        driverId,
+        note:
+          String(data?.note ?? '')
+            .trim()
+            .slice(0, 300) || null,
+        spentAt,
+        createdBy: createdBy ?? null,
+      },
+      include: { driver: { select: { id: true, fullName: true } } },
+    });
+    return this.shapeExpense(row);
+  }
+
+  async removeExpense(debtId: string, expenseId: string) {
+    const row = await this.prisma.debtExpense.findUnique({ where: { id: expenseId } });
+    if (!row || row.debtId !== debtId) throw new NotFoundException('Gasto no encontrado');
+    await this.prisma.debtExpense.delete({ where: { id: expenseId } });
+    return { ok: true };
+  }
+
+  private async requireDebt(debtId: string) {
+    const debt = await this.prisma.debt.findUnique({ where: { id: debtId } });
+    if (!debt) throw new NotFoundException('Deuda no encontrada');
+    return debt;
   }
 
   private shape(d: any) {

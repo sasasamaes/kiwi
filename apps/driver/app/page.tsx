@@ -1078,6 +1078,13 @@ export default function Home() {
                 {isOnline ? t('wdrvauth.home.receiving') : t('wdrvauth.home.paused')}
               </motion.span>
             </div>
+            <Link
+              href="/ranking"
+              className="flex items-center justify-between rounded-xl bg-gold-50 dark:bg-gold-900/20 border border-gold-200 dark:border-gold-800 px-3 py-2.5 text-sm font-semibold text-gold-700 dark:text-gold-300"
+            >
+              <span>🏆 {t('wdrvwork.active.rankTitle')}</span>
+              <span className="text-xs">→</span>
+            </Link>
           </div>
         </motion.div>
       </main>

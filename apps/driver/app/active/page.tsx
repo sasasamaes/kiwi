@@ -156,6 +156,22 @@ function Countdown({
   return <>{children(targetMs == null ? null : Math.max(0, targetMs - now))}</>;
 }
 
+/**
+ * Cronómetro de viaje (cuenta hacia arriba desde assignedAt).
+ * Aislado como Countdown: el tick de 1s solo re-renderiza este texto.
+ */
+function TripStopwatch({ startIso, className }: { startIso: string | null; className?: string }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!startIso) return;
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [startIso]);
+  if (!startIso) return null;
+  const secs = Math.max(0, Math.round((now - new Date(startIso).getTime()) / 1000));
+  return <span className={className}>{formatTripDuration(secs)}</span>;
+}
+
 function toWaLink(phone: string): string {
   const digits = phone.replace(/\D/g, '');
   const normalized = digits.length === 8 ? `506${digits}` : digits;
@@ -175,6 +191,33 @@ function elapsedLabel(
   return m
     ? t('wdrvwork.active.elapsedHoursMins', { h, m })
     : t('wdrvwork.active.elapsedHours', { h });
+}
+
+/** Formato de cronómetro: 04:32 o 1:12:05. */
+function formatTripDuration(totalSeconds: number): string {
+  const s = Math.max(0, Math.round(totalSeconds));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  const mm = h > 0 ? String(m).padStart(2, '0') : String(m);
+  const ss = String(sec).padStart(2, '0');
+  return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
+}
+
+function tripStartOf(order: any): string | null {
+  return (order?.assignedAt ?? order?.createdAt ?? null) as string | null;
+}
+
+const BEST_KEY = 'kiwi_best_trip_seconds';
+
+function readBest(): number | null {
+  try {
+    const raw = localStorage.getItem(BEST_KEY);
+    const n = raw != null ? Number(raw) : NaN;
+    return Number.isFinite(n) && n > 0 ? n : null;
+  } catch {
+    return null;
+  }
 }
 
 // Clave de caché para render offline
@@ -205,7 +248,16 @@ export default function ActiveOrders() {
   const [rejectArmed, setRejectArmed] = useState(false);
   const [rejecting, setRejecting] = useState(false);
   const [accepting, setAccepting] = useState(false);
-  const [celebration, setCelebration] = useState<{ payout: number } | null>(null);
+  const [celebration, setCelebration] = useState<{
+    payout: number;
+    durationSeconds: number | null;
+    isRecord: boolean;
+  } | null>(null);
+  // Récord personal (local): el juego del cronómetro.
+  const [bestSeconds, setBestSeconds] = useState<number | null>(null);
+  useEffect(() => {
+    setBestSeconds(readBest());
+  }, []);
   // Zonas con label legible (hook arriba: hay returns tempranos abajo).
   const deliveryZones = useDeliveryZones();
   // Reloj vivo para "hace X min"
@@ -473,6 +525,31 @@ export default function ActiveOrders() {
     return () => clearInterval(timer);
   }, [orders]);
 
+  const celebrateDelivery = (finishedOrder: Order) => {
+    const start = tripStartOf(finishedOrder as any);
+    const durationSeconds = start
+      ? Math.max(0, Math.round((Date.now() - new Date(start).getTime()) / 1000))
+      : null;
+    let isRecord = false;
+    if (durationSeconds != null && durationSeconds > 0) {
+      const prev = readBest();
+      if (prev == null || durationSeconds < prev) {
+        try {
+          localStorage.setItem(BEST_KEY, String(durationSeconds));
+        } catch {
+          // sin storage: igual se muestra el tiempo
+        }
+        setBestSeconds(durationSeconds);
+        isRecord = prev != null;
+      }
+    }
+    setCelebration({
+      payout: netPayout({ ...finishedOrder, status: 'delivered' }),
+      durationSeconds,
+      isRecord,
+    });
+  };
+
   const advanceStatus = async (order: Order) => {
     const flow = NEXT_STATUS[order.status];
     if (!flow || updating) return;
@@ -524,7 +601,7 @@ export default function ActiveOrders() {
       await api.updateOrderStatus(order.id, flow.next);
       markQueued(null);
       if (flow.next === 'delivered') {
-        setCelebration({ payout: netPayout({ ...order, status: flow.next }) });
+        celebrateDelivery(order);
       }
       await fetchActiveOrders();
     } catch (err) {
@@ -541,7 +618,7 @@ export default function ActiveOrders() {
         if (serverDone) {
           markQueued(null);
           if (server.status === 'delivered') {
-            setCelebration({ payout: netPayout({ ...order, status: flow.next }) });
+            celebrateDelivery(order);
           }
           await fetchActiveOrders();
           return;
@@ -1107,6 +1184,22 @@ export default function ActiveOrders() {
                     {elapsedLabel((order as any).assignedAt ?? order.createdAt, t)} · #
                     {order.id.slice(0, 8).toUpperCase()}
                   </p>
+                  {/* Cronómetro de viaje: arranca al aceptar, visible como juego */}
+                  <div className="mt-3 inline-flex items-center gap-2 rounded-2xl bg-black/25 px-3 py-1.5">
+                    <Timer className="h-4 w-4 text-white" />
+                    <TripStopwatch
+                      startIso={tripStartOf(order as any)}
+                      className="font-mono text-2xl font-bold tabular-nums"
+                    />
+                    <span className="text-[11px] uppercase tracking-wide text-white/70">
+                      {t('wdrvwork.active.tripTimerLabel')}
+                    </span>
+                  </div>
+                  {bestSeconds != null && (
+                    <p className="mt-1 text-[11px] text-white/70">
+                      {t('wdrvwork.active.bestLabel')}: {formatTripDuration(bestSeconds)}
+                    </p>
+                  )}
                 </div>
                 <div className="text-right shrink-0">
                   <p className="text-xs text-white/70">{t('wdrvwork.active.earnLabel')}</p>
@@ -1677,6 +1770,22 @@ export default function ActiveOrders() {
                 value={celebration.payout}
                 className="font-mono text-4xl font-bold text-kiwi-700"
               />
+              {celebration.durationSeconds != null && (
+                <div className="mt-3 rounded-2xl bg-surface-100 dark:bg-surface-700/60 px-4 py-3">
+                  <p className="flex items-center justify-center gap-2 font-mono text-2xl font-bold text-surface-800 dark:text-surface-100">
+                    <Timer className="h-5 w-5 text-kiwi-600" />
+                    {formatTripDuration(celebration.durationSeconds)}
+                  </p>
+                  <p className="mt-0.5 text-xs text-surface-500 dark:text-surface-400">
+                    {t('wdrvwork.active.tripTimerLabel')}
+                  </p>
+                  {celebration.isRecord && (
+                    <p className="mt-1 text-sm font-bold text-gold-600">
+                      {t('wdrvwork.active.tripNewRecord')}
+                    </p>
+                  )}
+                </div>
+              )}
               <div className="mt-6 space-y-2">
                 <TapButton
                   haptic

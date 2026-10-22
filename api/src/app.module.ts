@@ -21,6 +21,7 @@ import { CreditsModule } from './credits/credits.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { WithdrawalsModule } from './withdrawals/withdrawals.module';
 import { DebtsModule } from './debts/debts.module';
+import { RentalsModule } from './rentals/rentals.module';
 import { GeocodingModule } from './geocoding/geocoding.module';
 import { RoutingModule } from './routing/routing.module';
 import { SecurityModule } from './security/security.module';
@@ -77,6 +78,7 @@ import { CoverageModule } from './service-area/coverage.module';
     AnalyticsModule,
     WithdrawalsModule,
     DebtsModule,
+    RentalsModule,
     GeocodingModule,
     RoutingModule,
     SecurityModule,

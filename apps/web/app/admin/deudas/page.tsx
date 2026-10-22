@@ -44,6 +44,23 @@ interface DebtDetail extends Debt {
     note?: string | null;
     paidAt: string;
   }>;
+  participants: Array<{ driverId: string; name: string; joinedAt: string }>;
+  expenses: Array<{
+    id: string;
+    amount: number;
+    kind: string;
+    driverId?: string | null;
+    driverName?: string | null;
+    note?: string | null;
+    spentAt: string;
+  }>;
+  expenseSummary: {
+    total: number;
+    byKind: Record<string, number>;
+    fuelToday: number;
+    fuelWeek: number;
+    fuelMonth: number;
+  };
 }
 
 const crc = (n: number) => `₡${Number(n || 0).toLocaleString('es-CR')}`;
@@ -86,6 +103,19 @@ export default function AdminDebtsPage() {
 
   // Simulador "pagarla más barato"
   const [extra, setExtra] = useState('');
+
+  // Participantes (quiénes pagan la deuda)
+  const [pDriver2, setPDriver2] = useState('');
+  const [partError, setPartError] = useState<string | null>(null);
+
+  // Gastos de la moto
+  const [eAmount, setEAmount] = useState('');
+  const [eKind, setEKind] = useState('gasolina');
+  const [eDriver, setEDriver] = useState('');
+  const [eNote, setENote] = useState('');
+  const [eDate, setEDate] = useState(new Date().toISOString().split('T')[0]);
+  const [savingExpense, setSavingExpense] = useState(false);
+  const [expenseError, setExpenseError] = useState<string | null>(null);
 
   const loadList = useCallback(async () => {
     setLoading(true);
@@ -194,6 +224,67 @@ export default function AdminDebtsPage() {
       await loadList();
     } catch (e: any) {
       setPayError(e?.message || t('webadmin2.adebts.deleteFailed'));
+    }
+  };
+
+  // Participantes: quiénes pagan la deuda con sus viajes.
+  const addParticipant = async () => {
+    if (!pDriver2) return;
+    setPartError(null);
+    try {
+      await api.addDebtParticipant(selectedId!, pDriver2);
+      setPDriver2('');
+      await loadDetail(selectedId!);
+    } catch (e: any) {
+      setPartError(e?.message || t('webadmin2.adebts.addFailed2'));
+    }
+  };
+
+  const removeParticipant = async (driverId: string, name: string) => {
+    if (!window.confirm(t('webadmin2.adebts.removeConfirm', { name }))) return;
+    try {
+      await api.removeDebtParticipant(selectedId!, driverId);
+      await loadDetail(selectedId!);
+    } catch (e: any) {
+      setPartError(e?.message || t('webadmin2.adebts.deleteFailed'));
+    }
+  };
+
+  // Gastos de la moto: mantenimiento, seguro, gasolina, repuestos, marchamo.
+  const addExpense = async () => {
+    setExpenseError(null);
+    setSavingExpense(true);
+    try {
+      await api.addDebtExpense(selectedId!, {
+        amount: Number(eAmount),
+        kind: eKind,
+        driverId: eDriver || undefined,
+        note: eNote.trim() || undefined,
+        spentAt: eDate || undefined,
+      });
+      setEAmount('');
+      setEDriver('');
+      setENote('');
+      await loadDetail(selectedId!);
+    } catch (e: any) {
+      setExpenseError(e?.message || t('webadmin2.adebts.expenseFailed'));
+    } finally {
+      setSavingExpense(false);
+    }
+  };
+
+  const removeExpense = async (expenseId: string, amount: number) => {
+    if (
+      !window.confirm(
+        t('webadmin2.adebts.deleteConfirm', { amount: Number(amount).toLocaleString() }),
+      )
+    )
+      return;
+    try {
+      await api.deleteDebtExpense(selectedId!, expenseId);
+      await loadDetail(selectedId!);
+    } catch (e: any) {
+      setExpenseError(e?.message || t('webadmin2.adebts.deleteFailed'));
     }
   };
 
@@ -476,6 +567,221 @@ export default function AdminDebtsPage() {
                       </li>
                     ))}
                   </ul>
+                )}
+              </div>
+
+              {/* Quiénes la pagan (roster) */}
+              <div className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] p-4">
+                <h3 className="mb-2 text-sm font-bold text-surface-800 dark:text-surface-100">
+                  {t('webadmin2.adebts.participants')}
+                </h3>
+                {detail.participants.length === 0 ? (
+                  <p className="text-xs text-surface-500">{t('webadmin2.adebts.noParticipants')}</p>
+                ) : (
+                  <ul className="mb-3 space-y-1.5">
+                    {detail.participants.map((p) => (
+                      <li key={p.driverId} className="flex items-center justify-between text-sm">
+                        <span className="font-medium text-surface-700 dark:text-surface-200">
+                          {p.name}
+                        </span>
+                        <button
+                          onClick={() => removeParticipant(p.driverId, p.name)}
+                          className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-xs text-surface-400 hover:text-red-500"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <div className="flex gap-2">
+                  <select
+                    value={pDriver2}
+                    onChange={(e) => setPDriver2(e.target.value)}
+                    aria-label={t('webadmin2.adebts.addParticipant')}
+                    className="min-h-[44px] flex-1 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 text-sm"
+                  >
+                    <option value="">{t('webadmin2.adebts.pickDriver')}</option>
+                    {drivers
+                      .filter((d) => !detail.participants.some((p) => p.driverId === d.id))
+                      .map((d) => (
+                        <option key={d.id} value={d.id}>
+                          {d.fullName}
+                        </option>
+                      ))}
+                  </select>
+                  <button
+                    onClick={addParticipant}
+                    disabled={!pDriver2}
+                    className="min-h-[44px] rounded-xl bg-kiwi-700 px-4 text-sm font-semibold text-white disabled:opacity-40"
+                  >
+                    {t('webadmin2.adebts.addParticipant')}
+                  </button>
+                </div>
+                {partError && <p className="mt-1.5 text-xs text-red-600">{partError}</p>}
+              </div>
+
+              {/* Gastos de la moto */}
+              <div className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] p-4">
+                <h3 className="mb-2 text-sm font-bold text-surface-800 dark:text-surface-100">
+                  {t('webadmin2.adebts.expenses')}
+                </h3>
+                <div className="mb-3 grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
+                  <div className="rounded-xl bg-surface-50 dark:bg-surface-900 p-3">
+                    <p className="text-[11px] uppercase tracking-wide text-surface-500">
+                      {t('webadmin2.adebts.expenseTotal')}
+                    </p>
+                    <p className="font-bold">{crc(detail.expenseSummary.total)}</p>
+                  </div>
+                  <div className="rounded-xl bg-surface-50 dark:bg-surface-900 p-3">
+                    <p className="text-[11px] uppercase tracking-wide text-surface-500">
+                      {t('webadmin2.adebts.fuelToday')}
+                    </p>
+                    <p className="font-bold">{crc(detail.expenseSummary.fuelToday)}</p>
+                  </div>
+                  <div className="rounded-xl bg-surface-50 dark:bg-surface-900 p-3">
+                    <p className="text-[11px] uppercase tracking-wide text-surface-500">
+                      {t('webadmin2.adebts.fuelWeek')}
+                    </p>
+                    <p className="font-bold">{crc(detail.expenseSummary.fuelWeek)}</p>
+                  </div>
+                  <div className="rounded-xl bg-surface-50 dark:bg-surface-900 p-3">
+                    <p className="text-[11px] uppercase tracking-wide text-surface-500">
+                      {t('webadmin2.adebts.fuelMonth')}
+                    </p>
+                    <p className="font-bold">{crc(detail.expenseSummary.fuelMonth)}</p>
+                  </div>
+                </div>
+                {Object.keys(detail.expenseSummary.byKind).length > 0 && (
+                  <p className="mb-3 text-[11px] text-surface-500">
+                    {Object.entries(detail.expenseSummary.byKind)
+                      .map(
+                        ([k, v]) =>
+                          `${t(`webadmin2.adebts.expenseNames.${k}` as any)}: ${crc(Number(v))}`,
+                      )
+                      .join(' · ')}
+                  </p>
+                )}
+                <div className="mb-2 grid grid-cols-3 gap-2">
+                  {['mantenimiento', 'seguro', 'gasolina', 'repuesto', 'marchamo', 'otro'].map(
+                    (k) => (
+                      <button
+                        key={k}
+                        onClick={() => setEKind(k)}
+                        className={`min-h-[44px] rounded-xl text-xs font-medium ${
+                          eKind === k
+                            ? 'bg-kiwi-700 text-white'
+                            : 'bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-300'
+                        }`}
+                      >
+                        {t(`webadmin2.adebts.expenseNames.${k}` as any)}
+                      </button>
+                    ),
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label
+                      htmlFor="exp-amount"
+                      className="mb-1 block text-xs font-medium text-surface-600 dark:text-surface-400"
+                    >
+                      {t('webadmin2.adebts.amountLabel')}
+                    </label>
+                    <input
+                      id="exp-amount"
+                      type="number"
+                      min="1"
+                      value={eAmount}
+                      onChange={(e) => setEAmount(e.target.value)}
+                      className="min-h-[44px] w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="exp-date"
+                      className="mb-1 block text-xs font-medium text-surface-600 dark:text-surface-400"
+                    >
+                      {t('webadmin2.adebts.dateLabel')}
+                    </label>
+                    <input
+                      id="exp-date"
+                      type="date"
+                      value={eDate}
+                      onChange={(e) => setEDate(e.target.value)}
+                      className="min-h-[44px] w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 text-sm"
+                    />
+                  </div>
+                </div>
+                <div className="mt-2 flex gap-2">
+                  <select
+                    value={eDriver}
+                    onChange={(e) => setEDriver(e.target.value)}
+                    aria-label={t('webadmin2.adebts.driverLabel')}
+                    className="min-h-[44px] flex-1 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 text-sm"
+                  >
+                    <option value="">{t('webadmin2.adebts.driverAny')}</option>
+                    {drivers.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.fullName}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    value={eNote}
+                    onChange={(e) => setENote(e.target.value)}
+                    placeholder={t('webadmin2.adebts.noteLabel')}
+                    aria-label={t('webadmin2.adebts.noteLabel')}
+                    className="min-h-[44px] flex-1 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 text-sm"
+                  />
+                </div>
+                {expenseError && <p className="mt-1.5 text-xs text-red-600">{expenseError}</p>}
+                <button
+                  onClick={addExpense}
+                  disabled={savingExpense || !eAmount || Number(eAmount) <= 0}
+                  className="mt-2 min-h-[44px] w-full rounded-xl bg-kiwi-700 text-sm font-semibold text-white disabled:opacity-40"
+                >
+                  {t('webadmin2.adebts.addExpense')}
+                </button>
+                {detail.expenses.length === 0 ? (
+                  <p className="mt-3 text-xs text-surface-500">
+                    {t('webadmin2.adebts.noExpenses')}
+                  </p>
+                ) : (
+                  <div className="mt-3 overflow-x-auto">
+                    <table className="w-full min-w-[520px] text-sm">
+                      <tbody>
+                        {detail.expenses.map((x) => (
+                          <tr
+                            key={x.id}
+                            className="border-t border-surface-100 dark:border-surface-700 first:border-0"
+                          >
+                            <td className="py-2.5 pr-2">
+                              <p className="font-medium text-surface-800 dark:text-surface-100">
+                                {fmtDate(x.spentAt)}
+                              </p>
+                              <p className="text-[11px] text-surface-500">
+                                {t(`webadmin2.adebts.expenseNames.${x.kind}` as any)}
+                                {x.driverName ? ` · ${x.driverName}` : ''}
+                                {x.note ? ` · ${x.note}` : ''}
+                              </p>
+                            </td>
+                            <td className="py-2.5 pr-2 text-right font-bold">{crc(x.amount)}</td>
+                            <td className="py-2.5 text-right">
+                              <button
+                                onClick={() => removeExpense(x.id, x.amount)}
+                                aria-label={t('webadmin2.adebts.deleteConfirm', {
+                                  amount: Number(x.amount).toLocaleString(),
+                                })}
+                                className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-surface-400 hover:text-red-500"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 )}
               </div>
 

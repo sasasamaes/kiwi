@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Calendar, Coins, History, Home as HomeIcon, Package, User } from 'lucide-react';
+import { Calendar, Coins, History, Home as HomeIcon, Package, User, Trophy } from 'lucide-react';
 
 /**
  * Navegación inferior única del driver. Antes cada página tenía su propia
@@ -16,6 +16,7 @@ import { Calendar, Coins, History, Home as HomeIcon, Package, User } from 'lucid
 const ITEMS = [
   { href: '/', label: 'Inicio', icon: HomeIcon, exact: true },
   { href: '/active', label: 'Activos', icon: Package, exact: false },
+  { href: '/ranking', label: 'Ranking', icon: Trophy, exact: false },
   { href: '/history', label: 'Historial', icon: History, exact: false },
   { href: '/earnings', label: 'Ganancias', icon: Coins, exact: false },
   { href: '/schedule', label: 'Horario', icon: Calendar, exact: false },

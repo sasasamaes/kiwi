@@ -611,6 +611,9 @@ model DriverProfile {
   incentives      DriverIncentive[]
   withdrawals     Withdrawal[]
   debtPayments    DebtPayment[]
+  debtLinks       DebtParticipant[]
+  debtExpenses    DebtExpense[]
+  rentals         RentalContract[]
 
   @@index([status, lastLat, lastLng], map: "driver_profiles_targeting_idx")
   @@map("driver_profiles")
@@ -1367,6 +1370,9 @@ model Debt {
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   payments DebtPayment[]
+  participants DebtParticipant[]
+  expenses DebtExpense[]
+  rentals RentalContract[]
 
   @@map("debts")
 }
@@ -1393,4 +1399,94 @@ enum DebtPaymentKind {
   cuota // mensualidad normal
   aporte // aporte extra de repartidor/socio
   extra // abono extra a capital
+}
+
+// Repartidores asignados a pagar una deuda (los que la pagan con sus viajes).
+// El aporte real queda en DebtPayment; esto es el roster de quiénes la pagan.
+model DebtParticipant {
+  id       String   @id @default(uuid())
+  debtId   String   @map("debt_id")
+  debt     Debt     @relation(fields: [debtId], references: [id], onDelete: Cascade)
+  driverId String   @map("driver_id")
+  driver   DriverProfile @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  joinedAt DateTime @default(now()) @map("joined_at")
+
+  @@unique([debtId, driverId], map: "debt_participants_debt_driver_uk")
+  @@index([debtId], map: "debt_participants_debt_idx")
+  @@map("debt_participants")
+}
+
+// Gastos de la moto/deuda: mantenimiento, seguro, gasolina, repuestos,
+// marchamo, otro. La gasolina se puede ver por día/semana/mes desde el resumen.
+model DebtExpense {
+  id        String         @id @default(uuid())
+  debtId    String         @map("debt_id")
+  debt      Debt           @relation(fields: [debtId], references: [id], onDelete: Cascade)
+  amount    Decimal        @db.Decimal(10, 2)
+  kind      DebtExpenseKind @default(otro)
+  // Quién hizo el gasto (opcional, ej. gasolina cargada por un repartidor).
+  driverId  String?        @map("driver_id")
+  driver    DriverProfile? @relation(fields: [driverId], references: [id])
+  note      String?
+  spentAt   DateTime       @default(now()) @map("spent_at")
+  createdBy String?        @map("created_by")
+  createdAt DateTime       @default(now()) @map("created_at")
+
+  @@index([debtId, spentAt], map: "debt_expenses_debt_spent_idx")
+  @@map("debt_expenses")
+}
+
+enum DebtExpenseKind {
+  mantenimiento
+  seguro
+  gasolina
+  repuesto
+  marchamo
+  otro
+}
+
+// Alquiler de la moto a repartidores (fase test: apagado por flag
+// RENTALS_ENABLED). El contrato fija precio semanal y depósito; los pagos
+// se registran acá. Nada de esto toca planilla: es libro aparte.
+model RentalContract {
+  id          String       @id @default(uuid())
+  // Moto ligada (deuda origen, opcional: sirve para costear el precio).
+  debtId      String?      @map("debt_id")
+  debt        Debt?         @relation(fields: [debtId], references: [id])
+  driverId    String        @map("driver_id")
+  driver      DriverProfile @relation(fields: [driverId], references: [id])
+  weeklyPrice Decimal       @db.Decimal(10, 2) @map("weekly_price")
+  deposit     Decimal       @default(0) @db.Decimal(10, 2)
+  startDate   DateTime      @map("start_date")
+  endDate     DateTime?     @map("end_date")
+  status      RentalStatus  @default(active)
+  notes       String?
+  createdBy   String?       @map("created_by")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  payments RentalPayment[]
+
+  @@index([driverId, status], map: "rental_contracts_driver_status_idx")
+  @@map("rental_contracts")
+}
+
+enum RentalStatus {
+  active
+  finished
+  cancelled
+}
+
+model RentalPayment {
+  id         String         @id @default(uuid())
+  contractId String         @map("contract_id")
+  contract   RentalContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  amount     Decimal        @db.Decimal(10, 2)
+  paidAt     DateTime       @default(now()) @map("paid_at")
+  note       String?
+  createdBy  String?        @map("created_by")
+  createdAt  DateTime       @default(now()) @map("created_at")
+
+  @@index([contractId, paidAt], map: "rental_payments_contract_paid_idx")
+  @@map("rental_payments")
 }

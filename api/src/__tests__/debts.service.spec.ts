@@ -17,6 +17,13 @@ describe('DebtsService', () => {
         findUnique: jest.fn(),
         delete: jest.fn(),
       },
+      debtParticipant: { findMany: jest.fn(), upsert: jest.fn(), deleteMany: jest.fn() },
+      debtExpense: {
+        findMany: jest.fn(),
+        create: jest.fn(),
+        findUnique: jest.fn(),
+        delete: jest.fn(),
+      },
       driverProfile: { findUnique: jest.fn(), findMany: jest.fn() },
     };
 
@@ -156,5 +163,53 @@ describe('DebtsService', () => {
     await expect(
       service.addPayment('d1', { amount: 25000, kind: 'aporte', driverId: 'ghost' }),
     ).rejects.toThrow(NotFoundException);
+  });
+
+  it('addParticipant asigna al repartidor y lista el roster', async () => {
+    prisma.debt.findUnique.mockResolvedValue({ id: 'd1' });
+    prisma.driverProfile.findUnique.mockResolvedValue({ id: 'drv-luis' });
+    prisma.debtParticipant.upsert.mockResolvedValue({});
+    prisma.debtParticipant.findMany.mockResolvedValue([
+      { driverId: 'drv-luis', joinedAt: new Date(), driver: { fullName: 'Luis Espinoza' } },
+    ]);
+    const res = await service.addParticipant('d1', 'drv-luis');
+    expect(res).toEqual([
+      { driverId: 'drv-luis', name: 'Luis Espinoza', joinedAt: expect.any(Date) },
+    ]);
+  });
+
+  it('addExpense rechaza tipo inválido y acepta gasolina con resumen', async () => {
+    prisma.debt.findUnique.mockResolvedValue({ id: 'd1' });
+    await expect(service.addExpense('d1', { amount: 5000, kind: 'raro' })).rejects.toThrow(
+      BadRequestException,
+    );
+    prisma.debtExpense.create.mockImplementation(async ({ data }: any) => ({
+      id: 'e1',
+      ...data,
+      driver: null,
+      createdAt: new Date(),
+    }));
+    const today = new Date().toISOString().split('T')[0];
+    const res = await service.addExpense('d1', { amount: 8000, kind: 'gasolina', spentAt: today });
+    expect(res.amount).toBe(8000);
+    expect(res.kind).toBe('gasolina');
+  });
+
+  it('summarizeExpenses agrupa gasolina por hoy/semana/mes', async () => {
+    const now = new Date();
+    const today = now.toISOString();
+    const old = new Date(now.getTime() - 40 * 24 * 60 * 60 * 1000).toISOString();
+    const rows = [
+      { amount: 8000, kind: 'gasolina', spentAt: today },
+      { amount: 8000, kind: 'gasolina', spentAt: today },
+      { amount: 15000, kind: 'mantenimiento', spentAt: today },
+      { amount: 8000, kind: 'gasolina', spentAt: old },
+    ];
+    const s: any = (service as any).summarizeExpenses(rows);
+    expect(s.total).toBe(39000);
+    expect(s.byKind).toEqual({ gasolina: 24000, mantenimiento: 15000 });
+    expect(s.fuelToday).toBe(16000);
+    // el gasto de hace 40 días no entra en semana ni mes corriente
+    expect(s.fuelWeek).toBe(16000);
   });
 });

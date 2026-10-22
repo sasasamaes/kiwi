@@ -16,6 +16,14 @@ import { Injectable } from '@nestjs/common';
  *                  fuera de producción para no frenar dev/test. Desactivar
  *                  en prod requiere KYC_REQUIRED=false explícito.
  *
+ * RENTALS_ENABLED — prueba de alquiler de motos a repartidores.
+ *
+ *   RENTALS_ENABLED=true  → el admin puede crear contratos, registrar pagos
+ *                           y usar la calculadora de precio.
+ *   Cualquier otro valor o sin variable → todo el módulo responde 403
+ *                           (fail-closed): queda desactivado para testearlo
+ *                           cuando el negocio decida.
+ *
  * Lectura DINÁMICA (por request): se puede activar/desactivar sin rebuild
  * y los tests pueden alternarlo con process.env.
  */
@@ -25,6 +33,10 @@ export function isKycRequired(): boolean {
   return process.env.NODE_ENV === 'production';
 }
 
+export function isRentalsEnabled(): boolean {
+  return process.env.RENTALS_ENABLED === 'true';
+}
+
 @Injectable()
 export class FeatureFlagsService {
   /** ¿El KYC bloquea hoy? (asignación, retiros, visibilidad) */
@@ -32,8 +44,13 @@ export class FeatureFlagsService {
     return isKycRequired();
   }
 
+  /** ¿La prueba de alquiler está activa? */
+  get rentalsEnabled(): boolean {
+    return isRentalsEnabled();
+  }
+
   /** Payload para exponer el flag a los frontends. */
   toSnapshot() {
-    return { kycRequired: this.kycRequired };
+    return { kycRequired: this.kycRequired, rentalsEnabled: this.rentalsEnabled };
   }
 }

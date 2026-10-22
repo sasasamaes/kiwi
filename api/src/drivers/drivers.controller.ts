@@ -179,6 +179,18 @@ export class DriversController {
     });
   }
 
+  @Get('me/ranking')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('driver')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Ranking interno de repartidores por velocidad (avg assigned→delivered)',
+  })
+  @ApiQuery({ name: 'period', required: false, enum: ['today', 'week', 'month', 'all'] })
+  async getRanking(@Query('period') period?: string) {
+    return this.driversService.getRanking(period || 'week');
+  }
+
   @Get('admin/list')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')

@@ -1392,6 +1392,11 @@ class ApiClient {
     return this.request<any>(`/drivers/me/earnings?period=${period}`);
   }
 
+  /** Ranking interno de repartidores por velocidad de entrega. */
+  async getDriverRanking(period: string = 'week') {
+    return this.request<any>(`/drivers/me/ranking?period=${period}`);
+  }
+
   /** Historial del repartidor: todos sus pedidos con filtro por estado. */
   async getDriverOrders(params?: { status?: string; take?: number; skip?: number }) {
     const q = new URLSearchParams();
@@ -1895,6 +1900,11 @@ class ApiClient {
 
   async getAnalyticsSummary() {
     return this.request<any>('/analytics/summary');
+  }
+
+  /** Ganancias Kiwi desde lun 19 oct 2026 + ranking y detalle (admin). */
+  async getKiwiEarnings() {
+    return this.request<any>('/analytics/kiwi-earnings');
   }
 
   // Crédito prepago del comercio (solo envío: viaje + plataforma)

@@ -67,6 +67,17 @@ export class AnalyticsController {
     return this.analyticsService.getLivePulse();
   }
 
+  @Get('kiwi-earnings')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Ganancias Kiwi desde lun 19 oct 2026 + ranking y detalle (admin only)',
+  })
+  async getKiwiEarnings() {
+    return this.analyticsService.getKiwiEarnings();
+  }
+
   @Get('summary')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()

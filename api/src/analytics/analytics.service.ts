@@ -183,6 +183,151 @@ export class AnalyticsService {
     };
   }
 
+  /**
+   * Ganancias Kiwi desde el inicio de operación real (lun 19 oct 2026 CR).
+   * Todo antes de esa fecha fue test y se excluye.
+   * Devuelve tarjetas día/semana/mes/desde-lanzamiento, ranking por
+   * repartidor (cuánto ganó cada uno y cuánta comisión dejó) y el detalle
+   * de pedidos entregados para auditar peso por peso.
+   */
+  async getKiwiEarnings() {
+    // Lunes 19 oct 2026 00:00 CR = inicio de operación real.
+    const launchStart = new Date('2026-10-19T00:00:00-06:00');
+    const now = new Date();
+    const todayStart = startOfTodayCR(now);
+    const weekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const monthStart = startOfMonthCR(now, 0);
+
+    const orders = await this.prisma.order.findMany({
+      where: { status: OrderStatus.delivered, deliveredAt: { gte: launchStart } },
+      select: {
+        id: true,
+        deliveredAt: true,
+        basePrice: true,
+        commission: true,
+        driverPayout: true,
+        totalAmount: true,
+        deliveryZone: true,
+        driverId: true,
+        merchant: { select: { businessName: true } },
+        driver: { select: { fullName: true } },
+      },
+      orderBy: { deliveredAt: 'desc' },
+      take: 1000,
+    });
+
+    const bucket = (from: Date) => {
+      let trips = 0;
+      let gmv = 0;
+      let commission = 0;
+      let driverPay = 0;
+      for (const o of orders) {
+        if (!o.deliveredAt || o.deliveredAt < from) continue;
+        trips += 1;
+        gmv += Number(o.basePrice ?? 0);
+        commission += Number(o.commission ?? 0);
+        driverPay += Number(o.driverPayout ?? 0);
+      }
+      return {
+        trips,
+        gmv: Math.round(gmv),
+        commission: Math.round(commission),
+        driverPay: Math.round(driverPay),
+      };
+    };
+
+    const byDay: Record<
+      string,
+      { trips: number; commission: number; driverPay: number; gmv: number }
+    > = {};
+    for (const o of orders) {
+      if (!o.deliveredAt) continue;
+      const k = toCRDateKey(o.deliveredAt);
+      const cur = byDay[k] ?? { trips: 0, commission: 0, driverPay: 0, gmv: 0 };
+      cur.trips += 1;
+      cur.commission += Number(o.commission ?? 0);
+      cur.driverPay += Number(o.driverPayout ?? 0);
+      cur.gmv += Number(o.basePrice ?? 0);
+      byDay[k] = cur;
+    }
+    const daily = Object.entries(byDay)
+      .map(([date, v]) => ({
+        date,
+        trips: v.trips,
+        commission: Math.round(v.commission),
+        driverPay: Math.round(v.driverPay),
+        gmv: Math.round(v.gmv),
+      }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    const perDriver = new Map<
+      string,
+      {
+        name: string;
+        trips: number;
+        driverPay: number;
+        commission: number;
+        todayTrips: number;
+        todayPay: number;
+        todayCommission: number;
+      }
+    >();
+    for (const o of orders) {
+      if (!o.driverId) continue;
+      const cur = perDriver.get(o.driverId) ?? {
+        name: (o.driver as any)?.fullName ?? 'Repartidor',
+        trips: 0,
+        driverPay: 0,
+        commission: 0,
+        todayTrips: 0,
+        todayPay: 0,
+        todayCommission: 0,
+      };
+      cur.trips += 1;
+      cur.driverPay += Number(o.driverPayout ?? 0);
+      cur.commission += Number(o.commission ?? 0);
+      if (o.deliveredAt && o.deliveredAt >= todayStart) {
+        cur.todayTrips += 1;
+        cur.todayPay += Number(o.driverPayout ?? 0);
+        cur.todayCommission += Number(o.commission ?? 0);
+      }
+      perDriver.set(o.driverId, cur);
+    }
+    const ranking = [...perDriver.entries()]
+      .map(([driverId, v]) => ({
+        driverId,
+        name: v.name,
+        trips: v.trips,
+        driverPay: Math.round(v.driverPay),
+        commission: Math.round(v.commission),
+        todayTrips: v.todayTrips,
+        todayPay: Math.round(v.todayPay),
+        todayCommission: Math.round(v.todayCommission),
+      }))
+      .sort((a, b) => b.trips - a.trips || b.commission - a.commission);
+
+    return {
+      launchDate: launchStart,
+      today: bucket(todayStart),
+      week: bucket(weekStart),
+      month: bucket(monthStart),
+      sinceLaunch: bucket(launchStart),
+      daily,
+      ranking,
+      orders: orders.map((o) => ({
+        id: o.id,
+        deliveredAt: o.deliveredAt,
+        merchant: (o.merchant as any)?.businessName ?? null,
+        driver: (o.driver as any)?.fullName ?? null,
+        basePrice: Math.round(Number(o.basePrice ?? 0)),
+        commission: Math.round(Number(o.commission ?? 0)),
+        driverPayout: Math.round(Number(o.driverPayout ?? 0)),
+        totalAmount: Math.round(Number(o.totalAmount ?? 0)),
+        deliveryZone: (o as any).deliveryZone ?? null,
+      })),
+    };
+  }
+
   private getDateRange(period: AnalyticsPeriod, startDate?: string, endDate?: string) {
     const now = new Date();
     let start: Date;

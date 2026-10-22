@@ -17,6 +17,8 @@ interface HistoryOrder {
   driverPayout: number;
   createdAt: string;
   deliveredAt?: string | null;
+  assignedAt?: string | null;
+  durationSeconds?: number | null;
 }
 
 const PAGE_SIZE = 20;
@@ -83,6 +85,17 @@ export default function HistoryPage() {
   const statusKey = (s: string) =>
     s === 'delivered' ? 'statusDelivered' : s === 'cancelled' ? 'statusCancelled' : 'statusActive';
   const statusColor = (s: string) => STATUS_COLOR[s] ?? STATUS_COLOR.active;
+
+  const fmtDuration = (secs?: number | null) => {
+    if (secs == null || !Number.isFinite(secs)) return null;
+    const s = Math.max(0, Math.round(secs));
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const r = s % 60;
+    return h > 0
+      ? `${h}:${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}`
+      : `${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}`;
+  };
 
   return (
     <main className="min-h-[100dvh] flex flex-col bg-bg-light dark:bg-surface-950">
@@ -186,6 +199,9 @@ export default function HistoryPage() {
                       hour: '2-digit',
                       minute: '2-digit',
                     })}
+                    {o.durationSeconds != null && fmtDuration(o.durationSeconds)
+                      ? ` · ⏱ ${fmtDuration(o.durationSeconds)}`
+                      : ''}
                   </span>
                 </span>
                 <span className="shrink-0 font-bold text-surface-800 dark:text-surface-100">

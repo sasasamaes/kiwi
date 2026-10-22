@@ -414,15 +414,26 @@ export class DriversService {
       .sort((a, b) => a.date.localeCompare(b.date));
 
     // Transaction list
-    const transactions = orders.map((order) => ({
-      id: order.id,
-      merchantName: order.merchant?.businessName ?? 'Comercio',
-      pickupAddress: order.pickupAddress,
-      deliveryAddress: order.deliveryAddress,
-      amount: Number(order.driverPayout),
-      date: order.deliveredAt || order.createdAt,
-      orderType: order.orderType,
-    }));
+    const transactions = orders.map((order: any) => {
+      const start = order.assignedAt ?? order.createdAt;
+      const end = order.deliveredAt ?? order.createdAt;
+      const durationSeconds =
+        start && end
+          ? Math.max(0, Math.round((new Date(end).getTime() - new Date(start).getTime()) / 1000))
+          : null;
+      return {
+        id: order.id,
+        merchantName: order.merchant?.businessName ?? 'Comercio',
+        pickupAddress: order.pickupAddress,
+        deliveryAddress: order.deliveryAddress,
+        amount: Number(order.driverPayout),
+        date: order.deliveredAt || order.createdAt,
+        orderType: order.orderType,
+        assignedAt: order.assignedAt ?? null,
+        deliveredAt: order.deliveredAt ?? null,
+        durationSeconds,
+      };
+    });
 
     return {
       period,
@@ -490,19 +501,112 @@ export class DriversService {
 
     return {
       total,
-      items: orders.map((order: any) => ({
-        id: order.id,
-        status: order.status,
-        orderType: order.orderType,
-        merchantName: order.merchant?.businessName ?? null,
-        pickupAddress: order.pickupAddress,
-        deliveryAddress: order.deliveryAddress,
-        driverPayout: Number(order.driverPayout ?? 0),
-        totalAmount: Number(order.totalAmount ?? 0),
-        createdAt: order.createdAt,
-        deliveredAt: order.deliveredAt ?? null,
-      })),
+      items: orders.map((order: any) => {
+        const start = order.assignedAt ?? order.createdAt;
+        const end = order.deliveredAt ?? order.createdAt;
+        const durationSeconds =
+          order.status === 'delivered' && start && end
+            ? Math.max(0, Math.round((new Date(end).getTime() - new Date(start).getTime()) / 1000))
+            : null;
+        return {
+          id: order.id,
+          status: order.status,
+          orderType: order.orderType,
+          merchantName: order.merchant?.businessName ?? null,
+          pickupAddress: order.pickupAddress,
+          deliveryAddress: order.deliveryAddress,
+          driverPayout: Number(order.driverPayout ?? 0),
+          totalAmount: Number(order.totalAmount ?? 0),
+          createdAt: order.createdAt,
+          assignedAt: order.assignedAt ?? null,
+          deliveredAt: order.deliveredAt ?? null,
+          durationSeconds,
+        };
+      }),
     };
+  }
+
+  /**
+   * Ranking interno de repartidores por velocidad de entrega.
+   * Métrica: tiempo promedio assignedAt → deliveredAt en el período.
+   * Solo cuenta entregados con ambos timestamps; mínimo 3 viajes para
+   * no premiar una entrega suerte. Orden: más rápido primero.
+   */
+  async getRanking(period: string = 'week') {
+    const now = new Date();
+    let startDate: Date | undefined;
+    switch (period) {
+      case 'today':
+        startDate = startOfTodayCR(now);
+        break;
+      case 'month':
+        startDate = startOfMonthCR(now, 0);
+        break;
+      case 'all':
+        startDate = undefined;
+        break;
+      case 'week':
+      default:
+        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        break;
+    }
+
+    const where: any = {
+      status: 'delivered',
+      assignedAt: { not: null },
+      deliveredAt: { not: null },
+    };
+    if (startDate) where.deliveredAt = { gte: startDate };
+
+    const orders = await this.prisma.order.findMany({
+      where,
+      select: {
+        driverId: true,
+        assignedAt: true,
+        deliveredAt: true,
+        driver: { select: { id: true, fullName: true, photoUrl: true, vehicleType: true } },
+      },
+      take: 5000,
+      orderBy: { deliveredAt: 'desc' },
+    });
+
+    const byDriver = new Map<
+      string,
+      { name: string; photoUrl: string | null; vehicleType: string; total: number; trips: number }
+    >();
+    for (const o of orders as any[]) {
+      if (!o.driverId || !o.assignedAt || !o.deliveredAt) continue;
+      const secs = Math.round(
+        (new Date(o.deliveredAt).getTime() - new Date(o.assignedAt).getTime()) / 1000,
+      );
+      // Viajes imposibles (<1 min o >4h) se descartan: GPS/arrastre viejo.
+      if (!Number.isFinite(secs) || secs < 60 || secs > 4 * 3600) continue;
+      const key = o.driverId;
+      const cur = byDriver.get(key) ?? {
+        name: o.driver?.fullName ?? 'Repartidor',
+        photoUrl: o.driver?.photoUrl ?? null,
+        vehicleType: o.driver?.vehicleType ?? 'motorcycle',
+        total: 0,
+        trips: 0,
+      };
+      cur.total += secs;
+      cur.trips += 1;
+      byDriver.set(key, cur);
+    }
+
+    const ranking = [...byDriver.entries()]
+      .filter(([, v]) => v.trips >= 3)
+      .map(([driverId, v]) => ({
+        driverId,
+        name: v.name,
+        photoUrl: v.photoUrl,
+        vehicleType: v.vehicleType,
+        trips: v.trips,
+        avgSeconds: Math.round(v.total / v.trips),
+      }))
+      .sort((a, b) => a.avgSeconds - b.avgSeconds || b.trips - a.trips);
+
+    return { period, ranking };
   }
 
   /** Lista corta de repartidores para filtros del admin (id + nombre). */
