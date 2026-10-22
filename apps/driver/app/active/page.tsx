@@ -227,7 +227,7 @@ export default function ActiveOrders() {
   const router = useRouter();
   const { t } = useTranslations();
   const { user, loading: authLoading } = useAuth();
-  const { on: onSocketEvent } = useSocket({});
+  const { on: onSocketEvent, updateDriverLocation: emitDriverLocation } = useSocket({});
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -379,6 +379,17 @@ export default function ActiveOrders() {
           api
             .updateDriverLocation(pos.coords.latitude, pos.coords.longitude)
             .catch(() => undefined);
+          // En vivo por socket: el tracking del cliente y el mapa del
+          // comercio reciben el punto al instante (el REST solo persiste).
+          // Se emite a TODOS los activos: el driver los lleva todos encima.
+          try {
+            const ids = ordersRef.current.slice(0, 5).map((o) => o.id);
+            for (const id of ids) {
+              emitDriverLocation?.(pos.coords.latitude, pos.coords.longitude, id);
+            }
+          } catch {
+            // sin socket: el polling REST del tracking igual lo levanta
+          }
         },
         () => undefined,
         { enableHighAccuracy: false, maximumAge: 30_000, timeout: 10_000 },

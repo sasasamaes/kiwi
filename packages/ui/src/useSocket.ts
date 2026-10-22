@@ -7,6 +7,12 @@ import { useAuth } from './AuthContext';
 
 interface UseSocketOptions {
   autoConnect?: boolean;
+  /**
+   * Permite conectar sin sesión (tracking público de invitados). El servidor
+   * deja al invitado sin salas hasta que emite `order:track` con un pedido
+   * válido. Sin esto, los invitados nunca recibían `driver:location`.
+   */
+  allowGuest?: boolean;
   onConnect?: () => void;
   onDisconnect?: (reason: string) => void;
   onNewOrder?: (data: any) => void;
@@ -25,13 +31,16 @@ export function useSocket(options: UseSocketOptions = {}) {
   const [socketId, setSocketId] = useState<string | undefined>(() => socketClient.getSocketId());
 
   useEffect(() => {
-    if (!user || options.autoConnect === false) return;
+    if (options.autoConnect === false) return;
 
-    const token = localStorage.getItem('kiwi_token');
-    if (!token) return;
+    const token = typeof localStorage !== 'undefined' ? localStorage.getItem('kiwi_token') : null;
+    // Invitados (tracking público): conectan sin token; el servidor los deja
+    // sin salas hasta `order:track`. Sin sesión y sin allowGuest, no conectar.
+    if (!token && !(optionsRef.current.allowGuest && !user)) return;
+    if (!token && !user) return;
 
     // Connect to socket
-    socketClient.connect(token);
+    socketClient.connect(token ?? '');
     setIsConnected(socketClient.isConnected());
     setSocketId(socketClient.getSocketId());
 

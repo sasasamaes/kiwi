@@ -234,6 +234,43 @@ describe('EventsGateway payload restrictions', () => {
     });
   });
 
+  describe('order:track (invitados, sin auth)', () => {
+    it('une a track:{orderId} si el pedido existe (sinconnectedUsers)', async () => {
+      (gateway as any).prisma.order.findUnique = jest.fn().mockResolvedValue({ id: 'ord-1' });
+      const res = await gateway.handleOrderTrack(client, { orderId: 'ord-1' });
+      expect(res).toEqual({ success: true });
+      expect(client.join).toHaveBeenCalledWith('track:ord-1');
+    });
+
+    it('rechaza orderId inexistente o inválido sin unir a salas', async () => {
+      (gateway as any).prisma.order.findUnique = jest.fn().mockResolvedValue(null);
+      expect(await gateway.handleOrderTrack(client, { orderId: 'nope' })).toEqual({
+        error: 'Pedido no encontrado',
+      });
+      expect(await gateway.handleOrderTrack(client, {})).toEqual({ error: 'orderId inválido' });
+      expect(client.join).not.toHaveBeenCalled();
+    });
+
+    it('driver:locationUpdate también emite a la sala de tracking', async () => {
+      connect('driver', 'd1');
+      (gateway as any).prisma.order.findUnique = jest.fn().mockResolvedValue({
+        merchant: { userId: 'm1' },
+      });
+      const toMock = (gateway as any).server.to as jest.Mock;
+      await gateway.handleDriverLocationUpdate(client, {
+        lat: 10.1,
+        lng: -85.4,
+        orderId: 'ord-1',
+      });
+      const rooms = toMock.mock.calls.map((c: any) => c[0]);
+      expect(rooms).toContain('track:ord-1');
+      expect(emitMock).toHaveBeenCalledWith(
+        'driver:location',
+        expect.objectContaining({ orderId: 'ord-1', lat: 10.1, lng: -85.4 }),
+      );
+    });
+  });
+
   describe('notification:subscribe topic allowlist', () => {
     it('refuses topics outside the allowlist', async () => {
       connect('merchant');

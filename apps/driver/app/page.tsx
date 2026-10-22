@@ -131,13 +131,15 @@ export default function Home() {
   // cierres viejos (availableOrders/newOrderAlert del primer render).
   const availableRef = useRef<Order[]>([]);
   const alertRef = useRef<any>(null);
+  const activeOrdersRef = useRef<Order[]>([]);
   // Sincronizados en efecto (no durante el render): escribir refs en el
   // render rompe en StrictMode/concurrent al descartar renders.
   useEffect(() => {
     isOnlineRef.current = isOnline;
     availableRef.current = availableOrders;
     alertRef.current = newOrderAlert;
-  }, [isOnline, availableOrders, newOrderAlert]);
+    activeOrdersRef.current = activeOrders;
+  }, [isOnline, availableOrders, newOrderAlert, activeOrders]);
 
   // Saca un pedido de Disponibles + popup cuando deja de estar vigente.
   const removeFromAvailable = useCallback((data: any) => {
@@ -163,6 +165,7 @@ export default function Home() {
     onNewOrder,
     onOrderStatusChanged,
     updateDriverStatus: socketUpdateStatus,
+    updateDriverLocation: emitDriverLocation,
   } = useSocket({
     onConnect: () => console.log('🟢 Driver connected to real-time'),
     onNewOrder: (data) => {
@@ -341,6 +344,16 @@ export default function Home() {
           api
             .updateDriverLocation(pos.coords.latitude, pos.coords.longitude)
             .catch(() => undefined); // best-effort: targeting, no tracking
+          // En vivo por socket a cada activo (el tracking del cliente lo
+          // recibe al instante en vez de esperar el polling REST).
+          try {
+            const ids = activeOrdersRef.current.slice(0, 5).map((o) => o.id);
+            for (const id of ids) {
+              emitDriverLocation?.(pos.coords.latitude, pos.coords.longitude, id);
+            }
+          } catch {
+            // sin socket: el polling REST igual lo levanta
+          }
         },
         () => undefined, // sin permiso/GPS: decae a broadcast, no spamea
         { enableHighAccuracy: false, maximumAge: 30_000, timeout: 10_000 },

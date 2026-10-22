@@ -60,8 +60,11 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     try {
       const token = client.handshake.auth?.token || client.handshake.query?.token;
 
+      // Invitados (tracking público sin login): se quedan conectados pero sin
+      // salas. Solo pueden usar `order:track` (validado por pedido); todo lo
+      // demás exige entrada en connectedUsers y los rechaza.
       if (!token) {
-        client.disconnect();
+        console.log(`Guest client connected: ${client.id}`);
         return;
       }
 
@@ -115,6 +118,35 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       console.log(`Client disconnected: ${client.id} (User: ${userData.userId})`);
       this.connectedUsers.delete(client.id);
     }
+  }
+
+  // ============================================
+  // 📍 PUBLIC TRACKING (invitados, sin auth)
+  // ============================================
+
+  /**
+   * El link público de seguimiento se une a `track:{orderId}` para recibir
+   * `driver:location` en vivo. Sin token: solo entra si el pedido existe.
+   * No une a ninguna otra sala, así que no ve nada ajeno.
+   */
+  @SubscribeMessage('order:track')
+  async handleOrderTrack(@ConnectedSocket() client: Socket, @MessageBody() data: any) {
+    const orderId =
+      typeof data?.orderId === 'string' && data.orderId.length > 0 && data.orderId.length <= 64
+        ? data.orderId
+        : null;
+    if (!orderId) {
+      return { error: 'orderId inválido' };
+    }
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      select: { id: true },
+    });
+    if (!order) {
+      return { error: 'Pedido no encontrado' };
+    }
+    client.join(`track:${orderId}`);
+    return { success: true };
   }
 
   // ============================================
@@ -377,6 +409,15 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
           lng: data.lng,
         });
       }
+
+      // Tracking público en vivo: el link del cliente unido a track:{orderId}
+      // recibe el punto azul sin esperar el polling REST (15-30s).
+      this.server.to(`track:${data.orderId}`).emit('driver:location', {
+        orderId: data.orderId,
+        driverId: userData.userId,
+        lat: data.lat,
+        lng: data.lng,
+      });
     }
 
     return { success: true };

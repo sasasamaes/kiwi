@@ -179,6 +179,7 @@ function TrackingContent() {
   >([]);
 
   const { isConnected, on, emit } = useSocket({
+    allowGuest: true,
     onConnect: () => {
       emit('order:track', { orderId });
     },
@@ -382,6 +383,11 @@ function TrackingContent() {
   }, [eta]);
 
   const config = getStatusConfig(t)[currentStatus] ?? getFallbackConfig(t);
+
+  const merchantName =
+    (order as any)?.merchantName?.trim?.() ||
+    (order as any)?.merchant?.businessName?.trim?.() ||
+    null;
 
   const driver = (order as any)?.driver ?? null;
   const vehicleLabels: Record<string, string> = {
@@ -697,6 +703,36 @@ function TrackingContent() {
                 #{(orderId || '').slice(0, 8) || '—'}
               </span>
             </div>
+            {merchantName && (
+              <div className="flex justify-between gap-3">
+                <span className="shrink-0 text-surface-500 dark:text-surface-400">
+                  {t('wcliord.tracking.merchantLabel')}
+                </span>
+                <span className="text-right font-semibold text-surface-700 dark:text-surface-200">
+                  {merchantName}
+                </span>
+              </div>
+            )}
+            {(order as any)?.pickupAddress && (
+              <div className="flex justify-between gap-3">
+                <span className="shrink-0 text-surface-500 dark:text-surface-400">
+                  {t('wcliord.tracking.pickupLabel')}
+                </span>
+                <span className="text-right text-surface-700 dark:text-surface-200">
+                  {(order as any).pickupAddress}
+                </span>
+              </div>
+            )}
+            {(order as any)?.deliveryAddress && (
+              <div className="flex justify-between gap-3">
+                <span className="shrink-0 text-surface-500 dark:text-surface-400">
+                  {t('wcliord.tracking.deliveryLabel')}
+                </span>
+                <span className="text-right text-surface-700 dark:text-surface-200">
+                  {(order as any).deliveryAddress}
+                </span>
+              </div>
+            )}
             <div className="flex justify-between">
               <span className="text-surface-500 dark:text-surface-400">
                 {t('wcliord.tracking.statusLabel')}
