@@ -11,6 +11,8 @@ export const business = {
   legalEntity:
     'operado por su titular como persona física (sin cédula jurídica), con domicilio en Nicoya, Guanacaste, Costa Rica',
   email: 'contacto@kiwicr.express',
+  /** Soporte a usuarios (comercios, repartidores, clientes). */
+  supportEmail: 'soporte@kiwicr.express',
   phone: '+506 8826 4007',
   /** Número sin espacios para enlaces tel:/wa.me. */
   phoneDial: '+50688264007',

@@ -532,6 +532,12 @@ export default function LandingPage() {
               <ul className="space-y-2 text-sm text-surface-500 dark:text-surface-400">
                 <li>📧 {business.email}</li>
                 <li>
+                  🛟{' '}
+                  <a href={`mailto:${business.supportEmail}`} className="hover:text-kiwi-700">
+                    Soporte: {business.supportEmail}
+                  </a>
+                </li>
+                <li>
                   <a
                     href={business.whatsapp}
                     target="_blank"
