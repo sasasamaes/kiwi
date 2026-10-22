@@ -1260,6 +1260,18 @@ export class OrdersService {
       })
       ?.catch?.(() => undefined);
 
+    // Admin en el celu: push del pedido nuevo para vigilar/re-asignar.
+    void this.notificationsService
+      .notifyAdminNewOrder?.({
+        id: order.id,
+        pickupAddress: order.pickupAddress,
+        deliveryAddress: order.deliveryAddress,
+        totalAmount: order.totalAmount,
+        merchantName: merchantProfile.businessName ?? null,
+        deliveryZone: (order as any).deliveryZone ?? null,
+      })
+      ?.catch?.(() => undefined);
+
     // Asignación directa: avisar SOLO al elegido (socket 1:1 + push 1:1).
     // Nada de broadcast: el resto de la flota no debe enterarse.
     if (directDriver) {
@@ -2541,6 +2553,23 @@ export class OrdersService {
       message: merchantLabels[status] || `Estado: ${status}`,
     });
 
+    // Admin en el celu: push de cada paso (quién lo tomó, dónde va, si se
+    // entregó o se soltó) para decidir reasignación sin abrir el panel.
+    void this.notificationsService
+      .notifyAdminOrderStatus?.(orderId, status, {
+        shortId,
+        merchantName,
+        driverName,
+        pickupAddress: statusContext.pickupAddress,
+        deliveryAddress: statusContext.deliveryAddress,
+        payout: statusContext.payout,
+        commission:
+          (updatedOrder as any).commission != null
+            ? Number((updatedOrder as any).commission)
+            : undefined,
+      })
+      ?.catch?.(() => undefined);
+
     return updatedOrder;
   }
 
@@ -3198,6 +3227,21 @@ export class OrdersService {
         .catch(() => undefined);
     }
 
+    // Admin en el celu: quién lo agarró.
+    void this.notificationsService
+      .notifyAdminOrderStatus?.(updatedOrder.id, 'assigned', {
+        shortId: updatedOrder.id.slice(0, 8).toUpperCase(),
+        merchantName: updatedOrder.merchant?.businessName ?? undefined,
+        driverName: driverProfile.fullName,
+        pickupAddress: (updatedOrder as any).pickupAddress ?? undefined,
+        deliveryAddress: (updatedOrder as any).deliveryAddress ?? undefined,
+        payout:
+          (updatedOrder as any).driverPayout != null
+            ? Number((updatedOrder as any).driverPayout)
+            : undefined,
+      })
+      ?.catch?.(() => undefined);
+
     // Notify driver confirmation
     this.eventsGateway.sendToUser(driverUserId, 'order:confirmed', {
       orderId: updatedOrder.id,
@@ -3299,6 +3343,16 @@ export class OrdersService {
         .notifyOrderRejected(order.id, order.merchant.userId, driverProfile.fullName)
         .catch(() => undefined);
     }
+
+    // Admin en el celu: se soltó, necesita otro repartidor.
+    void this.notificationsService
+      .notifyAdminOrderStatus?.(orderId, 'rejected', {
+        shortId: orderId.slice(0, 8).toUpperCase(),
+        merchantName: order?.merchant?.businessName ?? undefined,
+        driverName: driverProfile.fullName,
+        deliveryAddress: (order as any)?.deliveryAddress ?? undefined,
+      })
+      ?.catch?.(() => undefined);
 
     // Volvió a concurso: re-alertar a la flota (proximidad + fail-open a
     // broadcast). Sin esto el pedido quedaba en pending invisible.

@@ -27,6 +27,7 @@ import {
   MapPin,
   Globe,
   TrendingUp,
+  Bell,
 } from 'lucide-react';
 import {
   ThemeToggle,
@@ -35,6 +36,7 @@ import {
   KiwiSlice,
   LanguageSwitcher,
   useTranslations,
+  api,
 } from '@kiwi/ui';
 
 const menuItems = [
@@ -106,6 +108,26 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // Al navegar en móvil se cierra el drawer.
   useEffect(() => {
     setMobileOpen(false);
+  }, [pathname]);
+
+  // Campana: los push admin también dejan fila en inbox (push+inbox).
+  const [unread, setUnread] = useState(0);
+  useEffect(() => {
+    let alive = true;
+    const tick = async () => {
+      try {
+        const r = await api.getUnreadNotificationCount();
+        if (alive) setUnread(Number(r?.count ?? 0));
+      } catch {
+        // sin campana no se cae el layout
+      }
+    };
+    void tick();
+    const t = setInterval(tick, 30000);
+    return () => {
+      alive = false;
+      clearInterval(t);
+    };
   }, [pathname]);
 
   if (loading || !user) {
@@ -274,6 +296,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <div className="flex shrink-0 items-center gap-1.5 sm:gap-4">
               <LanguageSwitcher />
               <ThemeToggle />
+              <Link
+                href="/notifications"
+                aria-label="Notificaciones"
+                className="relative rounded-xl p-2.5 text-surface-500 hover:bg-surface-100 dark:text-surface-300 dark:hover:bg-surface-800"
+              >
+                <Bell className="h-5 w-5" />
+                {unread > 0 && (
+                  <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                    {unread > 99 ? '99+' : unread}
+                  </span>
+                )}
+              </Link>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-kiwi-gradient flex items-center justify-center text-white font-semibold ring-2 ring-white shadow-sm dark:ring-surface-800">
                   A

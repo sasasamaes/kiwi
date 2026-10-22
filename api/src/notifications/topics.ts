@@ -159,6 +159,24 @@ export const TOPIC_CATALOG: TopicDef[] = [
     locked: false,
     delivery: 'push+inbox',
   },
+  {
+    name: 'admin.orders.new',
+    audience: 'admin',
+    label: 'Pedidos nuevos',
+    description: 'Cuando entra un pedido (para vigilar y reasignar si hace falta)',
+    defaultEnabled: true,
+    locked: false,
+    delivery: 'push+inbox',
+  },
+  {
+    name: 'admin.orders.status',
+    audience: 'admin',
+    label: 'Estados de pedidos',
+    description: 'Quién lo tomó, dónde va, si se entregó o se soltó',
+    defaultEnabled: true,
+    locked: false,
+    delivery: 'push+inbox',
+  },
 ];
 
 const BY_NAME = new Map(TOPIC_CATALOG.map((t) => [t.name, t]));

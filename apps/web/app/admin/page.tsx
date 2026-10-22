@@ -22,8 +22,16 @@ import {
   Star,
   X,
   Mail,
+  Bell,
 } from 'lucide-react';
-import { api, StaggerContainer, StaggerItem, useTranslations } from '@kiwi/ui';
+import {
+  api,
+  StaggerContainer,
+  StaggerItem,
+  useTranslations,
+  usePushNotifications,
+  playNotificationSound,
+} from '@kiwi/ui';
 
 interface PlatformAnalytics {
   period: string;
@@ -154,6 +162,35 @@ export default function AdminDashboard() {
     const t = setInterval(fetchLive, 30000);
     return () => clearInterval(t);
   }, [fetchLive]);
+
+  // Push en el celu del admin: pedido nuevo, quién lo tomó, dónde va,
+  // entregado/soltado. Sin esto el token nunca se registra y no llega nada
+  // con el app cerrada (el socket solo cubre app abierta).
+  const {
+    permission: pushPermission,
+    isSupported: pushSupported,
+    requestPermission: requestPush,
+    needsInstall: pushNeedsInstall,
+  } = usePushNotifications({
+    enabled: true,
+    onNotification: () => {
+      playNotificationSound('order_update');
+      fetchLive();
+    },
+  });
+  const [pushBusy, setPushBusy] = useState(false);
+  const [pushError, setPushError] = useState<string | null>(null);
+
+  const enablePush = async () => {
+    setPushBusy(true);
+    setPushError(null);
+    try {
+      const res = await requestPush();
+      if (!res.ok) setPushError('No se pudo activar. Revisá el permiso del navegador.');
+    } finally {
+      setPushBusy(false);
+    }
+  };
 
   const fetchAnalytics = useCallback(
     async (period: string) => {
@@ -290,6 +327,28 @@ export default function AdminDashboard() {
         </div>
       </div>
 
+      {/* Activar push en el celu del admin (pedidos en vivo con app cerrada) */}
+      {pushSupported && !pushNeedsInstall && pushPermission === 'default' && (
+        <motion.div
+          className="flex flex-wrap items-center gap-3 rounded-2xl border border-kiwi-300 bg-kiwi-50 px-5 py-4 dark:border-kiwi-700 dark:bg-kiwi-900/20"
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <Bell className="h-5 w-5 shrink-0 text-kiwi-700 dark:text-kiwi-300" />
+          <p className="min-w-0 flex-1 text-sm text-surface-700 dark:text-surface-200">
+            <b>Recibí los pedidos en este celu:</b> nuevo, quién lo tomó, dónde va, entregado o
+            soltado — aunque el app esté cerrado.
+          </p>
+          <button
+            onClick={enablePush}
+            disabled={pushBusy}
+            className="shrink-0 rounded-lg bg-kiwi-700 px-4 py-2 text-xs font-semibold text-white hover:bg-kiwi-800 disabled:opacity-50"
+          >
+            {pushBusy ? 'Activando…' : 'Activar notificaciones'}
+          </button>
+          {pushError && <p className="w-full text-xs text-red-600">{pushError}</p>}
+        </motion.div>
+      )}
       {/* Alerta de ritmo vs meta del escenario */}
       {rhythmAlert && !rhythmDismissed && (
         <motion.div

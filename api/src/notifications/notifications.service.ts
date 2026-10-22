@@ -647,6 +647,110 @@ export class NotificationsService {
     });
   }
 
+  /**
+   * Pedido nuevo publicado → admins (para vigilar desde el celu y reasignar
+   * si hace falta). Topic admin.orders.new (push+inbox). El socket en vivo
+   * ya lo cubre con el app abierta; esto cubre app cerrada.
+   */
+  async notifyAdminNewOrder(order: {
+    id: string;
+    pickupAddress: string;
+    deliveryAddress: string;
+    totalAmount: any;
+    merchantName?: string | null;
+    deliveryZone?: string | null;
+  }) {
+    const short = order.id.slice(0, 8).toUpperCase();
+    return this.publishToTopic('admin.orders.new', {
+      title: `🆕 Pedido nuevo #${short}`,
+      body: `${this.newOrderRoute(order)} · ₡${Number(order.totalAmount || 0).toLocaleString('es-CR')}`,
+      data: { orderId: order.id, type: 'new_order', url: '/admin/orders' },
+    });
+  }
+
+  /**
+   * Cada paso del pedido → admins. Copy propia (quién lo tomó, dónde va,
+   * si se soltó) para decidir reasignación sin abrir el panel.
+   */
+  async notifyAdminOrderStatus(
+    orderId: string,
+    status: string,
+    context: {
+      shortId?: string;
+      merchantName?: string;
+      driverName?: string;
+      pickupAddress?: string;
+      deliveryAddress?: string;
+      payout?: number;
+      commission?: number;
+    } = {},
+  ) {
+    const shortId = context.shortId ?? orderId.slice(0, 8).toUpperCase();
+    const tag = `#${shortId}`;
+    const merchant = context.merchantName || 'el comercio';
+    const driver = context.driverName || 'El repartidor';
+    const payout =
+      context.payout != null && Number.isFinite(Number(context.payout))
+        ? `₡${Number(context.payout).toLocaleString('es-CR')}`
+        : null;
+    const commission =
+      context.commission != null && Number.isFinite(Number(context.commission))
+        ? `₡${Number(context.commission).toLocaleString('es-CR')}`
+        : null;
+
+    const messages: Record<string, { title: string; body: string }> = {
+      pending: {
+        title: `🔄 Pedido ${tag} volvió a concurso`,
+        body: `${merchant} → ${context.deliveryAddress || 'destino'}. Sin repartidor.`,
+      },
+      pending_acceptance: {
+        title: `🛵 ${driver} debe aceptar ${tag}`,
+        body: `${merchant} → ${context.deliveryAddress || 'destino'}. Si no acepta, vuelve a concurso.`,
+      },
+      assigned: {
+        title: `🛵 ${driver} tomó ${tag}`,
+        body: `${merchant} → ${context.deliveryAddress || 'destino'}${payout ? ` · Gana ${payout}` : ''}.`,
+      },
+      in_transit_to_pickup: {
+        title: `🛵 ${driver} va a recoger ${tag}`,
+        body: `${merchant} · ${context.pickupAddress || 'comercio'}.`,
+      },
+      picked_up: {
+        title: `📦 ${tag} recogido`,
+        body: `${driver} lo lleva a ${context.deliveryAddress || 'su destino'}.`,
+      },
+      in_transit_to_delivery: {
+        title: `🛣️ ${tag} en camino`,
+        body: `${driver} → ${context.deliveryAddress || 'destino'}.`,
+      },
+      delivered: {
+        title: `🎉 ${tag} entregado`,
+        body: `${driver}${commission ? ` · Kiwi ${commission}` : ''}.`,
+      },
+      cancelled: {
+        title: `❌ ${tag} cancelado`,
+        body: `${merchant} → ${context.deliveryAddress || 'destino'}.`,
+      },
+      no_driver: {
+        title: `⚠️ ${tag} sin repartidor`,
+        body: 'Nadie lo tomó. Reasignalo desde Pedidos.',
+      },
+      rejected: {
+        title: `⚠️ ${driver} soltó ${tag}`,
+        body: 'Necesita otro repartidor. Reasignalo desde Pedidos.',
+      },
+    };
+    const message = messages[status] || {
+      title: `Pedido ${tag}: ${status}`,
+      body: `${merchant} → ${context.deliveryAddress || 'destino'}.`,
+    };
+
+    return this.publishToTopic('admin.orders.status', {
+      ...message,
+      data: { orderId, type: 'order_status', status, url: '/admin/orders' },
+    });
+  }
+
   /** Te asignaron un pedido: tenés N minutos para aceptar. */
   async notifyAssignmentOffered(orderId: string, driverUserId: string, minutes: number) {
     return this.sendToUser(driverUserId, {
