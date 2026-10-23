@@ -1,6 +1,6 @@
 // Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 import type { Metadata, Viewport } from 'next';
-import { Geist_Mono, Inter, Fraunces } from 'next/font/google';
+import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import {
   ThemeProvider,
@@ -14,20 +14,16 @@ import {
 } from '@kiwi/ui';
 import { OfflineBanner } from './offline-banner';
 
-const geistMono = Geist_Mono({
+const geist = Geist({
   subsets: ['latin'],
-  variable: '--font-geist-mono',
-});
-
-const fraunces = Fraunces({
-  subsets: ['latin'],
-  variable: '--font-fraunces',
+  variable: '--font-geist',
   display: 'swap',
 });
 
-const inter = Inter({
+const geistMono = Geist_Mono({
   subsets: ['latin'],
-  variable: '--font-inter',
+  variable: '--font-geist-mono',
+  display: 'swap',
 });
 
 export const viewport: Viewport = {
@@ -50,11 +46,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html
-      lang="es"
-      className={`${fraunces.variable} ${geistMono.variable} ${inter.variable}`}
-      suppressHydrationWarning
-    >
+    <html lang="es" className={`${geist.variable} ${geistMono.variable}`} suppressHydrationWarning>
       <head>
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
