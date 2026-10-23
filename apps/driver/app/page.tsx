@@ -376,6 +376,16 @@ export default function Home() {
       setPageError(t('wdrvauth.home.errIncomplete'));
       return;
     }
+    if (activeOrders.length >= 10) {
+      const msg = t('wdrvauth.home.errMaxOrders');
+      setPageError(msg);
+      addNotification({
+        type: 'order_status',
+        title: t('wdrvauth.home.acceptFailTitle'),
+        body: msg,
+      });
+      return;
+    }
     if (acceptingRef.current === orderId) return;
     acceptingRef.current = orderId;
     setAcceptingOrder(orderId);

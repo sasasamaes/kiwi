@@ -1486,6 +1486,67 @@ describe('OrdersService', () => {
     });
   });
 
+  describe('tope de 10 pedidos simultáneos por repartidor', () => {
+    const ORDER_ID = 'order-1';
+    const DRIVER_ID = 'dp-1';
+
+    beforeEach(() => {
+      prisma.driverProfile = {
+        findUnique: jest.fn().mockResolvedValue({
+          id: DRIVER_ID,
+          fullName: 'Juan',
+          status: 'available',
+          kycStatus: 'approved',
+          userId: 'user-d',
+        }),
+      };
+    });
+
+    it('acceptOrderAsDriver rechaza el 11° pedido sin tocar el claim', async () => {
+      prisma.order.findUnique.mockResolvedValue({
+        id: ORDER_ID,
+        status: 'pending',
+        driverId: null,
+      });
+      prisma.order.count.mockResolvedValue(10);
+      await expect(service.acceptOrderAsDriver(ORDER_ID, 'user-d')).rejects.toThrow(
+        'Ya tenés 10 pedidos activos',
+      );
+      expect(prisma.order.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('acceptOrderAsDriver deja pasar con 9 activos', async () => {
+      prisma.order.findUnique.mockResolvedValue({
+        id: ORDER_ID,
+        status: 'pending',
+        driverId: null,
+      });
+      prisma.order.count.mockResolvedValue(9);
+      prisma.order.updateMany.mockResolvedValue({ count: 1 });
+      prisma.order.findUnique.mockResolvedValueOnce({
+        id: ORDER_ID,
+        status: 'pending',
+        driverId: null,
+      });
+      // findUnique se llama varias veces; el claim y el fetch devuelven pedido válido
+      prisma.order.findUnique.mockResolvedValue({
+        id: ORDER_ID,
+        merchant: { userId: 'm1' },
+        driver: { fullName: 'Juan' },
+      });
+      await expect(service.acceptOrderAsDriver(ORDER_ID, 'user-d')).resolves.toBeDefined();
+      expect(prisma.order.updateMany).toHaveBeenCalled();
+    });
+
+    it('assignDriver rechaza si el elegido ya tiene 10 activos', async () => {
+      prisma.order.count.mockResolvedValue(10);
+      await expect(service.assignDriver(ORDER_ID, DRIVER_ID)).rejects.toThrow(
+        'Ya tenés 10 pedidos activos',
+      );
+      expect(prisma.order.updateMany).not.toHaveBeenCalled();
+    });
+  });
+
   describe('rejectOrderAsDriver', () => {
     it('reject asignado: vuelve a concurso y avisa al comercio', async () => {
       prisma.driverProfile = {

@@ -55,6 +55,18 @@ const MERCHANT_FOR_DRIVER_SELECT = {
   user: { select: { phone: true } },
 } as const;
 
+/** Tope de pedidos simultáneos por repartidor (el 11° se rechaza). */
+const MAX_ACTIVE_ORDERS_PER_DRIVER = 10;
+
+/** Estados que ocupan un lugar del tope (el pedido sigue en manos del driver). */
+const ACTIVE_DRIVER_STATUSES = [
+  'assigned',
+  'pending_acceptance',
+  'in_transit_to_pickup',
+  'picked_up',
+  'in_transit_to_delivery',
+] as const;
+
 /** Lo que se expone del repartidor en respuestas de pedidos. */
 const DRIVER_PUBLIC_SELECT = {
   id: true,
@@ -83,6 +95,22 @@ export class OrdersService {
     @Inject(ImageUploadService)
     private readonly imageUpload?: ImageUploadService,
   ) {}
+
+  /**
+   * Tope de simultáneos: cuántos pedidos activos tiene el repartidor y
+   * revienta si ya llegó al máximo. Se chequea ANTES de cada claim
+   * (aceptar, asignar, propuesta, reasignar) para que el 11° no entre.
+   */
+  private async assertDriverCapacity(driverId: string) {
+    const active = await this.prisma.order.count({
+      where: { driverId, status: { in: [...ACTIVE_DRIVER_STATUSES] as any } },
+    });
+    if (active >= MAX_ACTIVE_ORDERS_PER_DRIVER) {
+      throw new BadRequestException(
+        `Ya tenés ${MAX_ACTIVE_ORDERS_PER_DRIVER} pedidos activos (el máximo). Entregá alguno antes de agarrar otro.`,
+      );
+    }
+  }
 
   /**
    * Contacto para la lista de espera (best-effort): email/tel del pedido o,
@@ -2583,6 +2611,9 @@ export class OrdersService {
       throw new NotFoundException('Repartidor no encontrado');
     }
 
+    // Tope de simultáneos: con 10 activos no se le puede asignar otro.
+    await this.assertDriverCapacity(driverId);
+
     // Only active drivers can be assigned: the merchant sees everyone in the
     // directory, but a driver who is offline cannot be chosen — matching what
     // the UI offers.
@@ -2805,6 +2836,9 @@ export class OrdersService {
     if (isKycRequired() && (next as any).kycStatus !== 'approved') {
       throw new BadRequestException(`${next.fullName} aún no está verificado`);
     }
+
+    // Tope de simultáneos: con 10 activos no se le puede pasar otro.
+    await this.assertDriverCapacity(newDriverId);
 
     let acceptanceMinutes = 5;
     try {
@@ -3033,6 +3067,16 @@ export class OrdersService {
 
     // Accept proposal and assign driver atomically
     const updatedOrder = await this.prisma.$transaction(async (tx) => {
+      // Tope de simultáneos: con 10 activos no se le puede asignar otro.
+      const active = await tx.order.count({
+        where: { driverId: proposal.driverId, status: { in: [...ACTIVE_DRIVER_STATUSES] as any } },
+      });
+      if (active >= MAX_ACTIVE_ORDERS_PER_DRIVER) {
+        throw new BadRequestException(
+          `El repartidor ya tiene ${MAX_ACTIVE_ORDERS_PER_DRIVER} pedidos activos (el máximo)`,
+        );
+      }
+
       await tx.driverProposal.update({
         where: { id: proposalId },
         data: { status: 'accepted' },
@@ -3149,6 +3193,9 @@ export class OrdersService {
         `El pedido ya no está disponible (estado: ${(order as any).status})`,
       );
     }
+
+    // Tope de simultáneos: con 10 activos no puede agarrar otro.
+    await this.assertDriverCapacity(driverProfile.id);
 
     // Atomic claim: only pending orders with no driver can be taken
     const claimed = await this.prisma.order.updateMany({

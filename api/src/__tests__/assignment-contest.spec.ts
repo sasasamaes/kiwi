@@ -46,6 +46,7 @@ describe('Assignment contest (Task 6): 10 criterios', () => {
         findMany: jest.fn(),
         update: jest.fn(),
         updateMany: jest.fn(),
+        count: jest.fn().mockResolvedValue(0),
       },
       driverProfile: { findUnique: jest.fn(), update: jest.fn().mockResolvedValue({}) },
       merchantProfile: { findUnique: jest.fn() },
