@@ -476,14 +476,14 @@ export default function MandadosPage() {
             type="button"
             onClick={submit}
             disabled={loading || !canSubmit}
-            className="w-full rounded-full bg-orange-500 py-4 font-display text-[17px] font-bold text-white shadow-card transition-all active:scale-[0.98] disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/50 focus-visible:ring-offset-2"
+            className="w-full rounded-full bg-orange-500 py-4 font-display text-[17px] font-bold text-surface-950 shadow-card transition-all active:scale-[0.98] disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-800 focus-visible:ring-offset-2"
           >
             {loading
               ? t('wclimisc.manda.submitLoading')
               : t('wclimisc.manda.submit', { total: money(total) })}
           </button>
           {!canSubmit && !loading && (
-            <p className="mt-1.5 text-center text-[11px] text-surface-400">
+            <p className="mt-1.5 text-center text-xs text-surface-500">
               {t('wclimisc.manda.incomplete')}
             </p>
           )}

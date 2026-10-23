@@ -214,7 +214,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             return (
               <div key={group.titleKey} className="mb-5">
                 {sidebarOpen ? (
-                  <p className="mb-2 px-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-surface-400 dark:text-surface-500">
+                  <p className="mb-2 px-4 text-xs font-semibold uppercase tracking-[0.14em] text-surface-500 dark:text-surface-400">
                     {groupTitle(group.titleKey)}
                   </p>
                 ) : (

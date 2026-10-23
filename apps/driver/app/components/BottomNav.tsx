@@ -51,7 +51,7 @@ export function BottomNav() {
                 whileTap={{ scale: 0.9 }}
               >
                 <Icon className="h-5 w-5 shrink-0" />
-                <span className="truncate text-[10px] leading-tight font-medium">{item.label}</span>
+                <span className="truncate text-xs leading-tight font-medium">{item.label}</span>
               </motion.span>
             </Link>
           );
