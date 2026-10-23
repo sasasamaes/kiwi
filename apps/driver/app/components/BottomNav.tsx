@@ -28,7 +28,7 @@ export function BottomNav() {
 
   return (
     <nav className="pb-safe fixed inset-x-0 bottom-0 z-40 border-t border-surface-200/50 dark:border-surface-700/50 bg-white/80 dark:bg-surface-900/80 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-lg items-center justify-around py-2">
+      <div className="mx-auto flex max-w-lg items-stretch justify-around px-1 py-1.5">
         {ITEMS.map((item) => {
           const active = item.exact
             ? pathname === item.href
@@ -40,18 +40,18 @@ export function BottomNav() {
               href={item.href}
               aria-label={item.label}
               aria-current={active ? 'page' : undefined}
-              className="flex flex-col items-center gap-1 px-3 py-2"
+              className="flex min-w-0 flex-1 flex-col items-center gap-0.5 px-1 py-1.5"
             >
               <motion.span
-                className={`flex flex-col items-center gap-1 ${
+                className={`flex min-w-0 flex-col items-center gap-0.5 ${
                   active
                     ? 'text-kiwi-700 dark:text-kiwi-400'
                     : 'text-surface-500 dark:text-surface-400'
                 }`}
                 whileTap={{ scale: 0.9 }}
               >
-                <Icon className="h-5 w-5" />
-                <span className="text-xs font-medium">{item.label}</span>
+                <Icon className="h-5 w-5 shrink-0" />
+                <span className="truncate text-[10px] leading-tight font-medium">{item.label}</span>
               </motion.span>
             </Link>
           );
