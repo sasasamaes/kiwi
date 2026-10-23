@@ -269,15 +269,15 @@
    SELECTION & FOCUS
    ═══════════════════════════════════════════ */
 
-::selection {
-  background: rgba(42, 134, 173, 0.25);
-  color: #0f172a;
-}
-
+/* Foco visible único: kiwi-700 en claro, kiwi-300 en oscuro (AA no-texto). */
 *:focus-visible {
-  outline: 2px solid #22c55e;
+  outline: 2px solid #195a77;
   outline-offset: 2px;
   border-radius: 4px;
+}
+
+.dark *:focus-visible {
+  outline-color: #7cc0da;
 }
 
 /* ═══════════════════════════════════════════
@@ -287,10 +287,6 @@
 ::selection {
   background: rgba(42, 134, 173, 0.25);
   color: #0d3345;
-}
-
-*:focus-visible {
-  outline: 2px solid #2a86ad;
 }
 
 /* Fondo cálido de página (arena) en claro; azul profundo en oscuro. */
@@ -353,12 +349,23 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto !important;
+  }
   .reveal,
   .reveal-delay-1,
   .reveal-delay-2,
   .reveal-delay-3,
   .zona-wave-bg,
-  .press {
+  .press,
+  .animate-perpetual-pulse,
+  .animate-perpetual-float,
+  .animate-perpetual-shimmer,
+  .animate-perpetual-glow,
+  .skeleton,
+  .shimmer,
+  .animate-float,
+  .animate-pulse-soft {
     animation: none !important;
     transition: none !important;
     transform: none !important;
