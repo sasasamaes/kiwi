@@ -241,9 +241,9 @@ Delete the `*:focus-visible` (`outline: 2px solid #22c55e`) and `::selection` gr
 
 Leave the light-mode `focus:ring-kiwi-500` utility and all other web local styles untouched.
 
-- [ ] **Step 4: Verify no local green overrides remain**
+- [ ] **Step 4: Verify no functional green overrides remain (scrollbars, gradient text, and the `--kiwi-500` token stay)**
 
-Run: `grep -rn "#22c55e" apps/web/app/globals.css apps/driver/app/globals.css apps/client/app/globals.css`
+Run: `grep -rn "focus-visible\|::selection\|'Inter'" apps/web/app/globals.css apps/driver/app/globals.css apps/client/app/globals.css`
 Expected: no output.
 
 - [ ] **Step 5: Commit**
