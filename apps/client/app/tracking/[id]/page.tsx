@@ -497,6 +497,7 @@ function TrackingContent() {
             pickup={pickup}
             delivery={delivery}
             driverLocation={driverLocation || undefined}
+            driverPhotoUrl={driver?.photoUrl}
             height={300}
             showRoute={true}
           />

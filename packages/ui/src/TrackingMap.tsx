@@ -5,6 +5,7 @@ import 'leaflet/dist/leaflet.css';
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Bike, MapPin, Home, AlertTriangle } from 'lucide-react';
+import { isHttpUrl } from './utils';
 
 let L: any = null;
 
@@ -17,6 +18,8 @@ export interface TrackingMapProps {
   pickup?: Location;
   delivery?: Location;
   driverLocation?: Location;
+  /** Foto de perfil del repartidor: va en el marcador (igual que el mapa de zonas). */
+  driverPhotoUrl?: string | null;
   height?: number;
   className?: string;
   showRoute?: boolean;
@@ -35,6 +38,29 @@ function createSvgIcon(svgContent: string, color: string, size = 40): any {
       box-shadow: 0 4px 12px rgba(0,0,0,0.3);
       border: 3px solid white;
     ">${svgContent}</div>`,
+    className: 'custom-marker',
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+  });
+}
+
+/**
+ * Marcador con la foto de perfil del repartidor (igual que el mapa de
+ * zonas del admin). Solo URLs https: cualquier otro valor usa el icono
+ * de bici. La URL se escapa para el atributo src.
+ */
+function createDriverPhotoIcon(photoUrl: string, size = 44): any {
+  const src = photoUrl.replace(/"/g, '%22');
+  return L.divIcon({
+    html: `<div style="
+      width: ${size}px;
+      height: ${size}px;
+      border-radius: 50%;
+      border: 3px solid white;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      overflow: hidden;
+      background: #3b82f6;
+    "><img src="${src}" alt="" style="width:100%;height:100%;object-fit:cover;display:block" /></div>`,
     className: 'custom-marker',
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
@@ -77,6 +103,7 @@ export function TrackingMap({
   pickup,
   delivery,
   driverLocation,
+  driverPhotoUrl,
   height = 300,
   className = '',
   showRoute = true,
@@ -173,7 +200,9 @@ export function TrackingMap({
     }
 
     if (driverLocation) {
-      const icon = createSvgIcon(MARKER_SVGS.driver, '#3b82f6');
+      const icon = isHttpUrl(driverPhotoUrl)
+        ? createDriverPhotoIcon(driverPhotoUrl)
+        : createSvgIcon(MARKER_SVGS.driver, '#3b82f6');
       const marker = L.marker([driverLocation.lat, driverLocation.lng], { icon })
         .addTo(mapInstanceRef.current)
         .bindPopup('<b>Repartidor</b><br>En camino');
@@ -184,7 +213,7 @@ export function TrackingMap({
     if (bounds.isValid()) {
       mapInstanceRef.current.fitBounds(bounds, { padding: [50, 50] });
     }
-  }, [pickup, delivery, driverLocation]);
+  }, [pickup, delivery, driverLocation, driverPhotoUrl]);
 
   useEffect(() => {
     if (!mapInstanceRef.current || !L || !showRoute) return;
