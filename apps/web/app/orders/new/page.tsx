@@ -141,21 +141,25 @@ function NewOrderInner({
   const [scheduledDate, setScheduledDate] = useState('');
   const [scheduledTime, setScheduledTime] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<
-    'cash' | 'sinpe' | 'card' | 'crypto' | 'credit'
+    'cash' | 'sinpe' | 'card' | 'crypto' | 'credit' | 'weekly'
   >('sinpe');
   // Crédito prepago: solo cubre el viaje. Se descuenta al crear.
   const [creditBalance, setCreditBalance] = useState<number | null>(null);
+  // Facturación semanal pospago: la activa el admin por comercio.
+  const weeklyBillingEnabled = (user as any)?.merchantProfile?.weeklyBillingEnabled === true;
   // Efectivo: con cuánto pagan (para que el repartidor lleve el vuelto listo).
   const [cashTendered, setCashTendered] = useState('');
   // % de comisión del repartidor (admin). Solo espejo visual: el backend manda.
   const [commissionPct, setCommissionPct] = useState(15);
 
   // Métodos habilitados por el admin (/admin/settings). Crédito siempre va.
+  // La facturación semanal la activa el admin por comercio.
   const [payAvailability, setPayAvailability] = useState({
     sinpe: true,
     card: true,
     cash: true,
     crypto: true,
+    weekly: false,
   });
 
   useEffect(() => {
@@ -176,7 +180,8 @@ function NewOrderInner({
           cash: a.cash !== false,
           crypto: a.crypto !== false,
         };
-        setPayAvailability(next);
+        // No pisar el flag semanal (viene del perfil, no de settings).
+        setPayAvailability((prev) => ({ ...next, weekly: prev.weekly }));
         // Si el método elegido quedó deshabilitado, caer al primero válido
         setPaymentMethod((prev) => {
           const enabled: string[] = (Object.entries(next) as [string, boolean][])
@@ -188,6 +193,14 @@ function NewOrderInner({
       })
       .catch(() => undefined);
   }, []);
+
+  // Facturación semanal: el flag viene en el perfil (carga async), así que
+  // se fusiona aparte cuando el usuario ya está disponible.
+  useEffect(() => {
+    if (weeklyBillingEnabled) {
+      setPayAvailability((prev) => (prev.weekly ? prev : { ...prev, weekly: true }));
+    }
+  }, [weeklyBillingEnabled]);
 
   const [favoriteDrivers, setFavoriteDrivers] = useState<Driver[]>([]);
   const [availableDrivers, setAvailableDrivers] = useState<Driver[]>([]);
@@ -619,6 +632,11 @@ function NewOrderInner({
       await api.createPayment({ orderId, method: 'credit', amount: trip });
       return { redirected: false };
     }
+    if (method === 'weekly') {
+      // Pospago: se acumula el viaje y Kiwi lo cobra en el corte semanal.
+      await api.createPayment({ orderId, method: 'weekly_invoice', amount: trip });
+      return { redirected: false };
+    }
     await api.createPayment({ orderId, method: 'cash', amount: total });
     return { redirected: false };
   };
@@ -762,7 +780,7 @@ function NewOrderInner({
             deliveryAddress,
             deliveryZone: zoneForServer,
             payWithCredit: paymentMethod === 'credit',
-            paymentMethod,
+            paymentMethod: paymentMethod === 'weekly' ? 'weekly_invoice' : paymentMethod,
             cashTendered: cashTenderedNum,
             deliveryLat,
             deliveryLng,
@@ -808,7 +826,7 @@ function NewOrderInner({
               deliveryAddress,
               deliveryZone: zoneForServer,
               payWithCredit: paymentMethod === 'credit',
-              paymentMethod,
+              paymentMethod: paymentMethod === 'weekly' ? 'weekly_invoice' : paymentMethod,
               cashTendered: cashTenderedNum,
               deliveryLat,
               deliveryLng,
@@ -1718,6 +1736,11 @@ function NewOrderInner({
                               amount: creditBalance.toLocaleString(),
                             }),
                     },
+                    {
+                      id: 'weekly',
+                      on: payAvailability.weekly,
+                      label: t('webshop2.neworder.payWeekly'),
+                    },
                   ] as const
                 )
                   .filter((m) => m.on)
@@ -1741,6 +1764,11 @@ function NewOrderInner({
                     trip: trip.toLocaleString(),
                     pct: commissionPct,
                   })}
+                </p>
+              )}
+              {paymentMethod === 'weekly' && (
+                <p className="mb-2 text-xs text-surface-500 dark:text-surface-400">
+                  {t('webshop2.neworder.weeklyNote', { trip: trip.toLocaleString() })}
                 </p>
               )}
               {paymentMethod === 'cash' && (

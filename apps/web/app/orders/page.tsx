@@ -379,6 +379,12 @@ export default function OrdersPage() {
 
         {/* Tabs */}
         <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+          <Link
+            href="/orders/share"
+            className="whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold bg-kiwi-100 text-kiwi-700 dark:bg-kiwi-900/40 dark:text-kiwi-300"
+          >
+            {t('webshop1.orders.shareLinkCta')}
+          </Link>
           {TABS.map((tabItem) => (
             <button
               key={tabItem.id}

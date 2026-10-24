@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 import { Module, forwardRef } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
+import { MerchantInvoicesService } from './merchant-invoices.service';
 import { PaymentsController } from './payments.controller';
 import { OnvoPayProvider } from './providers/onvopay.provider';
 import { MarketplaceService } from './marketplace/marketplace.service';
@@ -15,6 +16,7 @@ import { OrdersModule } from '../orders/orders.module';
   imports: [CreditsModule, forwardRef(() => OrdersModule)],
   providers: [
     PaymentsService,
+    MerchantInvoicesService,
     OnvoPayProvider,
     MarketplaceService,
     DriverMarketplaceService,

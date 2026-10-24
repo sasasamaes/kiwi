@@ -88,6 +88,7 @@ export class UsersService {
               logoUrl: true,
               kycStatus: true,
               cardPaymentsEnabled: true,
+              weeklyBillingEnabled: true,
               isHomeCook: true,
               pushCredits: true,
               _count: { select: { orders: true } },

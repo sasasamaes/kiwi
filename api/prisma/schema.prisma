@@ -38,18 +38,18 @@ model User {
   referredByCode String? @map("referred_by_code")
 
   // Relations
-  merchantProfile  MerchantProfile?
-  driverProfile    DriverProfile?
-  customerProfile  CustomerProfile?
-  customerAddresses CustomerAddress[]
-  kycVerification  KYCVerification?
-  notifications    Notification[]
-  deviceTokens     DeviceToken[]
-  topicPreferences TopicPreference[]
-  refreshTokens    RefreshToken[]
+  merchantProfile     MerchantProfile?
+  driverProfile       DriverProfile?
+  customerProfile     CustomerProfile?
+  customerAddresses   CustomerAddress[]
+  kycVerification     KYCVerification?
+  notifications       Notification[]
+  deviceTokens        DeviceToken[]
+  topicPreferences    TopicPreference[]
+  refreshTokens       RefreshToken[]
   passwordResetTokens PasswordResetToken[]
-  customerOrders   Order[]           @relation("CustomerOrders")
-  merchantFollows  MerchantFollow[]
+  customerOrders      Order[]              @relation("CustomerOrders")
+  merchantFollows     MerchantFollow[]
 
   @@index([phone])
   @@index([referredByCode])
@@ -96,24 +96,52 @@ model PasswordResetToken {
 // token crudo; en DB solo vive su hash sha256 (igual que el recupero).
 // Expira a los 30 días. Al registrarse con ese email+rol se marca accepted.
 model Invitation {
-  id        String   @id @default(uuid())
-  email     String
-  phone     String?
+  id         String    @id @default(uuid())
+  email      String
+  phone      String?
   // Nombre del negocio (merchant) o de la persona (driver). Solo etiqueta
   // para el vendedor; no se usa en el registro.
-  name      String?
-  role      String // merchant | driver
-  tokenHash String   @unique @map("token_hash")
-  status    String   @default("pending") // pending | accepted | revoked
-  expiresAt DateTime @map("expires_at")
-  createdBy String?  @map("created_by") // userId del admin/vendedor
-  sentAt    DateTime? @map("sent_at")
+  name       String?
+  role       String // merchant | driver
+  tokenHash  String    @unique @map("token_hash")
+  status     String    @default("pending") // pending | accepted | revoked
+  expiresAt  DateTime  @map("expires_at")
+  createdBy  String?   @map("created_by") // userId del admin/vendedor
+  sentAt     DateTime? @map("sent_at")
   acceptedAt DateTime? @map("accepted_at")
-  createdAt DateTime @default(now()) @map("created_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
 
   @@index([role, status, createdAt])
   @@index([email, role])
   @@map("invitations")
+}
+
+// Link de reparto del comercio: el comercio elige barrio + método de pago
+// (cash, crédito o facturación semanal — él paga el viaje) y comparte el
+// link con el cliente, que solo completa sus datos y la dirección exacta.
+// Token crudo solo en la URL; en DB solo su hash sha256 (igual que las
+// invitaciones). Un solo uso: al crear el pedido se marca consumed con el
+// orderId, y los reintentos devuelven ese mismo pedido. Expira a los 7 días.
+model DeliveryLink {
+  id            String          @id @default(uuid())
+  merchantId    String          @map("merchant_id")
+  merchant      MerchantProfile @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  // Zona elegida por el comercio (id de DeliveryZone; el precio siempre se
+  // recalcula en servidor, nunca se confía en el query string).
+  deliveryZone  String          @map("delivery_zone")
+  // Método con el que paga el comercio: cash | credit | weekly_invoice
+  paymentMethod String          @map("payment_method")
+  tokenHash     String          @unique @map("token_hash")
+  status        String          @default("pending") // pending | consumed | cancelled
+  expiresAt     DateTime        @map("expires_at")
+  consumedAt    DateTime?       @map("consumed_at")
+  orderId       String?         @map("order_id")
+  order         Order?          @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  createdBy     String?         @map("created_by") // userId del comercio que lo creó
+  createdAt     DateTime        @default(now()) @map("created_at")
+
+  @@index([merchantId, status, createdAt])
+  @@map("delivery_links")
 }
 
 // Códigos de referido (KIKO, WICHO, …): el que se registra puede anotar uno
@@ -267,6 +295,10 @@ model MerchantProfile {
   cashEnabled  Boolean @default(true) @map("cash_enabled")
   sinpeEnabled Boolean @default(true) @map("sinpe_enabled")
 
+  // Facturación semanal pospago: solo la activa el admin por comercio.
+  // El comercio paga contra uso y Kiwi hace el corte/cobro cada semana.
+  weeklyBillingEnabled Boolean @default(false) @map("weekly_billing_enabled")
+
   // Onvo marketplace: cuenta conectada del comercio para split automático.
   // onboardingStatus: pending_onboarding | awaiting_approval | active | ...
   onvoConnectedAccountId String? @map("onvo_connected_account_id")
@@ -299,6 +331,8 @@ model MerchantProfile {
   ratings         Rating[]
   creditLedger    CreditTransaction[]
   creditTopups    CreditTopup[]
+  invoices        MerchantInvoice[]
+  deliveryLinks   DeliveryLink[]
   campaigns       AdCampaign[]
   broadcasts      OfferBroadcast[]
 
@@ -350,6 +384,7 @@ model CustomerProfile {
   @@index([citySlug])
   @@map("customer_profiles")
 }
+
 // Catálogo de ciudades operativas. Nicoya activa hoy; Liberia y otras se
 // activan sin migraciones (solo insert + catálogo de zonas en código).
 model City {
@@ -545,6 +580,40 @@ model CreditTopup {
   @@map("credit_topups")
 }
 
+// Corte semanal de facturación pospago por comercio (pedidos con pago
+// weekly_invoice ya entregados). Las líneas son los Payment enlazados por
+// invoiceId; el monto queda congelado al generar (snapshot anti re-cálculo).
+model MerchantInvoice {
+  id         String          @id @default(uuid())
+  merchantId String          @map("merchant_id")
+  merchant   MerchantProfile @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  // Semana mar–lun CR (igual corte que la planilla de repartidores).
+  periodStart DateTime @map("period_start")
+  periodEnd   DateTime @map("period_end")
+
+  trips  Int     @default(0)
+  // Suma congelada de los viajes (basePrice) al generar el corte.
+  amount Decimal @map("amount") @db.Decimal(10, 2)
+
+  status InvoiceStatus @default(pending)
+  paidAt DateTime?     @map("paid_at")
+
+  createdBy String?  @map("created_by") // userId del admin que generó
+  createdAt DateTime @default(now()) @map("created_at")
+
+  payments Payment[]
+
+  @@unique([merchantId, periodStart], map: "merchant_invoices_merchant_period_uk")
+  @@index([merchantId, status, periodStart], map: "merchant_invoices_merchant_status_idx")
+  @@map("merchant_invoices")
+}
+
+enum InvoiceStatus {
+  pending
+  paid
+}
+
 // Ajustes de plataforma (admin). Clave-valor: lo que ves en /admin/settings
 // se guarda acá — nada vive solo en el navegador.
 model PlatformSetting {
@@ -574,22 +643,22 @@ model ScenarioSnapshot {
 
 // Driver profiles
 model DriverProfile {
-  id           String       @id @default(uuid())
-  userId       String       @unique @map("user_id")
-  fullName     String       @map("full_name")
-  photoUrl     String?      @map("photo_url")
+  id                     String       @id @default(uuid())
+  userId                 String       @unique @map("user_id")
+  fullName               String       @map("full_name")
+  photoUrl               String?      @map("photo_url")
   // Onvo marketplace: cuenta conectada del repartidor (flete/express).
   // onboardingStatus: pending_onboarding | awaiting_approval | active | ...
-  onvoConnectedAccountId String? @map("onvo_connected_account_id")
-  onvoOnboardingStatus   String? @map("onvo_onboarding_status")
-  vehicleType  VehicleType  @map("vehicle_type")
-  vehiclePlate String?      @map("vehicle_plate")
-  level        DriverLevel  @default(bronce)
-  rating       Decimal      @default(5.0) @db.Decimal(3, 2)
-  totalTrips   Int          @default(0) @map("total_trips")
-  status       DriverStatus @default(offline)
-  createdAt    DateTime     @default(now()) @map("created_at")
-  updatedAt    DateTime     @updatedAt @map("updated_at")
+  onvoConnectedAccountId String?      @map("onvo_connected_account_id")
+  onvoOnboardingStatus   String?      @map("onvo_onboarding_status")
+  vehicleType            VehicleType  @map("vehicle_type")
+  vehiclePlate           String?      @map("vehicle_plate")
+  level                  DriverLevel  @default(bronce)
+  rating                 Decimal      @default(5.0) @db.Decimal(3, 2)
+  totalTrips             Int          @default(0) @map("total_trips")
+  status                 DriverStatus @default(offline)
+  createdAt              DateTime     @default(now()) @map("created_at")
+  updatedAt              DateTime     @updatedAt @map("updated_at")
 
   // KYC
   kycStatus     KYCStatus @default(pending) @map("kyc_status")
@@ -809,17 +878,18 @@ model Order {
   deliveryProofAt       DateTime? @map("delivery_proof_at")
 
   // Relations
-  merchant  MerchantProfile  @relation(fields: [merchantId], references: [id])
-  driver    DriverProfile?   @relation(fields: [driverId], references: [id])
-  customer  User?            @relation("CustomerOrders", fields: [customerId], references: [id])
-  proposals DriverProposal[]
-  items     OrderItem[]
-  payment   Payment?
-  ratings   Rating[]
+  merchant        MerchantProfile  @relation(fields: [merchantId], references: [id])
+  driver          DriverProfile?   @relation(fields: [driverId], references: [id])
+  customer        User?            @relation("CustomerOrders", fields: [customerId], references: [id])
+  proposals       DriverProposal[]
+  items           OrderItem[]
+  payment         Payment?
+  ratings         Rating[]
   withdrawalItems WithdrawalItem[]
+  deliveryLinks   DeliveryLink[]
 
-  @@index([merchantId, origin, status, createdAt], map: "orders_merchant_origin_status_created_idx")
   @@unique([merchantId, idempotencyKey], map: "orders_merchant_idempotency_uk")
+  @@index([merchantId, origin, status, createdAt], map: "orders_merchant_origin_status_created_idx")
   @@index([merchantId, status])
   @@index([merchantId, createdAt])
   @@index([driverId, status])
@@ -905,11 +975,16 @@ model Payment {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  // Facturación semanal del comercio: la línea queda enlazada al corte.
+  invoiceId String?          @map("invoice_id")
+  invoice   MerchantInvoice? @relation(fields: [invoiceId], references: [id])
+
   // Relations
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([status, createdAt], map: "payments_status_created_idx")
   @@index([method, status, createdAt], map: "payments_method_status_created_idx")
+  @@index([invoiceId], map: "payments_invoice_id_idx")
   @@index([onvoPaymentId], map: "payments_onvo_payment_id_idx")
   @@index([onvoSessionId], map: "payments_onvo_session_id_idx")
   @@index([cryptoWalletAddress, status], map: "payments_wallet_status_idx")
@@ -922,6 +997,8 @@ enum PaymentMethod {
   crypto
   cash
   credit
+  // Pos-pago del comercio: se acumula y Kiwi lo cobra en el corte semanal.
+  weekly_invoice
 }
 
 enum PaymentStatus {
@@ -1032,7 +1109,7 @@ model Withdrawal {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  driver DriverProfile   @relation(fields: [driverId], references: [id])
+  driver DriverProfile    @relation(fields: [driverId], references: [id])
   items  WithdrawalItem[]
 
   @@index([driverId, status, createdAt], map: "withdrawals_driver_status_created_idx")
@@ -1043,15 +1120,15 @@ model Withdrawal {
 
 // Líneas del recibo: qué viajes componen el retiro (monto congelado).
 model WithdrawalItem {
-  id           String   @id @default(uuid())
-  withdrawalId String   @map("withdrawal_id")
+  id           String     @id @default(uuid())
+  withdrawalId String     @map("withdrawal_id")
   withdrawal   Withdrawal @relation(fields: [withdrawalId], references: [id], onDelete: Cascade)
-  orderId      String   @map("order_id")
-  order        Order    @relation(fields: [orderId], references: [id])
+  orderId      String     @map("order_id")
+  order        Order      @relation(fields: [orderId], references: [id])
   // Snapshot del payout al generar el recibo (no cambia si el pedido cambia).
-  amount       Decimal  @db.Decimal(10, 2)
-  deliveredAt  DateTime? @map("delivered_at")
-  createdAt    DateTime @default(now()) @map("created_at")
+  amount       Decimal    @db.Decimal(10, 2)
+  deliveredAt  DateTime?  @map("delivered_at")
+  createdAt    DateTime   @default(now()) @map("created_at")
 
   @@unique([withdrawalId, orderId], map: "withdrawal_items_withdrawal_order_uk")
   @@index([withdrawalId], map: "withdrawal_items_withdrawal_idx")
@@ -1096,32 +1173,32 @@ model MerchantKiosk {
 
 // Menu Items
 model MenuItem {
-  id          String   @id @default(uuid())
-  merchantId  String   @map("merchant_id")
+  id            String   @id @default(uuid())
+  merchantId    String   @map("merchant_id")
   // Kiosko dueño del producto (null = directo del comercio).
-  kioskId     String?  @map("kiosk_id")
-  name        String
-  description String?
-  price       Decimal  @db.Decimal(10, 2)
-  image       String?
-  category    String
-  isPopular   Boolean  @default(false) @map("is_popular")
-  isAvailable Boolean  @default(true) @map("is_available")
+  kioskId       String?  @map("kiosk_id")
+  name          String
+  description   String?
+  price         Decimal  @db.Decimal(10, 2)
+  image         String?
+  category      String
+  isPopular     Boolean  @default(false) @map("is_popular")
+  isAvailable   Boolean  @default(true) @map("is_available")
   // Días de la semana en que se ofrece (0=dom…6=sáb, hora Costa Rica).
   // Vacío = todos los días. Ej. rollos de canela solo jueves → [4].
-  availableDays Int[]  @default([]) @map("available_days")
+  availableDays Int[]    @default([]) @map("available_days")
   // Stock por día de venta (ej. 50 rollos cada jueves). Null = sin límite.
   // dailyQty es el tamaño del lote: cada día CR nuevo el stock vuelve a ese
   // valor solo. stockDay guarda el día (YYYY-MM-DD CR) del stock vigente.
-  stockQty  Int?    @map("stock_qty")
-  dailyQty  Int?    @map("daily_qty")
-  stockDay  String? @map("stock_day")
+  stockQty      Int?     @map("stock_qty")
+  dailyQty      Int?     @map("daily_qty")
+  stockDay      String?  @map("stock_day")
   // Nota de entrega programada (ej. "Se entrega el jueves a las 2:00 p. m.").
   // Se muestra en la vitrina de mañana y en la preventa.
-  fulfillNote String? @map("fulfill_note")
-  sortOrder   Int      @default(0) @map("sort_order")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  fulfillNote   String?  @map("fulfill_note")
+  sortOrder     Int      @default(0) @map("sort_order")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
   // Relations
   merchant      MerchantProfile        @relation(fields: [merchantId], references: [id], onDelete: Cascade)
@@ -1136,14 +1213,14 @@ model MenuItem {
 
 // Modifier groups (tamaño, color, extras) defined per menu item
 model MenuItemVariantGroup {
-  id         String  @id @default(uuid())
-  menuItemId String  @map("menu_item_id")
-  name       String
-  required   Boolean @default(false)
-  multiple   Boolean @default(false)
+  id            String  @id @default(uuid())
+  menuItemId    String  @map("menu_item_id")
+  name          String
+  required      Boolean @default(false)
+  multiple      Boolean @default(false)
   // Tope de opciones elegibles (ej. "máximo 3 frutas"). Null = sin tope.
-  maxSelections Int? @map("max_selections")
-  sortOrder  Int     @default(0) @map("sort_order")
+  maxSelections Int?    @map("max_selections")
+  sortOrder     Int     @default(0) @map("sort_order")
 
   // Relations
   menuItem MenuItem                @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
@@ -1181,7 +1258,7 @@ model OrderItem {
   selectedVariants Json?    @map("selected_variants")
   // Snapshot del kiosko dueño del producto (para la lista de compras del
   // comercio). Null = directo del comercio o producto personalizado.
-  kioskName      String?   @map("kiosk_name")
+  kioskName        String?  @map("kiosk_name")
   createdAt        DateTime @default(now()) @map("created_at")
 
   // Relations
@@ -1355,24 +1432,24 @@ model DeliveryZone {
 // y abonos extra a capital. Sin seed con montos: la deuda real la crea el
 // admin en /admin/deudas con los números del contrato.
 model Debt {
-  id          String   @id @default(uuid())
-  title       String
-  description String?
+  id            String   @id @default(uuid())
+  title         String
+  description   String?
   // Costo total financiado (precio + intereses del contrato).
-  totalAmount   Decimal @db.Decimal(12, 2) @map("total_amount")
+  totalAmount   Decimal  @map("total_amount") @db.Decimal(12, 2)
   // Cuota mensual pactada.
-  monthlyAmount Decimal @db.Decimal(10, 2) @map("monthly_amount")
+  monthlyAmount Decimal  @map("monthly_amount") @db.Decimal(10, 2)
   // Prima o abono inicial ya pagado al sacarla (no va en DebtPayment).
-  downPayment Decimal @default(0) @db.Decimal(10, 2) @map("down_payment")
-  startDate   DateTime @map("start_date")
-  termMonths  Int?     @map("term_months")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  downPayment   Decimal  @default(0) @map("down_payment") @db.Decimal(10, 2)
+  startDate     DateTime @map("start_date")
+  termMonths    Int?     @map("term_months")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
-  payments DebtPayment[]
+  payments     DebtPayment[]
   participants DebtParticipant[]
-  expenses DebtExpense[]
-  rentals RentalContract[]
+  expenses     DebtExpense[]
+  rentals      RentalContract[]
 
   @@map("debts")
 }
@@ -1404,12 +1481,12 @@ enum DebtPaymentKind {
 // Repartidores asignados a pagar una deuda (los que la pagan con sus viajes).
 // El aporte real queda en DebtPayment; esto es el roster de quiénes la pagan.
 model DebtParticipant {
-  id       String   @id @default(uuid())
-  debtId   String   @map("debt_id")
-  debt     Debt     @relation(fields: [debtId], references: [id], onDelete: Cascade)
-  driverId String   @map("driver_id")
+  id       String        @id @default(uuid())
+  debtId   String        @map("debt_id")
+  debt     Debt          @relation(fields: [debtId], references: [id], onDelete: Cascade)
+  driverId String        @map("driver_id")
   driver   DriverProfile @relation(fields: [driverId], references: [id], onDelete: Cascade)
-  joinedAt DateTime @default(now()) @map("joined_at")
+  joinedAt DateTime      @default(now()) @map("joined_at")
 
   @@unique([debtId, driverId], map: "debt_participants_debt_driver_uk")
   @@index([debtId], map: "debt_participants_debt_idx")
@@ -1419,18 +1496,18 @@ model DebtParticipant {
 // Gastos de la moto/deuda: mantenimiento, seguro, gasolina, repuestos,
 // marchamo, otro. La gasolina se puede ver por día/semana/mes desde el resumen.
 model DebtExpense {
-  id        String         @id @default(uuid())
-  debtId    String         @map("debt_id")
-  debt      Debt           @relation(fields: [debtId], references: [id], onDelete: Cascade)
-  amount    Decimal        @db.Decimal(10, 2)
+  id        String          @id @default(uuid())
+  debtId    String          @map("debt_id")
+  debt      Debt            @relation(fields: [debtId], references: [id], onDelete: Cascade)
+  amount    Decimal         @db.Decimal(10, 2)
   kind      DebtExpenseKind @default(otro)
   // Quién hizo el gasto (opcional, ej. gasolina cargada por un repartidor).
-  driverId  String?        @map("driver_id")
-  driver    DriverProfile? @relation(fields: [driverId], references: [id])
+  driverId  String?         @map("driver_id")
+  driver    DriverProfile?  @relation(fields: [driverId], references: [id])
   note      String?
-  spentAt   DateTime       @default(now()) @map("spent_at")
-  createdBy String?        @map("created_by")
-  createdAt DateTime       @default(now()) @map("created_at")
+  spentAt   DateTime        @default(now()) @map("spent_at")
+  createdBy String?         @map("created_by")
+  createdAt DateTime        @default(now()) @map("created_at")
 
   @@index([debtId, spentAt], map: "debt_expenses_debt_spent_idx")
   @@map("debt_expenses")
@@ -1449,13 +1526,13 @@ enum DebtExpenseKind {
 // RENTALS_ENABLED). El contrato fija precio semanal y depósito; los pagos
 // se registran acá. Nada de esto toca planilla: es libro aparte.
 model RentalContract {
-  id          String       @id @default(uuid())
+  id          String        @id @default(uuid())
   // Moto ligada (deuda origen, opcional: sirve para costear el precio).
-  debtId      String?      @map("debt_id")
+  debtId      String?       @map("debt_id")
   debt        Debt?         @relation(fields: [debtId], references: [id])
   driverId    String        @map("driver_id")
   driver      DriverProfile @relation(fields: [driverId], references: [id])
-  weeklyPrice Decimal       @db.Decimal(10, 2) @map("weekly_price")
+  weeklyPrice Decimal       @map("weekly_price") @db.Decimal(10, 2)
   deposit     Decimal       @default(0) @db.Decimal(10, 2)
   startDate   DateTime      @map("start_date")
   endDate     DateTime?     @map("end_date")

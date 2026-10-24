@@ -4,7 +4,7 @@ import { Suspense, useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Coins, CreditCard, History, RefreshCw, Check, X } from 'lucide-react';
+import { Coins, CreditCard, History, Receipt, RefreshCw, Check, X } from 'lucide-react';
 import { api, useAuth, safeNavigateToUrl, useTranslations } from '@kiwi/ui';
 import { MerchantNav } from '../../components/MerchantNav';
 
@@ -33,6 +33,9 @@ function CreditsInner() {
   const [balance, setBalance] = useState<number | null>(null);
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  // Facturación semanal: recibos del comercio con sus líneas de viajes.
+  const [invoices, setInvoices] = useState<any[]>([]);
+  const [openInvoice, setOpenInvoice] = useState<any | null>(null);
   const [amount, setAmount] = useState('20000');
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,14 +48,24 @@ function CreditsInner() {
 
   const load = useCallback(async () => {
     try {
-      const [b, h] = await Promise.all([
+      const [b, h, inv] = await Promise.all([
         api.getCreditBalance().catch(() => null),
         api.getCreditHistory(30, 0).catch(() => null),
+        api.getMyMerchantInvoices({ take: 20 }).catch(() => null),
       ]);
       if (b) setBalance(Number(b.balance ?? 0));
       if (h) setHistory(Array.isArray(h.items) ? h.items : []);
+      if (inv) setInvoices(Array.isArray(inv.items) ? inv.items : []);
     } finally {
       setLoading(false);
+    }
+  }, []);
+
+  const openInvoiceDetail = useCallback(async (id: string) => {
+    try {
+      setOpenInvoice(await api.getMyMerchantInvoice(id));
+    } catch {
+      // noop: la lista ya muestra los totales
     }
   }, []);
 
@@ -318,6 +331,82 @@ function CreditsInner() {
             </div>
           )}
         </div>
+
+        {/* Facturación semanal */}
+        {invoices.length > 0 && (
+          <div className="mt-6">
+            <p className="mb-2 flex items-center gap-1 text-sm font-semibold">
+              <Receipt className="h-4 w-4" /> {t('webshop2.credits.invTitle')}
+            </p>
+            <p className="mb-2 text-xs text-surface-500 dark:text-surface-400">
+              {t('webshop2.credits.invHint')}
+            </p>
+            <div className="space-y-2">
+              {invoices.map((inv: any) => {
+                const isOpen = openInvoice?.id === inv.id;
+                return (
+                  <div
+                    key={inv.id}
+                    className="rounded-xl bg-white dark:bg-surface-900 border border-surface-100 dark:border-surface-800 px-4 py-2.5 text-sm"
+                  >
+                    <button
+                      onClick={() => (isOpen ? setOpenInvoice(null) : openInvoiceDetail(inv.id))}
+                      className="flex w-full items-center justify-between gap-3 text-left"
+                    >
+                      <div className="min-w-0">
+                        <p className="font-medium">
+                          {new Date(inv.periodStart).toLocaleDateString('es-CR', {
+                            day: 'numeric',
+                            month: 'short',
+                          })}{' '}
+                          →{' '}
+                          {new Date(inv.periodEnd).toLocaleDateString('es-CR', {
+                            day: 'numeric',
+                            month: 'short',
+                          })}{' '}
+                          · {t('webshop2.credits.invTrips', { trips: inv.trips })}
+                        </p>
+                        <p
+                          className={`text-xs font-semibold ${inv.status === 'paid' ? 'text-kiwi-700' : 'text-gold-600'}`}
+                        >
+                          {inv.status === 'paid'
+                            ? t('webshop2.credits.invPaid')
+                            : t('webshop2.credits.invPending')}
+                        </p>
+                      </div>
+                      <span className="shrink-0 font-mono font-bold">
+                        ₡{Number(inv.amount ?? 0).toLocaleString()}
+                      </span>
+                    </button>
+                    {isOpen && Array.isArray(openInvoice?.lines) && (
+                      <div className="mt-2 space-y-1 border-t border-surface-100 pt-2 dark:border-surface-800">
+                        {openInvoice.lines.map((l: any) => (
+                          <div key={l.paymentId} className="flex justify-between gap-2 text-xs">
+                            <span className="min-w-0 truncate text-surface-500 dark:text-surface-400">
+                              {l.deliveredAt
+                                ? new Date(l.deliveredAt).toLocaleString('es-CR', {
+                                    day: 'numeric',
+                                    month: 'short',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  })
+                                : ''}{' '}
+                              · {l.deliveryAddress}
+                              {l.driverName ? ` · ${l.driverName}` : ''}
+                            </span>
+                            <span className="shrink-0 font-mono">
+                              ₡{Number(l.amount ?? 0).toLocaleString()}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         <Link
           href="/dashboard"

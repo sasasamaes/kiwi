@@ -14,6 +14,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
 import { PaymentsService } from './payments.service';
+import { MerchantInvoicesService } from './merchant-invoices.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -29,6 +30,7 @@ import { ConfirmPaymentDto } from './dto/confirm-payment.dto';
 export class PaymentsController {
   constructor(
     private readonly paymentsService: PaymentsService,
+    private readonly merchantInvoices: MerchantInvoicesService,
     private readonly onvopayProvider: OnvoPayProvider,
     private readonly stellarProvider: StellarProvider,
   ) {}
@@ -133,6 +135,96 @@ export class PaymentsController {
       take: take != null ? Number(take) : undefined,
       skip: skip != null ? Number(skip) : undefined,
     });
+  }
+
+  @Post('admin/merchant-invoices/preview')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Preview weekly billing cut for a merchant (admin only)' })
+  async previewMerchantInvoice(@Body() body: { merchantId: string; week?: string }) {
+    if (!body?.merchantId) throw new BadRequestException('merchantId requerido');
+    return this.merchantInvoices.preview(body.merchantId, body.week);
+  }
+
+  @Post('admin/merchant-invoices/generate')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Generate weekly billing receipt for a merchant (admin only)' })
+  async generateMerchantInvoice(
+    @CurrentUser() user: any,
+    @Body() body: { merchantId: string; week?: string },
+  ) {
+    if (!body?.merchantId) throw new BadRequestException('merchantId requerido');
+    return this.merchantInvoices.generate(user.sub ?? user.id, body.merchantId, body.week);
+  }
+
+  @Get('admin/merchant-invoices')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List merchant invoices (admin only)' })
+  async listMerchantInvoices(
+    @Query('merchantId') merchantId?: string,
+    @Query('status') status?: string,
+    @Query('take') take?: string,
+    @Query('skip') skip?: string,
+  ) {
+    return this.merchantInvoices.listForAdmin({
+      merchantId,
+      status,
+      take: take != null ? Number(take) : undefined,
+      skip: skip != null ? Number(skip) : undefined,
+    });
+  }
+
+  @Get('admin/merchant-invoices/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Merchant invoice receipt with lines (admin only)' })
+  async getMerchantInvoice(@Param('id') id: string) {
+    return this.merchantInvoices.detail(id);
+  }
+
+  @Post('admin/merchant-invoices/:id/mark-paid')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Mark merchant invoice as paid (admin only)' })
+  async markMerchantInvoicePaid(@CurrentUser() user: any, @Param('id') id: string) {
+    return this.merchantInvoices.markPaid(user.sub ?? user.id, id);
+  }
+
+  @Get('me/merchant-invoices')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('merchant')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'My weekly billing receipts (merchant only)' })
+  async listMyMerchantInvoices(
+    @CurrentUser() user: any,
+    @Query('take') take?: string,
+    @Query('skip') skip?: string,
+  ) {
+    const merchant = await this.paymentsService.merchantIdForUser(user.sub ?? user.id);
+    return this.merchantInvoices.listForMerchant(
+      merchant,
+      take != null ? Number(take) : 30,
+      skip != null ? Number(skip) : 0,
+    );
+  }
+
+  @Get('me/merchant-invoices/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('merchant')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'My weekly billing receipt detail (merchant only)' })
+  async getMyMerchantInvoice(@CurrentUser() user: any, @Param('id') id: string) {
+    const merchant = await this.paymentsService.merchantIdForUser(user.sub ?? user.id);
+    return this.merchantInvoices.detail(id, merchant);
   }
 
   @Post('admin/crypto/reverify')

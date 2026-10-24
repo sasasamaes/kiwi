@@ -212,6 +212,15 @@ export class MerchantsController {
     return this.merchantsService.setHomeCook(id, body?.enabled === true);
   }
 
+  @Put(':id/weekly-billing')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Activar facturación semanal pospago a un comercio' })
+  async setWeeklyBilling(@Param('id') id: string, @Body() body: { enabled?: boolean }) {
+    return this.merchantsService.setWeeklyBilling(id, body?.enabled === true);
+  }
+
   @Put(':id/push-credits')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')

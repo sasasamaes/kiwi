@@ -1014,6 +1014,33 @@ export class OrdersService {
     // confirmarse el cobro se libera a concurso/asignación
     // (releaseAwaitingPayment). El efectivo no se gatea: no hay nada que
     // esperar y su flujo nunca tuvo este problema.
+    //
+    // weekly_invoice es pospago del comercio: también gatea (el cobro real
+    // es el corte semanal). Solo vale para pedidos del panel del comercio:
+    // invitados/clientes jamás pueden usar saldo del comercio.
+    const VALID_PAYMENT_METHODS = [
+      'cash',
+      'card',
+      'sinpe',
+      'crypto',
+      'credit',
+      'weekly',
+      'weekly_invoice',
+      'onvopay_card',
+      'onvopay_sinpe',
+    ] as const;
+    if (
+      data.paymentMethod != null &&
+      !(VALID_PAYMENT_METHODS as readonly string[]).includes(data.paymentMethod)
+    ) {
+      throw new BadRequestException(`paymentMethod inválido: ${data.paymentMethod}`);
+    }
+    if (
+      (data.paymentMethod === 'weekly_invoice' || data.paymentMethod === 'weekly') &&
+      (data as any)?.origin === 'client_app'
+    ) {
+      throw new BadRequestException('La facturación semanal es solo para pedidos del comercio');
+    }
     const gatedForPayment = data.paymentMethod !== 'cash';
     // Concurso con vencimiento: el pedido a concurso nace con ventana para
     // que el sweeper lo marque no_driver si nadie lo toma. Antes nacía sin
@@ -2442,6 +2469,16 @@ export class OrdersService {
           where: { orderId, method: 'credit', status: 'completed' },
           data: { status: 'refunded' },
         });
+        // Pos-pago semanal: se anula la línea si aún no entró a ninguna
+        // factura (las facturadas ya están entregadas: no se pueden
+        // cancelar). Sin devolución a saldo: nunca se descontó nada.
+        const markedWeekly = await tx.payment.updateMany({
+          where: { orderId, method: 'weekly_invoice', status: 'completed', invoiceId: null },
+          data: { status: 'refunded' },
+        });
+        if (markedWeekly.count > 0) {
+          this.logger.log(`Weekly-invoice void for cancelled order ${orderId}`);
+        }
         if (marked.count > 0) {
           const amount = Math.round(Number((fresh as any).basePrice ?? order.basePrice ?? 0));
           if (Number.isFinite(amount) && amount > 0) {

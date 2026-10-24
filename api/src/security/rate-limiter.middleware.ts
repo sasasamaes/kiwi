@@ -136,6 +136,19 @@ export class RateLimiterMiddleware implements NestMiddleware {
       message: 'Demasiados pedidos. Espera un momento.',
     },
 
+    // Link de reparto del comercio (público, sin auth): ver + enviar tienen
+    // el mismo techo que el pedido invitado (un token por link).
+    'GET:/api/delivery-links/:token': {
+      windowMs: 60 * 1000,
+      maxRequests: 30,
+      message: 'Demasiadas consultas. Espera un momento.',
+    },
+    'POST:/api/delivery-links/:token/submit': {
+      windowMs: 60 * 1000,
+      maxRequests: 10,
+      message: 'Demasiados pedidos. Espera un momento.',
+    },
+
     // Payment endpoints - strict limits
     'POST:/api/payments/create': {
       windowMs: 60 * 1000,

@@ -206,6 +206,19 @@ export class MerchantsService {
     });
   }
 
+  /** Facturación semanal pospago (admin, por comercio). Sin esto el
+   * comercio no puede elegir pagar contra uso; el corte lo cobra Kiwi. */
+  async setWeeklyBilling(id: string, enabled: boolean) {
+    const merchant = await this.prisma.merchantProfile.findUnique({ where: { id } });
+    if (!merchant) {
+      throw new NotFoundException('Comercio no encontrado');
+    }
+    return this.prisma.merchantProfile.update({
+      where: { id },
+      data: { weeklyBillingEnabled: enabled },
+    });
+  }
+
   /** Métodos de pago que el comercio prende/apaga en su perfil. */
   async setPaymentMethods(userId: string, data: { cashEnabled?: boolean; sinpeEnabled?: boolean }) {
     const merchant = await this.prisma.merchantProfile.findUnique({ where: { userId } });

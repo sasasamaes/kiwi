@@ -668,6 +668,14 @@ class ApiClient {
     });
   }
 
+  /** Activa/apaga facturación semanal pospago a un comercio (admin). */
+  async setMerchantWeeklyBilling(merchantId: string, enabled: boolean) {
+    return this.request<any>(`/merchants/${merchantId}/weekly-billing`, {
+      method: 'PUT',
+      body: { enabled },
+    });
+  }
+
   async getMarketplaceStatus(): Promise<{ accountId: string | null; status: string | null }> {
     return this.request<any>('/merchants/me/marketplace/status').catch(() => ({
       accountId: null,
@@ -1537,6 +1545,36 @@ class ApiClient {
     return this.request<any>(`/orders/track/${orderId}/location`);
   }
 
+  /** Link de reparto: crear (comercio, con auth). */
+  async createDeliveryLink(data: { deliveryZone: string; paymentMethod: string }) {
+    return this.request<any>(`/delivery-links`, { method: 'POST', body: data });
+  }
+
+  /** Mis links de reparto (comercio, con auth). */
+  async getMyDeliveryLinks() {
+    return this.request<any>(`/delivery-links/mine`);
+  }
+
+  /** Revocar un link pendiente (comercio, con auth). */
+  async cancelDeliveryLink(id: string) {
+    return this.request<any>(`/delivery-links/${id}`, { method: 'DELETE' });
+  }
+
+  /** Ver un link público (sin auth). */
+  async getDeliveryLink(token: string) {
+    return this.request<any>(`/delivery-links/${encodeURIComponent(token)}`);
+  }
+
+  /** Enviar datos del cliente y crear el pedido (sin auth). */
+  async submitDeliveryLink(token: string, data: any, opts?: { idempotencyKey?: string }) {
+    const idempotencyKey = opts?.idempotencyKey || (data as any)?.idempotencyKey;
+    return this.request<any>(`/delivery-links/${encodeURIComponent(token)}/submit`, {
+      method: 'POST',
+      body: idempotencyKey ? { ...data, idempotencyKey } : data,
+      headers: idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined,
+    });
+  }
+
   async updateOrderStatus(orderId: string, status: string) {
     return this.request<any>(`/orders/${orderId}/status`, {
       method: 'PUT',
@@ -1845,7 +1883,7 @@ class ApiClient {
   async createPayment(
     data: {
       orderId: string;
-      method: 'onvopay_card' | 'onvopay_sinpe' | 'crypto' | 'cash' | 'credit';
+      method: 'onvopay_card' | 'onvopay_sinpe' | 'crypto' | 'cash' | 'credit' | 'weekly_invoice';
       amount: number;
       customerEmail?: string;
       customerPhone?: string;
@@ -1892,6 +1930,68 @@ class ApiClient {
 
   async getPaymentMethods() {
     return this.request<any>('/payments/methods');
+  }
+
+  // ============================================
+  // 🧾 FACTURACIÓN SEMANAL (pospago comercio)
+  // ============================================
+
+  /** Vista previa del corte semanal de un comercio (admin). */
+  async previewMerchantInvoice(merchantId: string, week?: string) {
+    return this.request<any>('/payments/admin/merchant-invoices/preview', {
+      method: 'POST',
+      body: week ? { merchantId, week } : { merchantId },
+    });
+  }
+
+  /** Genera el recibo del corte semanal (admin, idempotente por semana). */
+  async generateMerchantInvoice(merchantId: string, week?: string) {
+    return this.request<any>('/payments/admin/merchant-invoices/generate', {
+      method: 'POST',
+      body: week ? { merchantId, week } : { merchantId },
+    });
+  }
+
+  /** Lista recibos de facturación (admin, filtro por comercio/estado). */
+  async getMerchantInvoices(params?: {
+    merchantId?: string;
+    status?: string;
+    take?: number;
+    skip?: number;
+  }) {
+    const q = new URLSearchParams();
+    if (params?.merchantId) q.append('merchantId', params.merchantId);
+    if (params?.status) q.append('status', params.status);
+    if (params?.take != null) q.append('take', String(params.take));
+    if (params?.skip != null) q.append('skip', String(params.skip));
+    const s = q.toString();
+    return this.request<any>(`/payments/admin/merchant-invoices${s ? `?${s}` : ''}`);
+  }
+
+  /** Recibo con líneas de viajes (admin). */
+  async getMerchantInvoice(id: string) {
+    return this.request<any>(`/payments/admin/merchant-invoices/${id}`);
+  }
+
+  /** Marca un recibo como cobrado (admin). */
+  async markMerchantInvoicePaid(id: string) {
+    return this.request<any>(`/payments/admin/merchant-invoices/${id}/mark-paid`, {
+      method: 'POST',
+    });
+  }
+
+  /** Mis recibos de facturación semanal (comercio). */
+  async getMyMerchantInvoices(params?: { take?: number; skip?: number }) {
+    const q = new URLSearchParams();
+    if (params?.take != null) q.append('take', String(params.take));
+    if (params?.skip != null) q.append('skip', String(params.skip));
+    const s = q.toString();
+    return this.request<any>(`/payments/me/merchant-invoices${s ? `?${s}` : ''}`);
+  }
+
+  /** Detalle de mi recibo con líneas (comercio). */
+  async getMyMerchantInvoice(id: string) {
+    return this.request<any>(`/payments/me/merchant-invoices/${id}`);
   }
 
   async getCryptoQuote(amount: number, coin: 'USDC' | 'USDT') {

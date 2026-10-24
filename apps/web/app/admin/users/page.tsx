@@ -26,6 +26,7 @@ interface AdminUser {
     longitude?: number | string | null;
     kycStatus: string;
     cardPaymentsEnabled?: boolean;
+    weeklyBillingEnabled?: boolean;
     isHomeCook?: boolean;
     pushCredits?: number;
     _count?: { orders: number };
@@ -625,6 +626,26 @@ export default function UsersPage() {
     }
   };
 
+  const toggleWeeklyBilling = async (u: AdminUser) => {
+    const merchantId = u.merchantProfile?.id;
+    if (!merchantId) return;
+    const enabled = !(u.merchantProfile?.weeklyBillingEnabled === true);
+    setToggling(true);
+    try {
+      await api.setMerchantWeeklyBilling(merchantId, enabled);
+      const patch = (x: AdminUser) =>
+        x.id === u.id && x.merchantProfile
+          ? { ...x, merchantProfile: { ...x.merchantProfile, weeklyBillingEnabled: enabled } }
+          : x;
+      setUsers((prev) => prev.map(patch));
+      setSelectedUser((prev) => (prev?.id === u.id ? patch(prev) : prev));
+    } catch (e: any) {
+      setError(e?.message || t('webadmin1.ausers.weeklyBillingError'));
+    } finally {
+      setToggling(false);
+    }
+  };
+
   const getRoleLabel = (role: string) => {
     switch (role) {
       case 'driver':
@@ -1035,6 +1056,36 @@ export default function UsersPage() {
                           <span
                             className={`block h-6 w-6 rounded-full bg-white shadow transition-transform ${
                               selectedUser.merchantProfile?.cardPaymentsEnabled === true
+                                ? 'translate-x-6'
+                                : ''
+                            }`}
+                          />
+                        </button>
+                      </div>
+                      <div className="flex justify-between items-center mt-3 pt-3 border-t border-kiwi-200/50 dark:border-kiwi-800/30">
+                        <div>
+                          <p className="text-sm font-semibold text-surface-800 dark:text-surface-200">
+                            {t('webadmin1.ausers.weeklyBillingTitle')}
+                          </p>
+                          <p className="text-xs text-surface-500">
+                            {t('webadmin1.ausers.weeklyBillingHint')}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => toggleWeeklyBilling(selectedUser)}
+                          disabled={toggling}
+                          role="switch"
+                          aria-checked={selectedUser.merchantProfile?.weeklyBillingEnabled === true}
+                          aria-label={t('webadmin1.ausers.weeklyBillingTitle')}
+                          className={`relative h-8 w-14 shrink-0 rounded-full p-1 transition-colors disabled:opacity-50 ${
+                            selectedUser.merchantProfile?.weeklyBillingEnabled === true
+                              ? 'bg-kiwi-600'
+                              : 'bg-surface-300 dark:bg-surface-600'
+                          }`}
+                        >
+                          <span
+                            className={`block h-6 w-6 rounded-full bg-white shadow transition-transform ${
+                              selectedUser.merchantProfile?.weeklyBillingEnabled === true
                                 ? 'translate-x-6'
                                 : ''
                             }`}

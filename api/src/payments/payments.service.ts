@@ -4,6 +4,7 @@ import {
   Logger,
   BadRequestException,
   ForbiddenException,
+  NotFoundException,
   UnauthorizedException,
   Inject,
   Optional,
@@ -18,7 +19,7 @@ import { PaymentMethod, PaymentStatus } from '@prisma/client';
 
 export interface CreatePaymentDTO {
   orderId: string;
-  method: 'onvopay_card' | 'onvopay_sinpe' | 'crypto' | 'cash' | 'credit';
+  method: 'onvopay_card' | 'onvopay_sinpe' | 'crypto' | 'cash' | 'credit' | 'weekly_invoice';
   amount: number;
   currency?: string;
   customerEmail?: string;
@@ -103,12 +104,15 @@ export class PaymentsService {
     if (payerRole !== 'admin') {
       if (payerRole === 'customer') {
         // El cliente dueño paga su propio pedido (tarjeta/SINPE/efectivo).
-        // El crédito prepago es saldo del comercio, jamás del cliente.
+        // El crédito prepago y la factura semanal son saldo del comercio,
+        // jamás del cliente.
         if (!order.customerId || order.customerId !== payerUserId) {
           throw new ForbiddenException('Solo puedes pagar tus propios pedidos');
         }
-        if (method === 'credit') {
-          throw new ForbiddenException('El crédito prepago es solo del comercio');
+        if (method === 'credit' || method === 'weekly_invoice') {
+          throw new ForbiddenException(
+            'El crédito prepago y la facturación semanal son solo del comercio',
+          );
         }
       } else {
         const merchant = await this.prisma.merchantProfile.findUnique({
@@ -194,6 +198,10 @@ export class PaymentsService {
 
     if (method === 'credit') {
       return this.createCreditPayment(orderId, order, payerUserId);
+    }
+
+    if (method === 'weekly_invoice') {
+      return this.createWeeklyInvoicePayment(orderId, order, payerUserId);
     }
 
     const result = await this.runProviderPayment(orderId, method, amount, {
@@ -578,6 +586,90 @@ export class PaymentsService {
     }
   }
 
+  /**
+   * Pago contra uso (facturación semanal): solo el dueño comercio del pedido
+   * y solo si el admin le activó `weeklyBillingEnabled`. No descuenta saldo
+   * ni escribe asientos: acumula el viaje (basePrice) en un Payment
+   * `completed` que el corte semanal enlaza a la factura del comercio.
+   * Misma protección anti-doble-cobro que el crédito (orderId UNIQUE).
+   */
+  private async createWeeklyInvoicePayment(
+    orderId: string,
+    order: any,
+    payerUserId?: string,
+  ): Promise<PaymentResult> {
+    if (!payerUserId) {
+      throw new BadRequestException('Iniciá sesión como comercio para pagar contra uso');
+    }
+    const merchant = await this.prisma.merchantProfile.findUnique({
+      where: { userId: payerUserId },
+    });
+    if (!merchant || merchant.id !== order.merchantId) {
+      throw new ForbiddenException('Solo el comercio dueño puede pagar contra uso');
+    }
+    if ((merchant as any).weeklyBillingEnabled !== true) {
+      throw new BadRequestException(
+        'Tu comercio no tiene activada la facturación semanal. Pedila a Kiwi.',
+      );
+    }
+    const existing = await this.prisma.payment.findUnique({ where: { orderId } });
+    if (existing && existing.status === PaymentStatus.completed) {
+      throw new BadRequestException('El pedido ya tiene un pago completado');
+    }
+    if (existing && existing.status !== PaymentStatus.failed) {
+      throw new BadRequestException('Ya hay un pago en curso para este pedido');
+    }
+
+    // Solo el viaje (igual que el crédito): basePrice, sin productos.
+    const amount = Math.round(Number(order.basePrice));
+    if (!Number.isFinite(amount) || amount <= 0) {
+      throw new BadRequestException('Monto del envío inválido');
+    }
+
+    try {
+      const { payment } = await this.prisma.$transaction(async (tx) => {
+        if (!existing) {
+          await tx.payment.create({
+            data: {
+              order: { connect: { id: orderId } },
+              amount,
+              currency: 'CRC',
+              method: 'weekly_invoice' as PaymentMethod,
+              status: PaymentStatus.processing as PaymentStatus,
+            },
+          });
+        } else {
+          const claimed = await tx.payment.updateMany({
+            where: { orderId, status: PaymentStatus.failed },
+            data: { amount, status: PaymentStatus.processing as PaymentStatus },
+          });
+          if (claimed.count === 0) {
+            throw new BadRequestException('Ya hay un pago en curso para este pedido');
+          }
+        }
+        const completed = await tx.payment.update({
+          where: { orderId },
+          data: { status: PaymentStatus.completed as PaymentStatus },
+        });
+        return { payment: completed };
+      });
+
+      this.logger.log(`Weekly-invoice payment for order ${orderId}: amount=${amount}`);
+      await this.releaseOrderIfPaid(orderId);
+      return { success: true, paymentId: payment.id };
+    } catch (e: any) {
+      if (e instanceof BadRequestException) throw e;
+      if (e?.code === 'P2002') {
+        const raced = await this.prisma.payment.findUnique({ where: { orderId } });
+        if (raced?.status === PaymentStatus.completed) {
+          throw new BadRequestException('El pedido ya tiene un pago completado');
+        }
+        throw new BadRequestException('Ya hay un pago en curso para este pedido');
+      }
+      throw e;
+    }
+  }
+
   private async createOnvoPayPayment(
     orderId: string,
     amount: number,
@@ -702,7 +794,14 @@ export class PaymentsService {
     const skip = Math.max(Number(opts.skip ?? 0), 0);
     const where: any = {};
     const validStatus = ['pending', 'processing', 'completed', 'failed', 'refunded'];
-    const validMethod = ['onvopay_card', 'onvopay_sinpe', 'crypto', 'cash', 'credit'];
+    const validMethod = [
+      'onvopay_card',
+      'onvopay_sinpe',
+      'crypto',
+      'cash',
+      'credit',
+      'weekly_invoice',
+    ];
     if (opts.status && !validStatus.includes(opts.status)) {
       throw new BadRequestException(`status inválido: ${opts.status}`);
     }
@@ -744,7 +843,7 @@ export class PaymentsService {
       this.prisma.$queryRaw<Array<{ day: string; total: number }>>`
         SELECT TO_CHAR("created_at", 'YYYY-MM-DD') AS day, SUM("amount")::float AS total
         FROM "payments"
-        WHERE "status" = 'completed' AND "created_at" >= NOW() - INTERVAL '30 days'
+        WHERE "status" = 'completed' AND "method" != 'weekly_invoice' AND "created_at" >= NOW() - INTERVAL '30 days'
         GROUP BY day ORDER BY day`,
     ]);
 
@@ -762,6 +861,13 @@ export class PaymentsService {
         daily30: daily.map((d) => ({ date: d.day, amount: Number(d.total) })),
       },
     };
+  }
+
+  /** Merchant profile id for the logged-in merchant user (or throw). */
+  async merchantIdForUser(userId: string): Promise<string> {
+    const merchant = await this.prisma.merchantProfile.findUnique({ where: { userId } });
+    if (!merchant) throw new NotFoundException('Perfil de comercio no encontrado');
+    return merchant.id;
   }
 
   /**

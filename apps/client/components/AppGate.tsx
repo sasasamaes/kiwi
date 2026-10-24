@@ -15,6 +15,7 @@ const OPEN_PATHS = [
   '/cookies',
   '/refunds',
   '/tracking',
+  '/order/delivery',
 ];
 
 /** El link de seguimiento siempre funciona: el pedido ya existe y el

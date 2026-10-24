@@ -28,6 +28,7 @@ import {
   Globe,
   TrendingUp,
   Bell,
+  Receipt,
 } from 'lucide-react';
 import {
   ThemeToggle,
@@ -48,6 +49,7 @@ const menuItems = [
   { href: '/admin/referidos', icon: TicketPercent, key: 'referidos' },
   { href: '/admin/orders', icon: Package, key: 'orders' },
   { href: '/admin/credits', icon: Wallet, key: 'credits' },
+  { href: '/admin/facturacion', icon: Receipt, key: 'facturacion' },
   { href: '/admin/ratings', icon: Star, key: 'ratings' },
   { href: '/admin/kyc', icon: BadgeCheck, key: 'kyc' },
   { href: '/admin/payments', icon: Coins, key: 'payments' },
@@ -78,6 +80,7 @@ const menuGroups: Array<{ titleKey: string; hrefs: string[] }> = [
       '/admin/payments',
       '/admin/payments/crypto',
       '/admin/credits',
+      '/admin/facturacion',
       '/admin/ganancias',
       '/admin/reportes',
       '/admin/simulador',

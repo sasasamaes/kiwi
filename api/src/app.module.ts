@@ -38,6 +38,7 @@ import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { MarketingModule } from './marketing/marketing.module';
 import { VisitsModule } from './visits/visits.module';
 import { CoverageModule } from './service-area/coverage.module';
+import { DeliveryLinksModule } from './delivery-links/delivery-links.module';
 
 @Module({
   imports: [
@@ -92,6 +93,7 @@ import { CoverageModule } from './service-area/coverage.module';
     MarketingModule,
     VisitsModule,
     CoverageModule,
+    DeliveryLinksModule,
   ],
 })
 export class AppModule {}
