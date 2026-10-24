@@ -265,7 +265,14 @@ export class OrdersController {
     return this.ordersService.findPossibleDuplicate(user.sub, String(deliveryAddress ?? ''));
   }
 
-  @Get(':id')
+  @Post('admin/create')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Admin crea un pedido manual (fuera de la app) para contabilizar' })
+  async createManual(@Body() body: any, @CurrentUser() user: any) {
+    return this.ordersService.createManualOrder(body, user.sub);
+  }
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get order by ID' })

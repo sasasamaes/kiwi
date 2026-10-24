@@ -1460,6 +1460,11 @@ class ApiClient {
     return this.request<any>('/drivers/admin/list');
   }
 
+  /** Comercios para selects del admin (id + nombre). */
+  async getMerchantsAdmin() {
+    return this.request<any[]>('/credits/admin/merchants');
+  }
+
   async getAvailableDrivers(lat?: number, lng?: number) {
     const params = new URLSearchParams();
     if (lat != null) params.append('lat', String(lat));
@@ -2312,6 +2317,11 @@ class ApiClient {
     if (params?.driverId) q.append('driverId', params.driverId);
     const s = q.toString();
     return this.request<any>(`/orders/admin/all${s ? `?${s}` : ''}`);
+  }
+
+  /** Crea un pedido manual (fuera de la app) para contabilizar viajes/precios. */
+  async createAdminOrder(data: any) {
+    return this.request<any>('/orders/admin/create', { method: 'POST', body: data });
   }
 
   async getPaymentsAdmin(params?: {

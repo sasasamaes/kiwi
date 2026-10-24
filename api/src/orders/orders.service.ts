@@ -1295,6 +1295,89 @@ export class OrdersService {
    * estado operativo (concurso / propuestas / asignado) y recién ahí avisa
    * a drivers. Atómico e idempotente: solo el primer claim gana.
    */
+  async createManualOrder(data: any, adminUserId: string): Promise<any> {
+    if (!data?.merchantId) throw new BadRequestException('merchantId es requerido');
+    const merchant = await this.prisma.merchantProfile.findUnique({
+      where: { id: String(data.merchantId) },
+    });
+    if (!merchant) throw new NotFoundException('Comercio no encontrado');
+
+    const price = Number(data.basePrice);
+    if (!Number.isFinite(price) || price <= 0) {
+      throw new BadRequestException('basePrice debe ser un número positivo');
+    }
+
+    const status = ['pending', 'assigned', 'delivered'].includes(String(data.status))
+      ? String(data.status)
+      : 'delivered';
+    const driverId = data.driverId ? String(data.driverId) : null;
+    let driver: any = null;
+    if (driverId) {
+      driver = await this.prisma.driverProfile.findUnique({ where: { id: driverId } });
+      if (!driver) throw new NotFoundException('Repartidor no encontrado');
+    }
+
+    const delivered = status === 'delivered';
+    const assigned = status === 'assigned' || (status === 'delivered' && !!driverId);
+    const deliveredAt =
+      delivered && data.deliveredAt ? new Date(data.deliveredAt) : delivered ? new Date() : null;
+    const pickedUpAt = delivered ? (deliveredAt ?? new Date()) : null;
+    const assignedAt = assigned ? new Date() : null;
+
+    const order = await this.prisma.order.create({
+      data: {
+        merchantId: merchant.id,
+        status: (delivered ? 'delivered' : status) as any,
+        orderType: 'immediate',
+        pickupAddress: String(data.pickupAddress ?? merchant.address ?? '').trim() || '—',
+        deliveryAddress: String(data.deliveryAddress ?? '').trim() || '—',
+        deliveryZone: data.deliveryZone ? String(data.deliveryZone) : null,
+        basePrice: price,
+        commission: 0,
+        commissionRate: 0.15,
+        driverPayout: price,
+        totalAmount: price,
+        productsTotal: 0,
+        kind: 'freight',
+        packageDescription: data.packageDescription ? String(data.packageDescription) : null,
+        customerName: data.customerName ? String(data.customerName).trim() : null,
+        customerPhone: data.customerPhone ? String(data.customerPhone).trim() : null,
+        specialInstructions: data.specialInstructions ? String(data.specialInstructions) : null,
+        origin: 'merchant_panel',
+        ...(driverId && assigned ? { driverId, assignedAt } : {}),
+        ...(delivered ? { pickedUpAt, deliveredAt } : {}),
+        ...(data.createdAt ? { createdAt: new Date(data.createdAt) } : {}),
+      },
+      include: {
+        merchant: { select: MERCHANT_PUBLIC_SELECT },
+        driver: { select: DRIVER_PUBLIC_SELECT },
+      },
+    });
+
+    if (data.paymentMethod === 'cash' || !data.paymentMethod) {
+      await this.ensureCashPayment(order.id, Number(order.totalAmount));
+    }
+    if (delivered && driverId) {
+      await this.prisma.driverProfile
+        .update({ where: { id: driverId }, data: { totalTrips: { increment: 1 } } })
+        .catch((e) => this.logger.error(`totalTrips increment failed: ${String(e)}`));
+    }
+    await (this.prisma as any).orderEvent
+      ?.create?.({
+        data: {
+          orderId: order.id,
+          type: 'manual_create',
+          actorId: adminUserId,
+          driverId: driverId ?? undefined,
+          meta: { status, manual: true },
+        },
+      })
+      .catch(() => undefined);
+
+    this.logger.log(`Admin ${adminUserId} creó pedido manual ${order.id} (${status})`);
+    return order;
+  }
+
   async releaseAwaitingPayment(orderId: string): Promise<any | null> {
     const order: any = await this.prisma.order.findUnique({ where: { id: orderId } });
     if (!order || order.status !== 'awaiting_payment') return null;

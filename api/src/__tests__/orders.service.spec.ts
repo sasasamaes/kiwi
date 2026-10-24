@@ -2177,4 +2177,44 @@ describe('OrdersService', () => {
       expect(prisma.order.findMany).toHaveBeenCalledTimes(1);
     });
   });
+
+  describe('createManualOrder', () => {
+    beforeEach(() => {
+      prisma.merchantProfile.findUnique.mockResolvedValue({ id: 'm-1', userId: 'u-1' });
+      prisma.driverProfile = {
+        findUnique: jest.fn().mockResolvedValue({ id: 'drv-1' }),
+        update: jest.fn().mockResolvedValue({}),
+      };
+      prisma.order.create.mockResolvedValue({
+        id: 'manual-1',
+        merchantId: 'm-1',
+        driverId: 'drv-1',
+        status: 'delivered',
+        totalAmount: 1500,
+      });
+      prisma.payment = {
+        findUnique: jest.fn(),
+        upsert: jest.fn().mockResolvedValue({}),
+        updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+      };
+    });
+
+    it('crea entregado con repartidor e incrementa viajes', async () => {
+      const res = await service.createManualOrder(
+        {
+          merchantId: 'm-1',
+          driverId: 'drv-1',
+          pickupAddress: 'Comercio',
+          deliveryAddress: 'Casa',
+          basePrice: 1500,
+          status: 'delivered',
+        },
+        'admin-1',
+      );
+      expect(res.id).toBe('manual-1');
+      expect(prisma.driverProfile.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: { totalTrips: { increment: 1 } } }),
+      );
+    });
+  });
 });

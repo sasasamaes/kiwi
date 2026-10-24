@@ -16,6 +16,7 @@ import {
   Navigation,
 } from 'lucide-react';
 import { api, buildTrackingUrl, useTranslations, useSocket, playNotificationSound } from '@kiwi/ui';
+import { useDeliveryZones } from '@kiwi/ui';
 import { findDeliveryZone } from '@kiwi/types';
 
 interface AdminOrder {
@@ -98,6 +99,25 @@ export default function AdminOrders() {
   const [search, setSearch] = useState('');
   const [driverId, setDriverId] = useState('');
   const [drivers, setDrivers] = useState<Array<{ id: string; fullName: string }>>([]);
+  const [merchants, setMerchants] = useState<Array<{ id: string; businessName: string }>>([]);
+  const deliveryZones = useDeliveryZones();
+  const [zones, setZones] = useState<any[]>([]);
+  const [showManual, setShowManual] = useState(false);
+  const [manualBusy, setManualBusy] = useState(false);
+  const [manualError, setManualError] = useState<string | null>(null);
+  const [manualForm, setManualForm] = useState({
+    merchantId: '',
+    driverId: '',
+    pickupAddress: '',
+    deliveryAddress: '',
+    deliveryZone: '',
+    basePrice: '',
+    status: 'delivered',
+    customerName: '',
+    customerPhone: '',
+    packageDescription: '',
+    deliveredAt: '',
+  });
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -302,6 +322,10 @@ export default function AdminOrders() {
       .getDriversAdminList()
       .then((res: any) => setDrivers(Array.isArray(res) ? res : []))
       .catch(() => setDrivers([]));
+    api
+      .getMerchantsAdmin?.()
+      .then((res: any) => setMerchants(Array.isArray(res) ? res : []))
+      .catch(() => setMerchants([]));
   }, []);
 
   const pushLive = useCallback((kind: 'new' | 'status', orderId: string, message: string) => {
@@ -410,6 +434,14 @@ export default function AdminOrders() {
           </span>
         </p>
       </div>
+
+      <button
+        type="button"
+        onClick={() => setShowManual(true)}
+        className="inline-flex items-center gap-2 rounded-xl bg-kiwi-700 px-4 py-2.5 text-sm font-semibold text-white"
+      >
+        + Crear pedido manual
+      </button>
 
       {/* Hub en vivo: últimos eventos + aviso cuando hay nuevos fuera de vista */}
       {pendingLive > 0 && (
@@ -996,6 +1028,211 @@ export default function AdminOrders() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {showManual && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={() => setShowManual(false)}
+        >
+          <div
+            className="max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-3xl bg-white p-6 dark:bg-surface-800"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100">
+                Crear pedido manual
+              </h2>
+              <button onClick={() => setShowManual(false)} className="text-surface-500">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            {manualError && <p className="mb-3 text-sm text-red-600">{manualError}</p>}
+            <div className="space-y-3 text-sm">
+              <label className="block">
+                <span className="text-xs font-semibold text-surface-600">Comercio</span>
+                <select
+                  value={manualForm.merchantId}
+                  onChange={(e) => setManualForm((f) => ({ ...f, merchantId: e.target.value }))}
+                  className="mt-1 w-full rounded-xl border border-surface-200 px-3 py-2 dark:bg-surface-900"
+                >
+                  <option value="">Seleccionar…</option>
+                  {merchants.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.businessName}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block">
+                <span className="text-xs font-semibold text-surface-600">
+                  Repartidor (opcional)
+                </span>
+                <select
+                  value={manualForm.driverId}
+                  onChange={(e) => setManualForm((f) => ({ ...f, driverId: e.target.value }))}
+                  className="mt-1 w-full rounded-xl border border-surface-200 px-3 py-2 dark:bg-surface-900"
+                >
+                  <option value="">Sin asignar</option>
+                  {drivers.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.fullName}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block">
+                <span className="text-xs font-semibold text-surface-600">
+                  Dirección de recogida
+                </span>
+                <input
+                  value={manualForm.pickupAddress}
+                  onChange={(e) => setManualForm((f) => ({ ...f, pickupAddress: e.target.value }))}
+                  className="mt-1 w-full rounded-xl border border-surface-200 px-3 py-2 dark:bg-surface-900"
+                />
+              </label>
+              <label className="block">
+                <span className="text-xs font-semibold text-surface-600">Dirección de entrega</span>
+                <input
+                  value={manualForm.deliveryAddress}
+                  onChange={(e) =>
+                    setManualForm((f) => ({ ...f, deliveryAddress: e.target.value }))
+                  }
+                  className="mt-1 w-full rounded-xl border border-surface-200 px-3 py-2 dark:bg-surface-900"
+                />
+              </label>
+              <label className="block">
+                <span className="text-xs font-semibold text-surface-600">Zona</span>
+                <select
+                  value={manualForm.deliveryZone}
+                  onChange={(e) => setManualForm((f) => ({ ...f, deliveryZone: e.target.value }))}
+                  className="mt-1 w-full rounded-xl border border-surface-200 px-3 py-2 dark:bg-surface-900"
+                >
+                  <option value="">Sin zona</option>
+                  {deliveryZones.map((z: any) => (
+                    <option key={z.id} value={z.id}>
+                      {z.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block">
+                <span className="text-xs font-semibold text-surface-600">Precio del viaje</span>
+                <input
+                  type="number"
+                  value={manualForm.basePrice}
+                  onChange={(e) => setManualForm((f) => ({ ...f, basePrice: e.target.value }))}
+                  className="mt-1 w-full rounded-xl border border-surface-200 px-3 py-2 dark:bg-surface-900"
+                />
+              </label>
+              <label className="block">
+                <span className="text-xs font-semibold text-surface-600">Estado final</span>
+                <select
+                  value={manualForm.status}
+                  onChange={(e) => setManualForm((f) => ({ ...f, status: e.target.value }))}
+                  className="mt-1 w-full rounded-xl border border-surface-200 px-3 py-2 dark:bg-surface-900"
+                >
+                  <option value="delivered">Entregado</option>
+                  <option value="assigned">Asignado</option>
+                  <option value="pending">Pendiente</option>
+                </select>
+              </label>
+              <label className="block">
+                <span className="text-xs font-semibold text-surface-600">
+                  Nombre del cliente (opcional)
+                </span>
+                <input
+                  value={manualForm.customerName}
+                  onChange={(e) => setManualForm((f) => ({ ...f, customerName: e.target.value }))}
+                  className="mt-1 w-full rounded-xl border border-surface-200 px-3 py-2 dark:bg-surface-900"
+                />
+              </label>
+              <label className="block">
+                <span className="text-xs font-semibold text-surface-600">
+                  Teléfono del cliente (opcional)
+                </span>
+                <input
+                  value={manualForm.customerPhone}
+                  onChange={(e) => setManualForm((f) => ({ ...f, customerPhone: e.target.value }))}
+                  className="mt-1 w-full rounded-xl border border-surface-200 px-3 py-2 dark:bg-surface-900"
+                />
+              </label>
+              <label className="block">
+                <span className="text-xs font-semibold text-surface-600">
+                  Qué se envía (opcional)
+                </span>
+                <input
+                  value={manualForm.packageDescription}
+                  onChange={(e) =>
+                    setManualForm((f) => ({ ...f, packageDescription: e.target.value }))
+                  }
+                  className="mt-1 w-full rounded-xl border border-surface-200 px-3 py-2 dark:bg-surface-900"
+                />
+              </label>
+              <label className="block">
+                <span className="text-xs font-semibold text-surface-600">
+                  Fecha de entrega (opcional)
+                </span>
+                <input
+                  type="datetime-local"
+                  value={manualForm.deliveredAt}
+                  onChange={(e) => setManualForm((f) => ({ ...f, deliveredAt: e.target.value }))}
+                  className="mt-1 w-full rounded-xl border border-surface-200 px-3 py-2 dark:bg-surface-900"
+                />
+              </label>
+            </div>
+            <div className="mt-4 flex gap-2">
+              <button
+                type="button"
+                disabled={manualBusy}
+                onClick={async () => {
+                  setManualBusy(true);
+                  setManualError(null);
+                  try {
+                    await api.createAdminOrder({
+                      ...manualForm,
+                      basePrice: Number(manualForm.basePrice),
+                      driverId: manualForm.driverId || undefined,
+                      deliveryZone: manualForm.deliveryZone || undefined,
+                      deliveredAt: manualForm.deliveredAt
+                        ? new Date(manualForm.deliveredAt).toISOString()
+                        : undefined,
+                    });
+                    setShowManual(false);
+                    setManualForm({
+                      merchantId: '',
+                      driverId: '',
+                      pickupAddress: '',
+                      deliveryAddress: '',
+                      deliveryZone: '',
+                      basePrice: '',
+                      status: 'delivered',
+                      customerName: '',
+                      customerPhone: '',
+                      packageDescription: '',
+                      deliveredAt: '',
+                    });
+                    await load(filter, search, page, driverId);
+                  } catch (e: any) {
+                    setManualError(e?.message || 'No se pudo crear el pedido');
+                  } finally {
+                    setManualBusy(false);
+                  }
+                }}
+                className="flex-1 rounded-xl bg-kiwi-700 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"
+              >
+                {manualBusy ? 'Creando…' : 'Crear'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowManual(false)}
+                className="rounded-xl border border-surface-200 px-4 py-2.5 text-sm font-semibold text-surface-600"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
