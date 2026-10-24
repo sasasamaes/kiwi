@@ -6,24 +6,16 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { MapPin } from 'lucide-react';
-import {
-  KYCVerification,
-  KYCStatusBadge,
-  DiditVerifyButton,
-  useAuth,
-  api,
-  useTranslations,
-} from '@kiwi/ui';
+import { KYCVerification, DiditVerifyButton, useAuth, api, useTranslations } from '@kiwi/ui';
 
 export default function MerchantKYCPage() {
   const { t } = useTranslations();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
-  const [loading, setLoading] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
   const [kycStatus, setKycStatus] = useState<
     'pending' | 'documents_submitted' | 'under_review' | 'approved' | 'rejected'
   >('pending');
+  const [rejectionReason, setRejectionReason] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (!authLoading && !user) router.push('/login');
@@ -35,27 +27,10 @@ export default function MerchantKYCPage() {
       .getKycStatus()
       .then((s) => {
         if (s?.status) setKycStatus(s.status);
+        if (s?.rejectionReason) setRejectionReason(s.rejectionReason);
       })
       .catch(() => undefined);
   }, [user]);
-
-  const handleSubmit = async (data: any) => {
-    setLoading(true);
-    setSubmitError(null);
-    try {
-      const res = await api.submitKycDocuments({
-        idType: data.idType,
-        idNumber: data.idNumber,
-        businessLicenseUrl: data.businessLicenseUrl,
-        taxId: data.taxId,
-      });
-      setKycStatus(res?.status ?? 'documents_submitted');
-    } catch (error: any) {
-      setSubmitError(error?.message || t('webshop2.kycweb.errSubmit'));
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <div className="min-h-[100dvh] bg-bg-light">
@@ -171,26 +146,23 @@ export default function MerchantKYCPage() {
                   }
                 }}
               />
-              <div className="my-4 flex items-center gap-3 text-xs text-surface-500 dark:text-surface-400">
-                <span className="h-px flex-1 bg-surface-200" />
-                {t('webshop2.kycweb.orUpload')}
-                <span className="h-px flex-1 bg-surface-200" />
-              </div>
             </div>
           )}
-          <KYCVerification
-            role="merchant"
-            kycData={kycStatus === 'pending' ? undefined : { status: kycStatus }}
-            onSubmit={handleSubmit}
-            loading={loading}
-            onRefreshStatus={async () => {
-              const r = await api.refreshDiditSession();
-              const s = (r as any)?.status as typeof kycStatus | undefined;
-              if (s) setKycStatus(s);
-              return s;
-            }}
-          />
-          {submitError && <p className="mt-3 text-center text-sm text-red-600">{submitError}</p>}
+          {kycStatus !== 'pending' && (
+            <KYCVerification
+              role="merchant"
+              statusOnly
+              kycData={{ status: kycStatus, rejectionReason }}
+              onSubmit={() => undefined}
+              onRefreshStatus={async () => {
+                const r = await api.refreshDiditSession();
+                const s = (r as any)?.status as typeof kycStatus | undefined;
+                if (s) setKycStatus(s);
+                if ((r as any)?.rejectionReason) setRejectionReason((r as any).rejectionReason);
+                return s;
+              }}
+            />
+          )}
         </motion.div>
 
         {/* Help Section */}

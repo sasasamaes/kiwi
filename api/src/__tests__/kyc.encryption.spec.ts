@@ -40,12 +40,36 @@ describe('KYCService — cifrado de números de identidad en reposo', () => {
     prisma.kYCVerification.findUnique.mockResolvedValue(null);
     prisma.kYCVerification.create.mockImplementation(async ({ data }) => data);
 
-    await service.submitDocuments('u-1', { idNumber: '209880065', idType: 'cedula' });
+    await service.submitDocuments('u-1', {
+      idNumber: '209880065',
+      idType: 'cedula',
+      idFrontUrl: 'https://cdn.example.com/id.jpg',
+      selfieUrl: 'https://cdn.example.com/selfie.jpg',
+      businessLicenseUrl: 'https://cdn.example.com/license.jpg',
+    });
 
     const stored = prisma.kYCVerification.create.mock.calls[0][0].data;
     expect(stored.idNumber).toMatch(/^v1:/);
     expect(stored.idNumber).not.toContain('209880065');
     expect(stored.idType).toBe('cedula'); // campo no sensible queda intacto
+  });
+
+  it('rechaza envíos sin documentos (nunca crea una revisión vacía)', async () => {
+    await expect(
+      service.submitDocuments('u-1', { idNumber: '209880065', idType: 'cedula' }),
+    ).rejects.toThrow('Faltan las fotos');
+    expect(prisma.kYCVerification.create).not.toHaveBeenCalled();
+  });
+
+  it('rechaza URLs truthy no-https, aunque el campo venga relleno', async () => {
+    await expect(
+      service.submitDocuments('u-1', {
+        idFrontUrl: 'javascript:alert(1)',
+        selfieUrl: 'http://insecure.example.com/selfie.jpg',
+        businessLicenseUrl: 'https://cdn.example.com/license.jpg',
+      }),
+    ).rejects.toThrow('Faltan las fotos');
+    expect(prisma.kYCVerification.create).not.toHaveBeenCalled();
   });
 
   it('getVerificationByUserId (dueño) recibe el número enmascarado por defecto', async () => {

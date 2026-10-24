@@ -172,7 +172,7 @@ export default function RankingPage() {
           </p>
           <p className="mt-1 flex items-center gap-1.5">
             <Bike className="h-4 w-4" />
-            Top 3 = los más rápidos de la flota.
+            {t('wdrvwork.active.rankTop3')}
           </p>
         </div>
       </div>

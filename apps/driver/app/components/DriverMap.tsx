@@ -4,6 +4,7 @@
 import 'leaflet/dist/leaflet.css';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AlertTriangle, LocateFixed, Maximize2, Navigation, X } from 'lucide-react';
+import { useTranslations } from '@kiwi/ui';
 
 export interface DriverMapPoint {
   lat: number;
@@ -72,6 +73,7 @@ export function DriverMap({
   height = 340,
   className = '',
 }: DriverMapProps) {
+  const { t } = useTranslations();
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
@@ -125,7 +127,7 @@ export function DriverMap({
 
         failTimer = setTimeout(() => {
           if (!cancelled && !tilesOk) {
-            setMapError('El mapa no cargó. Revisá tu conexión e intentá de nuevo.');
+            setMapError(t('wdrvwork.common.mapLoadFailed'));
           }
         }, 10000);
 
@@ -133,7 +135,7 @@ export function DriverMap({
         setMapReady(true);
       } catch (err) {
         console.error('DriverMap init failed:', err);
-        if (!cancelled) setMapError('No se pudo cargar el mapa');
+        if (!cancelled) setMapError(t('wdrvwork.common.mapInitFailed'));
       }
     };
 
@@ -148,7 +150,7 @@ export function DriverMap({
       setMapReady(false);
       fittedRef.current = false;
     };
-  }, [retryKey]);
+  }, [retryKey, t]);
 
   // ---- 2. GPS en vivo tipo Uber (watchPosition) ----
   useEffect(() => {
@@ -196,7 +198,7 @@ export function DriverMap({
         icon: mk(dot('#22c55e', '◈'), 40),
       })
         .addTo(mapInstanceRef.current)
-        .bindPopup(`<b>Recoger</b><br>${esc(pickup.label)}`);
+        .bindPopup(`<b>${t('wdrvwork.common.pickup')}</b><br>${esc(pickup.label)}`);
       markersRef.current.push(m);
       bounds.extend([pickup.lat, pickup.lng]);
     }
@@ -205,7 +207,7 @@ export function DriverMap({
         icon: mk(dot('#f59e0b', '◎'), 40),
       })
         .addTo(mapInstanceRef.current)
-        .bindPopup(`<b>Entregar</b><br>${esc(delivery.label)}`);
+        .bindPopup(`<b>${t('wdrvwork.common.delivery')}</b><br>${esc(delivery.label)}`);
       markersRef.current.push(m);
       bounds.extend([delivery.lat, delivery.lng]);
     }
@@ -213,7 +215,7 @@ export function DriverMap({
       const pulse = `<div style="position:relative;width:44px;height:44px;"><div style="position:absolute;inset:0;border-radius:50%;background:#3b82f633;border:2px solid #3b82f6;"></div><div style="position:absolute;inset:10px;border-radius:50%;background:#3b82f6;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,.4);"></div></div>`;
       const m = L.marker([driver.lat, driver.lng], { icon: mk(pulse, 44), zIndexOffset: 1000 })
         .addTo(mapInstanceRef.current)
-        .bindPopup('<b>Vos</b><br>Ubicación en vivo');
+        .bindPopup(`<b>${t('wdrvwork.common.you')}</b><br>${t('wdrvwork.common.liveLocation')}`);
       markersRef.current.push(m);
       bounds.extend([driver.lat, driver.lng]);
     }
@@ -222,7 +224,7 @@ export function DriverMap({
       mapInstanceRef.current.fitBounds(bounds, { padding: [56, 56] });
       fittedRef.current = true;
     }
-  }, [pickup, delivery, driver, mapReady]);
+  }, [pickup, delivery, driver, mapReady, t]);
 
   // ---- 4. Ruta real OSRM (driver -> destino) con fallback recto ----
   useEffect(() => {
@@ -368,7 +370,7 @@ export function DriverMap({
               setRetryKey((k) => k + 1);
             }}
           >
-            Reintentar
+            {t('wdrvwork.common.retry')}
           </button>
         </div>
       </div>
@@ -381,9 +383,7 @@ export function DriverMap({
         className={`flex items-center justify-center rounded-3xl bg-surface-100 dark:bg-surface-800 ${className}`}
         style={{ height }}
       >
-        <p className="px-6 text-center text-sm text-surface-500">
-          Este pedido no trae coordenadas. Usá la dirección escrita abajo.
-        </p>
+        <p className="px-6 text-center text-sm text-surface-500">{t('wdrvwork.common.noCoords')}</p>
       </div>
     );
   }
@@ -399,18 +399,26 @@ export function DriverMap({
       {/* Pantalla completa (debajo del banner de próxima parada, si hay) */}
       <button
         onClick={() => setExpanded((v) => !v)}
-        aria-label={expanded ? 'Cerrar mapa en grande' : 'Ver mapa en grande'}
+        aria-label={expanded ? t('wdrvwork.common.closeMap') : t('wdrvwork.common.expandMap')}
         aria-expanded={expanded}
         className={`absolute right-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-white dark:bg-surface-800 shadow-lg text-surface-700 dark:text-surface-200 ${
           activeDest ? 'top-[76px]' : 'top-3'
         }`}
+        style={
+          expanded
+            ? { top: `calc(${activeDest ? 76 : 12}px + env(safe-area-inset-top, 0px))` }
+            : undefined
+        }
       >
         {expanded ? <X className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
       </button>
 
       {/* Banner Uber: próxima parada + distancia/ETA */}
       {activeDest && (
-        <div className="absolute inset-x-3 top-3 flex items-center gap-2 rounded-2xl bg-white/95 dark:bg-surface-900/95 px-3 py-2.5 shadow-lg backdrop-blur">
+        <div
+          className="absolute inset-x-3 top-3 flex items-center gap-2 rounded-2xl bg-white/95 dark:bg-surface-900/95 px-3 py-2.5 shadow-lg backdrop-blur"
+          style={expanded ? { top: 'calc(0.75rem + env(safe-area-inset-top, 0px))' } : undefined}
+        >
           <span
             className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white ${
               target === 'pickup' ? 'bg-kiwi-500' : 'bg-amber-500'
@@ -420,12 +428,15 @@ export function DriverMap({
           </span>
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold text-surface-800 dark:text-surface-100">
-              {targetLabel ?? (target === 'pickup' ? 'Vas a recoger' : 'Vas a entregar')}
+              {targetLabel ??
+                (target === 'pickup'
+                  ? t('wdrvwork.common.pickupFallback')
+                  : t('wdrvwork.common.deliveryFallback'))}
             </p>
             <p className="truncate text-xs text-surface-500">
               {routeMeta
-                ? `${formatDist(routeMeta.distanceM)} · ${formatEta(routeMeta.durationS)}${driver ? '' : ' (estimado)'}`
-                : 'Calculando ruta…'}
+                ? `${formatDist(routeMeta.distanceM)} · ${formatEta(routeMeta.durationS)}${driver ? '' : t('wdrvwork.common.estimatedSuffix')}`
+                : t('wdrvwork.common.calculatingRoute')}
             </p>
           </div>
         </div>
@@ -433,16 +444,22 @@ export function DriverMap({
 
       {/* Sin GPS */}
       {gpsDenied && (
-        <div className="absolute inset-x-3 bottom-12 rounded-2xl bg-amber-500/95 px-3 py-2 text-center text-xs font-medium text-white shadow-lg">
-          Activá el GPS para verte en el mapa y navegar en vivo.
+        <div
+          className="absolute inset-x-3 bottom-12 rounded-2xl bg-amber-500/95 px-3 py-2 text-center text-xs font-medium text-white shadow-lg"
+          style={expanded ? { bottom: 'calc(3rem + env(safe-area-inset-bottom, 0px))' } : undefined}
+        >
+          {t('wdrvwork.common.gpsEnable')}
         </div>
       )}
 
       {/* Controles */}
-      <div className="absolute bottom-12 right-3 flex flex-col gap-2">
+      <div
+        className="absolute bottom-12 right-3 flex flex-col gap-2"
+        style={expanded ? { bottom: 'calc(3rem + env(safe-area-inset-bottom, 0px))' } : undefined}
+      >
         <button
           onClick={recenter}
-          aria-label="Centrar en mi ubicación"
+          aria-label={t('wdrvwork.common.recenter')}
           className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white dark:bg-surface-800 shadow-lg text-surface-700 dark:text-surface-200"
         >
           <LocateFixed className="h-5 w-5" />
@@ -451,8 +468,11 @@ export function DriverMap({
       <button
         onClick={openExternal}
         className="absolute bottom-3 right-3 rounded-xl bg-white/90 dark:bg-surface-800/90 px-3 py-1.5 text-[11px] font-medium text-surface-500 shadow backdrop-blur"
+        style={
+          expanded ? { bottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' } : undefined
+        }
       >
-        Abrir en Maps
+        {t('wdrvwork.common.openMaps')}
       </button>
 
       <p className="absolute bottom-3 left-3 rounded-lg bg-white/80 dark:bg-surface-900/80 px-2 py-0.5 text-[10px] text-surface-500 dark:text-surface-400 backdrop-blur">

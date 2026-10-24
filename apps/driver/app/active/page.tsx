@@ -185,10 +185,11 @@ function TripStopwatch({ startIso, className }: { startIso: string | null; class
   return <span className={className}>{formatTripDuration(secs)}</span>;
 }
 
-function toWaLink(phone: string): string {
+function toWaLink(phone: string, merchantName?: string | null): string {
   const digits = phone.replace(/\D/g, '');
   const normalized = digits.length === 8 ? `506${digits}` : digits;
-  return `https://wa.me/${normalized}`;
+  const msg = `Hola! Te habla de parte de Kiwi Express, tengo por entrega un pedido del ${merchantName || 'comercio'}, me podrias mandar la ubicacion por favor`;
+  return `https://wa.me/${normalized}?text=${encodeURIComponent(msg)}`;
 }
 
 function elapsedLabel(
@@ -399,7 +400,7 @@ export default function ActiveOrders() {
           // comercio reciben el punto al instante (el REST solo persiste).
           // Se emite a TODOS los activos: el driver los lleva todos encima.
           try {
-            const ids = ordersRef.current.slice(0, 5).map((o) => o.id);
+            const ids = orders.slice(0, 5).map((o) => o.id);
             for (const id of ids) {
               emitDriverLocation?.(pos.coords.latitude, pos.coords.longitude, id);
             }
@@ -450,7 +451,7 @@ export default function ActiveOrders() {
       }
       wakeLock = null;
     };
-  }, [user]);
+  }, [user, emitDriverLocation, orders]);
 
   // Aplica la transición localmente (UI optimista) y marca el pedido como encolado.
   // Los estados terminales se quitan de la lista al momento (igual que hace el
@@ -508,16 +509,10 @@ export default function ActiveOrders() {
   // Cuenta regresiva de aceptación y readyAt: el tick de 1s vive dentro del
   // componente <Countdown> (solo se re-renderiza el texto). Acá queda un poll
   // sin setState que solo dispara sonido/vibración cuando un readyAt se cumple.
-  const ordersRef = useRef(orders);
-  useEffect(() => {
-    ordersRef.current = orders;
-  }, [orders]);
-
-  // readyAt alcanzado → sonido + vibración una vez por pedido (ir a recoger).
   const readyNotifiedRef = useRef<Set<string>>(new Set());
   useEffect(() => {
     const checkReady = () => {
-      for (const o of ordersRef.current) {
+      for (const o of orders) {
         const t = new Date(String((o as any).readyAt ?? '')).getTime();
         if (
           !Number.isFinite(t) ||
@@ -539,7 +534,7 @@ export default function ActiveOrders() {
       }
     };
     checkReady();
-    const needsPoll = ordersRef.current.some((o) => {
+    const needsPoll = orders.some((o) => {
       const t = new Date(String((o as any).readyAt ?? '')).getTime();
       return (
         Number.isFinite(t) &&
@@ -629,7 +624,16 @@ export default function ActiveOrders() {
       }
       await fetchActiveOrders();
     } catch (err) {
-      console.error('Status update failed, queuing for background sync:', err);
+      console.error('Status update failed:', err);
+      const httpStatus = Number((err as any)?.status ?? 0);
+      // Un 4xx es una regla del servidor (foto faltante, transición inválida,
+      // permisos): reintentarlo en cola solo simula un avance que nunca ocurrió.
+      if (httpStatus >= 400 && httpStatus < 500) {
+        markQueued(null);
+        setNotice(err instanceof Error ? err.message : t('wdrvwork.active.queueFailed'));
+        await fetchActiveOrders();
+        return;
+      }
       // ¿El servidor SÍ avanzó y se perdió la respuesta? Reconciliar antes de
       // encolar un duplicado que el backend rechazaría con 400 ("No se puede
       // cambiar"), envenenando la cola y revirtiendo la UI al estado viejo.
@@ -652,6 +656,7 @@ export default function ActiveOrders() {
       }
       // UI optimista + cola persistente (IndexedDB). backgroundSync replaya
       // con reintentos/backoff al volver la conexión (o en su poll de 5s).
+      const beforeOptimistic = orders;
       applyOptimistic(order.id, flow.next);
       try {
         await backgroundSync.enqueue(
@@ -661,8 +666,11 @@ export default function ActiveOrders() {
         );
       } catch (queueErr) {
         console.error('Failed to enqueue status change:', queueErr);
-        // Sin cola disponible: revertir para no mostrar un estado mentiroso
-        applyOptimistic(order.id, order.status);
+        // Sin cola disponible: restaurar lista y marcador exactos, sin dejar
+        // un "Sincronizando" ni un entregado oculto que nunca se encoló.
+        setOrders(beforeOptimistic);
+        setSelectedId(order.id);
+        markQueued(null);
         setNotice(t('wdrvwork.active.queueFailed'));
       }
     } finally {
@@ -1557,7 +1565,7 @@ export default function ActiveOrders() {
                 <Phone className="h-4 w-4 text-kiwi-500" /> {t('wdrvwork.active.call')}
               </a>
               <a
-                href={toWaLink(customer.phone)}
+                href={toWaLink(customer.phone, (order as any).merchant?.businessName)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark text-sm font-semibold text-surface-700 dark:text-surface-200"

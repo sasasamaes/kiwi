@@ -7,6 +7,7 @@ import { cn } from './utils';
 import { KiwiMark } from './KiwiMark';
 import { ConsentCheckbox, ConsentLink } from './ConsentCheckbox';
 import { Bike, Car, Truck, Eye, EyeOff, Loader } from 'lucide-react';
+import { useTranslations } from './LanguageProvider';
 
 export interface AuthFormProps {
   type: 'login' | 'register';
@@ -56,6 +57,7 @@ export function AuthForm({
   referralValid,
   referralChecking = false,
 }: AuthFormProps) {
+  const { t } = useTranslations();
   const [formData, setFormData] = useState<AuthFormData>({
     email: initialEmail,
     password: '',
@@ -108,11 +110,11 @@ export function AuthForm({
         <p className="text-surface-500 mt-2">
           {type === 'login'
             ? role === 'merchant'
-              ? 'Gestiona tus pedidos'
-              : 'Empieza a ganar'
+              ? t('wdrvwork.common.authLoginMerchant')
+              : t('wdrvwork.common.authLoginDriver')
             : role === 'merchant'
-              ? 'Registra tu negocio'
-              : 'Únete como repartidor'}
+              ? t('wdrvwork.common.authRegisterMerchant')
+              : t('wdrvwork.common.authRegisterDriver')}
         </p>
       </motion.div>
 
@@ -138,7 +140,7 @@ export function AuthForm({
                   htmlFor="auth-fullname"
                   className="block text-sm font-medium text-surface-700 mb-2"
                 >
-                  Nombre completo
+                  {t('wdrvwork.common.authFullName')}
                 </label>
                 <motion.input
                   id="auth-fullname"
@@ -146,7 +148,7 @@ export function AuthForm({
                   value={formData.fullName}
                   onChange={(e) => updateField('fullName', e.target.value)}
                   className="w-full px-4 py-3 rounded-xl bg-white/50 border border-surface-200 text-surface-800 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-kiwi-600 focus:border-transparent transition-all"
-                  placeholder="Tu nombre"
+                  placeholder={t('wdrvwork.common.authNamePlaceholder')}
                   autoComplete="name"
                   whileFocus={{ scale: 1.02 }}
                   required
@@ -167,7 +169,7 @@ export function AuthForm({
                   htmlFor="auth-business"
                   className="block text-sm font-medium text-surface-700 mb-2"
                 >
-                  Nombre del negocio
+                  {t('wdrvwork.common.authBusinessName')}
                 </label>
                 <motion.input
                   id="auth-business"
@@ -196,7 +198,7 @@ export function AuthForm({
                   id="auth-vehicle-label"
                   className="block text-sm font-medium text-surface-700 mb-2"
                 >
-                  Tipo de vehículo
+                  {t('wdrvwork.common.authVehicleType')}
                 </label>
                 <div
                   className="grid grid-cols-5 gap-2"
@@ -204,18 +206,18 @@ export function AuthForm({
                   aria-labelledby="auth-vehicle-label"
                 >
                   {[
-                    { type: 'motorcycle', icon: 'motorcycle', label: 'Moto' },
-                    { type: 'motorized_bike', icon: 'bike', label: 'Bici Moto' },
-                    { type: 'bicycle', icon: 'bike', label: 'Bici' },
-                    { type: 'car', icon: 'car', label: 'Carro' },
-                    { type: 'truck', icon: 'truck', label: 'Camion' },
+                    { type: 'motorcycle', icon: 'motorcycle', labelKey: 'authMotorcycle' },
+                    { type: 'motorized_bike', icon: 'bike', labelKey: 'authMotorizedBike' },
+                    { type: 'bicycle', icon: 'bike', labelKey: 'authBicycle' },
+                    { type: 'car', icon: 'car', labelKey: 'authCar' },
+                    { type: 'truck', icon: 'truck', labelKey: 'authTruck' },
                   ].map((v) => (
                     <motion.button
                       key={v.type}
                       type="button"
                       role="radio"
                       aria-checked={formData.vehicleType === v.type}
-                      aria-label={v.label}
+                      aria-label={t(`wdrvwork.common.${v.labelKey}`)}
                       className={cn(
                         'flex flex-col items-center p-2 rounded-xl transition-all',
                         formData.vehicleType === v.type
@@ -231,7 +233,9 @@ export function AuthForm({
                         {v.icon === 'car' && <Car className="h-6 w-6" />}
                         {v.icon === 'truck' && <Truck className="h-6 w-6" />}
                       </span>
-                      <span className="text-[10px] text-surface-600 mt-1">{v.label}</span>
+                      <span className="text-[10px] text-surface-600 mt-1">
+                        {t(`wdrvwork.common.${v.labelKey}`)}
+                      </span>
                     </motion.button>
                   ))}
                 </div>
@@ -251,7 +255,7 @@ export function AuthForm({
                   htmlFor="auth-phone"
                   className="block text-sm font-medium text-surface-700 mb-2"
                 >
-                  Teléfono
+                  {t('wdrvwork.common.authPhone')}
                 </label>
                 <motion.input
                   id="auth-phone"
@@ -272,7 +276,7 @@ export function AuthForm({
           {/* Email */}
           <div>
             <label htmlFor="auth-email" className="block text-sm font-medium text-surface-700 mb-2">
-              Correo electrónico
+              {t('wdrvwork.common.authEmail')}
             </label>
             <motion.input
               id="auth-email"
@@ -295,7 +299,7 @@ export function AuthForm({
               htmlFor="auth-password"
               className="block text-sm font-medium text-surface-700 mb-2"
             >
-              Contraseña
+              {t('wdrvwork.common.authPassword')}
             </label>
             <div className="relative">
               <motion.input
@@ -313,7 +317,7 @@ export function AuthForm({
                 minLength={6}
               />
               <span id="auth-password-hint" className="sr-only">
-                Mínimo 6 caracteres
+                {t('wdrvwork.common.authPasswordHint')}
               </span>
               {/* Botón plano (no motion): framer-motion escribe `transform`
                   inline y pisa el `-translate-y-1/2` de Tailwind, dejando el
@@ -322,7 +326,11 @@ export function AuthForm({
                 type="button"
                 className="absolute right-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center text-surface-500 dark:text-surface-400 transition-colors hover:text-surface-600 active:scale-90"
                 onClick={() => setShowPassword(!showPassword)}
-                aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                aria-label={
+                  showPassword
+                    ? t('wdrvwork.common.authHidePassword')
+                    : t('wdrvwork.common.authShowPassword')
+                }
               >
                 {showPassword ? <Eye className="h-5 w-5" /> : <EyeOff className="h-5 w-5" />}
               </button>
@@ -337,9 +345,9 @@ export function AuthForm({
                 htmlFor="auth-referral"
                 className="block text-sm font-medium text-surface-700 mb-2"
               >
-                Código de referido{' '}
+                {t('wdrvwork.common.authReferral')}{' '}
                 <span className="font-normal text-surface-500 dark:text-surface-400">
-                  (opcional)
+                  {t('wdrvwork.common.authOptional')}
                 </span>
               </label>
               <motion.input
@@ -363,7 +371,7 @@ export function AuthForm({
                 <div className="mt-2 text-xs" role="status">
                   {referralChecking ? (
                     <span className="text-surface-500 dark:text-surface-400">
-                      Verificando código…
+                      {t('wdrvwork.common.authCheckingReferral')}
                     </span>
                   ) : referralValid && referralOffer ? (
                     <span className="font-medium text-kiwi-700">
@@ -371,9 +379,13 @@ export function AuthForm({
                       {referralOffer.detail ? ` — ${referralOffer.detail}` : ''}
                     </span>
                   ) : referralValid ? (
-                    <span className="font-medium text-kiwi-700">🎟️ Código válido</span>
+                    <span className="font-medium text-kiwi-700">
+                      {t('wdrvwork.common.authValidReferral')}
+                    </span>
                   ) : (
-                    <span className="text-amber-600">Ese código no existe o venció.</span>
+                    <span className="text-amber-600">
+                      {t('wdrvwork.common.authInvalidReferral')}
+                    </span>
                   )}
                 </div>
               )}
@@ -391,13 +403,13 @@ export function AuthForm({
               }}
               error={consentError}
             >
-              Acepto los <ConsentLink href="/terms">términos de uso</ConsentLink> y la{' '}
-              <ConsentLink href="/privacy">política de privacidad</ConsentLink>. Autorizo a Kiwi a
-              tratar mis datos para gestionar mi cuenta
-              {role === 'driver'
-                ? ', incluyendo la verificación de identidad (KYC) con mis documentos'
-                : ''}{' '}
-              y las notificaciones de pedidos por la app.
+              {t('wdrvwork.common.authConsentA')}{' '}
+              <ConsentLink href="/terms">{t('wdrvwork.common.authTerms')}</ConsentLink>{' '}
+              {t('wdrvwork.common.authConsentAnd')}{' '}
+              <ConsentLink href="/privacy">{t('wdrvwork.common.authPrivacy')}</ConsentLink>
+              {t('wdrvwork.common.authConsentData')}
+              {role === 'driver' ? t('wdrvwork.common.authConsentKyc') : ''}
+              {t('wdrvwork.common.authConsentNotifications')}
             </ConsentCheckbox>
           )}
 
@@ -437,12 +449,12 @@ export function AuthForm({
                 >
                   <Loader className="h-4 w-4" />
                 </motion.span>
-                Procesando...
+                {t('wdrvwork.common.authProcessing')}
               </span>
             ) : type === 'login' ? (
-              'Iniciar Sesión'
+              t('wdrvwork.common.authLogin')
             ) : (
-              'Crear Cuenta'
+              t('wdrvwork.common.authRegister')
             )}
           </motion.button>
 
@@ -459,7 +471,7 @@ export function AuthForm({
                 onClick={onForgotPassword}
                 className="inline-flex min-h-[44px] items-center px-1 text-sm text-kiwi-700 hover:text-kiwi-800 font-medium"
               >
-                ¿Olvidaste tu contraseña?
+                {t('wdrvwork.common.authForgot')}
               </button>
             </motion.div>
           )}
@@ -473,12 +485,14 @@ export function AuthForm({
           transition={{ delay: 0.6 }}
         >
           <p className="text-sm text-surface-500">
-            {type === 'login' ? '¿No tienes cuenta?' : '¿Ya tienes cuenta?'}
+            {type === 'login'
+              ? t('wdrvwork.common.authNoAccount')
+              : t('wdrvwork.common.authHasAccount')}
             <button
               onClick={onToggle}
               className="ml-2 inline-flex min-h-[44px] items-center px-1 font-semibold text-kiwi-700 hover:text-kiwi-800"
             >
-              {type === 'login' ? 'Regístrate' : 'Inicia sesión'}
+              {type === 'login' ? t('wdrvwork.common.authSignup') : t('wdrvwork.common.authSignin')}
             </button>
           </p>
         </motion.div>

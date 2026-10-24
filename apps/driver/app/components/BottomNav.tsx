@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Calendar, Coins, History, Home as HomeIcon, Package, User, Trophy } from 'lucide-react';
+import { useTranslations } from '@kiwi/ui';
 
 /**
  * Navegación inferior única del driver. Antes cada página tenía su propia
@@ -14,17 +15,18 @@ import { Calendar, Coins, History, Home as HomeIcon, Package, User, Trophy } fro
  * por ruta (usePathname, no un booleano hardcodeado por página).
  */
 const ITEMS = [
-  { href: '/', label: 'Inicio', icon: HomeIcon, exact: true },
-  { href: '/active', label: 'Activos', icon: Package, exact: false },
-  { href: '/ranking', label: 'Ranking', icon: Trophy, exact: false },
-  { href: '/history', label: 'Historial', icon: History, exact: false },
-  { href: '/earnings', label: 'Ganancias', icon: Coins, exact: false },
-  { href: '/schedule', label: 'Horario', icon: Calendar, exact: false },
-  { href: '/profile', label: 'Perfil', icon: User, exact: false },
-];
+  { href: '/', labelKey: 'navHome', icon: HomeIcon, exact: true },
+  { href: '/active', labelKey: 'navActive', icon: Package, exact: false },
+  { href: '/ranking', labelKey: 'navRanking', icon: Trophy, exact: false },
+  { href: '/history', labelKey: 'navHistory', icon: History, exact: false },
+  { href: '/earnings', labelKey: 'navEarnings', icon: Coins, exact: false },
+  { href: '/schedule', labelKey: 'navSchedule', icon: Calendar, exact: false },
+  { href: '/profile', labelKey: 'navProfile', icon: User, exact: false },
+] as const;
 
 export function BottomNav() {
   const pathname = usePathname();
+  const { t } = useTranslations();
 
   return (
     <nav className="pb-safe fixed inset-x-0 bottom-0 z-40 border-t border-surface-200/50 dark:border-surface-700/50 bg-white/80 dark:bg-surface-900/80 backdrop-blur-xl">
@@ -34,11 +36,12 @@ export function BottomNav() {
             ? pathname === item.href
             : pathname === item.href || pathname.startsWith(`${item.href}/`);
           const Icon = item.icon;
+          const label = t(`wdrvwork.common.${item.labelKey}`);
           return (
             <Link
               key={item.href}
               href={item.href}
-              aria-label={item.label}
+              aria-label={label}
               aria-current={active ? 'page' : undefined}
               className="flex min-w-0 flex-1 flex-col items-center gap-0.5 px-1 py-1.5"
             >
@@ -51,7 +54,7 @@ export function BottomNav() {
                 whileTap={{ scale: 0.9 }}
               >
                 <Icon className="h-5 w-5 shrink-0" />
-                <span className="truncate text-xs leading-tight font-medium">{item.label}</span>
+                <span className="truncate text-xs leading-tight font-medium">{label}</span>
               </motion.span>
             </Link>
           );

@@ -12,7 +12,7 @@ export type KYCStatus =
   'pending' | 'documents_submitted' | 'under_review' | 'approved' | 'rejected' | 'expired';
 
 /** Pull manual del estado en Didit (por si el webhook se perdió). */
-function RefreshStatusButton({
+export function RefreshStatusButton({
   onRefreshStatus,
 }: {
   onRefreshStatus: () => Promise<string | undefined>;
@@ -67,6 +67,8 @@ interface KYCVerificationProps {
   kycData?: KYCData;
   onSubmit: (data: any) => void;
   loading?: boolean;
+  /** Solo muestra estado (aprobado/rechazado/en revisión), sin el formulario manual. */
+  statusOnly?: boolean;
   /** Pull manual a Didit (el webhook a veces no llega). Sin esto no se muestra. */
   onRefreshStatus?: () => Promise<string | undefined>;
 }
@@ -119,8 +121,11 @@ export function KYCVerification({
   onSubmit,
   loading = false,
   onRefreshStatus,
+  statusOnly = false,
 }: KYCVerificationProps) {
   const [step, setStep] = useState(0);
+  // Permite volver al formulario tras un rechazo sin quedar atrapado en la card.
+  const [resubmitting, setResubmitting] = useState(false);
   // Consentimiento explícito para el tratamiento de documentos de identidad
   // (dato personal sensible según Ley 8968). Sin esto, el envío se bloquea.
   const [dataConsent, setDataConsent] = useState(false);
@@ -192,7 +197,7 @@ export function KYCVerification({
   }
 
   // If rejected, show error with option to resubmit
-  if (status === 'rejected') {
+  if (status === 'rejected' && !resubmitting) {
     return (
       <motion.div
         className="rounded-2xl bg-red-50 border border-red-200 p-6"
@@ -211,15 +216,20 @@ export function KYCVerification({
             {kycData?.rejectionReason || 'Documentos no claros o incompletos'}
           </p>
         </div>
-        <motion.button
-          type="button"
-          className="w-full py-3 rounded-xl bg-kiwi-gradient text-white font-semibold"
-          onClick={() => setStep(0)}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-        >
-          Volver a Intentar
-        </motion.button>
+        {!statusOnly && (
+          <motion.button
+            type="button"
+            className="w-full py-3 rounded-xl bg-kiwi-gradient text-white font-semibold"
+            onClick={() => {
+              setResubmitting(true);
+              setStep(0);
+            }}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            Volver a Intentar
+          </motion.button>
+        )}
       </motion.div>
     );
   }
@@ -250,6 +260,7 @@ export function KYCVerification({
   }
 
   // KYC Form Steps
+  if (statusOnly) return null;
   const steps = [
     // Step 0: ID Type Selection
     {

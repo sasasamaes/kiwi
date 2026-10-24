@@ -225,7 +225,8 @@ export default function Profile() {
       const out = await api.startDriverMarketplaceOnboarding();
       setMpStatus({ accountId: out.accountId, status: out.status });
       if (out.onboardingUrl) {
-        window.open(out.onboardingUrl, '_blank', 'noopener,noreferrer');
+        // Misma pestaña: Safari iOS bloquea window.open tras un await.
+        window.location.assign(out.onboardingUrl);
         setMpInfo(t('wdrvmisc.profile.payoutCompleteOnvo'));
       }
     } catch {
@@ -243,7 +244,8 @@ export default function Profile() {
       const out = await api.regenerateDriverMarketplaceLink();
       if (out.status) setMpStatus({ accountId: out.accountId, status: out.status });
       if (out.onboardingUrl) {
-        window.open(out.onboardingUrl, '_blank', 'noopener,noreferrer');
+        // Misma pestaña: Safari iOS bloquea window.open tras un await.
+        window.location.assign(out.onboardingUrl);
         setMpInfo(t('wdrvmisc.profile.payoutCompleteOnvo'));
       }
     } catch {

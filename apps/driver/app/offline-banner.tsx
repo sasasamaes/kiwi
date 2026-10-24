@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useAuth, socketClient, backgroundSync } from '@kiwi/ui';
+import { useAuth, socketClient, backgroundSync, useTranslations } from '@kiwi/ui';
 
 type BannerState = 'hidden' | 'offline' | 'reconnecting' | 'syncing';
 
@@ -23,6 +23,7 @@ type BannerState = 'hidden' | 'offline' | 'reconnecting' | 'syncing';
  */
 export function OfflineBanner() {
   const { user } = useAuth();
+  const { t } = useTranslations();
   const [mounted, setMounted] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
   const [socketConnected, setSocketConnected] = useState(false);
@@ -111,34 +112,38 @@ export function OfflineBanner() {
 
   const styles: Record<
     Exclude<BannerState, 'hidden'>,
-    { bg: string; emoji: string; title: string; subtitle: string; animate?: any }
+    { bg: string; emoji: string; animate?: any }
   > = {
     offline: {
       bg: 'bg-red-500/90 text-white',
       emoji: '📴',
-      title: 'Sin conexión',
-      subtitle:
-        pendingCount > 0
-          ? `${pendingCount} ${pendingCount === 1 ? 'cambio' : 'cambios'} se enviarán al volver la señal`
-          : 'Los pedidos se enviarán cuando vuelva la conexión',
       animate: { rotate: [0, -10, 10, 0] },
     },
     reconnecting: {
       bg: 'bg-amber-500/90 text-white',
       emoji: '📡',
-      title: 'Reconectando…',
-      subtitle: 'Buscando señal con el servidor Kiwi',
       animate: { opacity: [1, 0.5, 1] },
     },
     syncing: {
       bg: 'bg-gold-500/90 text-white',
       emoji: '🔄',
-      title: 'Sincronizando…',
-      subtitle: `${pendingCount} ${pendingCount === 1 ? 'cambio pendiente' : 'cambios pendientes'}`,
     },
   };
 
   const s = styles[state];
+  const title = t(
+    `wdrvwork.common.${state === 'offline' ? 'offlineTitle' : state === 'reconnecting' ? 'reconnectingTitle' : 'syncingTitle'}`,
+  );
+  const subtitle =
+    state === 'reconnecting'
+      ? t('wdrvwork.common.reconnectingSubtitle')
+      : pendingCount === 1
+        ? t(`wdrvwork.common.${state === 'offline' ? 'offlinePendingOne' : 'syncingOne'}`)
+        : pendingCount > 1
+          ? t(`wdrvwork.common.${state === 'offline' ? 'offlinePendingMany' : 'syncingMany'}`, {
+              count: pendingCount,
+            })
+          : t('wdrvwork.common.offlineNoPending');
 
   return (
     <AnimatePresence>
@@ -168,8 +173,8 @@ export function OfflineBanner() {
                 {s.emoji}
               </motion.div>
               <div>
-                <p className="font-semibold text-sm">{s.title}</p>
-                <p className="text-xs opacity-80">{s.subtitle}</p>
+                <p className="font-semibold text-sm">{title}</p>
+                <p className="text-xs opacity-80">{subtitle}</p>
               </div>
             </div>
 
@@ -186,7 +191,7 @@ export function OfflineBanner() {
 
           {isExpanded && state === 'offline' && (
             <p className="mt-2 border-t border-white/20 pt-2 text-xs opacity-90">
-              Puedes seguir avanzando tus pedidos: los cambios se envían solos al reconectar.
+              {t('wdrvwork.common.offlineExpanded')}
             </p>
           )}
         </motion.div>

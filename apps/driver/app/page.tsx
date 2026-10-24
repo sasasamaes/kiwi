@@ -728,7 +728,9 @@ export default function Home() {
                           ? 'bg-white text-kiwi-800'
                           : 'bg-white/20 text-white/85 [@media(hover:hover)]:hover:bg-white/30 [@media(hover:hover)]:hover:text-white'
                       }`}
-                      onClick={() => setActiveTab(tab.id)}
+                      onClick={() =>
+                        tab.id === 'trip' ? router.push('/scheduled') : setActiveTab(tab.id)
+                      }
                       whileTap={{ scale: 0.95 }}
                     >
                       <tab.icon className="h-4 w-4" /> {tab.label}
@@ -838,7 +840,7 @@ export default function Home() {
                           </motion.span>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm font-semibold text-surface-700">
+                          <p className="text-sm font-semibold text-surface-700 dark:text-surface-200">
                             ₡{Number(order.driverPayout ?? order.totalAmount ?? 0).toLocaleString()}
                           </p>
                           <p className="text-[11px] text-surface-500 dark:text-surface-400">
@@ -853,7 +855,7 @@ export default function Home() {
                             <MapPin className="h-3 w-3" />
                           </div>
                           <div>
-                            <p className="text-sm font-medium text-surface-800">
+                            <p className="text-sm font-medium text-surface-800 dark:text-surface-100">
                               {(order as any).merchant?.businessName || order.pickupAddress}
                             </p>
                             <p className="text-xs text-surface-500 dark:text-surface-400">
@@ -868,7 +870,7 @@ export default function Home() {
                             <HomeIcon className="h-3 w-3" />
                           </div>
                           <div>
-                            <p className="text-sm font-medium text-surface-800">
+                            <p className="text-sm font-medium text-surface-800 dark:text-surface-100">
                               {order.deliveryAddress}
                             </p>
                             <p className="text-xs text-surface-500 dark:text-surface-400">

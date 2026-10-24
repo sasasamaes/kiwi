@@ -186,6 +186,22 @@ export class KYCService {
       taxId?: string;
     },
   ) {
+    // Un envío sin documentos crea una revisión vacía e imposible de aprobar.
+    // El formulario manual fue retirado; cualquier cliente directo también
+    // debe adjuntar frente + selfie y al menos una licencia.
+    if (
+      !KYCService.isAllowedDocumentUrl(data.idFrontUrl) ||
+      !KYCService.isAllowedDocumentUrl(data.selfieUrl)
+    ) {
+      throw new BadRequestException('Faltan las fotos del documento de identidad o de la selfie');
+    }
+    if (
+      !KYCService.isAllowedDocumentUrl(data.licenseUrl) &&
+      !KYCService.isAllowedDocumentUrl(data.businessLicenseUrl)
+    ) {
+      throw new BadRequestException('Falta la foto de la licencia correspondiente');
+    }
+
     // Check if verification already exists
     const existing = await this.prisma.kYCVerification.findUnique({
       where: { userId },

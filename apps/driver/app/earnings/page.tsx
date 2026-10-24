@@ -205,10 +205,10 @@ export default function EarningsPage() {
               className="flex items-center gap-2 text-surface-600 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200"
             >
               <span>←</span>
-              <span className="text-sm font-medium">Volver</span>
+              <span className="text-sm font-medium">{t('wdrvwork.earnings.back')}</span>
             </Link>
             <h1 className="font-display font-semibold text-surface-800 dark:text-surface-100">
-              Ganancias
+              {t('wdrvwork.earnings.title')}
             </h1>
             <div className="w-16" />
           </div>

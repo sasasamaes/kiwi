@@ -8,11 +8,9 @@ import { motion } from 'framer-motion';
 import { Car, Shield } from 'lucide-react';
 import {
   KYCVerification,
-  KYCStatusBadge,
   DiditVerifyButton,
   useAuth,
   api,
-  events,
   useTranslations,
   LanguageSwitcherCompact,
 } from '@kiwi/ui';
@@ -21,14 +19,16 @@ export default function DriverKYCPage() {
   const { t } = useTranslations();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
-  const [loading, setLoading] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
   const [kycStatus, setKycStatus] = useState<
     'pending' | 'documents_submitted' | 'under_review' | 'approved' | 'rejected'
   >('pending');
+  const [rejectionReason, setRejectionReason] = useState<string | undefined>(undefined);
 
   useEffect(() => {
-    if (!authLoading && !user) router.push('/login');
+    if (!authLoading) {
+      if (!user) router.push('/login');
+      else if ((user as any).role !== 'driver') router.push('/');
+    }
   }, [user, authLoading, router]);
 
   // Estado real: si ya envió, muestra en qué va (no un mock local).
@@ -38,31 +38,10 @@ export default function DriverKYCPage() {
       .getKycStatus()
       .then((s) => {
         if (s?.status) setKycStatus(s.status);
+        if (s?.rejectionReason) setRejectionReason(s.rejectionReason);
       })
       .catch(() => undefined);
   }, [user]);
-
-  const handleSubmit = async (data: any) => {
-    setLoading(true);
-    setSubmitError(null);
-
-    try {
-      const res = await api.submitKycDocuments({
-        idType: data.idType,
-        idNumber: data.idNumber,
-        licenseNumber: data.licenseNumber,
-        licenseExpiry: data.licenseExpiry,
-        taxId: data.taxId,
-      });
-      setKycStatus(res?.status ?? 'documents_submitted');
-      events.kyc.documentsSubmitted('driver');
-    } catch (error: any) {
-      console.error('KYC error:', error);
-      setSubmitError(error?.message || t('wdrvauth.kyc.submitError'));
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <div className="min-h-[100dvh] bg-bg-light">
@@ -185,27 +164,22 @@ export default function DriverKYCPage() {
                   }
                 }}
               />
-              <div className="my-4 flex items-center gap-3 text-xs text-surface-500 dark:text-surface-400">
-                <span className="h-px flex-1 bg-surface-200" />
-                {t('wdrvauth.kyc.orUpload')}
-                <span className="h-px flex-1 bg-surface-200" />
-              </div>
             </div>
           )}
-          <KYCVerification
-            role="driver"
-            kycData={kycStatus === 'pending' ? undefined : { status: kycStatus }}
-            onSubmit={handleSubmit}
-            loading={loading}
-            onRefreshStatus={async () => {
-              const r = await api.refreshDiditSession();
-              const s = (r as any)?.status as typeof kycStatus | undefined;
-              if (s) setKycStatus(s);
-              return s;
-            }}
-          />
-          {submitError && (
-            <p className="mt-3 text-center text-sm text-red-600 dark:text-red-400">{submitError}</p>
+          {kycStatus !== 'pending' && (
+            <KYCVerification
+              role="driver"
+              statusOnly
+              kycData={{ status: kycStatus, rejectionReason }}
+              onSubmit={() => undefined}
+              onRefreshStatus={async () => {
+                const r = await api.refreshDiditSession();
+                const s = (r as any)?.status as typeof kycStatus | undefined;
+                if (s) setKycStatus(s);
+                if ((r as any)?.rejectionReason) setRejectionReason((r as any).rejectionReason);
+                return s;
+              }}
+            />
           )}
         </motion.div>
 

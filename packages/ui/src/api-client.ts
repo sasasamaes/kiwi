@@ -1432,7 +1432,7 @@ class ApiClient {
   async updateDriverSchedule(schedules: any[]) {
     return this.request<any>('/drivers/me/schedule', {
       method: 'PUT',
-      body: schedules,
+      body: { schedules },
     });
   }
 

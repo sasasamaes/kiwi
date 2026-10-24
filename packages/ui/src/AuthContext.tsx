@@ -21,41 +21,91 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const AUTH_CACHE_KEY = 'kiwi_cached_profile';
+
+/** Perfil de última sesión: permite abrir la app offline sin fingir logout. */
+function readCachedProfile(): User | null {
+  try {
+    const raw = localStorage.getItem(AUTH_CACHE_KEY);
+    return raw ? (JSON.parse(raw) as User) : null;
+  } catch {
+    return null;
+  }
+}
+
+function cacheProfile(profile: User) {
+  try {
+    localStorage.setItem(AUTH_CACHE_KEY, JSON.stringify(profile));
+  } catch {
+    // Sin storage la app sigue online; solo pierde el arranque offline.
+  }
+}
+
+function clearCachedProfile() {
+  try {
+    localStorage.removeItem(AUTH_CACHE_KEY);
+  } catch {
+    // noop
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let active = true;
+
     // Check for existing session (válida 7 días). El access vive en
     // localStorage; si venció pero el refresh sigue vivo, getProfile lo
     // renueva solo vía api-client. Solo un 401 real cierra la sesión:
     // un error de red (Render cold start, offline) NO desloguea.
     const checkAuth = async () => {
-      try {
-        if (api.getToken() || api.getRefreshToken()) {
-          const userData = await api.getProfile();
-          setUser(userData);
-        } else {
+      if (!api.getToken() && !api.getRefreshToken()) {
+        if (active) {
+          setUser(null);
           setLoading(false);
-          return;
         }
+        return;
+      }
+      const cached = readCachedProfile();
+      if (cached && active) {
+        setUser(cached);
+        // Offline no espera el timeout del profile: entra ya con el último
+        // perfil y revalida en segundo plano (un 401 real sí cierra sesión).
+        setLoading(false);
+      }
+      try {
+        const userData = await api.getProfile();
+        cacheProfile(userData);
+        if (active) setUser(userData);
       } catch (error: any) {
         // 401 = sesión muerta (refresh vencido/revocado): limpiar.
-        // Cualquier otro error (red, timeout, 5xx) conserva los tokens
-        // para reintentar en la próxima navegación.
+        // Cualquier otro error conserva tokens y el último perfil cacheado.
         if (error?.status === 401) {
+          clearCachedProfile();
           api.logout();
+          if (active) setUser(null);
         }
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     };
 
-    checkAuth();
+    void checkAuth();
+    const onOnline = () => {
+      if (api.getToken() || api.getRefreshToken()) void checkAuth();
+    };
+    window.addEventListener('online', onOnline);
+    return () => {
+      active = false;
+      window.removeEventListener('online', onOnline);
+    };
   }, []);
 
   const login = async (email: string, password: string) => {
     const result = await api.login(email, password);
+    cacheProfile(result.user);
     setUser(result.user);
     // Analítica (solo corre si hay consentimiento: gate en analytics.ts).
     // Se asocia por ID interno; jamás email/teléfono (minimización).
@@ -66,6 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const register = async (data: any) => {
     const result = await api.register(data);
+    cacheProfile(result.user);
     setUser(result.user);
     void analytics.init();
     void analytics.identify(result.user.id, { role: result.user.role });
@@ -73,6 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
+    clearCachedProfile();
     api.logout();
     socketClient.disconnect();
     // Resetear la identidad de tracking: los eventos posteriores no deben
@@ -94,7 +146,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const updateUser = (data: Partial<User>) => {
     if (user) {
-      setUser({ ...user, ...data });
+      const next = { ...user, ...data };
+      cacheProfile(next);
+      setUser(next);
     }
   };
 

@@ -28,7 +28,8 @@ export class KYCController {
   // ============================================
 
   @Get('status')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('driver', 'merchant')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get KYC status for current user' })
   async getStatus(@Request() req) {
@@ -38,7 +39,8 @@ export class KYCController {
   }
 
   @Post('submit')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('driver', 'merchant')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Submit KYC documents' })
   async submitDocuments(@Request() req, @Body() data: any) {
@@ -50,7 +52,8 @@ export class KYCController {
   // ============================================
 
   @Post('didit/start')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('driver', 'merchant')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Start Didit hosted verification (returns url)' })
   async startDidit(@Request() req) {
@@ -58,7 +61,8 @@ export class KYCController {
   }
 
   @Post('didit/refresh')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('driver', 'merchant')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Pull Didit decision manually (webhook fallback)' })
   async refreshDidit(@Request() req) {

@@ -6,6 +6,7 @@ import { Send, MessageCircle } from 'lucide-react';
 import { api } from './api-client';
 import { socketClient } from './socket-client';
 import { useAuth } from './AuthContext';
+import { useTranslations } from './LanguageProvider';
 
 export interface ChatMessage {
   id: string;
@@ -16,17 +17,6 @@ export interface ChatMessage {
   mine: boolean;
 }
 
-const ROLE_LABEL: Record<string, string> = {
-  merchant: 'Comercio',
-  driver: 'Repartidor',
-  customer: 'Cliente',
-};
-
-function senderLabel(m: ChatMessage): string {
-  if (m.mine) return 'Tú';
-  return ROLE_LABEL[m.senderRole ?? ''] ?? 'Usuario';
-}
-
 /**
  * Chat del pedido (comercio ↔ repartidor ↔ cliente dueño). Historial por
  * REST + vivo por socket + relectura periódica por si se perdió algo.
@@ -34,6 +24,7 @@ function senderLabel(m: ChatMessage): string {
  */
 export function OrderChat({ orderId }: { orderId: string }) {
   const { user } = useAuth();
+  const { t } = useTranslations();
   const myId = (user as any)?.id ?? null;
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [participants, setParticipants] = useState<Array<{ role: string; present: boolean }>>([]);
@@ -109,13 +100,21 @@ export function OrderChat({ orderId }: { orderId: string }) {
       }
       setText('');
     } catch (e: any) {
-      setError(e?.message || 'No se pudo enviar');
+      setError(e?.message || t('wdrvwork.common.chatSendFailed'));
     } finally {
       setSending(false);
     }
   };
 
   if (denied) return null;
+
+  const senderLabel = (m: ChatMessage) => {
+    if (m.mine) return t('wdrvwork.common.chatYou');
+    const role = m.senderRole;
+    return role === 'merchant' || role === 'driver' || role === 'customer'
+      ? t(`wdrvwork.common.chatRole${role[0].toUpperCase()}${role.slice(1)}`)
+      : t('wdrvwork.common.chatUser');
+  };
 
   const counterpartMissing =
     participants.length > 0 &&
@@ -124,12 +123,11 @@ export function OrderChat({ orderId }: { orderId: string }) {
   return (
     <div className="rounded-2xl border border-surface-200/60 dark:border-white/[0.06] bg-surface-50 dark:bg-surface-900/50 p-3">
       <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-surface-500 dark:text-surface-400">
-        <MessageCircle className="h-3.5 w-3.5" aria-hidden /> Chat del pedido
+        <MessageCircle className="h-3.5 w-3.5" aria-hidden /> {t('wdrvwork.common.chatTitle')}
       </p>
       {counterpartMissing && (
         <p className="mb-2 text-xs text-surface-500 dark:text-surface-400">
-          Aún no hay con quién hablar acá (sin repartidor ni cliente con cuenta). Si hay teléfono a
-          la vista, llamá directo.
+          {t('wdrvwork.common.chatMissing')}
         </p>
       )}
       {messages.length > 0 && (
@@ -160,14 +158,14 @@ export function OrderChat({ orderId }: { orderId: string }) {
           onKeyDown={(e) => {
             if (e.key === 'Enter') void send();
           }}
-          placeholder="Escribí un mensaje…"
+          placeholder={t('wdrvwork.common.chatPlaceholder')}
           maxLength={1000}
           className="min-w-0 flex-1 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2 text-sm text-surface-800 dark:text-surface-100 placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-kiwi-600"
         />
         <button
           onClick={() => void send()}
           disabled={sending || !text.trim()}
-          aria-label="Enviar mensaje"
+          aria-label={t('wdrvwork.common.chatSend')}
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kiwi-600 text-white disabled:opacity-40"
         >
           <Send className="h-4 w-4" />

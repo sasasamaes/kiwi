@@ -125,7 +125,7 @@ export { downscalePhoto } from './downscale-photo';
 // ============================================
 //   KYC COMPONENTS
 // ============================================
-export { KYCVerification, KYCStatusBadge } from './KYCVerification';
+export { KYCVerification, KYCStatusBadge, RefreshStatusButton } from './KYCVerification';
 export { DiditVerifyButton } from './DiditVerifyButton';
 export type { KYCData, KYCStatus } from './KYCVerification';
 

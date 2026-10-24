@@ -213,7 +213,7 @@ export function TrackingMap({
     if (bounds.isValid()) {
       mapInstanceRef.current.fitBounds(bounds, { padding: [50, 50] });
     }
-  }, [pickup, delivery, driverLocation, driverPhotoUrl]);
+  }, [pickup, delivery, driverLocation, driverPhotoUrl, isLoaded]);
 
   useEffect(() => {
     if (!mapInstanceRef.current || !L || !showRoute) return;
@@ -237,7 +237,7 @@ export function TrackingMap({
         dashArray: '10, 10',
       }).addTo(mapInstanceRef.current);
     }
-  }, [pickup, delivery, driverLocation, showRoute]);
+  }, [pickup, delivery, driverLocation, showRoute, isLoaded]);
 
   if (error) {
     return (

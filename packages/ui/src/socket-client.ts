@@ -74,12 +74,6 @@ class SocketClient {
     });
 
     this.setupEventListeners();
-    // Re-attach local listeners registered before connect()
-    for (const [event, callbacks] of this.listeners) {
-      for (const cb of callbacks) {
-        this.socket.on(event, cb as any);
-      }
-    }
     return this.socket;
   }
 
@@ -109,41 +103,11 @@ class SocketClient {
       }
     });
 
-    // Order events
-    this.socket.on('order:new', (data) => {
-      console.log('📦 New order:', data);
-      this.emit('order:new', data);
-    });
-
-    this.socket.on('order:accepted', (data) => {
-      console.log('✅ Order accepted:', data);
-      this.emit('order:accepted', data);
-    });
-
-    this.socket.on('order:statusChanged', (data) => {
-      console.log('🔄 Order status changed:', data);
-      this.emit('order:statusChanged', data);
-    });
-
-    // Driver events
-    this.socket.on('driver:location', (data) => {
-      this.emit('driver:location', data);
-    });
-
-    this.socket.on('driver:statusChanged', (data) => {
-      console.log('🛵 Driver status changed:', data);
-      this.emit('driver:statusChanged', data);
-    });
-
-    // Connection events
-    this.socket.on('connected', (data) => {
-      console.log('🟢 Connected to Kiwi:', data);
-      this.emit('socket:ready', data);
-    });
-
-    // Chat events
-    this.socket.on('chat:message', (data) => {
-      this.emit('chat:message', data);
+    // Un solo despacho por evento: onAny alimenta el registro local. Si
+    // además registramos callbacks directos con socket.on(), cada evento
+    // llega dos veces (sonidos, refetches y mensajes duplicados).
+    this.socket.onAny((event, data) => {
+      this.emit(event, data);
     });
   }
 
@@ -213,15 +177,11 @@ class SocketClient {
     }
     this.listeners.get(event)?.add(callback);
 
-    // Also listen on socket
-    this.socket?.on(event, callback as any);
-
     return () => this.off(event, callback);
   }
 
   off(event: string, callback: Function) {
     this.listeners.get(event)?.delete(callback);
-    this.socket?.off(event, callback as any);
   }
 
   emit(event: string, data: any) {
