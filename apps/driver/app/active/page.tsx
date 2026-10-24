@@ -97,6 +97,18 @@ function openMaps(lat?: number | string | null, lng?: number | string | null, ad
   window.open(dest, '_blank', 'noopener,noreferrer');
 }
 
+/** Abre el destino en Waze (app si está instalada, web si no). */
+function openWaze(lat?: number | string | null, lng?: number | string | null, address?: string) {
+  const coords =
+    lat != null && lng != null && Number.isFinite(Number(lat)) && Number.isFinite(Number(lng))
+      ? `${lat},${lng}`
+      : null;
+  const dest = coords
+    ? `https://waze.com/ul?ll=${coords}&navigate=yes`
+    : `https://waze.com/ul?q=${encodeURIComponent(address || '')}&navigate=yes`;
+  window.open(dest, '_blank', 'noopener,noreferrer');
+}
+
 /** Lleva la vista al mapa dentro de la app (estilo Uber). Fallback: Maps externo. */
 function scrollToMap() {
   document.getElementById('driver-map')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1366,18 +1378,35 @@ export default function ActiveOrders() {
                   <Phone className="h-4 w-4 text-kiwi-500" /> {t('wdrvwork.active.callCommerce')}
                 </a>
               )}
-              <button
-                onClick={() =>
-                  openMaps(
-                    order.pickupLat ? Number(order.pickupLat) : null,
-                    order.pickupLng ? Number(order.pickupLng) : null,
-                    order.pickupAddress,
-                  )
-                }
-                className="mt-2 w-full text-center text-xs text-surface-500 dark:text-surface-400 underline-offset-2 hover:underline"
-              >
-                {t('wdrvwork.active.openGmaps')}
-              </button>
+              <div className="mt-2 flex w-full items-center justify-center gap-4">
+                <button
+                  onClick={() =>
+                    openMaps(
+                      order.pickupLat ? Number(order.pickupLat) : null,
+                      order.pickupLng ? Number(order.pickupLng) : null,
+                      order.pickupAddress,
+                    )
+                  }
+                  className="text-center text-xs text-surface-500 dark:text-surface-400 underline-offset-2 hover:underline"
+                >
+                  {t('wdrvwork.active.openGmaps')}
+                </button>
+                <span aria-hidden className="text-surface-300 dark:text-surface-600">
+                  ·
+                </span>
+                <button
+                  onClick={() =>
+                    openWaze(
+                      order.pickupLat ? Number(order.pickupLat) : null,
+                      order.pickupLng ? Number(order.pickupLng) : null,
+                      order.pickupAddress,
+                    )
+                  }
+                  className="text-center text-xs text-surface-500 dark:text-surface-400 underline-offset-2 hover:underline"
+                >
+                  {t('wdrvwork.active.openWaze')}
+                </button>
+              </div>
             </div>
           </div>
 
@@ -1488,18 +1517,35 @@ export default function ActiveOrders() {
               >
                 <Navigation className="h-4 w-4" /> {t('wdrvwork.active.navigateInApp')}
               </TapButton>
-              <button
-                onClick={() =>
-                  openMaps(
-                    order.deliveryLat ? Number(order.deliveryLat) : null,
-                    order.deliveryLng ? Number(order.deliveryLng) : null,
-                    order.deliveryAddress,
-                  )
-                }
-                className="mt-2 w-full text-center text-xs text-surface-500 dark:text-surface-400 underline-offset-2 hover:underline"
-              >
-                {t('wdrvwork.active.openGmaps')}
-              </button>
+              <div className="mt-2 flex w-full items-center justify-center gap-4">
+                <button
+                  onClick={() =>
+                    openMaps(
+                      order.deliveryLat ? Number(order.deliveryLat) : null,
+                      order.deliveryLng ? Number(order.deliveryLng) : null,
+                      order.deliveryAddress,
+                    )
+                  }
+                  className="text-center text-xs text-surface-500 dark:text-surface-400 underline-offset-2 hover:underline"
+                >
+                  {t('wdrvwork.active.openGmaps')}
+                </button>
+                <span aria-hidden className="text-surface-300 dark:text-surface-600">
+                  ·
+                </span>
+                <button
+                  onClick={() =>
+                    openWaze(
+                      order.deliveryLat ? Number(order.deliveryLat) : null,
+                      order.deliveryLng ? Number(order.deliveryLng) : null,
+                      order.deliveryAddress,
+                    )
+                  }
+                  className="text-center text-xs text-surface-500 dark:text-surface-400 underline-offset-2 hover:underline"
+                >
+                  {t('wdrvwork.active.openWaze')}
+                </button>
+              </div>
             </div>
           </div>
         </div>
