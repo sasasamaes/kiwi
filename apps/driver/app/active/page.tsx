@@ -46,6 +46,7 @@ import {
   LanguageSwitcherCompact,
   useDeliveryZones,
   useTranslations,
+  downscalePhoto,
 } from '@kiwi/ui';
 
 // Estados considerados "activos" para el repartidor
@@ -237,6 +238,9 @@ export default function ActiveOrders() {
   const [updating, setUpdating] = useState(false);
   // Subida de evidencia delivery: foto de la entrega al cliente.
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  // Error de foto junto a los botones (el notice queda arriba del mapa y en
+  // el celular no se ve cuando estás al final del pedido).
+  const [photoError, setPhotoError] = useState<string | null>(null);
   // Offline: pedidos vistos desde caché, acciones esperando sync
   const [fromCache, setFromCache] = useState(false);
   const [online, setOnline] = useState(true);
@@ -660,28 +664,39 @@ export default function ActiveOrders() {
 
   // Evidencia delivery: el repartidor fotografía la entrega al cliente.
   // Después de subir se refresca la orden para que el avance se desbloquee.
+  // La foto se comprime en el navegador: la cámara del celular entrega
+  // 3–12 MB y eso en datos móviles no termina nunca.
   const uploadDeliveryPhoto = async (target: Order, file: File) => {
     if (uploadingPhoto) return;
-    if (file.size > 5 * 1024 * 1024) {
-      setNotice(t('wdrvwork.active.photoTooBig'));
+    setUploadingPhoto(true);
+    setPhotoError(null);
+    let small = file;
+    try {
+      small = await downscalePhoto(file);
+    } catch {
+      small = file;
+    }
+    if (small.size > 5 * 1024 * 1024) {
+      setUploadingPhoto(false);
+      setPhotoError(t('wdrvwork.active.photoTooBig'));
       return;
     }
     if (
-      file.type &&
+      small.type &&
       !['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif'].includes(
-        file.type,
+        small.type,
       )
     ) {
-      setNotice(t('wdrvwork.active.photoBadType'));
+      setUploadingPhoto(false);
+      setPhotoError(t('wdrvwork.active.photoBadType'));
       return;
     }
-    setUploadingPhoto(true);
     try {
-      await api.uploadOrderProofPhoto(target.id, 'delivery', file);
+      await api.uploadOrderProofPhoto(target.id, 'delivery', small);
       setNotice(t('wdrvwork.active.photoSaved'));
       await fetchActiveOrders();
     } catch (err) {
-      setNotice(err instanceof Error ? err.message : t('wdrvwork.active.photoFailed'));
+      setPhotoError(err instanceof Error ? err.message : t('wdrvwork.active.photoFailed'));
     } finally {
       setUploadingPhoto(false);
     }
@@ -1637,7 +1652,9 @@ export default function ActiveOrders() {
                 </div>
               ) : (
                 <div>
-                  <label className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-kiwi-700 px-4 py-3 text-sm font-bold text-white">
+                  <label
+                    className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-kiwi-700 px-4 py-3 text-sm font-bold text-white ${uploadingPhoto ? 'animate-pulse opacity-80' : ''}`}
+                  >
                     {uploadingPhoto
                       ? t('wdrvwork.active.uploading')
                       : t('wdrvwork.active.takePhoto')}
@@ -1657,7 +1674,9 @@ export default function ActiveOrders() {
                   </label>
                   {/* Fallback: en algunos Android el intent de cámara con
                       capture no abre nada. La galería siempre funciona. */}
-                  <label className="mt-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-surface-200 dark:border-surface-700 px-4 py-2.5 text-sm font-semibold text-surface-600 dark:text-surface-300">
+                  <label
+                    className={`mt-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-surface-200 dark:border-surface-700 px-4 py-2.5 text-sm font-semibold text-surface-600 dark:text-surface-300 ${uploadingPhoto ? 'opacity-50' : ''}`}
+                  >
                     {uploadingPhoto
                       ? t('wdrvwork.active.uploading')
                       : t('wdrvwork.active.chooseGallery')}
@@ -1674,6 +1693,11 @@ export default function ActiveOrders() {
                       }}
                     />
                   </label>
+                  {photoError && (
+                    <p role="alert" className="mt-1.5 text-xs font-medium text-red-600">
+                      {photoError}
+                    </p>
+                  )}
                   <p className="mt-1.5 text-xs text-amber-600 dark:text-amber-400">
                     {t('wdrvwork.active.photoRequired')}
                   </p>

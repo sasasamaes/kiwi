@@ -25,6 +25,7 @@ import {
   ShareTrackingButton,
   ScrollReveal,
   useTranslations,
+  downscalePhoto,
 } from '@kiwi/ui';
 import { MerchantNav } from '../../components/MerchantNav';
 
@@ -135,6 +136,9 @@ export default function OrdersPage() {
   const [rejected, setRejected] = useState<{ orderId: string; driverName?: string } | null>(null);
   // Subida de evidencia: orderId que está subiendo su foto pickup.
   const [uploadingId, setUploadingId] = useState<string | null>(null);
+  // Error de foto junto al botón (el global queda arriba del listado y en el
+  // celular no se ve). Se limpia al reintentar o al lograr la subida.
+  const [photoError, setPhotoError] = useState<{ orderId: string; message: string } | null>(null);
   // Config del servidor (Cloudinary): null = aún cargando o sin permiso.
   const [uploadEnabled, setUploadEnabled] = useState<boolean | null>(null);
   // Reintento/cancelación de pedidos sin repartidor.
@@ -222,29 +226,41 @@ export default function OrdersPage() {
 
   // Evidencia pickup: el comercio fotografía el pedido al entregarlo al
   // repartidor. Sin foto el repartidor no puede marcarlo como recogido.
+  // La foto se comprime en el navegador: la cámara del celular entrega
+  // 3–12 MB y eso en datos móviles no termina nunca (o pega el tope de
+  // 5 MB del backend sin que se entienda por qué).
   const uploadPickupPhoto = async (orderId: string, file: File) => {
-    // Validación local: evita esperar la subida para un HEIC de iPhone o un
-    // archivo gigante que el backend va a rechazar (magic bytes + 5 MB).
-    if (file.size > 5 * 1024 * 1024) {
-      setError(t('webshop1.orders.photoTooBig'));
+    setUploadingId(orderId);
+    setPhotoError(null);
+    let small = file;
+    try {
+      small = await downscalePhoto(file);
+    } catch {
+      small = file;
+    }
+    if (small.size > 5 * 1024 * 1024) {
+      setUploadingId(null);
+      setPhotoError({ orderId, message: t('webshop1.orders.photoTooBig') });
       return;
     }
     if (
-      file.type &&
+      small.type &&
       !['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif'].includes(
-        file.type,
+        small.type,
       )
     ) {
-      setError(t('webshop1.orders.photoFormat'));
+      setUploadingId(null);
+      setPhotoError({ orderId, message: t('webshop1.orders.photoFormat') });
       return;
     }
-    setUploadingId(orderId);
     try {
-      await api.uploadOrderProofPhoto(orderId, 'pickup', file);
-      setError(null);
+      await api.uploadOrderProofPhoto(orderId, 'pickup', small);
       await fetchOrders(true);
     } catch (e) {
-      setError(e instanceof Error ? e.message : t('webshop1.orders.photoFailed'));
+      setPhotoError({
+        orderId,
+        message: e instanceof Error ? e.message : t('webshop1.orders.photoFailed'),
+      });
     } finally {
       setUploadingId(null);
     }
@@ -593,7 +609,9 @@ export default function OrdersPage() {
                                 </p>
                               ) : (
                                 <div>
-                                  <label className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-kiwi-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-kiwi-800">
+                                  <label
+                                    className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-kiwi-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-kiwi-800 ${uploadingId === order.id ? 'animate-pulse opacity-80' : ''}`}
+                                  >
                                     {uploadingId === order.id
                                       ? t('webshop1.orders.uploading')
                                       : t('webshop1.orders.uploadCta')}
@@ -611,6 +629,35 @@ export default function OrdersPage() {
                                       }}
                                     />
                                   </label>
+                                  {/* Fallback: en algunos Android el intent de cámara con
+                                      capture no abre nada. La galería siempre funciona. */}
+                                  <label
+                                    className={`mt-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-surface-200 dark:border-surface-700 px-4 py-2.5 text-sm font-semibold text-surface-600 dark:text-surface-300 ${uploadingId === order.id ? 'opacity-50' : ''}`}
+                                  >
+                                    {uploadingId === order.id
+                                      ? t('webshop1.orders.uploading')
+                                      : t('webshop1.orders.chooseGallery')}
+                                    <input
+                                      type="file"
+                                      accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif"
+                                      className="hidden"
+                                      disabled={uploadingId === order.id}
+                                      onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        e.target.value = '';
+                                        if (!file) return;
+                                        void uploadPickupPhoto(order.id, file);
+                                      }}
+                                    />
+                                  </label>
+                                  {photoError?.orderId === order.id && (
+                                    <p
+                                      role="alert"
+                                      className="mt-1.5 text-xs font-medium text-red-600"
+                                    >
+                                      {photoError.message}
+                                    </p>
+                                  )}
                                   <p className="mt-1.5 text-xs text-amber-600 dark:text-amber-400">
                                     {t('webshop1.orders.photoRequired')}
                                   </p>

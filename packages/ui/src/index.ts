@@ -120,6 +120,7 @@ export { CookieConsentBanner } from './CookieConsentBanner';
 export type { CookieConsentBannerProps } from './CookieConsentBanner';
 export { cookieConsent } from './cookie-consent';
 export type { CookieConsentValue } from './cookie-consent';
+export { downscalePhoto } from './downscale-photo';
 
 // ============================================
 //   KYC COMPONENTS
