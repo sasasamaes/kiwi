@@ -32,6 +32,10 @@ export const viewport: Viewport = {
   // viewportFit: cover hace que env(safe-area-*) reporte la notch/home
   // indicator; las barras fijas usan .pb-safe/.pt-safe para respetarla.
   viewportFit: 'cover',
+  // Sin esto, Safari colapsa su barra al scrollear cambiando el viewport
+  // visual de golpe y las barras fijas (header/nav) pegan saltos. Con
+  // resizes-content el layout acompaña suave y nada salta.
+  interactiveWidget: 'resizes-content',
   // Pinch-zoom habilitado: requisito de accesibilidad (WCAG 1.4.4).
   maximumScale: 5,
   userScalable: true,
