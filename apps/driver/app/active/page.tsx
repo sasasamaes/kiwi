@@ -930,7 +930,6 @@ export default function ActiveOrders() {
   // Transición encolada esperando sync para el pedido mostrado
   const pendingStatus = queuedTransitions[order.id];
   const showOfflineBanner = !online || fromCache;
-  const progress = Math.min(100, Math.round((visualStep / 2) * 100));
   // Mapa in-app tipo Uber: a dónde voy ahora depende del estado
   const pickupPoint = toMapPoint(
     order.pickupLat,
@@ -1310,17 +1309,10 @@ export default function ActiveOrders() {
                   );
                 })}
               </div>
-              <div className="mt-2 flex justify-between text-[11px] text-white/80">
-                <span>{t('wdrvwork.active.stepAccepted')}</span>
-                <span>{t('wdrvwork.active.stepPicked')}</span>
-                <span>{t('wdrvwork.active.stepDelivered')}</span>
-              </div>
-              <div className="mt-1 h-1 overflow-hidden rounded bg-white/20">
-                <motion.div
-                  className="h-1 rounded bg-white"
-                  initial={false}
-                  animate={{ width: `${progress}%` }}
-                />
+              <div className="mt-2 grid grid-cols-3 text-center text-[10px] leading-tight text-white/80">
+                <span className="min-h-7 px-1">{t('wdrvwork.active.stepAccepted')}</span>
+                <span className="min-h-7 px-1">{t('wdrvwork.active.stepPicked')}</span>
+                <span className="min-h-7 px-1">{t('wdrvwork.active.stepDelivered')}</span>
               </div>
             </div>
           </motion.div>
