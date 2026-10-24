@@ -108,19 +108,22 @@ describe('OrdersService proof photo (Task 2)', () => {
     service = module.get(OrdersService);
   });
 
-  it('picked_up sin foto de pickup se rechaza', async () => {
-    prisma.order.findUnique.mockResolvedValue({
+  it('picked_up sin foto de pickup avanza (foto del comercio optativa)', async () => {
+    const picking = {
       id: 'order-1',
       status: 'in_transit_to_pickup',
       driverId: 'dp-1',
       pickupProofPhotoUrl: null,
       merchant: { userId: 'merchant-user-1' },
       driver: { userId: 'user-d' },
-    });
-    await expect(service.updateStatus('order-1', 'picked_up', 'user-d')).rejects.toThrow(
-      'Subí la foto de evidencia para continuar',
+    };
+    prisma.order.findUnique
+      .mockResolvedValueOnce(picking)
+      .mockResolvedValue({ ...picking, status: 'picked_up' });
+    await service.updateStatus('order-1', 'picked_up', 'user-d');
+    expect(prisma.order.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 'order-1', status: 'in_transit_to_pickup' } }),
     );
-    expect(prisma.order.update).not.toHaveBeenCalled();
   });
 
   it('picked_up con foto avanza y sella pickupProofAt', async () => {

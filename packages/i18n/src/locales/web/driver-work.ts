@@ -113,7 +113,7 @@ export const drvWorkEs = {
     pickupPhotoDone: '✓ Foto del comercio al entregar',
     pickupPhotoAlt: 'Foto del comercio al entregar',
     pickupPhotoMissing:
-      'El comercio todavía no subió la foto del pedido. No vas a poder marcarlo como recogido hasta que lo haga.',
+      'El comercio todavía no subió la foto del pedido (es optativa, podés recoger igual).',
     deliveryPhotoDone: '✓ Foto de tu entrega registrada',
     deliveryPhotoAlt: 'Foto de la entrega al cliente',
     uploading: 'Subiendo…',
@@ -465,7 +465,7 @@ export const drvWorkEn = {
     pickupPhotoDone: '✓ Store handoff photo',
     pickupPhotoAlt: 'Store handoff photo',
     pickupPhotoMissing:
-      'The store has not uploaded the order photo yet. You cannot mark it as picked up until they do.',
+      'The store has not uploaded the order photo (optional, you can still pick up).',
     deliveryPhotoDone: '✓ Your delivery photo saved',
     deliveryPhotoAlt: 'Customer delivery photo',
     uploading: 'Uploading…',

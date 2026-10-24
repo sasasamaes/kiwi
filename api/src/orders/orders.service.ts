@@ -2386,19 +2386,12 @@ export class OrdersService {
       (order as any).deliveryProofPhotoUrl = proofPhotoUrl;
     }
 
-    // Evidencia fotográfica 1+1 obligatoria para avanzar. El admin puede
+    // Foto de entrega obligatoria para cerrar. La foto del comercio al
+    // entregar al repartidor es optativa: si la sube, agiliza el recojo;
+    // si no, el repartidor igual puede marcar recogido. El admin puede
     // cerrar pedidos trabados sin foto (chofer ilocalizable, cliente que
     // confirma por otro canal): queda auditado en el log.
     const skipPhoto = role === 'admin';
-    if (status === 'picked_up' && !(order as any).pickupProofPhotoUrl) {
-      if (skipPhoto) {
-        this.logger.warn(`Admin ${userId} avanzó ${orderId} a picked_up sin foto de evidencia`);
-      } else {
-        throw new BadRequestException(
-          'Subí la foto de evidencia para continuar: el comercio debe fotografiar el pedido al entregarlo.',
-        );
-      }
-    }
     if (status === 'delivered' && !(order as any).deliveryProofPhotoUrl) {
       if (skipPhoto) {
         this.logger.warn(`Admin ${userId} avanzó ${orderId} a delivered sin foto de evidencia`);

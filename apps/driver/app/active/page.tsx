@@ -581,12 +581,9 @@ export default function ActiveOrders() {
     const flow = NEXT_STATUS[order.status];
     if (!flow || updating) return;
 
-    // Evidencia 1+1 obligatoria: sin foto no se avanza (el backend también
+    // Foto de entrega obligatoria: sin foto no se cierra (el backend también
     // lo bloquea con 400, esto evita el tap inútil y explica el porqué).
-    if (flow.next === 'picked_up' && !(order as any).pickupProofPhotoUrl) {
-      setNotice(t('wdrvwork.active.needPickupPhoto'));
-      return;
-    }
+    // La foto del comercio es optativa: el recojo nunca se bloquea por eso.
     if (flow.next === 'delivered' && !(order as any).deliveryProofPhotoUrl) {
       // La foto la toma el driver en este paso:
       setNotice(t('wdrvwork.active.needDeliveryPhoto'));
