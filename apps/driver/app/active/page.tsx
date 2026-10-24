@@ -883,6 +883,9 @@ export default function ActiveOrders() {
     return raw;
   })();
   const stepIndex = Math.max(0, FLOW_ORDER.indexOf(order.status as (typeof FLOW_ORDER)[number]));
+  // Stepper visual de 3 pasos (la máquina de estados sigue con 5):
+  // 0 = aceptado y en camino, 1 = recogido y en camino, 2 = entregado.
+  const visualStep = stepIndex >= 4 ? 2 : stepIndex >= 2 ? 1 : 0;
   const meta = STEP_META[order.status];
   // La barra de acción fija es dueña del borde inferior en todos los pasos:
   // el BottomNav se oculta en esta pantalla para que no tape el botón
@@ -918,7 +921,7 @@ export default function ActiveOrders() {
   // Transición encolada esperando sync para el pedido mostrado
   const pendingStatus = queuedTransitions[order.id];
   const showOfflineBanner = !online || fromCache;
-  const progress = Math.min(100, Math.round((stepIndex / (FLOW_ORDER.length - 1)) * 100));
+  const progress = Math.min(100, Math.round((visualStep / 2) * 100));
   // Mapa in-app tipo Uber: a dónde voy ahora depende del estado
   const pickupPoint = toMapPoint(
     order.pickupLat,
@@ -1266,11 +1269,11 @@ export default function ActiveOrders() {
               )}
               {/* Stepper */}{' '}
               <div className="mt-4 flex items-center">
-                {FLOW_ORDER.map((s, i) => {
-                  const done = i < stepIndex;
-                  const current = i === stepIndex;
+                {[0, 1, 2].map((i) => {
+                  const done = i < visualStep;
+                  const current = i === visualStep;
                   return (
-                    <div key={s} className="flex flex-1 items-center last:flex-none">
+                    <div key={i} className="flex flex-1 items-center last:flex-none">
                       <motion.div
                         className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${
                           done
@@ -1284,7 +1287,7 @@ export default function ActiveOrders() {
                       >
                         {done ? <Check className="h-4 w-4" /> : i + 1}
                       </motion.div>
-                      {i < FLOW_ORDER.length - 1 && (
+                      {i < 2 && (
                         <div className="mx-1 h-1 flex-1 overflow-hidden rounded bg-white/20">
                           <motion.div
                             className="h-1 rounded bg-white"
