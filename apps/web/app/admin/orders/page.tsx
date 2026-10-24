@@ -23,6 +23,10 @@ interface AdminOrder {
   orderType: string;
   pickupAddress: string;
   deliveryAddress: string;
+  pickupLat?: number | string | null;
+  pickupLng?: number | string | null;
+  deliveryLat?: number | string | null;
+  deliveryLng?: number | string | null;
   deliveryZone?: string | null;
   distanceKm?: number | string | null;
   basePrice: number | string;
@@ -58,6 +62,27 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 const PAGE_SIZE = 20;
+
+// Destino para Maps/Waze: coordenadas cuando hay GPS, dirección escrita si no.
+function mapsUrl(lat?: number | string | null, lng?: number | string | null, address?: string) {
+  const coords =
+    lat != null && lng != null && Number.isFinite(Number(lat)) && Number.isFinite(Number(lng))
+      ? `${lat},${lng}`
+      : null;
+  return coords
+    ? `https://www.google.com/maps/dir/?api=1&destination=${coords}`
+    : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address || '')}`;
+}
+
+function wazeUrl(lat?: number | string | null, lng?: number | string | null, address?: string) {
+  const coords =
+    lat != null && lng != null && Number.isFinite(Number(lat)) && Number.isFinite(Number(lng))
+      ? `${lat},${lng}`
+      : null;
+  return coords
+    ? `https://waze.com/ul?ll=${coords}&navigate=yes`
+    : `https://waze.com/ul?q=${encodeURIComponent(address || '')}&navigate=yes`;
+}
 
 export default function AdminOrders() {
   const { t } = useTranslations();
@@ -652,6 +677,36 @@ export default function AdminOrders() {
                     <b>{selected.merchant?.businessName ?? '—'}</b>
                     <br />
                     <span className="text-surface-500">{selected.pickupAddress}</span>
+                    <br />
+                    <span className="text-xs">
+                      <a
+                        href={mapsUrl(
+                          selected.pickupLat,
+                          selected.pickupLng,
+                          selected.pickupAddress,
+                        )}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-kiwi-700 dark:text-kiwi-300 hover:underline"
+                      >
+                        {t('webadmin1.aorders.openGmaps')}
+                      </a>
+                      <span aria-hidden className="mx-1.5 text-surface-300">
+                        ·
+                      </span>
+                      <a
+                        href={wazeUrl(
+                          selected.pickupLat,
+                          selected.pickupLng,
+                          selected.pickupAddress,
+                        )}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-kiwi-700 dark:text-kiwi-300 hover:underline"
+                      >
+                        {t('webadmin1.aorders.openWaze')}
+                      </a>
+                    </span>
                   </span>
                 </p>
                 <p className="flex items-start gap-2">
@@ -663,6 +718,36 @@ export default function AdminOrders() {
                         {selected.deliveryZone}
                       </span>
                     )}
+                    <br />
+                    <span className="text-xs">
+                      <a
+                        href={mapsUrl(
+                          selected.deliveryLat,
+                          selected.deliveryLng,
+                          selected.deliveryAddress,
+                        )}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-kiwi-700 dark:text-kiwi-300 hover:underline"
+                      >
+                        {t('webadmin1.aorders.openGmaps')}
+                      </a>
+                      <span aria-hidden className="mx-1.5 text-surface-300">
+                        ·
+                      </span>
+                      <a
+                        href={wazeUrl(
+                          selected.deliveryLat,
+                          selected.deliveryLng,
+                          selected.deliveryAddress,
+                        )}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-kiwi-700 dark:text-kiwi-300 hover:underline"
+                      >
+                        {t('webadmin1.aorders.openWaze')}
+                      </a>
+                    </span>
                   </span>
                 </p>
                 <p className="flex items-center gap-2">
