@@ -16,6 +16,7 @@ import {
   Navigation,
 } from 'lucide-react';
 import { api, buildTrackingUrl, useTranslations, useSocket, playNotificationSound } from '@kiwi/ui';
+import { findDeliveryZone } from '@kiwi/types';
 
 interface AdminOrder {
   id: string;
@@ -715,7 +716,12 @@ export default function AdminOrders() {
                     {selected.deliveryAddress}
                     {selected.deliveryZone && (
                       <span className="ml-2 rounded-full bg-kiwi-100 px-2 py-0.5 text-xs text-kiwi-700">
-                        {selected.deliveryZone}
+                        {findDeliveryZone(selected.deliveryZone)?.label ?? 'Zona desconocida'}
+                      </span>
+                    )}
+                    {(selected.deliveryLat != null || selected.deliveryLng != null) && (
+                      <span className="ml-2 text-xs text-surface-400">
+                        GPS: {selected.deliveryLat ?? '—'}, {selected.deliveryLng ?? '—'}
                       </span>
                     )}
                     <br />
