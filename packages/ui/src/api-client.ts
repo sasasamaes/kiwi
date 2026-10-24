@@ -1510,6 +1510,13 @@ class ApiClient {
     return this.request<any[]>('/orders/incoming');
   }
 
+  /** Posible duplicado: pedido activo reciente a dirección parecida (solo avisa). */
+  async checkOrderDuplicate(deliveryAddress: string) {
+    return this.request<{ duplicate: any | null }>(
+      `/orders/duplicates?deliveryAddress=${encodeURIComponent(deliveryAddress)}`,
+    );
+  }
+
   async getMyOrders(status?: string) {
     const params = status ? `?status=${status}` : '';
     return this.request<any>(`/orders/my${params}`);

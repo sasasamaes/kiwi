@@ -77,6 +77,28 @@ const DRIVER_PUBLIC_SELECT = {
   rating: true,
 } as const;
 
+/** Minúsculas sin tildes ni puntuación, espacios simples: base del dedup. */
+function normalizeAddress(s: unknown): string {
+  return String(s ?? '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9ñ ]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/** Jaccard sobre palabras: 1 = iguales, 0 = nada en común. */
+function addressSimilarity(a: string, b: string): number {
+  if (!a || !b) return 0;
+  if (a === b) return 1;
+  const setA = new Set(a.split(' '));
+  const setB = new Set(b.split(' '));
+  let inter = 0;
+  for (const w of setA) if (setB.has(w)) inter++;
+  return inter / (setA.size + setB.size - inter);
+}
+
 @Injectable()
 export class OrdersService {
   private readonly logger = new Logger(OrdersService.name);
@@ -1182,6 +1204,65 @@ export class OrdersService {
     }
 
     return order;
+  }
+
+  /**
+   * Aviso de posible duplicado (el caso del comercio que re-escribe la
+   * misma dirección 20 min después y paga el viaje dos veces): pedidos
+   * ACTIVOS del mismo comercio con dirección parecida en los últimos
+   * 60 min. Solo avisa, jamás bloquea: dos viajes iguales seguidos son
+   * legítimos. La similitud es Jaccard sobre palabras (tolera "de la
+   * escuela" vs "de escuela"), no igualdad exacta.
+   */
+  async findPossibleDuplicate(merchantUserId: string, deliveryAddress: string) {
+    const norm = normalizeAddress(deliveryAddress);
+    if (norm.length < 10) return { duplicate: null };
+    const merchant = await this.prisma.merchantProfile.findUnique({
+      where: { userId: merchantUserId },
+    });
+    if (!merchant) return { duplicate: null };
+    const since = new Date(Date.now() - 60 * 60 * 1000);
+    const candidates: any[] =
+      (await (this.prisma.order as any).findMany?.({
+        where: {
+          merchantId: (merchant as any).id,
+          createdAt: { gte: since },
+          status: {
+            in: [
+              'pending',
+              'driver_proposals',
+              'assigned',
+              'pending_acceptance',
+              'in_transit_to_pickup',
+              'picked_up',
+              'in_transit_to_delivery',
+            ],
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+        select: {
+          id: true,
+          deliveryAddress: true,
+          status: true,
+          createdAt: true,
+          driver: { select: { fullName: true } },
+        },
+      })) ?? [];
+    for (const c of candidates) {
+      if (addressSimilarity(norm, normalizeAddress(String(c.deliveryAddress ?? ''))) >= 0.7) {
+        return {
+          duplicate: {
+            id: c.id,
+            deliveryAddress: c.deliveryAddress,
+            status: c.status,
+            createdAt: c.createdAt,
+            driverName: c.driver?.fullName ?? null,
+          },
+        };
+      }
+    }
+    return { duplicate: null };
   }
 
   /**

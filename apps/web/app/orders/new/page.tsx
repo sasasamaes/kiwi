@@ -764,6 +764,31 @@ function NewOrderInner({
       setFormError(t('webshop2.neworder.errOffline'));
       return;
     }
+    // Aviso de posible duplicado (misma dirección hace poco): solo avisa,
+    // jamás bloquea. Best-effort: si falla, se crea igual.
+    try {
+      const dupe = await api.checkOrderDuplicate(deliveryAddress.trim());
+      const d = (dupe as any)?.duplicate;
+      if (d) {
+        const mins = Math.max(
+          1,
+          Math.round((Date.now() - new Date(d.createdAt).getTime()) / 60000),
+        );
+        const ok = window.confirm(
+          t('webshop2.neworder.dupeConfirm', {
+            mins,
+            id: String(d.id).slice(0, 8).toUpperCase(),
+            address: d.deliveryAddress,
+          }),
+        );
+        if (!ok) {
+          creatingRef.current = false;
+          return;
+        }
+      }
+    } catch {
+      // El aviso no tumba la creación.
+    }
     const idempotencyKey = ensureIdempotencyKey();
     setLoading(true);
     try {

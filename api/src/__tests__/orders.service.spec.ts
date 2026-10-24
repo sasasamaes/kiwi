@@ -2132,4 +2132,49 @@ describe('OrdersService', () => {
       );
     });
   });
+
+  describe('findPossibleDuplicate', () => {
+    const A = '200 oeste y 75 sur de escuela Eupi casa a mano izquierda color celeste';
+    const B = '200 oeste y 75 sur de la escuela Eupi casa mano izquierda color celeste';
+
+    beforeEach(() => {
+      prisma.merchantProfile.findUnique.mockResolvedValue({ id: 'm-1', userId: 'u-1' });
+    });
+
+    it('detecta el par real: mismo destino re-escrito con diferencias', async () => {
+      prisma.order.findMany.mockResolvedValue([
+        {
+          id: 'order-1',
+          deliveryAddress: B,
+          status: 'in_transit_to_delivery',
+          createdAt: new Date(Date.now() - 23 * 60 * 1000),
+          driver: { fullName: 'Luis Espinoza' },
+        },
+      ]);
+      const res = await service.findPossibleDuplicate('u-1', A);
+      expect(res.duplicate?.id).toBe('order-1');
+      expect(res.duplicate?.driverName).toBe('Luis Espinoza');
+    });
+
+    it('no avisa con dirección distinta', async () => {
+      prisma.order.findMany.mockResolvedValue([
+        {
+          id: 'order-1',
+          deliveryAddress: 'Barrio San Martín, taller de muflas',
+          status: 'assigned',
+          createdAt: new Date(),
+          driver: null,
+        },
+      ]);
+      const res = await service.findPossibleDuplicate('u-1', A);
+      expect(res.duplicate).toBeNull();
+    });
+
+    it('no avisa sin activos recientes ni con dirección cortita', async () => {
+      prisma.order.findMany.mockResolvedValue([]);
+      expect((await service.findPossibleDuplicate('u-1', A)).duplicate).toBeNull();
+      expect((await service.findPossibleDuplicate('u-1', 'casa')).duplicate).toBeNull();
+      expect(prisma.order.findMany).toHaveBeenCalledTimes(1);
+    });
+  });
 });

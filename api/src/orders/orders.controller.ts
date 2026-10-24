@@ -252,6 +252,19 @@ export class OrdersController {
     return this.ordersService.getPublicDriverLocation(id);
   }
 
+  @Get('duplicates')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('merchant')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Aviso de posible duplicado: pedido activo parecido reciente' })
+  @ApiQuery({ name: 'deliveryAddress', required: true })
+  async checkDuplicate(
+    @CurrentUser() user: any,
+    @Query('deliveryAddress') deliveryAddress?: string,
+  ) {
+    return this.ordersService.findPossibleDuplicate(user.sub, String(deliveryAddress ?? ''));
+  }
+
   @Get(':id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()

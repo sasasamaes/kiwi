@@ -145,6 +145,8 @@ export const shop2Es = {
     errSchedFuture: 'La fecha y hora programadas deben ser futuras',
     errOffline: 'Sin internet: no se creó el pedido. Reconectá y tocá Crear una sola vez.',
     errCreate: 'Error al crear el pedido. Tocá Crear una sola vez.',
+    dupeConfirm:
+      'Ojo: hace {{mins}} min ya creaste el pedido #{{id}} a una dirección muy parecida ("{{address}}"). ¿Crear otro igual?',
     errAssignFallback: 'No se pudo asignar al repartidor elegido ({{msg}}): quedó en concurso.',
     missItems: 'agregar productos',
     missName: 'nombre del cliente',
@@ -758,6 +760,8 @@ export const shop2En = {
     errSchedFuture: 'The scheduled date and time must be in the future',
     errOffline: 'No internet: the order was not created. Reconnect and tap Create just once.',
     errCreate: 'Failed to create the order. Tap Create just once.',
+    dupeConfirm:
+      'Heads up: {{mins}} min ago you already created order #{{id}} to a very similar address ("{{address}}"). Create another one anyway?',
     errAssignFallback: 'Could not assign the chosen driver ({{msg}}): left in contest.',
     missItems: 'add products',
     missName: 'customer name',
