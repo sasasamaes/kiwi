@@ -241,7 +241,11 @@ export default function ActiveOrders() {
   const router = useRouter();
   const { t } = useTranslations();
   const { user, loading: authLoading } = useAuth();
-  const { on: onSocketEvent, updateDriverLocation: emitDriverLocation } = useSocket({});
+  const {
+    on: onSocketEvent,
+    isConnected,
+    updateDriverLocation: emitDriverLocation,
+  } = useSocket({});
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -375,11 +379,30 @@ export default function ActiveOrders() {
     }
   }, [user, fetchActiveOrders]);
 
-  // Actualización en tiempo real cuando el comercio cambia algo
+  // Actualización en tiempo real cuando el comercio cambia algo o el admin
+  // reasigna el pedido a otro driver (order:taken): sale de la lista al
+  // momento y se reconcilia con el servidor. Si me ofrecen uno a mí,
+  // aparece sin recargar.
   useEffect(() => {
-    const off = onSocketEvent('order:statusChanged', () => fetchActiveOrders());
-    return off;
+    const offStatus = onSocketEvent('order:statusChanged', () => fetchActiveOrders());
+    const offTaken = onSocketEvent('order:taken', (data: any) => {
+      const goneId = data?.id ?? data?.orderId;
+      if (goneId) setOrders((prev) => prev.filter((o) => o.id !== goneId));
+      fetchActiveOrders();
+    });
+    const offOffered = onSocketEvent('order:assignmentOffered', () => fetchActiveOrders());
+    return () => {
+      offStatus();
+      offTaken();
+      offOffered();
+    };
   }, [onSocketEvent, fetchActiveOrders]);
+
+  // El socket puede perder la reasignación (3G, app en fondo): al reconectar
+  // se reconcilia para no dejar pedidos fantasma.
+  useEffect(() => {
+    if (isConnected) fetchActiveOrders();
+  }, [isConnected, fetchActiveOrders]);
 
   // Ping de ubicación también en /active: el loop vive en Home y al aceptar
   // se desmonta — justo cuando el tracking más importa (pickup→delivery).

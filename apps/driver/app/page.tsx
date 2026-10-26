@@ -164,6 +164,7 @@ export default function Home() {
     isConnected,
     onNewOrder,
     onOrderStatusChanged,
+    on: onSocketEvent,
     updateDriverStatus: socketUpdateStatus,
     updateDriverLocation: emitDriverLocation,
   } = useSocket({
@@ -202,6 +203,10 @@ export default function Home() {
       // dice QUIÉN lo agarró (no un genérico "ya no disponible").
       // silent = asignación directa del comercio: solo desaparecer, sin
       // sonido ni banner para la flota (el aviso fue solo al elegido).
+      // Reasignación del admin: también sale de mis Activos al momento (el
+      // refetch de statusChanged llega después y puede perderse con 3G).
+      const goneId = data?.id ?? data?.orderId;
+      if (goneId) setActiveOrders((prev) => prev.filter((o) => o.id !== goneId));
       const wasVisible = removeFromAvailable({ ...data, status: data?.status ?? 'assigned' });
       if (wasVisible && !data?.silent) {
         const winner = data?.driverName;
@@ -254,6 +259,17 @@ export default function Home() {
       console.error('Failed to fetch active orders:', error);
     }
   }, []);
+
+  // El socket puede perder la reasignación (3G, app en fondo): al reconectar
+  // se reconcilia con el servidor para no dejar pedidos fantasma. Y si a mí
+  // me reasignan un pedido, aparece sin recargar.
+  useEffect(() => {
+    if (isConnected && user && !authLoading) fetchActiveOrders();
+  }, [isConnected, user, authLoading, fetchActiveOrders]);
+  useEffect(() => {
+    const off = onSocketEvent('order:assignmentOffered', () => fetchActiveOrders());
+    return off;
+  }, [onSocketEvent, fetchActiveOrders]);
 
   useEffect(() => {
     if (authLoading) return;
