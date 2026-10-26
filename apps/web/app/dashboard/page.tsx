@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -204,7 +204,16 @@ export default function Dashboard() {
     }
   };
 
+  // Carga inicial UNA vez por usuario: el AuthProvider setea el perfil dos
+  // veces al entrar (cacheado y luego fresco) y cada objeto nuevo
+  // re-disparaba este efecto → doble ola de requests y doble registro push.
+  // Con red inestable eso escala a tormenta (online/offline → refetch).
+  const initialLoadFor = useRef<string | null>(null);
   useEffect(() => {
+    const uid = (user as any)?.id as string | undefined;
+    if (!uid) return;
+    if (initialLoadFor.current === uid) return;
+    initialLoadFor.current = uid;
     const fetchData = async () => {
       await fetchOrders();
       setLoading(false);
@@ -244,9 +253,7 @@ export default function Dashboard() {
       requestPermission();
     };
 
-    if (user) {
-      fetchData();
-    }
+    void fetchData();
   }, [user, requestPermission]);
   if (authLoading || loading) {
     return (

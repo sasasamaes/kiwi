@@ -93,7 +93,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     void checkAuth();
+    // Red inestable (3G, túneles) dispara online/offline en ráfaga: cada
+    // checkAuth trae un perfil NUEVO y eso re-disparaba los fetch iniciales
+    // de cada página → tormenta de requests. Se limita a 1 por minuto.
+    let lastOnlineCheck = 0;
     const onOnline = () => {
+      const now = Date.now();
+      if (now - lastOnlineCheck < 60000) return;
+      lastOnlineCheck = now;
       if (api.getToken() || api.getRefreshToken()) void checkAuth();
     };
     window.addEventListener('online', onOnline);
