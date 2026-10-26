@@ -63,6 +63,23 @@ body {
   box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.08);
 }
 
+/* iOS Safari: sticky/fixed + backdrop-filter se desordena al scrollear (el
+   header "desaparece" y el contenido pasa por encima, como en el reporte).
+   El chrome que scrollea (headers sticky, BottomNav fija) va sólido; el blur
+   queda para cards, píldoras y overlays, que no scrollean y no fallan. */
+.pt-safe.sticky,
+.pb-safe.fixed[class*='backdrop-blur'],
+header.sticky[class*='backdrop-blur'] {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background-color: #fff;
+}
+.dark .pt-safe.sticky,
+.dark .pb-safe.fixed[class*='backdrop-blur'],
+.dark header.sticky[class*='backdrop-blur'] {
+  background-color: #101c33;
+}
+
 /* ============================================
    CARD STYLES
    ============================================ */
