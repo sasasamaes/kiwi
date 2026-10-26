@@ -113,6 +113,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     setMobileOpen(false);
   }, [pathname]);
 
+  // Drawer abierto en móvil: se bloquea el scroll del fondo (en iOS el
+  // scroll encadenado mueve los fixed y "desordena" el drawer).
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [mobileOpen]);
+
   // Campana: los push admin también dejan fila en inbox (push+inbox).
   const [unread, setUnread] = useState(0);
   useEffect(() => {
@@ -171,17 +182,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="min-h-[100dvh] bg-bg-light dark:bg-surface-950 flex">
-      {/* Fondo del drawer en móvil */}
-      {mobileOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/50 md:hidden"
-          onClick={() => setMobileOpen(false)}
-          aria-hidden
-        />
-      )}
       {/* Sidebar: drawer en móvil, fija/colapsable en desktop */}
       <motion.aside
-        className={`fixed left-0 top-0 h-full flex flex-col bg-white dark:bg-surface-900 border-r border-surface-200 dark:border-surface-700 z-50 w-64 ${
+        className={`fixed left-0 top-0 h-dvh flex flex-col bg-white dark:bg-surface-900 border-r border-surface-200 dark:border-surface-700 z-50 w-64 max-w-[85vw] ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         } md:translate-x-0 ${sidebarOpen ? 'md:w-64' : 'md:w-20'} transition-all duration-300`}
       >
@@ -195,11 +198,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <Link href="/admin" className="flex items-center gap-3" aria-label="Admin">
             {sidebarOpen ? <KiwiLogo size={30} /> : <KiwiSlice size={30} />}
             {sidebarOpen && (
-              <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="min-w-0"
+              >
                 <h1 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100">
                   Admin
                 </h1>
-                <p className="text-xs text-surface-500 dark:text-surface-400">
+                <p className="truncate text-xs text-surface-500 dark:text-surface-400">
                   Delivery Blue Zone · Admin
                 </p>
               </motion.div>
@@ -208,7 +215,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto p-4">
+        <nav className="flex-1 overflow-y-auto overscroll-contain p-4">
           {menuGroups.map((group) => {
             const items: MenuItem[] = group.hrefs
               .map((h) => menuItems.find((m) => m.href === h))
@@ -259,8 +266,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           })}
         </nav>
 
-        {/* Toggle Button: en flujo normal al pie (el absoluto pisaba el último item) */}
-        <div className="border-t border-surface-200 dark:border-surface-700 p-3 flex justify-center">
+        {/* Toggle Button: solo desktop (en móvil no colapsa nada y estorba) */}
+        <div className="border-t border-surface-200 dark:border-surface-700 p-3 hidden md:flex justify-center">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
             aria-label={sidebarOpen ? t('adminnav.collapse') : t('adminnav.expand')}
@@ -341,6 +348,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* Page Content */}
         <main className="p-4 sm:p-6">{children}</main>
       </div>
+      {/* Fondo del drawer en móvil: va después del contenido para que también
+          atenúe el header sticky (mismo z-40, pinta encima por orden DOM). */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 md:hidden"
+          onClick={() => setMobileOpen(false)}
+          aria-hidden
+        />
+      )}
     </div>
   );
 }
