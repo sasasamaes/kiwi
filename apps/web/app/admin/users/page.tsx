@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Star, Check, Loader2 } from 'lucide-react';
 import { api, useAuth, KiwiLoader, useTranslations, addStreetsAndSatellite } from '@kiwi/ui';
-import { MerchantNav } from '../../../components/MerchantNav';
 
 interface AdminUser {
   id: string;
@@ -696,7 +695,6 @@ export default function UsersPage() {
 
   return (
     <>
-      <MerchantNav />
       <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <div className="space-y-6">
           <div className="flex items-center justify-between">
