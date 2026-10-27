@@ -156,6 +156,15 @@ export class MerchantsController {
     return this.merchantsService.getFavoriteDrivers(merchant.id);
   }
 
+  @Get('me/chain')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('merchant')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Mi cadena: matriz + sedes para traslados' })
+  async getMyChain(@CurrentUser() user: any) {
+    return this.merchantsService.getChain(user.sub);
+  }
+
   @Post('me/favorites/:driverId')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('merchant')
@@ -231,6 +240,24 @@ export class MerchantsController {
     @Body() body: { enabled?: boolean; hours?: number },
   ) {
     return this.merchantsService.setTestOrders(id, body?.enabled === true, body?.hours);
+  }
+
+  @Put(':id/parent')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Colgar una sede bajo su matriz (parentId null = matriz)' })
+  async setParentMerchant(@Param('id') id: string, @Body() body: { parentId?: string | null }) {
+    return this.merchantsService.setParentMerchant(id, body?.parentId ?? null);
+  }
+
+  @Put(':id/transfers')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Activar traslados entre sedes a un comercio' })
+  async setTransfers(@Param('id') id: string, @Body() body: { enabled?: boolean }) {
+    return this.merchantsService.setTransfersEnabled(id, body?.enabled === true);
   }
 
   @Put(':id/push-credits')

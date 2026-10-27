@@ -446,12 +446,74 @@ export class OrdersService {
     return user.id;
   }
 
+  /**
+   * Traslado entre sedes de la misma cadena (ej. farmacia centro ↔ San
+   * Martín): la sede origen pide un repartidor para llevar producto a la
+   * destino. No hay venta (productsTotal=0): solo se cobra el viaje a la
+   * sede origen, con el flujo de pago normal (efectivo/crédito/semanal).
+   */
+  async createTransfer(merchantUserId: string, data: any) {
+    const origin: any = await this.prisma.merchantProfile.findUnique({
+      where: { userId: merchantUserId },
+    });
+    if (!origin) {
+      throw new NotFoundException('Perfil de comerciante no encontrado');
+    }
+    if (origin.transfersEnabled !== true) {
+      throw new ForbiddenException('Los traslados no están habilitados para este comercio');
+    }
+    const toId = String(data?.toMerchantId ?? '').trim();
+    if (!toId) {
+      throw new BadRequestException('toMerchantId es requerido (sede destino)');
+    }
+    if (toId === origin.id) {
+      throw new BadRequestException('La sede destino debe ser otra sede');
+    }
+    const dest: any = await this.prisma.merchantProfile.findUnique({
+      where: { id: toId },
+    });
+    if (!dest) {
+      throw new NotFoundException('Sede destino no encontrada');
+    }
+    const rootOf = (m: any) => m.parentMerchantId ?? m.id;
+    if (rootOf(origin) !== rootOf(dest)) {
+      throw new ForbiddenException('El traslado solo vale entre sedes de la misma cadena');
+    }
+    const desc = String(data?.packageDescription ?? '').trim();
+    if (!desc) {
+      throw new BadRequestException('packageDescription es requerido (qué se traslada)');
+    }
+    if (desc.length > 500) {
+      throw new BadRequestException('packageDescription muy larga (máx 500)');
+    }
+    return this.create(merchantUserId, {
+      kind: 'transfer',
+      productsTotal: 0,
+      items: [],
+      pickupAddress: origin.address,
+      pickupLat: origin.latitude != null ? Number(origin.latitude) : undefined,
+      pickupLng: origin.longitude != null ? Number(origin.longitude) : undefined,
+      deliveryAddress: dest.address,
+      deliveryLat: dest.latitude != null ? Number(dest.latitude) : undefined,
+      deliveryLng: dest.longitude != null ? Number(dest.longitude) : undefined,
+      deliveryZone: data.deliveryZone,
+      distanceKm: data.distanceKm,
+      orderType: 'immediate',
+      paymentMethod: data.paymentMethod ?? 'cash',
+      cashTendered: data.cashTendered,
+      driverId: data.driverId,
+      customerName: dest.businessName,
+      packageDescription: `Traslado a ${dest.businessName}: ${desc}`,
+      transferToMerchantId: dest.id,
+      ...(data?.idempotencyKey ? { idempotencyKey: data.idempotencyKey } : {}),
+    });
+  }
+
   async create(merchantId: string, data: any) {
     // Look up the merchant profile
     const merchantProfile = await this.prisma.merchantProfile.findUnique({
       where: { userId: merchantId },
     });
-
     if (!merchantProfile) {
       throw new NotFoundException('Perfil de comerciante no encontrado');
     }
@@ -619,8 +681,8 @@ export class OrdersService {
     // del comercio. Aparte, el viaje deja el corte del repartidor (tasa
     // standard). Los productos son 100% del comercio.
     const kind = data.kind ?? 'food';
-    if (kind !== 'food' && kind !== 'freight') {
-      throw new BadRequestException('kind inválido: use food o freight');
+    if (kind !== 'food' && kind !== 'freight' && kind !== 'transfer') {
+      throw new BadRequestException('kind inválido: use food, freight o transfer');
     }
 
     // Server is the source of truth for prices. Menu items are re-read from
@@ -1132,6 +1194,10 @@ export class OrdersService {
           ...(isContest ? { contestStartedAt, contestEndsAt } : {}),
           orderType,
           isTest,
+          // Traslado entre sedes: la destino que lo recibe.
+          ...(data.transferToMerchantId
+            ? { transferToMerchantId: String(data.transferToMerchantId) }
+            : {}),
           scheduledDate,
           scheduledTime: data.scheduledTime,
           ...(readyAt ? { readyAt } : {}),
@@ -2388,6 +2454,26 @@ export class OrdersService {
       orderBy: { createdAt: 'desc' },
       take: t,
       skip: s,
+    });
+  }
+
+  /**
+   * Traslados que recibe mi sede (los pide otra sede de la cadena).
+   * La sede destino los ve para prepararlos y entregarlos al repartidor.
+   */
+  async findTransfersIncoming(userId: string) {
+    const merchantProfile = await this.prisma.merchantProfile.findUnique({
+      where: { userId },
+    });
+    if (!merchantProfile) return [];
+    return this.prisma.order.findMany({
+      where: { transferToMerchantId: merchantProfile.id },
+      include: {
+        merchant: { select: { businessName: true, address: true } },
+        driver: { select: { id: true, fullName: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
     });
   }
 

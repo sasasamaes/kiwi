@@ -91,6 +91,8 @@ export class UsersService {
               weeklyBillingEnabled: true,
               testOrdersEnabled: true,
               testOrdersUntil: true,
+              parentMerchantId: true,
+              transfersEnabled: true,
               isHomeCook: true,
               pushCredits: true,
               _count: { select: { orders: true } },

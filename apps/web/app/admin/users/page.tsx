@@ -28,6 +28,8 @@ interface AdminUser {
     weeklyBillingEnabled?: boolean;
     testOrdersEnabled?: boolean;
     testOrdersUntil?: string | null;
+    parentMerchantId?: string | null;
+    transfersEnabled?: boolean;
     isHomeCook?: boolean;
     pushCredits?: number;
     _count?: { orders: number };
@@ -448,6 +450,8 @@ export default function UsersPage() {
   const [unlocking, setUnlocking] = useState(false);
   const [pushAmount, setPushAmount] = useState('4');
   const [grantingPush, setGrantingPush] = useState(false);
+  // Comercios para el selector "Sede de" (colgar bajo matriz).
+  const [allMerchants, setAllMerchants] = useState<Array<{ id: string; businessName: string }>>([]);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const displayName = (u: AdminUser) =>
@@ -490,6 +494,14 @@ export default function UsersPage() {
       if (searchTimer.current) clearTimeout(searchTimer.current);
     };
   }, [user, filter, search, load]);
+
+  useEffect(() => {
+    if (!user) return;
+    api
+      .getMerchantsAdmin()
+      .then((res: any) => setAllMerchants(Array.isArray(res) ? res : []))
+      .catch(() => setAllMerchants([]));
+  }, [user]);
 
   const openUser = (u: AdminUser) => {
     setSelectedUser(u);
@@ -676,6 +688,46 @@ export default function UsersPage() {
       setSelectedUser((prev) => (prev?.id === u.id ? patch(prev) : prev));
     } catch (e: any) {
       setError(e?.message || 'No se pudo cambiar el modo prueba');
+    } finally {
+      setToggling(false);
+    }
+  };
+
+  // Sedes: colgar bajo matriz + toggle de traslados (admin, por comercio).
+  const setParent = async (u: AdminUser, parentId: string | null) => {
+    const merchantId = u.merchantProfile?.id;
+    if (!merchantId) return;
+    setToggling(true);
+    try {
+      await api.setMerchantParent(merchantId, parentId);
+      const patch = (x: AdminUser) =>
+        x.id === u.id && x.merchantProfile
+          ? { ...x, merchantProfile: { ...x.merchantProfile, parentMerchantId: parentId } }
+          : x;
+      setUsers((prev) => prev.map(patch));
+      setSelectedUser((prev) => (prev?.id === u.id ? patch(prev) : prev));
+    } catch (e: any) {
+      setError(e?.message || 'No se pudo cambiar la sede');
+    } finally {
+      setToggling(false);
+    }
+  };
+
+  const toggleTransfers = async (u: AdminUser) => {
+    const merchantId = u.merchantProfile?.id;
+    if (!merchantId) return;
+    const enabled = !(u.merchantProfile?.transfersEnabled === true);
+    setToggling(true);
+    try {
+      await api.setMerchantTransfers(merchantId, enabled);
+      const patch = (x: AdminUser) =>
+        x.id === u.id && x.merchantProfile
+          ? { ...x, merchantProfile: { ...x.merchantProfile, transfersEnabled: enabled } }
+          : x;
+      setUsers((prev) => prev.map(patch));
+      setSelectedUser((prev) => (prev?.id === u.id ? patch(prev) : prev));
+    } catch (e: any) {
+      setError(e?.message || 'No se pudo cambiar traslados');
     } finally {
       setToggling(false);
     }
@@ -1172,6 +1224,61 @@ export default function UsersPage() {
                           <span
                             className={`block h-6 w-6 rounded-full bg-white shadow transition-transform ${
                               selectedUser.merchantProfile?.testOrdersEnabled === true
+                                ? 'translate-x-6'
+                                : ''
+                            }`}
+                          />
+                        </button>
+                      </div>
+                      <div className="mt-2">
+                        <label
+                          htmlFor="parent-merchant"
+                          className="mb-1 block text-xs font-medium text-surface-600 dark:text-surface-400"
+                        >
+                          🏪 Sede de (matriz)
+                        </label>
+                        <select
+                          id="parent-merchant"
+                          value={selectedUser.merchantProfile?.parentMerchantId ?? ''}
+                          disabled={toggling}
+                          onChange={(e) => void setParent(selectedUser, e.target.value || null)}
+                          className="min-h-[44px] w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 text-sm disabled:opacity-50"
+                        >
+                          <option value="">— Es matriz (sin padre) —</option>
+                          {allMerchants
+                            .filter((m) => m.id !== selectedUser.merchantProfile?.id)
+                            .map((m) => (
+                              <option key={m.id} value={m.id}>
+                                {m.businessName}
+                              </option>
+                            ))}
+                        </select>
+                      </div>
+                      <div className="flex justify-between items-center mt-3 pt-3 border-t border-kiwi-200/50 dark:border-kiwi-800/30">
+                        <div>
+                          <p className="text-sm font-semibold text-surface-800 dark:text-surface-200">
+                            🚚 Traslados entre sedes
+                          </p>
+                          <p className="text-xs text-surface-500">
+                            Pide repartidor para llevar producto a otra sede de la cadena. Solo
+                            origen/destino de la misma matriz.
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => toggleTransfers(selectedUser)}
+                          disabled={toggling}
+                          role="switch"
+                          aria-checked={selectedUser.merchantProfile?.transfersEnabled === true}
+                          aria-label="Traslados entre sedes"
+                          className={`relative h-8 w-14 shrink-0 rounded-full p-1 transition-colors disabled:opacity-50 ${
+                            selectedUser.merchantProfile?.transfersEnabled === true
+                              ? 'bg-kiwi-600'
+                              : 'bg-surface-300 dark:bg-surface-600'
+                          }`}
+                        >
+                          <span
+                            className={`block h-6 w-6 rounded-full bg-white shadow transition-transform ${
+                              selectedUser.merchantProfile?.transfersEnabled === true
                                 ? 'translate-x-6'
                                 : ''
                             }`}

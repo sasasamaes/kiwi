@@ -220,6 +220,69 @@ export class MerchantsService {
   }
 
   /**
+   * Cuelga una sede bajo su matriz (admin). parentId null = la deja como
+   * matriz (sin padre). No permite colgarse de sí misma ni ciclos directos.
+   */
+  async setParentMerchant(id: string, parentId: string | null) {
+    const merchant = await this.prisma.merchantProfile.findUnique({ where: { id } });
+    if (!merchant) {
+      throw new NotFoundException('Comercio no encontrado');
+    }
+    if (parentId) {
+      if (parentId === id) {
+        throw new BadRequestException('Una sede no puede ser su propia matriz');
+      }
+      const parent = await this.prisma.merchantProfile.findUnique({ where: { id: parentId } });
+      if (!parent) {
+        throw new NotFoundException('Matriz no encontrada');
+      }
+      if ((parent as any).parentMerchantId === id) {
+        throw new BadRequestException('Ciclo de sedes no permitido');
+      }
+    }
+    return this.prisma.merchantProfile.update({
+      where: { id },
+      data: { parentMerchantId: parentId },
+    });
+  }
+
+  /** Traslados entre sedes (admin, por comercio). */
+  async setTransfersEnabled(id: string, enabled: boolean) {
+    const merchant = await this.prisma.merchantProfile.findUnique({ where: { id } });
+    if (!merchant) {
+      throw new NotFoundException('Comercio no encontrado');
+    }
+    return this.prisma.merchantProfile.update({
+      where: { id },
+      data: { transfersEnabled: enabled },
+    });
+  }
+
+  /**
+   * Cadena del comercio: matriz + sedes hermanas (para el módulo de
+   * traslados). Incluye direcciones/GPS para armar pickup y delivery.
+   */
+  async getChain(userId: string) {
+    const me = await this.prisma.merchantProfile.findUnique({ where: { userId } });
+    if (!me) throw new NotFoundException('Perfil de comerciante no encontrado');
+    const rootId = (me as any).parentMerchantId ?? me.id;
+    const members = await this.prisma.merchantProfile.findMany({
+      where: { OR: [{ id: rootId }, { parentMerchantId: rootId }] },
+      select: {
+        id: true,
+        businessName: true,
+        address: true,
+        latitude: true,
+        longitude: true,
+        parentMerchantId: true,
+        transfersEnabled: true,
+      },
+      orderBy: { businessName: 'asc' },
+    });
+    return { rootId, myId: me.id, members };
+  }
+
+  /**
    * Modo prueba por comercio (admin, tiempo limitado): el comercio puede
    * crear pedidos test sin gastar crédito, solo con pilotos. `hours`
    * define la vigencia desde ahora; enabled=false o vencido lo apaga.

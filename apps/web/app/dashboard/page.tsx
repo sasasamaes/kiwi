@@ -15,6 +15,7 @@ import {
   Calendar,
   BarChart3,
   Plus,
+  ArrowLeftRight,
 } from 'lucide-react';
 import {
   ScrollReveal,
@@ -441,6 +442,30 @@ export default function Dashboard() {
                     </h3>
                     <p className="text-sm text-surface-500 dark:text-surface-400">
                       {t('webshop1.dash.quickFreightDesc')}
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            </Link>
+          </StaggerItem>
+
+          <StaggerItem>
+            <Link href="/traslados">
+              <motion.div
+                className="rounded-2xl bg-white/70 dark:bg-surface-800/70 backdrop-blur-xl border border-white/30 dark:border-surface-700/30 shadow-card dark:shadow-dark p-4 cursor-pointer transition-[transform,box-shadow,border-color] duration-200 ease-out [@media(hover:hover)]:hover:-translate-y-0.5 [@media(hover:hover)]:hover:shadow-[0_10px_28px_-12px_rgba(13,51,69,0.22)] [@media(hover:hover)]:hover:border-zona-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-600/40 active:scale-[0.99]"
+
+                whileTap={{ scale: 0.98 }}
+              >
+                <div className="flex items-center gap-4">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-kiwi-100 dark:bg-kiwi-900/50 text-kiwi-700 dark:text-kiwi-400 transition-colors group-hover:bg-kiwi-700 group-hover:text-white">
+                    <ArrowLeftRight className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100">
+                      Traslados entre sedes
+                    </h3>
+                    <p className="text-sm text-surface-500 dark:text-surface-400">
+                      Llevá producto a otra sede con repartidor
                     </p>
                   </div>
                 </div>

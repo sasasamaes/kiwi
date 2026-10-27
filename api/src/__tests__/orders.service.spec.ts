@@ -588,6 +588,95 @@ describe('OrdersService', () => {
       expect(prisma.order.create).not.toHaveBeenCalled();
     });
 
+    it('traslado: rechaza si la sede origen no tiene traslados habilitados', async () => {
+      prisma.merchantProfile.findUnique.mockResolvedValue({
+        id: 'sede-a',
+        userId: 'user-1',
+        businessName: 'Farmacia Centro',
+        address: 'Nicoya centro',
+        transfersEnabled: false,
+        parentMerchantId: null,
+      });
+
+      await expect(
+        service.createTransfer('user-1', {
+          toMerchantId: 'sede-b',
+          packageDescription: '2 cajas',
+          deliveryZone: 'hojancha',
+        }),
+      ).rejects.toThrow('traslados no están habilitados');
+      expect(prisma.order.create).not.toHaveBeenCalled();
+    });
+
+    it('traslado: rechaza destino de otra cadena', async () => {
+      prisma.merchantProfile.findUnique.mockImplementation(async ({ where }: any) => {
+        if (where.userId)
+          return {
+            id: 'sede-a',
+            userId: 'user-1',
+            businessName: 'Farmacia Centro',
+            address: 'Nicoya centro',
+            transfersEnabled: true,
+            parentMerchantId: 'matriz-1',
+          };
+        return {
+          id: 'otra',
+          businessName: 'Otra farmacia',
+          address: 'Liberia',
+          transfersEnabled: true,
+          parentMerchantId: 'matriz-2',
+        };
+      });
+
+      await expect(
+        service.createTransfer('user-1', {
+          toMerchantId: 'otra',
+          packageDescription: '2 cajas',
+          deliveryZone: 'hojancha',
+        }),
+      ).rejects.toThrow('misma cadena');
+      expect(prisma.order.create).not.toHaveBeenCalled();
+    });
+
+    it('traslado: crea pedido kind transfer a la sede hermana, sin venta', async () => {
+      prisma.merchantProfile.findUnique.mockImplementation(async ({ where }: any) => {
+        if (where.userId)
+          return {
+            id: 'sede-a',
+            userId: 'user-1',
+            businessName: 'Farmacia Centro',
+            address: 'Nicoya centro',
+            transfersEnabled: true,
+            parentMerchantId: 'matriz-1',
+          };
+        return {
+          id: 'sede-b',
+          businessName: 'Farmacia San Martín',
+          address: 'San Martín',
+          transfersEnabled: true,
+          parentMerchantId: 'matriz-1',
+        };
+      });
+      prisma.order.create.mockImplementation(async ({ data }: any) => ({
+        id: 'order-1',
+        status: 'pending',
+        ...data,
+      }));
+
+      const order: any = await service.createTransfer('user-1', {
+        toMerchantId: 'sede-b',
+        packageDescription: '2 cajas de acetaminofén',
+        deliveryZone: 'hojancha',
+      });
+
+      expect(order.kind).toBe('transfer');
+      expect(order.transferToMerchantId).toBe('sede-b');
+      expect(order.productsTotal).toBe(0);
+      expect(order.customerName).toBe('Farmacia San Martín');
+      expect(order.pickupAddress).toBe('Nicoya centro');
+      expect(order.deliveryAddress).toBe('San Martín');
+    });
+
     it('should reject unknown deliveryZone', async () => {
       prisma.merchantProfile.findUnique.mockResolvedValue({
         id: 'merchant-1',

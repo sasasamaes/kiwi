@@ -117,6 +117,32 @@ export class OrdersController {
     return this.ordersService.createMandadoOrder(user.sub, dto);
   }
 
+  @Post('transfer')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('merchant')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Traslado entre sedes de la misma cadena (pide repartidor)' })
+  async createTransfer(
+    @CurrentUser() user: any,
+    @Body() createOrderDto: any,
+    @Headers('idempotency-key') idempotencyKey?: string,
+  ) {
+    const dto =
+      idempotencyKey && !createOrderDto?.idempotencyKey
+        ? { ...createOrderDto, idempotencyKey }
+        : createOrderDto;
+    return this.ordersService.createTransfer(user.sub, dto);
+  }
+
+  @Get('transfers/incoming')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('merchant')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Traslados que recibe mi sede (los pidió otra sede)' })
+  async getTransfersIncoming(@CurrentUser() user: any) {
+    return this.ordersService.findTransfersIncoming(user.sub);
+  }
+
   @Put(':id/receipt')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('driver')

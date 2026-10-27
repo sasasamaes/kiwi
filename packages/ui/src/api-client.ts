@@ -684,6 +684,27 @@ class ApiClient {
     });
   }
 
+  /** Cuelga una sede bajo su matriz (admin). parentId null = matriz. */
+  async setMerchantParent(merchantId: string, parentId: string | null) {
+    return this.request<any>(`/merchants/${merchantId}/parent`, {
+      method: 'PUT',
+      body: { parentId },
+    });
+  }
+
+  /** Activa/apaga traslados entre sedes a un comercio (admin). */
+  async setMerchantTransfers(merchantId: string, enabled: boolean) {
+    return this.request<any>(`/merchants/${merchantId}/transfers`, {
+      method: 'PUT',
+      body: { enabled },
+    });
+  }
+
+  /** Mi cadena: matriz + sedes para traslados. */
+  async getMyChain() {
+    return this.request<any>('/merchants/me/chain');
+  }
+
   async getMarketplaceStatus(): Promise<{ accountId: string | null; status: string | null }> {
     return this.request<any>('/merchants/me/marketplace/status').catch(() => ({
       accountId: null,
@@ -1517,6 +1538,21 @@ class ApiClient {
       body: idempotencyKey ? { ...data, idempotencyKey } : data,
       headers: idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined,
     });
+  }
+
+  /** Traslado entre sedes de la misma cadena (pide repartidor). */
+  async createTransfer(data: any, opts?: { idempotencyKey?: string }) {
+    const idempotencyKey = opts?.idempotencyKey || (data as any)?.idempotencyKey;
+    return this.request<any>('/orders/transfer', {
+      method: 'POST',
+      body: idempotencyKey ? { ...data, idempotencyKey } : data,
+      headers: idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined,
+    });
+  }
+
+  /** Traslados que recibe mi sede (los pidió otra sede). */
+  async getIncomingTransfers() {
+    return this.request<any[]>('/orders/transfers/incoming');
   }
 
   /** Comandas del comercio: pedidos activos entrados por la app cliente. */
