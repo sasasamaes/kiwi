@@ -185,6 +185,7 @@ export const cliOrderEs = {
     totalLabel: 'Total',
     historyTitle: 'Historial',
     backHome: 'Volver al inicio',
+    retry: 'Reintentar',
     rate: 'Calificar',
   },
   rate: {
@@ -402,6 +403,7 @@ export const cliOrderEn = {
     totalLabel: 'Total',
     historyTitle: 'History',
     backHome: 'Back to home',
+    retry: 'Retry',
     rate: 'Rate',
   },
   rate: {

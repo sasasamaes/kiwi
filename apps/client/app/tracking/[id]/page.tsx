@@ -437,9 +437,18 @@ function TrackingContent() {
           <h2 className="text-xl font-semibold text-surface-800 dark:text-surface-100 mb-2">
             {error || t('wcliord.tracking.notFound')}
           </h2>
-          <Link href="/">
-            <AnimatedButton>{t('wcliord.tracking.backHome')}</AnimatedButton>
-          </Link>
+          <div className="flex flex-col items-center gap-3">
+            <button
+              type="button"
+              onClick={() => void fetchOrder()}
+              className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-kiwi-700 px-6 text-sm font-semibold text-white"
+            >
+              {t('wcliord.tracking.retry')}
+            </button>
+            <Link href="/">
+              <AnimatedButton>{t('wcliord.tracking.backHome')}</AnimatedButton>
+            </Link>
+          </div>
         </div>
       </div>
     );
