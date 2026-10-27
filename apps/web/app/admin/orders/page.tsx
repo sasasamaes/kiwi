@@ -15,6 +15,7 @@ import {
   ChevronRight,
   Navigation,
   Download,
+  Share2,
 } from 'lucide-react';
 import { api, buildTrackingUrl, useTranslations, useSocket, playNotificationSound } from '@kiwi/ui';
 import { useDeliveryZones } from '@kiwi/ui';
@@ -347,6 +348,26 @@ export default function AdminOrders() {
 
   // Descarga el resumen del rango en CSV (Excel lo abre directo, `;` para
   // locale ES + BOM para tildes). Pagina de 100 hasta agotar el total.
+  const fetchExportOrders = useCallback(async () => {
+    const all: AdminOrder[] = [];
+    const TAKE = 100;
+    for (let skip = 0; ; skip += TAKE) {
+      const res = await api.getOrdersAdmin({
+        take: TAKE,
+        skip,
+        status: expStatus || undefined,
+        from: expFrom || undefined,
+        to: expTo || undefined,
+        merchantId: expMerchant || undefined,
+        driverId: expDriver || undefined,
+      });
+      const items: AdminOrder[] = Array.isArray(res?.items) ? res.items : [];
+      all.push(...items);
+      if (items.length < TAKE || all.length >= Number(res?.total ?? 0)) break;
+    }
+    return all;
+  }, [expStatus, expFrom, expTo, expMerchant, expDriver]);
+
   const exportCsv = useCallback(async () => {
     if (exporting) return;
     if (expFrom && expTo && expFrom > expTo) {
@@ -357,22 +378,7 @@ export default function AdminOrders() {
     setExportError(null);
     setExportDone(null);
     try {
-      const all: AdminOrder[] = [];
-      const TAKE = 100;
-      for (let skip = 0; ; skip += TAKE) {
-        const res = await api.getOrdersAdmin({
-          take: TAKE,
-          skip,
-          status: expStatus || undefined,
-          from: expFrom || undefined,
-          to: expTo || undefined,
-          merchantId: expMerchant || undefined,
-          driverId: expDriver || undefined,
-        });
-        const items: AdminOrder[] = Array.isArray(res?.items) ? res.items : [];
-        all.push(...items);
-        if (items.length < TAKE || all.length >= Number(res?.total ?? 0)) break;
-      }
+      const all = await fetchExportOrders();
       if (all.length === 0) {
         setExportError(t('webadmin1.aorders.exportEmpty'));
         return;
@@ -386,14 +392,38 @@ export default function AdminOrders() {
           .map(csvCell)
           .join(';'),
         '',
-        ['N°', 'Comercio', 'Cliente', 'Repartidor', 'Fecha', 'Hora', 'Estado', 'Total (₡)']
+        [
+          'N°',
+          'Comercio',
+          'Cliente',
+          'Repartidor',
+          'Fecha',
+          'Hora',
+          'Estado',
+          'Total (₡)',
+          'Comisión Kiwi 15% (₡)',
+          'IVA 13% (₡)',
+          'Neto comercio (₡)',
+        ]
           .map(csvCell)
           .join(';'),
       ];
       let sum = 0;
+      let sumFee = 0;
+      let sumIva = 0;
+      let sumNet = 0;
       all.forEach((o, i) => {
         const amount = Number(o.totalAmount ?? 0);
-        sum += Number.isFinite(amount) ? amount : 0;
+        const gross = Number.isFinite(amount) ? Math.round(amount) : 0;
+        // Liquidación comercio: ambas rebajas sobre el total bruto
+        // (lo pedido: -15% Kiwi y -13% IVA). Neto = Total × 0.72.
+        const fee = Math.round(gross * 0.15);
+        const iva = Math.round(gross * 0.13);
+        const net = gross - fee - iva;
+        sum += gross;
+        sumFee += fee;
+        sumIva += iva;
+        sumNet += net;
         const dt = new Date(o.createdAt);
         lines.push(
           [
@@ -404,13 +434,18 @@ export default function AdminOrders() {
             dt.toLocaleDateString('es-CR'),
             dt.toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' }),
             STATUS_LABEL[o.status] ?? o.status,
-            Number.isFinite(amount) ? Math.round(amount) : '',
+            gross,
+            fee,
+            iva,
+            net,
           ]
             .map(csvCell)
             .join(';'),
         );
       });
-      lines.push(['TOTAL', '', '', '', '', '', '', Math.round(sum)].map(csvCell).join(';'));
+      lines.push(
+        ['TOTAL', '', '', '', '', '', '', sum, sumFee, sumIva, sumNet].map(csvCell).join(';'),
+      );
       const blob = new Blob(['\uFEFF' + lines.join('\r\n')], {
         type: 'text/csv;charset=utf-8',
       });
@@ -428,7 +463,110 @@ export default function AdminOrders() {
     } finally {
       setExporting(false);
     }
-  }, [exporting, expFrom, expTo, expStatus, expMerchant, expDriver, merchants, t]);
+  }, [exporting, expFrom, expTo, expMerchant, merchants, t, fetchExportOrders]);
+
+  // Corte del repartidor en PDF (vía ventana de impresión: Guardar como PDF).
+  // Reusa los filtros de fecha/estado/chofer. El chofer ya cobra viaje − 15%
+  // (driverPayout), así que el corte es la suma de payouts, sin rebaja extra.
+  const exportDriverPdf = useCallback(async () => {
+    if (exporting) return;
+    if (expFrom && expTo && expFrom > expTo) {
+      setExportError(t('webadmin1.aorders.exportError'));
+      return;
+    }
+    setExporting(true);
+    setExportError(null);
+    setExportDone(null);
+    try {
+      const all = await fetchExportOrders();
+      const trips = all.filter((o) => o.driver?.fullName);
+      if (trips.length === 0) {
+        setExportError(t('webadmin1.aorders.exportEmpty'));
+        return;
+      }
+      const byDriver = new Map<string, AdminOrder[]>();
+      trips.forEach((o) => {
+        const name = o.driver?.fullName ?? t('webadmin1.aorders.noDriver');
+        const list = byDriver.get(name) ?? [];
+        list.push(o);
+        byDriver.set(name, list);
+      });
+      const money = (n: number) => `₡${Math.round(n).toLocaleString('es-CR')}`;
+      const sections = [...byDriver.entries()]
+        .map(([name, list]) => {
+          let sumTrip = 0;
+          let sumPay = 0;
+          const rows = list
+            .map((o, i) => {
+              const trip = Math.round(Number(o.basePrice ?? 0));
+              const pay = Math.round(Number(o.driverPayout ?? 0));
+              sumTrip += trip;
+              sumPay += pay;
+              const dt = new Date(o.createdAt);
+              return `<tr><td>${i + 1}</td><td>${dt.toLocaleDateString('es-CR')} ${dt.toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' })}</td><td>${o.merchant?.businessName ?? ''}</td><td style="text-align:right">${money(trip)}</td><td style="text-align:right">${money(trip - pay)}</td><td style="text-align:right"><b>${money(pay)}</b></td></tr>`;
+            })
+            .join('');
+          return `<h3>${name} · ${list.length} viajes</h3><table><thead><tr><th>N°</th><th>Fecha</th><th>Comercio</th><th style="text-align:right">Viaje</th><th style="text-align:right">Corte 15%</th><th style="text-align:right">A pagar</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td colspan="3">Subtotal ${name}</td><td style="text-align:right">${money(sumTrip)}</td><td style="text-align:right">${money(sumTrip - sumPay)}</td><td style="text-align:right">${money(sumPay)}</td></tr></tfoot></table>`;
+        })
+        .join('');
+      const grandPay = trips.reduce((s, o) => s + Math.round(Number(o.driverPayout ?? 0)), 0);
+      const w = window.open('', '_blank', 'width=720');
+      if (!w) return;
+      w.document.write(
+        `<html><head><title>Corte repartidor ${expFrom || 'inicio'} → ${expTo || 'hoy'}</title><style>body{font-family:sans-serif;padding:24px;color:#111}table{width:100%;border-collapse:collapse;margin:8px 0 20px}td,th{border-bottom:1px solid #ddd;padding:6px 4px;font-size:13px;text-align:left}tfoot td{font-weight:bold}h2{margin:0}h3{margin:20px 0 4px}.muted{color:#555;font-size:13px}</style></head><body><h2>Kiwi · Corte repartidor</h2><p class="muted">${expFrom || '…'} → ${expTo || '…'} · ${trips.length} viajes · Total a pagar: <b>${money(grandPay)}</b></p>${sections}</body></html>`,
+      );
+      w.document.close();
+      w.focus();
+      w.print();
+      setExportDone(t('webadmin1.aorders.exportDone', { count: trips.length }));
+    } catch {
+      setExportError(t('webadmin1.aorders.exportError'));
+    } finally {
+      setExporting(false);
+    }
+  }, [exporting, expFrom, expTo, t, fetchExportOrders]);
+
+  // Compartir el corte por WhatsApp / share nativo (texto resumen + detalle).
+  const shareDriverCut = useCallback(async () => {
+    if (exporting) return;
+    setExportError(null);
+    try {
+      const all = await fetchExportOrders();
+      const trips = all.filter((o) => o.driver?.fullName);
+      if (trips.length === 0) {
+        setExportError(t('webadmin1.aorders.exportEmpty'));
+        return;
+      }
+      const name =
+        drivers.find((d) => d.id === expDriver)?.fullName ??
+        t('webadmin1.aorders.exportMerchantAll');
+      const total = trips.reduce((s, o) => s + Math.round(Number(o.driverPayout ?? 0)), 0);
+      const text =
+        `Kiwi · Corte ${name} (${expFrom || '…'} → ${expTo || '…'})\n` +
+        `${trips.length} viajes · A pagar: ₡${total.toLocaleString('es-CR')}\n` +
+        trips
+          .map((o) => {
+            const dt = new Date(o.createdAt);
+            return `• ${dt.toLocaleDateString('es-CR')} ${o.merchant?.businessName ?? ''}: ₡${Math.round(Number(o.driverPayout ?? 0)).toLocaleString('es-CR')}`;
+          })
+          .join('\n');
+      if (typeof navigator !== 'undefined' && 'share' in navigator) {
+        await (window.navigator as any).share({ title: 'Kiwi · Corte repartidor', text });
+        return;
+      }
+      await window.navigator.clipboard.writeText(text);
+      setExportDone(t('webadmin1.aorders.exportDone', { count: trips.length }));
+    } catch (e: any) {
+      if (e?.name === 'AbortError') return;
+      try {
+        await window.navigator.clipboard.writeText(
+          `Kiwi corte ${expFrom || ''}→${expTo || ''}: ver PDF generado`,
+        );
+      } catch {
+        setExportError(t('webadmin1.aorders.exportError'));
+      }
+    }
+  }, [exporting, expDriver, expFrom, expTo, drivers, t, fetchExportOrders]);
 
   useEffect(() => {
     api
@@ -769,6 +907,24 @@ export default function AdminOrders() {
           >
             <Download className="h-4 w-4" />
             {exporting ? t('webadmin1.aorders.exporting') : t('webadmin1.aorders.exportCta')}
+          </button>
+          <button
+            type="button"
+            onClick={() => void exportDriverPdf()}
+            disabled={exporting}
+            className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-surface-800 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60 dark:bg-white dark:text-surface-900"
+          >
+            <Download className="h-4 w-4" />
+            Corte repartidor (PDF)
+          </button>
+          <button
+            type="button"
+            onClick={() => void shareDriverCut()}
+            disabled={exporting}
+            className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-surface-200 px-4 py-2.5 text-sm font-semibold dark:border-surface-700"
+          >
+            <Share2 className="h-4 w-4" />
+            Compartir
           </button>
           {exportError && <p className="text-sm text-red-600">{exportError}</p>}
           {exportDone && <p className="text-sm text-green-700 dark:text-green-400">{exportDone}</p>}
