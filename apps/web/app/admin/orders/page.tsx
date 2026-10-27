@@ -160,6 +160,7 @@ export default function AdminOrders() {
   const [expTo, setExpTo] = useState(() => localDateStr(new Date()));
   const [expStatus, setExpStatus] = useState('');
   const [expDriver, setExpDriver] = useState('');
+  const [expIva, setExpIva] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
   const [exportDone, setExportDone] = useState<string | null>(null);
@@ -402,7 +403,7 @@ export default function AdminOrders() {
           'Estado',
           'Total (₡)',
           'Comisión Kiwi 15% (₡)',
-          'IVA 13% (₡)',
+          ...(expIva ? ['IVA 13% (₡)'] : []),
           'Neto comercio (₡)',
         ]
           .map(csvCell)
@@ -415,10 +416,10 @@ export default function AdminOrders() {
       all.forEach((o, i) => {
         const amount = Number(o.totalAmount ?? 0);
         const gross = Number.isFinite(amount) ? Math.round(amount) : 0;
-        // Liquidación comercio: ambas rebajas sobre el total bruto
-        // (lo pedido: -15% Kiwi y -13% IVA). Neto = Total × 0.72.
+        // Liquidación comercio: -15% Kiwi siempre; -13% IVA solo si el
+        // comercio lo requiere (toggle). Con IVA: Neto = Total × 0.72.
         const fee = Math.round(gross * 0.15);
-        const iva = Math.round(gross * 0.13);
+        const iva = expIva ? Math.round(gross * 0.13) : 0;
         const net = gross - fee - iva;
         sum += gross;
         sumFee += fee;
@@ -436,7 +437,7 @@ export default function AdminOrders() {
             STATUS_LABEL[o.status] ?? o.status,
             gross,
             fee,
-            iva,
+            ...(expIva ? [iva] : []),
             net,
           ]
             .map(csvCell)
@@ -444,7 +445,9 @@ export default function AdminOrders() {
         );
       });
       lines.push(
-        ['TOTAL', '', '', '', '', '', '', sum, sumFee, sumIva, sumNet].map(csvCell).join(';'),
+        ['TOTAL', '', '', '', '', '', '', sum, sumFee, ...(expIva ? [sumIva] : []), sumNet]
+          .map(csvCell)
+          .join(';'),
       );
       const blob = new Blob(['\uFEFF' + lines.join('\r\n')], {
         type: 'text/csv;charset=utf-8',
@@ -463,7 +466,7 @@ export default function AdminOrders() {
     } finally {
       setExporting(false);
     }
-  }, [exporting, expFrom, expTo, expMerchant, merchants, t, fetchExportOrders]);
+  }, [exporting, expFrom, expTo, expMerchant, expIva, merchants, t, fetchExportOrders]);
 
   // Corte del repartidor en PDF (vía ventana de impresión: Guardar como PDF).
   // Reusa los filtros de fecha/estado/chofer. Base: driverPayout (viaje − 15%);
@@ -502,26 +505,26 @@ export default function AdminOrders() {
             .map((o, i) => {
               const trip = Math.round(Number(o.basePrice ?? 0));
               const pay = Math.round(Number(o.driverPayout ?? 0));
-              const iva = Math.round(pay * 0.13);
+              const iva = expIva ? Math.round(pay * 0.13) : 0;
               const net = pay - iva;
               sumTrip += trip;
               sumPay += pay;
               sumIva += iva;
               sumNet += net;
               const dt = new Date(o.createdAt);
-              return `<tr><td>${i + 1}</td><td>${dt.toLocaleDateString('es-CR')} ${dt.toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' })}</td><td>${o.merchant?.businessName ?? ''}</td><td style="text-align:right">${money(trip)}</td><td style="text-align:right">${money(trip - pay)}</td><td style="text-align:right">${money(iva)}</td><td style="text-align:right"><b>${money(net)}</b></td></tr>`;
+              return `<tr><td>${i + 1}</td><td>${dt.toLocaleDateString('es-CR')} ${dt.toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' })}</td><td>${o.merchant?.businessName ?? ''}</td><td style="text-align:right">${money(trip)}</td><td style="text-align:right">${money(trip - pay)}</td>${expIva ? `<td style="text-align:right">${money(iva)}</td>` : ''}<td style="text-align:right"><b>${money(net)}</b></td></tr>`;
             })
             .join('');
-          return `<h3>${name} · ${list.length} viajes</h3><table><thead><tr><th>N°</th><th>Fecha</th><th>Comercio</th><th style="text-align:right">Viaje</th><th style="text-align:right">Corte 15%</th><th style="text-align:right">IVA 13%</th><th style="text-align:right">A pagar</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td colspan="3">Subtotal ${name}</td><td style="text-align:right">${money(sumTrip)}</td><td style="text-align:right">${money(sumTrip - sumPay)}</td><td style="text-align:right">${money(sumIva)}</td><td style="text-align:right">${money(sumNet)}</td></tr></tfoot></table>`;
+          return `<h3>${name} · ${list.length} viajes</h3><table><thead><tr><th>N°</th><th>Fecha</th><th>Comercio</th><th style="text-align:right">Viaje</th><th style="text-align:right">Corte 15%</th>${expIva ? '<th style="text-align:right">IVA 13%</th>' : ''}<th style="text-align:right">A pagar</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td colspan="3">Subtotal ${name}</td><td style="text-align:right">${money(sumTrip)}</td><td style="text-align:right">${money(sumTrip - sumPay)}</td>${expIva ? `<td style="text-align:right">${money(sumIva)}</td>` : ''}<td style="text-align:right">${money(sumNet)}</td></tr></tfoot></table>`;
         })
         .join('');
       const grandPay = trips.reduce((s, o) => s + Math.round(Number(o.driverPayout ?? 0)), 0);
-      const grandIva = Math.round(grandPay * 0.13);
+      const grandIva = expIva ? Math.round(grandPay * 0.13) : 0;
       const grandNet = grandPay - grandIva;
       const w = window.open('', '_blank', 'width=720');
       if (!w) return;
       w.document.write(
-        `<html><head><title>Corte repartidor ${expFrom || 'inicio'} → ${expTo || 'hoy'}</title><style>body{font-family:sans-serif;padding:24px;color:#111}table{width:100%;border-collapse:collapse;margin:8px 0 20px}td,th{border-bottom:1px solid #ddd;padding:6px 4px;font-size:13px;text-align:left}tfoot td{font-weight:bold}h2{margin:0}h3{margin:20px 0 4px}.muted{color:#555;font-size:13px}</style></head><body><h2>Kiwi · Corte repartidor</h2><p class="muted">${expFrom || '…'} → ${expTo || '…'} · ${trips.length} viajes · Bruto: ${money(grandPay)} · IVA 13%: ${money(grandIva)} · <b>Total a pagar: ${money(grandNet)}</b></p>${sections}</body></html>`,
+        `<html><head><title>Corte repartidor ${expFrom || 'inicio'} → ${expTo || 'hoy'}</title><style>body{font-family:sans-serif;padding:24px;color:#111}table{width:100%;border-collapse:collapse;margin:8px 0 20px}td,th{border-bottom:1px solid #ddd;padding:6px 4px;font-size:13px;text-align:left}tfoot td{font-weight:bold}h2{margin:0}h3{margin:20px 0 4px}.muted{color:#555;font-size:13px}</style></head><body><h2>Kiwi · Corte repartidor</h2><p class="muted">${expFrom || '…'} → ${expTo || '…'} · ${trips.length} viajes · Bruto: ${money(grandPay)}${expIva ? ` · IVA 13%: ${money(grandIva)}` : ''} · <b>Total a pagar: ${money(grandNet)}</b></p>${sections}</body></html>`,
       );
       w.document.close();
       w.focus();
@@ -532,7 +535,7 @@ export default function AdminOrders() {
     } finally {
       setExporting(false);
     }
-  }, [exporting, expFrom, expTo, t, fetchExportOrders]);
+  }, [exporting, expFrom, expTo, expIva, t, fetchExportOrders]);
 
   // Compartir el corte por WhatsApp / share nativo (texto resumen + detalle).
   const shareDriverCut = useCallback(async () => {
@@ -549,16 +552,16 @@ export default function AdminOrders() {
         drivers.find((d) => d.id === expDriver)?.fullName ??
         t('webadmin1.aorders.exportMerchantAll');
       const total = trips.reduce((s, o) => s + Math.round(Number(o.driverPayout ?? 0)), 0);
-      const totalIva = Math.round(total * 0.13);
+      const totalIva = expIva ? Math.round(total * 0.13) : 0;
       const totalNet = total - totalIva;
       const text =
         `Kiwi · Corte ${name} (${expFrom || '…'} → ${expTo || '…'})\n` +
-        `${trips.length} viajes · Bruto: ₡${total.toLocaleString('es-CR')} · IVA 13%: ₡${totalIva.toLocaleString('es-CR')} · A pagar: ₡${totalNet.toLocaleString('es-CR')}\n` +
+        `${trips.length} viajes · Bruto: ₡${total.toLocaleString('es-CR')}${expIva ? ` · IVA 13%: ₡${totalIva.toLocaleString('es-CR')}` : ''} · A pagar: ₡${totalNet.toLocaleString('es-CR')}\n` +
         trips
           .map((o) => {
             const dt = new Date(o.createdAt);
             const pay = Math.round(Number(o.driverPayout ?? 0));
-            const net = pay - Math.round(pay * 0.13);
+            const net = pay - (expIva ? Math.round(pay * 0.13) : 0);
             return `• ${dt.toLocaleDateString('es-CR')} ${o.merchant?.businessName ?? ''}: ₡${net.toLocaleString('es-CR')}`;
           })
           .join('\n');
@@ -578,7 +581,7 @@ export default function AdminOrders() {
         setExportError(t('webadmin1.aorders.exportError'));
       }
     }
-  }, [exporting, expDriver, expFrom, expTo, drivers, t, fetchExportOrders]);
+  }, [exporting, expDriver, expFrom, expTo, expIva, drivers, t, fetchExportOrders]);
 
   useEffect(() => {
     api
@@ -911,6 +914,15 @@ export default function AdminOrders() {
           </div>
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-3">
+          <label className="inline-flex min-h-[44px] cursor-pointer items-center gap-2 rounded-xl border border-surface-200 px-4 py-2.5 text-sm font-semibold dark:border-surface-700">
+            <input
+              type="checkbox"
+              checked={expIva}
+              onChange={(e) => setExpIva(e.target.checked)}
+              className="h-4 w-4 accent-kiwi-700"
+            />
+            Incluir IVA 13%
+          </label>
           <button
             type="button"
             onClick={() => void exportCsv()}
