@@ -466,8 +466,8 @@ export default function AdminOrders() {
   }, [exporting, expFrom, expTo, expMerchant, merchants, t, fetchExportOrders]);
 
   // Corte del repartidor en PDF (vía ventana de impresión: Guardar como PDF).
-  // Reusa los filtros de fecha/estado/chofer. El chofer ya cobra viaje − 15%
-  // (driverPayout), así que el corte es la suma de payouts, sin rebaja extra.
+  // Reusa los filtros de fecha/estado/chofer. Base: driverPayout (viaje − 15%);
+  // además se rebaja 13% de IVA sobre ese payout. Neto = payout × 0.87.
   const exportDriverPdf = useCallback(async () => {
     if (exporting) return;
     if (expFrom && expTo && expFrom > expTo) {
@@ -496,24 +496,32 @@ export default function AdminOrders() {
         .map(([name, list]) => {
           let sumTrip = 0;
           let sumPay = 0;
+          let sumIva = 0;
+          let sumNet = 0;
           const rows = list
             .map((o, i) => {
               const trip = Math.round(Number(o.basePrice ?? 0));
               const pay = Math.round(Number(o.driverPayout ?? 0));
+              const iva = Math.round(pay * 0.13);
+              const net = pay - iva;
               sumTrip += trip;
               sumPay += pay;
+              sumIva += iva;
+              sumNet += net;
               const dt = new Date(o.createdAt);
-              return `<tr><td>${i + 1}</td><td>${dt.toLocaleDateString('es-CR')} ${dt.toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' })}</td><td>${o.merchant?.businessName ?? ''}</td><td style="text-align:right">${money(trip)}</td><td style="text-align:right">${money(trip - pay)}</td><td style="text-align:right"><b>${money(pay)}</b></td></tr>`;
+              return `<tr><td>${i + 1}</td><td>${dt.toLocaleDateString('es-CR')} ${dt.toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' })}</td><td>${o.merchant?.businessName ?? ''}</td><td style="text-align:right">${money(trip)}</td><td style="text-align:right">${money(trip - pay)}</td><td style="text-align:right">${money(iva)}</td><td style="text-align:right"><b>${money(net)}</b></td></tr>`;
             })
             .join('');
-          return `<h3>${name} · ${list.length} viajes</h3><table><thead><tr><th>N°</th><th>Fecha</th><th>Comercio</th><th style="text-align:right">Viaje</th><th style="text-align:right">Corte 15%</th><th style="text-align:right">A pagar</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td colspan="3">Subtotal ${name}</td><td style="text-align:right">${money(sumTrip)}</td><td style="text-align:right">${money(sumTrip - sumPay)}</td><td style="text-align:right">${money(sumPay)}</td></tr></tfoot></table>`;
+          return `<h3>${name} · ${list.length} viajes</h3><table><thead><tr><th>N°</th><th>Fecha</th><th>Comercio</th><th style="text-align:right">Viaje</th><th style="text-align:right">Corte 15%</th><th style="text-align:right">IVA 13%</th><th style="text-align:right">A pagar</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td colspan="3">Subtotal ${name}</td><td style="text-align:right">${money(sumTrip)}</td><td style="text-align:right">${money(sumTrip - sumPay)}</td><td style="text-align:right">${money(sumIva)}</td><td style="text-align:right">${money(sumNet)}</td></tr></tfoot></table>`;
         })
         .join('');
       const grandPay = trips.reduce((s, o) => s + Math.round(Number(o.driverPayout ?? 0)), 0);
+      const grandIva = Math.round(grandPay * 0.13);
+      const grandNet = grandPay - grandIva;
       const w = window.open('', '_blank', 'width=720');
       if (!w) return;
       w.document.write(
-        `<html><head><title>Corte repartidor ${expFrom || 'inicio'} → ${expTo || 'hoy'}</title><style>body{font-family:sans-serif;padding:24px;color:#111}table{width:100%;border-collapse:collapse;margin:8px 0 20px}td,th{border-bottom:1px solid #ddd;padding:6px 4px;font-size:13px;text-align:left}tfoot td{font-weight:bold}h2{margin:0}h3{margin:20px 0 4px}.muted{color:#555;font-size:13px}</style></head><body><h2>Kiwi · Corte repartidor</h2><p class="muted">${expFrom || '…'} → ${expTo || '…'} · ${trips.length} viajes · Total a pagar: <b>${money(grandPay)}</b></p>${sections}</body></html>`,
+        `<html><head><title>Corte repartidor ${expFrom || 'inicio'} → ${expTo || 'hoy'}</title><style>body{font-family:sans-serif;padding:24px;color:#111}table{width:100%;border-collapse:collapse;margin:8px 0 20px}td,th{border-bottom:1px solid #ddd;padding:6px 4px;font-size:13px;text-align:left}tfoot td{font-weight:bold}h2{margin:0}h3{margin:20px 0 4px}.muted{color:#555;font-size:13px}</style></head><body><h2>Kiwi · Corte repartidor</h2><p class="muted">${expFrom || '…'} → ${expTo || '…'} · ${trips.length} viajes · Bruto: ${money(grandPay)} · IVA 13%: ${money(grandIva)} · <b>Total a pagar: ${money(grandNet)}</b></p>${sections}</body></html>`,
       );
       w.document.close();
       w.focus();
@@ -541,13 +549,17 @@ export default function AdminOrders() {
         drivers.find((d) => d.id === expDriver)?.fullName ??
         t('webadmin1.aorders.exportMerchantAll');
       const total = trips.reduce((s, o) => s + Math.round(Number(o.driverPayout ?? 0)), 0);
+      const totalIva = Math.round(total * 0.13);
+      const totalNet = total - totalIva;
       const text =
         `Kiwi · Corte ${name} (${expFrom || '…'} → ${expTo || '…'})\n` +
-        `${trips.length} viajes · A pagar: ₡${total.toLocaleString('es-CR')}\n` +
+        `${trips.length} viajes · Bruto: ₡${total.toLocaleString('es-CR')} · IVA 13%: ₡${totalIva.toLocaleString('es-CR')} · A pagar: ₡${totalNet.toLocaleString('es-CR')}\n` +
         trips
           .map((o) => {
             const dt = new Date(o.createdAt);
-            return `• ${dt.toLocaleDateString('es-CR')} ${o.merchant?.businessName ?? ''}: ₡${Math.round(Number(o.driverPayout ?? 0)).toLocaleString('es-CR')}`;
+            const pay = Math.round(Number(o.driverPayout ?? 0));
+            const net = pay - Math.round(pay * 0.13);
+            return `• ${dt.toLocaleDateString('es-CR')} ${o.merchant?.businessName ?? ''}: ₡${net.toLocaleString('es-CR')}`;
           })
           .join('\n');
       if (typeof navigator !== 'undefined' && 'share' in navigator) {
