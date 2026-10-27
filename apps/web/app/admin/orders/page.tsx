@@ -158,6 +158,7 @@ export default function AdminOrders() {
   });
   const [expTo, setExpTo] = useState(() => localDateStr(new Date()));
   const [expStatus, setExpStatus] = useState('');
+  const [expDriver, setExpDriver] = useState('');
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
   const [exportDone, setExportDone] = useState<string | null>(null);
@@ -366,6 +367,7 @@ export default function AdminOrders() {
           from: expFrom || undefined,
           to: expTo || undefined,
           merchantId: expMerchant || undefined,
+          driverId: expDriver || undefined,
         });
         const items: AdminOrder[] = Array.isArray(res?.items) ? res.items : [];
         all.push(...items);
@@ -384,7 +386,7 @@ export default function AdminOrders() {
           .map(csvCell)
           .join(';'),
         '',
-        ['N°', 'Comercio', 'Cliente', 'Fecha', 'Hora', 'Estado', 'Total (₡)']
+        ['N°', 'Comercio', 'Cliente', 'Repartidor', 'Fecha', 'Hora', 'Estado', 'Total (₡)']
           .map(csvCell)
           .join(';'),
       ];
@@ -398,6 +400,7 @@ export default function AdminOrders() {
             i + 1,
             o.merchant?.businessName ?? '',
             (o as AdminOrder).customerName ?? '',
+            o.driver?.fullName ?? t('webadmin1.aorders.noDriver'),
             dt.toLocaleDateString('es-CR'),
             dt.toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' }),
             STATUS_LABEL[o.status] ?? o.status,
@@ -407,7 +410,7 @@ export default function AdminOrders() {
             .join(';'),
         );
       });
-      lines.push(['TOTAL', '', '', '', '', '', Math.round(sum)].map(csvCell).join(';'));
+      lines.push(['TOTAL', '', '', '', '', '', '', Math.round(sum)].map(csvCell).join(';'));
       const blob = new Blob(['\uFEFF' + lines.join('\r\n')], {
         type: 'text/csv;charset=utf-8',
       });
@@ -425,7 +428,7 @@ export default function AdminOrders() {
     } finally {
       setExporting(false);
     }
-  }, [exporting, expFrom, expTo, expStatus, expMerchant, merchants, t]);
+  }, [exporting, expFrom, expTo, expStatus, expMerchant, expDriver, merchants, t]);
 
   useEffect(() => {
     api
@@ -731,6 +734,27 @@ export default function AdminOrders() {
               {FILTERS.map((f) => (
                 <option key={f.id} value={f.id}>
                   {f.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="col-span-2 sm:col-span-1">
+            <label
+              htmlFor="exp-driver"
+              className="mb-1 block text-xs font-medium text-surface-600 dark:text-surface-400"
+            >
+              {t('webadmin1.aorders.exportDriver')}
+            </label>
+            <select
+              id="exp-driver"
+              value={expDriver}
+              onChange={(e) => setExpDriver(e.target.value)}
+              className="min-h-[44px] w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 text-sm"
+            >
+              <option value="">{t('webadmin1.aorders.driverAll')}</option>
+              {drivers.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.fullName}
                 </option>
               ))}
             </select>
