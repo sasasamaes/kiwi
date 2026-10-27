@@ -14,6 +14,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Navigation,
+  Download,
 } from 'lucide-react';
 import { api, buildTrackingUrl, useTranslations, useSocket, playNotificationSound } from '@kiwi/ui';
 import { useDeliveryZones } from '@kiwi/ui';
@@ -44,6 +45,8 @@ interface AdminOrder {
   deliveredAt?: string | null;
   merchant?: { businessName?: string | null } | null;
   driver?: { fullName?: string | null } | null;
+  customerName?: string | null;
+  customerPhone?: string | null;
   items?: Array<{ name: string; quantity: number }>;
   pickupProofPhotoUrl?: string | null;
   deliveryProofPhotoUrl?: string | null;
@@ -84,6 +87,19 @@ function wazeUrl(lat?: number | string | null, lng?: number | string | null, add
   return coords
     ? `https://waze.com/ul?ll=${coords}&navigate=yes`
     : `https://waze.com/ul?q=${encodeURIComponent(address || '')}&navigate=yes`;
+}
+
+/** Fecha local YYYY-MM-DD para los inputs date del export. */
+function localDateStr(d: Date): string {
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${mm}-${dd}`;
+}
+
+/** Celda CSV con `;`: cita si trae separador, comillas o salto de línea. */
+function csvCell(v: unknown): string {
+  const s = String(v ?? '');
+  return /[;"\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
 export default function AdminOrders() {
@@ -134,6 +150,17 @@ export default function AdminOrders() {
   // si hace falta, la foto — queda auditado en el log del servidor).
   const [advancing, setAdvancing] = useState(false);
   const [nextStatus, setNextStatus] = useState('');
+  // Factura/resumen: comercio + rango de fechas → CSV (abre en Excel).
+  const [expMerchant, setExpMerchant] = useState('');
+  const [expFrom, setExpFrom] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
+  });
+  const [expTo, setExpTo] = useState(() => localDateStr(new Date()));
+  const [expStatus, setExpStatus] = useState('');
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+  const [exportDone, setExportDone] = useState<string | null>(null);
   // Hub logístico en vivo: el backend emite order:new y order:statusChanged
   // al rol admin. En primera página sin filtros la lista se actualiza sola;
   // con filtros/paginación se acumula contador + feed con botón Recargar.
@@ -316,6 +343,89 @@ export default function AdminOrders() {
       if (searchTimer.current) clearTimeout(searchTimer.current);
     };
   }, [filter, search, page, driverId, load]);
+
+  // Descarga el resumen del rango en CSV (Excel lo abre directo, `;` para
+  // locale ES + BOM para tildes). Pagina de 100 hasta agotar el total.
+  const exportCsv = useCallback(async () => {
+    if (exporting) return;
+    if (expFrom && expTo && expFrom > expTo) {
+      setExportError(t('webadmin1.aorders.exportError'));
+      return;
+    }
+    setExporting(true);
+    setExportError(null);
+    setExportDone(null);
+    try {
+      const all: AdminOrder[] = [];
+      const TAKE = 100;
+      for (let skip = 0; ; skip += TAKE) {
+        const res = await api.getOrdersAdmin({
+          take: TAKE,
+          skip,
+          status: expStatus || undefined,
+          from: expFrom || undefined,
+          to: expTo || undefined,
+          merchantId: expMerchant || undefined,
+        });
+        const items: AdminOrder[] = Array.isArray(res?.items) ? res.items : [];
+        all.push(...items);
+        if (items.length < TAKE || all.length >= Number(res?.total ?? 0)) break;
+      }
+      if (all.length === 0) {
+        setExportError(t('webadmin1.aorders.exportEmpty'));
+        return;
+      }
+      const bizName =
+        merchants.find((m) => m.id === expMerchant)?.businessName ??
+        t('webadmin1.aorders.exportMerchantAll');
+      const lines: string[] = [
+        [t('webadmin1.aorders.exportMerchant'), bizName].map(csvCell).join(';'),
+        [t('webadmin1.aorders.exportTitle'), `${expFrom || '…'} → ${expTo || '…'}`]
+          .map(csvCell)
+          .join(';'),
+        '',
+        ['N°', 'Comercio', 'Cliente', 'Fecha', 'Hora', 'Estado', 'Total (₡)']
+          .map(csvCell)
+          .join(';'),
+      ];
+      let sum = 0;
+      all.forEach((o, i) => {
+        const amount = Number(o.totalAmount ?? 0);
+        sum += Number.isFinite(amount) ? amount : 0;
+        const dt = new Date(o.createdAt);
+        lines.push(
+          [
+            i + 1,
+            o.merchant?.businessName ?? '',
+            (o as AdminOrder).customerName ?? '',
+            dt.toLocaleDateString('es-CR'),
+            dt.toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' }),
+            STATUS_LABEL[o.status] ?? o.status,
+            Number.isFinite(amount) ? Math.round(amount) : '',
+          ]
+            .map(csvCell)
+            .join(';'),
+        );
+      });
+      lines.push(['TOTAL', '', '', '', '', '', Math.round(sum)].map(csvCell).join(';'));
+      const blob = new Blob(['\uFEFF' + lines.join('\r\n')], {
+        type: 'text/csv;charset=utf-8',
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `kiwi-pedidos-${expFrom || 'inicio'}-${expTo || 'hoy'}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      setExportDone(t('webadmin1.aorders.exportDone', { count: all.length }));
+    } catch {
+      setExportError(t('webadmin1.aorders.exportError'));
+    } finally {
+      setExporting(false);
+    }
+  }, [exporting, expFrom, expTo, expStatus, expMerchant, merchants, t]);
 
   useEffect(() => {
     api
@@ -547,6 +657,99 @@ export default function AdminOrders() {
           {error}
         </div>
       )}
+
+      {/* Factura / resumen por fechas */}
+      <div className="rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4">
+        <p className="mb-3 text-sm font-semibold text-surface-800 dark:text-surface-100">
+          {t('webadmin1.aorders.exportTitle')}
+        </p>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="col-span-2 sm:col-span-1">
+            <label
+              htmlFor="exp-merchant"
+              className="mb-1 block text-xs font-medium text-surface-600 dark:text-surface-400"
+            >
+              {t('webadmin1.aorders.exportMerchant')}
+            </label>
+            <select
+              id="exp-merchant"
+              value={expMerchant}
+              onChange={(e) => setExpMerchant(e.target.value)}
+              className="min-h-[44px] w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 text-sm"
+            >
+              <option value="">{t('webadmin1.aorders.exportMerchantAll')}</option>
+              {merchants.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.businessName}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label
+              htmlFor="exp-from"
+              className="mb-1 block text-xs font-medium text-surface-600 dark:text-surface-400"
+            >
+              {t('webadmin1.aorders.exportFrom')}
+            </label>
+            <input
+              id="exp-from"
+              type="date"
+              value={expFrom}
+              onChange={(e) => setExpFrom(e.target.value)}
+              className="min-h-[44px] w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 text-sm"
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="exp-to"
+              className="mb-1 block text-xs font-medium text-surface-600 dark:text-surface-400"
+            >
+              {t('webadmin1.aorders.exportTo')}
+            </label>
+            <input
+              id="exp-to"
+              type="date"
+              value={expTo}
+              onChange={(e) => setExpTo(e.target.value)}
+              className="min-h-[44px] w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 text-sm"
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="exp-status"
+              className="mb-1 block text-xs font-medium text-surface-600 dark:text-surface-400"
+            >
+              {t('webadmin1.aorders.exportStatus')}
+            </label>
+            <select
+              id="exp-status"
+              value={expStatus}
+              onChange={(e) => setExpStatus(e.target.value)}
+              className="min-h-[44px] w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 text-sm"
+            >
+              {FILTERS.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={() => void exportCsv()}
+            disabled={exporting}
+            className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-kiwi-700 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+          >
+            <Download className="h-4 w-4" />
+            {exporting ? t('webadmin1.aorders.exporting') : t('webadmin1.aorders.exportCta')}
+          </button>
+          {exportError && <p className="text-sm text-red-600">{exportError}</p>}
+          {exportDone && <p className="text-sm text-green-700 dark:text-green-400">{exportDone}</p>}
+        </div>
+      </div>
 
       {/* Lista */}
       {loading ? (

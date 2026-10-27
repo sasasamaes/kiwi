@@ -2308,6 +2308,9 @@ class ApiClient {
     status?: string;
     search?: string;
     driverId?: string;
+    from?: string;
+    to?: string;
+    merchantId?: string;
   }) {
     const q = new URLSearchParams();
     if (params?.take != null) q.append('take', String(params.take));
@@ -2315,6 +2318,9 @@ class ApiClient {
     if (params?.status) q.append('status', params.status);
     if (params?.search) q.append('search', params.search);
     if (params?.driverId) q.append('driverId', params.driverId);
+    if (params?.from) q.append('from', params.from);
+    if (params?.to) q.append('to', params.to);
+    if (params?.merchantId) q.append('merchantId', params.merchantId);
     const s = q.toString();
     return this.request<any>(`/orders/admin/all${s ? `?${s}` : ''}`);
   }

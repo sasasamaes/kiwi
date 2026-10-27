@@ -99,6 +99,20 @@ function addressSimilarity(a: string, b: string): number {
   return inter / (setA.size + setB.size - inter);
 }
 
+/**
+ * Fecha YYYY-MM-DD del filtro de exportación → Date. `endOfDay` devuelve el
+ * inicio del día SIGUIENTE (para `lt`). Inválidos → null (se ignoran).
+ */
+function parseExportDate(raw: unknown, endOfDay: boolean): Date | null {
+  if (typeof raw !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(raw)) return null;
+  const [y, m, d] = raw.split('-').map(Number);
+  // Sin rollover silencioso (mes 13, día 40): validar contra el calendario.
+  if (m < 1 || m > 12 || d < 1 || d > 31) return null;
+  if (d > new Date(y, m, 0).getDate()) return null;
+  const dt = new Date(y, m - 1, d + (endOfDay ? 1 : 0));
+  return Number.isNaN(dt.getTime()) ? null : dt;
+}
+
 @Injectable()
 export class OrdersService {
   private readonly logger = new Logger(OrdersService.name);
@@ -2001,6 +2015,9 @@ export class OrdersService {
     status?: string;
     search?: string;
     driverId?: string;
+    from?: string;
+    to?: string;
+    merchantId?: string;
   }) {
     if (opts.status) this.validateOrderStatus(opts.status);
     const take = Math.min(Math.max(Number(opts.take ?? 30), 1), 100);
@@ -2010,6 +2027,14 @@ export class OrdersService {
     const where: any = {};
     if (opts.status) where.status = opts.status;
     if (opts.driverId) where.driverId = opts.driverId;
+    if (opts.merchantId) where.merchantId = opts.merchantId;
+    // Rango de fechas (YYYY-MM-DD, día completo en hora local del servidor).
+    // Inválidos se ignoran para no romper el listado.
+    const from = parseExportDate(opts.from, false);
+    const to = parseExportDate(opts.to, true);
+    if (from || to) {
+      where.createdAt = { ...(from ? { gte: from } : {}), ...(to ? { lt: to } : {}) };
+    }
     if (q) {
       where.OR = [
         { id: { contains: q, mode: 'insensitive' } },
