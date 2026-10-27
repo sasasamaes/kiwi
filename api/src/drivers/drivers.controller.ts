@@ -234,10 +234,16 @@ export class DriversController {
   @ApiOperation({ summary: 'Get available drivers' })
   @ApiQuery({ name: 'lat', required: false })
   @ApiQuery({ name: 'lng', required: false })
-  async getAvailable(@Query('lat') lat?: string, @Query('lng') lng?: string) {
+  async getAvailable(
+    @Query('lat') lat?: string,
+    @Query('lng') lng?: string,
+    @Query('testOnly') testOnly?: string,
+  ) {
     const latitude = lat ? parseFloat(lat) : undefined;
     const longitude = lng ? parseFloat(lng) : undefined;
-    return this.driversService.getAvailableDrivers(latitude, longitude);
+    return this.driversService.getAvailableDrivers(latitude, longitude, {
+      testOnly: testOnly === 'true',
+    });
   }
 
   @Get(':id')

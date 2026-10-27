@@ -219,6 +219,27 @@ export class MerchantsService {
     });
   }
 
+  /**
+   * Modo prueba por comercio (admin, tiempo limitado): el comercio puede
+   * crear pedidos test sin gastar crédito, solo con pilotos. `hours`
+   * define la vigencia desde ahora; enabled=false o vencido lo apaga.
+   */
+  async setTestOrders(id: string, enabled: boolean, hours?: number) {
+    const merchant = await this.prisma.merchantProfile.findUnique({ where: { id } });
+    if (!merchant) {
+      throw new NotFoundException('Comercio no encontrado');
+    }
+    const h = Math.round(Number(hours ?? 24));
+    const safeHours = Number.isFinite(h) ? Math.min(Math.max(h, 1), 24 * 30) : 24;
+    return this.prisma.merchantProfile.update({
+      where: { id },
+      data: {
+        testOrdersEnabled: enabled,
+        testOrdersUntil: enabled ? new Date(Date.now() + safeHours * 3_600_000) : null,
+      },
+    });
+  }
+
   /** Métodos de pago que el comercio prende/apaga en su perfil. */
   async setPaymentMethods(userId: string, data: { cashEnabled?: boolean; sinpeEnabled?: boolean }) {
     const merchant = await this.prisma.merchantProfile.findUnique({ where: { userId } });

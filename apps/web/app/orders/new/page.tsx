@@ -202,6 +202,47 @@ function NewOrderInner({
     }
   }, [weeklyBillingEnabled]);
 
+  // Modo prueba (demos con comercios): el admin lo habilita por tiempo
+  // limitado. Se lee fresco del perfil (el contexto puede estar viejo). La
+  // validez se calcula en efectos: `new Date()` en render lo prohíbe el linter.
+  const [isTest, setIsTest] = useState(false);
+  const [testAllowed, setTestAllowed] = useState(false);
+  const [testUntilLabel, setTestUntilLabel] = useState<string | null>(null);
+  const testFreshRef = useRef(false);
+  useEffect(() => {
+    const sync = (p: any) => {
+      const enabled = p?.testOrdersEnabled === true;
+      const until = p?.testOrdersUntil ?? null;
+      const ok = enabled && (!until || new Date(until).getTime() > Date.now());
+      setTestUntilLabel(until);
+      setTestAllowed(ok);
+      if (!ok) setIsTest(false);
+    };
+    api
+      .getMerchantProfile()
+      .then((p: any) => {
+        testFreshRef.current = true;
+        sync(p);
+      })
+      .catch(() => undefined);
+  }, []);
+  useEffect(() => {
+    // Contexto como respaldo mientras no llega el perfil fresco.
+    if (!testFreshRef.current && (user as any)?.merchantProfile) {
+      const p = (user as any).merchantProfile;
+      const enabled = p?.testOrdersEnabled === true;
+      const until = p?.testOrdersUntil ?? null;
+      setTestUntilLabel(until);
+      const ok = enabled && (!until || new Date(until).getTime() > Date.now());
+      setTestAllowed(ok);
+      if (!ok) setIsTest(false);
+    }
+  }, [user]);
+  // En modo prueba el cobro es efectivo (nunca toca crédito ni factura).
+  useEffect(() => {
+    if (isTest) setPaymentMethod('cash');
+  }, [isTest]);
+
   const [favoriteDrivers, setFavoriteDrivers] = useState<Driver[]>([]);
   const [availableDrivers, setAvailableDrivers] = useState<Driver[]>([]);
   const [selectedDriverId, setSelectedDriverId] = useState<string | null>(presetDriverId);
@@ -249,8 +290,11 @@ function NewOrderInner({
       setDriversLoading(true);
       try {
         const [favs, avail] = await Promise.all([
-          api.getFavoriteDrivers().catch(() => []),
-          api.getAvailableDrivers().catch(() => []),
+          // En modo prueba no hay favoritos: solo los pilotos.
+          (isTest ? Promise.resolve([]) : api.getFavoriteDrivers()).catch(() => []),
+          api
+            .getAvailableDrivers(undefined, undefined, isTest ? { testOnly: true } : undefined)
+            .catch(() => []),
         ]);
         if (!cancelled) {
           const favList = toDriverList(favs);
@@ -281,7 +325,7 @@ function NewOrderInner({
     return () => {
       cancelled = true;
     };
-  }, [step]);
+  }, [step, isTest]);
 
   // Distancia real con las coords de entrega (pickup = comercio).
   useEffect(() => {
@@ -831,6 +875,7 @@ function NewOrderInner({
                 : [],
             packageDescription: kind === 'freight' ? packageDescription : undefined,
             ...(selectedDriverId ? { driverId: selectedDriverId } : {}),
+            ...(isTest ? { isTest: true } : {}),
           },
           { idempotencyKey },
         );
@@ -1564,6 +1609,12 @@ function NewOrderInner({
                 </p>
                 <p className="text-xs text-surface-500">{t('webshop2.neworder.contestDesc')}</p>
               </button>
+              {isTest && (
+                <p className="mb-3 rounded-xl bg-gold-50 dark:bg-gold-900/20 border border-gold-200 dark:border-gold-800 px-3 py-2 text-xs text-gold-800 dark:text-gold-200">
+                  🧪 Pedido de prueba: en concurso solo lo ven los pilotos, y en asignación directa
+                  solo ellos valen.
+                </p>
+              )}
               {driverPresetNote && (
                 <p className="mb-3 rounded-xl bg-gold-50 dark:bg-gold-900/20 border border-gold-200 dark:border-gold-800 px-3 py-2 text-xs text-gold-800 dark:text-gold-200">
                   {driverPresetNote}
@@ -1730,6 +1781,20 @@ function NewOrderInner({
               <p className="mb-2 text-sm font-semibold text-surface-600 dark:text-surface-400">
                 {t('webshop2.neworder.payTitle')}
               </p>
+              {testAllowed && (
+                <label className="mb-3 flex cursor-pointer items-center gap-2 rounded-xl border border-gold-200 dark:border-gold-800 bg-gold-50 dark:bg-gold-900/20 px-3 py-2.5 text-sm font-medium">
+                  <input
+                    type="checkbox"
+                    checked={isTest}
+                    onChange={(e) => setIsTest(e.target.checked)}
+                    className="h-4 w-4 accent-kiwi-600"
+                  />
+                  🧪 Pedido de prueba — no gasta crédito ni se cobra, solo lo ven pilotos
+                  {testUntilLabel
+                    ? ` (hasta ${new Date(testUntilLabel).toLocaleDateString('es-CR', { day: 'numeric', month: 'short' })})`
+                    : ''}
+                </label>
+              )}
               <input
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
@@ -1742,18 +1807,22 @@ function NewOrderInner({
                     {
                       id: 'sinpe',
                       label: t('webshop2.neworder.paySinpe'),
-                      on: payAvailability.sinpe,
+                      on: payAvailability.sinpe && !isTest,
                     },
-                    { id: 'card', label: t('webshop2.neworder.payCard'), on: payAvailability.card },
+                    {
+                      id: 'card',
+                      label: t('webshop2.neworder.payCard'),
+                      on: payAvailability.card && !isTest,
+                    },
                     {
                       id: 'crypto',
                       label: t('webshop2.neworder.payCrypto'),
-                      on: payAvailability.crypto,
+                      on: payAvailability.crypto && !isTest,
                     },
                     { id: 'cash', label: t('webshop2.neworder.payCash'), on: payAvailability.cash },
                     {
                       id: 'credit',
-                      on: true,
+                      on: !isTest,
                       label:
                         creditBalance == null
                           ? t('webshop2.neworder.payCredit')
@@ -1763,7 +1832,7 @@ function NewOrderInner({
                     },
                     {
                       id: 'weekly',
-                      on: payAvailability.weekly,
+                      on: payAvailability.weekly && !isTest,
                       label: t('webshop2.neworder.payWeekly'),
                     },
                   ] as const

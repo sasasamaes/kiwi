@@ -810,11 +810,13 @@ export class PaymentsService {
     }
     if (opts.status) where.status = opts.status;
     if (opts.method) where.method = opts.method;
+    // La plata nunca cuenta pruebas: los pedidos test generan fila cash.
+    const moneyWhere: any = { ...where, order: { ...(where.order ?? {}), isTest: false } };
 
     const [total, items, byStatus, byMethod, daily] = await Promise.all([
-      this.prisma.payment.count({ where }),
+      this.prisma.payment.count({ where: moneyWhere }),
       this.prisma.payment.findMany({
-        where,
+        where: moneyWhere,
         orderBy: { createdAt: 'desc' },
         take,
         skip,
@@ -824,6 +826,7 @@ export class PaymentsService {
               id: true,
               status: true,
               totalAmount: true,
+              isTest: true,
               merchant: { select: { businessName: true } },
               driver: { select: { fullName: true } },
             },
@@ -831,19 +834,21 @@ export class PaymentsService {
         },
       }),
       this.prisma.payment.groupBy({
+        where: moneyWhere,
         by: ['status'],
         _count: { status: true },
         _sum: { amount: true },
       }),
       this.prisma.payment.groupBy({
+        where: moneyWhere,
         by: ['method'],
         _count: { method: true },
         _sum: { amount: true },
       }),
       this.prisma.$queryRaw<Array<{ day: string; total: number }>>`
-        SELECT TO_CHAR("created_at", 'YYYY-MM-DD') AS day, SUM("amount")::float AS total
-        FROM "payments"
-        WHERE "status" = 'completed' AND "method" != 'weekly_invoice' AND "created_at" >= NOW() - INTERVAL '30 days'
+        SELECT TO_CHAR(p."created_at", 'YYYY-MM-DD') AS day, SUM(p."amount")::float AS total
+        FROM "payments" p JOIN "orders" o ON o."id" = p."order_id"
+        WHERE p."status" = 'completed' AND p."method" != 'weekly_invoice' AND o."is_test" = false AND p."created_at" >= NOW() - INTERVAL '30 days'
         GROUP BY day ORDER BY day`,
     ]);
 

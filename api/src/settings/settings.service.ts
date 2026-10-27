@@ -22,6 +22,11 @@ export interface PlatformSettings {
     mandadosEnabled: boolean;
     /** Feature flag: app cliente abierta o en "próximamente" (lanzamiento). */
     clientAppEnabled: boolean;
+    /**
+     * Emails de los repartidores piloto que pueden tomar pedidos de prueba,
+     * separados por coma. Lo edita el admin en /admin/settings.
+     */
+    testDriverEmails: string;
   };
   payments: {
     sinpeEnabled: boolean;
@@ -106,6 +111,9 @@ export const DEFAULT_SETTINGS: PlatformSettings = {
     bannersEnabled: true,
     mandadosEnabled: true,
     clientAppEnabled: true,
+    // Pilotos del modo prueba (demos con comercios): solo ellos ven y
+    // toman pedidos test. Lo puede cambiar el admin en /admin/settings.
+    testDriverEmails: 'luisespinoza1212@gmail.com,hey@francampos.me',
   },
   payments: {
     sinpeEnabled: true,
@@ -404,6 +412,20 @@ export class SettingsService {
   async getClientAppEnabled(): Promise<boolean> {
     const all = await this.getAll();
     return all.platform?.clientAppEnabled !== false;
+  }
+
+  /**
+   * Emails piloto del modo prueba (minúsculas, sin vacíos). Si el admin
+   * lo deja vacío en settings, se usan los pilotos por defecto.
+   */
+  async getTestDriverEmails(): Promise<string[]> {
+    const all = await this.getAll();
+    const raw = String(all.platform?.testDriverEmails ?? '');
+    const list = raw
+      .split(',')
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean);
+    return list.length > 0 ? list : ['luisespinoza1212@gmail.com', 'hey@francampos.me'];
   }
   async getAssignmentTimeouts(): Promise<{ acceptanceMinutes: number; contestMinutes: number }> {
     const all = await this.getAll();

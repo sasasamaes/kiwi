@@ -36,7 +36,11 @@ describe('OrdersService', () => {
   let prisma: any;
   let coverageMock: { recordInterest: jest.Mock };
   let zonesMock: any;
-  let settingsStub: { getDriverCommissionPct: jest.Mock; getHomeCookCommissionPct: jest.Mock };
+  let settingsStub: {
+    getDriverCommissionPct: jest.Mock;
+    getHomeCookCommissionPct: jest.Mock;
+    getTestDriverEmails: jest.Mock;
+  };
 
   beforeEach(async () => {
     prisma = {
@@ -67,6 +71,12 @@ describe('OrdersService', () => {
       menuItemVariantOption: {
         findMany: jest.fn().mockResolvedValue([]),
       },
+      driverProfile: {
+        findUnique: jest.fn(),
+      },
+      user: {
+        findMany: jest.fn().mockResolvedValue([]),
+      },
       orderItem: {
         create: jest.fn(),
       },
@@ -79,6 +89,7 @@ describe('OrdersService', () => {
     settingsStub = {
       getDriverCommissionPct: jest.fn().mockResolvedValue(15),
       getHomeCookCommissionPct: jest.fn().mockResolvedValue(5),
+      getTestDriverEmails: jest.fn().mockResolvedValue(['pilot@kiwi.app']),
     };
 
     coverageMock = { recordInterest: jest.fn().mockResolvedValue(undefined) };
@@ -474,6 +485,107 @@ describe('OrdersService', () => {
       expect(order.commission).toBe(1400);
       expect(order.driverPayout).toBe(5600);
       expect(order.totalAmount).toBe(7000);
+    });
+
+    it('rechaza pedido test si el comercio no tiene el modo habilitado', async () => {
+      prisma.merchantProfile.findUnique.mockResolvedValue({
+        id: 'merchant-1',
+        userId: 'user-1',
+        businessName: 'Bowl & Café',
+        testOrdersEnabled: false,
+        testOrdersUntil: null,
+      });
+
+      await expect(
+        service.create('user-1', {
+          pickupAddress: 'Nicoya Centro',
+          deliveryAddress: 'Hojancha centro',
+          deliveryZone: 'hojancha',
+          distanceKm: 1,
+          isTest: true,
+        }),
+      ).rejects.toThrow('modo prueba');
+      expect(prisma.order.create).not.toHaveBeenCalled();
+    });
+
+    it('rechaza pedido test vencido aunque el flag siga prendido', async () => {
+      prisma.merchantProfile.findUnique.mockResolvedValue({
+        id: 'merchant-1',
+        userId: 'user-1',
+        businessName: 'Bowl & Café',
+        testOrdersEnabled: true,
+        testOrdersUntil: new Date(Date.now() - 1000),
+      });
+
+      await expect(
+        service.create('user-1', {
+          pickupAddress: 'Nicoya Centro',
+          deliveryAddress: 'Hojancha centro',
+          deliveryZone: 'hojancha',
+          distanceKm: 1,
+          isTest: true,
+        }),
+      ).rejects.toThrow('modo prueba');
+      expect(prisma.order.create).not.toHaveBeenCalled();
+    });
+
+    it('el pedido test nace en efectivo, sin gateo y marcado isTest', async () => {
+      prisma.merchantProfile.findUnique.mockResolvedValue({
+        id: 'merchant-1',
+        userId: 'user-1',
+        businessName: 'Bowl & Café',
+        testOrdersEnabled: true,
+        testOrdersUntil: new Date(Date.now() + 3600_000),
+      });
+      prisma.order.create.mockImplementation(async ({ data }: any) => ({
+        id: 'order-1',
+        status: 'pending',
+        ...data,
+      }));
+
+      const order: any = await service.create('user-1', {
+        pickupAddress: 'Nicoya Centro',
+        deliveryAddress: 'Hojancha centro',
+        deliveryZone: 'hojancha',
+        distanceKm: 1,
+        paymentMethod: 'weekly_invoice',
+        isTest: true,
+      });
+
+      expect(order.isTest).toBe(true);
+      // Efectivo forzado: sin gateo de pago aunque pidiera factura semanal.
+      expect(order.status).toBe('pending');
+      expect(order.basePrice).toBe(7000);
+    });
+
+    it('rechaza asignar un pedido test a un repartidor que no es piloto', async () => {
+      prisma.merchantProfile.findUnique.mockResolvedValue({
+        id: 'merchant-1',
+        userId: 'user-1',
+        businessName: 'Bowl & Café',
+        testOrdersEnabled: true,
+        testOrdersUntil: new Date(Date.now() + 3600_000),
+      });
+      prisma.driverProfile.findUnique.mockResolvedValue({
+        id: 'driver-1',
+        userId: 'user-not-pilot',
+        fullName: 'Repartidor X',
+        status: 'available',
+        kycStatus: 'approved',
+      });
+      prisma.user.findMany.mockResolvedValue([{ id: 'user-pilot' }]);
+
+      await expect(
+        service.create('user-1', {
+          pickupAddress: 'Nicoya Centro',
+          deliveryAddress: 'Hojancha centro',
+          deliveryZone: 'hojancha',
+          distanceKm: 1,
+          driverId: 'driver-1',
+          isTest: true,
+        }),
+      ).rejects.toThrow('piloto');
+      expect(prisma.order.create).not.toHaveBeenCalled();
     });
 
     it('should reject unknown deliveryZone', async () => {

@@ -26,6 +26,8 @@ interface AdminUser {
     kycStatus: string;
     cardPaymentsEnabled?: boolean;
     weeklyBillingEnabled?: boolean;
+    testOrdersEnabled?: boolean;
+    testOrdersUntil?: string | null;
     isHomeCook?: boolean;
     pushCredits?: number;
     _count?: { orders: number };
@@ -645,6 +647,40 @@ export default function UsersPage() {
     }
   };
 
+  // Modo prueba por comercio (admin, tiempo limitado en horas).
+  const [testHours, setTestHours] = useState('24');
+  const toggleTestOrders = async (u: AdminUser) => {
+    const merchantId = u.merchantProfile?.id;
+    if (!merchantId) return;
+    const enabled = !(u.merchantProfile?.testOrdersEnabled === true);
+    const hours = Math.round(Number(testHours));
+    setToggling(true);
+    try {
+      const updated = await api.setMerchantTestOrders(
+        merchantId,
+        enabled,
+        Number.isFinite(hours) ? hours : 24,
+      );
+      const patch = (x: AdminUser) =>
+        x.id === u.id && x.merchantProfile
+          ? {
+              ...x,
+              merchantProfile: {
+                ...x.merchantProfile,
+                testOrdersEnabled: updated?.testOrdersEnabled === true,
+                testOrdersUntil: updated?.testOrdersUntil ?? null,
+              },
+            }
+          : x;
+      setUsers((prev) => prev.map(patch));
+      setSelectedUser((prev) => (prev?.id === u.id ? patch(prev) : prev));
+    } catch (e: any) {
+      setError(e?.message || 'No se pudo cambiar el modo prueba');
+    } finally {
+      setToggling(false);
+    }
+  };
+
   const getRoleLabel = (role: string) => {
     switch (role) {
       case 'driver':
@@ -1084,6 +1120,58 @@ export default function UsersPage() {
                           <span
                             className={`block h-6 w-6 rounded-full bg-white shadow transition-transform ${
                               selectedUser.merchantProfile?.weeklyBillingEnabled === true
+                                ? 'translate-x-6'
+                                : ''
+                            }`}
+                          />
+                        </button>
+                      </div>
+                      <div className="flex justify-between items-center mt-3 pt-3 border-t border-kiwi-200/50 dark:border-kiwi-800/30">
+                        <div>
+                          <p className="text-sm font-semibold text-surface-800 dark:text-surface-200">
+                            🧪 Pedidos de prueba
+                          </p>
+                          <p className="text-xs text-surface-500">
+                            Demos sin gastar crédito, solo pilotos. Se apaga solo al vencer.
+                            {selectedUser.merchantProfile?.testOrdersEnabled === true &&
+                            selectedUser.merchantProfile?.testOrdersUntil
+                              ? ` Vence ${new Date(selectedUser.merchantProfile.testOrdersUntil).toLocaleString('es-CR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}.`
+                              : ''}
+                          </p>
+                          <div className="mt-2 flex items-center gap-2">
+                            <label className="text-xs text-surface-500" htmlFor="test-hours">
+                              Horas:
+                            </label>
+                            <select
+                              id="test-hours"
+                              value={testHours}
+                              onChange={(e) => setTestHours(e.target.value)}
+                              disabled={selectedUser.merchantProfile?.testOrdersEnabled === true}
+                              className="rounded-lg border border-surface-200 dark:border-surface-600 bg-white dark:bg-surface-800 px-2 py-1.5 text-xs disabled:opacity-50"
+                            >
+                              <option value="1">1 hora</option>
+                              <option value="8">8 horas</option>
+                              <option value="24">24 horas</option>
+                              <option value="72">3 días</option>
+                              <option value="168">7 días</option>
+                            </select>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => toggleTestOrders(selectedUser)}
+                          disabled={toggling}
+                          role="switch"
+                          aria-checked={selectedUser.merchantProfile?.testOrdersEnabled === true}
+                          aria-label="Modo prueba del comercio"
+                          className={`relative h-8 w-14 shrink-0 rounded-full p-1 transition-colors disabled:opacity-50 ${
+                            selectedUser.merchantProfile?.testOrdersEnabled === true
+                              ? 'bg-gold-500'
+                              : 'bg-surface-300 dark:bg-surface-600'
+                          }`}
+                        >
+                          <span
+                            className={`block h-6 w-6 rounded-full bg-white shadow transition-transform ${
+                              selectedUser.merchantProfile?.testOrdersEnabled === true
                                 ? 'translate-x-6'
                                 : ''
                             }`}

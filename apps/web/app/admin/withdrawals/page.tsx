@@ -74,6 +74,9 @@ export default function AdminWithdrawalsPage() {
   const [transactionId, setTransactionId] = useState('');
   // Planilla semanal mar–lun
   const [payrollWeek, setPayrollWeek] = useState<string | null>(null);
+
+  // Vista TEST de la planilla: muestra los test marcados, no genera retiros.
+  const [payrollTest, setPayrollTest] = useState(false);
   const [payroll, setPayroll] = useState<any>(null);
   const [payrollLoading, setPayrollLoading] = useState(false);
   const [payrollMsg, setPayrollMsg] = useState<string | null>(null);
@@ -120,11 +123,11 @@ export default function AdminWithdrawalsPage() {
   }, [t]);
 
   const fetchPayroll = useCallback(
-    async (week?: string | null) => {
+    async (week?: string | null, includeTest?: boolean) => {
       try {
         setPayrollLoading(true);
         setPayrollMsg(null);
-        const data = await api.getPayroll(week ?? undefined);
+        const data = await api.getPayroll(week ?? undefined, includeTest === true);
         setPayroll(data ?? null);
         if (data?.weekStart && !week) {
           setPayrollWeek(new Date(data.weekStart).toISOString().slice(0, 10));
@@ -158,7 +161,7 @@ export default function AdminWithdrawalsPage() {
       await api.zeroOutDriver(driverId, t('webadmin1.awith.zeroOutReason'));
       setBalancesMsg(t('webadmin1.awith.zeroedOk', { name: fullName }));
       void fetchBalances();
-      void fetchPayroll(payrollWeek);
+      void fetchPayroll(payrollWeek, payrollTest);
     } catch (e: any) {
       setBalancesMsg(e?.message || t('webadmin1.awith.zeroOutError'));
     } finally {
@@ -171,7 +174,7 @@ export default function AdminWithdrawalsPage() {
     const next = new Date(base.getTime() + days * 24 * 3600 * 1000);
     const iso = next.toISOString().slice(0, 10);
     setPayrollWeek(iso);
-    void fetchPayroll(iso);
+    void fetchPayroll(iso, payrollTest);
   };
 
   const handleGeneratePayroll = async () => {
@@ -186,7 +189,7 @@ export default function AdminWithdrawalsPage() {
           ? t('webadmin1.awith.payrollPartial', { n, m })
           : t('webadmin1.awith.payrollCreated', { n }),
       );
-      void fetchPayroll(payrollWeek);
+      void fetchPayroll(payrollWeek, payrollTest);
       fetchWithdrawals();
     } catch {
       setPayrollMsg(t('webadmin1.awith.payrollGenError'));
@@ -230,7 +233,7 @@ export default function AdminWithdrawalsPage() {
   }, [fetchWithdrawals]);
 
   useEffect(() => {
-    void fetchPayroll(null);
+    void fetchPayroll(null, false);
     void fetchBalances();
   }, [fetchPayroll, fetchBalances]);
 
@@ -451,11 +454,21 @@ export default function AdminWithdrawalsPage() {
             <button
               onClick={() => {
                 setPayrollWeek(null);
-                void fetchPayroll(null);
+                void fetchPayroll(null, payrollTest);
               }}
               className="px-3 py-2 text-sm font-medium rounded-lg bg-surface-100 dark:bg-surface-700 text-surface-700 dark:text-surface-200"
             >
               {t('webadmin1.awith.payrollCurrent')}
+            </button>
+            <button
+              onClick={() => {
+                const next = !payrollTest;
+                setPayrollTest(next);
+                void fetchPayroll(payrollWeek, next);
+              }}
+              className={`px-3 py-2 text-sm font-medium rounded-lg ${payrollTest ? 'bg-gold-500 text-white' : 'bg-surface-100 dark:bg-surface-700 text-surface-700 dark:text-surface-200'}`}
+            >
+              🧪 TEST
             </button>
             <button
               onClick={() => shiftWeek(7)}
@@ -490,6 +503,9 @@ export default function AdminWithdrawalsPage() {
                   <p className="text-xs text-surface-500 dark:text-surface-400">
                     {t('webadmin1.awith.payrollTrips', { n: d.tripCount })} · ₡
                     {Number(d.totalPayout ?? 0).toLocaleString()}
+                    {Number(d.testCount ?? 0) > 0
+                      ? ` · 🧪 ${d.testCount} test (₡${Number(d.testPayout ?? 0).toLocaleString()}, no pagable)`
+                      : ''}
                   </p>
                 </div>
                 {d.existingWithdrawal ? (
@@ -510,12 +526,18 @@ export default function AdminWithdrawalsPage() {
 
         <button
           onClick={handleGeneratePayroll}
-          disabled={generating || !(payroll?.drivers ?? []).some((d: any) => !d.existingWithdrawal)}
+          disabled={
+            generating ||
+            payrollTest ||
+            !(payroll?.drivers ?? []).some((d: any) => !d.existingWithdrawal)
+          }
           className="mt-3 w-full rounded-xl bg-kiwi-700 py-3 text-sm font-bold text-white hover:bg-kiwi-800 disabled:opacity-50"
         >
-          {generating
-            ? t('webadmin1.awith.payrollGenerating')
-            : t('webadmin1.awith.payrollGenerate')}
+          {payrollTest
+            ? '🧪 Vista TEST — no genera retiros'
+            : generating
+              ? t('webadmin1.awith.payrollGenerating')
+              : t('webadmin1.awith.payrollGenerate')}
         </button>
       </motion.div>
 
@@ -530,6 +552,9 @@ export default function AdminWithdrawalsPage() {
         </p>
         <p className="text-xs text-surface-500 dark:text-surface-400">
           {t('webadmin1.awith.balancesHint')}
+        </p>
+        <p className="mt-1 text-xs text-gold-700 dark:text-gold-300">
+          🧪 Los pedidos de prueba no suman aquí (ver pestaña TEST en planilla).
         </p>
         {balancesMsg && (
           <p className="mt-2 text-sm font-medium text-kiwi-700 dark:text-kiwi-300">{balancesMsg}</p>

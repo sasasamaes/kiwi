@@ -53,6 +53,8 @@ export class MerchantInvoicesService {
           merchantId,
           status: 'delivered' as any,
           deliveredAt: { gte: weekStart, lt: weekEnd },
+          // Los pedidos de prueba no se facturan al comercio.
+          isTest: false,
         },
       },
       include: {

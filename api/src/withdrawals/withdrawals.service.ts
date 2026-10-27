@@ -59,11 +59,12 @@ export class WithdrawalsService {
       throw new NotFoundException('Perfil de repartidor no encontrado');
     }
 
-    // Calculate total earnings from completed orders
+    // Calculate total earnings from completed orders (test excluded: no pagan).
     const totalEarnings = await this.prisma.order.aggregate({
       where: {
         driverId: driverProfile.id,
         status: 'delivered',
+        isTest: false,
       },
       _sum: { driverPayout: true },
     });
@@ -159,7 +160,7 @@ export class WithdrawalsService {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${driverProfile.id})::bigint)`;
       const [earnings, withdrawn, pending] = await Promise.all([
         tx.order.aggregate({
-          where: { driverId: driverProfile.id, status: 'delivered' },
+          where: { driverId: driverProfile.id, status: 'delivered', isTest: false },
           _sum: { driverPayout: true },
         }),
         tx.withdrawal.aggregate({
@@ -308,6 +309,8 @@ export class WithdrawalsService {
         driverId,
         status: 'delivered',
         deliveredAt: { lte: cutoff },
+        // Los test no generan saldo a pagar.
+        isTest: false,
       },
       select: {
         id: true,
@@ -321,8 +324,12 @@ export class WithdrawalsService {
     return orders.filter((o) => !usedIds.has(o.id));
   }
 
-  /** Vista previa de la planilla de una semana (mar 00:00 → mar 00:00). */
-  async getPayroll(weekISO?: string) {
+  /**
+   * Vista previa de la planilla de una semana (mar 00:00 → mar 00:00).
+   * Por defecto solo viajes reales: los test no generan plata a pagar.
+   * Con includeTest=true se incluyen marcados (pestaña TEST del admin).
+   */
+  async getPayroll(weekISO?: string, includeTest = false) {
     const weekStart = weekISO ? payWeekStartFromISO(weekISO) : lastClosedWeek().weekStart;
     const weekEnd = new Date(weekStart.getTime() + WEEK_MS);
 
@@ -331,6 +338,7 @@ export class WithdrawalsService {
         status: 'delivered',
         deliveredAt: { gte: weekStart, lt: weekEnd },
         driverId: { not: null },
+        ...(includeTest ? {} : { isTest: false }),
       },
       select: {
         id: true,
@@ -339,6 +347,7 @@ export class WithdrawalsService {
         basePrice: true,
         driverPayout: true,
         totalAmount: true,
+        isTest: true,
         merchant: { select: { businessName: true } },
       },
       orderBy: { deliveredAt: 'asc' },
@@ -384,17 +393,24 @@ export class WithdrawalsService {
     const existingByDriver = new Map(existing.map((w) => [w.driverId, w]));
 
     const drivers = [...byDriver.entries()].map(([driverId, trips]) => {
-      const totalPayout = trips.reduce((s, o) => s + Number(o.driverPayout ?? 0), 0);
-      const totalTrip = trips.reduce((s, o) => s + Number(o.basePrice ?? 0), 0);
+      const real = trips.filter((o: any) => !(o as any).isTest);
+      const totalPayout = real.reduce((s, o) => s + Number(o.driverPayout ?? 0), 0);
+      const totalTrip = real.reduce((s, o) => s + Number(o.basePrice ?? 0), 0);
       const p = profileById.get(driverId);
       return {
         driverId,
         fullName: p?.fullName ?? '',
         phone: p?.user?.phone ?? null,
         email: p?.user?.email ?? null,
-        tripCount: trips.length,
+        tripCount: real.length,
         totalPayout: Math.round(totalPayout),
         totalTrip: Math.round(totalTrip),
+        testCount: trips.length - real.length,
+        testPayout: Math.round(
+          trips
+            .filter((o: any) => (o as any).isTest)
+            .reduce((s, o) => s + Number(o.driverPayout ?? 0), 0),
+        ),
         existingWithdrawal: existingByDriver.get(driverId) ?? null,
         trips: trips.map((o) => ({
           id: o.id,
@@ -402,6 +418,7 @@ export class WithdrawalsService {
           merchant: o.merchant?.businessName ?? null,
           trip: Math.round(Number(o.basePrice ?? 0)),
           payout: Math.round(Number(o.driverPayout ?? 0)),
+          isTest: (o as any).isTest === true,
         })),
       };
     });
@@ -607,7 +624,8 @@ export class WithdrawalsService {
   async getUnsettledBalances() {
     const now = new Date();
     const trips = await this.prisma.order.findMany({
-      where: { status: 'delivered', driverId: { not: null } },
+      // Solo reales: los test no generan saldo a pagar.
+      where: { status: 'delivered', driverId: { not: null }, isTest: false },
       select: { id: true, driverId: true, deliveredAt: true, driverPayout: true },
       orderBy: { deliveredAt: 'asc' },
     });

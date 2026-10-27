@@ -316,6 +316,11 @@ model MerchantProfile {
   // (viaje + plataforma). Solo envío — los productos los cobra el comercio.
   creditBalance Decimal @default(0) @map("credit_balance") @db.Decimal(10, 2)
 
+  // Modo prueba (demos con comercios): el admin lo habilita por tiempo
+  // limitado. Vencido el plazo, crear pedidos test se rechaza.
+  testOrdersEnabled Boolean @default(false) @map("test_orders_enabled")
+  testOrdersUntil   DateTime? @map("test_orders_until")
+
   // Avisos push extra a seguidores (más allá de los 4 gratis/semana). Los
   // otorga el admin (comprados o por acuerdo); cada aviso extra consume 1.
   pushCredits Int @default(0) @map("push_credits")
@@ -849,6 +854,11 @@ model Order {
   // Null = no indicó. El vuelto se deriva: cashTendered − totalAmount.
   cashTendered Decimal? @map("cash_tendered") @db.Decimal(10, 2)
 
+  // Pedido de prueba (modo demo con comercios): no mueve crédito del
+  // comercio ni cuenta como ganancia; solo practican el flujo con los
+  // repartidores piloto. Los agregados de plata lo excluyen por defecto.
+  isTest Boolean @default(false) @map("is_test")
+
   // Origen: client_app (link público / app cliente) vs merchant_panel
   // (creado por el comercio en el dashboard). La página de comandas muestra
   // solo client_app.
@@ -892,6 +902,7 @@ model Order {
   @@index([merchantId, origin, status, createdAt], map: "orders_merchant_origin_status_created_idx")
   @@index([merchantId, status])
   @@index([merchantId, createdAt])
+  @@index([isTest])
   @@index([driverId, status])
   @@index([driverId, createdAt])
   @@index([customerId, status, createdAt], map: "orders_customer_status_created_idx")

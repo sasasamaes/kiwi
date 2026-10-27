@@ -38,6 +38,7 @@ interface AdminOrder {
   commissionRate?: number | string | null;
   driverPayout: number | string;
   totalAmount: number | string;
+  isTest?: boolean;
   productsTotal?: number | string | null;
   cashTendered?: number | string | null;
   payment?: { method?: string | null; status?: string | null } | null;
@@ -161,6 +162,11 @@ export default function AdminOrders() {
   const [expStatus, setExpStatus] = useState('');
   const [expDriver, setExpDriver] = useState('');
   const [expIva, setExpIva] = useState(true);
+  // Exports: por defecto sin pruebas (plata real). Con el check se incluyen
+  // marcadas y con subtotal separado.
+  const [expIncludeTest, setExpIncludeTest] = useState(false);
+  // Filtro de la lista en pantalla: '' todos, 'only' solo test, 'exclude' reales.
+  const [testFilter, setTestFilter] = useState('');
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
   const [exportDone, setExportDone] = useState<string | null>(null);
@@ -177,8 +183,8 @@ export default function AdminOrders() {
   const [liveEvents, setLiveEvents] = useState<LiveEvent[]>([]);
   const [pendingLive, setPendingLive] = useState(0);
   const liveKey = useRef(0);
-  const listCtx = useRef({ page, filter, search, driverId });
-  listCtx.current = { page, filter, search, driverId };
+  const listCtx = useRef({ page, filter, search, driverId, testFilter });
+  listCtx.current = { page, filter, search, driverId, testFilter };
 
   const STATUS_LABEL: Record<string, string> = {
     pending: t('webadmin1.aorders.status.pending'),
@@ -227,7 +233,7 @@ export default function AdminOrders() {
       await api.updateOrderStatus(selected.id, nextStatus);
       setSelected(null);
       setNextStatus('');
-      await load(filter, search, page, driverId);
+      await load(filter, search, page, driverId, testFilter);
     } catch (e: any) {
       setCancelError(e?.message || t('webadmin1.aorders.statusChangeError'));
     } finally {
@@ -254,7 +260,7 @@ export default function AdminOrders() {
       await api.updateOrderStatus(selected.id, 'delivered');
       setSelected(null);
       setNextStatus('');
-      await load(filter, search, page, driverId);
+      await load(filter, search, page, driverId, testFilter);
     } catch (e: any) {
       setCancelError(e?.message || t('webadmin1.aorders.markDeliveredError'));
     } finally {
@@ -279,7 +285,7 @@ export default function AdminOrders() {
     try {
       await api.updateOrderStatus(selected.id, 'cancelled');
       setSelected(null);
-      await load(filter, search, page, driverId);
+      await load(filter, search, page, driverId, testFilter);
     } catch (e: any) {
       setCancelError(e?.message || t('webadmin1.aorders.cancelError'));
     } finally {
@@ -306,7 +312,7 @@ export default function AdminOrders() {
       await api.reassignDriver(selected.id, reassignTo);
       setSelected(null);
       setReassignTo('');
-      await load(filter, search, page, driverId);
+      await load(filter, search, page, driverId, testFilter);
     } catch (e: any) {
       setCancelError(e?.message || t('webadmin1.aorders.reassignError'));
     } finally {
@@ -316,7 +322,7 @@ export default function AdminOrders() {
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const load = useCallback(
-    async (status: string, q: string, p: number, dId?: string) => {
+    async (status: string, q: string, p: number, dId?: string, test?: string) => {
       setLoading(true);
       setError(null);
       try {
@@ -326,6 +332,7 @@ export default function AdminOrders() {
           status: status || undefined,
           search: q.trim() || undefined,
           driverId: dId || undefined,
+          test: test || undefined,
         });
         setOrders(Array.isArray(res?.items) ? res.items : []);
         setTotal(Number(res?.total ?? 0));
@@ -341,14 +348,15 @@ export default function AdminOrders() {
 
   useEffect(() => {
     if (searchTimer.current) clearTimeout(searchTimer.current);
-    searchTimer.current = setTimeout(() => load(filter, search, page, driverId), 400);
+    searchTimer.current = setTimeout(() => load(filter, search, page, driverId, testFilter), 400);
     return () => {
       if (searchTimer.current) clearTimeout(searchTimer.current);
     };
-  }, [filter, search, page, driverId, load]);
+  }, [filter, search, page, driverId, testFilter, load]);
 
   // Descarga el resumen del rango en CSV (Excel lo abre directo, `;` para
   // locale ES + BOM para tildes). Pagina de 100 hasta agotar el total.
+  // Por defecto sin pruebas (plata real); con el check se incluyen marcadas.
   const fetchExportOrders = useCallback(async () => {
     const all: AdminOrder[] = [];
     const TAKE = 100;
@@ -361,13 +369,14 @@ export default function AdminOrders() {
         to: expTo || undefined,
         merchantId: expMerchant || undefined,
         driverId: expDriver || undefined,
+        test: expIncludeTest ? undefined : 'exclude',
       });
       const items: AdminOrder[] = Array.isArray(res?.items) ? res.items : [];
       all.push(...items);
       if (items.length < TAKE || all.length >= Number(res?.total ?? 0)) break;
     }
     return all;
-  }, [expStatus, expFrom, expTo, expMerchant, expDriver]);
+  }, [expStatus, expFrom, expTo, expMerchant, expDriver, expIncludeTest]);
 
   const exportCsv = useCallback(async () => {
     if (exporting) return;
@@ -401,6 +410,7 @@ export default function AdminOrders() {
           'Fecha',
           'Hora',
           'Estado',
+          ...(expIncludeTest ? ['Test'] : []),
           'Total (₡)',
           'Comisión Kiwi 15% (₡)',
           ...(expIva ? ['IVA 13% (₡)'] : []),
@@ -413,6 +423,10 @@ export default function AdminOrders() {
       let sumFee = 0;
       let sumIva = 0;
       let sumNet = 0;
+      let tSum = 0;
+      let tFee = 0;
+      let tIva = 0;
+      let tNet = 0;
       all.forEach((o, i) => {
         const amount = Number(o.totalAmount ?? 0);
         const gross = Number.isFinite(amount) ? Math.round(amount) : 0;
@@ -421,10 +435,18 @@ export default function AdminOrders() {
         const fee = Math.round(gross * 0.15);
         const iva = expIva ? Math.round(gross * 0.13) : 0;
         const net = gross - fee - iva;
-        sum += gross;
-        sumFee += fee;
-        sumIva += iva;
-        sumNet += net;
+        const isT = (o as AdminOrder).isTest === true;
+        if (isT) {
+          tSum += gross;
+          tFee += fee;
+          tIva += iva;
+          tNet += net;
+        } else {
+          sum += gross;
+          sumFee += fee;
+          sumIva += iva;
+          sumNet += net;
+        }
         const dt = new Date(o.createdAt);
         lines.push(
           [
@@ -435,6 +457,7 @@ export default function AdminOrders() {
             dt.toLocaleDateString('es-CR'),
             dt.toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' }),
             STATUS_LABEL[o.status] ?? o.status,
+            ...(expIncludeTest ? [isT ? 'TEST' : ''] : []),
             gross,
             fee,
             ...(expIva ? [iva] : []),
@@ -444,11 +467,28 @@ export default function AdminOrders() {
             .join(';'),
         );
       });
+      const blanks = ['', '', '', '', '', '', ''];
+      const testBlanks = expIncludeTest ? [''] : [];
       lines.push(
-        ['TOTAL', '', '', '', '', '', '', sum, sumFee, ...(expIva ? [sumIva] : []), sumNet]
+        ['TOTAL REALES', ...blanks, ...testBlanks, sum, sumFee, ...(expIva ? [sumIva] : []), sumNet]
           .map(csvCell)
           .join(';'),
       );
+      if (expIncludeTest && all.some((o) => (o as AdminOrder).isTest === true)) {
+        lines.push(
+          [
+            'TOTAL TEST (no pagable)',
+            ...blanks,
+            ...testBlanks,
+            tSum,
+            tFee,
+            ...(expIva ? [tIva] : []),
+            tNet,
+          ]
+            .map(csvCell)
+            .join(';'),
+        );
+      }
       const blob = new Blob(['\uFEFF' + lines.join('\r\n')], {
         type: 'text/csv;charset=utf-8',
       });
@@ -501,30 +541,50 @@ export default function AdminOrders() {
           let sumPay = 0;
           let sumIva = 0;
           let sumNet = 0;
+          let tNet = 0;
+          let tCount = 0;
           const rows = list
             .map((o, i) => {
               const trip = Math.round(Number(o.basePrice ?? 0));
               const pay = Math.round(Number(o.driverPayout ?? 0));
               const iva = expIva ? Math.round(pay * 0.13) : 0;
               const net = pay - iva;
-              sumTrip += trip;
-              sumPay += pay;
-              sumIva += iva;
-              sumNet += net;
+              const isT = (o as AdminOrder).isTest === true;
+              if (isT) {
+                tNet += net;
+                tCount += 1;
+              } else {
+                sumTrip += trip;
+                sumPay += pay;
+                sumIva += iva;
+                sumNet += net;
+              }
               const dt = new Date(o.createdAt);
-              return `<tr><td>${i + 1}</td><td>${dt.toLocaleDateString('es-CR')} ${dt.toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' })}</td><td>${o.merchant?.businessName ?? ''}</td><td style="text-align:right">${money(trip)}</td><td style="text-align:right">${money(trip - pay)}</td>${expIva ? `<td style="text-align:right">${money(iva)}</td>` : ''}<td style="text-align:right"><b>${money(net)}</b></td></tr>`;
+              return `<tr><td>${i + 1}</td><td>${dt.toLocaleDateString('es-CR')} ${dt.toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' })}</td><td>${o.merchant?.businessName ?? ''}${isT ? ' · TEST' : ''}</td><td style="text-align:right">${money(trip)}</td><td style="text-align:right">${money(trip - pay)}</td>${expIva ? `<td style="text-align:right">${money(iva)}</td>` : ''}<td style="text-align:right"><b>${money(net)}</b></td></tr>`;
             })
             .join('');
-          return `<h3>${name} · ${list.length} viajes</h3><table><thead><tr><th>N°</th><th>Fecha</th><th>Comercio</th><th style="text-align:right">Viaje</th><th style="text-align:right">Corte 15%</th>${expIva ? '<th style="text-align:right">IVA 13%</th>' : ''}<th style="text-align:right">A pagar</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td colspan="3">Subtotal ${name}</td><td style="text-align:right">${money(sumTrip)}</td><td style="text-align:right">${money(sumTrip - sumPay)}</td>${expIva ? `<td style="text-align:right">${money(sumIva)}</td>` : ''}<td style="text-align:right">${money(sumNet)}</td></tr></tfoot></table>`;
+          const testLine =
+            tCount > 0
+              ? `<tr><td colspan="3">Subtotal TEST (no pagable, ${tCount})</td><td style="text-align:right" colspan="${expIva ? 3 : 2}"></td><td style="text-align:right">${money(tNet)}</td></tr>`
+              : '';
+          const realCount = list.length - tCount;
+          return `<h3>${name} · ${realCount} viajes${tCount > 0 ? ` + ${tCount} test` : ''}</h3><table><thead><tr><th>N°</th><th>Fecha</th><th>Comercio</th><th style="text-align:right">Viaje</th><th style="text-align:right">Corte 15%</th>${expIva ? '<th style="text-align:right">IVA 13%</th>' : ''}<th style="text-align:right">A pagar</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td colspan="3">Subtotal ${name}</td><td style="text-align:right">${money(sumTrip)}</td><td style="text-align:right">${money(sumTrip - sumPay)}</td>${expIva ? `<td style="text-align:right">${money(sumIva)}</td>` : ''}<td style="text-align:right">${money(sumNet)}</td></tr>${testLine}</tfoot></table>`;
         })
         .join('');
-      const grandPay = trips.reduce((s, o) => s + Math.round(Number(o.driverPayout ?? 0)), 0);
+      const real = trips.filter((o) => (o as AdminOrder).isTest !== true);
+      const grandPay = real.reduce((s, o) => s + Math.round(Number(o.driverPayout ?? 0)), 0);
       const grandIva = expIva ? Math.round(grandPay * 0.13) : 0;
       const grandNet = grandPay - grandIva;
+      const grandTest = trips
+        .filter((o) => (o as AdminOrder).isTest === true)
+        .reduce((s, o) => {
+          const pay = Math.round(Number(o.driverPayout ?? 0));
+          return s + pay - (expIva ? Math.round(pay * 0.13) : 0);
+        }, 0);
       const w = window.open('', '_blank', 'width=720');
       if (!w) return;
       w.document.write(
-        `<html><head><title>Corte repartidor ${expFrom || 'inicio'} → ${expTo || 'hoy'}</title><style>body{font-family:sans-serif;padding:24px;color:#111}table{width:100%;border-collapse:collapse;margin:8px 0 20px}td,th{border-bottom:1px solid #ddd;padding:6px 4px;font-size:13px;text-align:left}tfoot td{font-weight:bold}h2{margin:0}h3{margin:20px 0 4px}.muted{color:#555;font-size:13px}</style></head><body><h2>Kiwi · Corte repartidor</h2><p class="muted">${expFrom || '…'} → ${expTo || '…'} · ${trips.length} viajes · Bruto: ${money(grandPay)}${expIva ? ` · IVA 13%: ${money(grandIva)}` : ''} · <b>Total a pagar: ${money(grandNet)}</b></p>${sections}</body></html>`,
+        `<html><head><title>Corte repartidor ${expFrom || 'inicio'} → ${expTo || 'hoy'}</title><style>body{font-family:sans-serif;padding:24px;color:#111}table{width:100%;border-collapse:collapse;margin:8px 0 20px}td,th{border-bottom:1px solid #ddd;padding:6px 4px;font-size:13px;text-align:left}tfoot td{font-weight:bold}h2{margin:0}h3{margin:20px 0 4px}.muted{color:#555;font-size:13px}</style></head><body><h2>Kiwi · Corte repartidor</h2><p class="muted">${expFrom || '…'} → ${expTo || '…'} · ${real.length} viajes · Bruto: ${money(grandPay)}${expIva ? ` · IVA 13%: ${money(grandIva)}` : ''} · <b>Total a pagar: ${money(grandNet)}</b>${grandTest > 0 ? ` · TEST (no pagable): ${money(grandTest)}` : ''}</p>${sections}</body></html>`,
       );
       w.document.close();
       w.focus();
@@ -554,15 +614,22 @@ export default function AdminOrders() {
       const total = trips.reduce((s, o) => s + Math.round(Number(o.driverPayout ?? 0)), 0);
       const totalIva = expIva ? Math.round(total * 0.13) : 0;
       const totalNet = total - totalIva;
+      const realTrips = trips.filter((o) => (o as AdminOrder).isTest !== true);
+      const realNet = realTrips.reduce((s, o) => {
+        const pay = Math.round(Number(o.driverPayout ?? 0));
+        return s + pay - (expIva ? Math.round(pay * 0.13) : 0);
+      }, 0);
+      const testNet = totalNet - realNet;
       const text =
         `Kiwi · Corte ${name} (${expFrom || '…'} → ${expTo || '…'})\n` +
-        `${trips.length} viajes · Bruto: ₡${total.toLocaleString('es-CR')}${expIva ? ` · IVA 13%: ₡${totalIva.toLocaleString('es-CR')}` : ''} · A pagar: ₡${totalNet.toLocaleString('es-CR')}\n` +
+        `${realTrips.length} viajes · A pagar: ₡${realNet.toLocaleString('es-CR')}${testNet > 0 ? ` (TEST no pagable: ₡${testNet.toLocaleString('es-CR')})` : ''}\n` +
         trips
           .map((o) => {
             const dt = new Date(o.createdAt);
             const pay = Math.round(Number(o.driverPayout ?? 0));
             const net = pay - (expIva ? Math.round(pay * 0.13) : 0);
-            return `• ${dt.toLocaleDateString('es-CR')} ${o.merchant?.businessName ?? ''}: ₡${net.toLocaleString('es-CR')}`;
+            const tag = (o as AdminOrder).isTest === true ? ' [TEST]' : '';
+            return `• ${dt.toLocaleDateString('es-CR')} ${o.merchant?.businessName ?? ''}${tag}: ₡${net.toLocaleString('es-CR')}`;
           })
           .join('\n');
       if (typeof navigator !== 'undefined' && 'share' in navigator) {
@@ -637,7 +704,7 @@ export default function AdminOrders() {
         // sonido decorativo: nunca tumba el feed
       }
       const ctx = listCtx.current;
-      if (ctx.page === 0 && !ctx.filter && !ctx.search && !ctx.driverId) {
+      if (ctx.page === 0 && !ctx.filter && !ctx.search && !ctx.driverId && !ctx.testFilter) {
         setOrders((prev) => {
           if (prev.some((o) => o.id === id)) return prev;
           const row: AdminOrder = {
@@ -718,6 +785,7 @@ export default function AdminOrders() {
             setFilter('');
             setSearch('');
             setDriverId('');
+            setTestFilter('');
             load('', '', 0);
           }}
           className="w-full rounded-xl bg-kiwi-700 px-4 py-2.5 text-sm font-semibold text-white"
@@ -767,6 +835,28 @@ export default function AdminOrders() {
             >
               {f.label}
               {f.id !== '' && stats ? ` (${stats.byStatus[f.id] ?? 0})` : ''}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {[
+            { id: '', label: 'Todos' },
+            { id: 'exclude', label: 'Reales' },
+            { id: 'only', label: '🧪 Solo test' },
+          ].map((f) => (
+            <button
+              key={f.id}
+              onClick={() => {
+                setTestFilter(f.id);
+                setPage(0);
+              }}
+              className={`whitespace-nowrap rounded-full px-4 py-2 text-xs font-medium transition-colors ${
+                testFilter === f.id
+                  ? 'bg-gold-500 text-white'
+                  : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400'
+              }`}
+            >
+              {f.label}
             </button>
           ))}
         </div>
@@ -923,6 +1013,15 @@ export default function AdminOrders() {
             />
             Incluir IVA 13%
           </label>
+          <label className="inline-flex min-h-[44px] cursor-pointer items-center gap-2 rounded-xl border border-surface-200 px-4 py-2.5 text-sm font-semibold dark:border-surface-700">
+            <input
+              type="checkbox"
+              checked={expIncludeTest}
+              onChange={(e) => setExpIncludeTest(e.target.checked)}
+              className="h-4 w-4 accent-kiwi-700"
+            />
+            Incluir pedidos TEST
+          </label>
           <button
             type="button"
             onClick={() => void exportCsv()}
@@ -996,6 +1095,11 @@ export default function AdminOrders() {
                   >
                     {STATUS_LABEL[o.status] ?? o.status}
                   </span>
+                  {(o as AdminOrder).isTest === true && (
+                    <span className="rounded-full px-2.5 py-0.5 text-xs font-medium bg-gold-100 text-gold-800 dark:bg-gold-900/40 dark:text-gold-200">
+                      🧪 TEST
+                    </span>
+                  )}
                   <span className="text-xs text-surface-400 dark:text-surface-500">
                     {new Date(o.createdAt).toLocaleString('es-CR', {
                       day: 'numeric',
@@ -1101,6 +1205,11 @@ export default function AdminOrders() {
                   >
                     {STATUS_LABEL[selected.status] ?? selected.status}
                   </span>
+                  {(selected as AdminOrder).isTest === true && (
+                    <span className="mt-1 ml-1 inline-block rounded-full px-2.5 py-0.5 text-xs font-medium bg-gold-100 text-gold-800 dark:bg-gold-900/40 dark:text-gold-200">
+                      🧪 TEST — no cuenta en plata
+                    </span>
+                  )}
                 </div>
                 <button
                   onClick={() => setSelected(null)}
@@ -1618,7 +1727,7 @@ export default function AdminOrders() {
                       packageDescription: '',
                       deliveredAt: '',
                     });
-                    await load(filter, search, page, driverId);
+                    await load(filter, search, page, driverId, testFilter);
                   } catch (e: any) {
                     setManualError(e?.message || 'No se pudo crear el pedido');
                   } finally {

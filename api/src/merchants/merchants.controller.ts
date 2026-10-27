@@ -221,6 +221,18 @@ export class MerchantsController {
     return this.merchantsService.setWeeklyBilling(id, body?.enabled === true);
   }
 
+  @Put(':id/test-orders')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Habilitar modo prueba a un comercio por tiempo limitado (horas)' })
+  async setTestOrders(
+    @Param('id') id: string,
+    @Body() body: { enabled?: boolean; hours?: number },
+  ) {
+    return this.merchantsService.setTestOrders(id, body?.enabled === true, body?.hours);
+  }
+
   @Put(':id/push-credits')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')

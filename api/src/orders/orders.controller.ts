@@ -183,11 +183,13 @@ export class OrdersController {
     @Query('lat') lat?: string,
     @Query('lng') lng?: string,
     @Query('scheduled') scheduled?: string,
+    @CurrentUser() user?: any,
   ) {
     const latitude = lat ? parseFloat(lat) : undefined;
     const longitude = lng ? parseFloat(lng) : undefined;
     return this.ordersService.getAvailableOrders(latitude, longitude, {
       scheduled: scheduled === 'true',
+      driverUserId: user?.sub,
     });
   }
 
@@ -205,6 +207,7 @@ export class OrdersController {
     @Query('from') from?: string,
     @Query('to') to?: string,
     @Query('merchantId') merchantId?: string,
+    @Query('test') test?: string,
   ) {
     return this.ordersService.listForAdmin({
       take: take != null ? Number(take) : undefined,
@@ -215,6 +218,7 @@ export class OrdersController {
       from,
       to,
       merchantId,
+      test,
     });
   }
 

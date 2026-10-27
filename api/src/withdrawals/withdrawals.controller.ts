@@ -104,8 +104,8 @@ export class WithdrawalsController {
   @Roles('admin')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Payroll preview for a Tue–Mon week (admin)' })
-  async getPayroll(@Query('week') week?: string) {
-    return this.withdrawalsService.getPayroll(week);
+  async getPayroll(@Query('week') week?: string, @Query('includeTest') includeTest?: string) {
+    return this.withdrawalsService.getPayroll(week, includeTest === 'true');
   }
 
   @Post('admin/payroll/generate')

@@ -89,6 +89,8 @@ export class UsersService {
               kycStatus: true,
               cardPaymentsEnabled: true,
               weeklyBillingEnabled: true,
+              testOrdersEnabled: true,
+              testOrdersUntil: true,
               isHomeCook: true,
               pushCredits: true,
               _count: { select: { orders: true } },

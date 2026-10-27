@@ -456,6 +456,26 @@ export class OrdersService {
       throw new NotFoundException('Perfil de comerciante no encontrado');
     }
 
+    // Pedido de prueba (demo con comercios): solo si el admin lo habilitó
+    // a este comercio y sigue vigente. El test no toca crédito (se fuerza
+    // efectivo para que nunca pase por spend ni factura semanal) y solo lo
+    // pueden tomar los repartidores piloto.
+    const isTest = data?.isTest === true;
+    if (isTest) {
+      const until = (merchantProfile as any).testOrdersUntil
+        ? new Date((merchantProfile as any).testOrdersUntil)
+        : null;
+      if (
+        (merchantProfile as any).testOrdersEnabled !== true ||
+        (until && until.getTime() < Date.now())
+      ) {
+        throw new ForbiddenException(
+          'El modo prueba no está habilitado para este comercio o ya venció',
+        );
+      }
+      data.paymentMethod = 'cash';
+    }
+
     // Anti-duplicados (wifi caído + doble-tap = N pedidos iguales):
     // si el frontend reintenta con la misma Idempotency-Key, se devuelve el
     // pedido ya creado en vez de crear otro.
@@ -997,6 +1017,10 @@ export class OrdersService {
           `${directDriver.fullName} aún no está verificado (KYC ${directDriver.kycStatus}).`,
         );
       }
+      // Pedido de prueba: solo un piloto puede ser el asignado directo.
+      if (isTest) {
+        await this.assertTestDriverByUserId(directDriver.userId);
+      }
     }
 
     // Fallback para clientes viejos sin key (app sin actualizar): si el
@@ -1107,6 +1131,7 @@ export class OrdersService {
                 : 'pending',
           ...(isContest ? { contestStartedAt, contestEndsAt } : {}),
           orderType,
+          isTest,
           scheduledDate,
           scheduledTime: data.scheduledTime,
           ...(readyAt ? { readyAt } : {}),
@@ -1593,6 +1618,27 @@ export class OrdersService {
    *
    * Fire-and-forget: un fallo de notificación NUNCA revierte el pedido.
    */
+  /** UserIds de los pilotos que pueden tomar pedidos de prueba. */
+  private async getTestDriverUserIds(): Promise<Set<string>> {
+    const emails = await this.settingsService.getTestDriverEmails();
+    if (emails.length === 0) return new Set();
+    const users = await this.prisma.user.findMany({
+      where: { email: { in: emails } },
+      select: { id: true },
+    });
+    return new Set(users.map((u) => u.id));
+  }
+
+  /** Un pedido de prueba solo lo opera un repartidor piloto. */
+  private async assertTestDriverByUserId(userId: string) {
+    const allowed = await this.getTestDriverUserIds();
+    if (!allowed.has(userId)) {
+      throw new ForbiddenException(
+        'Ese pedido es de prueba: solo lo puede tomar un repartidor piloto',
+      );
+    }
+  }
+
   async alertNearbyDrivers(
     order: {
       id: string;
@@ -1608,6 +1654,16 @@ export class OrdersService {
   ) {
     const scheduled = event === 'order:scheduledNew';
     try {
+      // Pedido de prueba: avisa SOLO a los pilotos, nunca a la flota
+      // (ni targeted por cercanía ni broadcast por rol/tópico).
+      if ((order as any).isTest === true) {
+        const pilotIds = await this.getTestDriverUserIds();
+        for (const userId of pilotIds) {
+          this.eventsGateway.sendToUser(userId, event, payload);
+        }
+        this.logger.log(`order ${order.id}: test alert → ${pilotIds.size} pilot driver(s)`);
+        return;
+      }
       const pickupLat = order.pickupLat != null ? Number(order.pickupLat) : null;
       const pickupLng = order.pickupLng != null ? Number(order.pickupLng) : null;
 
@@ -2018,6 +2074,8 @@ export class OrdersService {
     from?: string;
     to?: string;
     merchantId?: string;
+    /** 'only' = solo prueba, 'exclude' = solo reales. Vacío = todos. */
+    test?: string;
   }) {
     if (opts.status) this.validateOrderStatus(opts.status);
     const take = Math.min(Math.max(Number(opts.take ?? 30), 1), 100);
@@ -2028,6 +2086,8 @@ export class OrdersService {
     if (opts.status) where.status = opts.status;
     if (opts.driverId) where.driverId = opts.driverId;
     if (opts.merchantId) where.merchantId = opts.merchantId;
+    if (opts.test === 'only') where.isTest = true;
+    if (opts.test === 'exclude') where.isTest = false;
     // Rango de fechas (YYYY-MM-DD, día completo en hora local del servidor).
     // Inválidos se ignoran para no romper el listado.
     const from = parseExportDate(opts.from, false);
@@ -2060,7 +2120,8 @@ export class OrdersService {
         },
       }),
       this.prisma.order.aggregate({
-        where,
+        // La plata nunca cuenta pruebas (ni filtrando por test).
+        where: { ...where, isTest: false },
         _count: { id: true },
         _sum: { totalAmount: true, commission: true },
       }),
@@ -2098,7 +2159,7 @@ export class OrdersService {
    */
   async getDeliveredZoneMix() {
     const delivered = await this.prisma.order.findMany({
-      where: { status: 'delivered' },
+      where: { status: 'delivered', isTest: false },
       select: {
         deliveryZone: true,
         deliveryAddress: true,
@@ -2199,7 +2260,7 @@ export class OrdersService {
     const start30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
     const orders = await this.prisma.order.findMany({
-      where: { status: 'delivered', deliveredAt: { gte: start, lt: end } },
+      where: { status: 'delivered', deliveredAt: { gte: start, lt: end }, isTest: false },
       select: {
         deliveredAt: true,
         deliveryZone: true,
@@ -3055,6 +3116,10 @@ export class OrdersService {
     if (isKycRequired() && (next as any).kycStatus !== 'approved') {
       throw new BadRequestException(`${next.fullName} aún no está verificado`);
     }
+    // Pedido de prueba: solo se puede pasar a un piloto.
+    if ((order as any).isTest === true) {
+      await this.assertTestDriverByUserId((next as any).userId);
+    }
 
     // Tope de simultáneos: con 10 activos no se le puede pasar otro.
     await this.assertDriverCapacity(newDriverId);
@@ -3145,21 +3210,34 @@ export class OrdersService {
     return updated;
   }
 
-  async getAvailableOrders(latitude?: number, longitude?: number, opts?: { scheduled?: boolean }) {
+  async getAvailableOrders(
+    latitude?: number,
+    longitude?: number,
+    opts?: { scheduled?: boolean; driverUserId?: string },
+  ) {
     // Programados: el concurso vive en driver_proposals. Sin este filtro la
     // página de programados del driver pedía ?scheduled=true y recibía los
     // inmediatos (el controlador ignoraba el flag).
     const scheduledOnly = opts?.scheduled === true;
+    // Pedidos de prueba: solo los ven los pilotos (el resto de la flota
+    // ni los huele en la vitrina).
+    let testFilter: Record<string, unknown> = {};
+    if (opts?.driverUserId) {
+      const allowed = await this.getTestDriverUserIds();
+      if (!allowed.has(opts.driverUserId)) testFilter = { isTest: false };
+    }
     const orders = await this.prisma.order.findMany({
       where: scheduledOnly
         ? {
             status: 'driver_proposals',
             orderType: 'scheduled',
             driverId: null,
+            ...testFilter,
           }
         : {
             status: 'pending',
             driverId: null,
+            ...testFilter,
           },
       include: {
         merchant: { select: MERCHANT_PUBLIC_SELECT },
@@ -3209,6 +3287,11 @@ export class OrdersService {
 
     if (!driverProfile) {
       throw new NotFoundException('Perfil de repartidor no encontrado');
+    }
+
+    // Pedido de prueba: solo un piloto puede proponer.
+    if ((order as any).isTest === true) {
+      await this.assertTestDriverByUserId(driverProfile.userId);
     }
 
     const existingProposal = await this.prisma.driverProposal.findFirst({
@@ -3376,6 +3459,11 @@ export class OrdersService {
 
     if (!driverProfile) {
       throw new NotFoundException('Perfil de repartidor no encontrado');
+    }
+
+    // Pedido de prueba: solo un piloto puede aceptarlo.
+    if ((order as any).isTest === true) {
+      await this.assertTestDriverByUserId(driverProfile.userId);
     }
 
     // Idempotente: si YA lo tomó este mismo driver (doble tap, popup

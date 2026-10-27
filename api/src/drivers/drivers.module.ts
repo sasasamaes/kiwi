@@ -4,10 +4,11 @@ import { DriversService } from './drivers.service';
 import { DriversController } from './drivers.controller';
 import { ImageUploadService } from '../menu/image-upload.service';
 import { PaymentsModule } from '../payments/payments.module';
+import { SettingsModule } from '../settings/settings.module';
 
 @Module({
   // forwardRef: PaymentsModule → OrdersModule → DriversModule → PaymentsModule.
-  imports: [forwardRef(() => PaymentsModule)],
+  imports: [forwardRef(() => PaymentsModule), SettingsModule],
   providers: [DriversService, ImageUploadService],
   controllers: [DriversController],
   exports: [DriversService],

@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { FeatureFlagsService } from '../feature-flags/feature-flags';
+import { SettingsService } from '../settings/settings.service';
 import { isKycRequired } from '../feature-flags/feature-flags';
 import { startOfTodayCR, startOfMonthCR, toCRDateKey } from '../common/costa-rica-time';
 
@@ -17,6 +18,7 @@ export class DriversService {
   constructor(
     private prisma: PrismaService,
     private flags: FeatureFlagsService,
+    private settingsService: SettingsService,
   ) {}
 
   async findById(id: string) {
@@ -121,7 +123,16 @@ export class DriversService {
    * availability for assignment is enforced at assignment time, not by
    * hiding people from the list.
    */
-  async getAvailableDrivers(latitude?: number, longitude?: number) {
+  async getAvailableDrivers(latitude?: number, longitude?: number, opts?: { testOnly?: boolean }) {
+    if (opts?.testOnly) {
+      // Modo prueba del comercio: solo los pilotos (por email).
+      const emails = await this.settingsService.getTestDriverEmails();
+      return this.prisma.driverProfile.findMany({
+        where: { user: { email: { in: emails } } },
+        include: { user: { select: { phone: true, email: true } } },
+        orderBy: [{ status: 'asc' }, { rating: 'desc' }],
+      });
+    }
     return this.prisma.driverProfile.findMany({
       include: {
         user: {

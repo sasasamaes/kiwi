@@ -676,6 +676,14 @@ class ApiClient {
     });
   }
 
+  /** Habilita/apaga el modo prueba de un comercio por N horas (admin). */
+  async setMerchantTestOrders(merchantId: string, enabled: boolean, hours?: number) {
+    return this.request<any>(`/merchants/${merchantId}/test-orders`, {
+      method: 'PUT',
+      body: { enabled, hours },
+    });
+  }
+
   async getMarketplaceStatus(): Promise<{ accountId: string | null; status: string | null }> {
     return this.request<any>('/merchants/me/marketplace/status').catch(() => ({
       accountId: null,
@@ -1465,10 +1473,11 @@ class ApiClient {
     return this.request<any[]>('/credits/admin/merchants');
   }
 
-  async getAvailableDrivers(lat?: number, lng?: number) {
+  async getAvailableDrivers(lat?: number, lng?: number, opts?: { testOnly?: boolean }) {
     const params = new URLSearchParams();
     if (lat != null) params.append('lat', String(lat));
     if (lng != null) params.append('lng', String(lng));
+    if (opts?.testOnly) params.append('testOnly', 'true');
     return this.request<any>(`/drivers/available?${params.toString()}`);
   }
 
@@ -2311,6 +2320,7 @@ class ApiClient {
     from?: string;
     to?: string;
     merchantId?: string;
+    test?: string;
   }) {
     const q = new URLSearchParams();
     if (params?.take != null) q.append('take', String(params.take));
@@ -2321,6 +2331,7 @@ class ApiClient {
     if (params?.from) q.append('from', params.from);
     if (params?.to) q.append('to', params.to);
     if (params?.merchantId) q.append('merchantId', params.merchantId);
+    if (params?.test) q.append('test', params.test);
     const s = q.toString();
     return this.request<any>(`/orders/admin/all${s ? `?${s}` : ''}`);
   }
@@ -2462,9 +2473,12 @@ class ApiClient {
   }
 
   /** Vista previa de la planilla semanal mar–lun (admin). */
-  async getPayroll(week?: string) {
-    const params = week ? `?week=${encodeURIComponent(week)}` : '';
-    return this.request<any>(`/withdrawals/admin/payroll${params}`);
+  async getPayroll(week?: string, includeTest?: boolean) {
+    const params = new URLSearchParams();
+    if (week) params.append('week', week);
+    if (includeTest) params.append('includeTest', 'true');
+    const s = params.toString();
+    return this.request<any>(`/withdrawals/admin/payroll${s ? `?${s}` : ''}`);
   }
 
   /** Genera los retiros de la semana con sus recibos (admin). */

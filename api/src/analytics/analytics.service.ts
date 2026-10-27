@@ -151,7 +151,7 @@ export class AnalyticsService {
           },
         }),
         this.prisma.order.aggregate({
-          where: { status: OrderStatus.delivered, createdAt: { gte: todayStart } },
+          where: { status: OrderStatus.delivered, createdAt: { gte: todayStart }, isTest: false },
           _count: { id: true },
           _sum: { totalAmount: true, commission: true },
         }),
@@ -199,7 +199,7 @@ export class AnalyticsService {
     const monthStart = startOfMonthCR(now, 0);
 
     const orders = await this.prisma.order.findMany({
-      where: { status: OrderStatus.delivered, deliveredAt: { gte: launchStart } },
+      where: { status: OrderStatus.delivered, deliveredAt: { gte: launchStart }, isTest: false },
       select: {
         id: true,
         deliveredAt: true,
@@ -364,6 +364,7 @@ export class AnalyticsService {
   private async getOrderStats(merchantId: string, dateRange: { start: Date; end: Date }) {
     const where = {
       merchantId,
+      isTest: false,
       createdAt: { gte: dateRange.start, lte: dateRange.end },
     };
 
@@ -412,6 +413,7 @@ export class AnalyticsService {
   private async getRevenueStats(merchantId: string, dateRange: { start: Date; end: Date }) {
     const where = {
       merchantId,
+      isTest: false,
       status: OrderStatus.delivered,
       createdAt: { gte: dateRange.start, lte: dateRange.end },
     };
@@ -436,7 +438,11 @@ export class AnalyticsService {
     const payments = await this.prisma.payment.groupBy({
       by: ['method'],
       where: {
-        order: { merchantId, createdAt: { gte: dateRange.start, lte: dateRange.end } },
+        order: {
+          merchantId,
+          isTest: false,
+          createdAt: { gte: dateRange.start, lte: dateRange.end },
+        },
         status: PaymentStatus.completed,
       },
       _sum: { amount: true },
@@ -465,6 +471,7 @@ export class AnalyticsService {
       where: {
         order: {
           merchantId,
+          isTest: false,
           createdAt: { gte: dateRange.start, lte: dateRange.end },
         },
       },
@@ -482,6 +489,7 @@ export class AnalyticsService {
         menuItemId: { in: topByCount.map((t) => t.menuItemId) },
         order: {
           merchantId,
+          isTest: false,
           createdAt: { gte: dateRange.start, lte: dateRange.end },
         },
       },
@@ -516,6 +524,7 @@ export class AnalyticsService {
     // into memory (OOM with volume). 500-row pages keep results exact.
     const baseWhere = {
       merchantId,
+      isTest: false,
       createdAt: { gte: dateRange.start, lte: dateRange.end },
     };
     let cursor: string | undefined;
@@ -556,6 +565,7 @@ export class AnalyticsService {
     const orders = await this.prisma.order.findMany({
       where: {
         merchantId,
+        isTest: false,
         createdAt: { gte: dateRange.start, lte: dateRange.end },
       },
       select: { id: true },
@@ -595,14 +605,19 @@ export class AnalyticsService {
 
     const [currentOrders, previousOrders, currentRevenue, previousRevenue] = await Promise.all([
       this.prisma.order.count({
-        where: { merchantId, createdAt: { gte: dateRange.start, lte: dateRange.end } },
+        where: {
+          merchantId,
+          isTest: false,
+          createdAt: { gte: dateRange.start, lte: dateRange.end },
+        },
       }),
       this.prisma.order.count({
-        where: { merchantId, createdAt: { gte: previousStart, lte: previousEnd } },
+        where: { merchantId, isTest: false, createdAt: { gte: previousStart, lte: previousEnd } },
       }),
       this.prisma.order.aggregate({
         where: {
           merchantId,
+          isTest: false,
           status: OrderStatus.delivered,
           createdAt: { gte: dateRange.start, lte: dateRange.end },
         },
@@ -611,6 +626,7 @@ export class AnalyticsService {
       this.prisma.order.aggregate({
         where: {
           merchantId,
+          isTest: false,
           status: OrderStatus.delivered,
           createdAt: { gte: previousStart, lte: previousEnd },
         },
@@ -638,6 +654,7 @@ export class AnalyticsService {
   private async getDeliveryStats(driverId: string, dateRange: { start: Date; end: Date }) {
     const where = {
       driverId,
+      isTest: false,
       createdAt: { gte: dateRange.start, lte: dateRange.end },
     };
 
@@ -685,6 +702,7 @@ export class AnalyticsService {
   private async getEarningsStats(driverId: string, dateRange: { start: Date; end: Date }) {
     const where = {
       driverId,
+      isTest: false,
       status: OrderStatus.delivered,
       createdAt: { gte: dateRange.start, lte: dateRange.end },
     };
@@ -782,6 +800,7 @@ export class AnalyticsService {
         this.prisma.order.count({
           where: {
             driverId,
+            isTest: false,
             status: OrderStatus.delivered,
             createdAt: { gte: dateRange.start, lte: dateRange.end },
           },
@@ -789,6 +808,7 @@ export class AnalyticsService {
         this.prisma.order.count({
           where: {
             driverId,
+            isTest: false,
             status: OrderStatus.delivered,
             createdAt: { gte: previousStart, lte: previousEnd },
           },
@@ -796,6 +816,7 @@ export class AnalyticsService {
         this.prisma.order.aggregate({
           where: {
             driverId,
+            isTest: false,
             status: OrderStatus.delivered,
             createdAt: { gte: dateRange.start, lte: dateRange.end },
           },
@@ -804,6 +825,7 @@ export class AnalyticsService {
         this.prisma.order.aggregate({
           where: {
             driverId,
+            isTest: false,
             status: OrderStatus.delivered,
             createdAt: { gte: previousStart, lte: previousEnd },
           },
@@ -873,6 +895,7 @@ export class AnalyticsService {
 
   private async getPlatformOrderStats(dateRange: { start: Date; end: Date }) {
     const where = {
+      isTest: false,
       createdAt: { gte: dateRange.start, lte: dateRange.end },
     };
 
@@ -902,6 +925,7 @@ export class AnalyticsService {
   private async getPlatformRevenueStats(dateRange: { start: Date; end: Date }) {
     const where = {
       status: OrderStatus.delivered,
+      isTest: false,
       createdAt: { gte: dateRange.start, lte: dateRange.end },
     };
 
@@ -947,14 +971,15 @@ export class AnalyticsService {
         where: { createdAt: { gte: previousStart, lte: previousEnd } },
       }),
       this.prisma.order.count({
-        where: { createdAt: { gte: dateRange.start, lte: dateRange.end } },
+        where: { isTest: false, createdAt: { gte: dateRange.start, lte: dateRange.end } },
       }),
       this.prisma.order.count({
-        where: { createdAt: { gte: previousStart, lte: previousEnd } },
+        where: { isTest: false, createdAt: { gte: previousStart, lte: previousEnd } },
       }),
       this.prisma.order.aggregate({
         where: {
           status: OrderStatus.delivered,
+          isTest: false,
           createdAt: { gte: dateRange.start, lte: dateRange.end },
         },
         _sum: { totalAmount: true },
@@ -962,6 +987,7 @@ export class AnalyticsService {
       this.prisma.order.aggregate({
         where: {
           status: OrderStatus.delivered,
+          isTest: false,
           createdAt: { gte: previousStart, lte: previousEnd },
         },
         _sum: { totalAmount: true },
@@ -1004,6 +1030,7 @@ export class AnalyticsService {
     const orders = await this.prisma.order.findMany({
       where: {
         merchantId,
+        isTest: false,
         createdAt: { gte: dateRange.start, lte: dateRange.end },
       },
       select: { createdAt: true, totalAmount: true },
@@ -1035,6 +1062,7 @@ export class AnalyticsService {
     const orders = await this.prisma.order.findMany({
       where: {
         driverId,
+        isTest: false,
         status: OrderStatus.delivered,
         createdAt: { gte: dateRange.start, lte: dateRange.end },
       },
