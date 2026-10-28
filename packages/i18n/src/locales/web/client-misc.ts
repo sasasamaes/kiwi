@@ -204,6 +204,13 @@ export const cliMiscEs = {
     pinTitle: 'Pin en mapa (opcional)',
     removePin: 'Quitar pin',
     subtitle: '{{merchant}} te invita a completar tus datos de entrega. El comercio paga el envío.',
+    subtitleCash:
+      '{{merchant}} te invita a completar tus datos de entrega. Vos le pagás el express al comercio.',
+    sinpeTitle: 'Pagá el envío por SINPE',
+    sinpeHint:
+      'Hacé el SINPE al número del comercio y guardá el comprobante. El repartidor lo verifica al entregar.',
+    sinpeCopy: 'Copiar número',
+    sinpeCopied: '¡Número copiado!',
     tripLabel: 'Viaje a {{zone}}: {{price}}',
     invalidTitle: 'Link no válido',
     invalidHint: 'Este link venció o ya fue usado. Pedile uno nuevo al comercio.',
@@ -501,6 +508,13 @@ export const cliMiscEn = {
     removePin: 'Remove pin',
     subtitle:
       '{{merchant}} invites you to complete your delivery details. The store pays for shipping.',
+    subtitleCash:
+      '{{merchant}} invites you to complete your delivery details. You pay the express to the store.',
+    sinpeTitle: 'Pay shipping via SINPE',
+    sinpeHint:
+      'Send the SINPE to the store number and keep the receipt. The driver verifies it on delivery.',
+    sinpeCopy: 'Copy number',
+    sinpeCopied: 'Number copied!',
     tripLabel: 'Trip to {{zone}}: {{price}}',
     invalidTitle: 'Invalid link',
     invalidHint: 'This link expired or was already used. Ask the store for a new one.',

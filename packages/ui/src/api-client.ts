@@ -1603,7 +1603,7 @@ class ApiClient {
   }
 
   /** Link de reparto: crear (comercio, con auth). */
-  async createDeliveryLink(data: { deliveryZone: string; paymentMethod: string }) {
+  async createDeliveryLink(data: { deliveryZone: string; paymentMethod: string; paidBy?: string }) {
     return this.request<any>(`/delivery-links`, { method: 'POST', body: data });
   }
 

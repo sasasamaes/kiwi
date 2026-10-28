@@ -374,6 +374,10 @@ export const shop2Es = {
     addressPh: 'Nicoya, Guanacaste',
     phone: 'Teléfono',
     phonePh: '8888-8888',
+    sinpeNumber: 'SINPE para cobrar links',
+    sinpeNumberPh: '8888-8888',
+    sinpeNumberHint:
+      'Si un link lo paga el cliente, le mostramos este número para que te pague directo.',
     sectionLocation: 'Ubicación del local',
     locationHint:
       'Tocá el mapa para marcar dónde llegan a recoger. Ese punto se ve en el mapa general de operaciones.',
@@ -989,6 +993,10 @@ export const shop2En = {
     addressPh: 'Nicoya, Guanacaste',
     phone: 'Phone',
     phonePh: '8888-8888',
+    sinpeNumber: 'SINPE to collect links',
+    sinpeNumberPh: '8888-8888',
+    sinpeNumberHint:
+      'If a link is paid by the customer, we show them this number so they pay you directly.',
     sectionLocation: 'Shop location',
     locationHint:
       'Tap the map to pin where drivers pick up. That point shows on the operations map.',

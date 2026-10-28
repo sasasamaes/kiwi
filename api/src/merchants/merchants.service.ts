@@ -429,6 +429,16 @@ export class MerchantsService {
     if (data.socials !== undefined) {
       extra.socials = MerchantsService.normalizeSocials(data.socials);
     }
+    // SINPE para cobrar directo al cliente (links "lo paga el cliente"):
+    // 8 dígitos CR (8888-8888) o vacío para usar el teléfono de la cuenta.
+    if (data.sinpeNumber !== undefined) {
+      const digits = String(data.sinpeNumber ?? '').replace(/\D/g, '');
+      const local = digits.length === 11 && digits.startsWith('506') ? digits.slice(3) : digits;
+      if (local !== '' && !/^\d{8}$/.test(local)) {
+        throw new BadRequestException('SINPE inválido (8 dígitos, ej. 8888-8888)');
+      }
+      extra.sinpeNumber = local === '' ? null : `${local.slice(0, 4)}-${local.slice(4)}`;
+    }
 
     return this.prisma.merchantProfile.update({
       where: { userId },

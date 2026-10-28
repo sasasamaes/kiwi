@@ -37,6 +37,19 @@ export default function DeliveryLinkPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [placed, setPlaced] = useState<{ id: string } | null>(null);
+  const [copiedSinpe, setCopiedSinpe] = useState(false);
+
+  const copySinpe = async () => {
+    const num = String((link as any)?.sinpeNumber ?? '').trim();
+    if (!num) return;
+    try {
+      await navigator.clipboard.writeText(num.replace(/\D/g, ''));
+      setCopiedSinpe(true);
+      setTimeout(() => setCopiedSinpe(false), 2000);
+    } catch {
+      window.prompt(num, num);
+    }
+  };
 
   // Doble tap o reintento con wifi caído: misma key = mismo pedido.
   const placingRef = useRef(false);
@@ -197,7 +210,9 @@ export default function DeliveryLinkPage() {
             </div>
           </div>
           <p className="mt-2 text-sm leading-relaxed text-surface-500 dark:text-surface-400">
-            {t('wclimisc.dlink.subtitle', { merchant: link?.merchantName ?? '' })}
+            {link?.paidBy === 'customer'
+              ? t('wclimisc.dlink.subtitleCash', { merchant: link?.merchantName ?? '' })
+              : t('wclimisc.dlink.subtitle', { merchant: link?.merchantName ?? '' })}
           </p>
           {link?.zoneLabel != null && (
             <p className="mt-2 inline-block rounded-full bg-kiwi-100 px-3 py-1 text-sm font-semibold text-kiwi-700 dark:bg-kiwi-400/10 dark:text-kiwi-300">
@@ -206,6 +221,26 @@ export default function DeliveryLinkPage() {
                 price: money(Number(link.price ?? 0)),
               })}
             </p>
+          )}
+          {(link as any)?.paidBy === 'customer' && (link as any)?.sinpeNumber && (
+            <div className="mt-3 rounded-2xl border border-gold-500/40 bg-gold-50 p-4 dark:border-gold-500/30 dark:bg-gold-900/20">
+              <p className="text-sm font-bold text-gold-800 dark:text-gold-200">
+                📲 {t('wclimisc.dlink.sinpeTitle')}
+              </p>
+              <p className="mt-1 font-mono text-2xl font-bold tracking-wide text-surface-900 dark:text-surface-100">
+                {(link as any).sinpeNumber}
+              </p>
+              <p className="mt-1 text-xs text-surface-600 dark:text-surface-300">
+                {t('wclimisc.dlink.sinpeHint')}
+              </p>
+              <button
+                type="button"
+                onClick={copySinpe}
+                className="mt-2 rounded-xl bg-gold-500 px-4 py-2 text-sm font-bold text-white active:scale-[0.98]"
+              >
+                {copiedSinpe ? t('wclimisc.dlink.sinpeCopied') : t('wclimisc.dlink.sinpeCopy')}
+              </button>
+            </div>
           )}
         </header>
 

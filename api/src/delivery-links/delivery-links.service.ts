@@ -25,6 +25,8 @@ const LINK_PAYMENT_METHODS = ['cash', 'credit', 'weekly_invoice'] as const;
 export interface CreateDeliveryLinkDto {
   deliveryZone: string;
   paymentMethod: string;
+  /** Quién paga el viaje: merchant (rebaja crédito) o customer (SINPE directo). */
+  paidBy?: string;
 }
 
 export interface SubmitDeliveryLinkDto {
@@ -107,13 +109,18 @@ export class DeliveryLinksService {
   async create(merchantUserId: string, dto: CreateDeliveryLinkDto) {
     const merchant = await this.merchantOf(merchantUserId);
     const zone = await this.zoneById(String(dto?.deliveryZone ?? ''));
-    this.assertMethodForMerchant(merchant, String(dto?.paymentMethod ?? ''));
+    // Si lo paga el cliente por SINPE no hay movimiento de crédito: el
+    // método se fuerza a efectivo y el cobro es directo al comercio.
+    const paidBy = String(dto?.paidBy ?? 'merchant') === 'customer' ? 'customer' : 'merchant';
+    const method = paidBy === 'customer' ? 'cash' : String(dto?.paymentMethod ?? '');
+    this.assertMethodForMerchant(merchant, method);
     const { raw, hash } = this.newToken();
     const row: any = await (this.prisma as any).deliveryLink.create({
       data: {
         merchantId: merchant.id,
         deliveryZone: zone.id,
-        paymentMethod: String(dto.paymentMethod),
+        paymentMethod: method,
+        paidBy,
         tokenHash: hash,
         status: 'pending',
         expiresAt: new Date(Date.now() + LINK_TTL_MS),
@@ -140,10 +147,20 @@ export class DeliveryLinksService {
     }
     const merchant: any = await this.prisma.merchantProfile.findUnique({
       where: { id: link.merchantId },
-      select: { businessName: true, logoUrl: true, address: true },
+      select: { businessName: true, logoUrl: true, address: true, sinpeNumber: true, userId: true },
     });
     if (!merchant) throw new NotFoundException('Comercio no encontrado');
     const zone = await this.zoneById(link.deliveryZone).catch(() => null);
+    // SINPE para que el cliente le pague directo al comercio (si no tiene
+    // uno configurado, cae al teléfono de la cuenta).
+    let sinpe: string | null = (merchant as any).sinpeNumber ?? null;
+    if (!sinpe && (merchant as any).userId) {
+      const u: any = await this.prisma.user.findUnique({
+        where: { id: (merchant as any).userId },
+        select: { phone: true },
+      });
+      sinpe = u?.phone ?? null;
+    }
     return {
       consumed: false as const,
       merchantName: merchant.businessName,
@@ -154,6 +171,8 @@ export class DeliveryLinksService {
       // Informativo: el precio real lo calcula el servidor al crear el pedido.
       price: zone ? Number((zone as any).price) : null,
       paymentMethod: link.paymentMethod,
+      paidBy: (link as any).paidBy ?? 'merchant',
+      sinpeNumber: sinpe,
       expiresAt: link.expiresAt,
     };
   }

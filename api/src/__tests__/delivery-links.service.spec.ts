@@ -91,6 +91,17 @@ describe('DeliveryLinksService', () => {
       expect(prisma.deliveryLink.create).not.toHaveBeenCalled();
     });
 
+    it('link pagado por el cliente nace en efectivo', async () => {
+      prisma.deliveryLink.create.mockImplementation(({ data }: any) => ({ id: 'dl-9', ...data }));
+      const res = await service.create('user-m1', {
+        deliveryZone: 'zone-1',
+        paymentMethod: 'credit',
+        paidBy: 'customer',
+      } as any);
+      expect(res.link.paymentMethod).toBe('cash');
+      expect(res.link.paidBy).toBe('customer');
+    });
+
     it('rechaza facturación semanal si el comercio no la tiene activa', async () => {
       prisma.merchantProfile.findUnique.mockResolvedValue({ ...merchant });
       await expect(
@@ -127,6 +138,30 @@ describe('DeliveryLinksService', () => {
       expect(pub.zoneLabel).toBe('Los Ángeles');
       expect(pub.price).toBe(1500);
       expect(pub).not.toHaveProperty('tokenHash');
+    });
+
+    it('expone paidBy y SINPE (o teléfono como respaldo)', async () => {
+      prisma.deliveryLink.findUnique.mockResolvedValue({
+        id: 'dl-1',
+        merchantId: 'merchant-1',
+        deliveryZone: 'zone-1',
+        paymentMethod: 'cash',
+        paidBy: 'customer',
+        status: 'pending',
+        expiresAt: new Date(Date.now() + 1000),
+        orderId: null,
+      });
+      prisma.merchantProfile.findUnique.mockResolvedValue({
+        businessName: 'Soda Test',
+        logoUrl: null,
+        address: 'Nicoya centro',
+        sinpeNumber: null,
+        userId: 'user-m1',
+      });
+      prisma.user = { findUnique: jest.fn().mockResolvedValue({ phone: '8888-1111' }) } as any;
+      const pub: any = await service.getPublic('a'.repeat(64));
+      expect(pub.paidBy).toBe('customer');
+      expect(pub.sinpeNumber).toBe('8888-1111');
     });
 
     it('link consumido devuelve el pedido para redirigir al tracking', async () => {
@@ -217,6 +252,19 @@ describe('DeliveryLinksService', () => {
         'user-m1',
         'merchant',
       );
+    });
+
+    it('link pagado por el cliente no toca el crédito (nace en efectivo)', async () => {
+      prisma.deliveryLink.findUnique.mockResolvedValue(linkRow({ paidBy: 'customer' }));
+      prisma.deliveryLink.updateMany.mockResolvedValue({ count: 1 });
+      ordersService.create.mockResolvedValue({ id: 'order-3', basePrice: 1500 });
+      prisma.deliveryLink.update.mockResolvedValue({});
+      paymentsService.createPayment.mockClear();
+
+      await service.submit('h'.repeat(64), dto);
+      const data = ordersService.create.mock.calls[0][1];
+      expect(data.paymentMethod).toBe('cash');
+      expect(paymentsService.createPayment).not.toHaveBeenCalled();
     });
 
     it('reintento con el mismo link devuelve el pedido sin duplicar', async () => {

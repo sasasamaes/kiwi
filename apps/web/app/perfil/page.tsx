@@ -93,6 +93,7 @@ export default function PerfilPage() {
     description: '',
     address: '',
     phone: '',
+    sinpe: '',
     category: 'restaurante',
     logoUrl: '' as string | null,
     latitude: '' as number | string,
@@ -131,6 +132,7 @@ export default function PerfilPage() {
           description: (profile as any)?.description || '',
           address: (profile as any)?.address || '',
           phone: (me as any)?.phone || '',
+          sinpe: (profile as any)?.sinpeNumber || '',
           category: (profile as any)?.category || 'restaurante',
           logoUrl: (profile as any)?.logoUrl || null,
           latitude: (profile as any)?.latitude ?? '',
@@ -354,6 +356,7 @@ export default function PerfilPage() {
           description: form.description.trim() || null,
           address: form.address.trim() || undefined,
           category: form.category,
+          sinpeNumber: form.sinpe.trim() === '' ? null : normalizePhone(form.sinpe),
           latitude: latRaw,
           longitude: lngRaw,
           openingHours,
@@ -584,6 +587,22 @@ export default function PerfilPage() {
                   inputMode="tel"
                   className={inputCls}
                 />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-surface-600 dark:text-surface-400">
+                  {t('webshop2.perfil.sinpeNumber')}
+                </label>
+                <input
+                  value={form.sinpe}
+                  onChange={(e) => setForm((f) => ({ ...f, sinpe: e.target.value }))}
+                  onBlur={() => setForm((f) => ({ ...f, sinpe: normalizePhone(f.sinpe) }))}
+                  placeholder={t('webshop2.perfil.sinpeNumberPh')}
+                  inputMode="tel"
+                  className={inputCls}
+                />
+                <p className="mt-1 text-xs text-surface-500 dark:text-surface-400">
+                  {t('webshop2.perfil.sinpeNumberHint')}
+                </p>
               </div>
             </div>
           </div>

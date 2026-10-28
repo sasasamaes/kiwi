@@ -15,6 +15,10 @@ export default function ShareDeliveryPage() {
 
   const [zoneId, setZoneId] = useState('');
   const [method, setMethod] = useState<PayMethod>('cash');
+  // Quién paga el viaje: el comercio (rebaja crédito) o el cliente por SINPE
+  // directo al comercio (no toca crédito, el link nace en efectivo).
+  const [paidBy, setPaidBy] = useState<'merchant' | 'customer'>('merchant');
+  const [sinpeNumber, setSinpeNumber] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<{ url: string; price: number | null; label: string } | null>(
@@ -37,6 +41,10 @@ export default function ShareDeliveryPage() {
       .getMyDeliveryLinks()
       .then((r: any) => setLinks(Array.isArray(r?.links) ? r.links : []))
       .catch(() => setLinks([]));
+    api
+      .getMerchantProfile()
+      .then((p: any) => setSinpeNumber((p as any)?.sinpeNumber ?? null))
+      .catch(() => setSinpeNumber(null));
   }, [user]);
 
   if (!authLoading && !user) {
@@ -73,7 +81,12 @@ export default function ShareDeliveryPage() {
     setError(null);
     setResult(null);
     try {
-      const res = await api.createDeliveryLink({ deliveryZone: zoneId, paymentMethod: method });
+      const res = await api.createDeliveryLink({
+        deliveryZone: zoneId,
+        paymentMethod:
+          paidBy === 'customer' ? 'cash' : method === 'weekly' ? 'weekly_invoice' : method,
+        paidBy,
+      });
       setResult({
         url: String(res?.url ?? ''),
         price: Number(res?.zone?.price ?? zonePrice ?? 0),
@@ -152,39 +165,80 @@ export default function ShareDeliveryPage() {
           )}
 
           <h2 className="mt-5 font-display text-[17px] font-bold text-surface-900 dark:text-surface-100">
+            ¿Quién paga el viaje?
+          </h2>
+          <div className="mt-2 grid grid-cols-2 gap-2" role="group" aria-label="Quién paga">
+            {(
+              [
+                { id: 'merchant', label: 'Lo pago yo (crédito)' },
+                { id: 'customer', label: 'Lo paga el cliente (SINPE)' },
+              ] as const
+            ).map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                aria-pressed={paidBy === p.id}
+                onClick={() => setPaidBy(p.id)}
+                className={`rounded-xl border px-2 py-2.5 text-center text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-600/50 ${
+                  paidBy === p.id
+                    ? 'border-kiwi-600 bg-kiwi-50 dark:bg-kiwi-900/30'
+                    : 'border-surface-200 bg-white dark:border-surface-700 dark:bg-surface-800'
+                }`}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+          {paidBy === 'customer' && (
+            <p className="mt-2 rounded-xl bg-gold-50 dark:bg-gold-900/20 border border-gold-200 dark:border-gold-800 px-3 py-2 text-xs text-gold-800 dark:text-gold-200">
+              El cliente te paga directo a tu SINPE ({sinpeNumber ?? 'ponelo en Mi Perfil'})
+              {zonePrice != null ? ` · Monto: ₡${zonePrice.toLocaleString('es-CR')}` : ''}. No se
+              toca tu crédito.
+            </p>
+          )}
+
+          <h2 className="mt-5 font-display text-[17px] font-bold text-surface-900 dark:text-surface-100">
             {t('webshop2.sharelink.stepPay')}
           </h2>
           <p className="mt-0.5 text-xs text-surface-500 dark:text-surface-400">
             {t('webshop2.sharelink.payHint')}
           </p>
-          <div
-            className="mt-2 grid grid-cols-3 gap-2"
-            role="group"
-            aria-label={t('webshop2.sharelink.stepPay')}
-          >
-            {methods
-              .filter((m) => m.on || m.id === 'weekly')
-              .map((m) => (
-                <button
-                  key={m.id}
-                  type="button"
-                  aria-pressed={method === m.id}
-                  disabled={m.id === 'weekly' && !m.on}
-                  onClick={() => setMethod(m.id)}
-                  title={m.hint}
-                  className={`rounded-xl border px-2 py-2.5 text-center text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-600/50 disabled:opacity-40 ${
-                    method === m.id
-                      ? 'border-kiwi-600 bg-kiwi-50 dark:bg-kiwi-900/30'
-                      : 'border-surface-200 bg-white dark:border-surface-700 dark:bg-surface-800'
-                  }`}
-                >
-                  {m.label}
-                  {m.hint && (
-                    <span className="block text-[10px] font-normal text-surface-400">{m.hint}</span>
-                  )}
-                </button>
-              ))}
-          </div>
+          {paidBy === 'customer' ? (
+            <p className="mt-2 rounded-xl bg-surface-50 dark:bg-surface-800 px-3 py-2.5 text-sm text-surface-600 dark:text-surface-300">
+              Efectivo: el cliente te paga el viaje directo a tu SINPE.
+            </p>
+          ) : (
+            <div
+              className="mt-2 grid grid-cols-3 gap-2"
+              role="group"
+              aria-label={t('webshop2.sharelink.stepPay')}
+            >
+              {methods
+                .filter((m) => m.on || m.id === 'weekly')
+                .map((m) => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    aria-pressed={method === m.id}
+                    disabled={m.id === 'weekly' && !m.on}
+                    onClick={() => setMethod(m.id)}
+                    title={m.hint}
+                    className={`rounded-xl border px-2 py-2.5 text-center text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kiwi-600/50 disabled:opacity-40 ${
+                      method === m.id
+                        ? 'border-kiwi-600 bg-kiwi-50 dark:bg-kiwi-900/30'
+                        : 'border-surface-200 bg-white dark:border-surface-700 dark:bg-surface-800'
+                    }`}
+                  >
+                    {m.label}
+                    {m.hint && (
+                      <span className="block text-[10px] font-normal text-surface-400">
+                        {m.hint}
+                      </span>
+                    )}
+                  </button>
+                ))}
+            </div>
+          )}
 
           {error && (
             <p

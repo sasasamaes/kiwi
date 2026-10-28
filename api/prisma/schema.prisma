@@ -131,6 +131,9 @@ model DeliveryLink {
   deliveryZone  String          @map("delivery_zone")
   // Método con el que paga el comercio: cash | credit | weekly_invoice
   paymentMethod String          @map("payment_method")
+  // Quién paga el viaje: merchant (se rebaja del crédito) o customer
+  // (el cliente le paga directo al comercio por SINPE, sin tocar crédito).
+  paidBy        String          @default("merchant") @map("paid_by")
   tokenHash     String          @unique @map("token_hash")
   status        String          @default("pending") // pending | consumed | cancelled
   expiresAt     DateTime        @map("expires_at")
@@ -315,6 +318,10 @@ model MerchantProfile {
   // Crédito prepago: el admin recarga, el comercio lo gasta en envíos
   // (viaje + plataforma). Solo envío — los productos los cobra el comercio.
   creditBalance Decimal @default(0) @map("credit_balance") @db.Decimal(10, 2)
+
+  // SINPE del comercio para cobrar directo al cliente (links "lo paga el
+  // cliente"). Si está vacío se usa el teléfono de la cuenta.
+  sinpeNumber String? @map("sinpe_number")
 
   // Modo prueba (demos con comercios): el admin lo habilita por tiempo
   // limitado. Vencido el plazo, crear pedidos test se rechaza.
