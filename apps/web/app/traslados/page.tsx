@@ -108,13 +108,39 @@ export default function TrasladosPage() {
       <p className="mt-1 text-sm text-surface-500">
         Pedí un repartidor para llevar producto a otra sede de tu cadena. Solo se cobra el viaje.
       </p>
+      {(() => {
+        const my = (chain?.members ?? []).find((m: any) => m.id === chain?.myId);
+        const root = (chain?.members ?? []).find((m: any) => m.id === chain?.rootId);
+        if (!my) return null;
+        const others = (chain?.members ?? []).filter((m: any) => m.id !== chain?.myId);
+        return (
+          <p className="mt-2 rounded-xl bg-surface-100 dark:bg-surface-800 px-3 py-2 text-xs text-surface-600 dark:text-surface-300">
+            Entraste como <b>{my.businessName}</b>
+            {root && root.id !== my.id ? (
+              <>
+                {' '}
+                · sede de <b>{root.businessName}</b>
+              </>
+            ) : (
+              <> · sos la matriz de la cadena</>
+            )}
+            {others.length === 0 && ' · todavía no tenés sedes vinculadas.'}
+          </p>
+        );
+      })()}
 
       {!chain ? (
         <p className="mt-6 text-sm text-surface-500">Cargando…</p>
       ) : !enabled ? (
         <div className="mt-6 rounded-2xl bg-gold-50 dark:bg-gold-900/20 border border-gold-200 dark:border-gold-800 p-4 text-sm">
-          Los traslados no están habilitados para este comercio. Pedile al admin de Kiwi que los
-          active.
+          <p className="font-semibold text-gold-800 dark:text-gold-200">
+            Entraste como “
+            {(chain?.members ?? []).find((m: any) => m.id === chain?.myId)?.businessName ?? '—'}”.
+          </p>
+          <p className="mt-1 text-gold-800 dark:text-gold-200">
+            Los traslados no están habilitados para este comercio. Pedile al admin de Kiwi que los
+            active (y que revise que la sede esté colgada de su matriz).
+          </p>
         </div>
       ) : (
         <>

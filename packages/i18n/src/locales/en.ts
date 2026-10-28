@@ -789,6 +789,9 @@ export default {
     saving: 'Saving…',
     saved: 'Schedule saved.',
     saveFailed: 'Could not save.',
+    selectAll: 'Select whole day',
+    clear: 'Clear schedule',
+    tip: 'Tip: consistent hours get you more scheduled orders.',
     days: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
   },
   driverRanking: {

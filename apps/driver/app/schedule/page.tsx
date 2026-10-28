@@ -207,8 +207,15 @@ export default function Schedule() {
       await api.updateDriverSchedule(toApiRows(schedule));
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
-    } catch {
-      setScheduleError(t('wdrvwork.schedule.saveError'));
+    } catch (e: any) {
+      // Mostrar el motivo real (validación del servidor) en vez de
+      // un genérico de conexión: dayOfWeek, fechas, sesión, etc.
+      const detail = String(e?.message ?? '').trim();
+      setScheduleError(
+        detail && !/network|fetch|failed/i.test(detail)
+          ? `${t('wdrvwork.schedule.saveError')} (${detail})`
+          : t('wdrvwork.schedule.saveError'),
+      );
     } finally {
       setSaving(false);
     }

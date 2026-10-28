@@ -509,6 +509,7 @@ export default function UsersPage() {
     setNewPassword('');
     setConfirmPassword('');
     setPwMessage(null);
+    setChainMsg(null);
     setPushAmount('4');
   };
 
@@ -695,10 +696,12 @@ export default function UsersPage() {
   };
 
   // Sedes: colgar bajo matriz + toggle de traslados (admin, por comercio).
+  const [chainMsg, setChainMsg] = useState<string | null>(null);
   const setParent = async (u: AdminUser, parentId: string | null) => {
     const merchantId = u.merchantProfile?.id;
     if (!merchantId) return;
     setToggling(true);
+    setChainMsg(null);
     try {
       await api.setMerchantParent(merchantId, parentId);
       const patch = (x: AdminUser) =>
@@ -707,6 +710,12 @@ export default function UsersPage() {
           : x;
       setUsers((prev) => prev.map(patch));
       setSelectedUser((prev) => (prev?.id === u.id ? patch(prev) : prev));
+      const parentName = parentId
+        ? (allMerchants.find((m) => m.id === parentId)?.businessName ?? 'la matriz')
+        : null;
+      setChainMsg(
+        parentName ? `✓ Ahora es sede de ${parentName}.` : '✓ Ahora es matriz (sin padre).',
+      );
     } catch (e: any) {
       setError(e?.message || 'No se pudo cambiar la sede');
     } finally {
@@ -719,6 +728,7 @@ export default function UsersPage() {
     if (!merchantId) return;
     const enabled = !(u.merchantProfile?.transfersEnabled === true);
     setToggling(true);
+    setChainMsg(null);
     try {
       await api.setMerchantTransfers(merchantId, enabled);
       const patch = (x: AdminUser) =>
@@ -727,6 +737,11 @@ export default function UsersPage() {
           : x;
       setUsers((prev) => prev.map(patch));
       setSelectedUser((prev) => (prev?.id === u.id ? patch(prev) : prev));
+      setChainMsg(
+        enabled
+          ? '✓ Traslados activados para este comercio.'
+          : '✓ Traslados apagados para este comercio.',
+      );
     } catch (e: any) {
       setError(e?.message || 'No se pudo cambiar traslados');
     } finally {
@@ -1315,6 +1330,11 @@ export default function UsersPage() {
                           />
                         </button>
                       </div>
+                      {chainMsg && (
+                        <p className="mt-2 rounded-xl bg-kiwi-50 dark:bg-kiwi-900/30 border border-kiwi-200 dark:border-kiwi-800 px-3 py-2 text-xs font-medium text-kiwi-700 dark:text-kiwi-300">
+                          {chainMsg}
+                        </p>
+                      )}
                       <div className="flex justify-between items-center mt-3 pt-3 border-t border-kiwi-200/50 dark:border-kiwi-800/30">
                         <div>
                           <p className="text-sm font-semibold text-surface-800 dark:text-surface-200">

@@ -104,13 +104,30 @@ export default function Schedule() {
     setSaved(false);
   };
 
+  const selectAllDay = () => {
+    setSchedule((prev) => ({
+      ...prev,
+      [selectedDay]: HOURS.map((h) => `${String(h).padStart(2, '0')}:00`),
+    }));
+    setSaved(false);
+  };
+
+  const clearDay = () => {
+    setSchedule((prev) => {
+      const next = { ...prev };
+      delete next[selectedDay];
+      return next;
+    });
+    setSaved(false);
+  };
+
   const save = useCallback(async () => {
     setSaving(true);
     try {
       await api.updateSchedule(toApiRows(schedule));
       setSaved(true);
-    } catch {
-      Alert.alert(t.driverHours.saveFailed);
+    } catch (e: any) {
+      Alert.alert(t.driverHours.saveFailed, e?.message ?? '');
     } finally {
       setSaving(false);
     }
@@ -175,6 +192,46 @@ export default function Schedule() {
             </Pressable>
           );
         })}
+      </View>
+      <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
+        <Pressable
+          onPress={selectAllDay}
+          style={{
+            flex: 1,
+            backgroundColor: tokens.color.surface,
+            borderRadius: tokens.radius.md,
+            paddingVertical: 10,
+            alignItems: 'center',
+          }}
+        >
+          <Text style={{ color: tokens.color.ink, fontWeight: '600', fontSize: 13 }}>
+            {t.driverHours.selectAll}
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={clearDay}
+          style={{
+            flex: 1,
+            backgroundColor: tokens.color.surface,
+            borderRadius: tokens.radius.md,
+            paddingVertical: 10,
+            alignItems: 'center',
+          }}
+        >
+          <Text style={{ color: '#ef4444', fontWeight: '600', fontSize: 13 }}>
+            {t.driverHours.clear}
+          </Text>
+        </Pressable>
+      </View>
+      <View
+        style={{
+          backgroundColor: tokens.color.surface,
+          borderRadius: tokens.radius.md,
+          padding: tokens.space[3],
+          marginBottom: 12,
+        }}
+      >
+        <Text style={{ color: tokens.color.muted, fontSize: 12 }}>💡 {t.driverHours.tip}</Text>
       </View>
       <Button
         label={saving ? t.driverHours.saving : saved ? t.driverHours.saved : t.driverHours.save}

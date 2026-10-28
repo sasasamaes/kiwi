@@ -791,6 +791,9 @@ export default {
     saving: 'Guardando…',
     saved: 'Horario guardado.',
     saveFailed: 'No se pudo guardar.',
+    selectAll: 'Seleccionar todo el día',
+    clear: 'Limpiar horario',
+    tip: 'Consejo: con horarios consistentes recibís más pedidos programados.',
     days: ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'],
   },
   driverRanking: {
