@@ -768,6 +768,7 @@ export default {
     kycBlockedCta: 'Verify me',
     kycBlockedOnline: 'You cannot go online until verification is approved.',
     autoConnected: 'We connected you automatically per your schedule 🕗',
+    noBgLocation: 'Could not enable background location: you are connected, but keep the app open.',
   },
 
   // ===== Driver: operational screens =====
@@ -789,6 +790,27 @@ export default {
     saved: 'Schedule saved.',
     saveFailed: 'Could not save.',
     days: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+  },
+  driverRanking: {
+    title: 'Ranking',
+    week: 'Week',
+    month: 'Month',
+    all: 'All',
+    trips: 'Trips: {{n}}',
+    empty: 'No ranking yet.',
+  },
+  driverStats: {
+    title: 'My stats',
+    today: 'Today',
+    week: 'Week',
+    month: 'Month',
+    all: 'All',
+    deliveries: 'Deliveries',
+    earnings: 'Earned',
+    avgPerDelivery: 'Average per delivery',
+    rating: 'Rating',
+    completion: 'Completion',
+    hours: 'Active hours',
   },
   driverScheduled: {
     title: 'Scheduled',

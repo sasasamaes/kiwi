@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, FlatList, Pressable, Switch, Text, View } from 'react-native';
+import { Alert, AppState, FlatList, Pressable, Switch, Text, View } from 'react-native';
+import * as Location from 'expo-location';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { Screen, Button, StatusBadge, tokens } from '@kiwi/mobile-ui';
 import { useTranslation } from '@kiwi/i18n';
 import { ordersApi } from '../../src/api/orders';
 import { driversApi } from '../../src/api/drivers';
+import { startLocationTask, stopLocationTask } from '../../src/location/task';
 import { http } from '../../src/api/client';
 import { secureStorage } from '../../src/api/storage';
 import { useSession } from '../../src/session/useSession';
@@ -98,7 +100,19 @@ export default function Home() {
       try {
         await drvApi.updateStatus(next ? 'available' : 'offline');
         setOnline(next);
-        if (!next) setOrders([]);
+        if (next) {
+          // GPS en primer plano + tarea en segundo plano atados al estado.
+          const fg = await Location.requestForegroundPermissionsAsync().catch(() => null);
+          if (fg?.status === 'granted') {
+            const okBg = await startLocationTask().catch(() => false);
+            if (!okBg) {
+              Alert.alert(t.driverHome.noBgLocation);
+            }
+          }
+        } else {
+          setOrders([]);
+          await stopLocationTask().catch(() => {});
+        }
       } catch {
         Alert.alert(t.driverHome.offline, t.driverHome.kycBlockedOnline);
         // Relee el estado real ante cualquier fallo.
@@ -115,6 +129,30 @@ export default function Home() {
     [kycBlocked, setOnline, switching, t],
   );
 
+  // Ping de ubicación en primer plano cada 30s mientras está en línea
+  // (el fondo lo cubre la tarea nativa). Ahorra batería en background.
+  useEffect(() => {
+    if (!online) return;
+    let cancelled = false;
+    const ping = async () => {
+      if (cancelled || AppState.currentState !== 'active') return;
+      try {
+        const pos = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+        if (cancelled) return;
+        await drvApi.updateLocation(pos.coords.latitude, pos.coords.longitude).catch(() => {});
+      } catch {
+        // Sin GPS o sin red: el próximo ping reintenta.
+      }
+    };
+    void ping();
+    const id = setInterval(() => void ping(), 30 * 1000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [online]);
   // Horario propuesto: si estoy en horario, sin KYC pendiente y en pausa
   // (no manual reciente), me conecto solo. La desconexión la hace el servidor.
   useEffect(() => {
@@ -142,6 +180,7 @@ export default function Home() {
         if (cancelled) return;
         setOnline(true);
         setAutoMsg(t.driverHome.autoConnected);
+        await startLocationTask().catch(() => {});
       } catch {
         // Reintenta en el próximo tick.
       }
@@ -256,6 +295,30 @@ export default function Home() {
             { route: '/(app)/history', label: t.driverHistory.title },
             { route: '/(app)/schedule', label: t.driverHours.title },
             { route: '/(app)/scheduled', label: t.driverScheduled.title },
+          ] as const
+        ).map((b) => (
+          <Pressable
+            key={b.route}
+            onPress={() => router.push(b.route)}
+            style={{
+              flex: 1,
+              backgroundColor: tokens.color.surface,
+              borderRadius: tokens.radius.md,
+              paddingVertical: 10,
+              alignItems: 'center',
+            }}
+          >
+            <Text style={{ color: tokens.color.ink, fontWeight: '600', fontSize: 12 }}>
+              {b.label}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+      <View style={{ flexDirection: 'row', gap: 8, marginBottom: tokens.space[3] }}>
+        {(
+          [
+            { route: '/(app)/ranking', label: t.driverRanking.title },
+            { route: '/(app)/analytics', label: t.driverStats.title },
           ] as const
         ).map((b) => (
           <Pressable

@@ -769,6 +769,8 @@ export default {
     kycBlockedCta: 'Verificarme',
     kycBlockedOnline: 'No podés ponerte en línea hasta pasar la verificación.',
     autoConnected: 'Te conectamos solo según tu horario 🕗',
+    noBgLocation:
+      'No se pudo activar la ubicación en segundo plano: igual te conectamos, pero mantené la app abierta.',
   },
 
   // ===== Repartidor: pantallas operativas =====
@@ -790,6 +792,27 @@ export default {
     saved: 'Horario guardado.',
     saveFailed: 'No se pudo guardar.',
     days: ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'],
+  },
+  driverRanking: {
+    title: 'Ranking',
+    week: 'Semana',
+    month: 'Mes',
+    all: 'Todo',
+    trips: 'Viajes: {{n}}',
+    empty: 'Todavía no hay ranking.',
+  },
+  driverStats: {
+    title: 'Mis números',
+    today: 'Hoy',
+    week: 'Semana',
+    month: 'Mes',
+    all: 'Todo',
+    deliveries: 'Entregas',
+    earnings: 'Ganado',
+    avgPerDelivery: 'Promedio por entrega',
+    rating: 'Rating',
+    completion: 'Finalización',
+    hours: 'Horas activas',
   },
   driverScheduled: {
     title: 'Programados',

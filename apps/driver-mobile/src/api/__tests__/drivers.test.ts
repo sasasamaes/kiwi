@@ -22,6 +22,25 @@ test('myOrders GETs /drivers/me/orders with params', async () => {
   expect(fake.get).toHaveBeenCalledWith('/drivers/me/orders?status=delivered&take=50');
 });
 
+test('ranking GETs /drivers/me/ranking', async () => {
+  await driversApi(fake).ranking('month');
+  expect(fake.get).toHaveBeenCalledWith('/drivers/me/ranking?period=month');
+});
+
+test('analytics GETs /analytics/driver', async () => {
+  await driversApi(fake).analytics('week');
+  expect(fake.get).toHaveBeenCalledWith('/analytics/driver?period=week');
+});
+
+test('updateLocation PUTs /drivers/me/location', async () => {
+  await driversApi(fake).updateLocation(10.1, -85.4);
+  expect(fake.put).toHaveBeenCalledWith('/drivers/me/location', {
+    lat: 10.1,
+    lng: -85.4,
+    orderId: undefined,
+  });
+});
+
 test('updateSchedule PUTs /drivers/me/schedule', async () => {
   await driversApi(fake).updateSchedule([{ dayOfWeek: 3 }]);
   expect(fake.put).toHaveBeenCalledWith('/drivers/me/schedule', {
