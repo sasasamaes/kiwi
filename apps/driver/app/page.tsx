@@ -538,23 +538,24 @@ export default function Home() {
         transition={{ type: 'spring', stiffness: 260, damping: 20 }}
       >
         <div className="mx-auto max-w-lg px-4 py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2">
             <motion.div
-              className="flex items-center gap-2"
+              className="flex min-w-0 flex-1 items-center gap-2"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.2 }}
             >
               <KiwiLogo size={30} />
-              <h1 className="text-lg font-display font-bold text-surface-800 dark:text-surface-100">
+              <h1 className="truncate text-base min-[400px]:text-lg font-display font-bold text-surface-800 dark:text-surface-100">
                 {t('wdrvauth.home.brand')}
               </h1>
               <VehicleBadge
                 type={(user?.driverProfile?.vehicleType as any) || 'motorcycle'}
                 size="sm"
+                hideLabelOnMobile
               />
             </motion.div>
-            <div className="flex items-center gap-3">
+            <div className="flex shrink-0 items-center gap-1.5">
               <div className="flex items-center gap-1">
                 <motion.div
                   className={`h-2 w-2 rounded-full ${isConnected ? 'bg-kiwi-400' : 'bg-red-400'}`}
@@ -563,8 +564,8 @@ export default function Home() {
                 />
               </div>
               <ThemeToggle />
-              <LanguageSwitcherCompact />
-              <div className="h-8 w-8 rounded-full bg-kiwi-gradient text-white flex items-center justify-center text-sm font-semibold ring-2 ring-white dark:ring-surface-800 shadow-sm overflow-hidden">
+              <LanguageSwitcherCompact hideLabelOnMobile />
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-kiwi-gradient text-sm font-semibold text-white ring-2 ring-white dark:ring-surface-800 shadow-sm overflow-hidden">
                 {isHttpUrl((user as any)?.driverProfile?.photoUrl) ? (
                   // NOTE: <img> intencional — foto dinámica de Cloudinary.
                   <img

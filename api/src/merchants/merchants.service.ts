@@ -221,10 +221,14 @@ export class MerchantsService {
 
   /**
    * Cuelga una sede bajo su matriz (admin). parentId null = la deja como
-   * matriz (sin padre). No permite colgarse de sí misma ni ciclos directos.
+   * matriz (sin padre). No permite ciclos ni colgar una matriz que ya
+   * tiene sedes (rompería la raíz de la cadena, que es de un nivel).
    */
   async setParentMerchant(id: string, parentId: string | null) {
-    const merchant = await this.prisma.merchantProfile.findUnique({ where: { id } });
+    const merchant: any = await this.prisma.merchantProfile.findUnique({
+      where: { id },
+      include: { branches: { select: { id: true, businessName: true } } },
+    });
     if (!merchant) {
       throw new NotFoundException('Comercio no encontrado');
     }
@@ -232,12 +236,22 @@ export class MerchantsService {
       if (parentId === id) {
         throw new BadRequestException('Una sede no puede ser su propia matriz');
       }
-      const parent = await this.prisma.merchantProfile.findUnique({ where: { id: parentId } });
+      if (merchant.branches?.length > 0) {
+        const names = merchant.branches.map((b: any) => b.businessName).join(', ');
+        throw new BadRequestException(
+          `${merchant.businessName} ya es matriz de: ${names}. Mové primero sus sedes y reintentá`,
+        );
+      }
+      const parent: any = await this.prisma.merchantProfile.findUnique({
+        where: { id: parentId },
+      });
       if (!parent) {
         throw new NotFoundException('Matriz no encontrada');
       }
-      if ((parent as any).parentMerchantId === id) {
-        throw new BadRequestException('Ciclo de sedes no permitido');
+      if (parent.parentMerchantId === id) {
+        throw new BadRequestException(
+          `${parent.businessName} ya es sede de ${merchant.businessName}: quitá ese vínculo primero (ponela como matriz) y reintentá`,
+        );
       }
     }
     return this.prisma.merchantProfile.update({

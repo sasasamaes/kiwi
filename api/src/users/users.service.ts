@@ -93,6 +93,7 @@ export class UsersService {
               testOrdersUntil: true,
               parentMerchantId: true,
               transfersEnabled: true,
+              branches: { select: { id: true, businessName: true } },
               isHomeCook: true,
               pushCredits: true,
               _count: { select: { orders: true } },

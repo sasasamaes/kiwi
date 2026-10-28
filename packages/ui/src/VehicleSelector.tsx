@@ -174,9 +174,11 @@ export function VehicleSelector({ selected, onSelect, showDetails = true }: Vehi
 interface VehicleBadgeProps {
   type: VehicleType;
   size?: 'sm' | 'md' | 'lg';
+  /** En pantallas angostas muestra solo el icono (evita desborde del header). */
+  hideLabelOnMobile?: boolean;
 }
 
-export function VehicleBadge({ type, size = 'md' }: VehicleBadgeProps) {
+export function VehicleBadge({ type, size = 'md', hideLabelOnMobile = false }: VehicleBadgeProps) {
   const vehicle = vehicles.find((v) => v.type === type);
 
   const sizes = {
@@ -203,7 +205,9 @@ export function VehicleBadge({ type, size = 'md' }: VehicleBadgeProps) {
           <Truck className="h-4 w-4" />
         )}
       </span>
-      <span>{vehicle?.name}</span>
+      <span className={hideLabelOnMobile ? 'hidden min-[400px]:inline' : undefined}>
+        {vehicle?.name}
+      </span>
     </span>
   );
 }

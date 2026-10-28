@@ -30,6 +30,7 @@ interface AdminUser {
     testOrdersUntil?: string | null;
     parentMerchantId?: string | null;
     transfersEnabled?: boolean;
+    branches?: Array<{ id: string; businessName: string }>;
     isHomeCook?: boolean;
     pushCredits?: number;
     _count?: { orders: number };
@@ -1231,11 +1232,30 @@ export default function UsersPage() {
                         </button>
                       </div>
                       <div className="mt-2">
+                        {(() => {
+                          const mp = selectedUser.merchantProfile;
+                          const parentName = mp?.parentMerchantId
+                            ? (allMerchants.find((m) => m.id === mp.parentMerchantId)
+                                ?.businessName ?? 'otra sede')
+                            : null;
+                          const kids = mp?.branches ?? [];
+                          return (
+                            <p className="mb-2 rounded-xl bg-surface-100 dark:bg-surface-700/50 px-3 py-2 text-xs text-surface-600 dark:text-surface-300">
+                              ⛓️{' '}
+                              {parentName
+                                ? `Esta sede pertenece a la matriz ${parentName}.`
+                                : 'Es matriz (sin padre).'}
+                              {kids.length > 0
+                                ? ` Sedes bajo este comercio: ${kids.map((k) => k.businessName).join(', ')}.`
+                                : ''}
+                            </p>
+                          );
+                        })()}
                         <label
                           htmlFor="parent-merchant"
                           className="mb-1 block text-xs font-medium text-surface-600 dark:text-surface-400"
                         >
-                          🏪 Sede de (matriz)
+                          🏪 Esta sede pertenece a la matriz:
                         </label>
                         <select
                           id="parent-merchant"
@@ -1246,13 +1266,23 @@ export default function UsersPage() {
                         >
                           <option value="">— Es matriz (sin padre) —</option>
                           {allMerchants
-                            .filter((m) => m.id !== selectedUser.merchantProfile?.id)
+                            .filter(
+                              (m) =>
+                                m.id !== selectedUser.merchantProfile?.id &&
+                                !(selectedUser.merchantProfile?.branches ?? []).some(
+                                  (b) => b.id === m.id,
+                                ),
+                            )
                             .map((m) => (
                               <option key={m.id} value={m.id}>
                                 {m.businessName}
                               </option>
                             ))}
                         </select>
+                        <p className="mt-1 text-xs text-surface-500 dark:text-surface-400">
+                          Las propias sedes no salen: elegirlas daría ciclo. Para invertir el orden,
+                          poné primero ambas como matriz.
+                        </p>
                       </div>
                       <div className="flex justify-between items-center mt-3 pt-3 border-t border-kiwi-200/50 dark:border-kiwi-800/30">
                         <div>

@@ -93,7 +93,9 @@ export function LanguageSwitcher() {
 }
 
 // Compact version for mobile
-export function LanguageSwitcherCompact() {
+export function LanguageSwitcherCompact({
+  hideLabelOnMobile = false,
+}: { hideLabelOnMobile?: boolean } = {}) {
   const { locale, setLocale } = useLanguage();
 
   const toggleLocale = () => {
@@ -108,7 +110,9 @@ export function LanguageSwitcherCompact() {
       whileTap={{ scale: 0.95 }}
     >
       <span className="text-sm">{locales[locale].flag}</span>
-      <span className="text-xs font-medium text-surface-600 dark:text-surface-400">
+      <span
+        className={`text-xs font-medium text-surface-600 dark:text-surface-400 ${hideLabelOnMobile ? 'hidden min-[400px]:inline' : ''}`}
+      >
         {locale.toUpperCase()}
       </span>
     </motion.button>
