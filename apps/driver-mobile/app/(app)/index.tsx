@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
-import { FlatList, Pressable, Switch, Text, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Alert, FlatList, Pressable, Switch, Text, View } from 'react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { Screen, Button, StatusBadge, tokens } from '@kiwi/mobile-ui';
 import { useTranslation } from '@kiwi/i18n';
 import { ordersApi } from '../../src/api/orders';
+import { driversApi } from '../../src/api/drivers';
 import { http } from '../../src/api/client';
 import { secureStorage } from '../../src/api/storage';
 import { useSession } from '../../src/session/useSession';
@@ -12,7 +13,20 @@ import { createRealtime } from '@kiwi/mobile-core';
 import { io } from 'socket.io-client';
 
 const api = ordersApi(http);
+const drvApi = driversApi(http);
 const WS = (process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:4100/api').replace('/api', '');
+
+// Minutos CR (UTC-6 fijo) de un ISO. Null si inválido.
+function crMinutes(v: unknown): number | null {
+  const d = new Date(String(v ?? ''));
+  if (Number.isNaN(+d)) return null;
+  const c = new Date(d.getTime() - 6 * 3600 * 1000);
+  return c.getUTCHours() * 60 + c.getUTCMinutes();
+}
+function crNow(): { dow: number; mins: number } {
+  const c = new Date(Date.now() - 6 * 3600 * 1000);
+  return { dow: c.getUTCDay(), mins: c.getUTCHours() * 60 + c.getUTCMinutes() };
+}
 
 export default function Home() {
   const { t } = useTranslation();
@@ -20,6 +34,14 @@ export default function Home() {
   const qc = useQueryClient();
   const { online, setOnline } = useSession((s) => s);
   const [orders, setOrders] = useState<any[]>([]);
+  const [kycStatus, setKycStatus] = useState<string | null>(null);
+  const [kycRequired, setKycRequired] = useState(false);
+  const [switching, setSwitching] = useState(false);
+  const [autoMsg, setAutoMsg] = useState<string | null>(null);
+  const manualPauseAt = useRef<number | null>(null);
+  const onlineRef = useRef(online);
+  onlineRef.current = online;
+  const kycBlocked = kycRequired && kycStatus !== 'approved';
   const { data } = useQuery({
     queryKey: ['available', online],
     queryFn: () => api.available(),
@@ -39,6 +61,98 @@ export default function Home() {
     if (online) rt.connect();
     return () => rt.disconnect();
   }, [online]);
+
+  // Estado real del servidor + KYC: el toggle local solo es espejo.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const p = await drvApi.profile();
+        if (cancelled) return;
+        const st = typeof p?.kycStatus === 'string' ? p.kycStatus : 'pending';
+        setKycStatus(st);
+        setKycRequired(p?.kycRequired === true);
+        if (p?.status === 'available' && !(p?.kycRequired === true && st !== 'approved')) {
+          setOnline(true);
+        } else if (p?.status !== 'available') {
+          setOnline(false);
+        }
+      } catch {
+        // Sin red: se queda el estado local.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [setOnline]);
+
+  const toggleOnline = useCallback(
+    async (next: boolean) => {
+      if (switching) return;
+      if (next && kycBlocked) {
+        Alert.alert(t.driverHome.kycBlockedTitle, t.driverHome.kycBlockedPending);
+        return;
+      }
+      if (!next) manualPauseAt.current = Date.now();
+      setSwitching(true);
+      try {
+        await drvApi.updateStatus(next ? 'available' : 'offline');
+        setOnline(next);
+        if (!next) setOrders([]);
+      } catch {
+        Alert.alert(t.driverHome.offline, t.driverHome.kycBlockedOnline);
+        // Relee el estado real ante cualquier fallo.
+        try {
+          const p = await drvApi.profile();
+          setOnline(p?.status === 'available');
+        } catch {
+          // noop
+        }
+      } finally {
+        setSwitching(false);
+      }
+    },
+    [kycBlocked, setOnline, switching, t],
+  );
+
+  // Horario propuesto: si estoy en horario, sin KYC pendiente y en pausa
+  // (no manual reciente), me conecto solo. La desconexión la hace el servidor.
+  useEffect(() => {
+    let cancelled = false;
+    const check = async () => {
+      if (cancelled || onlineRef.current || kycBlocked) return;
+      if (manualPauseAt.current && Date.now() - manualPauseAt.current < 30 * 60 * 1000) return;
+      let rows: any[] = [];
+      try {
+        const s = await drvApi.schedule();
+        rows = Array.isArray(s) ? s : [];
+      } catch {
+        return;
+      }
+      const { dow, mins } = crNow();
+      const inside = rows.some((r) => {
+        if (Number(r?.dayOfWeek) !== dow || r?.isAvailable === false) return false;
+        const a = crMinutes(r?.startTime);
+        const b = crMinutes(r?.endTime);
+        return a != null && b != null && a <= mins && mins < b;
+      });
+      if (!inside || cancelled) return;
+      try {
+        await drvApi.updateStatus('available');
+        if (cancelled) return;
+        setOnline(true);
+        setAutoMsg(t.driverHome.autoConnected);
+      } catch {
+        // Reintenta en el próximo tick.
+      }
+    };
+    void check();
+    const id = setInterval(() => void check(), 60 * 1000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [kycBlocked, setOnline, t]);
   const accept = useCallback(
     async (id: string) => {
       await api.accept(id);
@@ -49,6 +163,53 @@ export default function Home() {
   );
   return (
     <Screen>
+      {kycBlocked && (
+        <View
+          style={{
+            backgroundColor: '#fef2f2',
+            borderRadius: tokens.radius.md,
+            padding: tokens.space[3],
+            marginBottom: tokens.space[3],
+          }}
+        >
+          <Text style={{ fontWeight: '700', color: '#b91c1c' }}>
+            🪪 {t.driverHome.kycBlockedTitle}
+          </Text>
+          <Text style={{ color: '#b91c1c', fontSize: 12, marginTop: 4 }}>
+            {kycStatus === 'rejected'
+              ? t.driverHome.kycBlockedRejected
+              : kycStatus === 'under_review' || kycStatus === 'submitted'
+                ? t.driverHome.kycBlockedReview
+                : t.driverHome.kycBlockedPending}
+          </Text>
+          {kycStatus !== 'under_review' && kycStatus !== 'submitted' && (
+            <Pressable
+              onPress={() => router.push('/(app)/kyc')}
+              style={{
+                marginTop: tokens.space[2],
+                backgroundColor: '#b91c1c',
+                borderRadius: tokens.radius.md,
+                paddingVertical: 10,
+                alignItems: 'center',
+              }}
+            >
+              <Text style={{ color: '#fff', fontWeight: '700' }}>{t.driverHome.kycBlockedCta}</Text>
+            </Pressable>
+          )}
+        </View>
+      )}
+      {autoMsg && (
+        <View
+          style={{
+            backgroundColor: '#f0fdf4',
+            borderRadius: tokens.radius.md,
+            padding: tokens.space[3],
+            marginBottom: tokens.space[3],
+          }}
+        >
+          <Text style={{ color: '#15803d', fontSize: 12, fontWeight: '600' }}>{autoMsg}</Text>
+        </View>
+      )}
       <View
         style={{
           flexDirection: 'row',
@@ -60,7 +221,7 @@ export default function Home() {
         <Text style={{ color: tokens.color.ink, fontWeight: '700', fontSize: 18 }}>
           {online ? t.driverHome.online : t.driverHome.offline}
         </Text>
-        <Switch value={online} onValueChange={setOnline} />
+        <Switch value={online} onValueChange={(v) => void toggleOnline(v)} disabled={switching} />
       </View>
       <View style={{ flexDirection: 'row', gap: 8, marginBottom: tokens.space[3] }}>
         <Pressable

@@ -762,6 +762,13 @@ export default {
     accept: 'Aceptar',
     noOrders: 'Sin pedidos disponibles',
     connectHint: 'Conectate pa que te caigan pedidos',
+    kycBlockedTitle: 'Sin verificación no hay pedidos',
+    kycBlockedPending: 'Pasá la verificación de identidad para recibir pedidos en el sistema.',
+    kycBlockedReview: 'Tu verificación está en revisión. Te avisamos cuando quede lista.',
+    kycBlockedRejected: 'Tu verificación fue rechazada. Volvé a enviar tus documentos.',
+    kycBlockedCta: 'Verificarme',
+    kycBlockedOnline: 'No podés ponerte en línea hasta pasar la verificación.',
+    autoConnected: 'Te conectamos solo según tu horario 🕗',
   },
 
   // ===== Repartidor: pedido activo =====

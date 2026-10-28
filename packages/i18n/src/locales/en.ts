@@ -761,6 +761,13 @@ export default {
     accept: 'Accept',
     noOrders: 'No orders available',
     connectHint: 'Go online to receive orders',
+    kycBlockedTitle: 'No verification, no orders',
+    kycBlockedPending: 'Complete identity verification to receive orders in the system.',
+    kycBlockedReview: 'Your verification is under review. We will let you know when it is ready.',
+    kycBlockedRejected: 'Your verification was rejected. Please resubmit your documents.',
+    kycBlockedCta: 'Verify me',
+    kycBlockedOnline: 'You cannot go online until verification is approved.',
+    autoConnected: 'We connected you automatically per your schedule 🕗',
   },
 
   // ===== Driver: active order =====
