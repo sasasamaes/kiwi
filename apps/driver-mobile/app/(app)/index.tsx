@@ -249,6 +249,32 @@ export default function Home() {
           <Text style={{ color: tokens.color.ink, fontWeight: '600' }}>{t.profile.title}</Text>
         </Pressable>
       </View>
+      <View style={{ flexDirection: 'row', gap: 8, marginBottom: tokens.space[3] }}>
+        {(
+          [
+            { route: '/(app)/active', label: t.driverActive.title },
+            { route: '/(app)/history', label: t.driverHistory.title },
+            { route: '/(app)/schedule', label: t.driverHours.title },
+            { route: '/(app)/scheduled', label: t.driverScheduled.title },
+          ] as const
+        ).map((b) => (
+          <Pressable
+            key={b.route}
+            onPress={() => router.push(b.route)}
+            style={{
+              flex: 1,
+              backgroundColor: tokens.color.surface,
+              borderRadius: tokens.radius.md,
+              paddingVertical: 10,
+              alignItems: 'center',
+            }}
+          >
+            <Text style={{ color: tokens.color.ink, fontWeight: '600', fontSize: 12 }}>
+              {b.label}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
       <FlatList
         data={orders}
         keyExtractor={(o) => o.id}

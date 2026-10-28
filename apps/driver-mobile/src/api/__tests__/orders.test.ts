@@ -7,6 +7,19 @@ test('accept hits POST /orders/:id/accept', async () => {
   expect(fake.post).toHaveBeenCalledWith('/orders/o1/accept');
 });
 
+test('availableScheduled GETs scheduled available', async () => {
+  await ordersApi(fake).availableScheduled();
+  expect(fake.get).toHaveBeenCalledWith('/orders/available?scheduled=true');
+});
+
+test('propose POSTs proposal', async () => {
+  await ordersApi(fake).propose('o1', { estimatedArrival: '10:30', message: 'Voy' });
+  expect(fake.post).toHaveBeenCalledWith('/orders/o1/proposals', {
+    estimatedArrival: '10:30',
+    message: 'Voy',
+  });
+});
+
 test('updateStatus hits PUT /orders/:id/status with body', async () => {
   await ordersApi(fake).updateStatus('o1', 'in_transit_to_pickup');
   expect(fake.put).toHaveBeenCalledWith('/orders/o1/status', { status: 'in_transit_to_pickup' });

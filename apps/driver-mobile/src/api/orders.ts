@@ -6,6 +6,9 @@ export type DriverOrderStatus =
 export function ordersApi(http: Http) {
   return {
     available: () => http.get<any[]>('/orders/available'),
+    availableScheduled: () => http.get<any[]>('/orders/available?scheduled=true'),
+    propose: (id: string, data: { estimatedArrival: string; message?: string }) =>
+      http.post<any>(`/orders/${id}/proposals`, data),
     mine: () => http.get<any[]>('/orders/my'),
     accept: (id: string) => http.post<any>(`/orders/${id}/accept`),
     reject: (id: string) => http.post<any>(`/orders/${id}/reject`),

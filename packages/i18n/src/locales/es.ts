@@ -771,6 +771,37 @@ export default {
     autoConnected: 'Te conectamos solo según tu horario 🕗',
   },
 
+  // ===== Repartidor: pantallas operativas =====
+  driverActive: {
+    title: 'Pedidos activos',
+    empty: 'Sin pedidos activos.',
+    emptyHint: 'Cuando aceptés uno, aparece acá.',
+  },
+  driverHistory: {
+    title: 'Historial',
+    empty: 'Todavía no entregaste pedidos.',
+    payout: 'Ganancia',
+  },
+  driverHours: {
+    title: 'Mi horario',
+    hint: 'Con este horario te conectamos y desconectamos solo. Fuera de horario solo quedás en línea con pedidos activos.',
+    save: 'Guardar horario',
+    saving: 'Guardando…',
+    saved: 'Horario guardado.',
+    saveFailed: 'No se pudo guardar.',
+    days: ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'],
+  },
+  driverScheduled: {
+    title: 'Programados',
+    empty: 'Sin programados disponibles.',
+    propose: 'Proponer',
+    arrivalPh: 'Hora estimada (ej: 10:30)',
+    messagePh: 'Mensaje (opcional)',
+    needArrival: 'Poné tu hora estimada de llegada.',
+    sent: 'Propuesta enviada.',
+    failed: 'No se pudo enviar la propuesta.',
+  },
+
   // ===== Repartidor: pedido activo =====
   driverOrder: {
     title: 'Pedido #{{id}}',

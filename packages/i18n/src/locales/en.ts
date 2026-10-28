@@ -770,6 +770,37 @@ export default {
     autoConnected: 'We connected you automatically per your schedule 🕗',
   },
 
+  // ===== Driver: operational screens =====
+  driverActive: {
+    title: 'Active orders',
+    empty: 'No active orders.',
+    emptyHint: 'When you accept one, it shows up here.',
+  },
+  driverHistory: {
+    title: 'History',
+    empty: 'No deliveries yet.',
+    payout: 'Payout',
+  },
+  driverHours: {
+    title: 'My schedule',
+    hint: 'With this schedule we connect and disconnect you automatically. Off-schedule you only stay online with active orders.',
+    save: 'Save schedule',
+    saving: 'Saving…',
+    saved: 'Schedule saved.',
+    saveFailed: 'Could not save.',
+    days: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+  },
+  driverScheduled: {
+    title: 'Scheduled',
+    empty: 'No scheduled orders available.',
+    propose: 'Propose',
+    arrivalPh: 'Estimated time (e.g. 10:30)',
+    messagePh: 'Message (optional)',
+    needArrival: 'Enter your estimated arrival time.',
+    sent: 'Proposal sent.',
+    failed: 'Could not send the proposal.',
+  },
+
   // ===== Driver: active order =====
   driverOrder: {
     title: 'Order #{{id}}',

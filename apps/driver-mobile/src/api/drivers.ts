@@ -11,5 +11,15 @@ export function driversApi(http: Http) {
       http.put<any>('/drivers/me/status', { status }),
     // Horario propuesto (`GET /drivers/me/schedule`).
     schedule: () => http.get<any>('/drivers/me/schedule'),
+    // Mis pedidos (`GET /drivers/me/orders?status=&take=`).
+    myOrders: (status?: string, take?: number) => {
+      const q = new URLSearchParams();
+      if (status) q.append('status', status);
+      if (take != null) q.append('take', String(take));
+      const s = q.toString();
+      return http.get<any>(`/drivers/me/orders${s ? `?${s}` : ''}`);
+    },
+    // Guarda el horario propuesto (bloques día+horas).
+    updateSchedule: (schedules: any[]) => http.put<any>('/drivers/me/schedule', { schedules }),
   };
 }
