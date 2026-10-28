@@ -3,8 +3,10 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   ArrayMaxSize,
   IsArray,
+  IsBoolean,
   IsDateString,
   IsInt,
+  IsOptional,
   Max,
   Min,
   ValidateNested,
@@ -26,6 +28,11 @@ export class ScheduleEntryDto {
   @ApiProperty({ example: '2026-09-13T17:00:00.000Z' })
   @IsDateString({}, { message: 'endTime debe ser ISO8601' })
   endTime: string;
+
+  @ApiPropertyOptional({ example: true })
+  @IsOptional()
+  @IsBoolean()
+  isAvailable?: boolean;
 }
 
 export class UpdateScheduleDto {
