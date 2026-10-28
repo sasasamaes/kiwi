@@ -328,15 +328,34 @@ export class WithdrawalsService {
    * Vista previa de la planilla de una semana (mar 00:00 → mar 00:00).
    * Por defecto solo viajes reales: los test no generan plata a pagar.
    * Con includeTest=true se incluyen marcados (pestaña TEST del admin).
+   * Con `to` (YYYY-MM-DD) el corte se recorta a ese día inclusive: lo
+   * posterior queda sin recibo para la próxima semana. Además arrastra el
+   * rezago: entregados antes de weekStart y aún sin recibo (marcados
+   * rezago:true) para que cuenten como cobro en este corte.
    */
-  async getPayroll(weekISO?: string, includeTest = false) {
+  async getPayroll(weekISO?: string, includeTest = false, toISO?: string) {
     const weekStart = weekISO ? payWeekStartFromISO(weekISO) : lastClosedWeek().weekStart;
     const weekEnd = new Date(weekStart.getTime() + WEEK_MS);
+    // Tope del corte: fin de la semana, o la fecha "hasta" si es anterior.
+    let cutoff = weekEnd;
+    if (toISO) {
+      const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(toISO.trim());
+      if (!m) throw new BadRequestException('hasta inválido (AAAA-MM-DD)');
+      if (Number(m[1]) < 2020 || Number(m[1]) > 2100) {
+        throw new BadRequestException('hasta inválido (AAAA-MM-DD)');
+      }
+      // Inicio del día siguiente 00:00 CR = 06:00 UTC (corte inclusivo).
+      const toEnd = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]) + 1, 6));
+      if (toEnd <= weekStart) {
+        throw new BadRequestException('el "hasta" debe caer dentro de la semana');
+      }
+      if (toEnd < cutoff) cutoff = toEnd;
+    }
 
     const orders = await this.prisma.order.findMany({
       where: {
         status: 'delivered',
-        deliveredAt: { gte: weekStart, lt: weekEnd },
+        deliveredAt: { lt: cutoff },
         driverId: { not: null },
         ...(includeTest ? {} : { isTest: false }),
       },
@@ -396,6 +415,9 @@ export class WithdrawalsService {
       const real = trips.filter((o: any) => !(o as any).isTest);
       const totalPayout = real.reduce((s, o) => s + Number(o.driverPayout ?? 0), 0);
       const totalTrip = real.reduce((s, o) => s + Number(o.basePrice ?? 0), 0);
+      const rezagados = real.filter(
+        (o: any) => o.deliveredAt && new Date(o.deliveredAt).getTime() < weekStart.getTime(),
+      );
       const p = profileById.get(driverId);
       return {
         driverId,
@@ -405,6 +427,8 @@ export class WithdrawalsService {
         tripCount: real.length,
         totalPayout: Math.round(totalPayout),
         totalTrip: Math.round(totalTrip),
+        rezagoCount: rezagados.length,
+        rezagoPayout: Math.round(rezagados.reduce((s, o) => s + Number(o.driverPayout ?? 0), 0)),
         testCount: trips.length - real.length,
         testPayout: Math.round(
           trips
@@ -412,18 +436,21 @@ export class WithdrawalsService {
             .reduce((s, o) => s + Number(o.driverPayout ?? 0), 0),
         ),
         existingWithdrawal: existingByDriver.get(driverId) ?? null,
-        trips: trips.map((o) => ({
+        trips: trips.map((o: any) => ({
           id: o.id,
           deliveredAt: o.deliveredAt,
           merchant: o.merchant?.businessName ?? null,
           trip: Math.round(Number(o.basePrice ?? 0)),
           payout: Math.round(Number(o.driverPayout ?? 0)),
           isTest: (o as any).isTest === true,
+          rezago: !!o.deliveredAt && new Date(o.deliveredAt).getTime() < weekStart.getTime(),
         })),
       };
     });
 
-    return { weekStart, weekEnd, drivers };
+    const grandRezago = drivers.reduce((s, d: any) => s + Number(d.rezagoPayout ?? 0), 0);
+
+    return { weekStart, weekEnd, cutoff, drivers, rezagoTotal: Math.round(grandRezago) };
   }
 
   /**
@@ -431,8 +458,12 @@ export class WithdrawalsService {
    * pendientes), con sus líneas de recibo congeladas. Idempotente por
    * repartidor+semana: no duplica si ya existe un retiro vigente.
    */
-  async generatePayroll(weekISO: string | undefined, driverIds: string[] | undefined) {
-    const payroll: any = await this.getPayroll(weekISO);
+  async generatePayroll(
+    weekISO: string | undefined,
+    driverIds: string[] | undefined,
+    toISO?: string,
+  ) {
+    const payroll: any = await this.getPayroll(weekISO, false, toISO);
     const wanted = new Set(driverIds ?? []);
     const eligible = payroll.drivers.filter(
       (d: any) =>

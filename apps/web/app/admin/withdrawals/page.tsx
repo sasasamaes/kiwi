@@ -77,6 +77,9 @@ export default function AdminWithdrawalsPage() {
 
   // Vista TEST de la planilla: muestra los test marcados, no genera retiros.
   const [payrollTest, setPayrollTest] = useState(false);
+  // Corte parcial: "hasta" fecha (default = fin de la semana). Lo posterior
+  // queda sin recibo para la próxima semana.
+  const [payrollTo, setPayrollTo] = useState('');
   const [payroll, setPayroll] = useState<any>(null);
   const [payrollLoading, setPayrollLoading] = useState(false);
   const [payrollMsg, setPayrollMsg] = useState<string | null>(null);
@@ -126,11 +129,11 @@ export default function AdminWithdrawalsPage() {
   }, [t]);
 
   const fetchPayroll = useCallback(
-    async (week?: string | null, includeTest?: boolean) => {
+    async (week?: string | null, includeTest?: boolean, to?: string) => {
       try {
         setPayrollLoading(true);
         setPayrollMsg(null);
-        const data = await api.getPayroll(week ?? undefined, includeTest === true);
+        const data = await api.getPayroll(week ?? undefined, includeTest === true, to || undefined);
         setPayroll(data ?? null);
         if (data?.weekStart && !week) {
           setPayrollWeek(new Date(data.weekStart).toISOString().slice(0, 10));
@@ -164,7 +167,7 @@ export default function AdminWithdrawalsPage() {
       await api.zeroOutDriver(driverId, t('webadmin1.awith.zeroOutReason'));
       setBalancesMsg(t('webadmin1.awith.zeroedOk', { name: fullName }));
       void fetchBalances();
-      void fetchPayroll(payrollWeek, payrollTest);
+      void fetchPayroll(payrollWeek, payrollTest, payrollTo || undefined);
     } catch (e: any) {
       setBalancesMsg(e?.message || t('webadmin1.awith.zeroOutError'));
     } finally {
@@ -177,14 +180,18 @@ export default function AdminWithdrawalsPage() {
     const next = new Date(base.getTime() + days * 24 * 3600 * 1000);
     const iso = next.toISOString().slice(0, 10);
     setPayrollWeek(iso);
-    void fetchPayroll(iso, payrollTest);
+    void fetchPayroll(iso, payrollTest, payrollTo || undefined);
   };
 
   const handleGeneratePayroll = async () => {
     try {
       setGenerating(true);
       setPayrollMsg(null);
-      const res: any = await api.generatePayroll(payrollWeek ?? undefined);
+      const res: any = await api.generatePayroll(
+        payrollWeek ?? undefined,
+        undefined,
+        payrollTo || undefined,
+      );
       const n = Array.isArray(res?.created) ? res.created.length : 0;
       const m = Array.isArray(res?.skipped) ? res.skipped.length : 0;
       setPayrollMsg(
@@ -192,7 +199,7 @@ export default function AdminWithdrawalsPage() {
           ? t('webadmin1.awith.payrollPartial', { n, m })
           : t('webadmin1.awith.payrollCreated', { n }),
       );
-      void fetchPayroll(payrollWeek, payrollTest);
+      void fetchPayroll(payrollWeek, payrollTest, payrollTo || undefined);
       fetchWithdrawals();
     } catch {
       setPayrollMsg(t('webadmin1.awith.payrollGenError'));
@@ -223,7 +230,7 @@ export default function AdminWithdrawalsPage() {
         `Semana pagada ✓ ${res?.completed ?? 0} retiros · ₡${Number(res?.total ?? 0).toLocaleString('es-CR')}`,
       );
       setPayTxId('');
-      void fetchPayroll(payrollWeek, payrollTest);
+      void fetchPayroll(payrollWeek, payrollTest, payrollTo || undefined);
       fetchWithdrawals();
       void fetchBalances();
     } catch (e: any) {
@@ -268,7 +275,7 @@ export default function AdminWithdrawalsPage() {
   }, [fetchWithdrawals]);
 
   useEffect(() => {
-    void fetchPayroll(null, false);
+    void fetchPayroll(null, false, payrollTo || undefined);
     void fetchBalances();
   }, [fetchPayroll, fetchBalances]);
 
@@ -479,7 +486,7 @@ export default function AdminWithdrawalsPage() {
                 : '…'}
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => shiftWeek(-7)}
               className="px-3 py-2 text-sm font-medium rounded-lg bg-surface-100 dark:bg-surface-700 text-surface-700 dark:text-surface-200"
@@ -489,7 +496,7 @@ export default function AdminWithdrawalsPage() {
             <button
               onClick={() => {
                 setPayrollWeek(null);
-                void fetchPayroll(null, payrollTest);
+                void fetchPayroll(null, payrollTest, payrollTo || undefined);
               }}
               className="px-3 py-2 text-sm font-medium rounded-lg bg-surface-100 dark:bg-surface-700 text-surface-700 dark:text-surface-200"
             >
@@ -499,7 +506,7 @@ export default function AdminWithdrawalsPage() {
               onClick={() => {
                 const next = !payrollTest;
                 setPayrollTest(next);
-                void fetchPayroll(payrollWeek, next);
+                void fetchPayroll(payrollWeek, next, payrollTo || undefined);
               }}
               className={`px-3 py-2 text-sm font-medium rounded-lg ${payrollTest ? 'bg-gold-500 text-white' : 'bg-surface-100 dark:bg-surface-700 text-surface-700 dark:text-surface-200'}`}
             >
@@ -511,8 +518,49 @@ export default function AdminWithdrawalsPage() {
             >
               {t('webadmin1.awith.payrollNext')}
             </button>
+            <label className="flex items-center gap-2 rounded-lg bg-surface-100 dark:bg-surface-700 px-3 py-2 text-sm">
+              <span className="text-surface-600 dark:text-surface-300">Hasta</span>
+              <input
+                type="date"
+                value={payrollTo}
+                max={
+                  payroll?.weekEnd
+                    ? new Date(payroll.weekEnd).toISOString().slice(0, 10)
+                    : undefined
+                }
+                onChange={(e) => {
+                  setPayrollTo(e.target.value);
+                  void fetchPayroll(payrollWeek, payrollTest, e.target.value || undefined);
+                }}
+                className="bg-transparent text-sm outline-none"
+                title="Corta la planilla en esta fecha (inclusive). Lo posterior queda para la próxima semana."
+              />
+              {payrollTo && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPayrollTo('');
+                    void fetchPayroll(payrollWeek, payrollTest, undefined);
+                  }}
+                  className="text-xs font-bold text-surface-500"
+                  aria-label="Quitar filtro hasta"
+                >
+                  ✕
+                </button>
+              )}
+            </label>
           </div>
         </div>
+        {(payrollTo || Number(payroll?.rezagoTotal ?? 0) > 0) && (
+          <p className="mt-2 text-xs text-surface-500 dark:text-surface-400">
+            {payrollTo
+              ? `Corte hasta el ${payrollTo}: lo posterior queda para la próxima semana. `
+              : ''}
+            {Number(payroll?.rezagoTotal ?? 0) > 0
+              ? `Incluye rezago de semanas anteriores: ₡${Number(payroll.rezagoTotal).toLocaleString('es-CR')}.`
+              : ''}
+          </p>
+        )}
 
         {payrollMsg && (
           <p className="mt-2 text-sm font-medium text-kiwi-700 dark:text-kiwi-300">{payrollMsg}</p>
@@ -540,6 +588,9 @@ export default function AdminWithdrawalsPage() {
                     {Number(d.totalPayout ?? 0).toLocaleString()}
                     {Number(d.testCount ?? 0) > 0
                       ? ` · 🧪 ${d.testCount} test (₡${Number(d.testPayout ?? 0).toLocaleString()}, no pagable)`
+                      : ''}
+                    {Number(d.rezagoCount ?? 0) > 0
+                      ? ` · ⏮️ rezago ${d.rezagoCount} (₡${Number(d.rezagoPayout ?? 0).toLocaleString()})`
                       : ''}
                   </p>
                 </div>

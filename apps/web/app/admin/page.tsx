@@ -20,6 +20,7 @@ import {
   AlertTriangle,
   BadgeCheck,
   Star,
+  Wallet,
   X,
   Mail,
   Bell,
@@ -983,6 +984,18 @@ export default function AdminDashboard() {
                 <Mail className="h-7 w-7" />
               </span>
               <span className="text-sm font-medium">{t('webadmin1.adash.invite')}</span>
+            </motion.button>
+          </Link>
+          <Link href="/admin/withdrawals">
+            <motion.button
+              className="w-full p-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors"
+              whileHover={{ y: -2 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <span className="mb-2 flex justify-center">
+                <Wallet className="h-7 w-7" />
+              </span>
+              <span className="text-sm font-medium">Retiros</span>
             </motion.button>
           </Link>
         </div>

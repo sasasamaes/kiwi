@@ -104,8 +104,12 @@ export class WithdrawalsController {
   @Roles('admin')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Payroll preview for a Tue–Mon week (admin)' })
-  async getPayroll(@Query('week') week?: string, @Query('includeTest') includeTest?: string) {
-    return this.withdrawalsService.getPayroll(week, includeTest === 'true');
+  async getPayroll(
+    @Query('week') week?: string,
+    @Query('includeTest') includeTest?: string,
+    @Query('to') to?: string,
+  ) {
+    return this.withdrawalsService.getPayroll(week, includeTest === 'true', to);
   }
 
   @Post('admin/payroll/generate')
@@ -113,8 +117,8 @@ export class WithdrawalsController {
   @Roles('admin')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Generate weekly withdrawals with receipts (admin)' })
-  async generatePayroll(@Body() body: { week?: string; driverIds?: string[] }) {
-    return this.withdrawalsService.generatePayroll(body?.week, body?.driverIds);
+  async generatePayroll(@Body() body: { week?: string; driverIds?: string[]; to?: string }) {
+    return this.withdrawalsService.generatePayroll(body?.week, body?.driverIds, body?.to);
   }
 
   @Post('admin/payroll/complete-week')

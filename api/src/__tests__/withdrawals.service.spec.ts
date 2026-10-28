@@ -208,6 +208,48 @@ describe('WithdrawalsService payroll', () => {
     expect(res.weekEnd.toISOString()).toBe('2026-10-27T06:00:00.000Z');
   });
 
+  it('getPayroll con hasta recorta la semana y deja el resto sin recibo', async () => {
+    const o1 = order({ id: 'o1', deliveredAt: new Date(Date.UTC(2026, 9, 22, 12)) });
+    const o2 = order({ id: 'o2', deliveredAt: new Date(Date.UTC(2026, 9, 26, 12)) });
+    // El mock respeta el rango deliveredAt como lo haría Prisma.
+    prisma.order.findMany.mockImplementation(async ({ where }: any) => {
+      const gte = where?.deliveredAt?.gte ? new Date(where.deliveredAt.gte).getTime() : -Infinity;
+      const lt = where?.deliveredAt?.lt ? new Date(where.deliveredAt.lt).getTime() : Infinity;
+      return [o1, o2].filter((o) => {
+        const t = new Date(o.deliveredAt).getTime();
+        return t >= gte && t < lt;
+      });
+    });
+    prisma.withdrawalItem.findMany.mockResolvedValue([]);
+    prisma.driverProfile.findMany.mockResolvedValue([
+      { id: 'drv-1', fullName: 'Juan', user: { phone: '8888', email: 'j@x.com' } },
+    ]);
+
+    const res: any = await service.getPayroll('2026-10-20', false, '2026-10-25');
+    expect(res.drivers).toHaveLength(1);
+    expect(res.drivers[0].tripCount).toBe(1);
+    expect(res.drivers[0].trips[0].id).toBe('o1');
+  });
+
+  it('getPayroll arrastra el rezago de semanas anteriores marcado', async () => {
+    prisma.order.findMany.mockResolvedValue([
+      order({ id: 'viejo', deliveredAt: new Date(Date.UTC(2026, 9, 19, 12)) }),
+      order({ id: 'nuevo', deliveredAt: new Date(Date.UTC(2026, 9, 22, 12)) }),
+    ]);
+    prisma.withdrawalItem.findMany.mockResolvedValue([]);
+    prisma.driverProfile.findMany.mockResolvedValue([
+      { id: 'drv-1', fullName: 'Juan', user: { phone: '8888', email: 'j@x.com' } },
+    ]);
+
+    const res: any = await service.getPayroll('2026-10-20');
+    expect(res.drivers).toHaveLength(1);
+    expect(res.drivers[0].tripCount).toBe(2);
+    expect(res.drivers[0].rezagoCount).toBe(1);
+    expect(res.drivers[0].trips.find((t: any) => t.id === 'viejo').rezago).toBe(true);
+    expect(res.drivers[0].trips.find((t: any) => t.id === 'nuevo').rezago).toBe(false);
+    expect(res.rezagoTotal).toBe(1275);
+  });
+
   it('getPayroll marca retiros ya generados para la semana', async () => {
     prisma.order.findMany.mockResolvedValue([order({})]);
     prisma.withdrawalItem.findMany.mockResolvedValue([]);

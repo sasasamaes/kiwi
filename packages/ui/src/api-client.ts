@@ -2509,19 +2509,20 @@ class ApiClient {
   }
 
   /** Vista previa de la planilla semanal mar–lun (admin). */
-  async getPayroll(week?: string, includeTest?: boolean) {
+  async getPayroll(week?: string, includeTest?: boolean, to?: string) {
     const params = new URLSearchParams();
     if (week) params.append('week', week);
     if (includeTest) params.append('includeTest', 'true');
+    if (to) params.append('to', to);
     const s = params.toString();
     return this.request<any>(`/withdrawals/admin/payroll${s ? `?${s}` : ''}`);
   }
 
   /** Genera los retiros de la semana con sus recibos (admin). */
-  async generatePayroll(week?: string, driverIds?: string[]) {
+  async generatePayroll(week?: string, driverIds?: string[], to?: string) {
     return this.request<any>('/withdrawals/admin/payroll/generate', {
       method: 'POST',
-      body: { week, driverIds },
+      body: { week, driverIds, to },
     });
   }
 
