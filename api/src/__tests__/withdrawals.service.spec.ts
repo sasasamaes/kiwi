@@ -413,7 +413,10 @@ describe('WithdrawalsService saldos y puesta en 0', () => {
 
   beforeEach(async () => {
     prisma = {
-      order: { findMany: jest.fn().mockResolvedValue([]) },
+      order: {
+        findMany: jest.fn().mockResolvedValue([]),
+        aggregate: jest.fn().mockResolvedValue({ _sum: { driverPayout: 0 } }),
+      },
       withdrawalItem: {
         findMany: jest.fn().mockResolvedValue([]),
         findFirst: jest.fn().mockResolvedValue(null),
@@ -429,7 +432,7 @@ describe('WithdrawalsService saldos y puesta en 0', () => {
         updateMany: jest.fn(),
         count: jest.fn().mockResolvedValue(0),
         groupBy: jest.fn().mockResolvedValue([]),
-        aggregate: jest.fn(),
+        aggregate: jest.fn().mockResolvedValue({ _sum: { amount: 0 } }),
       },
       driverProfile: {
         findMany: jest.fn().mockResolvedValue([]),
@@ -508,5 +511,45 @@ describe('WithdrawalsService saldos y puesta en 0', () => {
     prisma.withdrawal.count.mockResolvedValue(0);
     prisma.order.findMany.mockResolvedValue([]);
     await expect(service.zeroOutDriver('drv-1', 'a', 'x')).rejects.toThrow('No hay saldo');
+  });
+
+  it('getBalance reporta lo ganado desde el último corte', async () => {
+    prisma.driverProfile.findUnique.mockResolvedValue({ id: 'drv-1' });
+    prisma.order.aggregate
+      .mockResolvedValueOnce({ _sum: { driverPayout: 29750 } })
+      .mockResolvedValueOnce({ _sum: { driverPayout: 5000 } });
+    prisma.withdrawal.aggregate
+      .mockResolvedValueOnce({ _sum: { amount: 29750 } })
+      .mockResolvedValueOnce({ _sum: { amount: 0 } });
+    prisma.withdrawal.findFirst.mockResolvedValue({
+      processedAt: new Date('2026-10-27T12:00:00Z'),
+      createdAt: new Date('2026-10-27T12:00:00Z'),
+      amount: 29750,
+    });
+
+    const r: any = await service.getBalance('u1');
+    expect(r.totalEarnings).toBe(29750);
+    expect(r.availableBalance).toBe(0);
+    expect(r.sinceLastCut).toBe(5000);
+    expect(r.lastCutAmount).toBe(29750);
+    // El corte filtra entregados posteriores al pago.
+    expect(prisma.order.aggregate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          deliveredAt: { gt: new Date('2026-10-27T12:00:00Z') },
+        }),
+      }),
+    );
+  });
+
+  it('getBalance sin cortes: desde el corte es todo lo ganado', async () => {
+    prisma.driverProfile.findUnique.mockResolvedValue({ id: 'drv-1' });
+    prisma.order.aggregate.mockResolvedValue({ _sum: { driverPayout: 3000 } });
+    prisma.withdrawal.aggregate.mockResolvedValue({ _sum: { amount: 0 } });
+    prisma.withdrawal.findFirst.mockResolvedValue(null);
+
+    const r: any = await service.getBalance('u1');
+    expect(r.sinceLastCut).toBe(3000);
+    expect(r.lastCutAt).toBeNull();
   });
 });

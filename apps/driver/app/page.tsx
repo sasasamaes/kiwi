@@ -101,6 +101,7 @@ export default function Home() {
   // Sin KYC aprobado no hay pedidos: el backend bloquea asignar/aceptar.
   const kycBlocked = kycRequired && kycStatus !== 'approved';
   const [stats, setStats] = useState({ trips: 0, earnings: 0, rating: 5.0 });
+  const [sinceCut, setSinceCut] = useState<number | null>(null);
   const [availableOrders, setAvailableOrders] = useState<Order[]>([]);
   const [activeOrders, setActiveOrders] = useState<Order[]>([]);
   const [newOrderAlert, setNewOrderAlert] = useState<any>(null);
@@ -290,11 +291,17 @@ export default function Home() {
     const fetchDriverData = async () => {
       try {
         // Paralelo: perfil + ganancias no dependen entre sí (antes 2 RTT en serie).
-        const [profile, earningsRes, kyc] = await Promise.all([
+        const [profile, earningsRes, kyc, balanceRes] = await Promise.all([
           api.getDriverProfile(),
           api.getDriverEarnings('all').catch(() => null),
           api.getKycStatus().catch(() => null),
+          api.getBalance().catch(() => null),
         ]);
+        if ((balanceRes as any)?.lastCutAt != null) {
+          setSinceCut(Number((balanceRes as any)?.sinceLastCut ?? 0));
+        } else {
+          setSinceCut(null);
+        }
         const kycSt = (kyc as any)?.status ?? (profile as any)?.kycStatus ?? 'pending';
         setKycStatus(typeof kycSt === 'string' ? kycSt : 'pending');
         setKycRequired((profile as any)?.kycRequired === true);
@@ -854,6 +861,13 @@ export default function Home() {
               <p className="text-xs text-surface-500 dark:text-surface-400">
                 {t('wdrvauth.home.statEarnings')}
               </p>
+              {sinceCut != null && (
+                <p className="mt-1 text-xs font-semibold text-kiwi-700 dark:text-kiwi-400">
+                  {t('wdrvauth.home.statSinceCut', {
+                    amount: Math.round(sinceCut).toLocaleString(),
+                  })}
+                </p>
+              )}
             </motion.div>
           </StaggerItem>
           <StaggerItem>

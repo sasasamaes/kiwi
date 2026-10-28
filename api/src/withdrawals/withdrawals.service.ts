@@ -91,11 +91,36 @@ export class WithdrawalsService {
     const withdrawn = Number(totalWithdrawn._sum?.amount || 0);
     const pending = Number(pendingWithdrawals._sum?.amount || 0);
 
+    // Ganado desde el último corte cobrado (último retiro completed).
+    // Sin cortes aún, es todo lo ganado: el home muestra "desde el inicio".
+    const lastCut = await this.prisma.withdrawal.findFirst({
+      where: { driverId: driverProfile.id, status: 'completed' },
+      orderBy: { processedAt: 'desc' },
+      select: { processedAt: true, createdAt: true, amount: true },
+    });
+    const cutAt = lastCut?.processedAt ?? lastCut?.createdAt ?? null;
+    let sinceLastCut = total;
+    if (cutAt) {
+      const since = await this.prisma.order.aggregate({
+        where: {
+          driverId: driverProfile.id,
+          status: 'delivered',
+          isTest: false,
+          deliveredAt: { gt: cutAt },
+        },
+        _sum: { driverPayout: true },
+      });
+      sinceLastCut = Number(since._sum?.driverPayout || 0);
+    }
+
     return {
       totalEarnings: total,
       totalWithdrawn: withdrawn,
       pendingWithdrawals: pending,
       availableBalance: total - withdrawn - pending,
+      sinceLastCut: Math.round(sinceLastCut),
+      lastCutAt: cutAt,
+      lastCutAmount: lastCut ? Math.round(Number((lastCut as any).amount ?? 0)) : 0,
     };
   }
 
