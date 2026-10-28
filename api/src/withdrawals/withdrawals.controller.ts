@@ -117,6 +117,22 @@ export class WithdrawalsController {
     return this.withdrawalsService.generatePayroll(body?.week, body?.driverIds);
   }
 
+  @Post('admin/payroll/complete-week')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Marcar la semana como pagada: completa los retiros generados (admin)' })
+  async completePayrollWeek(
+    @Request() req,
+    @Body() body: { week?: string; transactionId?: string },
+  ) {
+    return this.withdrawalsService.completePayrollWeek(
+      body?.week,
+      body?.transactionId ?? '',
+      req.user.sub ?? req.user.id,
+    );
+  }
+
   @Get('admin/balances')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')

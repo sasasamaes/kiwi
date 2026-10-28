@@ -81,6 +81,9 @@ export default function AdminWithdrawalsPage() {
   const [payrollLoading, setPayrollLoading] = useState(false);
   const [payrollMsg, setPayrollMsg] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
+  // Comprobante SINPE + cierre de semana (marcar como pagada).
+  const [payTxId, setPayTxId] = useState('');
+  const [completingWeek, setCompletingWeek] = useState(false);
   const [balances, setBalances] = useState<any[]>([]);
   const [balancesLoading, setBalancesLoading] = useState(false);
   const [zeroingId, setZeroingId] = useState<string | null>(null);
@@ -195,6 +198,38 @@ export default function AdminWithdrawalsPage() {
       setPayrollMsg(t('webadmin1.awith.payrollGenError'));
     } finally {
       setGenerating(false);
+    }
+  };
+
+  // Ya se pagó por SINPE: completa de una vez los retiros generados de la
+  // semana con el comprobante (el "poner en 0" del corte).
+  const handleCompleteWeek = async () => {
+    if (!payTxId.trim()) {
+      setPayrollMsg('Poné el comprobante SINPE primero');
+      return;
+    }
+    if (
+      !window.confirm(
+        `¿Marcar como PAGADA la semana con comprobante ${payTxId.trim()}? Los repartidores la verán cobrada.`,
+      )
+    ) {
+      return;
+    }
+    try {
+      setCompletingWeek(true);
+      setPayrollMsg(null);
+      const res: any = await api.completePayrollWeek(payrollWeek ?? undefined, payTxId.trim());
+      setPayrollMsg(
+        `Semana pagada ✓ ${res?.completed ?? 0} retiros · ₡${Number(res?.total ?? 0).toLocaleString('es-CR')}`,
+      );
+      setPayTxId('');
+      void fetchPayroll(payrollWeek, payrollTest);
+      fetchWithdrawals();
+      void fetchBalances();
+    } catch (e: any) {
+      setPayrollMsg(e?.message || t('webadmin1.awith.payrollGenError'));
+    } finally {
+      setCompletingWeek(false);
     }
   };
 
@@ -539,6 +574,35 @@ export default function AdminWithdrawalsPage() {
               ? t('webadmin1.awith.payrollGenerating')
               : t('webadmin1.awith.payrollGenerate')}
         </button>
+
+        {!payrollTest && (
+          <div className="mt-3 rounded-xl border border-surface-200 dark:border-surface-700 p-3">
+            <p className="text-xs font-semibold text-surface-600 dark:text-surface-300">
+              Ya se pagó por SINPE: marcar la semana como pagada (pone en 0)
+            </p>
+            <div className="mt-2 flex gap-2">
+              <input
+                value={payTxId}
+                onChange={(e) => setPayTxId(e.target.value)}
+                placeholder="Comprobante SINPE"
+                className="min-w-0 flex-1 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 py-2.5 text-sm"
+              />
+              <button
+                type="button"
+                onClick={() => void handleCompleteWeek()}
+                disabled={
+                  completingWeek ||
+                  !(payroll?.drivers ?? []).some((d: any) =>
+                    ['pending', 'processing'].includes(d.existingWithdrawal?.status),
+                  )
+                }
+                className="shrink-0 rounded-xl bg-surface-800 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50 dark:bg-white dark:text-surface-900"
+              >
+                {completingWeek ? 'Marcando…' : 'Marcar pagada'}
+              </button>
+            </div>
+          </div>
+        )}
       </motion.div>
 
       {/* Saldos sin liquidar (limpieza pre-lanzamiento) */}

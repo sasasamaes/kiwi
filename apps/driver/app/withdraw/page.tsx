@@ -327,6 +327,17 @@ export default function WithdrawPage() {
                 <p className="font-medium">{formatCurrency(balance?.pendingWithdrawals || 0)}</p>
               </div>
             </div>
+            {(() => {
+              const last = (withdrawals ?? [])
+                .filter((w) => w.status === 'completed')
+                .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))[0];
+              return last ? (
+                <p className="mt-3 text-sm text-white/80">
+                  Último corte cobrado: <b>{formatCurrency(last.amount)}</b> ·{' '}
+                  {formatDate(last.createdAt)}
+                </p>
+              ) : null;
+            })()}
           </div>
         </motion.div>
 

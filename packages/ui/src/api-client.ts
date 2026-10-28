@@ -2525,6 +2525,14 @@ class ApiClient {
     });
   }
 
+  /** Marca la semana como pagada: completa los retiros generados (admin). */
+  async completePayrollWeek(week: string | undefined, transactionId: string) {
+    return this.request<any>('/withdrawals/admin/payroll/complete-week', {
+      method: 'POST',
+      body: { week, transactionId },
+    });
+  }
+
   /** Recibo con los viajes de un retiro (admin). */
   async getWithdrawalReceipt(id: string) {
     return this.request<any>(`/withdrawals/admin/receipt/${id}`);

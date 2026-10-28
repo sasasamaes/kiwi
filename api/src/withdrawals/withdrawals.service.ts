@@ -513,6 +513,66 @@ export class WithdrawalsService {
     return { weekStart: payroll.weekStart, weekEnd: payroll.weekEnd, created, skipped };
   }
 
+  /**
+   * Marca la semana como pagada: completa de una vez todos los retiros
+   * generados de la planilla (pending/processing) con el comprobante SINPE.
+   * Es el "poner en 0" del corte: después de esto el disponible del
+   * repartidor queda en 0 porque ya cobró, no porque falte plata.
+   */
+  async completePayrollWeek(
+    weekISO: string | undefined,
+    transactionId: string,
+    adminUserId: string,
+  ) {
+    const txId = String(transactionId ?? '').trim();
+    if (!txId) {
+      throw new BadRequestException('transactionId es requerido (comprobante del pago)');
+    }
+    const weekStart = weekISO ? payWeekStartFromISO(weekISO) : lastClosedWeek().weekStart;
+    const pending = await this.prisma.withdrawal.findMany({
+      where: { periodStart: weekStart, status: { in: ['pending', 'processing'] } },
+      select: {
+        id: true,
+        amount: true,
+        driver: { select: { userId: true } },
+      },
+    });
+    if (pending.length === 0) {
+      throw new BadRequestException(
+        'No hay retiros por pagar en esa semana (generá la planilla primero)',
+      );
+    }
+    let completed = 0;
+    let total = 0;
+    for (const w of pending) {
+      const claimed = await this.prisma.withdrawal.updateMany({
+        where: { id: w.id, status: { in: ['pending', 'processing'] } },
+        data: {
+          status: 'completed',
+          processedAt: new Date(),
+          processedBy: adminUserId,
+          transactionId: txId,
+        },
+      });
+      if (claimed.count > 0) {
+        completed += 1;
+        total += Number((w as any).amount ?? 0);
+        const userId = (w as any).driver?.userId;
+        if (userId) {
+          await this.notificationsService
+            .notifyWithdrawalStatus(userId, 'completed', Number((w as any).amount ?? 0))
+            .catch(() => null);
+        }
+      }
+    }
+    return {
+      weekStart,
+      weekEnd: new Date(weekStart.getTime() + WEEK_MS),
+      completed,
+      total: Math.round(total),
+    };
+  }
+
   /** Recibo de un retiro: líneas de viajes + totales. */
   async getReceipt(id: string, opts: { driverUserId?: string; isAdmin?: boolean }) {
     const withdrawal: any = await this.prisma.withdrawal.findUnique({

@@ -264,6 +264,32 @@ describe('WithdrawalsService payroll', () => {
     expect(res).toBeInstanceOf(BadRequestException);
   });
 
+  it('completePayrollWeek exige comprobante y completa los pendientes', async () => {
+    await expect(service.completePayrollWeek('2026-10-20', '', 'admin-1')).rejects.toThrow(
+      'transactionId',
+    );
+    prisma.withdrawal.findMany.mockResolvedValue([
+      { id: 'w1', amount: 2550, driver: { userId: 'u1' } },
+      { id: 'w2', amount: 1275, driver: { userId: 'u2' } },
+    ]);
+    const res: any = await service.completePayrollWeek('2026-10-20', 'SINPE-123', 'admin-1');
+    expect(res.completed).toBe(2);
+    expect(res.total).toBe(3825);
+    expect(prisma.withdrawal.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ id: 'w1' }),
+        data: expect.objectContaining({ status: 'completed', transactionId: 'SINPE-123' }),
+      }),
+    );
+  });
+
+  it('completePayrollWeek falla si no hay nada generado', async () => {
+    prisma.withdrawal.findMany.mockResolvedValue([]);
+    await expect(service.completePayrollWeek('2026-10-20', 'SINPE-123', 'admin-1')).rejects.toThrow(
+      'generá la planilla primero',
+    );
+  });
+
   it('getReceipt suma líneas y valida dueño', async () => {
     prisma.withdrawal.findUnique.mockResolvedValue({
       id: 'w1',
