@@ -132,8 +132,24 @@ function NewOrderInner({
   const [locating, setLocating] = useState(false);
   const [showZonesMap, setShowZonesMap] = useState(false);
   // Cómo se fija el punto de entrega: escribir (dirección + sugerencias),
-  // link de WhatsApp, o pin en el mapa. Solo una opción a la vista.
+  // link de WhatsApp, o pin en el mapa. Solo UNA vale a la vez: al cambiar
+  // de método se borra lo del anterior (dirección, GPS, link y zona salvo
+  // que la zona se haya elegido a mano).
   const [locMethod, setLocMethod] = useState<'manual' | 'link' | 'pin'>('manual');
+  // true si la zona la fijó el comercio a mano en el ZonePicker (sobrevive
+  // al cambio de método; el auto-detect la apaga al recalcular).
+  const zoneManualRef = useRef(false);
+  const selectLocMethod = (m: 'manual' | 'link' | 'pin') => {
+    setLocMethod(m);
+    setDeliveryAddress('');
+    setDeliveryLat(undefined);
+    setDeliveryLng(undefined);
+    setDeliverySuggest([]);
+    setMapLink('');
+    setMapLinkMsg(null);
+    setRouteKm(null);
+    if (!zoneManualRef.current) setDeliveryZone('');
+  };
 
   const [packageDescription, setPackageDescription] = useState('');
   const [notes, setNotes] = useState('');
@@ -413,6 +429,7 @@ function NewOrderInner({
   const autoDetectZone = async (lat: number, lng: number, fixedLabel: string) => {
     const base = t('webshop2.neworder.zoneSet', { label: fixedLabel });
     const apply = (zoneId: string, zoneLabel: string, zonePrice: number, note: string) => {
+      zoneManualRef.current = false;
       setDeliveryZone(zoneId);
       setMapLinkMsg(
         `${base} · ${t('webshop2.neworder.zoneIs', { label: zoneLabel, price: zonePrice.toLocaleString() })} ${note}`,
@@ -1386,7 +1403,7 @@ function NewOrderInner({
                       role="radio"
                       aria-checked={locMethod === m.id}
                       aria-controls={`method-${m.id}`}
-                      onClick={() => setLocMethod(m.id)}
+                      onClick={() => selectLocMethod(m.id)}
                       className={`rounded-xl p-3 text-left transition-all ${
                         locMethod === m.id
                           ? 'border-2 border-kiwi-600 bg-kiwi-50 dark:bg-kiwi-900/30'
@@ -1401,6 +1418,24 @@ function NewOrderInner({
                     </button>
                   ))}
                 </div>
+                {/* Lo único que cuenta: una sola fuente de entrega a la vez */}
+                {(deliveryAddress.trim() || deliveryLat != null || deliveryZone) && (
+                  <p
+                    aria-live="polite"
+                    className="mt-2 rounded-xl bg-kiwi-50 dark:bg-kiwi-900/30 border border-kiwi-200 dark:border-kiwi-800 px-3 py-2 text-xs text-kiwi-800 dark:text-kiwi-200"
+                  >
+                    📍 Entrega:{' '}
+                    {deliveryAddress.trim()
+                      ? `“${deliveryAddress.trim().slice(0, 80)}${deliveryAddress.trim().length > 80 ? '…' : ''}”`
+                      : 'sin dirección escrita'}
+                    {deliveryLat != null && deliveryLng != null
+                      ? ' · con punto GPS ✓'
+                      : ' · sin punto GPS'}
+                    {zoneLabel
+                      ? ` · ${zoneLabel} (₡${Number(zonePrice ?? 0).toLocaleString()})`
+                      : ' · sin barrio'}
+                  </p>
+                )}
                 {locMethod === 'manual' && (
                   <div
                     id="method-manual"
@@ -1450,6 +1485,8 @@ function NewOrderInner({
                   detectedPrice={zonePrice}
                   onChange={(id) => {
                     setDeliveryZone(id);
+                    // Zona fijada a mano: sobrevive al cambio de método.
+                    zoneManualRef.current = true;
                     // La zona manual manda: el aviso previo del auto-detect
                     // quedaría contradiciéndola (ej. Los Ángeles vs USJ).
                     setMapLinkMsg(null);
