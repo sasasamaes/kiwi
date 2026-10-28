@@ -89,6 +89,46 @@ describe('DriversService', () => {
       const result = await service.updateStatus('user-1', 'available');
       expect(result.status).toBe('available');
     });
+
+    it('rechaza ponerse en línea sin KYC aprobado cuando el flag lo exige', async () => {
+      process.env.KYC_REQUIRED = 'true';
+      try {
+        prisma.driverProfile.findUnique.mockResolvedValue({
+          id: 'dp-1',
+          userId: 'user-1',
+          kycStatus: 'pending',
+        });
+
+        await expect(service.updateStatus('user-1', 'available')).rejects.toThrow(
+          'verificación de identidad',
+        );
+        expect(prisma.driverProfile.update).not.toHaveBeenCalled();
+
+        // Apagarse sí se puede.
+        prisma.driverProfile.update.mockResolvedValue({ id: 'dp-1', status: 'offline' });
+        const off = await service.updateStatus('user-1', 'offline');
+        expect(off.status).toBe('offline');
+      } finally {
+        delete process.env.KYC_REQUIRED;
+      }
+    });
+
+    it('permite en línea con KYC aprobado aunque el flag lo exija', async () => {
+      process.env.KYC_REQUIRED = 'true';
+      try {
+        prisma.driverProfile.findUnique.mockResolvedValue({
+          id: 'dp-1',
+          userId: 'user-1',
+          kycStatus: 'approved',
+        });
+        prisma.driverProfile.update.mockResolvedValue({ id: 'dp-1', status: 'available' });
+
+        const result = await service.updateStatus('user-1', 'available');
+        expect(result.status).toBe('available');
+      } finally {
+        delete process.env.KYC_REQUIRED;
+      }
+    });
   });
 
   describe('getAvailableDrivers', () => {

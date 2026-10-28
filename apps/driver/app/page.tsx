@@ -95,6 +95,11 @@ export default function Home() {
   const { user, loading: authLoading } = useAuth();
   const [isOnline, setIsOnline] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [kycStatus, setKycStatus] = useState<string | null>(null);
+  const [kycRequired, setKycRequired] = useState(false);
+  const [kycRejection, setKycRejection] = useState<string | null>(null);
+  // Sin KYC aprobado no hay pedidos: el backend bloquea asignar/aceptar.
+  const kycBlocked = kycRequired && kycStatus !== 'approved';
   const [stats, setStats] = useState({ trips: 0, earnings: 0, rating: 5.0 });
   const [availableOrders, setAvailableOrders] = useState<Order[]>([]);
   const [activeOrders, setActiveOrders] = useState<Order[]>([]);
@@ -285,10 +290,15 @@ export default function Home() {
     const fetchDriverData = async () => {
       try {
         // Paralelo: perfil + ganancias no dependen entre sí (antes 2 RTT en serie).
-        const [profile, earningsRes] = await Promise.all([
+        const [profile, earningsRes, kyc] = await Promise.all([
           api.getDriverProfile(),
           api.getDriverEarnings('all').catch(() => null),
+          api.getKycStatus().catch(() => null),
         ]);
+        const kycSt = (kyc as any)?.status ?? (profile as any)?.kycStatus ?? 'pending';
+        setKycStatus(typeof kycSt === 'string' ? kycSt : 'pending');
+        setKycRequired((profile as any)?.kycRequired === true);
+        setKycRejection((kyc as any)?.rejectionReason ?? null);
         const earnings = Number(earningsRes?.totalEarnings || 0);
         const earnedTrips = Number(earningsRes?.totalTrips || 0);
         setStats({
@@ -299,7 +309,10 @@ export default function Home() {
           earnings,
           rating: Number(profile.rating) || 5.0,
         });
-        setIsOnline(profile.status === 'available');
+        setIsOnline(
+          profile.status === 'available' &&
+            !((profile as any)?.kycRequired === true && kycSt !== 'approved'),
+        );
         // Offline = fuera de la lista: no se piden ni se muestran disponibles.
         // El backend además solo targetea a disponibles por socket/push.
         // Disponibles + activos en paralelo (antes 2 RTT en serie).
@@ -323,6 +336,11 @@ export default function Home() {
 
   const toggleOnlineStatus = async () => {
     const goingOnline = !isOnline;
+    // Sin KYC aprobado no hay pedidos: ni siquiera fingir "en línea".
+    if (goingOnline && kycBlocked) {
+      setPageError(t('wdrvauth.home.kycBlockedOnline'));
+      return;
+    }
     const newStatus = goingOnline ? 'available' : 'offline';
     setPageError(null);
     try {
@@ -654,6 +672,33 @@ export default function Home() {
             {t('wdrvauth.home.pushDenied')}
           </div>
         )}
+        {/* KYC: sin verificación aprobada no hay pedidos en el sistema */}
+        {kycBlocked && (
+          <div className="mb-4 rounded-2xl border border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/30 p-4">
+            <p className="font-semibold text-sm text-red-700 dark:text-red-300">
+              🪪 {t('wdrvauth.home.kycBlockedTitle')}
+            </p>
+            <p className="mt-1 text-xs text-red-600 dark:text-red-400">
+              {kycStatus === 'rejected'
+                ? t('wdrvauth.home.kycBlockedRejected', {
+                    reason: kycRejection
+                      ? t('wdrvauth.home.kycBlockedReason', { reason: kycRejection })
+                      : '',
+                  })
+                : ['under_review', 'submitted'].includes(kycStatus ?? '')
+                  ? t('wdrvauth.home.kycBlockedReview')
+                  : t('wdrvauth.home.kycBlockedPending')}
+            </p>
+            {!['under_review', 'submitted'].includes(kycStatus ?? '') && (
+              <Link
+                href="/kyc"
+                className="mt-3 inline-block rounded-xl bg-red-600 px-4 py-2.5 text-sm font-bold text-white"
+              >
+                {t('wdrvauth.home.kycBlockedCta')}
+              </Link>
+            )}
+          </div>
+        )}
         {/* Status Toggle */}
         <motion.div
           className={`mb-6 rounded-3xl p-6 text-white overflow-hidden relative transition-colors ${
@@ -693,10 +738,11 @@ export default function Home() {
               </AnimatePresence>
             </div>
             <motion.button
-              className={`relative h-14 w-24 rounded-full p-1 transition-colors ${
+              className={`relative h-14 w-24 rounded-full p-1 transition-colors disabled:opacity-50 ${
                 isOnline ? 'bg-white' : 'bg-white/20'
               }`}
               onClick={toggleOnlineStatus}
+              disabled={kycBlocked && !isOnline}
               whileTap={{ scale: 0.95 }}
               aria-label={isOnline ? t('wdrvauth.home.pauseAria') : t('wdrvauth.home.resumeAria')}
             >
@@ -766,9 +812,9 @@ export default function Home() {
                   variant="secondary"
                   haptic
                   className="w-full rounded-xl h-12 text-sm font-bold"
-                  onClick={toggleOnlineStatus}
+                  onClick={() => (kycBlocked ? router.push('/kyc') : void toggleOnlineStatus())}
                 >
-                  {t('wdrvauth.home.goOnlineCta')}
+                  {kycBlocked ? t('wdrvauth.home.kycBlockedCta') : t('wdrvauth.home.goOnlineCta')}
                 </TapButton>
               </motion.div>
             )}

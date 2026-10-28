@@ -110,6 +110,13 @@ export class DriversService {
       throw new NotFoundException('Perfil de repartidor no encontrado');
     }
 
+    // Sin KYC aprobado no hay pedidos: ni siquiera fingir "en línea".
+    if (status === 'available' && isKycRequired() && driver.kycStatus !== 'approved') {
+      throw new ForbiddenException(
+        'Pasá la verificación de identidad para ponerte en línea y recibir pedidos',
+      );
+    }
+
     return this.prisma.driverProfile.update({
       where: { userId },
       data: { status: status as any },
