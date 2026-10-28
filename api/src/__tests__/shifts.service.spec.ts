@@ -109,4 +109,37 @@ describe('ShiftsService (horario propuesto)', () => {
     expect(res).toEqual({ checked: 1, offed: 0, reminded: 0 });
     expect(notify).not.toHaveBeenCalled();
   });
+
+  it('respeta la gracia manual: no desconecta aunque esté fuera de horario', async () => {
+    const now = new Date();
+    prisma.driverProfile.findMany.mockResolvedValue([
+      {
+        id: 'drv-9',
+        userId: 'u9',
+        fullName: 'Luis',
+        schedules: [],
+        manualOnlineUntil: new Date(now.getTime() + 60 * 60 * 1000),
+      },
+    ]);
+    const res = await service.enforceSchedules(now);
+    expect(res).toEqual({ checked: 1, offed: 0, reminded: 0 });
+    expect(prisma.driverProfile.update).not.toHaveBeenCalled();
+    expect(notify).not.toHaveBeenCalled();
+  });
+
+  it('vencida la gracia vuelve a desconectar', async () => {
+    const now = new Date();
+    prisma.driverProfile.findMany.mockResolvedValue([
+      {
+        id: 'drv-9',
+        userId: 'u9',
+        fullName: 'Luis',
+        schedules: [],
+        manualOnlineUntil: new Date(now.getTime() - 1000),
+      },
+    ]);
+    prisma.order.count.mockResolvedValue(0);
+    const res = await service.enforceSchedules(now);
+    expect(res.offed).toBe(1);
+  });
 });

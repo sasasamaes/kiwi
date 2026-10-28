@@ -8,6 +8,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { FeatureFlagsService } from '../feature-flags/feature-flags';
 import { SettingsService } from '../settings/settings.service';
+import { MANUAL_GRACE_MS, isInSchedule } from './schedule-window';
 import { isKycRequired } from '../feature-flags/feature-flags';
 import { startOfTodayCR, startOfMonthCR, toCRDateKey } from '../common/costa-rica-time';
 
@@ -102,8 +103,9 @@ export class DriversService {
       );
     }
 
-    const driver = await this.prisma.driverProfile.findUnique({
+    const driver: any = await this.prisma.driverProfile.findUnique({
       where: { userId },
+      include: { schedules: { where: { isAvailable: true } } },
     });
 
     if (!driver) {
@@ -117,9 +119,16 @@ export class DriversService {
       );
     }
 
+    // Conexión manual fuera de horario: vale 2 h (después el cron retoma).
+    // Dentro de horario o al apagar, la gracia se limpia.
+    let manualOnlineUntil: Date | null = null;
+    if (status === 'available' && !isInSchedule(driver.schedules, new Date())) {
+      manualOnlineUntil = new Date(Date.now() + MANUAL_GRACE_MS);
+    }
+
     return this.prisma.driverProfile.update({
       where: { userId },
-      data: { status: status as any },
+      data: { status: status as any, manualOnlineUntil },
     });
   }
 

@@ -692,6 +692,10 @@ model DriverProfile {
   lastLng    Decimal?  @map("last_lng") @db.Decimal(11, 8)
   lastSeenAt DateTime? @map("last_seen_at")
 
+  // Gracia manual: si se pone en línea fuera de su horario, el cron no lo
+  // desconecta hasta esta hora (2 h). Vence sola; apagar la limpia.
+  manualOnlineUntil DateTime? @map("manual_online_until")
+
   // Relations
   user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   schedules       DriverSchedule[]

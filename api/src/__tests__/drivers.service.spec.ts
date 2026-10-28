@@ -129,6 +129,49 @@ describe('DriversService', () => {
         delete process.env.KYC_REQUIRED;
       }
     });
+
+    it('conectarse fuera de horario da 2 h de gracia; dentro de horario la limpia', async () => {
+      // Sin bloques hoy: fuera de horario → gracia.
+      prisma.driverProfile.findUnique.mockResolvedValue({
+        id: 'dp-1',
+        userId: 'user-1',
+        kycStatus: 'approved',
+        schedules: [],
+      });
+      prisma.driverProfile.update.mockResolvedValue({ id: 'dp-1', status: 'available' });
+      await service.updateStatus('user-1', 'available');
+      const data = prisma.driverProfile.update.mock.calls[0][0].data;
+      expect(data.status).toBe('available');
+      expect(new Date(data.manualOnlineUntil).getTime()).toBeGreaterThan(Date.now());
+
+      // Bloque que cubre ahora: sin gracia.
+      const now = new Date();
+      const cr = new Date(now.getTime() - 6 * 3600 * 1000);
+      prisma.driverProfile.findUnique.mockResolvedValue({
+        id: 'dp-1',
+        userId: 'user-1',
+        kycStatus: 'approved',
+        schedules: [
+          {
+            dayOfWeek: cr.getUTCDay(),
+            startTime: new Date(now.getTime() - 3600 * 1000).toISOString(),
+            endTime: new Date(now.getTime() + 3600 * 1000).toISOString(),
+          },
+        ],
+      });
+      await service.updateStatus('user-1', 'available');
+      expect(prisma.driverProfile.update.mock.calls[1][0].data).toEqual({
+        status: 'available',
+        manualOnlineUntil: null,
+      });
+
+      // Apagarse siempre limpia la gracia.
+      await service.updateStatus('user-1', 'offline');
+      expect(prisma.driverProfile.update.mock.calls[2][0].data).toEqual({
+        status: 'offline',
+        manualOnlineUntil: null,
+      });
+    });
   });
 
   describe('getAvailableDrivers', () => {
