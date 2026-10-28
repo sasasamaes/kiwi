@@ -104,6 +104,9 @@ export const drvAuthEs = {
     emptyPaused: 'Estás en pausa',
     emptyOnlineHint: 'Cuando caiga algo, aparece acá',
     emptyPausedHint: 'Ponete en línea pa entrar en la lista y que te caigan pedidos',
+    autoConnected: 'Te conectamos solo según tu horario propuesto 🕒',
+    scheduleAutoHint:
+      'Con este horario te conectamos y desconectamos solo. Fuera de horario solo quedás en línea si tenés pedidos activos.',
     kycBlockedTitle: 'Sin verificación no hay pedidos',
     kycBlockedPending: 'Pasá la verificación de identidad para recibir pedidos en el sistema.',
     kycBlockedReview: 'Tu verificación está en revisión. En cuanto quede lista te caen pedidos.',
@@ -343,6 +346,9 @@ export const drvAuthEn = {
     emptyPaused: 'You are paused',
     emptyOnlineHint: 'When something drops, it shows up here',
     emptyPausedHint: 'Go online to join the list and get orders',
+    autoConnected: 'We connected you automatically per your proposed schedule 🕒',
+    scheduleAutoHint:
+      'With this schedule we connect and disconnect you automatically. Off-schedule you only stay online with active orders.',
     kycBlockedTitle: 'No verification, no orders',
     kycBlockedPending: 'Complete identity verification to receive orders in the system.',
     kycBlockedReview: 'Your verification is under review. Orders will reach you once approved.',

@@ -1,5 +1,6 @@
 // Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 import { Module } from '@nestjs/common';
+import { ScheduleModule } from '@nestjs/schedule';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from './prisma/prisma.module';
 import { HealthModule } from './health/health.module';
@@ -46,6 +47,9 @@ import { DeliveryLinksModule } from './delivery-links/delivery-links.module';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+
+    // Cron (turnos de repartidores: ShiftsService cada 5 min)
+    ScheduleModule.forRoot(),
 
     // Database
     PrismaModule,

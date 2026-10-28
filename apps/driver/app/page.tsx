@@ -100,6 +100,10 @@ export default function Home() {
   const [kycRejection, setKycRejection] = useState<string | null>(null);
   // Sin KYC aprobado no hay pedidos: el backend bloquea asignar/aceptar.
   const kycBlocked = kycRequired && kycStatus !== 'approved';
+  const [autoNotice, setAutoNotice] = useState<string | null>(null);
+  // Pausa manual: no reconectar solo por horario hasta 30 min después.
+  const manualPauseAt = useRef<number | null>(null);
+  const kycBlockedRef = useRef(false);
   const [stats, setStats] = useState({ trips: 0, earnings: 0, rating: 5.0 });
   const [sinceCut, setSinceCut] = useState<number | null>(null);
   const [availableOrders, setAvailableOrders] = useState<Order[]>([]);
@@ -145,7 +149,8 @@ export default function Home() {
     availableRef.current = availableOrders;
     alertRef.current = newOrderAlert;
     activeOrdersRef.current = activeOrders;
-  }, [isOnline, availableOrders, newOrderAlert, activeOrders]);
+    kycBlockedRef.current = kycBlocked;
+  }, [isOnline, availableOrders, newOrderAlert, activeOrders, kycBlocked]);
 
   // Saca un pedido de Disponibles + popup cuando deja de estar vigente.
   const removeFromAvailable = useCallback((data: any) => {
@@ -348,6 +353,8 @@ export default function Home() {
       setPageError(t('wdrvauth.home.kycBlockedOnline'));
       return;
     }
+    // Pausa manual: el horario no reconecta solo en los próximos 30 min.
+    if (!goingOnline) manualPauseAt.current = Date.now();
     const newStatus = goingOnline ? 'available' : 'offline';
     setPageError(null);
     try {
@@ -367,6 +374,56 @@ export default function Home() {
       setPageError(t('wdrvauth.home.errStatus'));
     }
   };
+
+  // Horario propuesto: al abrir la app (y cada minuto) dentro del horario,
+  // conecta solo si está en pausa — salvo KYC pendiente o pausa manual
+  // reciente (30 min). La desconexión la hace el servidor (cron cada 5 min).
+  const checkScheduleAutoConnect = useCallback(async () => {
+    if (!user || isOnlineRef.current || kycBlockedRef.current || document.hidden) return;
+    if (manualPauseAt.current && Date.now() - manualPauseAt.current < 30 * 60 * 1000) return;
+    let rows: any[] = [];
+    try {
+      const sched = await api.getDriverSchedule();
+      rows = Array.isArray(sched) ? sched : [];
+    } catch {
+      return;
+    }
+    const now = new Date();
+    const cr = new Date(now.getTime() - 6 * 3600 * 1000);
+    const dow = cr.getUTCDay();
+    const mins = cr.getUTCHours() * 60 + cr.getUTCMinutes();
+    const toMin = (v: unknown) => {
+      const d = new Date(String(v));
+      if (Number.isNaN(d.getTime())) return NaN;
+      const c = new Date(d.getTime() - 6 * 3600 * 1000);
+      return c.getUTCHours() * 60 + c.getUTCMinutes();
+    };
+    const inside = rows.some(
+      (r) =>
+        Number(r?.dayOfWeek) === dow &&
+        r?.isAvailable !== false &&
+        toMin(r?.startTime) <= mins &&
+        mins < toMin(r?.endTime),
+    );
+    if (!inside) return;
+    try {
+      await api.updateDriverStatus('available' as any);
+      socketUpdateStatus('available' as any);
+      setIsOnline(true);
+      setAutoNotice(t('wdrvauth.home.autoConnected'));
+      window.setTimeout(() => setAutoNotice(null), 8000);
+      await fetchAvailableOrders();
+    } catch {
+      // Reintenta en el próximo tick; no rompe nada.
+    }
+  }, [user, fetchAvailableOrders, socketUpdateStatus, t]);
+
+  useEffect(() => {
+    if (!user) return;
+    void checkScheduleAutoConnect();
+    const id = window.setInterval(() => void checkScheduleAutoConnect(), 60 * 1000);
+    return () => window.clearInterval(id);
+  }, [user, checkScheduleAutoConnect]);
 
   // Ping de ubicación mientras está disponible (cada 30s): alimenta el
   // targeting por proximidad — sin esto el repartidor no recibe alertas de
@@ -597,6 +654,11 @@ export default function Home() {
                 <pre className="mt-1 whitespace-pre-wrap break-all">{pushDetail}</pre>
               </details>
             )}
+          </div>
+        )}
+        {autoNotice && (
+          <div className="mb-4 rounded-xl bg-kiwi-50 dark:bg-kiwi-900/30 border border-kiwi-200 dark:border-kiwi-800 px-4 py-3 text-sm text-kiwi-700 dark:text-kiwi-300">
+            {autoNotice}
           </div>
         )}
         {/* iPhone sin instalar: el push es imposible en Safari → guía */}

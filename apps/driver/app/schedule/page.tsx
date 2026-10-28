@@ -251,6 +251,9 @@ export default function Schedule() {
       </motion.header>
 
       <main className="flex-1 mx-auto w-full max-w-lg px-4 pt-6 pb-28">
+        <p className="mb-4 rounded-xl bg-kiwi-50 dark:bg-kiwi-900/30 border border-kiwi-200 dark:border-kiwi-800 px-4 py-3 text-xs text-kiwi-700 dark:text-kiwi-300">
+          🕒 {t('wdrvauth.home.scheduleAutoHint')}
+        </p>
         {/* Weekly Summary */}
         <motion.div
           className="mb-6 rounded-2xl bg-kiwi-gradient p-5 text-white shadow-kiwi overflow-hidden relative"
