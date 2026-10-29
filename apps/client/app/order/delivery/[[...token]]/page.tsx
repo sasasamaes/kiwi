@@ -17,8 +17,18 @@ const label = 'mb-1.5 block text-[13px] font-semibold text-surface-600 dark:text
 
 export default function DeliveryLinkPage() {
   const params = useParams();
+  // El link llega por WhatsApp y a veces con texto pegado ("...TOKEN
+  // Completá tus datos...") o segmentos de más: eso daba el 404 global.
+  // La ruta es catch-all y acá se extrae el token (64 hex) donde venga;
+  // sin token válido se muestra el estado inválido de la página, no 404.
+  const segs = Array.isArray(params.token)
+    ? params.token
+    : params.token
+      ? [params.token as string]
+      : [];
+  const match = segs.join('/').match(/[0-9a-f]{64}/i);
+  const token = match ? match[0] : '';
   const { t } = useTranslations();
-  const token = Array.isArray(params.token) ? params.token[0] : (params.token as string);
 
   const [link, setLink] = useState<any | null>(null);
   const [loadingLink, setLoadingLink] = useState(true);
@@ -65,7 +75,11 @@ export default function DeliveryLinkPage() {
   };
 
   useEffect(() => {
-    if (!token) return;
+    if (!token) {
+      setLinkError('invalid');
+      setLoadingLink(false);
+      return;
+    }
     let cancelled = false;
     api
       .getDeliveryLink(token)
