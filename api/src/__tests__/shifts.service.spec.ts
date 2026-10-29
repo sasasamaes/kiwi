@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ShiftsService } from '../drivers/shifts.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { blocksForToday, isInSchedule } from '../drivers/schedule-window';
 
 const CR = -6 * 3600 * 1000;
 const atCRMinutes = (base: Date, mins: number) => {
@@ -108,6 +109,19 @@ describe('ShiftsService (horario propuesto)', () => {
     const res = await service.enforceSchedules(now);
     expect(res).toEqual({ checked: 1, offed: 0, reminded: 0 });
     expect(notify).not.toHaveBeenCalled();
+  });
+
+  it('los bloques se leen en hora CR: 14:00Z es 8am', () => {
+    // Contrato con los clientes: el slot "8am" se guarda como 14:00Z
+    // (hora CR expresada en UTC). El servidor lo lee como 8:00 CR.
+    const thursday = new Date('2026-10-29T16:30:00.000Z'); // jue 10:30 CR
+    const rows = [
+      { dayOfWeek: 4, startTime: '2026-01-08T14:00:00.000Z', endTime: '2026-01-08T19:00:00.000Z' },
+    ];
+    expect(blocksForToday(rows, thursday)).toEqual([{ start: 480, end: 780 }]);
+    expect(isInSchedule(rows, thursday)).toBe(true);
+    // 13:00 CR ya está fuera del bloque 8–13.
+    expect(isInSchedule(rows, new Date('2026-10-29T19:00:00.000Z'))).toBe(false);
   });
 
   it('respeta la gracia manual: no desconecta aunque esté fuera de horario', async () => {

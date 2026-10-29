@@ -27,8 +27,13 @@ function toApiRows(schedule: Record<number, string[]>) {
     const flush = (endExclusive: number) => {
       if (start == null) return;
       const d = new Date(Date.UTC(2026, 0, 4 + day));
+      // El servidor lee los bloques en hora CR (UTC-6 fijo, sin horario de
+      // verano): se guarda la hora CR expresada en UTC. Sin el +6, todo el
+      // horario quedaba 6 h corrido y el cron desconectaba en pleno turno.
       const iso = (h: number) =>
-        new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), h)).toISOString();
+        new Date(
+          Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), h + 6),
+        ).toISOString();
       rows.push({
         dayOfWeek: day,
         startTime: iso(start),
@@ -58,8 +63,12 @@ function fromApiRows(rows: any[]): Record<number, string[]> {
     const s = new Date(r?.startTime);
     const e = new Date(r?.endTime);
     if (isNaN(s.getTime()) || isNaN(e.getTime()) || e <= s) continue;
-    const sh = s.getUTCHours();
-    const eh = e.getUTCHours() + (e.getUTCMinutes() > 0 || e.getUTCSeconds() > 0 ? 1 : 0);
+    // Inverso del +6 al guardar: la hora CR es UTC menos 6.
+    const crH = (d: Date) => (d.getUTCHours() - 6 + 24) % 24;
+    const sh = crH(s);
+    const ehRaw = crH(e) + (e.getUTCMinutes() > 0 || e.getUTCSeconds() > 0 ? 1 : 0);
+    // Rango que cruza medianoche (heredado o slot 23): llega hasta las 24.
+    const eh = ehRaw <= sh ? 24 : ehRaw;
     for (let h = sh; h < eh && h < 24; h++) {
       const slot = `${String(h).padStart(2, '0')}:00`;
       next[day] = [...(next[day] || []), slot];
