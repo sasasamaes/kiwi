@@ -51,6 +51,13 @@ const kycOf = (u: AdminUser) =>
 const coordStr = (v: number | string | null | undefined) =>
   v == null || v === '' ? '' : String(v);
 
+/** Dígitos para wa.me: CR de 8 dígitos lleva 506 adelante. */
+const waDigits = (phone: string) => {
+  const d = String(phone ?? '').replace(/\D/g, '');
+  if (d.length === 8) return `506${d}`;
+  return d;
+};
+
 /** Editor del punto GPS de retiro de un comercio (admin). Tocás el mapa donde
  * llegan los repartidores, guardás y el punto sale en el mapa general de zonas
  * (y lo heredan los pedidos nuevos como pickup por defecto). */
@@ -1085,6 +1092,25 @@ export default function UsersPage() {
                       <p className="text-sm text-surface-500 dark:text-surface-400">
                         {selectedUser.email || selectedUser.phone || '—'}
                       </p>
+                      {selectedUser.phone && (
+                        <div className="mt-2 flex items-center gap-2">
+                          <span className="text-sm font-medium text-surface-800 dark:text-surface-200">
+                            {selectedUser.phone}
+                          </span>
+                          <a
+                            href={`https://wa.me/${waDigits(selectedUser.phone)}?text=${encodeURIComponent(
+                              t('webadmin1.ausers.whatsappHello', {
+                                name: displayName(selectedUser),
+                              }),
+                            )}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 rounded-xl bg-[#25D366] px-3 py-1.5 text-xs font-bold text-white transition-opacity hover:opacity-90"
+                          >
+                            {t('webadmin1.ausers.whatsappCta')}
+                          </a>
+                        </div>
+                      )}
                     </div>
                   </div>
 

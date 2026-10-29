@@ -233,6 +233,8 @@ export const admin1Es = {
     detailStatus: 'Estado',
     detailKyc: 'KYC',
     detailRegistered: 'Registro',
+    whatsappCta: 'WhatsApp',
+    whatsappHello: 'Hola {{name}}, te escribe el equipo de Kiwi 🥝',
     role: {
       driver: 'Repartidor',
       merchant: 'Comercio',
@@ -946,6 +948,8 @@ export const admin1En = {
     detailStatus: 'Status',
     detailKyc: 'KYC',
     detailRegistered: 'Joined',
+    whatsappCta: 'WhatsApp',
+    whatsappHello: 'Hi {{name}}, this is the Kiwi team 🥝',
     role: {
       driver: 'Driver',
       merchant: 'Store',
