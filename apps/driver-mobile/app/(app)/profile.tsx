@@ -1,12 +1,15 @@
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Screen, Button, tokens } from '@kiwi/mobile-ui';
 import { useTranslation } from '@kiwi/i18n';
 import { useSession } from '../../src/session/useSession';
 import { LanguageButton } from '../../src/i18n/LanguageButton';
 
+// Soporte Kiwi (única fuente de verdad: packages/ui/src/business.ts).
+const SUPPORT_WA = 'https://wa.me/50688264007';
+
 export default function Profile() {
-  const { t } = useTranslation();
+  const { t, translate } = useTranslation();
   const { user, signOut } = useSession((s) => s);
   const router = useRouter();
 
@@ -45,6 +48,25 @@ export default function Profile() {
         <View style={{ marginTop: 8 }}>
           <LanguageButton />
         </View>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => {
+            const name = user?.driverProfile?.fullName ?? user?.email ?? '';
+            const msg = translate('profile.supportMsg', { name });
+            void Linking.openURL(`${SUPPORT_WA}?text=${encodeURIComponent(msg)}`);
+          }}
+          style={{
+            backgroundColor: '#25D366',
+            borderRadius: tokens.radius.md,
+            padding: 14,
+            marginTop: 8,
+            flexDirection: 'row',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
+          <Text style={{ color: '#fff', fontWeight: '700' }}>💬 {t.profile.support}</Text>
+        </Pressable>
       </ScrollView>
 
       <View style={{ marginBottom: 8 }}>

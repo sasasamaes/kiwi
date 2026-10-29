@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Text, TextInput, View } from 'react-native';
+import { Alert, Linking, Pressable, Text, TextInput, View } from 'react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Screen, Button, StatusBadge, tokens } from '@kiwi/mobile-ui';
 import * as ImagePicker from 'expo-image-picker';
@@ -126,6 +126,25 @@ export default function ActiveOrder() {
         {order.isTest === true ? '🧪 TEST · ' : ''}
         {translate('driverOrder.title', { id: String(id).slice(0, 8) })}
       </Text>
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => {
+          const msg = translate('profile.orderSupportMsg', {
+            id: String(id).slice(0, 8).toUpperCase(),
+          });
+          // Soporte Kiwi (fuente: packages/ui/src/business.ts).
+          void Linking.openURL(`https://wa.me/50688264007?text=${encodeURIComponent(msg)}`);
+        }}
+        style={{
+          backgroundColor: '#25D366',
+          borderRadius: tokens.radius.md,
+          paddingVertical: 12,
+          marginBottom: tokens.space[3],
+          alignItems: 'center',
+        }}
+      >
+        <Text style={{ color: '#fff', fontWeight: '700' }}>💬 {t.profile.support}</Text>
+      </Pressable>
 
       {isMandado && (
         <View

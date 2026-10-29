@@ -47,6 +47,7 @@ import {
   useDeliveryZones,
   useTranslations,
   downscalePhoto,
+  business,
 } from '@kiwi/ui';
 
 // Estados considerados "activos" para el repartidor
@@ -1398,6 +1399,18 @@ export default function ActiveOrders() {
                   <Phone className="h-4 w-4 text-kiwi-500" /> {t('wdrvwork.active.callCommerce')}
                 </a>
               )}
+              <a
+                href={`${business.whatsapp}?text=${encodeURIComponent(
+                  t('wdrvwork.active.orderSupportMsg', {
+                    id: String(order.id).slice(0, 8).toUpperCase(),
+                  }),
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] text-sm font-bold text-white"
+              >
+                <MessageCircle className="h-4 w-4" /> {t('wdrvwork.active.orderSupportCta')}
+              </a>
               <div className="mt-2 flex w-full items-center justify-center gap-4">
                 <button
                   onClick={() =>

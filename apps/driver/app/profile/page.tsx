@@ -36,6 +36,7 @@ import {
   useAuth,
   useSocket,
   api,
+  business,
   type KYCStatus,
   KiwiLoader,
   ThemeToggle,
@@ -750,6 +751,31 @@ export default function Profile() {
           {mpInfo && (
             <p className="mt-3 text-sm text-surface-600 dark:text-surface-300">{mpInfo}</p>
           )}
+        </motion.div>
+
+        {/* Soporte por WhatsApp */}
+        <motion.div
+          className="mb-6 rounded-2xl bg-white dark:bg-surface-800 p-5 shadow-soft"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.22 }}
+        >
+          <h3 className="font-display font-semibold text-surface-800 dark:text-surface-100 mb-1">
+            {t('wdrvmisc.profile.supportTitle')}
+          </h3>
+          <p className="text-sm text-surface-500 dark:text-surface-400 mb-4">
+            {t('wdrvmisc.profile.supportHint')}
+          </p>
+          <a
+            href={`${business.whatsapp}?text=${encodeURIComponent(
+              t('wdrvmisc.profile.supportMsg', { name }),
+            )}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] px-4 py-3 text-sm font-bold text-white transition-opacity hover:opacity-90"
+          >
+            💬 {t('wdrvmisc.profile.supportCta')}
+          </a>
         </motion.div>
 
         {/* Logout real */}
