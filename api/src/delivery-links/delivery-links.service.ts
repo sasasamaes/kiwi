@@ -240,12 +240,11 @@ export class DeliveryLinksService {
     }
     const deliveryAddress = String(dto?.deliveryAddress ?? '').trim();
     if (!deliveryAddress) throw new BadRequestException('deliveryAddress es requerido');
-    const packageDescription = String(dto?.packageDescription ?? '')
-      .trim()
-      .slice(0, 500);
-    if (!packageDescription) {
-      throw new BadRequestException('packageDescription es requerido (qué se envía)');
-    }
+    // Sin sección "qué llevar" en el formulario: default genérico.
+    const packageDescription =
+      String(dto?.packageDescription ?? '')
+        .trim()
+        .slice(0, 500) || 'Paquete por entregar';
     const idempotencyKey =
       (typeof headerKey === 'string' && headerKey.trim()) ||
       (typeof dto?.idempotencyKey === 'string' && dto.idempotencyKey.trim()) ||

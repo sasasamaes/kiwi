@@ -239,6 +239,18 @@ describe('DeliveryLinksService', () => {
       });
     });
 
+    it('sin descripción usa el default genérico (formulario sin sección)', async () => {
+      prisma.deliveryLink.findUnique.mockResolvedValue(linkRow());
+      prisma.deliveryLink.updateMany.mockResolvedValue({ count: 1 });
+      ordersService.create.mockResolvedValue({ id: 'order-9', basePrice: 1500 });
+      prisma.deliveryLink.update.mockResolvedValue({});
+
+      const { customerName, customerPhone, deliveryAddress } = dto;
+      await service.submit('f'.repeat(64), { customerName, customerPhone, deliveryAddress });
+      const data = ordersService.create.mock.calls[0][1];
+      expect(data.packageDescription).toBe('Paquete por entregar');
+    });
+
     it('con crédito cobra el viaje al comercio y libera el pedido', async () => {
       prisma.deliveryLink.findUnique.mockResolvedValue(linkRow({ paymentMethod: 'credit' }));
       prisma.deliveryLink.updateMany.mockResolvedValue({ count: 1 });

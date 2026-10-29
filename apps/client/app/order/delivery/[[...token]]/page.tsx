@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Package, MapPin, User, Phone, CheckCircle2, Scale, Store } from 'lucide-react';
+import { MapPin, User, Phone, CheckCircle2, Store } from 'lucide-react';
 import { api, ConsentCheckbox, ConsentLink, useTranslations } from '@kiwi/ui';
 import { PinMapPicker } from '../../../../components/PinMapPicker';
 
@@ -39,9 +39,32 @@ export default function DeliveryLinkPage() {
   const [customerPhone, setCustomerPhone] = useState('');
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [deliveryGps, setDeliveryGps] = useState<{ lat: number; lng: number } | null>(null);
-  const [packageDescription, setPackageDescription] = useState('');
-  const [weightInput, setWeightInput] = useState('');
-  const [notes, setNotes] = useState('');
+  const [locating, setLocating] = useState(false);
+  const [locError, setLocError] = useState(false);
+
+  const useMyLocation = () => {
+    if (locating) return;
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      setLocError(true);
+      return;
+    }
+    setLocating(true);
+    setLocError(false);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setDeliveryGps({
+          lat: Number(pos.coords.latitude.toFixed(6)),
+          lng: Number(pos.coords.longitude.toFixed(6)),
+        });
+        setLocating(false);
+      },
+      () => {
+        setLocError(true);
+        setLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 },
+    );
+  };
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [consentError, setConsentError] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -104,16 +127,12 @@ export default function DeliveryLinkPage() {
   }, [token]);
 
   const digits = customerPhone.replace(/\D/g, '');
-  const weightKg = weightInput === '' ? 0 : Number(weightInput);
-  const weightValid = weightInput === '' || (weightKg > 0 && weightKg <= 500);
   const canSubmit =
     link &&
     !linkError &&
     customerName.trim().length > 0 &&
     digits.length >= 8 &&
     deliveryAddress.trim().length > 0 &&
-    packageDescription.trim().length > 0 &&
-    weightValid &&
     acceptedTerms;
 
   async function submit() {
@@ -132,9 +151,6 @@ export default function DeliveryLinkPage() {
           customerPhone: digits,
           deliveryAddress: deliveryAddress.trim(),
           ...(deliveryGps ? { deliveryLat: deliveryGps.lat, deliveryLng: deliveryGps.lng } : {}),
-          packageDescription: packageDescription.trim(),
-          ...(weightKg > 0 ? { weightKg } : {}),
-          specialInstructions: notes.trim() || undefined,
         },
         { idempotencyKey: ensureKey() },
       );
@@ -325,6 +341,19 @@ export default function DeliveryLinkPage() {
               </div>
               <div>
                 <span className={label}>{t('wclimisc.dlink.pinTitle')}</span>
+                <button
+                  type="button"
+                  onClick={useMyLocation}
+                  disabled={locating}
+                  className="mb-2 inline-flex items-center gap-2 rounded-xl bg-kiwi-700 px-4 py-2.5 text-sm font-bold text-white active:scale-[0.98] disabled:opacity-50"
+                >
+                  📍 {locating ? t('wclimisc.dlink.locating') : t('wclimisc.dlink.useMyLocation')}
+                </button>
+                {locError && (
+                  <p className="mb-2 text-xs font-medium text-red-600">
+                    {t('wclimisc.dlink.locationError')}
+                  </p>
+                )}
                 <PinMapPicker
                   lat={deliveryGps?.lat ?? null}
                   lng={deliveryGps?.lng ?? null}
@@ -340,60 +369,6 @@ export default function DeliveryLinkPage() {
                     {t('wclimisc.dlink.removePin')}
                   </button>
                 )}
-              </div>
-            </div>
-          </section>
-
-          <section className="rounded-2xl border border-surface-200/60 bg-white p-4 shadow-card dark:border-white/[0.06] dark:bg-surface-800">
-            <h2 className="flex items-center gap-2 font-display text-[17px] font-bold text-surface-900 dark:text-surface-100">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-kiwi-100 text-kiwi-700 dark:bg-kiwi-400/10 dark:text-kiwi-300">
-                <Package className="h-4 w-4" aria-hidden />
-              </span>
-              {t('wclimisc.dlink.packageLabel')}
-            </h2>
-            <div className="mt-3 space-y-3">
-              <div>
-                <label className={label} htmlFor="dlink-package">
-                  {t('wclimisc.dlink.packageLabel')}
-                </label>
-                <input
-                  id="dlink-package"
-                  className={field}
-                  value={packageDescription}
-                  onChange={(e) => setPackageDescription(e.target.value)}
-                  placeholder={t('wclimisc.dlink.packagePh')}
-                />
-              </div>
-              <div>
-                <label className={label} htmlFor="dlink-weight">
-                  {t('wclimisc.dlink.weightLabel')}
-                </label>
-                <div className="relative">
-                  <Scale
-                    className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400"
-                    aria-hidden
-                  />
-                  <input
-                    id="dlink-weight"
-                    inputMode="decimal"
-                    className={`${field} pl-10 tabular-nums`}
-                    value={weightInput}
-                    onChange={(e) => setWeightInput(e.target.value)}
-                  />
-                </div>
-                {!weightValid && <p className="mt-1 text-xs font-medium text-red-600">0–500 kg</p>}
-              </div>
-              <div>
-                <label className={label} htmlFor="dlink-notes">
-                  {t('wclimisc.dlink.notesLabel')}
-                </label>
-                <textarea
-                  id="dlink-notes"
-                  rows={2}
-                  className={`${field} resize-none`}
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                />
               </div>
             </div>
           </section>
