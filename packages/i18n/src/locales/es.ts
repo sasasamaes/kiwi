@@ -771,6 +771,7 @@ export default {
     autoConnected: 'Te conectamos solo según tu horario 🕗',
     noBgLocation:
       'No se pudo activar la ubicación en segundo plano: igual te conectamos, pero mantené la app abierta.',
+    weekCut: 'Ganado esta semana de corte: ₡{{amount}}',
   },
 
   // ===== Repartidor: pantallas operativas =====

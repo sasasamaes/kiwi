@@ -273,6 +273,32 @@ export class MerchantsService {
   }
 
   /**
+   * Precio pactado del traslado (admin, colones). null = automático
+   * (sede→sede por GPS/distancia). Se setea en la sede que pide o en la
+   * matriz (las sedes lo heredan si no tienen propio).
+   */
+  async setTransferPriceOverride(id: string, price: number | null) {
+    const merchant = await this.prisma.merchantProfile.findUnique({ where: { id } });
+    if (!merchant) {
+      throw new NotFoundException('Comercio no encontrado');
+    }
+    if (price === null || price === undefined) {
+      return this.prisma.merchantProfile.update({
+        where: { id },
+        data: { transferPriceOverride: null },
+      });
+    }
+    const n = Math.round(Number(price));
+    if (!Number.isFinite(n) || n < 0 || n > 500000) {
+      throw new BadRequestException('Precio inválido (0–500000 colones, o vacío para automático)');
+    }
+    return this.prisma.merchantProfile.update({
+      where: { id },
+      data: { transferPriceOverride: n },
+    });
+  }
+
+  /**
    * Cadena del comercio: matriz + sedes hermanas (para el módulo de
    * traslados). Incluye direcciones/GPS para armar pickup y delivery.
    */

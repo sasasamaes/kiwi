@@ -7,6 +7,7 @@ import { Screen, Button, StatusBadge, tokens } from '@kiwi/mobile-ui';
 import { useTranslation } from '@kiwi/i18n';
 import { ordersApi } from '../../src/api/orders';
 import { driversApi } from '../../src/api/drivers';
+import { earningsApi } from '../../src/api/earnings';
 import { startLocationTask, stopLocationTask } from '../../src/location/task';
 import { http } from '../../src/api/client';
 import { secureStorage } from '../../src/api/storage';
@@ -16,6 +17,7 @@ import { io } from 'socket.io-client';
 
 const api = ordersApi(http);
 const drvApi = driversApi(http);
+const earnApi = earningsApi(http);
 const WS = (process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:4100/api').replace('/api', '');
 
 // Minutos CR (UTC-6 fijo) de un ISO. Null si inválido.
@@ -31,7 +33,7 @@ function crNow(): { dow: number; mins: number } {
 }
 
 export default function Home() {
-  const { t } = useTranslation();
+  const { t, translate } = useTranslation();
   const router = useRouter();
   const qc = useQueryClient();
   const { online, setOnline } = useSession((s) => s);
@@ -49,6 +51,10 @@ export default function Home() {
     queryFn: () => api.available(),
     enabled: online,
   });
+  // Ganado en la semana de corte en curso (sale del balance).
+  const bal = useQuery({ queryKey: ['withdraw', 'balance'], queryFn: () => earnApi.balance() });
+  const weekEarnings =
+    (bal.data as any)?.weekEarnings != null ? Number((bal.data as any).weekEarnings) : null;
   useEffect(() => {
     if (Array.isArray(data)) setOrders(data);
   }, [data]);
@@ -262,6 +268,22 @@ export default function Home() {
         </Text>
         <Switch value={online} onValueChange={(v) => void toggleOnline(v)} disabled={switching} />
       </View>
+      {weekEarnings != null && (
+        <View
+          style={{
+            backgroundColor: '#f0fdf4',
+            borderRadius: tokens.radius.md,
+            padding: tokens.space[3],
+            marginBottom: tokens.space[3],
+          }}
+        >
+          <Text style={{ color: '#15803d', fontSize: 13, fontWeight: '700' }}>
+            {translate('driverHome.weekCut', {
+              amount: Math.round(weekEarnings).toLocaleString(),
+            })}
+          </Text>
+        </View>
+      )}
       <View style={{ flexDirection: 'row', gap: 8, marginBottom: tokens.space[3] }}>
         <Pressable
           onPress={() => router.push('/(app)/earnings')}
@@ -362,6 +384,7 @@ export default function Home() {
               }}
             />
             <Text style={{ color: tokens.color.ink, marginTop: 8, fontWeight: '600' }}>
+              {item.isTest ? '🧪 TEST · ' : ''}
               {item.merchant?.businessName ?? item.pickupAddress}
             </Text>
             <Text style={{ color: tokens.color.muted, fontSize: 12 }}>{item.deliveryAddress}</Text>

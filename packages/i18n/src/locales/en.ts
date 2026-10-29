@@ -769,6 +769,7 @@ export default {
     kycBlockedOnline: 'You cannot go online until verification is approved.',
     autoConnected: 'We connected you automatically per your schedule 🕗',
     noBgLocation: 'Could not enable background location: you are connected, but keep the app open.',
+    weekCut: 'Earned this payout week: ₡{{amount}}',
   },
 
   // ===== Driver: operational screens =====

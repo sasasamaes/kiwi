@@ -403,9 +403,11 @@ export class DriversService {
         startDate = undefined;
     }
 
+    // Pruebas: jamás son ganancia (ni totales, ni gráfica, ni conteos).
     const where: any = {
       driverId: driver.id,
       status: 'delivered',
+      isTest: false,
     };
 
     if (startDate) {
@@ -539,6 +541,9 @@ export class DriversService {
           id: order.id,
           status: order.status,
           orderType: order.orderType,
+          // El flujo de prueba se ve completo pero marcado: el frontend
+          // muestra badge TEST y ₡0 (el payout real queda para auditoría).
+          isTest: (order as any).isTest === true,
           merchantName: order.merchant?.businessName ?? null,
           pickupAddress: order.pickupAddress,
           deliveryAddress: order.deliveryAddress,
@@ -578,10 +583,12 @@ export class DriversService {
         break;
     }
 
+    // Pruebas: no rankean (son demo, no trabajo real).
     const where: any = {
       status: 'delivered',
       assignedAt: { not: null },
       deliveredAt: { not: null },
+      isTest: false,
     };
     if (startDate) where.deliveredAt = { gte: startDate };
 

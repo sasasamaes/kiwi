@@ -123,6 +123,7 @@ export default function ActiveOrder() {
           marginVertical: tokens.space[4],
         }}
       >
+        {order.isTest === true ? '🧪 TEST · ' : ''}
         {translate('driverOrder.title', { id: String(id).slice(0, 8) })}
       </Text>
 

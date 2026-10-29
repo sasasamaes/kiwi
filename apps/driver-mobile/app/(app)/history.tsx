@@ -53,6 +53,7 @@ export default function History() {
           >
             <View style={{ flex: 1 }}>
               <Text style={{ color: tokens.color.ink, fontWeight: '600' }}>
+                {item.isTest ? '🧪 TEST · ' : ''}
                 {item.merchantName ?? item.pickupAddress}
               </Text>
               <Text style={{ color: tokens.color.muted, fontSize: 12 }}>
@@ -61,7 +62,7 @@ export default function History() {
             </View>
             <View style={{ alignItems: 'flex-end' }}>
               <Text style={{ color: tokens.color.ink, fontWeight: '700' }}>
-                ₡{Math.round(Number(item.driverPayout ?? 0)).toLocaleString()}
+                ₡{item.isTest ? 0 : Math.round(Number(item.driverPayout ?? 0)).toLocaleString()}
               </Text>
               <Text style={{ color: tokens.color.muted, fontSize: 12 }}>
                 {t.driverHistory.payout}

@@ -755,8 +755,15 @@ export class NotificationsService {
 
   /** Te asignaron un pedido: tenés N minutos para aceptar. */
   async notifyAssignmentOffered(orderId: string, driverUserId: string, minutes: number) {
+    const order = await this.prisma.order
+      ?.findUnique({ where: { id: orderId }, select: { isTest: true } })
+      .catch(() => null);
+    const title =
+      (order as any)?.isTest === true
+        ? '🧪 TEST · Tenés un pedido de prueba para aceptar'
+        : '🛵 Tenés un pedido para aceptar';
     return this.sendToUser(driverUserId, {
-      title: '🛵 Tenés un pedido para aceptar',
+      title,
       body: `Tenés ${minutes} min para aceptarlo antes de que vuelva a concurso. Pedido #${orderId.slice(0, 8)}`,
       data: { orderId, type: 'assignment_offered' },
     });
@@ -918,8 +925,17 @@ export class NotificationsService {
       body: `Pedido ${tag}: ${status}`,
     };
 
+    // Prueba: el título avisa desde el primer push (el flujo se simula,
+    // no paga ganancia real). Se lee acá y no en cada llamador: ningún
+    // flujo futuro se olvida el prefijo.
+    const order = await this.prisma.order
+      ?.findUnique({ where: { id: orderId }, select: { isTest: true } })
+      .catch(() => null);
+    const title = (order as any)?.isTest === true ? `🧪 TEST · ${message.title}` : message.title;
+
     return this.sendToUser(userId, {
       ...message,
+      title,
       // Driver: solo el delivered suena (con ganancia); el resto queda en
       // la campanita. Merchant y entrantes no cambian.
       push: perspective === 'driver' ? status === 'delivered' : true,

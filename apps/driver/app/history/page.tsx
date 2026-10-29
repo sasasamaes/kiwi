@@ -15,6 +15,7 @@ interface HistoryOrder {
   pickupAddress: string;
   deliveryAddress: string;
   driverPayout: number;
+  isTest?: boolean;
   createdAt: string;
   deliveredAt?: string | null;
   assignedAt?: string | null;
@@ -188,6 +189,11 @@ export default function HistoryPage() {
                     >
                       {t(`wdrvwork.history.${statusKey(o.status)}` as any)}
                     </span>
+                    {o.isTest === true && (
+                      <span className="rounded-full px-2.5 py-0.5 text-xs font-bold bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300">
+                        🧪 TEST
+                      </span>
+                    )}
                   </span>
                   <span className="mt-1 block truncate text-sm font-medium text-surface-800 dark:text-surface-100">
                     {o.merchantName ?? o.pickupAddress} → {o.deliveryAddress}
@@ -205,7 +211,7 @@ export default function HistoryPage() {
                   </span>
                 </span>
                 <span className="shrink-0 font-bold text-surface-800 dark:text-surface-100">
-                  ₡{Number(o.driverPayout).toLocaleString()}
+                  ₡{o.isTest === true ? 0 : Number(o.driverPayout).toLocaleString()}
                 </span>
               </div>
             ))}

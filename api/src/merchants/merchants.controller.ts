@@ -260,6 +260,19 @@ export class MerchantsController {
     return this.merchantsService.setTransfersEnabled(id, body?.enabled === true);
   }
 
+  @Put(':id/transfer-price')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Precio pactado del traslado (null/vacío = automático)' })
+  async setTransferPrice(@Param('id') id: string, @Body() body: { price?: number | null }) {
+    const raw = body?.price;
+    return this.merchantsService.setTransferPriceOverride(
+      id,
+      raw === null || raw === undefined || raw === '' ? null : Number(raw),
+    );
+  }
+
   @Put(':id/push-credits')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')

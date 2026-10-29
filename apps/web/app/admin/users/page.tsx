@@ -30,6 +30,7 @@ interface AdminUser {
     testOrdersUntil?: string | null;
     parentMerchantId?: string | null;
     transfersEnabled?: boolean;
+    transferPriceOverride?: number | string | null;
     branches?: Array<{ id: string; businessName: string }>;
     isHomeCook?: boolean;
     pushCredits?: number;
@@ -511,6 +512,11 @@ export default function UsersPage() {
     setPwMessage(null);
     setChainMsg(null);
     setPushAmount('4');
+    setTransferPrice(
+      u.merchantProfile?.transferPriceOverride != null
+        ? String(u.merchantProfile.transferPriceOverride)
+        : '',
+    );
   };
 
   const grantPushCredits = async (u: AdminUser) => {
@@ -697,6 +703,38 @@ export default function UsersPage() {
 
   // Sedes: colgar bajo matriz + toggle de traslados (admin, por comercio).
   const [chainMsg, setChainMsg] = useState<string | null>(null);
+  const [transferPrice, setTransferPrice] = useState('');
+  const saveTransferPrice = async (u: AdminUser) => {
+    const merchantId = u.merchantProfile?.id;
+    if (!merchantId) return;
+    const raw = transferPrice.trim();
+    // Vacío = automático (punto a punto). Con valor = pactado en colones.
+    const price = raw === '' ? null : Math.round(Number(raw));
+    if (price !== null && (!Number.isFinite(price) || price < 0 || price > 500000)) {
+      setChainMsg('Precio inválido (0–500000 colones, o vacío para automático).');
+      return;
+    }
+    setToggling(true);
+    setChainMsg(null);
+    try {
+      await api.setMerchantTransferPrice(merchantId, price);
+      const patch = (x: AdminUser) =>
+        x.id === u.id && x.merchantProfile
+          ? { ...x, merchantProfile: { ...x.merchantProfile, transferPriceOverride: price } }
+          : x;
+      setUsers((prev) => prev.map(patch));
+      setSelectedUser((prev) => (prev?.id === u.id ? patch(prev) : prev));
+      setChainMsg(
+        price === null
+          ? '✓ Precio automático (punto a punto).'
+          : `✓ Precio pactado: ₡${price.toLocaleString('es-CR')} por traslado.`,
+      );
+    } catch (e: any) {
+      setError(e?.message || 'No se pudo guardar el precio');
+    } finally {
+      setToggling(false);
+    }
+  };
   const setParent = async (u: AdminUser, parentId: string | null) => {
     const merchantId = u.merchantProfile?.id;
     if (!merchantId) return;
@@ -1335,6 +1373,32 @@ export default function UsersPage() {
                           {chainMsg}
                         </p>
                       )}
+                      <div className="mt-3 pt-3 border-t border-kiwi-200/50 dark:border-kiwi-800/30">
+                        <p className="text-sm font-semibold text-surface-800 dark:text-surface-200">
+                          💰 Precio pactado del traslado
+                        </p>
+                        <p className="text-xs text-surface-500">
+                          Vacío = automático punto a punto. Con valor, ese precio manda (en la
+                          matriz aplica a sus sedes).
+                        </p>
+                        <div className="mt-2 flex gap-2">
+                          <input
+                            value={transferPrice}
+                            onChange={(e) => setTransferPrice(e.target.value)}
+                            inputMode="numeric"
+                            placeholder="Ej. 2500"
+                            className="min-h-[44px] w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 text-sm"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => void saveTransferPrice(selectedUser)}
+                            disabled={toggling}
+                            className="shrink-0 rounded-xl bg-kiwi-700 px-4 text-sm font-bold text-white disabled:opacity-50"
+                          >
+                            Guardar
+                          </button>
+                        </div>
+                      </div>
                       <div className="flex justify-between items-center mt-3 pt-3 border-t border-kiwi-200/50 dark:border-kiwi-800/30">
                         <div>
                           <p className="text-sm font-semibold text-surface-800 dark:text-surface-200">

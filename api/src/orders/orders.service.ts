@@ -452,7 +452,85 @@ export class OrdersService {
    * destino. No hay venta (productsTotal=0): solo se cobra el viaje a la
    * sede origen, con el flujo de pago normal (efectivo/crédito/semanal).
    */
-  async createTransfer(merchantUserId: string, data: any) {
+  /**
+   * Base del precio del viaje por zona: la zona manual (si viene) más el
+   * polígono GPS de entrega (que manda si cae en polígono). Sin nada,
+   * zoneBase null y se cobra por distancia. Mismo helper para crear y
+   * cotizar: el precio estimado y el cobrado no pueden divergir.
+   */
+  private async resolveZoneBase(
+    deliveryZoneInput: unknown,
+    deliveryLat: unknown,
+    deliveryLng: unknown,
+  ): Promise<{ deliveryZone: string | null; zoneBase: number | null }> {
+    let deliveryZone: string | null = null;
+    let zoneBase: number | null = null;
+    if (deliveryZoneInput != null && String(deliveryZoneInput).trim() !== '') {
+      // Fuente de verdad: zonas en la DB (editables desde el admin). Si la DB
+      // todavía no tiene zonas (seed pendiente), fallback al catálogo en código.
+      const dbZones = await this.zonesService.list();
+      const source: Array<{ id: string; label: string; price: number }> = dbZones.length
+        ? dbZones
+        : NICOYA_DELIVERY_ZONES;
+      const wanted = String(deliveryZoneInput).trim();
+      // El frontend manda ids UUID (lista DB) o slugs del catálogo
+      // ('los-angeles'). Normalizar (sin tildes, guiones≅espacios) para que
+      // el slug matchee el label de la DB ('Los Ángeles').
+      const norm = (s: string) =>
+        s
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .toLowerCase()
+          .replace(/[_-]+/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+      const wantedNorm = norm(wanted);
+      const zone =
+        source.find((z) => z.id === wanted) ?? source.find((z) => norm(z.label) === wantedNorm);
+      if (!zone) {
+        // Diagnóstico: el valor viaja en el 400 para verlo en el banner del
+        // comercio y cazar UUIDs viejos/slugs que no matchean.
+        this.logger.warn(
+          `Zona inválida en pedido: "${wanted.slice(0, 80)}" (${source.length} zonas en catálogo)`,
+        );
+        throw new BadRequestException(`Barrio de entrega inválido ("${wanted.slice(0, 60)}")`);
+      }
+      deliveryZone = zone.id;
+      zoneBase = Number(zone.price);
+    }
+
+    // Con coordenadas: resolver la zona por polígono (cobro automático por
+    // ubicación). Si cae en polígono, ESA zona cobra (aunque el cliente haya
+    // elegido otra a mano). Si solo cae en referencia (sin polígono) NO se
+    // cobra automático: queda como sugerencia.
+    const hasDeliveryCoords =
+      deliveryLat != null &&
+      deliveryLng != null &&
+      Number.isFinite(Number(deliveryLat)) &&
+      Number.isFinite(Number(deliveryLng));
+    if (hasDeliveryCoords) {
+      const resolved = await this.zonesService.resolvePriceAt(
+        Number(deliveryLat),
+        Number(deliveryLng),
+      );
+      if (resolved && resolved.source === 'polygon') {
+        if (deliveryZone !== null && deliveryZone !== resolved.zone.id) {
+          this.logger.warn(
+            `Zona corregida por GPS en pedido (cliente=${deliveryZone} gps=${resolved.zone.id})`,
+          );
+        }
+        deliveryZone = resolved.zone.id;
+        zoneBase = Number(resolved.zone.price);
+      }
+    }
+    return { deliveryZone, zoneBase };
+  }
+
+  /**
+   * Sedes de un traslado: origen que pide + destino, misma cadena y con
+   * traslados habilitados. Validación única para crear y cotizar.
+   */
+  private async loadTransferEndpoints(merchantUserId: string, toMerchantId: unknown) {
     const origin: any = await this.prisma.merchantProfile.findUnique({
       where: { userId: merchantUserId },
     });
@@ -462,7 +540,7 @@ export class OrdersService {
     if (origin.transfersEnabled !== true) {
       throw new ForbiddenException('Los traslados no están habilitados para este comercio');
     }
-    const toId = String(data?.toMerchantId ?? '').trim();
+    const toId = String(toMerchantId ?? '').trim();
     if (!toId) {
       throw new BadRequestException('toMerchantId es requerido (sede destino)');
     }
@@ -479,6 +557,71 @@ export class OrdersService {
     if (rootOf(origin) !== rootOf(dest)) {
       throw new ForbiddenException('El traslado solo vale entre sedes de la misma cadena');
     }
+    return { origin, dest };
+  }
+
+  /**
+   * Precio pactado del traslado: el de la sede que pide, o el de su matriz
+   * si no tiene propio. null = automático (punto a punto).
+   */
+  private async transferPriceOverrideFor(origin: any): Promise<number | null> {
+    // Ojo: Number(null) === 0 — el null (automático) se chequea explícito,
+    // si no todo traslado sin pactado saldría gratis.
+    const pick = (v: unknown): number | null => {
+      if (v === null || v === undefined || v === '') return null;
+      const n = Number(v);
+      return Number.isFinite(n) && n >= 0 ? Math.round(n) : null;
+    };
+    const own = pick((origin as any)?.transferPriceOverride);
+    if (own != null) return own;
+    const rootId = (origin as any)?.parentMerchantId;
+    if (rootId && rootId !== origin.id) {
+      const root: any = await this.prisma.merchantProfile.findUnique({ where: { id: rootId } });
+      const rootPrice = pick(root?.transferPriceOverride);
+      if (rootPrice != null) return rootPrice;
+    }
+    return null;
+  }
+
+  /**
+   * Cotiza un traslado sin crear el pedido: misma distancia y misma tarifa
+   * que al cobrar (polígono GPS o tabla por distancia), más el pactado si
+   * hay. El frontend lo muestra al elegir la sede destino.
+   */
+  async quoteTransfer(merchantUserId: string, toMerchantId: string) {
+    const { origin, dest } = await this.loadTransferEndpoints(merchantUserId, toMerchantId);
+    const pickup = {
+      lat: origin.latitude != null ? Number(origin.latitude) : undefined,
+      lng: origin.longitude != null ? Number(origin.longitude) : undefined,
+    };
+    const delivery = {
+      lat: dest.latitude != null ? Number(dest.latitude) : undefined,
+      lng: dest.longitude != null ? Number(dest.longitude) : undefined,
+    };
+    const distanceKm = await this.resolveDistanceKm(
+      pickup,
+      delivery,
+      origin.address,
+      dest.address,
+      0,
+    );
+    const { deliveryZone, zoneBase } = await this.resolveZoneBase(
+      undefined,
+      delivery.lat,
+      delivery.lng,
+    );
+    const computed = Math.round(zoneBase ?? this.calculateBasePrice(distanceKm, pickup, delivery));
+    const override = await this.transferPriceOverrideFor(origin);
+    return {
+      distanceKm,
+      tripPrice: override ?? computed,
+      overrideApplied: override != null,
+      deliveryZone,
+    };
+  }
+
+  async createTransfer(merchantUserId: string, data: any) {
+    const { origin, dest } = await this.loadTransferEndpoints(merchantUserId, data?.toMerchantId);
     const desc = String(data?.packageDescription ?? '').trim();
     if (!desc) {
       throw new BadRequestException('packageDescription es requerido (qué se traslada)');
@@ -486,6 +629,7 @@ export class OrdersService {
     if (desc.length > 500) {
       throw new BadRequestException('packageDescription muy larga (máx 500)');
     }
+    const tripPriceOverride = await this.transferPriceOverrideFor(origin);
     return this.create(merchantUserId, {
       kind: 'transfer',
       productsTotal: 0,
@@ -498,6 +642,7 @@ export class OrdersService {
       deliveryLng: dest.longitude != null ? Number(dest.longitude) : undefined,
       deliveryZone: data.deliveryZone,
       distanceKm: data.distanceKm,
+      ...(tripPriceOverride != null ? { tripPriceOverride } : {}),
       orderType: 'immediate',
       paymentMethod: data.paymentMethod ?? 'cash',
       cashTendered: data.cashTendered,
@@ -896,66 +1041,11 @@ export class OrdersService {
     // zona elegida a mano. Si no, bastaba poner GPS en zona cara + barrio
     // barato para pagar menos por una entrega cara. La referencia (sin
     // polígono) es solo sugerencia y no pisa nada.
-    let deliveryZone: string | null = null;
-    let zoneBase: number | null = null;
-    if (data.deliveryZone != null && String(data.deliveryZone).trim() !== '') {
-      // Fuente de verdad: zonas en la DB (editables desde el admin). Si la DB
-      // todavía no tiene zonas (seed pendiente), fallback al catálogo en código.
-      const dbZones = await this.zonesService.list();
-      const source: Array<{ id: string; label: string; price: number }> = dbZones.length
-        ? dbZones
-        : NICOYA_DELIVERY_ZONES;
-      const wanted = String(data.deliveryZone).trim();
-      // El frontend manda ids UUID (lista DB) o slugs del catálogo
-      // ('los-angeles'). Normalizar (sin tildes, guiones≅espacios) para que
-      // el slug matchee el label de la DB ('Los Ángeles').
-      const norm = (s: string) =>
-        s
-          .normalize('NFD')
-          .replace(/[\u0300-\u036f]/g, '')
-          .toLowerCase()
-          .replace(/[_-]+/g, ' ')
-          .replace(/\s+/g, ' ')
-          .trim();
-      const wantedNorm = norm(wanted);
-      const zone =
-        source.find((z) => z.id === wanted) ?? source.find((z) => norm(z.label) === wantedNorm);
-      if (!zone) {
-        // Diagnóstico: el valor viaja en el 400 para verlo en el banner del
-        // comercio y cazar UUIDs viejos/slugs que no matchean.
-        this.logger.warn(
-          `Zona inválida en pedido: "${wanted.slice(0, 80)}" (${source.length} zonas en catálogo)`,
-        );
-        throw new BadRequestException(`Barrio de entrega inválido ("${wanted.slice(0, 60)}")`);
-      }
-      deliveryZone = zone.id;
-      zoneBase = Number(zone.price);
-    }
-
-    // Con coordenadas: resolver la zona por polígono (cobro automático por
-    // ubicación). Si cae en polígono, ESA zona cobra (aunque el cliente haya
-    // elegido otra a mano). Si solo cae en referencia (sin polígono) NO se
-    // cobra automático: queda como sugerencia.
-    const hasDeliveryCoords =
-      data.deliveryLat != null &&
-      data.deliveryLng != null &&
-      Number.isFinite(Number(data.deliveryLat)) &&
-      Number.isFinite(Number(data.deliveryLng));
-    if (hasDeliveryCoords) {
-      const resolved = await this.zonesService.resolvePriceAt(
-        Number(data.deliveryLat),
-        Number(data.deliveryLng),
-      );
-      if (resolved && resolved.source === 'polygon') {
-        if (deliveryZone !== null && deliveryZone !== resolved.zone.id) {
-          this.logger.warn(
-            `Zona corregida por GPS en pedido (cliente=${deliveryZone} gps=${resolved.zone.id})`,
-          );
-        }
-        deliveryZone = resolved.zone.id;
-        zoneBase = Number(resolved.zone.price);
-      }
-    }
+    const { deliveryZone, zoneBase } = await this.resolveZoneBase(
+      data.deliveryZone,
+      data.deliveryLat,
+      data.deliveryLng,
+    );
 
     // Cobertura: solo Nicoya y alrededores (25 km). Si hay coords de entrega
     // y caen fuera, se rechaza amable y se anota el interés (lista de espera
@@ -989,7 +1079,7 @@ export class OrdersService {
     // (retiros, analytics) arrastrarían decimales. Todo se redondea ANTES
     // de persistir: viaje, productos, comisión y payout derivan enteros.
     productsTotal = Math.round(productsTotal);
-    const tripPrice = Math.round(
+    const computedTrip = Math.round(
       (zoneBase ??
         this.calculateBasePrice(
           distanceKm,
@@ -997,6 +1087,13 @@ export class OrdersService {
           { lat: data.deliveryLat, lng: data.deliveryLng },
         )) + weightSurcharge,
     );
+    // Precio pactado (traslados con override del admin): manda sobre el
+    // cálculo. Solo lo inyecta el servidor (createTransfer), nunca el cliente.
+    // Corte, payout y total derivan igual que siempre.
+    const tripPrice =
+      data.tripPriceOverride != null && Number.isFinite(Number(data.tripPriceOverride))
+        ? Math.round(Number(data.tripPriceOverride))
+        : computedTrip;
     // Cargo por servicio de Kiwi — 2 vías, sin recargos al que paga:
     // - VÍA COMERCIO (dashboard negocios, pedido o encomienda): el comercio
     //   paga productos + viaje de la zona. Solo se le cobra al repartidor.
@@ -1555,6 +1652,7 @@ export class OrdersService {
       orderId: order.id,
       status: order.status,
       orderType: order.orderType,
+      isTest: (order as any).isTest === true,
       pickupAddress: order.pickupAddress,
       deliveryAddress: order.deliveryAddress,
       deliveryZone: (order as any).deliveryZone ?? null,
@@ -1602,6 +1700,7 @@ export class OrdersService {
       const directPayload = {
         id: order.id,
         orderId: order.id,
+        isTest: (order as any).isTest === true,
         pickupAddress: order.pickupAddress,
         deliveryAddress: order.deliveryAddress,
         deliveryZone: (order as any).deliveryZone ?? deliveryZone,
@@ -1641,6 +1740,7 @@ export class OrdersService {
       const payload = {
         id: order.id,
         orderId: order.id,
+        isTest: (order as any).isTest === true,
         pickupAddress: order.pickupAddress,
         deliveryAddress: order.deliveryAddress,
         deliveryZone: (order as any).deliveryZone ?? deliveryZone,
@@ -1660,6 +1760,7 @@ export class OrdersService {
         id: order.id,
         orderId: order.id,
         orderType: 'scheduled',
+        isTest: (order as any).isTest === true,
         scheduledDate: order.scheduledDate,
         scheduledTime: (order as any).scheduledTime ?? null,
         pickupAddress: order.pickupAddress,

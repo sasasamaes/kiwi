@@ -700,6 +700,21 @@ class ApiClient {
     });
   }
 
+  /** Precio pactado del traslado en colones (admin). null = automático. */
+  async setMerchantTransferPrice(merchantId: string, price: number | null) {
+    return this.request<any>(`/merchants/${merchantId}/transfer-price`, {
+      method: 'PUT',
+      body: { price },
+    });
+  }
+
+  /** Cotiza un traslado a una sede (precio estimado sin crear el pedido). */
+  async getTransferQuote(toMerchantId: string) {
+    return this.request<{ distanceKm: number; tripPrice: number; overrideApplied: boolean }>(
+      `/orders/transfers/quote?toMerchantId=${encodeURIComponent(toMerchantId)}`,
+    );
+  }
+
   /** Mi cadena: matriz + sedes para traslados. */
   async getMyChain() {
     return this.request<any>('/merchants/me/chain');

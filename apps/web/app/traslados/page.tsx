@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { api, useAuth } from '@kiwi/ui';
 import { Driver, toDriverList } from '../drivers/mappers';
 
@@ -13,11 +14,9 @@ import { Driver, toDriverList } from '../drivers/mappers';
 export default function TrasladosPage() {
   const { user } = useAuth();
   const [chain, setChain] = useState<any>(null);
-  const [zones, setZones] = useState<any[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [toId, setToId] = useState('');
   const [desc, setDesc] = useState('');
-  const [zoneId, setZoneId] = useState('');
   const [driverId, setDriverId] = useState<string | null>(null);
   const [payMethod, setPayMethod] = useState<'cash' | 'credit' | 'weekly'>('cash');
   const [sent, setSent] = useState<any[]>([]);
@@ -25,6 +24,12 @@ export default function TrasladosPage() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [quote, setQuote] = useState<{
+    distanceKm: number;
+    tripPrice: number;
+    overrideApplied: boolean;
+  } | null>(null);
+  const [quoteBusy, setQuoteBusy] = useState(false);
 
   const myEntry = chain?.members?.find((m: any) => m.id === chain?.myId);
   const enabled = myEntry?.transfersEnabled === true;
@@ -33,16 +38,14 @@ export default function TrasladosPage() {
 
   const reload = async () => {
     try {
-      const [c, av, z, mine, incoming] = await Promise.all([
+      const [c, av, mine, incoming] = await Promise.all([
         api.getMyChain().catch(() => null),
         api.getAvailableDrivers().catch(() => []),
-        api.getDeliveryZones().catch(() => []),
         api.getMyOrders().catch(() => []),
         api.getIncomingTransfers().catch(() => []),
       ]);
       setChain(c);
       setDrivers(toDriverList(av));
-      setZones(Array.isArray(z) ? z : []);
       const mineArr = Array.isArray(mine) ? mine : (mine?.items ?? []);
       setSent(mineArr.filter((o: any) => o.kind === 'transfer'));
       setReceived(Array.isArray(incoming) ? incoming : []);
@@ -56,6 +59,29 @@ export default function TrasladosPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Cotización punto a punto al elegir destino (sin crear el pedido).
+  useEffect(() => {
+    setQuote(null);
+    if (!toId || !enabled) return;
+    let alive = true;
+    setQuoteBusy(true);
+    api
+      .getTransferQuote(toId)
+      .then((q) => {
+        if (alive) setQuote(q);
+      })
+      .catch(() => {
+        // Sin estimado: el submit igual calcula y muestra el precio.
+        if (alive) setQuote(null);
+      })
+      .finally(() => {
+        if (alive) setQuoteBusy(false);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [toId, enabled]);
+
   const submit = async () => {
     if (busy) return;
     setErr(null);
@@ -68,16 +94,11 @@ export default function TrasladosPage() {
       setErr('Describí qué se traslada');
       return;
     }
-    if (!zoneId) {
-      setErr('Elegí la zona de entrega (la de la sede destino)');
-      return;
-    }
     setBusy(true);
     try {
       const order = await api.createTransfer({
         toMerchantId: toId,
         packageDescription: desc.trim(),
-        deliveryZone: zoneId,
         driverId: driverId || undefined,
         paymentMethod: payMethod === 'weekly' ? 'weekly_invoice' : payMethod,
       });
@@ -104,6 +125,12 @@ export default function TrasladosPage() {
 
   return (
     <main className="mx-auto w-full max-w-lg px-4 pb-28 pt-6">
+      <Link
+        href="/dashboard"
+        className="inline-block text-sm text-surface-500 hover:text-surface-800 dark:hover:text-surface-200"
+      >
+        ← Volver
+      </Link>
       <h1 className="font-display text-2xl font-bold">🚚 Traslados entre sedes</h1>
       <p className="mt-1 text-sm text-surface-500">
         Pedí un repartidor para llevar producto a otra sede de tu cadena. Solo se cobra el viaje.
@@ -159,6 +186,15 @@ export default function TrasladosPage() {
                   </option>
                 ))}
               </select>
+              {(quoteBusy || quote) && (
+                <p className="mt-1 text-xs text-surface-500">
+                  {quoteBusy && !quote
+                    ? 'Calculando viaje…'
+                    : quote
+                      ? `Viaje estimado: ₡${Number(quote.tripPrice).toLocaleString('es-CR')} (~${Number(quote.distanceKm).toLocaleString('es-CR', { maximumFractionDigits: 1 })} km)${quote.overrideApplied ? ' · precio pactado' : ''}`
+                      : null}
+                </p>
+              )}
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium">¿Qué se traslada? *</label>
@@ -168,21 +204,10 @@ export default function TrasladosPage() {
                 placeholder="Ej. 2 cajas de acetaminofén, 1 hielera"
                 className="w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm"
               />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium">Zona de la sede destino *</label>
-              <select
-                value={zoneId}
-                onChange={(e) => setZoneId(e.target.value)}
-                className="min-h-[44px] w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 text-sm"
-              >
-                <option value="">Elegí la zona…</option>
-                {zones.map((z: any) => (
-                  <option key={z.id} value={z.id}>
-                    {z.label ?? z.id} — ₡{Number(z.price ?? 0).toLocaleString('es-CR')}
-                  </option>
-                ))}
-              </select>
+              <p className="mt-1 text-xs text-surface-500">
+                Se recoge en tu sede y se entrega en la dirección de la sede destino. El precio del
+                viaje lo calcula Kiwi solo.
+              </p>
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium">

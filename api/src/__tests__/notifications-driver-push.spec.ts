@@ -42,4 +42,44 @@ describe('NotificationsService: driver push silencioso salvo entrega', () => {
     await service.notifyOrderStatusUpdate('order-1', 'm-1', 'picked_up', 'merchant', {});
     expect((service as any).fcmAdmin.send).toHaveBeenCalled();
   });
+
+  it('pedido de prueba: el push lleva prefijo TEST', async () => {
+    prisma.order = { findUnique: jest.fn().mockResolvedValue({ isTest: true }) };
+    await service.notifyOrderStatusUpdate('order-1', 'driver-1', 'delivered', 'driver', {
+      payout: 1275,
+    });
+    expect(prisma.notification.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          title: expect.stringMatching(/^🧪 TEST/),
+        }),
+      }),
+    );
+  });
+
+  it('oferta a piloto de un test: el título avisa que es prueba', async () => {
+    prisma.order = { findUnique: jest.fn().mockResolvedValue({ isTest: true }) };
+    await service.notifyAssignmentOffered('order-1', 'driver-1', 5);
+    expect(prisma.notification.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          title: expect.stringMatching(/prueba/i),
+        }),
+      }),
+    );
+  });
+
+  it('pedido real: sin prefijo TEST', async () => {
+    prisma.order = { findUnique: jest.fn().mockResolvedValue({ isTest: false }) };
+    await service.notifyOrderStatusUpdate('order-1', 'driver-1', 'delivered', 'driver', {
+      payout: 1275,
+    });
+    expect(prisma.notification.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          title: expect.not.stringMatching(/TEST/),
+        }),
+      }),
+    );
+  });
 });

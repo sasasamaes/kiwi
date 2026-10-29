@@ -338,6 +338,11 @@ model MerchantProfile {
   // traslados no aparece en el panel del comercio.
   transfersEnabled Boolean @default(false) @map("transfers_enabled")
 
+  // Precio pactado del viaje de traslado (colones, admin). Si hay valor,
+  // manda sobre el cálculo automático (sede→sede). null = automático.
+  // Se resuelve en la sede que pide, con herencia de la matriz.
+  transferPriceOverride Int? @map("transfer_price_override")
+
   // Avisos push extra a seguidores (más allá de los 4 gratis/semana). Los
   // otorga el admin (comprados o por acuerdo); cada aviso extra consume 1.
   pushCredits Int @default(0) @map("push_credits")

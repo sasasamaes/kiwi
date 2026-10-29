@@ -468,6 +468,11 @@ export default function OrdersPage() {
                       <p className="truncate font-medium">{clientName}</p>
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
+                      {(order as any).isTest === true && (
+                        <span className="rounded-full px-3 py-1 text-xs font-bold bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300">
+                          🧪 TEST
+                        </span>
+                      )}
                       <span
                         className={`rounded-full px-3 py-1 text-xs font-medium ${STATUS_COLOR[order.status] ?? 'bg-surface-100 text-surface-500'}`}
                       >

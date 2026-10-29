@@ -69,6 +69,7 @@ export default function Active() {
               }}
             />
             <Text style={{ color: tokens.color.ink, marginTop: 8, fontWeight: '600' }}>
+              {item.isTest ? '🧪 TEST · ' : ''}
               {item.merchantName ?? item.pickupAddress}
             </Text>
             <Text style={{ color: tokens.color.muted, fontSize: 12 }}>{item.deliveryAddress}</Text>

@@ -91,6 +91,19 @@ export class WithdrawalsService {
     const withdrawn = Number(totalWithdrawn._sum?.amount || 0);
     const pending = Number(pendingWithdrawals._sum?.amount || 0);
 
+    // Ganado en la semana de corte en curso (mar–lun): lo que el
+    // dashboard muestra como "esta semana". Independiente de retiros.
+    const weekStart = payWeekStart(new Date());
+    const week = await this.prisma.order.aggregate({
+      where: {
+        driverId: driverProfile.id,
+        status: 'delivered',
+        isTest: false,
+        deliveredAt: { gte: weekStart },
+      },
+      _sum: { driverPayout: true },
+    });
+
     // Ganado desde el último corte cobrado (último retiro completed).
     // Sin cortes aún, es todo lo ganado: el home muestra "desde el inicio".
     const lastCut = await this.prisma.withdrawal.findFirst({
@@ -121,6 +134,8 @@ export class WithdrawalsService {
       sinceLastCut: Math.round(sinceLastCut),
       lastCutAt: cutAt,
       lastCutAmount: lastCut ? Math.round(Number((lastCut as any).amount ?? 0)) : 0,
+      weekEarnings: Math.round(Number(week._sum?.driverPayout || 0)),
+      weekStart,
     };
   }
 

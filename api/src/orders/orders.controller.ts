@@ -143,6 +143,15 @@ export class OrdersController {
     return this.ordersService.findTransfersIncoming(user.sub);
   }
 
+  @Get('transfers/quote')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('merchant')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Cotiza un traslado a una sede (sin crear el pedido)' })
+  async getTransferQuote(@CurrentUser() user: any, @Query('toMerchantId') toMerchantId: string) {
+    return this.ordersService.quoteTransfer(user.sub, toMerchantId);
+  }
+
   @Put(':id/receipt')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('driver')

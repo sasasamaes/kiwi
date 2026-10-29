@@ -101,6 +101,12 @@ export class PaymentsService {
       throw new BadRequestException('Pedido no encontrado');
     }
 
+    // Prueba: jamás se cobra ni gasta crédito/weekly (el flujo se simula
+    // en efectivo). Sin esto, un POST directo a /payments cobraba un test.
+    if ((order as any).isTest === true) {
+      throw new BadRequestException('Los pedidos de prueba no se cobran');
+    }
+
     if (payerRole !== 'admin') {
       if (payerRole === 'customer') {
         // El cliente dueño paga su propio pedido (tarjeta/SINPE/efectivo).

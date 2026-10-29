@@ -106,6 +106,7 @@ export default function Home() {
   const kycBlockedRef = useRef(false);
   const [stats, setStats] = useState({ trips: 0, earnings: 0, rating: 5.0 });
   const [sinceCut, setSinceCut] = useState<number | null>(null);
+  const [weekEarnings, setWeekEarnings] = useState<number | null>(null);
   const [availableOrders, setAvailableOrders] = useState<Order[]>([]);
   const [activeOrders, setActiveOrders] = useState<Order[]>([]);
   const [newOrderAlert, setNewOrderAlert] = useState<any>(null);
@@ -307,6 +308,11 @@ export default function Home() {
         } else {
           setSinceCut(null);
         }
+        setWeekEarnings(
+          (balanceRes as any)?.weekEarnings != null
+            ? Number((balanceRes as any).weekEarnings)
+            : null,
+        );
         const kycSt = (kyc as any)?.status ?? (profile as any)?.kycStatus ?? 'pending';
         setKycStatus(typeof kycSt === 'string' ? kycSt : 'pending');
         setKycRequired((profile as any)?.kycRequired === true);
@@ -931,6 +937,13 @@ export default function Home() {
                   })}
                 </p>
               )}
+              {weekEarnings != null && (
+                <p className="mt-1 text-xs font-semibold text-gold-600 dark:text-gold-400">
+                  {t('wdrvauth.home.statWeekCut', {
+                    amount: Math.round(weekEarnings).toLocaleString(),
+                  })}
+                </p>
+              )}
             </motion.div>
           </StaggerItem>
           <StaggerItem>
@@ -980,10 +993,14 @@ export default function Home() {
                         </div>
                         <div className="text-right">
                           <p className="text-sm font-semibold text-surface-700 dark:text-surface-200">
-                            ₡{Number(order.driverPayout ?? order.totalAmount ?? 0).toLocaleString()}
+                            {(order as any).isTest === true
+                              ? '₡0'
+                              : `₡${Number(order.driverPayout ?? order.totalAmount ?? 0).toLocaleString()}`}
                           </p>
                           <p className="text-[11px] text-surface-500 dark:text-surface-400">
-                            {t('wdrvauth.home.yourEarning')}
+                            {(order as any).isTest === true
+                              ? '🧪 TEST'
+                              : t('wdrvauth.home.yourEarning')}
                           </p>
                         </div>
                       </div>
@@ -1169,9 +1186,11 @@ export default function Home() {
                         <span className="text-xs text-surface-500 dark:text-surface-400">
                           {t('wdrvauth.home.earningLabel')}{' '}
                           <span className="font-mono">
-                            {order.driverPayout != null
-                              ? `₡${Number(order.driverPayout).toLocaleString()}`
-                              : '—'}
+                            {(order as any).isTest === true
+                              ? '₡0 🧪 TEST'
+                              : order.driverPayout != null
+                                ? `₡${Number(order.driverPayout).toLocaleString()}`
+                                : '—'}
                           </span>
                         </span>
                       </div>
@@ -1286,7 +1305,9 @@ export default function Home() {
                       <Package className="h-12 w-12 text-kiwi-500" />
                     </motion.div>
                     <h3 className="text-xl font-display font-bold text-surface-800 dark:text-surface-100">
-                      {t('wdrvauth.home.alertTitle')}
+                      {(newOrderAlert as any)?.isTest === true
+                        ? '🧪 TEST · Nuevo pedido'
+                        : t('wdrvauth.home.alertTitle')}
                     </h3>
                   </div>
 
@@ -1323,9 +1344,11 @@ export default function Home() {
                             : t('wdrvauth.home.orderTotalLabel')}
                         </span>
                         <span className="text-2xl font-bold text-kiwi-700 dark:text-kiwi-400 font-mono">
-                          {hasPayout
-                            ? `₡${Number(newOrderAlert.driverPayout).toLocaleString()}`
-                            : `₡${Number(newOrderAlert.totalAmount || 0).toLocaleString()}`}
+                          {(newOrderAlert as any)?.isTest === true
+                            ? '₡0'
+                            : hasPayout
+                              ? `₡${Number(newOrderAlert.driverPayout).toLocaleString()}`
+                              : `₡${Number(newOrderAlert.totalAmount || 0).toLocaleString()}`}
                         </span>
                       </div>
                       {!hasPayout && (

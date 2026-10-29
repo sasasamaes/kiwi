@@ -517,6 +517,7 @@ describe('WithdrawalsService saldos y puesta en 0', () => {
     prisma.driverProfile.findUnique.mockResolvedValue({ id: 'drv-1' });
     prisma.order.aggregate
       .mockResolvedValueOnce({ _sum: { driverPayout: 29750 } })
+      .mockResolvedValueOnce({ _sum: { driverPayout: 8000 } })
       .mockResolvedValueOnce({ _sum: { driverPayout: 5000 } });
     prisma.withdrawal.aggregate
       .mockResolvedValueOnce({ _sum: { amount: 29750 } })
@@ -531,6 +532,7 @@ describe('WithdrawalsService saldos y puesta en 0', () => {
     expect(r.totalEarnings).toBe(29750);
     expect(r.availableBalance).toBe(0);
     expect(r.sinceLastCut).toBe(5000);
+    expect(r.weekEarnings).toBe(8000);
     expect(r.lastCutAmount).toBe(29750);
     // El corte filtra entregados posteriores al pago.
     expect(prisma.order.aggregate).toHaveBeenCalledWith(
@@ -551,5 +553,25 @@ describe('WithdrawalsService saldos y puesta en 0', () => {
     const r: any = await service.getBalance('u1');
     expect(r.sinceLastCut).toBe(3000);
     expect(r.lastCutAt).toBeNull();
+  });
+
+  it('getBalance reporta lo ganado en la semana de corte en curso', async () => {
+    prisma.driverProfile.findUnique.mockResolvedValue({ id: 'drv-1' });
+    prisma.order.aggregate.mockResolvedValue({ _sum: { driverPayout: 1200 } });
+    prisma.withdrawal.aggregate.mockResolvedValue({ _sum: { amount: 0 } });
+    prisma.withdrawal.findFirst.mockResolvedValue(null);
+
+    const r: any = await service.getBalance('u1');
+    expect(r.weekEarnings).toBe(1200);
+    expect(new Date(r.weekStart).getTime()).toBeLessThanOrEqual(Date.now());
+    // La semana filtra entregados desde su inicio (mar–lun).
+    expect(prisma.order.aggregate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          status: 'delivered',
+          deliveredAt: { gte: expect.any(Date) },
+        }),
+      }),
+    );
   });
 });
