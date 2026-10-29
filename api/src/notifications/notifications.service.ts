@@ -12,6 +12,8 @@ export interface PushNotification {
   body: string;
   data?: Record<string, string>;
   imageUrl?: string;
+  /** push:false = solo inbox, sin FCM (el historial se conserva). */
+  push?: boolean;
 }
 
 interface NotificationPayload {
@@ -269,7 +271,7 @@ export class NotificationsService {
       },
     });
 
-    if (this.fcmAdmin) {
+    if (this.fcmAdmin && notification.push !== false) {
       await this.sendPushToTokens(userId, notification);
     }
 
@@ -918,6 +920,9 @@ export class NotificationsService {
 
     return this.sendToUser(userId, {
       ...message,
+      // Driver: solo el delivered suena (con ganancia); el resto queda en
+      // la campanita. Merchant y entrantes no cambian.
+      push: perspective === 'driver' ? status === 'delivered' : true,
       data: { orderId, type: 'order_status', status },
     });
   }
