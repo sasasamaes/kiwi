@@ -15,6 +15,7 @@ import {
   Star,
 } from 'lucide-react';
 import { api, Skeleton, useTranslations } from '@kiwi/ui';
+import { renderPayoutReceiptPdf, downloadPdf } from './payout-receipt';
 
 interface Withdrawal {
   id: string;
@@ -268,6 +269,40 @@ export default function AdminWithdrawalsPage() {
     w.document.close();
     w.focus();
     w.print();
+  };
+
+  const [pdfBusy, setPdfBusy] = useState(false);
+
+  const downloadReceiptPdf = async (r: any) => {
+    if (!r || r.error || pdfBusy) return;
+    setPdfBusy(true);
+    try {
+      const bytes = await renderPayoutReceiptPdf({
+        id: r.id,
+        amount: Number(r.amount ?? 0),
+        status: r.status,
+        paymentMethod: r.paymentMethod,
+        sinpePhone: r.sinpePhone,
+        sinpeName: r.sinpeName,
+        bankName: r.bankName,
+        accountNumber: r.accountNumber,
+        accountHolder: r.accountHolder,
+        periodStart: r.periodStart,
+        periodEnd: r.periodEnd,
+        transactionId: r.transactionId,
+        createdAt: r.createdAt,
+        driver: r.driver,
+        trips: r.trips ?? [],
+        tripsTotal: Number(r.tripsTotal ?? 0),
+        tripCount: Number(r.tripCount ?? (r.trips ?? []).length),
+      });
+      const folio = String(r.id ?? '')
+        .slice(0, 8)
+        .toUpperCase();
+      downloadPdf(bytes, `recibo-corte-${folio}.pdf`);
+    } finally {
+      setPdfBusy(false);
+    }
   };
 
   useEffect(() => {
@@ -983,12 +1018,21 @@ export default function AdminWithdrawalsPage() {
                       {t('webadmin1.awith.receiptTitle')}
                     </p>
                     {receipt && !receipt.error && (receipt.trips ?? []).length > 0 && (
-                      <button
-                        onClick={() => printReceipt(receipt)}
-                        className="text-xs font-semibold text-kiwi-700 dark:text-kiwi-300 hover:underline"
-                      >
-                        {t('webadmin1.awith.receiptPrint')}
-                      </button>
+                      <>
+                        <button
+                          onClick={() => void downloadReceiptPdf(receipt)}
+                          disabled={pdfBusy}
+                          className="text-xs font-semibold text-kiwi-700 dark:text-kiwi-300 hover:underline disabled:opacity-50"
+                        >
+                          {t('webadmin1.awith.receiptPdf')}
+                        </button>
+                        <button
+                          onClick={() => printReceipt(receipt)}
+                          className="text-xs font-semibold text-kiwi-700 dark:text-kiwi-300 hover:underline"
+                        >
+                          {t('webadmin1.awith.receiptPrint')}
+                        </button>
+                      </>
                     )}
                   </div>
                   {receiptLoading ? (

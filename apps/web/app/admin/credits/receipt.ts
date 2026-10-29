@@ -48,6 +48,18 @@ const MUTED = rgb(0.42, 0.42, 0.42);
 /** Helvetica (WinAnsi) no trae ₡ ni emojis: se normaliza al dibujar. */
 const pdfSafe = (s: string) => String(s ?? '').replace(/₡/g, 'CRC ');
 
+/** Logo de marca para el recibo (se sirve desde /public). Null si no carga. */
+async function loadLogoBytes(): Promise<Uint8Array | null> {
+  try {
+    if (typeof fetch === 'undefined') return null;
+    const res = await fetch('/kiwi-logo.png');
+    if (!res.ok) return null;
+    return new Uint8Array(await res.arrayBuffer());
+  } catch {
+    return null;
+  }
+}
+
 /** Renderiza el recibo a PDF (bytes listos para descargar). */
 export async function renderRechargeReceiptPdf(data: RechargeReceiptData): Promise<Uint8Array> {
   const f = buildRechargeReceipt(data);
@@ -61,8 +73,18 @@ export async function renderRechargeReceiptPdf(data: RechargeReceiptData): Promi
 
   // Franja de marca.
   page.drawRectangle({ x: 0, y: y - 28, width: 612, height: 92, color: KIWI });
-  page.drawText('KiWi', { x: M, y: y + 8, size: 26, font: bold, color: rgb(1, 1, 1) });
-  page.drawText(pdfSafe(f.brand), { x: M, y: y - 12, size: 11, font, color: rgb(1, 1, 1) });
+  const logoBytes = await loadLogoBytes();
+  const tx = M + (logoBytes ? 54 : 0);
+  if (logoBytes) {
+    try {
+      const logo = await doc.embedPng(logoBytes);
+      page.drawImage(logo, { x: M, y: y - 6, width: 44, height: 44 });
+    } catch {
+      // Sin logo: el recibo sale igual con la marca en texto.
+    }
+  }
+  page.drawText('KiWi', { x: tx, y: y + 8, size: 26, font: bold, color: rgb(1, 1, 1) });
+  page.drawText(pdfSafe(f.brand), { x: tx, y: y - 12, size: 11, font, color: rgb(1, 1, 1) });
   y -= 76;
 
   page.drawText(pdfSafe(f.title), { x: M, y, size: 20, font: bold, color: INK });
