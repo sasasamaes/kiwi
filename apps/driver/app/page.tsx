@@ -925,22 +925,25 @@ export default function Home() {
           <StaggerItem>
             <motion.div className="rounded-xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-card dark:shadow-dark p-4 text-center">
               <span className="text-2xl font-bold text-kiwi-700">
-                ₡{Math.round(stats.earnings).toLocaleString()}
+                ₡
+                {weekEarnings != null
+                  ? Math.round(weekEarnings).toLocaleString()
+                  : Math.round(stats.earnings).toLocaleString()}
               </span>
               <p className="text-xs text-surface-500 dark:text-surface-400">
-                {t('wdrvauth.home.statEarnings')}
+                {weekEarnings != null
+                  ? t('wdrvauth.home.statWeekLabel')
+                  : t('wdrvauth.home.statEarnings')}
               </p>
+              {weekEarnings != null && (
+                <p className="mt-1 text-xs font-semibold text-surface-500 dark:text-surface-400">
+                  ₡{Math.round(stats.earnings).toLocaleString()} {t('wdrvauth.home.statEarnings')}
+                </p>
+              )}
               {sinceCut != null && (
                 <p className="mt-1 text-xs font-semibold text-kiwi-700 dark:text-kiwi-400">
                   {t('wdrvauth.home.statSinceCut', {
                     amount: Math.round(sinceCut).toLocaleString(),
-                  })}
-                </p>
-              )}
-              {weekEarnings != null && (
-                <p className="mt-1 text-xs font-semibold text-gold-600 dark:text-gold-400">
-                  {t('wdrvauth.home.statWeekCut', {
-                    amount: Math.round(weekEarnings).toLocaleString(),
                   })}
                 </p>
               )}
