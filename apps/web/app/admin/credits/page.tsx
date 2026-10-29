@@ -3,8 +3,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Coins, Plus, History, Phone, X, RefreshCw } from 'lucide-react';
+import { Coins, Plus, History, Phone, X, RefreshCw, Receipt } from 'lucide-react';
 import { api, useTranslations } from '@kiwi/ui';
+import { renderRechargeReceiptPdf, downloadPdf } from './receipt';
 
 interface CreditMerchant {
   id: string;
@@ -38,6 +39,15 @@ export default function AdminCredits() {
   const [reason, setReason] = useState(t('webadmin1.acreds.defaultReason'));
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [receipt, setReceipt] = useState<{
+    businessName: string;
+    amount: number;
+    balance: number;
+    createdAt: string;
+    reason: string;
+    transactionId: string | null;
+  } | null>(null);
+  const [receiptBusy, setReceiptBusy] = useState(false);
 
   const KIND_LABEL: Record<string, string> = {
     recharge: t('webadmin1.acreds.kind.recharge'),
@@ -65,6 +75,8 @@ export default function AdminCredits() {
   const openMerchant = async (m: CreditMerchant) => {
     setSelected(m);
     setAmount('10000');
+    setReceipt(null);
+    setNotice(null);
     setHistory([]);
     setHistoryLoading(true);
     try {
@@ -90,6 +102,7 @@ export default function AdminCredits() {
   const doRecharge = async (m: CreditMerchant, value: number, reasonText?: string) => {
     setSaving(true);
     setNotice(null);
+    setReceipt(null);
     try {
       const res = await api.rechargeMerchantCredit(m.id, value, reasonText);
       setMerchants((prev) =>
@@ -102,12 +115,34 @@ export default function AdminCredits() {
           name: m.businessName,
         }),
       );
+      setReceipt({
+        businessName: m.businessName,
+        amount: value,
+        balance: Number(res.balance),
+        createdAt: res.createdAt ?? new Date().toISOString(),
+        reason: reasonText || t('webadmin1.acreds.defaultReason'),
+        transactionId: res.transactionId ?? null,
+      });
       const res2 = await api.getMerchantCreditHistory(m.id, 30, 0);
       setHistory(Array.isArray(res2?.items) ? res2.items : []);
     } catch (e: any) {
       setNotice(e?.message || t('webadmin1.acreds.rechargeError'));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const downloadReceipt = async () => {
+    if (!receipt || receiptBusy) return;
+    setReceiptBusy(true);
+    try {
+      const bytes = await renderRechargeReceiptPdf(receipt);
+      const folio = receipt.transactionId
+        ? String(receipt.transactionId).slice(0, 8).toUpperCase()
+        : 'recarga';
+      downloadPdf(bytes, `recibo-recarga-${folio}.pdf`);
+    } finally {
+      setReceiptBusy(false);
     }
   };
 
@@ -318,6 +353,15 @@ export default function AdminCredits() {
                 className="mb-2 w-full rounded-xl border border-surface-200 dark:border-surface-700 px-4 py-2.5 text-sm"
               />
               {notice && <p className="mb-2 text-sm text-kiwi-700">{notice}</p>}
+              {receipt && (
+                <button
+                  onClick={() => void downloadReceipt()}
+                  disabled={receiptBusy}
+                  className="mb-2 flex w-full items-center justify-center gap-2 rounded-xl bg-surface-900 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50 dark:bg-surface-100 dark:text-surface-900"
+                >
+                  <Receipt className="h-4 w-4" /> {t('webadmin1.acreds.receiptCta')}
+                </button>
+              )}
 
               <p className="mb-2 mt-4 flex items-center gap-1 text-sm font-semibold">
                 <History className="h-4 w-4" /> {t('webadmin1.acreds.history')}

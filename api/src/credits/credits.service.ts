@@ -75,7 +75,7 @@ export class CreditsService {
     const merchant = await this.prisma.merchantProfile.findUnique({ where: { id: merchantId } });
     if (!merchant) throw new NotFoundException('Comercio no encontrado');
 
-    const [updated] = await this.prisma.$transaction([
+    const [updated, entry] = await this.prisma.$transaction([
       this.prisma.merchantProfile.update({
         where: { id: merchantId },
         data: { creditBalance: { increment: value } },
@@ -90,7 +90,16 @@ export class CreditsService {
         },
       }),
     ]);
-    return { merchantId, balance: Number(updated.creditBalance), recharged: value };
+    // El recibo PDF necesita folio y fecha del asiento.
+    const e: any = entry as any;
+    return {
+      merchantId,
+      balance: Number(updated.creditBalance),
+      recharged: value,
+      transactionId: e?.id ?? null,
+      createdAt: e?.createdAt ?? new Date(),
+      reason: reason || 'Recarga prepago',
+    };
   }
 
   /**

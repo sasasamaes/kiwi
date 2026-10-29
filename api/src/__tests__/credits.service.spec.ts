@@ -44,11 +44,18 @@ describe('CreditsService', () => {
   it('recharge suma saldo y asienta en el libro', async () => {
     prisma.merchantProfile.findUnique.mockResolvedValue({ id: 'm1' });
     prisma.merchantProfile.update.mockResolvedValue({ creditBalance: 10000 });
-    prisma.creditTransaction.create.mockResolvedValue({});
+    prisma.creditTransaction.create.mockResolvedValue({
+      id: 'tx-1',
+      createdAt: new Date('2026-10-29T18:00:00Z'),
+    });
 
     const res = await service.recharge('m1', 10000, 'admin1', 'Paquete semanal');
 
     expect(res.balance).toBe(10000);
+    // Folio para el recibo PDF.
+    expect(res.transactionId).toBe('tx-1');
+    expect(res.createdAt).toEqual(new Date('2026-10-29T18:00:00Z'));
+    expect(res.reason).toBe('Paquete semanal');
     expect(prisma.creditTransaction.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({ amount: 10000, kind: 'recharge' }),
