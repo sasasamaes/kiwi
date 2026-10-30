@@ -46,7 +46,7 @@ export function BottomNav() {
               className="flex min-w-0 flex-1 flex-col items-center gap-0.5 px-1 py-1.5"
             >
               <motion.span
-                className={`flex min-w-0 flex-col items-center gap-0.5 ${
+                className={`flex w-full min-w-0 flex-col items-center gap-0.5 ${
                   active
                     ? 'text-kiwi-700 dark:text-kiwi-400'
                     : 'text-surface-500 dark:text-surface-400'
@@ -54,7 +54,9 @@ export function BottomNav() {
                 whileTap={{ scale: 0.9 }}
               >
                 <Icon className="h-5 w-5 shrink-0" />
-                <span className="truncate text-xs leading-tight font-medium">{label}</span>
+                <span className="w-full truncate text-center text-[11px] leading-tight font-medium sm:text-xs">
+                  {label}
+                </span>
               </motion.span>
             </Link>
           );
