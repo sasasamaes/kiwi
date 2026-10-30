@@ -936,9 +936,10 @@ export class NotificationsService {
     return this.sendToUser(userId, {
       ...message,
       title,
-      // Driver: solo el delivered suena (con ganancia); el resto queda en
-      // la campanita. Merchant y entrantes no cambian.
-      push: perspective === 'driver' ? status === 'delivered' : true,
+      // Driver: suenan el entrante (asignado directo) y el delivered con
+      // ganancia; el resto queda en la campanita. Merchant y entrantes
+      // por concurso/topic no cambian.
+      push: perspective === 'driver' ? status === 'delivered' || status === 'assigned' : true,
       data: { orderId, type: 'order_status', status },
     });
   }
@@ -1066,6 +1067,65 @@ export class NotificationsService {
       this.logger.log(`Manual prune: removed ${stale.length} tokens for user ${userId}`);
     }
     return { removed: stale.length, remaining: tokens.length - stale.length };
+  }
+
+  /**
+   * Salud del pipeline push (admin, agregado sin PII): dice DÓNDE se corta
+   * la cadena cuando "no llegan notificaciones" — FCM sin configurar, sin
+   * tokens, prefs apagadas, nadie en línea o sin pedidos. Ventana: 24 h.
+   */
+  async pushHealth() {
+    const since = new Date(Date.now() - 24 * 3600 * 1000);
+    const tokensTotal = await this.prisma.deviceToken.count();
+    const byPlatform: Array<{ platform: string; _count: number }> =
+      (await (this.prisma.deviceToken as any).groupBy?.({
+        by: ['platform'],
+        _count: true,
+      })) ?? [];
+    const tokensActive = await this.prisma.deviceToken.count({
+      where: { lastUsedAt: { gte: since } },
+    });
+    const driversAvailable: Array<{ userId: string }> = await this.prisma.driverProfile.findMany({
+      where: { status: 'available' },
+      select: { userId: true },
+      take: 2000,
+    });
+    const availableUserIds = driversAvailable.map((d) => d.userId);
+    const availableWithTokens =
+      availableUserIds.length === 0
+        ? 0
+        : await this.prisma.deviceToken.count({
+            where: { userId: { in: availableUserIds } },
+          });
+    const prefsEnabled = await this.prisma.topicPreference.count({
+      where: { topic: 'driver.orders.new', enabled: true },
+    });
+    const ordersTotal = await this.prisma.order.count({ where: { createdAt: { gte: since } } });
+    const ordersTest = await this.prisma.order.count({
+      where: { createdAt: { gte: since }, isTest: true },
+    });
+    const inboxByType: Array<{ type: string; _count: { type: number } }> =
+      (await (this.prisma.notification as any).groupBy?.({
+        by: ['type'],
+        where: { createdAt: { gte: since }, type: { startsWith: 'push:' } },
+        _count: { type: true },
+      })) ?? [];
+    return {
+      fcmConfigured: this.fcmAdmin != null,
+      windowHours: 24,
+      tokens: {
+        total: tokensTotal,
+        byPlatform: Object.fromEntries(byPlatform.map((r) => [r.platform, r._count])),
+        active24h: tokensActive,
+      },
+      drivers: {
+        availableNow: driversAvailable.length,
+        availableWithTokens,
+      },
+      prefsDriverOrdersNew: prefsEnabled,
+      orders24h: { total: ordersTotal, test: ordersTest, real: ordersTotal - ordersTest },
+      inboxPushes24h: Object.fromEntries(inboxByType.map((r) => [r.type, r._count?.type ?? 0])),
+    };
   }
 
   /**

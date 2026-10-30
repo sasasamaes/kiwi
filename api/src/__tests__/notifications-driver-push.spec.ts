@@ -9,8 +9,21 @@ describe('NotificationsService: driver push silencioso salvo entrega', () => {
 
   beforeEach(async () => {
     prisma = {
-      notification: { create: jest.fn().mockResolvedValue({ id: 'n1' }) },
-      deviceToken: { findMany: jest.fn().mockResolvedValue([{ token: 'tok-1' }]) },
+      notification: {
+        create: jest.fn().mockResolvedValue({ id: 'n1' }),
+        groupBy: jest.fn().mockResolvedValue([]),
+      },
+      deviceToken: {
+        findMany: jest.fn().mockResolvedValue([{ token: 'tok-1' }]),
+        count: jest.fn().mockResolvedValue(0),
+        groupBy: jest.fn().mockResolvedValue([]),
+      },
+      driverProfile: { findMany: jest.fn().mockResolvedValue([]) },
+      topicPreference: { count: jest.fn().mockResolvedValue(0) },
+      order: {
+        count: jest.fn().mockResolvedValue(0),
+        findUnique: jest.fn().mockResolvedValue(null),
+      },
     };
     const module: TestingModule = await Test.createTestingModule({
       providers: [NotificationsService, { provide: PrismaService, useValue: prisma }],
@@ -35,6 +48,13 @@ describe('NotificationsService: driver push silencioso salvo entrega', () => {
     await service.notifyOrderStatusUpdate('order-1', 'driver-1', 'delivered', 'driver', {
       payout: 1500,
     });
+    expect((service as any).fcmAdmin.send).toHaveBeenCalled();
+  });
+
+  it('driver assigned directo sí suena (es entrante para él)', async () => {
+    (service as any).fcmAdmin.send.mockClear();
+    prisma.order = { findUnique: jest.fn().mockResolvedValue({ isTest: false }) };
+    await service.notifyOrderStatusUpdate('order-1', 'driver-1', 'assigned', 'driver', {});
     expect((service as any).fcmAdmin.send).toHaveBeenCalled();
   });
 
@@ -81,5 +101,29 @@ describe('NotificationsService: driver push silencioso salvo entrega', () => {
         }),
       }),
     );
+  });
+
+  it('pushHealth agrega el pipeline sin PII', async () => {
+    prisma.deviceToken.count.mockResolvedValue(12);
+    prisma.deviceToken.groupBy.mockResolvedValue([
+      { platform: 'android', _count: 9 },
+      { platform: 'web', _count: 3 },
+    ]);
+    prisma.driverProfile.findMany.mockResolvedValue([{ userId: 'u1' }, { userId: 'u2' }]);
+    prisma.topicPreference.count.mockResolvedValue(2);
+    prisma.order.count.mockResolvedValueOnce(5).mockResolvedValueOnce(1);
+    prisma.notification.groupBy.mockResolvedValue([
+      { type: 'push:order_status', _count: { type: 4 } },
+    ]);
+
+    const h: any = await service.pushHealth();
+    expect(h.fcmConfigured).toBe(true);
+    expect(h.tokens.total).toBe(12);
+    expect(h.tokens.byPlatform).toEqual({ android: 9, web: 3 });
+    expect(h.drivers.availableNow).toBe(2);
+    expect(h.prefsDriverOrdersNew).toBe(2);
+    expect(h.orders24h).toEqual({ total: 5, test: 1, real: 4 });
+    expect(h.inboxPushes24h).toEqual({ 'push:order_status': 4 });
+    expect(JSON.stringify(h)).not.toMatch(/8888|@|\.com/);
   });
 });

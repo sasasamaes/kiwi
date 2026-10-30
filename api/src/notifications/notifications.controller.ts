@@ -4,6 +4,8 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger'
 import { NotificationsService } from './notifications.service';
 import { TrafficNotificationService } from './traffic-notification.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @ApiTags('Notifications')
@@ -105,6 +107,15 @@ export class NotificationsController {
   @ApiOperation({ summary: 'Keep newest registration per platform, delete the rest' })
   async pruneMyTokens(@CurrentUser() user: any) {
     return this.notificationsService.pruneMyTokens(user.sub);
+  }
+
+  @Get('admin/push-health')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Push pipeline health (admin diagnostics, no PII)' })
+  async pushHealth() {
+    return this.notificationsService.pushHealth();
   }
 
   // ============================================
