@@ -21,6 +21,7 @@ import { api, buildTrackingUrl, useTranslations, useSocket, playNotificationSoun
 import { useDeliveryZones } from '@kiwi/ui';
 import { findDeliveryZone } from '@kiwi/types';
 import { normalizeExportRange } from './export-range';
+import { buildOrdersWorkbook } from './export-xlsx';
 
 interface AdminOrder {
   id: string;
@@ -99,12 +100,6 @@ function localDateStr(d: Date): string {
   return `${d.getFullYear()}-${mm}-${dd}`;
 }
 
-/** Celda CSV con `;`: cita si trae separador, comillas o salto de línea. */
-function csvCell(v: unknown): string {
-  const s = String(v ?? '');
-  return /[;"\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-}
-
 export default function AdminOrders() {
   const { t } = useTranslations();
   const [orders, setOrders] = useState<AdminOrder[]>([]);
@@ -153,7 +148,7 @@ export default function AdminOrders() {
   // si hace falta, la foto — queda auditado en el log del servidor).
   const [advancing, setAdvancing] = useState(false);
   const [nextStatus, setNextStatus] = useState('');
-  // Factura/resumen: comercio + rango de fechas → CSV (abre en Excel).
+  // Factura/resumen: comercio + rango de fechas → Excel con fórmulas.
   const [expMerchant, setExpMerchant] = useState('');
   const [expFrom, setExpFrom] = useState(() => {
     const d = new Date();
@@ -355,9 +350,9 @@ export default function AdminOrders() {
     };
   }, [filter, search, page, driverId, testFilter, load]);
 
-  // Descarga el resumen del rango en CSV (Excel lo abre directo, `;` para
-  // locale ES + BOM para tildes). Pagina de 100 hasta agotar el total.
-  // Por defecto sin pruebas (plata real); con el check se incluyen marcadas.
+  // Descarga el resumen del rango en Excel con fórmulas. Pagina de 100
+  // hasta agotar el total. Por defecto sin pruebas (plata real); con el
+  // check se incluyen marcadas.
   const fetchExportOrders = useCallback(async () => {
     const all: AdminOrder[] = [];
     const TAKE = 100;
@@ -379,7 +374,7 @@ export default function AdminOrders() {
     return all;
   }, [expStatus, expFrom, expTo, expMerchant, expDriver, expIncludeTest]);
 
-  const exportCsv = useCallback(async () => {
+  const exportExcel = useCallback(async () => {
     if (exporting) return;
     setExporting(true);
     setExportError(null);
@@ -393,106 +388,43 @@ export default function AdminOrders() {
       const bizName =
         merchants.find((m) => m.id === expMerchant)?.businessName ??
         t('webadmin1.aorders.exportMerchantAll');
-      const lines: string[] = [
-        [t('webadmin1.aorders.exportMerchant'), bizName].map(csvCell).join(';'),
-        [t('webadmin1.aorders.exportTitle'), `${expFrom || '…'} → ${expTo || '…'}`]
-          .map(csvCell)
-          .join(';'),
-        '',
-        [
-          'N°',
-          'Comercio',
-          'Cliente',
-          'Repartidor',
-          'Fecha',
-          'Hora',
-          'Estado',
-          ...(expIncludeTest ? ['Test'] : []),
-          'Total (₡)',
-          'Comisión Kiwi 15% (₡)',
-          ...(expIva ? ['IVA 13% (₡)'] : []),
-          'Neto comercio (₡)',
-        ]
-          .map(csvCell)
-          .join(';'),
-      ];
-      let sum = 0;
-      let sumFee = 0;
-      let sumIva = 0;
-      let sumNet = 0;
-      let tSum = 0;
-      let tFee = 0;
-      let tIva = 0;
-      let tNet = 0;
-      all.forEach((o, i) => {
-        const amount = Number(o.totalAmount ?? 0);
-        const gross = Number.isFinite(amount) ? Math.round(amount) : 0;
-        // Liquidación comercio: -15% Kiwi siempre; -13% IVA solo si el
-        // comercio lo requiere (toggle). Con IVA: Neto = Total × 0.72.
-        const fee = Math.round(gross * 0.15);
-        const iva = expIva ? Math.round(gross * 0.13) : 0;
-        const net = gross - fee - iva;
-        const isT = (o as AdminOrder).isTest === true;
-        if (isT) {
-          tSum += gross;
-          tFee += fee;
-          tIva += iva;
-          tNet += net;
-        } else {
-          sum += gross;
-          sumFee += fee;
-          sumIva += iva;
-          sumNet += net;
-        }
-        const dt = new Date(o.createdAt);
-        lines.push(
-          [
-            i + 1,
-            o.merchant?.businessName ?? '',
-            (o as AdminOrder).customerName ?? '',
-            o.driver?.fullName ?? t('webadmin1.aorders.noDriver'),
-            dt.toLocaleDateString('es-CR'),
-            dt.toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' }),
-            STATUS_LABEL[o.status] ?? o.status,
-            ...(expIncludeTest ? [isT ? 'TEST' : ''] : []),
-            gross,
-            fee,
-            ...(expIva ? [iva] : []),
-            net,
-          ]
-            .map(csvCell)
-            .join(';'),
-        );
+      const bytes = await buildOrdersWorkbook({
+        titleRows: [
+          [t('webadmin1.aorders.exportMerchant'), bizName],
+          [t('webadmin1.aorders.exportTitle'), `${expFrom || '…'} → ${expTo || '…'}`],
+        ],
+        headers: ['N°', 'Comercio', 'Cliente', 'Repartidor', 'Fecha', 'Hora', 'Estado'],
+        testHeader: 'Test',
+        totalRealLabel: 'TOTAL REALES',
+        totalTestLabel: 'TOTAL TEST (no pagable)',
+        moneyHeaders: {
+          fee: 'Comisión Kiwi 15% (₡)',
+          iva: 'IVA 13% (₡)',
+          net: 'Neto comercio (₡)',
+        },
+        rows: all.map((o) => {
+          const dt = new Date(o.createdAt);
+          return {
+            merchant: o.merchant?.businessName ?? '',
+            customer: (o as AdminOrder).customerName ?? '',
+            driver: o.driver?.fullName ?? t('webadmin1.aorders.noDriver'),
+            date: dt.toLocaleDateString('es-CR'),
+            time: dt.toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' }),
+            status: STATUS_LABEL[o.status] ?? o.status,
+            isTest: (o as AdminOrder).isTest === true,
+            total: Math.round(Number(o.totalAmount ?? 0) || 0),
+          };
+        }),
+        includeTest: expIncludeTest,
+        includeIva: expIva,
       });
-      const blanks = ['', '', '', '', '', '', ''];
-      const testBlanks = expIncludeTest ? [''] : [];
-      lines.push(
-        ['TOTAL REALES', ...blanks, ...testBlanks, sum, sumFee, ...(expIva ? [sumIva] : []), sumNet]
-          .map(csvCell)
-          .join(';'),
-      );
-      if (expIncludeTest && all.some((o) => (o as AdminOrder).isTest === true)) {
-        lines.push(
-          [
-            'TOTAL TEST (no pagable)',
-            ...blanks,
-            ...testBlanks,
-            tSum,
-            tFee,
-            ...(expIva ? [tIva] : []),
-            tNet,
-          ]
-            .map(csvCell)
-            .join(';'),
-        );
-      }
-      const blob = new Blob(['\uFEFF' + lines.join('\r\n')], {
-        type: 'text/csv;charset=utf-8',
+      const blob = new Blob([bytes as any], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `kiwi-pedidos-${expFrom || 'inicio'}-${expTo || 'hoy'}.csv`;
+      a.download = `kiwi-pedidos-${expFrom || 'inicio'}-${expTo || 'hoy'}.xlsx`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -503,7 +435,17 @@ export default function AdminOrders() {
     } finally {
       setExporting(false);
     }
-  }, [exporting, expFrom, expTo, expMerchant, expIva, merchants, t, fetchExportOrders]);
+  }, [
+    exporting,
+    expFrom,
+    expTo,
+    expMerchant,
+    expIva,
+    merchants,
+    t,
+    fetchExportOrders,
+    expIncludeTest,
+  ]);
 
   // Corte del repartidor en PDF (vía ventana de impresión: Guardar como PDF).
   // Reusa los filtros de fecha/estado/chofer. Base: driverPayout (viaje − 15%);
@@ -1027,7 +969,7 @@ export default function AdminOrders() {
           </label>
           <button
             type="button"
-            onClick={() => void exportCsv()}
+            onClick={() => void exportExcel()}
             disabled={exporting}
             className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-kiwi-700 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
           >
