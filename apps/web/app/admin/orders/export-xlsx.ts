@@ -27,7 +27,7 @@ export interface ExportXlsxInput {
   testHeader: string;
   totalRealLabel: string;
   totalTestLabel: string;
-  moneyHeaders: { fee: string; iva: string; net: string };
+  moneyHeaders: { total: string; fee: string; iva: string; net: string };
   rows: ExportXlsxRow[];
   includeTest: boolean;
   includeIva: boolean;
@@ -64,6 +64,7 @@ export async function buildOrdersWorkbook(input: ExportXlsxInput): Promise<Buffe
 
   const headerLabels = [...input.headers];
   if (input.includeTest) headerLabels.push(input.testHeader);
+  headerLabels.push(input.moneyHeaders.total);
   headerLabels.push(input.moneyHeaders.fee);
   if (input.includeIva) headerLabels.push(input.moneyHeaders.iva);
   headerLabels.push(input.moneyHeaders.net);

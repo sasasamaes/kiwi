@@ -13,7 +13,12 @@ const base = {
   testHeader: 'Test',
   totalRealLabel: 'TOTAL REALES',
   totalTestLabel: 'TOTAL TEST (no pagable)',
-  moneyHeaders: { fee: 'Comisión Kiwi 15% (₡)', iva: 'IVA 13% (₡)', net: 'Neto comercio (₡)' },
+  moneyHeaders: {
+    total: 'Total (₡)',
+    fee: 'Comisión Kiwi 15% (₡)',
+    iva: 'IVA 13% (₡)',
+    net: 'Neto comercio (₡)',
+  },
 };
 
 const row = (over: any = {}) => ({
@@ -51,6 +56,27 @@ describe('buildOrdersWorkbook', () => {
     expect(fee.formula).toBe('ROUND(I5*0.15,0)');
     expect(iva.formula).toBe('ROUND(I5*0.13,0)');
     expect(neto.formula).toBe('I5-J5-K5');
+    expect(ws.getCell('I5').value).toBe(1500);
+  });
+
+  it('encabezados alineados con valores (Total/Comisión/IVA/Neto)', async () => {
+    const buf = await buildOrdersWorkbook({
+      ...base,
+      rows: [row()],
+      includeTest: true,
+      includeIva: true,
+    });
+    const ws = await load(buf);
+    // Fila 4 = encabezados: H Test, I Total, J Comisión, K IVA, L Neto.
+    const heads = ['H', 'I', 'J', 'K', 'L'].map((c) => ws.getCell(`${c}4`).value);
+    expect(heads).toEqual([
+      'Test',
+      'Total (₡)',
+      'Comisión Kiwi 15% (₡)',
+      'IVA 13% (₡)',
+      'Neto comercio (₡)',
+    ]);
+    // La columna de valores Total coincide con su encabezado.
     expect(ws.getCell('I5').value).toBe(1500);
   });
 

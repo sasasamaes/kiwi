@@ -398,6 +398,7 @@ export default function AdminOrders() {
         totalRealLabel: 'TOTAL REALES',
         totalTestLabel: 'TOTAL TEST (no pagable)',
         moneyHeaders: {
+          total: 'Total (₡)',
           fee: 'Comisión Kiwi 15% (₡)',
           iva: 'IVA 13% (₡)',
           net: 'Neto comercio (₡)',
