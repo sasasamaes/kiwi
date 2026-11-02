@@ -50,8 +50,26 @@ describe('buildOrdersWorkbook', () => {
     const neto = ws.getCell('L5').value as any;
     expect(fee.formula).toBe('ROUND(I5*0.15,0)');
     expect(iva.formula).toBe('ROUND(I5*0.13,0)');
-    expect(neto.formula).toBe('=I5-J5-K5');
+    expect(neto.formula).toBe('I5-J5-K5');
     expect(ws.getCell('I5').value).toBe(1500);
+  });
+
+  it('ninguna fórmula lleva = inicial (rompe el XML en Sheets)', async () => {
+    const buf = await buildOrdersWorkbook({
+      ...base,
+      rows: [row(), row({ isTest: true, total: 1000 })],
+      includeTest: true,
+      includeIva: true,
+    });
+    const ws = await load(buf);
+    ws.eachRow((r) => {
+      r.eachCell((c) => {
+        const v = c.value as any;
+        if (v && typeof v === 'object' && 'formula' in v) {
+          expect(v.formula.startsWith('=')).toBe(false);
+        }
+      });
+    });
   });
 
   it('totales con SUMIF separando reales y test', async () => {

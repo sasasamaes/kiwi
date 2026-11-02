@@ -83,9 +83,11 @@ export async function buildOrdersWorkbook(input: ExportXlsxInput): Promise<Buffe
     const vals: unknown[] = [i + 1, o.merchant, o.customer, o.driver, o.date, o.time, o.status];
     if (input.includeTest) vals.push(o.isTest ? 'TEST' : '');
     vals.push(Math.round(Number(o.total) || 0));
+    // OJO: exceljs guarda la fórmula SIN '=' inicial. Con '=' el XML queda
+    // inválido y Sheets muestra #ERROR! (le pasó a la columna Neto).
     vals.push({ formula: `ROUND(${T}${r}*0.15,0)` });
     if (input.includeIva) vals.push({ formula: `ROUND(${T}${r}*0.13,0)` });
-    vals.push({ formula: input.includeIva ? `=${T}${r}-${F}${r}-${V}${r}` : `=${T}${r}-${F}${r}` });
+    vals.push({ formula: input.includeIva ? `${T}${r}-${F}${r}-${V}${r}` : `${T}${r}-${F}${r}` });
     vals.forEach((v, ci) => {
       row.getCell(ci + 1).value = v as ExcelJS.CellValue;
     });
