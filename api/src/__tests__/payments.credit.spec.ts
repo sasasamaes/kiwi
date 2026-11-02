@@ -65,6 +65,27 @@ describe('PaymentsService crédito sin doble-cobro', () => {
     expect(prisma.merchantProfile.updateMany).toHaveBeenCalledTimes(1);
   });
 
+  it('pedido cancelado o entregado ya no admite pagos (ni toca crédito)', async () => {
+    for (const status of ['cancelled', 'delivered']) {
+      prisma.order.findUnique.mockResolvedValueOnce({
+        id: 'order-9',
+        merchantId: 'merchant-1',
+        basePrice: 2000,
+        totalAmount: 2000,
+        status,
+      });
+      await expect(
+        service.createPayment(
+          { orderId: 'order-9', method: 'credit', amount: 2000 } as any,
+          'user-1',
+        ),
+      ).rejects.toThrow('ya no admite pagos');
+    }
+    // Ni un solo descuento: el cancelado no rebaja crédito.
+    expect(prisma.merchantProfile.updateMany).not.toHaveBeenCalled();
+    expect(prisma.creditTransaction.create).not.toHaveBeenCalled();
+  });
+
   it('pedido ya pagado no gasta', async () => {
     prisma.payment.findUnique.mockResolvedValue({ id: 'pay-1', status: 'completed' });
     await expect(

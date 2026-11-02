@@ -107,6 +107,13 @@ export class PaymentsService {
       throw new BadRequestException('Los pedidos de prueba no se cobran');
     }
 
+    // Cerrado: un cancelado no admite pagos (el crédito no se rebaja sin
+    // viaje) y un entregado tampoco (ya se cobró o va por su vía).
+    // Igual que el flujo invitado.
+    if (order.status === 'delivered' || order.status === 'cancelled') {
+      throw new BadRequestException('El pedido ya no admite pagos');
+    }
+
     if (payerRole !== 'admin') {
       if (payerRole === 'customer') {
         // El cliente dueño paga su propio pedido (tarjeta/SINPE/efectivo).

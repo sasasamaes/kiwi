@@ -105,4 +105,58 @@ describe('MerchantInvoicesService corte semanal idempotente', () => {
     });
     await expect(service.markPaid('admin-1', 'inv-1')).rejects.toThrow('ya está cobrada');
   });
+
+  it('los cancelados no entran a la factura (aunque el pago siga completed)', async () => {
+    prisma.merchantProfile.findUnique.mockResolvedValue({ id: 'm-1', businessName: 'Soda' });
+    const all = [
+      {
+        id: 'pay-ok',
+        orderId: 'o-1',
+        amount: 2000,
+        order: {
+          merchantId: 'm-1',
+          status: 'delivered',
+          deliveredAt: new Date('2026-10-21T12:00:00-06:00'),
+          pickupAddress: 'A',
+          deliveryAddress: 'B',
+          distanceKm: 2,
+          isTest: false,
+          driver: { fullName: 'Juan' },
+        },
+      },
+      {
+        id: 'pay-cancel',
+        orderId: 'o-2',
+        amount: 1500,
+        order: {
+          merchantId: 'm-1',
+          status: 'cancelled',
+          deliveredAt: null,
+          pickupAddress: 'A',
+          deliveryAddress: 'C',
+          distanceKm: 3,
+          isTest: false,
+          driver: { fullName: 'Luis' },
+        },
+      },
+    ];
+    // La DB filtra por order.status delivered: el mock hace lo mismo.
+    prisma.payment.findMany.mockImplementation(async ({ where }: any) =>
+      where?.order?.status === 'delivered'
+        ? all.filter((p) => p.order.status === 'delivered')
+        : all,
+    );
+
+    const prev = await service.preview('m-1', '2026-10-20');
+    expect(prev.trips).toBe(1);
+    expect(prev.amount).toBe(2000);
+    expect(prisma.payment.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          status: 'completed',
+          order: expect.objectContaining({ status: 'delivered' }),
+        }),
+      }),
+    );
+  });
 });
