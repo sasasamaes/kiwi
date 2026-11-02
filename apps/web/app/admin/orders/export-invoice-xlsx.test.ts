@@ -23,34 +23,36 @@ async function load(buf: Buffer) {
 }
 
 describe('buildInvoiceWorkbook', () => {
-  it('base gravada, IVA y neto con fórmulas (sin comisión Kiwi)', async () => {
+  it('IVA encima del total: base = total, IVA = 13%, neto = base + IVA', async () => {
     const buf = await buildInvoiceWorkbook(base);
     expect(buf.slice(0, 2).toString()).toBe('PK');
     const ws = await load(buf);
-    // Encabezados fila 4: N° A, Fecha B, Comercio C, Cliente D, Total E, Base F, IVA G, Neto H.
+    // Encabezados fila 4: N° A, Fecha B, Comercio C, Cliente D, Total E, Base F, IVA G, Total a pagar H.
     expect(ws.getCell('A4').value).toBe('N°');
     expect(ws.getCell('E4').value).toBe('Total (₡)');
     expect(ws.getCell('F4').value).toBe('Base gravada (₡)');
     expect(ws.getCell('G4').value).toBe('IVA 13% (₡)');
-    expect(ws.getCell('H4').value).toBe('Neto comercio (₡)');
-    // Fila 5: Total E5=1500, Base F5, IVA G5, Neto H5.
+    expect(ws.getCell('H4').value).toBe('Total a pagar (₡)');
+    // Fila 5: Total E5=1500, Base F5=E5, IVA G5=13%, Neto H5=F5+G5.
     expect(ws.getCell('E5').value).toBe(1500);
     const baseCell = ws.getCell('F5').value as any;
     const iva = ws.getCell('G5').value as any;
     const neto = ws.getCell('H5').value as any;
-    expect(baseCell.formula).toBe('ROUND(E5/1.13,0)');
-    expect(iva.formula).toBe('E5-F5');
-    expect(neto.formula).toBe('F5');
+    expect(baseCell.formula).toBe('E5');
+    expect(iva.formula).toBe('ROUND(E5*0.13,0)');
+    expect(neto.formula).toBe('F5+G5');
     // Total fila 7: SUM de cada columna.
     const totalNeto = ws.getCell('H7').value as any;
     expect(totalNeto.formula).toBe('SUM(H5:H6)');
     expect(ws.getCell('A7').value).toBe('TOTAL');
   });
 
-  it('Base + IVA cuadra exacto al total (validación aritmética)', () => {
-    // 1500/1.13 = 1327.43 → Base 1327, IVA = 1500-1327 = 173 → 1327+173 = 1500 ✓
-    expect(Math.round(1500 / 1.13)).toBe(1327);
-    expect(1500 - Math.round(1500 / 1.13)).toBe(173);
+  it('el comercio paga el IVA encima: 1500 + 195 = 1695', () => {
+    const base = Math.round(1500);
+    const iva = Math.round(1500 * 0.13);
+    expect(base).toBe(1500);
+    expect(iva).toBe(195);
+    expect(base + iva).toBe(1695);
   });
 
   it('ninguna fórmula lleva = inicial', async () => {

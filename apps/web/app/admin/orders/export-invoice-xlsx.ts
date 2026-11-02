@@ -2,11 +2,10 @@
 import ExcelJS from 'exceljs';
 
 /**
- * Factura para el comercio (versión sin Comisión Kiwi): columnas
- * Total cobrado, Base gravada e IVA 13% según Hacienda CR (precios de cara
- * al consumidor final llevan IVA incluido → Base = Total / 1.13,
- * IVA = Total − Base, así Base + IVA cuadra exacto al total cobrado).
- * Todo con fórmulas: si cambia un total, base/IVA/neto se recalculan solos.
+ * Factura para el comercio (versión sin Comisión Kiwi): el IVA lo PAGA el
+ * comercio (factura B2B: base + impuesto desglosado). Base gravada = Total,
+ * IVA 13% = Base × 0.13, Total a pagar = Base + IVA. Todo con fórmulas: si
+ * cambia un total, base/IVA/total se recalculan solos.
  */
 
 export interface InvoiceXlsxRow {
@@ -49,12 +48,12 @@ export async function buildInvoiceWorkbook(input: InvoiceXlsxInput): Promise<Buf
     'Total (₡)',
     'Base gravada (₡)',
     'IVA 13% (₡)',
-    'Neto comercio (₡)',
+    'Total a pagar (₡)',
   ]);
   header.font = { bold: true };
   const firstDataRow = ws.rowCount + 1;
 
-  // E:H = Total, F = Base, G = IVA, H = Neto.
+  // E:H = Total, F = Base (= Total), G = IVA (13% de la base), H = Total a pagar (Base + IVA).
   const T = colLetter(5);
   const B = colLetter(6);
   const V = colLetter(7);
@@ -68,9 +67,9 @@ export async function buildInvoiceWorkbook(input: InvoiceXlsxInput): Promise<Buf
       o.merchant,
       o.customer,
       Math.round(Number(o.total) || 0),
-      { formula: `ROUND(${T}${r}/1.13,0)` },
-      { formula: `${T}${r}-${B}${r}` },
-      { formula: `${B}${r}` },
+      { formula: `${T}${r}` },
+      { formula: `ROUND(${T}${r}*0.13,0)` },
+      { formula: `${B}${r}+${V}${r}` },
     ]);
     row.eachCell((c) => {
       c.numFmt = '#,##0';
