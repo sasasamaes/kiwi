@@ -1,5 +1,8 @@
 // Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+import { INK, KIWI, MUTED, downloadPdf, loadLogoBytes, pdfSafe } from '../pdf-utils';
+
+export { downloadPdf };
 
 export interface RechargeReceiptData {
   businessName: string;
@@ -40,25 +43,6 @@ export function buildRechargeReceipt(d: RechargeReceiptData) {
 }
 
 export type ReceiptFields = ReturnType<typeof buildRechargeReceipt>;
-
-const KIWI = rgb(0.13, 0.5, 0.24); // kiwi-700
-const INK = rgb(0.1, 0.1, 0.1);
-const MUTED = rgb(0.42, 0.42, 0.42);
-
-/** Helvetica (WinAnsi) no trae ₡ ni emojis: se normaliza al dibujar. */
-const pdfSafe = (s: string) => String(s ?? '').replace(/₡/g, 'CRC ');
-
-/** Logo de marca para el recibo (se sirve desde /public). Null si no carga. */
-async function loadLogoBytes(): Promise<Uint8Array | null> {
-  try {
-    if (typeof fetch === 'undefined') return null;
-    const res = await fetch('/kiwi-logo.png');
-    if (!res.ok) return null;
-    return new Uint8Array(await res.arrayBuffer());
-  } catch {
-    return null;
-  }
-}
 
 /** Renderiza el recibo a PDF (bytes listos para descargar). */
 export async function renderRechargeReceiptPdf(data: RechargeReceiptData): Promise<Uint8Array> {
@@ -116,17 +100,4 @@ export async function renderRechargeReceiptPdf(data: RechargeReceiptData): Promi
   });
 
   return doc.save();
-}
-
-/** Descarga bytes como archivo (solo navegador). */
-export function downloadPdf(bytes: Uint8Array, filename: string) {
-  const blob = new Blob([bytes as any], { type: 'application/pdf' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 5000);
 }

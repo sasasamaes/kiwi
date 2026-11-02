@@ -22,6 +22,7 @@ import { useDeliveryZones } from '@kiwi/ui';
 import { findDeliveryZone } from '@kiwi/types';
 import { normalizeExportRange } from './export-range';
 import { buildOrdersWorkbook } from './export-xlsx';
+import { downloadPdf, renderMerchantInvoicePdf } from './merchant-invoice-pdf';
 
 interface AdminOrder {
   id: string;
@@ -533,6 +534,54 @@ export default function AdminOrders() {
     }
   }, [exporting, expFrom, expTo, expIva, t, fetchExportOrders]);
 
+  // Factura para el comercio (PDF con marca): mismos filtros pero solo
+  // entregados reales, sin Comisión Kiwi ni Neto comercio.
+  const exportInvoicePdf = useCallback(async () => {
+    if (exporting) return;
+    setExporting(true);
+    setExportError(null);
+    setExportDone(null);
+    try {
+      const all = await fetchExportOrders();
+      const rows = all.filter((o) => o.status === 'delivered' && (o as AdminOrder).isTest !== true);
+      if (rows.length === 0) {
+        setExportError(t('webadmin1.aorders.exportEmpty'));
+        return;
+      }
+      const bizName =
+        merchants.find((m) => m.id === expMerchant)?.businessName ??
+        t('webadmin1.aorders.exportMerchantAll');
+      const bytes = await renderMerchantInvoicePdf({
+        merchantName: bizName,
+        from: expFrom || '',
+        to: expTo || '',
+        rows: rows.map((o) => {
+          const dt = new Date(o.createdAt);
+          return {
+            date: dt.toLocaleDateString('es-CR'),
+            merchant: o.merchant?.businessName ?? '',
+            customer: (o as AdminOrder).customerName ?? '',
+            total: Math.round(Number(o.totalAmount ?? 0) || 0),
+          };
+        }),
+      });
+      const safe = bizName
+        .normalize('NFD')
+        .replace(/[̀-ͯ]/g, '')
+        .replace(/[^a-zA-Z0-9]+/g, '-')
+        .toLowerCase();
+      downloadPdf(
+        bytes,
+        `factura-${safe || 'comercio'}-${expFrom || 'inicio'}-${expTo || 'hoy'}.pdf`,
+      );
+      setExportDone(t('webadmin1.aorders.exportDone', { count: rows.length }));
+    } catch {
+      setExportError(t('webadmin1.aorders.exportError'));
+    } finally {
+      setExporting(false);
+    }
+  }, [exporting, expFrom, expTo, expMerchant, merchants, t, fetchExportOrders]);
+
   // Compartir el corte por WhatsApp / share nativo (texto resumen + detalle).
   const shareDriverCut = useCallback(async () => {
     if (exporting) return;
@@ -984,7 +1033,25 @@ export default function AdminOrders() {
             className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-surface-800 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60 dark:bg-white dark:text-surface-900"
           >
             <Download className="h-4 w-4" />
-            Corte repartidor (PDF)
+            {t('webadmin1.aorders.exportDriverCut')}
+          </button>
+          <button
+            type="button"
+            onClick={() => void exportInvoicePdf()}
+            disabled={exporting}
+            className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-gold-500 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-60"
+          >
+            <Download className="h-4 w-4" />
+            {t('webadmin1.aorders.exportInvoiceCta')}
+          </button>
+          <button
+            type="button"
+            onClick={() => void exportInvoicePdf()}
+            disabled={exporting}
+            className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-gold-500 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-60"
+          >
+            <Download className="h-4 w-4" />
+            {t('webadmin1.aorders.exportInvoiceCta')}
           </button>
           <button
             type="button"
