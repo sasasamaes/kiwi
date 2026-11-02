@@ -23,6 +23,7 @@ import { findDeliveryZone } from '@kiwi/types';
 import { normalizeExportRange } from './export-range';
 import { buildOrdersWorkbook } from './export-xlsx';
 import { downloadPdf, renderMerchantInvoicePdf } from './merchant-invoice-pdf';
+import { buildInvoiceWorkbook } from './export-invoice-xlsx';
 
 interface AdminOrder {
   id: string;
@@ -582,6 +583,63 @@ export default function AdminOrders() {
     }
   }, [exporting, expFrom, expTo, expMerchant, merchants, t, fetchExportOrders]);
 
+  // Factura para el comercio en Excel (sin Comisión Kiwi): Total cobrado,
+  // Base gravada (Total/1.13) e IVA 13% (Total − Base) con fórmulas, para
+  // que el comercio recalcule si cambia un precio. Solo entregados reales.
+  const exportInvoiceXlsx = useCallback(async () => {
+    if (exporting) return;
+    setExporting(true);
+    setExportError(null);
+    setExportDone(null);
+    try {
+      const all = await fetchExportOrders();
+      const rows = all.filter((o) => o.status === 'delivered' && !(o as AdminOrder).isTest);
+      if (rows.length === 0) {
+        setExportError(t('webadmin1.aorders.exportEmpty'));
+        return;
+      }
+      const bizName =
+        merchants.find((m) => m.id === expMerchant)?.businessName ??
+        t('webadmin1.aorders.exportMerchantAll');
+      const bytes = await buildInvoiceWorkbook({
+        titleRows: [
+          [t('webadmin1.aorders.exportMerchant'), bizName],
+          [t('webadmin1.aorders.exportTitle'), `${expFrom || '…'} → ${expTo || '…'}`],
+        ],
+        rows: rows.map((o) => {
+          const dt = new Date(o.createdAt);
+          return {
+            date: dt.toLocaleDateString('es-CR'),
+            merchant: o.merchant?.businessName ?? '',
+            customer: (o as AdminOrder).customerName ?? '',
+            total: Math.round(Number(o.totalAmount ?? 0) || 0),
+          };
+        }),
+      });
+      const blob = new Blob([bytes as any], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const safe = bizName
+        .normalize('NFD')
+        .replace(/[̀-ͯ]/g, '')
+        .replace(/[^a-zA-Z0-9]+/g, '-')
+        .toLowerCase();
+      a.download = `factura-${safe || 'comercio'}-${expFrom || 'inicio'}-${expTo || 'hoy'}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      setExportDone(t('webadmin1.aorders.exportDone', { count: rows.length }));
+    } catch {
+      setExportError(t('webadmin1.aorders.exportError'));
+    } finally {
+      setExporting(false);
+    }
+  }, [exporting, expFrom, expTo, expMerchant, merchants, t, fetchExportOrders]);
+
   // Compartir el corte por WhatsApp / share nativo (texto resumen + detalle).
   const shareDriverCut = useCallback(async () => {
     if (exporting) return;
@@ -1046,12 +1104,12 @@ export default function AdminOrders() {
           </button>
           <button
             type="button"
-            onClick={() => void exportInvoicePdf()}
+            onClick={() => void exportInvoiceXlsx()}
             disabled={exporting}
-            className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-gold-500 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-60"
+            className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-kiwi-700 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-60"
           >
             <Download className="h-4 w-4" />
-            {t('webadmin1.aorders.exportInvoiceCta')}
+            {t('webadmin1.aorders.exportInvoiceXlsxCta')}
           </button>
           <button
             type="button"

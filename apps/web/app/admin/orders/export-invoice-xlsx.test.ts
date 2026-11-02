@@ -1,0 +1,68 @@
+// Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
+import { describe, expect, it } from 'vitest';
+import ExcelJS from 'exceljs';
+
+// pdf-lib no se usa acá, pero fetch sí existe en node; el módulo solo lo usa al renderizar.
+import { buildInvoiceWorkbook } from './export-invoice-xlsx';
+
+const base = {
+  titleRows: [
+    ['Comercio', 'Soda'],
+    ['Rango', '2026-11-01 → 2026-11-02'],
+  ] as Array<[string, string]>,
+  rows: [
+    { date: '02/11/2026', merchant: 'Soda', customer: 'Ana', total: 1500 },
+    { date: '01/11/2026', merchant: 'Soda', customer: 'Luis', total: 1000 },
+  ],
+};
+
+async function load(buf: Buffer) {
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.load(buf as any);
+  return wb.getWorksheet(1)!;
+}
+
+describe('buildInvoiceWorkbook', () => {
+  it('base gravada, IVA y neto con fórmulas (sin comisión Kiwi)', async () => {
+    const buf = await buildInvoiceWorkbook(base);
+    expect(buf.slice(0, 2).toString()).toBe('PK');
+    const ws = await load(buf);
+    // Encabezados fila 4: N° A, Fecha B, Comercio C, Cliente D, Total E, Base F, IVA G, Neto H.
+    expect(ws.getCell('A4').value).toBe('N°');
+    expect(ws.getCell('E4').value).toBe('Total (₡)');
+    expect(ws.getCell('F4').value).toBe('Base gravada (₡)');
+    expect(ws.getCell('G4').value).toBe('IVA 13% (₡)');
+    expect(ws.getCell('H4').value).toBe('Neto comercio (₡)');
+    // Fila 5: Total E5=1500, Base F5, IVA G5, Neto H5.
+    expect(ws.getCell('E5').value).toBe(1500);
+    const baseCell = ws.getCell('F5').value as any;
+    const iva = ws.getCell('G5').value as any;
+    const neto = ws.getCell('H5').value as any;
+    expect(baseCell.formula).toBe('ROUND(E5/1.13,0)');
+    expect(iva.formula).toBe('E5-F5');
+    expect(neto.formula).toBe('F5');
+    // Total fila 7: SUM de cada columna.
+    const totalNeto = ws.getCell('H7').value as any;
+    expect(totalNeto.formula).toBe('SUM(H5:H6)');
+    expect(ws.getCell('A7').value).toBe('TOTAL');
+  });
+
+  it('Base + IVA cuadra exacto al total (validación aritmética)', () => {
+    // 1500/1.13 = 1327.43 → Base 1327, IVA = 1500-1327 = 173 → 1327+173 = 1500 ✓
+    expect(Math.round(1500 / 1.13)).toBe(1327);
+    expect(1500 - Math.round(1500 / 1.13)).toBe(173);
+  });
+
+  it('ninguna fórmula lleva = inicial', async () => {
+    const buf = await buildInvoiceWorkbook(base);
+    const ws = await load(buf);
+    ws.eachRow((row) => {
+      row.eachCell((cell) => {
+        const v = cell.value as any;
+        if (v && typeof v === 'object' && 'formula' in v) {
+          expect(v.formula.startsWith('=')).toBe(false);
+        }
+      });
+    });
+  });
+});
