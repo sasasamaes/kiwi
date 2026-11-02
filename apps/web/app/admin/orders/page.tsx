@@ -20,6 +20,7 @@ import {
 import { api, buildTrackingUrl, useTranslations, useSocket, playNotificationSound } from '@kiwi/ui';
 import { useDeliveryZones } from '@kiwi/ui';
 import { findDeliveryZone } from '@kiwi/types';
+import { normalizeExportRange } from './export-range';
 
 interface AdminOrder {
   id: string;
@@ -380,10 +381,6 @@ export default function AdminOrders() {
 
   const exportCsv = useCallback(async () => {
     if (exporting) return;
-    if (expFrom && expTo && expFrom > expTo) {
-      setExportError(t('webadmin1.aorders.exportError'));
-      return;
-    }
     setExporting(true);
     setExportError(null);
     setExportDone(null);
@@ -513,10 +510,6 @@ export default function AdminOrders() {
   // además se rebaja 13% de IVA sobre ese payout. Neto = payout × 0.87.
   const exportDriverPdf = useCallback(async () => {
     if (exporting) return;
-    if (expFrom && expTo && expFrom > expTo) {
-      setExportError(t('webadmin1.aorders.exportError'));
-      return;
-    }
     setExporting(true);
     setExportError(null);
     setExportDone(null);
@@ -942,7 +935,12 @@ export default function AdminOrders() {
               id="exp-from"
               type="date"
               value={expFrom}
-              onChange={(e) => setExpFrom(e.target.value)}
+              onChange={(e) => {
+                // Auto-corrige rango invertido: intercambia las fechas solas.
+                const [from, to] = normalizeExportRange(e.target.value, expTo);
+                setExpFrom(from);
+                setExpTo(to);
+              }}
               className="min-h-[44px] w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 text-sm"
             />
           </div>
@@ -957,7 +955,12 @@ export default function AdminOrders() {
               id="exp-to"
               type="date"
               value={expTo}
-              onChange={(e) => setExpTo(e.target.value)}
+              onChange={(e) => {
+                // Auto-corrige rango invertido: intercambia las fechas solas.
+                const [from, to] = normalizeExportRange(expFrom, e.target.value);
+                setExpFrom(from);
+                setExpTo(to);
+              }}
               className="min-h-[44px] w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-3 text-sm"
             />
           </div>
