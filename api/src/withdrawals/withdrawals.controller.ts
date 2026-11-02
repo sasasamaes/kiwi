@@ -99,6 +99,15 @@ export class WithdrawalsController {
   // 🛡️ ADMIN ENDPOINTS
   // ============================================
 
+  @Get('admin/payroll/history')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Historial de cortes semanales (admin)' })
+  async getPayrollHistory(@Query('take') take?: string) {
+    return this.withdrawalsService.payrollHistory(take ? Number(take) : undefined);
+  }
+
   @Get('admin/payroll')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')

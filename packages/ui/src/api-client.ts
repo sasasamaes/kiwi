@@ -2549,6 +2549,11 @@ class ApiClient {
     });
   }
 
+  /** Historial de cortes semanales mar–lun (admin). */
+  async getPayrollHistory(take?: number) {
+    return this.request<any>(`/withdrawals/admin/payroll/history${take ? `?take=${take}` : ''}`);
+  }
+
   /** Recibo con los viajes de un retiro (admin). */
   async getWithdrawalReceipt(id: string) {
     return this.request<any>(`/withdrawals/admin/receipt/${id}`);

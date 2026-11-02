@@ -85,6 +85,16 @@ export default function AdminWithdrawalsPage() {
   const [payrollLoading, setPayrollLoading] = useState(false);
   const [payrollMsg, setPayrollMsg] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
+  // Historial de cortes: semanas con retiros generados (click = ver esa semana).
+  const [payrollHistory, setPayrollHistory] = useState<any[]>([]);
+  const fetchPayrollHistory = useCallback(async () => {
+    try {
+      const data = await api.getPayrollHistory(12);
+      setPayrollHistory(Array.isArray(data) ? data : []);
+    } catch {
+      setPayrollHistory([]);
+    }
+  }, []);
   // Comprobante SINPE + cierre de semana (marcar como pagada).
   const [payTxId, setPayTxId] = useState('');
   const [completingWeek, setCompletingWeek] = useState(false);
@@ -201,6 +211,7 @@ export default function AdminWithdrawalsPage() {
           : t('webadmin1.awith.payrollCreated', { n }),
       );
       void fetchPayroll(payrollWeek, payrollTest, payrollTo || undefined);
+      void fetchPayrollHistory();
       fetchWithdrawals();
     } catch {
       setPayrollMsg(t('webadmin1.awith.payrollGenError'));
@@ -232,6 +243,7 @@ export default function AdminWithdrawalsPage() {
       );
       setPayTxId('');
       void fetchPayroll(payrollWeek, payrollTest, payrollTo || undefined);
+      void fetchPayrollHistory();
       fetchWithdrawals();
       void fetchBalances();
     } catch (e: any) {
@@ -312,7 +324,8 @@ export default function AdminWithdrawalsPage() {
   useEffect(() => {
     void fetchPayroll(null, false, payrollTo || undefined);
     void fetchBalances();
-  }, [fetchPayroll, fetchBalances]);
+    void fetchPayrollHistory();
+  }, [fetchPayroll, fetchBalances, fetchPayrollHistory]);
 
   useEffect(() => {
     if (selectedWithdrawal) void fetchReceipt(selectedWithdrawal.id);
@@ -595,6 +608,60 @@ export default function AdminWithdrawalsPage() {
               ? `Incluye rezago de semanas anteriores: ₡${Number(payroll.rezagoTotal).toLocaleString('es-CR')}.`
               : ''}
           </p>
+        )}
+
+        {payrollHistory.length > 0 && (
+          <div className="mt-3">
+            <p className="mb-1.5 text-xs font-semibold text-surface-500 dark:text-surface-400">
+              {t('webadmin1.awith.payrollHistoryTitle')}
+            </p>
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {payrollHistory.map((h: any) => {
+                const iso = h.weekStart ? new Date(h.weekStart).toISOString().slice(0, 10) : null;
+                const label = h.weekStart
+                  ? `${new Date(h.weekStart).toLocaleDateString('es-CR', { day: 'numeric', month: 'short' })} – ${new Date(h.weekEnd).toLocaleDateString('es-CR', { day: 'numeric', month: 'short' })}`
+                  : '—';
+                const stColor =
+                  h.status === 'paid'
+                    ? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300'
+                    : h.status === 'partial'
+                      ? 'bg-gold-100 text-gold-700 dark:bg-gold-900/50 dark:text-gold-300'
+                      : 'bg-surface-100 text-surface-600 dark:bg-surface-700 dark:text-surface-300';
+                const stLabel =
+                  h.status === 'paid'
+                    ? t('webadmin1.awith.payrollHistPaid')
+                    : h.status === 'partial'
+                      ? t('webadmin1.awith.payrollHistPartial')
+                      : t('webadmin1.awith.payrollHistPending');
+                return (
+                  <button
+                    key={iso ?? label}
+                    type="button"
+                    disabled={!iso}
+                    onClick={() => {
+                      if (!iso) return;
+                      setPayrollWeek(iso);
+                      void fetchPayroll(iso, payrollTest, payrollTo || undefined);
+                    }}
+                    className="shrink-0 rounded-xl border border-surface-200/60 dark:border-white/[0.06] bg-surface-50 dark:bg-surface-700/50 px-3 py-2 text-left disabled:opacity-50"
+                    title={t('webadmin1.awith.payrollHistoryTitle')}
+                  >
+                    <span className="block text-xs font-bold text-surface-800 dark:text-surface-100">
+                      {label}
+                    </span>
+                    <span className="mt-0.5 flex items-center gap-1.5">
+                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${stColor}`}>
+                        {stLabel}
+                      </span>
+                      <span className="text-[11px] text-surface-500">
+                        ₡{Number(h.total ?? 0).toLocaleString('es-CR')}
+                      </span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         )}
 
         {payrollMsg && (

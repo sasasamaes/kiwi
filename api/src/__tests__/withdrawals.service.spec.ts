@@ -574,4 +574,45 @@ describe('WithdrawalsService saldos y puesta en 0', () => {
       }),
     );
   });
+
+  it('payrollHistory agrupa cortes con estado y excluye manuales', async () => {
+    const tue = new Date('2026-10-27T06:00:00Z');
+    prisma.withdrawal.groupBy.mockResolvedValue([
+      { periodStart: tue, _count: { id: 2 }, _sum: { amount: 5000 } },
+      { periodStart: null, _count: { id: 1 }, _sum: { amount: 999 } },
+    ]);
+    prisma.withdrawal.count.mockResolvedValue(2);
+    prisma.withdrawal.findMany.mockResolvedValue([{ driverId: 'd1' }, { driverId: 'd2' }]);
+
+    const r: any = await service.payrollHistory(12);
+    expect(r).toHaveLength(1);
+    expect(r[0]).toMatchObject({
+      withdrawals: 2,
+      drivers: 2,
+      completed: 2,
+      total: 5000,
+      status: 'paid',
+    });
+    expect(new Date(r[0].weekStart).getTime()).toBe(tue.getTime());
+    expect(new Date(r[0].weekEnd).getTime()).toBe(tue.getTime() + 7 * 24 * 3600 * 1000);
+    expect(prisma.withdrawal.groupBy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        by: ['periodStart'],
+        where: { periodStart: { not: null } },
+      }),
+    );
+  });
+
+  it('payrollHistory marca parcial cuando falta cobrar', async () => {
+    const tue = new Date('2026-10-27T06:00:00Z');
+    prisma.withdrawal.groupBy.mockResolvedValue([
+      { periodStart: tue, _count: { id: 2 }, _sum: { amount: 5000 } },
+    ]);
+    prisma.withdrawal.count.mockResolvedValue(1);
+    prisma.withdrawal.findMany.mockResolvedValue([{ driverId: 'd1' }]);
+
+    const r: any = await service.payrollHistory(12);
+    expect(r[0].status).toBe('partial');
+    expect(r[0].completed).toBe(1);
+  });
 });

@@ -584,6 +584,50 @@ export class WithdrawalsService {
     return { weekStart: payroll.weekStart, weekEnd: payroll.weekEnd, created, skipped };
   }
 
+  /** Historial de cortes semanales: una fila por semana con totales y
+   *  estado (pagada/parcial/pendiente). Solo planilla (con período); los
+   *  retiros manuales no entran. */
+  async payrollHistory(take = 12) {
+    const t = Math.min(Math.max(Number(take) || 12, 1), 52);
+    const groups: Array<{
+      periodStart: Date | null;
+      _count: { id: number };
+      _sum: { amount: number | null };
+    }> = await (this.prisma.withdrawal as any).groupBy({
+      by: ['periodStart'],
+      where: { periodStart: { not: null } },
+      _count: { id: true },
+      _sum: { amount: true },
+      orderBy: { periodStart: 'desc' },
+      take: t,
+    });
+    const out = [];
+    for (const g of groups) {
+      if (!g.periodStart) continue;
+      const [done, drivers] = await Promise.all([
+        this.prisma.withdrawal.count({
+          where: { periodStart: g.periodStart, status: 'completed' },
+        }),
+        this.prisma.withdrawal.findMany({
+          where: { periodStart: g.periodStart },
+          select: { driverId: true },
+          distinct: ['driverId'],
+        }),
+      ]);
+      const total = g._count?.id ?? 0;
+      out.push({
+        weekStart: g.periodStart,
+        weekEnd: new Date(new Date(g.periodStart).getTime() + WEEK_MS),
+        withdrawals: total,
+        drivers: drivers.length,
+        completed: done,
+        total: Math.round(Number(g._sum?.amount ?? 0)),
+        status: done === 0 ? 'pending' : done < total ? 'partial' : 'paid',
+      });
+    }
+    return out;
+  }
+
   /**
    * Marca la semana como pagada: completa de una vez todos los retiros
    * generados de la planilla (pending/processing) con el comprobante SINPE.
