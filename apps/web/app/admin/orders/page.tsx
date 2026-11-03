@@ -22,6 +22,7 @@ import { useDeliveryZones } from '@kiwi/ui';
 import { findDeliveryZone } from '@kiwi/types';
 import { normalizeExportRange } from './export-range';
 import { buildOrdersWorkbook } from './export-xlsx';
+import { buildDriverCutReport } from './driver-cut';
 import { zoneAutofillPrice } from './manual-order';
 import { downloadPdf, renderMerchantInvoicePdf } from './merchant-invoice-pdf';
 import { buildInvoiceWorkbook } from './export-invoice-xlsx';
@@ -455,8 +456,8 @@ export default function AdminOrders() {
   ]);
 
   // Corte del repartidor en PDF (vía ventana de impresión: Guardar como PDF).
-  // Reusa los filtros de fecha/estado/chofer. Base: driverPayout (viaje − 15%);
-  // además se rebaja 13% de IVA sobre ese payout. Neto = payout × 0.87.
+  // Reusa los filtros de fecha/estado/chofer. Se paga el driverPayout tal cual
+  // (el 15% de Kiwi ya viene rebajado de origen): sin IVA y sin mostrar comisión.
   const exportDriverPdf = useCallback(async () => {
     if (exporting) return;
     setExporting(true);
@@ -469,64 +470,37 @@ export default function AdminOrders() {
         setExportError(t('webadmin1.aorders.exportEmpty'));
         return;
       }
-      const byDriver = new Map<string, AdminOrder[]>();
-      trips.forEach((o) => {
-        const name = o.driver?.fullName ?? t('webadmin1.aorders.noDriver');
-        const list = byDriver.get(name) ?? [];
-        list.push(o);
-        byDriver.set(name, list);
-      });
+      const report = buildDriverCutReport(
+        trips.map((o) => ({
+          id: o.id,
+          driverName: o.driver?.fullName ?? t('webadmin1.aorders.noDriver'),
+          merchantName: o.merchant?.businessName ?? '',
+          createdAt: o.createdAt,
+          basePrice: o.basePrice ?? 0,
+          driverPayout: o.driverPayout ?? 0,
+          isTest: (o as AdminOrder).isTest === true,
+        })),
+      );
       const money = (n: number) => `₡${Math.round(n).toLocaleString('es-CR')}`;
-      const sections = [...byDriver.entries()]
-        .map(([name, list]) => {
-          let sumTrip = 0;
-          let sumPay = 0;
-          let sumIva = 0;
-          let sumNet = 0;
-          let tNet = 0;
-          let tCount = 0;
-          const rows = list
-            .map((o, i) => {
-              const trip = Math.round(Number(o.basePrice ?? 0));
-              const pay = Math.round(Number(o.driverPayout ?? 0));
-              const iva = expIva ? Math.round(pay * 0.13) : 0;
-              const net = pay - iva;
-              const isT = (o as AdminOrder).isTest === true;
-              if (isT) {
-                tNet += net;
-                tCount += 1;
-              } else {
-                sumTrip += trip;
-                sumPay += pay;
-                sumIva += iva;
-                sumNet += net;
-              }
-              const dt = new Date(o.createdAt);
-              return `<tr><td>${i + 1}</td><td>${dt.toLocaleDateString('es-CR')} ${dt.toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' })}</td><td>${o.merchant?.businessName ?? ''}${isT ? ' · TEST' : ''}</td><td style="text-align:right">${money(trip)}</td><td style="text-align:right">${money(trip - pay)}</td>${expIva ? `<td style="text-align:right">${money(iva)}</td>` : ''}<td style="text-align:right"><b>${money(net)}</b></td></tr>`;
+      const sections = report.sections
+        .map((sec) => {
+          const rows = sec.rows
+            .map((r, i) => {
+              const dt = new Date(r.createdAt);
+              return `<tr><td>${i + 1}</td><td>${dt.toLocaleDateString('es-CR')} ${dt.toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' })}</td><td>${r.merchant}${r.isTest ? ' · TEST' : ''}</td><td style="text-align:right">${money(r.trip)}</td><td style="text-align:right"><b>${money(r.payable)}</b></td></tr>`;
             })
             .join('');
           const testLine =
-            tCount > 0
-              ? `<tr><td colspan="3">Subtotal TEST (no pagable, ${tCount})</td><td style="text-align:right" colspan="${expIva ? 3 : 2}"></td><td style="text-align:right">${money(tNet)}</td></tr>`
+            sec.testCount > 0
+              ? `<tr><td colspan="3">Subtotal TEST (no pagable, ${sec.testCount})</td><td style="text-align:right"></td><td style="text-align:right">${money(sec.testTotal)}</td></tr>`
               : '';
-          const realCount = list.length - tCount;
-          return `<h3>${name} · ${realCount} viajes${tCount > 0 ? ` + ${tCount} test` : ''}</h3><table><thead><tr><th>N°</th><th>Fecha</th><th>Comercio</th><th style="text-align:right">Viaje</th><th style="text-align:right">Corte 15%</th>${expIva ? '<th style="text-align:right">IVA 13%</th>' : ''}<th style="text-align:right">A pagar</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td colspan="3">Subtotal ${name}</td><td style="text-align:right">${money(sumTrip)}</td><td style="text-align:right">${money(sumTrip - sumPay)}</td>${expIva ? `<td style="text-align:right">${money(sumIva)}</td>` : ''}<td style="text-align:right">${money(sumNet)}</td></tr>${testLine}</tfoot></table>`;
+          return `<h3>${sec.driver} · ${sec.realCount} viajes${sec.testCount > 0 ? ` + ${sec.testCount} test` : ''}</h3><table><thead><tr><th>N°</th><th>Fecha</th><th>Comercio</th><th style="text-align:right">Viaje</th><th style="text-align:right">A pagar</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td colspan="3">Subtotal ${sec.driver}</td><td style="text-align:right">${money(sec.tripTotal)}</td><td style="text-align:right"><b>${money(sec.payableTotal)}</b></td></tr>${testLine}</tfoot></table>`;
         })
         .join('');
-      const real = trips.filter((o) => (o as AdminOrder).isTest !== true);
-      const grandPay = real.reduce((s, o) => s + Math.round(Number(o.driverPayout ?? 0)), 0);
-      const grandIva = expIva ? Math.round(grandPay * 0.13) : 0;
-      const grandNet = grandPay - grandIva;
-      const grandTest = trips
-        .filter((o) => (o as AdminOrder).isTest === true)
-        .reduce((s, o) => {
-          const pay = Math.round(Number(o.driverPayout ?? 0));
-          return s + pay - (expIva ? Math.round(pay * 0.13) : 0);
-        }, 0);
       const w = window.open('', '_blank', 'width=720');
       if (!w) return;
       w.document.write(
-        `<html><head><title>Corte repartidor ${expFrom || 'inicio'} → ${expTo || 'hoy'}</title><style>body{font-family:sans-serif;padding:24px;color:#111}table{width:100%;border-collapse:collapse;margin:8px 0 20px}td,th{border-bottom:1px solid #ddd;padding:6px 4px;font-size:13px;text-align:left}tfoot td{font-weight:bold}h2{margin:0}h3{margin:20px 0 4px}.muted{color:#555;font-size:13px}</style></head><body><h2>Kiwi · Corte repartidor</h2><p class="muted">${expFrom || '…'} → ${expTo || '…'} · ${real.length} viajes · Bruto: ${money(grandPay)}${expIva ? ` · IVA 13%: ${money(grandIva)}` : ''} · <b>Total a pagar: ${money(grandNet)}</b>${grandTest > 0 ? ` · TEST (no pagable): ${money(grandTest)}` : ''}</p>${sections}</body></html>`,
+        `<html><head><title>Corte repartidor ${expFrom || 'inicio'} → ${expTo || 'hoy'}</title><style>body{font-family:sans-serif;padding:24px;color:#111}table{width:100%;border-collapse:collapse;margin:8px 0 20px}td,th{border-bottom:1px solid #ddd;padding:6px 4px;font-size:13px;text-align:left}tfoot td{font-weight:bold}h2{margin:0}h3{margin:20px 0 4px}.muted{color:#555;font-size:13px}</style></head><body><h2>Kiwi · Corte repartidor</h2><p class="muted">${expFrom || '…'} → ${expTo || '…'} · ${report.grandCount} viajes · <b>Total a pagar: ${money(report.grandPayable)}</b>${report.grandTest > 0 ? ` · TEST (no pagable): ${money(report.grandTest)}` : ''}</p>${sections}</body></html>`,
       );
       w.document.close();
       w.focus();
@@ -537,7 +511,7 @@ export default function AdminOrders() {
     } finally {
       setExporting(false);
     }
-  }, [exporting, expFrom, expTo, expIva, t, fetchExportOrders]);
+  }, [exporting, expFrom, expTo, t, fetchExportOrders]);
 
   // Factura para el comercio (PDF con marca): mismos filtros pero solo
   // entregados reales, sin Comisión Kiwi ni Neto comercio.
@@ -645,6 +619,7 @@ export default function AdminOrders() {
   }, [exporting, expFrom, expTo, expMerchant, merchants, t, fetchExportOrders]);
 
   // Compartir el corte por WhatsApp / share nativo (texto resumen + detalle).
+  // Igual que el PDF: se paga el driverPayout tal cual, sin IVA ni comisión visible.
   const shareDriverCut = useCallback(async () => {
     if (exporting) return;
     setExportError(null);
@@ -655,30 +630,29 @@ export default function AdminOrders() {
         setExportError(t('webadmin1.aorders.exportEmpty'));
         return;
       }
-      const name =
-        drivers.find((d) => d.id === expDriver)?.fullName ??
-        t('webadmin1.aorders.exportMerchantAll');
-      const total = trips.reduce((s, o) => s + Math.round(Number(o.driverPayout ?? 0)), 0);
-      const totalIva = expIva ? Math.round(total * 0.13) : 0;
-      const totalNet = total - totalIva;
-      const realTrips = trips.filter((o) => (o as AdminOrder).isTest !== true);
-      const realNet = realTrips.reduce((s, o) => {
-        const pay = Math.round(Number(o.driverPayout ?? 0));
-        return s + pay - (expIva ? Math.round(pay * 0.13) : 0);
-      }, 0);
-      const testNet = totalNet - realNet;
+      const report = buildDriverCutReport(
+        trips.map((o) => ({
+          id: o.id,
+          driverName: o.driver?.fullName ?? t('webadmin1.aorders.noDriver'),
+          merchantName: o.merchant?.businessName ?? '',
+          createdAt: o.createdAt,
+          basePrice: o.basePrice ?? 0,
+          driverPayout: o.driverPayout ?? 0,
+          isTest: (o as AdminOrder).isTest === true,
+        })),
+      );
+      const money = (n: number) => `₡${Math.round(n).toLocaleString('es-CR')}`;
+      const lines = report.sections.flatMap((sec) => [
+        `*${sec.driver}* — ${money(sec.payableTotal)}${sec.testCount > 0 ? ` (+${sec.testCount} test: ${money(sec.testTotal)})` : ''}`,
+        ...sec.rows.map((r) => {
+          const dt = new Date(r.createdAt);
+          return `• ${dt.toLocaleDateString('es-CR')} ${r.merchant}${r.isTest ? ' [TEST]' : ''}: ${money(r.payable)}`;
+        }),
+      ]);
       const text =
-        `Kiwi · Corte ${name} (${expFrom || '…'} → ${expTo || '…'})\n` +
-        `${realTrips.length} viajes · A pagar: ₡${realNet.toLocaleString('es-CR')}${testNet > 0 ? ` (TEST no pagable: ₡${testNet.toLocaleString('es-CR')})` : ''}\n` +
-        trips
-          .map((o) => {
-            const dt = new Date(o.createdAt);
-            const pay = Math.round(Number(o.driverPayout ?? 0));
-            const net = pay - (expIva ? Math.round(pay * 0.13) : 0);
-            const tag = (o as AdminOrder).isTest === true ? ' [TEST]' : '';
-            return `• ${dt.toLocaleDateString('es-CR')} ${o.merchant?.businessName ?? ''}${tag}: ₡${net.toLocaleString('es-CR')}`;
-          })
-          .join('\n');
+        `Kiwi · Corte (${expFrom || '…'} → ${expTo || '…'})\n` +
+        `${report.grandCount} viajes · A pagar: ${money(report.grandPayable)}${report.grandTest > 0 ? ` (TEST no pagable: ${money(report.grandTest)})` : ''}\n` +
+        lines.join('\n');
       if (typeof navigator !== 'undefined' && 'share' in navigator) {
         await (window.navigator as any).share({ title: 'Kiwi · Corte repartidor', text });
         return;
@@ -695,7 +669,7 @@ export default function AdminOrders() {
         setExportError(t('webadmin1.aorders.exportError'));
       }
     }
-  }, [exporting, expDriver, expFrom, expTo, expIva, drivers, t, fetchExportOrders]);
+  }, [exporting, expFrom, expTo, t, fetchExportOrders]);
 
   useEffect(() => {
     api
