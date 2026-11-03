@@ -497,13 +497,31 @@ export default function AdminOrders() {
           return `<h3>${sec.driver} · ${sec.realCount} viajes${sec.testCount > 0 ? ` + ${sec.testCount} test` : ''}</h3><table><thead><tr><th>N°</th><th>Fecha</th><th>Comercio</th><th style="text-align:right">Viaje</th><th style="text-align:right">A pagar</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td colspan="3">Subtotal ${sec.driver}</td><td style="text-align:right">${money(sec.tripTotal)}</td><td style="text-align:right"><b>${money(sec.payableTotal)}</b></td></tr>${testLine}</tfoot></table>`;
         })
         .join('');
+      const footer = `<div style="margin-top:24px;border-top:2px solid #15803d;padding-top:12px;display:flex;align-items:center;gap:16px"><img src="/kiwi-ig-qr.png" style="width:110px;height:110px" alt="QR Instagram KiWi" /><div><p style="font-weight:bold;margin:0 0 4px">Escríbinos por WhatsApp · +506 8826 4007</p><p style="margin:0 0 4px">Seguinos en Instagram · @KIWI_CR_EXPRESS</p><p class="muted" style="margin:0">kiwicr.express · Nicoya, Guanacaste</p></div></div>`;
       const w = window.open('', '_blank', 'width=720');
       if (!w) return;
       w.document.write(
-        `<html><head><title>Corte repartidor ${expFrom || 'inicio'} → ${expTo || 'hoy'}</title><style>body{font-family:sans-serif;padding:24px;color:#111}table{width:100%;border-collapse:collapse;margin:8px 0 20px}td,th{border-bottom:1px solid #ddd;padding:6px 4px;font-size:13px;text-align:left}tfoot td{font-weight:bold}h2{margin:0}h3{margin:20px 0 4px}.muted{color:#555;font-size:13px}</style></head><body><h2>Kiwi · Corte repartidor</h2><p class="muted">${expFrom || '…'} → ${expTo || '…'} · ${report.grandCount} viajes · <b>Total a pagar: ${money(report.grandPayable)}</b>${report.grandTest > 0 ? ` · TEST (no pagable): ${money(report.grandTest)}` : ''}</p>${sections}</body></html>`,
+        `<html><head><title>Corte repartidor ${expFrom || 'inicio'} → ${expTo || 'hoy'}</title><style>body{font-family:sans-serif;padding:24px;color:#111}table{width:100%;border-collapse:collapse;margin:8px 0 20px}td,th{border-bottom:1px solid #ddd;padding:6px 4px;font-size:13px;text-align:left}tfoot td{font-weight:bold}h2{margin:0}h3{margin:20px 0 4px}.muted{color:#555;font-size:13px}</style></head><body><h2>Kiwi · Corte repartidor</h2><p class="muted">${expFrom || '…'} → ${expTo || '…'} · ${report.grandCount} viajes · <b>Total a pagar: ${money(report.grandPayable)}</b>${report.grandTest > 0 ? ` · TEST (no pagable): ${money(report.grandTest)}` : ''}</p>${sections}${footer}</body></html>`,
       );
       w.document.close();
       w.focus();
+      // Esperar el QR antes de imprimir para que no salga en blanco.
+      const imgs = Array.from(w.document.images ?? []);
+      try {
+        await Promise.all(
+          imgs.map((img: HTMLImageElement) =>
+            img.complete
+              ? Promise.resolve()
+              : new Promise<void>((res) => {
+                  img.onload = () => res();
+                  img.onerror = () => res();
+                  setTimeout(res, 3000);
+                }),
+          ),
+        );
+      } catch {
+        // sigue igual sin QR
+      }
       w.print();
       setExportDone(t('webadmin1.aorders.exportDone', { count: trips.length }));
     } catch {
