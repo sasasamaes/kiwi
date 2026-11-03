@@ -266,7 +266,7 @@ export class MerchantsController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Precio pactado del traslado (null/vacío = automático)' })
   async setTransferPrice(@Param('id') id: string, @Body() body: { price?: number | null }) {
-    const raw = body?.price;
+    const raw: unknown = body?.price;
     return this.merchantsService.setTransferPriceOverride(
       id,
       raw === null || raw === undefined || raw === '' ? null : Number(raw),

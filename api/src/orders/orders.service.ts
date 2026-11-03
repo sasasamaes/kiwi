@@ -1497,12 +1497,43 @@ export class OrdersService {
    * estado operativo (concurso / propuestas / asignado) y recién ahí avisa
    * a drivers. Atómico e idempotente: solo el primer claim gana.
    */
-  async createManualOrder(data: any, adminUserId: string): Promise<any> {
-    if (!data?.merchantId) throw new BadRequestException('merchantId es requerido');
-    const merchant = await this.prisma.merchantProfile.findUnique({
-      where: { id: String(data.merchantId) },
+  /**
+   * Comercio casa para mandados sin comercio ("Mostrador KiWi").
+   * Find-or-create (carreras concurrentes del admin son raras y un duplicado
+   * solo duplicaría la fila mostrador, sin efecto en plata).
+   */
+  private async ensureHouseMerchant(): Promise<any> {
+    const NAME = 'Mostrador KiWi';
+    const existing = await this.prisma.merchantProfile.findFirst({
+      where: { businessName: NAME },
     });
-    if (!merchant) throw new NotFoundException('Comercio no encontrado');
+    if (existing) return existing;
+    const user = await this.prisma.user.create({ data: { role: 'merchant' } });
+    return this.prisma.merchantProfile.create({
+      data: {
+        userId: user.id,
+        businessName: NAME,
+        address: 'Mostrador KiWi (pedidos manuales del admin)',
+      },
+    });
+  }
+
+  async createManualOrder(data: any, adminUserId: string): Promise<any> {
+    // Mandado sin comercio: cae al comercio casa ("Mostrador KiWi").
+    // Con house:false (o ausente) se exige merchantId como antes.
+    let merchant: any = null;
+    if (data?.merchantId) {
+      merchant = await this.prisma.merchantProfile.findUnique({
+        where: { id: String(data.merchantId) },
+      });
+    } else if (data?.house === true) {
+      merchant = await this.ensureHouseMerchant();
+    }
+    if (!merchant) {
+      throw new NotFoundException(
+        data?.merchantId ? 'Comercio no encontrado' : 'merchantId es requerido',
+      );
+    }
 
     const price = Number(data.basePrice);
     if (!Number.isFinite(price) || price <= 0) {
@@ -1571,7 +1602,7 @@ export class OrdersService {
           type: 'manual_create',
           actorId: adminUserId,
           driverId: driverId ?? undefined,
-          meta: { status, manual: true },
+          meta: { status, manual: true, house: data?.merchantId ? false : true },
         },
       })
       .catch(() => undefined);

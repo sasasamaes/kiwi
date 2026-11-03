@@ -22,6 +22,7 @@ import { useDeliveryZones } from '@kiwi/ui';
 import { findDeliveryZone } from '@kiwi/types';
 import { normalizeExportRange } from './export-range';
 import { buildOrdersWorkbook } from './export-xlsx';
+import { zoneAutofillPrice } from './manual-order';
 import { downloadPdf, renderMerchantInvoicePdf } from './merchant-invoice-pdf';
 import { buildInvoiceWorkbook } from './export-invoice-xlsx';
 
@@ -121,6 +122,9 @@ export default function AdminOrders() {
   const [showManual, setShowManual] = useState(false);
   const [manualBusy, setManualBusy] = useState(false);
   const [manualError, setManualError] = useState<string | null>(null);
+  // Pedido = atado a un comercio. Mandado = compra+entrega, con o sin
+  // comercio (sin comercio cae al Mostrador KiWi, sin tocar crédito).
+  const [manualKind, setManualKind] = useState<'pedido' | 'mandado'>('pedido');
   const [manualForm, setManualForm] = useState({
     merchantId: '',
     driverId: '',
@@ -1634,6 +1638,35 @@ export default function AdminOrders() {
               </button>
             </div>
             {manualError && <p className="mb-3 text-sm text-red-600">{manualError}</p>}
+            <div
+              className="mb-3 grid grid-cols-2 gap-2"
+              role="group"
+              aria-label="Tipo de pedido manual"
+            >
+              {(
+                [
+                  { id: 'pedido', label: 'Pedido' },
+                  { id: 'mandado', label: 'Mandado' },
+                ] as const
+              ).map((k) => (
+                <button
+                  key={k.id}
+                  type="button"
+                  onClick={() => {
+                    setManualKind(k.id);
+                    setManualError(null);
+                  }}
+                  aria-pressed={manualKind === k.id}
+                  className={`rounded-xl border px-3 py-2 text-sm font-bold transition-colors ${
+                    manualKind === k.id
+                      ? 'border-kiwi-700 bg-kiwi-700 text-white'
+                      : 'border-surface-200 text-surface-600 dark:border-surface-700'
+                  }`}
+                >
+                  {k.label}
+                </button>
+              ))}
+            </div>
             <div className="space-y-3 text-sm">
               <label className="block">
                 <span className="text-xs font-semibold text-surface-600">Comercio</span>
@@ -1642,7 +1675,9 @@ export default function AdminOrders() {
                   onChange={(e) => setManualForm((f) => ({ ...f, merchantId: e.target.value }))}
                   className="mt-1 w-full rounded-xl border border-surface-200 px-3 py-2 dark:bg-surface-900"
                 >
-                  <option value="">Seleccionar…</option>
+                  <option value="">
+                    {manualKind === 'mandado' ? 'Sin comercio (mostrador)' : 'Seleccionar…'}
+                  </option>
                   {merchants.map((m) => (
                     <option key={m.id} value={m.id}>
                       {m.businessName}
@@ -1669,7 +1704,7 @@ export default function AdminOrders() {
               </label>
               <label className="block">
                 <span className="text-xs font-semibold text-surface-600">
-                  Dirección de recogida
+                  {manualKind === 'mandado' ? 'Lugar de compra' : 'Dirección de recogida'}
                 </span>
                 <input
                   value={manualForm.pickupAddress}
@@ -1678,7 +1713,9 @@ export default function AdminOrders() {
                 />
               </label>
               <label className="block">
-                <span className="text-xs font-semibold text-surface-600">Dirección de entrega</span>
+                <span className="text-xs font-semibold text-surface-600">
+                  {manualKind === 'mandado' ? 'Lugar de entrega' : 'Dirección de entrega'}
+                </span>
                 <input
                   value={manualForm.deliveryAddress}
                   onChange={(e) =>
@@ -1691,13 +1728,23 @@ export default function AdminOrders() {
                 <span className="text-xs font-semibold text-surface-600">Zona</span>
                 <select
                   value={manualForm.deliveryZone}
-                  onChange={(e) => setManualForm((f) => ({ ...f, deliveryZone: e.target.value }))}
+                  onChange={(e) => {
+                    const zoneId = e.target.value;
+                    const zone = deliveryZones.find((z: any) => String(z.id) === zoneId);
+                    // Precio de la zona automático (se puede ajustar a mano).
+                    const auto = zoneAutofillPrice(zone ?? null);
+                    setManualForm((f) => ({
+                      ...f,
+                      deliveryZone: zoneId,
+                      ...(auto ? { basePrice: auto } : {}),
+                    }));
+                  }}
                   className="mt-1 w-full rounded-xl border border-surface-200 px-3 py-2 dark:bg-surface-900"
                 >
                   <option value="">Sin zona</option>
                   {deliveryZones.map((z: any) => (
                     <option key={z.id} value={z.id}>
-                      {z.label}
+                      {z.label} — ₡{Math.round(Number(z.price ?? 0)).toLocaleString('es-CR')}
                     </option>
                   ))}
                 </select>
@@ -1775,8 +1822,14 @@ export default function AdminOrders() {
                   setManualBusy(true);
                   setManualError(null);
                   try {
+                    // Pedido exige comercio; mandado puede ir a mostrador.
+                    if (manualKind === 'pedido' && !manualForm.merchantId) {
+                      setManualError('Elegí el comercio');
+                      return;
+                    }
                     await api.createAdminOrder({
                       ...manualForm,
+                      house: manualKind === 'mandado' && !manualForm.merchantId,
                       basePrice: Number(manualForm.basePrice),
                       driverId: manualForm.driverId || undefined,
                       deliveryZone: manualForm.deliveryZone || undefined,
@@ -1785,6 +1838,7 @@ export default function AdminOrders() {
                         : undefined,
                     });
                     setShowManual(false);
+                    setManualKind('pedido');
                     setManualForm({
                       merchantId: '',
                       driverId: '',

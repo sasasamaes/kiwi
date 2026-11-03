@@ -2417,5 +2417,87 @@ describe('OrdersService', () => {
         expect.objectContaining({ data: { totalTrips: { increment: 1 } } }),
       );
     });
+
+    it('sin merchantId y sin house exige comercio (no cae a mostrador por error)', async () => {
+      await expect(
+        service.createManualOrder(
+          { pickupAddress: 'A', deliveryAddress: 'B', basePrice: 1500 },
+          'admin-1',
+        ),
+      ).rejects.toThrow('merchantId es requerido');
+      expect(prisma.order.create).not.toHaveBeenCalled();
+    });
+
+    it('mandado sin comercio usa/crea el mostrador y paga completo al repartidor sin tocar crédito', async () => {
+      prisma.merchantProfile.findFirst = jest.fn().mockResolvedValue(null);
+      prisma.user = { create: jest.fn().mockResolvedValue({ id: 'u-house' }) };
+      prisma.merchantProfile.create = jest
+        .fn()
+        .mockResolvedValue({ id: 'm-house', userId: 'u-house' });
+      prisma.order.create.mockResolvedValue({
+        id: 'manual-2',
+        merchantId: 'm-house',
+        status: 'delivered',
+        totalAmount: 1500,
+      });
+
+      const res = await service.createManualOrder(
+        {
+          house: true,
+          pickupAddress: 'Pulpería',
+          deliveryAddress: 'Casa',
+          basePrice: 1500,
+          status: 'delivered',
+        },
+        'admin-1',
+      );
+      expect(res.id).toBe('manual-2');
+      expect(prisma.user.create).toHaveBeenCalled();
+      expect(prisma.merchantProfile.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ businessName: 'Mostrador KiWi' }),
+        }),
+      );
+      // Payout completo al repartidor y sin movimiento de crédito
+      // (solo registro cash; el balance del comercio no se toca).
+      expect(prisma.order.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            merchantId: 'm-house',
+            driverPayout: 1500,
+            commission: 0,
+          }),
+        }),
+      );
+      expect(prisma.payment.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          create: expect.objectContaining({ method: 'cash', status: 'pending' }),
+        }),
+      );
+    });
+
+    it('mandado sin comercio reusa el mostrador existente', async () => {
+      prisma.merchantProfile.findFirst = jest
+        .fn()
+        .mockResolvedValue({ id: 'm-house', userId: 'u-house' });
+      prisma.user = { create: jest.fn() };
+      prisma.merchantProfile.create = jest.fn();
+
+      await service.createManualOrder(
+        {
+          house: true,
+          pickupAddress: 'A',
+          deliveryAddress: 'B',
+          basePrice: 1000,
+          status: 'pending',
+        },
+        'admin-1',
+      );
+      expect(prisma.user.create).not.toHaveBeenCalled();
+      expect(prisma.merchantProfile.create).not.toHaveBeenCalled();
+      expect(prisma.order.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ merchantId: 'm-house' }) }),
+      );
+    });
   });
 });
