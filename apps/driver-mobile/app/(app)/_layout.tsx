@@ -17,6 +17,7 @@ import { BottomTabs } from '@kiwi/mobile-ui';
 import { useTranslation } from '@kiwi/i18n';
 import { useColorScheme } from 'nativewind';
 import { useSession } from '../../src/session/useSession';
+import { OfflineBanner } from '../../src/realtime/OfflineBanner';
 import { saveThemeMode } from '../_layout';
 import { queue } from '../../src/queue/useQueue';
 import { notificationsApi } from '../../src/api/notifications';
@@ -99,6 +100,7 @@ export default function AppLayout() {
         </View>
       </View>
       <Stack screenOptions={{ headerShown: false }} />
+      <OfflineBanner />
       <BottomTabs items={items} active={active} onGo={(r) => router.replace(r as any)} />
     </View>
   );

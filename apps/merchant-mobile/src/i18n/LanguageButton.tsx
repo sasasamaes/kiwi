@@ -1,6 +1,5 @@
 import { Pressable, Text } from 'react-native';
 import { useLanguage } from '@kiwi/i18n';
-import { tokens } from '@kiwi/mobile-ui';
 
 /** Compact ES ⇄ EN toggle for native screens (profile, header, etc.). */
 export function LanguageButton() {
@@ -11,17 +10,9 @@ export function LanguageButton() {
       accessibilityRole="button"
       accessibilityLabel={locale === 'es' ? 'Switch to English' : 'Cambiar a español'}
       onPress={() => setLocale(next)}
-      style={{
-        paddingHorizontal: 10,
-        paddingVertical: 6,
-        borderRadius: 999,
-        backgroundColor: tokens.color.surface,
-        borderWidth: 1,
-        borderColor: tokens.color.border,
-        alignSelf: 'flex-start',
-      }}
+      className="self-start rounded-full border border-surface-200 bg-white px-2.5 py-1.5 dark:border-surface-700 dark:bg-surface-800"
     >
-      <Text style={{ color: tokens.color.ink, fontSize: 12, fontWeight: '700' }}>
+      <Text className="text-xs font-bold text-surface-800 dark:text-surface-100">
         {locale === 'es' ? '🇨🇷 ES · EN' : '🇺🇸 EN · ES'}
       </Text>
     </Pressable>

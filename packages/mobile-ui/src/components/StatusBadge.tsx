@@ -1,5 +1,4 @@
 import { Text, View } from 'react-native';
-import { tokens } from '../theme';
 
 const DEFAULT_LABELS: Record<string, string> = {
   pending: 'Pendiente',
@@ -20,16 +19,8 @@ export function StatusBadge({
   labels?: Record<string, string>;
 }) {
   return (
-    <View
-      style={{
-        backgroundColor: tokens.color.surface,
-        borderRadius: tokens.radius.sm,
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        alignSelf: 'flex-start',
-      }}
-    >
-      <Text style={{ color: tokens.color.lime, fontSize: 12, fontWeight: '600' }}>
+    <View className="self-start rounded-md bg-kiwi-50 px-2 py-1 dark:bg-kiwi-900/30">
+      <Text className="text-xs font-semibold text-kiwi-700 dark:text-kiwi-400">
         {(labels ?? DEFAULT_LABELS)[status] ?? status}
       </Text>
     </View>

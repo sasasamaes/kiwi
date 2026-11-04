@@ -1,10 +1,9 @@
 import { Text } from 'react-native';
-import { tokens } from '../theme';
 
 export function Price({ amount, size = 16 }: { amount: number; size?: number }) {
   const n = Number.isFinite(amount) ? amount : 0;
   return (
-    <Text style={{ color: tokens.color.ink, fontSize: size, fontWeight: '700' }}>
+    <Text className="font-bold text-surface-800 dark:text-surface-100" style={{ fontSize: size }}>
       {'₡' + n.toLocaleString('es-CR')}
     </Text>
   );
