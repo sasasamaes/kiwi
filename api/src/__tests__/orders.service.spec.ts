@@ -82,6 +82,8 @@ describe('OrdersService', () => {
       },
       // updateStatus corre en transacción interactiva (claim + refund).
       $transaction: jest.fn((fn: any) => fn(prisma)),
+      // claimWithCapacity: lock de aviso dentro de la tx.
+      $executeRaw: jest.fn().mockResolvedValue([]),
     };
 
     jest.clearAllMocks();

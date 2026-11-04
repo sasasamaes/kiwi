@@ -45,6 +45,26 @@ jobs:
       - name: Check client bundles (source + built chunks)
         run: npm run check:client-bundle
 
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup dependencies (cached)
+        uses: ./.github/actions/setup-deps
+
+      - name: Gitleaks (secretos commiteados)
+        uses: gitleaks/gitleaks-action@v2
+
+      # Aviso (no bloquea): hay 94 highs/moderates heredados — se migran
+      # aparte. Cuando el conteo llegue a 0, quitar continue-on-error.
+      - name: npm audit (high+, solo aviso)
+        run: npm audit --omit=dev --audit-level=high
+        continue-on-error: true
+
   test:
     name: Test & Build
     runs-on: ubuntu-latest
@@ -60,6 +80,9 @@ jobs:
       - name: Type-check workspace (turbo)
         run: npx turbo run type-check
 
+      - name: Lint workspace (turbo)
+        run: npm run lint
+
       - name: Run API tests
         run: cd api && npm test
 
@@ -67,7 +90,7 @@ jobs:
         run: cd api && npx nest build
 
       - name: Verify API builds
-        run: test -f api/dist/main.js && echo "✅ API build OK" || echo "❌ API build failed"
+        run: test -f api/dist/main.js && echo "✅ API build OK" || (echo "❌ API build failed" && exit 1)
 
   mobile:
     name: Mobile (mobile-ui + mobile-core + driver-mobile + client-mobile + merchant-mobile)

@@ -30,6 +30,7 @@ import { offeredToday } from '../merchants/opening-hours';
 import { normalizeCRPhone } from '../common/phone';
 import { isKycRequired } from '../feature-flags/feature-flags';
 import { ImageUploadService } from '../menu/image-upload.service';
+import type { Prisma } from '@prisma/client';
 
 /**
  * Lo que un repartidor puede ver del comercio en respuestas de pedidos.
@@ -133,19 +134,26 @@ export class OrdersService {
   ) {}
 
   /**
-   * Tope de simultáneos: cuántos pedidos activos tiene el repartidor y
-   * revienta si ya llegó al máximo. Se chequea ANTES de cada claim
-   * (aceptar, asignar, propuesta, reasignar) para que el 11° no entre.
+   * Capacidad atómica: lock de aviso por repartidor + conteo dentro de la
+   * misma tx que el claim. Sin esto, dos accepts concurrentes con 9 activos
+   * pasan el count y el 11° entra (TOCTOU). Mismo patrón que retiros.
    */
-  private async assertDriverCapacity(driverId: string) {
-    const active = await this.prisma.order.count({
-      where: { driverId, status: { in: [...ACTIVE_DRIVER_STATUSES] as any } },
+  private async claimWithCapacity<T>(
+    driverId: string,
+    claim: (tx: Prisma.TransactionClient) => Promise<T>,
+  ): Promise<T> {
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${driverId})::bigint)`;
+      const active = await tx.order.count({
+        where: { driverId, status: { in: [...ACTIVE_DRIVER_STATUSES] as any } },
+      });
+      if (active >= MAX_ACTIVE_ORDERS_PER_DRIVER) {
+        throw new BadRequestException(
+          `Ya tenés ${MAX_ACTIVE_ORDERS_PER_DRIVER} pedidos activos (el máximo). Entregá alguno antes de agarrar otro.`,
+        );
+      }
+      return claim(tx);
     });
-    if (active >= MAX_ACTIVE_ORDERS_PER_DRIVER) {
-      throw new BadRequestException(
-        `Ya tenés ${MAX_ACTIVE_ORDERS_PER_DRIVER} pedidos activos (el máximo). Entregá alguno antes de agarrar otro.`,
-      );
-    }
   }
 
   /**
@@ -844,568 +852,609 @@ export class OrdersService {
       kioskName?: string;
     }> = [];
     let productsTotal = 0;
-    if (kind === 'food' && incomingItems.length > 0) {
-      const menuIds = [
-        ...new Set(incomingItems.map((i) => i?.menuItemId).filter(Boolean) as string[]),
-      ];
-      const menuItems = menuIds.length
-        ? await this.prisma.menuItem.findMany({
-            where: { id: { in: menuIds }, merchantId: merchantProfile.id },
-            include: { kiosk: { select: { name: true } } },
-          })
-        : [];
-      const menuById = new Map(menuItems.map((m) => [m.id, m]));
+    // Vive fuera del try: se usa después (cash, anuncios).
+    let order: any = null;
 
-      // Variant options referenced by the cart: load once, validate
-      // ownership (same merchant) + availability. Deltas come from the DB,
-      // never from the client.
-      const optionIds = [
-        ...new Set(
-          incomingItems.flatMap((i) =>
-            Array.isArray(i?.variants)
-              ? i.variants.map((v: any) => v?.optionId).filter(Boolean)
-              : [],
-          ) as string[],
-        ),
-      ];
-      const dbOptions = optionIds.length
-        ? await this.prisma.menuItemVariantOption.findMany({
-            where: { id: { in: optionIds } },
-            include: {
-              group: { select: { id: true, name: true, menuItemId: true, maxSelections: true } },
-            },
-          })
-        : [];
-      const optionById = new Map(dbOptions.map((o) => [o.id, o]));
-
-      for (const item of incomingItems) {
-        const quantity = Number(item?.quantity ?? 1);
-        if (!Number.isFinite(quantity) || quantity < 1 || quantity > 999) {
-          throw new BadRequestException('quantity inválida');
-        }
-        if (item?.menuItemId) {
-          const menuItem = menuById.get(item.menuItemId);
-          if (!menuItem) {
-            throw new BadRequestException('Producto del menú no válido para este comercio');
-          }
-          // Días disponibles: en preventa se valida contra el día de entrega,
-          // en inmediato contra hoy. Sin esto se podría pedir el jueves algo
-          // de "solo lunes" programándolo mal.
-          const fulfillment = scheduledDate ?? new Date();
-          if (!offeredToday((menuItem as any).availableDays ?? [], fulfillment)) {
-            throw new BadRequestException(`"${menuItem.name}" no se ofrece ese día`);
-          }
-          // Stock por día de venta: cada día CR nuevo el stock vuelve al
-          // lote (dailyQty). Luego se descuenta atómico para no sobrevender
-          // con pedidos concurrentes (50 rollos son 50).
-          const dayKey = toCRDateKey(fulfillment);
-          let row: any = menuItem;
-          const daily = row.dailyQty as number | null;
-          if (daily != null && row.stockDay !== dayKey) {
-            const reset = await this.prisma.menuItem.updateMany({
-              where: { id: row.id, stockDay: row.stockDay },
-              data: { stockQty: daily, stockDay: dayKey },
-            });
-            const fresh = await this.prisma.menuItem.findUnique({ where: { id: row.id } });
-            if (fresh) {
-              row = fresh;
-              menuById.set(row.id, fresh as any);
-            }
-            // Reposición automática del día: avisar una vez (solo quien
-            // aplicó el reset notifica; el update es condicional por día).
-            if (reset.count > 0) {
-              try {
-                void this.notificationsService
-                  .notifyFollowers(row.merchantId, {
-                    title: `🧡 ¡Hoy hay ${row.name}!`,
-                    body: `Ya podés pedirlo — quedan ${daily} de hoy. Hasta agotar stock.`,
-                    data: { kind: 'restock', menuItemId: row.id },
-                  })
-                  .catch(() => undefined);
-              } catch {
-                // noop: el pedido igual se crea
-              }
-            }
-          }
-          const stock = row.stockQty as number | null;
-          if (stock != null) {
-            const took = await this.prisma.menuItem.updateMany({
-              where: { id: row.id, stockQty: { gte: quantity } },
-              data: { stockQty: { decrement: quantity } },
-            });
-            if (took.count === 0) {
-              const left = await this.prisma.menuItem.findUnique({
-                where: { id: row.id },
-                select: { stockQty: true },
-              });
-              const n = left?.stockQty ?? 0;
-              throw new BadRequestException(
-                n > 0
-                  ? `Solo quedan ${n} de "${row.name}" — bajá la cantidad`
-                  : `"${row.name}" se agotó`,
-              );
-            }
-          }
-          const selectedVariants: Array<{ group: string; option: string; priceDelta: number }> = [];
-          let unitPrice = Number(menuItem.price);
-          const requested = Array.isArray(item?.variants) ? item.variants : [];
-          if (requested.length > 0) {
-            const seen = new Set<string>();
-            const perGroup = new Map<string, number>();
-            for (const v of requested) {
-              const opt: any = optionById.get(v?.optionId);
-              if (!opt || opt.group.menuItemId !== menuItem.id) {
-                throw new BadRequestException('Variante no válida para este producto');
-              }
-              if (!opt.isAvailable) {
-                throw new BadRequestException(`Variante no disponible: ${opt.name}`);
-              }
-              if (seen.has(opt.id)) continue;
-              seen.add(opt.id);
-              // Tope del grupo (ej. máximo 3 frutas): el cliente nunca se
-              // lleva más opciones de las que el comercio permite.
-              const count = (perGroup.get(opt.group.id) ?? 0) + 1;
-              perGroup.set(opt.group.id, count);
-              const max = opt.group.maxSelections;
-              if (typeof max === 'number' && count > max) {
-                throw new BadRequestException(`Máximo ${max} opciones en "${opt.group.name}"`);
-              }
-              const delta = Number(opt.priceDelta);
-              unitPrice += delta;
-              selectedVariants.push({
-                group: opt.group.name,
-                option: opt.name,
-                priceDelta: Math.round(delta * 100) / 100,
-              });
-            }
-          }
-          productsTotal += unitPrice * quantity;
-          resolvedItems.push({
-            menuItemId: menuItem.id,
-            name: menuItem.name,
-            price: Math.round(unitPrice * 100) / 100,
-            quantity,
-            notes: item.notes || undefined,
-            selectedVariants,
-            // Snapshot del kiosko dueño (lista de compras del comercio).
-            kioskName: (menuItem as any).kiosk?.name ?? undefined,
+    // Stock tomado en ESTE intento: si el pedido no nace (variantes,
+    // zona, pago…), se devuelve para no fantasear faltantes.
+    const stockTaken: Array<{ id: string; qty: number }> = [];
+    const restoreStock = async () => {
+      while (stockTaken.length > 0) {
+        const t = stockTaken.pop() as { id: string; qty: number };
+        try {
+          await this.prisma.menuItem.updateMany({
+            where: { id: t.id },
+            data: { stockQty: { increment: t.qty } },
           });
-        } else {
-          const name = String(item?.name ?? '').trim();
-          if (!name || name.length > 200) {
-            throw new BadRequestException('name inválido');
-          }
-          if (Array.isArray(item?.variants) && item.variants.length > 0) {
-            throw new BadRequestException('Los productos personalizados no llevan variantes');
-          }
-          const price = Number(item?.price ?? 0);
-          if (!Number.isFinite(price) || price < 0) {
-            throw new BadRequestException('price inválido');
-          }
-          productsTotal += price * quantity;
-          resolvedItems.push({
-            menuItemId: null,
-            name,
-            price,
-            quantity,
-            notes: item.notes || undefined,
-            selectedVariants: [],
-          });
+        } catch {
+          // best-effort: el faltante se reconcilia con el lote del día
         }
       }
-    } else {
-      productsTotal = Number(data.productsTotal ?? 0);
-      if (!Number.isFinite(productsTotal) || productsTotal < 0) {
-        throw new BadRequestException('productsTotal inválido');
-      }
-    }
+    };
 
-    // Encomiendas por peso: los primeros 5 kg van incluidos en la tarifa del
-    // viaje; cada kg adicional (iniciado) suma ₡500 al viaje (y por ende a la
-    // base sobre la que se calcula el payout del repartidor).
-    let weightKg: number | null = null;
-    if (kind === 'freight' && data.weightKg != null) {
-      weightKg = Number(data.weightKg);
-      if (!Number.isFinite(weightKg) || weightKg <= 0 || weightKg > 500) {
-        throw new BadRequestException('weightKg inválido (0–500 kg)');
-      }
-    }
-    const weightSurcharge = weightKg ? this.freightWeightSurcharge(weightKg) : 0;
-
-    // Precio por zona (catálogo Nicoya): si el cliente manda deliveryZone
-    // válida, esa manda y el servidor pone el precio — el cliente nunca
-    // decide el monto. Sin zona, se conserva la lógica anterior por distancia
-    // (compatibilidad con clientes viejos y tests).
-    //
-    // ANTIFRAUDE: con coords de entrega, el POLÍGONO del GPS manda sobre la
-    // zona elegida a mano. Si no, bastaba poner GPS en zona cara + barrio
-    // barato para pagar menos por una entrega cara. La referencia (sin
-    // polígono) es solo sugerencia y no pisa nada.
-    const { deliveryZone, zoneBase } = await this.resolveZoneBase(
-      data.deliveryZone,
-      data.deliveryLat,
-      data.deliveryLng,
-    );
-
-    // Cobertura: solo Nicoya y alrededores (25 km). Si hay coords de entrega
-    // y caen fuera, se rechaza amable y se anota el interés (lista de espera
-    // para decidir dónde abrir). Sin coords no se puede verificar: pasa y el
-    // comercio lo valida en la dirección.
-    {
-      const dLat = Number((data as any).deliveryLat);
-      const dLng = Number((data as any).deliveryLng);
-      if (
-        Number.isFinite(dLat) &&
-        Number.isFinite(dLng) &&
-        !CoverageService.inServiceArea(dLat, dLng)
-      ) {
-        const contact = await this.coverageContact(data);
-        await this.coverage.recordInterest({
-          email: contact.email,
-          phone: contact.phone,
-          city: 'Fuera de cobertura',
-          zone: deliveryZone ?? undefined,
-          latitude: dLat,
-          longitude: dLng,
-          source: 'order-blocked',
-        });
-        throw new BadRequestException(
-          'Todavía no llegamos a tu zona. Te avisamos por correo cuando operemos ahí.',
-        );
-      }
-    }
-
-    // Colones enteros: SINPE/efectivo no aceptan fracciones y las sumas
-    // (retiros, analytics) arrastrarían decimales. Todo se redondea ANTES
-    // de persistir: viaje, productos, comisión y payout derivan enteros.
-    productsTotal = Math.round(productsTotal);
-    const computedTrip = Math.round(
-      (zoneBase ??
-        this.calculateBasePrice(
-          distanceKm,
-          { lat: data.pickupLat, lng: data.pickupLng },
-          { lat: data.deliveryLat, lng: data.deliveryLng },
-        )) + weightSurcharge,
-    );
-    // Precio pactado (traslados con override del admin): manda sobre el
-    // cálculo. Solo lo inyecta el servidor (createTransfer), nunca el cliente.
-    // Corte, payout y total derivan igual que siempre.
-    const tripPrice =
-      data.tripPriceOverride != null && Number.isFinite(Number(data.tripPriceOverride))
-        ? Math.round(Number(data.tripPriceOverride))
-        : computedTrip;
-    // Cargo por servicio de Kiwi — 2 vías, sin recargos al que paga:
-    // - VÍA COMERCIO (dashboard negocios, pedido o encomienda): el comercio
-    //   paga productos + viaje de la zona. Solo se le cobra al repartidor.
-    // - VÍA CLIENTE (app): el cliente paga toda la factura con viaje incluido
-    //   (productos + viaje, a valor nominal). Se cobra 15% al repartidor por
-    //   el viaje y 15% al comercio por el ticket; cada uno recibe su ganancia
-    //   (driver: viaje − 15%; comercio: ticket − 15%).
-    // % configurable por el admin (/admin/settings). El medio de pago solo
-    // elige cómo se paga, no cambia la tasa. La tasa queda guardada
-    // por pedido (commissionRate): cambiar el setting solo afecta NUEVOS.
-    // El servidor pone el monto, el cliente nunca lo decide.
-    const isHomeCook = (merchantProfile as any).isHomeCook === true;
-    const [standardPct, servicePct] = await Promise.all([
-      this.settingsService.getDriverCommissionPct(),
-      isHomeCook
-        ? this.settingsService.getHomeCookCommissionPct()
-        : this.settingsService.getDriverCommissionPct(),
-    ]);
-    // Pedidos del cliente (app): llevan cargo de servicio sobre productos
-    // (lo absorbe el comercio). Pedidos del comercio (dashboard): sin cargo
-    // sobre productos. En ambos, la tasa guardada es la del corte del viaje.
-    const isClientOrder = (data as any)?.origin === 'client_app';
-    const commissionRate = standardPct / 100;
-    // Corte de Kiwi sobre el viaje (15% standard): SIEMPRE se le descuenta al
-    // repartidor (payout = viaje − corte). A nadie se le suma encima.
-    const tripFee = Math.round(tripPrice * (standardPct / 100));
-    // Comisión de Kiwi sobre la FACTURA (productos): SOLO en pedidos del cliente
-    // (app); la absorbe el comercio (recibe ticket − 15%).
-    const serviceFee = isClientOrder ? Math.round(productsTotal * (servicePct / 100)) : 0;
-    const commission = serviceFee + tripFee;
-    const driverPayout = tripPrice - tripFee;
-    // Total que paga quien ordena (siempre a valor nominal, sin recargos):
-    // productos + viaje. La comisión sale de las ganancias, no del que paga.
-    const totalAmount = productsTotal + tripPrice;
-    // Efectivo: con cuánto pagan (para llevar el vuelto listo). Opcional;
-    // si viene debe cubrir lo que el repartidor cobra en mano: el total en
-    // pedidos de la app cliente, solo el viaje en pedidos del comercio
-    // (los productos ya los cobró el comercio). Se guarda en el pedido.
-    const collectable = (data as any)?.origin === 'client_app' ? totalAmount : tripPrice;
-    let cashTendered: number | null = null;
-    if (data.cashTendered != null && data.cashTendered !== '') {
-      const ct = Math.round(Number(data.cashTendered) * 100) / 100;
-      if (!Number.isFinite(ct) || ct < 0 || ct > 99999999.99) {
-        throw new BadRequestException('cashTendered inválido');
-      }
-      if (ct < collectable) {
-        throw new BadRequestException(
-          `El monto (₡${ct.toLocaleString()}) no cubre lo que se cobra en efectivo (₡${collectable.toLocaleString()})`,
-        );
-      }
-      cashTendered = ct;
-    }
-    if (data.packageSize != null && !['S', 'M', 'L'].includes(data.packageSize)) {
-      throw new BadRequestException('packageSize inválido');
-    }
-
-    // Asignación directa (el comercio eligió a 1 repartidor): se valida
-    // ANTES de crear para no publicar un concurso que después se pisa.
-    // Si hay driverId válido → el pedido nace asignado y NO se alerta al
-    // resto de la flota. Sin driverId → concurso normal (alertNearbyDrivers).
-    const requestedDriverId =
-      typeof data?.driverId === 'string' && data.driverId.trim() !== ''
-        ? data.driverId.trim()
-        : null;
-    let directDriver: any = null;
-    if (requestedDriverId) {
-      directDriver = await this.prisma.driverProfile.findUnique({
-        where: { id: requestedDriverId },
-      });
-      if (!directDriver) {
-        throw new NotFoundException('Repartidor no encontrado');
-      }
-      if (directDriver.status !== 'available') {
-        throw new BadRequestException(
-          `${directDriver.fullName} no está disponible ahora (estado: ${directDriver.status}). Podrás asignárselo cuando se conecte.`,
-        );
-      }
-      if (isKycRequired() && directDriver.kycStatus !== 'approved') {
-        throw new BadRequestException(
-          `${directDriver.fullName} aún no está verificado (KYC ${directDriver.kycStatus}).`,
-        );
-      }
-      // Pedido de prueba: solo un piloto puede ser el asignado directo.
-      if (isTest) {
-        await this.assertTestDriverByUserId(directDriver.userId);
-      }
-    }
-
-    // Fallback para clientes viejos sin key (app sin actualizar): si el
-    // mismo comercio crea el mismo destinatario+dirección en <2 min y sigue
-    // activo, se devuelve el existente en vez de duplicar.
-    if (!idempotencyKey) {
-      const fallbackName =
-        data?.customerName != null ? String(data.customerName).trim() || null : null;
-      const fallbackPhone =
-        data?.customerPhone != null ? String(data.customerPhone).trim() || null : null;
-      if (fallbackName && fallbackPhone && data?.deliveryAddress) {
-        const orderDelegate = this.prisma.order as any;
-        if (orderDelegate?.findFirst) {
-          const since = new Date(Date.now() - 2 * 60 * 1000);
-          const dupe = await orderDelegate.findFirst({
-            where: {
-              merchantId: merchantProfile.id,
-              customerName: fallbackName,
-              customerPhone: fallbackPhone,
-              deliveryAddress: String(data.deliveryAddress),
-              createdAt: { gte: since },
-              status: {
-                in: [
-                  'pending',
-                  'driver_proposals',
-                  'assigned',
-                  'pending_acceptance',
-                  'in_transit_to_pickup',
-                  'picked_up',
-                  'in_transit_to_delivery',
-                ],
-              },
-            },
-            orderBy: { createdAt: 'desc' },
-            // Nunca la fila completa: creditBalance es interno del comercio.
-            include: { merchant: { select: MERCHANT_PUBLIC_SELECT } },
-          });
-          if (dupe) {
-            this.logger.warn(
-              `Dedup fallback: devolviendo pedido ${dupe.id} (mismo cliente+dirección <2min)`,
-            );
-            return dupe;
-          }
-        }
-      }
-    }
-
-    // Pago primero, repartidor después: todo lo que no es efectivo nace en
-    // `awaiting_payment`, invisible para drivers (ningún filtro de
-    // disponibles/incoming lo incluye) y sin ventana de concurso. Solo al
-    // confirmarse el cobro se libera a concurso/asignación
-    // (releaseAwaitingPayment). El efectivo no se gatea: no hay nada que
-    // esperar y su flujo nunca tuvo este problema.
-    //
-    // weekly_invoice es pospago del comercio: también gatea (el cobro real
-    // es el corte semanal). Solo vale para pedidos del panel del comercio:
-    // invitados/clientes jamás pueden usar saldo del comercio.
-    const VALID_PAYMENT_METHODS = [
-      'cash',
-      'card',
-      'sinpe',
-      'crypto',
-      'credit',
-      'weekly',
-      'weekly_invoice',
-      'onvopay_card',
-      'onvopay_sinpe',
-    ] as const;
-    if (
-      data.paymentMethod != null &&
-      !(VALID_PAYMENT_METHODS as readonly string[]).includes(data.paymentMethod)
-    ) {
-      throw new BadRequestException(`paymentMethod inválido: ${data.paymentMethod}`);
-    }
-    if (
-      (data.paymentMethod === 'weekly_invoice' || data.paymentMethod === 'weekly') &&
-      (data as any)?.origin === 'client_app'
-    ) {
-      throw new BadRequestException('La facturación semanal es solo para pedidos del comercio');
-    }
-    const gatedForPayment = data.paymentMethod !== 'cash';
-    // Concurso con vencimiento: el pedido a concurso nace con ventana para
-    // que el sweeper lo marque no_driver si nadie lo toma. Antes nacía sin
-    // contestEndsAt y quedaba en pending para siempre, invisible y sin aviso.
-    // (Asignación directa y programados no concursan: sin ventana. Los
-    // gateados tampoco: la ventana arranca al liberarse, no al crearse.)
-    const isContest = !gatedForPayment && !directDriver && orderType !== 'scheduled';
-    let contestStartedAt: Date | null = null;
-    let contestEndsAt: Date | null = null;
-    if (isContest) {
-      const window = await this.buildContestWindow();
-      contestStartedAt = window.contestStartedAt;
-      contestEndsAt = window.contestEndsAt;
-    }
-
-    let order: any;
+    // Todo lo que toca stock va dentro: si el pedido no nace, el catch
+    // devuelve lo tomado. Con pedido creado, el descuento es legítimo.
     try {
-      order = await this.prisma.order.create({
-        data: {
-          merchantId: merchantProfile.id,
-          ...(idempotencyKey ? { idempotencyKey } : {}),
-          status: gatedForPayment
-            ? 'awaiting_payment'
-            : directDriver
-              ? 'assigned'
-              : orderType === 'scheduled'
-                ? 'driver_proposals'
-                : 'pending',
-          ...(isContest ? { contestStartedAt, contestEndsAt } : {}),
-          orderType,
-          isTest,
-          // Traslado entre sedes: la destino que lo recibe.
-          ...(data.transferToMerchantId
-            ? { transferToMerchantId: String(data.transferToMerchantId) }
-            : {}),
-          scheduledDate,
-          scheduledTime: data.scheduledTime,
-          ...(readyAt ? { readyAt } : {}),
-          pickupAddress: data.pickupAddress,
-          pickupLat: data.pickupLat,
-          pickupLng: data.pickupLng,
-          deliveryAddress: data.deliveryAddress,
-          deliveryLat: data.deliveryLat,
-          deliveryLng: data.deliveryLng,
-          distanceKm,
-          deliveryZone,
-          basePrice: tripPrice,
-          commission,
-          commissionRate,
-          driverPayout,
-          totalAmount,
-          productsTotal,
-          kind,
-          packageDescription: data.packageDescription ?? null,
-          packageSize: data.packageSize ?? null,
-          declaredValue: data.declaredValue ?? null,
-          weightKg: weightKg != null ? weightKg : null,
-          specialInstructions: data.specialInstructions,
-          // Mandados: marca + tienda + estimado (el fee se calcula después).
-          ...(data.isMandado === true
-            ? {
-                isMandado: true,
-                purchaseStore: data.purchaseStore ?? null,
-                purchaseEstimate:
-                  data.purchaseEstimate != null ? Math.round(Number(data.purchaseEstimate)) : null,
+      if (kind === 'food' && incomingItems.length > 0) {
+        const menuIds = [
+          ...new Set(incomingItems.map((i) => i?.menuItemId).filter(Boolean) as string[]),
+        ];
+        const menuItems = menuIds.length
+          ? await this.prisma.menuItem.findMany({
+              where: { id: { in: menuIds }, merchantId: merchantProfile.id },
+              include: { kiosk: { select: { name: true } } },
+            })
+          : [];
+        const menuById = new Map(menuItems.map((m) => [m.id, m]));
+
+        // Variant options referenced by the cart: load once, validate
+        // ownership (same merchant) + availability. Deltas come from the DB,
+        // never from the client.
+        const optionIds = [
+          ...new Set(
+            incomingItems.flatMap((i) =>
+              Array.isArray(i?.variants)
+                ? i.variants.map((v: any) => v?.optionId).filter(Boolean)
+                : [],
+            ) as string[],
+          ),
+        ];
+        const dbOptions = optionIds.length
+          ? await this.prisma.menuItemVariantOption.findMany({
+              where: { id: { in: optionIds } },
+              include: {
+                group: { select: { id: true, name: true, menuItemId: true, maxSelections: true } },
+              },
+            })
+          : [];
+        const optionById = new Map(dbOptions.map((o) => [o.id, o]));
+
+        for (const item of incomingItems) {
+          const quantity = Number(item?.quantity ?? 1);
+          if (!Number.isFinite(quantity) || quantity < 1 || quantity > 999) {
+            throw new BadRequestException('quantity inválida');
+          }
+          if (item?.menuItemId) {
+            const menuItem = menuById.get(item.menuItemId);
+            if (!menuItem) {
+              throw new BadRequestException('Producto del menú no válido para este comercio');
+            }
+            // Días disponibles: en preventa se valida contra el día de entrega,
+            // en inmediato contra hoy. Sin esto se podría pedir el jueves algo
+            // de "solo lunes" programándolo mal.
+            const fulfillment = scheduledDate ?? new Date();
+            if (!offeredToday((menuItem as any).availableDays ?? [], fulfillment)) {
+              throw new BadRequestException(`"${menuItem.name}" no se ofrece ese día`);
+            }
+            // Stock por día de venta: cada día CR nuevo el stock vuelve al
+            // lote (dailyQty). Luego se descuenta atómico para no sobrevender
+            // con pedidos concurrentes (50 rollos son 50).
+            const dayKey = toCRDateKey(fulfillment);
+            let row: any = menuItem;
+            const daily = row.dailyQty as number | null;
+            if (daily != null && row.stockDay !== dayKey) {
+              const reset = await this.prisma.menuItem.updateMany({
+                where: { id: row.id, stockDay: row.stockDay },
+                data: { stockQty: daily, stockDay: dayKey },
+              });
+              const fresh = await this.prisma.menuItem.findUnique({ where: { id: row.id } });
+              if (fresh) {
+                row = fresh;
+                menuById.set(row.id, fresh as any);
               }
-            : {}),
-          customerName: data.customerName != null ? String(data.customerName).trim() || null : null,
-          customerPhone:
-            data.customerPhone != null ? String(data.customerPhone).trim() || null : null,
-          ...(cashTendered != null ? { cashTendered } : {}),
-          // customerId nunca viene del dashboard: el flujo invitado lo
-          // vincula en createGuestOrder tras verificar rol customer activo.
-          // Aceptarlo aquí permitiría inyectar pedidos en la cuenta ajena.
-          // Origen: solo el flujo público (link/app cliente) marca
-          // client_app; el dashboard nace merchant_panel (default).
-          ...(data.origin === 'client_app' ? { origin: 'client_app' } : {}),
-          ...(directDriver ? { driverId: directDriver.id, assignedAt: new Date() } : {}),
-          // Atómico: los items se crean en la misma escritura. Antes era un
-          // createMany best-effort que podía dejar el pedido cobrado sin items
-          // (el driver no veía qué llevar).
-          ...(resolvedItems.length > 0
-            ? {
-                items: {
-                  create: resolvedItems.map((item) => ({
-                    menuItemId: item.menuItemId,
-                    name: item.name,
-                    price: item.price,
-                    quantity: item.quantity,
-                    notes: item.notes || undefined,
-                    selectedVariants: item.selectedVariants,
-                    kioskName: item.kioskName || undefined,
-                  })),
-                },
+              // Reposición automática del día: avisar una vez (solo quien
+              // aplicó el reset notifica; el update es condicional por día).
+              if (reset.count > 0) {
+                try {
+                  void this.notificationsService
+                    .notifyFollowers(row.merchantId, {
+                      title: `🧡 ¡Hoy hay ${row.name}!`,
+                      body: `Ya podés pedirlo — quedan ${daily} de hoy. Hasta agotar stock.`,
+                      data: { kind: 'restock', menuItemId: row.id },
+                    })
+                    .catch(() => undefined);
+                } catch {
+                  // noop: el pedido igual se crea
+                }
               }
-            : {}),
-        },
-        // Nunca la fila completa: creditBalance es interno del comercio.
-        include: {
-          merchant: { select: MERCHANT_PUBLIC_SELECT },
-        },
-      });
-    } catch (e: any) {
-      // Carrera: dos taps con la misma key llegaron a la vez y ambos
-      // pasaron el findUnique. El segundo choca con el índice único: se
-      // devuelve el primero en vez de un 500.
-      if (
-        idempotencyKey &&
-        (e?.code === 'P2002' ||
-          String(e?.message ?? '').includes('orders_merchant_idempotency_uk') ||
-          String(e?.message ?? '').includes('idempotency'))
-      ) {
-        const delegate = this.prisma.order as any;
-        if (delegate?.findFirst) {
-          const raced = await delegate.findFirst({
-            where: {
-              merchantId: merchantProfile.id,
-              idempotencyKey,
-            },
-            // Nunca la fila completa: creditBalance es interno del comercio.
-            include: { merchant: { select: MERCHANT_PUBLIC_SELECT } },
+            }
+            const stock = row.stockQty as number | null;
+            if (stock != null) {
+              const took = await this.prisma.menuItem.updateMany({
+                where: { id: row.id, stockQty: { gte: quantity } },
+                data: { stockQty: { decrement: quantity } },
+              });
+              if (took.count === 0) {
+                const left = await this.prisma.menuItem.findUnique({
+                  where: { id: row.id },
+                  select: { stockQty: true },
+                });
+                const n = left?.stockQty ?? 0;
+                throw new BadRequestException(
+                  n > 0
+                    ? `Solo quedan ${n} de "${row.name}" — bajá la cantidad`
+                    : `"${row.name}" se agotó`,
+                );
+              }
+              stockTaken.push({ id: row.id, qty: quantity });
+            }
+            const selectedVariants: Array<{ group: string; option: string; priceDelta: number }> =
+              [];
+            let unitPrice = Number(menuItem.price);
+            const requested = Array.isArray(item?.variants) ? item.variants : [];
+            if (requested.length > 0) {
+              const seen = new Set<string>();
+              const perGroup = new Map<string, number>();
+              for (const v of requested) {
+                const opt: any = optionById.get(v?.optionId);
+                if (!opt || opt.group.menuItemId !== menuItem.id) {
+                  throw new BadRequestException('Variante no válida para este producto');
+                }
+                if (!opt.isAvailable) {
+                  throw new BadRequestException(`Variante no disponible: ${opt.name}`);
+                }
+                if (seen.has(opt.id)) continue;
+                seen.add(opt.id);
+                // Tope del grupo (ej. máximo 3 frutas): el cliente nunca se
+                // lleva más opciones de las que el comercio permite.
+                const count = (perGroup.get(opt.group.id) ?? 0) + 1;
+                perGroup.set(opt.group.id, count);
+                const max = opt.group.maxSelections;
+                if (typeof max === 'number' && count > max) {
+                  throw new BadRequestException(`Máximo ${max} opciones en "${opt.group.name}"`);
+                }
+                const delta = Number(opt.priceDelta);
+                unitPrice += delta;
+                selectedVariants.push({
+                  group: opt.group.name,
+                  option: opt.name,
+                  priceDelta: Math.round(delta * 100) / 100,
+                });
+              }
+            }
+            productsTotal += unitPrice * quantity;
+            resolvedItems.push({
+              menuItemId: menuItem.id,
+              name: menuItem.name,
+              price: Math.round(unitPrice * 100) / 100,
+              quantity,
+              notes: item.notes || undefined,
+              selectedVariants,
+              // Snapshot del kiosko dueño (lista de compras del comercio).
+              kioskName: (menuItem as any).kiosk?.name ?? undefined,
+            });
+          } else {
+            const name = String(item?.name ?? '').trim();
+            if (!name || name.length > 200) {
+              throw new BadRequestException('name inválido');
+            }
+            if (Array.isArray(item?.variants) && item.variants.length > 0) {
+              throw new BadRequestException('Los productos personalizados no llevan variantes');
+            }
+            const price = Number(item?.price ?? 0);
+            if (!Number.isFinite(price) || price < 0) {
+              throw new BadRequestException('price inválido');
+            }
+            productsTotal += price * quantity;
+            resolvedItems.push({
+              menuItemId: null,
+              name,
+              price,
+              quantity,
+              notes: item.notes || undefined,
+              selectedVariants: [],
+            });
+          }
+        }
+      } else {
+        productsTotal = Number(data.productsTotal ?? 0);
+        if (!Number.isFinite(productsTotal) || productsTotal < 0) {
+          throw new BadRequestException('productsTotal inválido');
+        }
+      }
+
+      // Encomiendas por peso: los primeros 5 kg van incluidos en la tarifa del
+      // viaje; cada kg adicional (iniciado) suma ₡500 al viaje (y por ende a la
+      // base sobre la que se calcula el payout del repartidor).
+      let weightKg: number | null = null;
+      if (kind === 'freight' && data.weightKg != null) {
+        weightKg = Number(data.weightKg);
+        if (!Number.isFinite(weightKg) || weightKg <= 0 || weightKg > 500) {
+          throw new BadRequestException('weightKg inválido (0–500 kg)');
+        }
+      }
+      const weightSurcharge = weightKg ? this.freightWeightSurcharge(weightKg) : 0;
+
+      // Precio por zona (catálogo Nicoya): si el cliente manda deliveryZone
+      // válida, esa manda y el servidor pone el precio — el cliente nunca
+      // decide el monto. Sin zona, se conserva la lógica anterior por distancia
+      // (compatibilidad con clientes viejos y tests).
+      //
+      // ANTIFRAUDE: con coords de entrega, el POLÍGONO del GPS manda sobre la
+      // zona elegida a mano. Si no, bastaba poner GPS en zona cara + barrio
+      // barato para pagar menos por una entrega cara. La referencia (sin
+      // polígono) es solo sugerencia y no pisa nada.
+      const { deliveryZone, zoneBase } = await this.resolveZoneBase(
+        data.deliveryZone,
+        data.deliveryLat,
+        data.deliveryLng,
+      );
+
+      // Cobertura: solo Nicoya y alrededores (25 km). Si hay coords de entrega
+      // y caen fuera, se rechaza amable y se anota el interés (lista de espera
+      // para decidir dónde abrir). Sin coords no se puede verificar: pasa y el
+      // comercio lo valida en la dirección.
+      {
+        const dLat = Number((data as any).deliveryLat);
+        const dLng = Number((data as any).deliveryLng);
+        if (
+          Number.isFinite(dLat) &&
+          Number.isFinite(dLng) &&
+          !CoverageService.inServiceArea(dLat, dLng)
+        ) {
+          const contact = await this.coverageContact(data);
+          await this.coverage.recordInterest({
+            email: contact.email,
+            phone: contact.phone,
+            city: 'Fuera de cobertura',
+            zone: deliveryZone ?? undefined,
+            latitude: dLat,
+            longitude: dLng,
+            source: 'order-blocked',
           });
-          if (raced) {
-            this.logger.warn(`Idempotency race: devolviendo pedido ${raced.id} existente`);
-            return raced;
+          throw new BadRequestException(
+            'Todavía no llegamos a tu zona. Te avisamos por correo cuando operemos ahí.',
+          );
+        }
+      }
+
+      // Colones enteros: SINPE/efectivo no aceptan fracciones y las sumas
+      // (retiros, analytics) arrastrarían decimales. Todo se redondea ANTES
+      // de persistir: viaje, productos, comisión y payout derivan enteros.
+      productsTotal = Math.round(productsTotal);
+      const computedTrip = Math.round(
+        (zoneBase ??
+          this.calculateBasePrice(
+            distanceKm,
+            { lat: data.pickupLat, lng: data.pickupLng },
+            { lat: data.deliveryLat, lng: data.deliveryLng },
+          )) + weightSurcharge,
+      );
+      // Precio pactado (traslados con override del admin): manda sobre el
+      // cálculo. Solo lo inyecta el servidor (createTransfer), nunca el cliente.
+      // Corte, payout y total derivan igual que siempre.
+      const tripPrice =
+        data.tripPriceOverride != null && Number.isFinite(Number(data.tripPriceOverride))
+          ? Math.round(Number(data.tripPriceOverride))
+          : computedTrip;
+      // Cargo por servicio de Kiwi — 2 vías, sin recargos al que paga:
+      // - VÍA COMERCIO (dashboard negocios, pedido o encomienda): el comercio
+      //   paga productos + viaje de la zona. Solo se le cobra al repartidor.
+      // - VÍA CLIENTE (app): el cliente paga toda la factura con viaje incluido
+      //   (productos + viaje, a valor nominal). Se cobra 15% al repartidor por
+      //   el viaje y 15% al comercio por el ticket; cada uno recibe su ganancia
+      //   (driver: viaje − 15%; comercio: ticket − 15%).
+      // % configurable por el admin (/admin/settings). El medio de pago solo
+      // elige cómo se paga, no cambia la tasa. La tasa queda guardada
+      // por pedido (commissionRate): cambiar el setting solo afecta NUEVOS.
+      // El servidor pone el monto, el cliente nunca lo decide.
+      const isHomeCook = (merchantProfile as any).isHomeCook === true;
+      const [standardPct, servicePct] = await Promise.all([
+        this.settingsService.getDriverCommissionPct(),
+        isHomeCook
+          ? this.settingsService.getHomeCookCommissionPct()
+          : this.settingsService.getDriverCommissionPct(),
+      ]);
+      // Pedidos del cliente (app): llevan cargo de servicio sobre productos
+      // (lo absorbe el comercio). Pedidos del comercio (dashboard): sin cargo
+      // sobre productos. En ambos, la tasa guardada es la del corte del viaje.
+      const isClientOrder = (data as any)?.origin === 'client_app';
+      const commissionRate = standardPct / 100;
+      // Corte de Kiwi sobre el viaje (15% standard): SIEMPRE se le descuenta al
+      // repartidor (payout = viaje − corte). A nadie se le suma encima.
+      const tripFee = Math.round(tripPrice * (standardPct / 100));
+      // Comisión de Kiwi sobre la FACTURA (productos): SOLO en pedidos del cliente
+      // (app); la absorbe el comercio (recibe ticket − 15%).
+      const serviceFee = isClientOrder ? Math.round(productsTotal * (servicePct / 100)) : 0;
+      const commission = serviceFee + tripFee;
+      const driverPayout = tripPrice - tripFee;
+      // Total que paga quien ordena (siempre a valor nominal, sin recargos):
+      // productos + viaje. La comisión sale de las ganancias, no del que paga.
+      const totalAmount = productsTotal + tripPrice;
+      // Efectivo: con cuánto pagan (para llevar el vuelto listo). Opcional;
+      // si viene debe cubrir lo que el repartidor cobra en mano: el total en
+      // pedidos de la app cliente, solo el viaje en pedidos del comercio
+      // (los productos ya los cobró el comercio). Se guarda en el pedido.
+      const collectable = (data as any)?.origin === 'client_app' ? totalAmount : tripPrice;
+      let cashTendered: number | null = null;
+      if (data.cashTendered != null && data.cashTendered !== '') {
+        const ct = Math.round(Number(data.cashTendered) * 100) / 100;
+        if (!Number.isFinite(ct) || ct < 0 || ct > 99999999.99) {
+          throw new BadRequestException('cashTendered inválido');
+        }
+        if (ct < collectable) {
+          throw new BadRequestException(
+            `El monto (₡${ct.toLocaleString()}) no cubre lo que se cobra en efectivo (₡${collectable.toLocaleString()})`,
+          );
+        }
+        cashTendered = ct;
+      }
+      if (data.packageSize != null && !['S', 'M', 'L'].includes(data.packageSize)) {
+        throw new BadRequestException('packageSize inválido');
+      }
+
+      // Asignación directa (el comercio eligió a 1 repartidor): se valida
+      // ANTES de crear para no publicar un concurso que después se pisa.
+      // Si hay driverId válido → el pedido nace asignado y NO se alerta al
+      // resto de la flota. Sin driverId → concurso normal (alertNearbyDrivers).
+      const requestedDriverId =
+        typeof data?.driverId === 'string' && data.driverId.trim() !== ''
+          ? data.driverId.trim()
+          : null;
+      let directDriver: any = null;
+      if (requestedDriverId) {
+        directDriver = await this.prisma.driverProfile.findUnique({
+          where: { id: requestedDriverId },
+        });
+        if (!directDriver) {
+          throw new NotFoundException('Repartidor no encontrado');
+        }
+        if (directDriver.status !== 'available') {
+          throw new BadRequestException(
+            `${directDriver.fullName} no está disponible ahora (estado: ${directDriver.status}). Podrás asignárselo cuando se conecte.`,
+          );
+        }
+        if (isKycRequired() && directDriver.kycStatus !== 'approved') {
+          throw new BadRequestException(
+            `${directDriver.fullName} aún no está verificado (KYC ${directDriver.kycStatus}).`,
+          );
+        }
+        // Pedido de prueba: solo un piloto puede ser el asignado directo.
+        if (isTest) {
+          await this.assertTestDriverByUserId(directDriver.userId);
+        }
+      }
+
+      // Fallback para clientes viejos sin key (app sin actualizar): si el
+      // mismo comercio crea el mismo destinatario+dirección en <2 min y sigue
+      // activo, se devuelve el existente en vez de duplicar.
+      if (!idempotencyKey) {
+        const fallbackName =
+          data?.customerName != null ? String(data.customerName).trim() || null : null;
+        const fallbackPhone =
+          data?.customerPhone != null ? String(data.customerPhone).trim() || null : null;
+        if (fallbackName && fallbackPhone && data?.deliveryAddress) {
+          const orderDelegate = this.prisma.order as any;
+          if (orderDelegate?.findFirst) {
+            const since = new Date(Date.now() - 2 * 60 * 1000);
+            const dupe = await orderDelegate.findFirst({
+              where: {
+                merchantId: merchantProfile.id,
+                customerName: fallbackName,
+                customerPhone: fallbackPhone,
+                deliveryAddress: String(data.deliveryAddress),
+                createdAt: { gte: since },
+                status: {
+                  in: [
+                    'pending',
+                    'driver_proposals',
+                    'assigned',
+                    'pending_acceptance',
+                    'in_transit_to_pickup',
+                    'picked_up',
+                    'in_transit_to_delivery',
+                  ],
+                },
+              },
+              orderBy: { createdAt: 'desc' },
+              // Nunca la fila completa: creditBalance es interno del comercio.
+              include: { merchant: { select: MERCHANT_PUBLIC_SELECT } },
+            });
+            if (dupe) {
+              this.logger.warn(
+                `Dedup fallback: devolviendo pedido ${dupe.id} (mismo cliente+dirección <2min)`,
+              );
+              return dupe;
+            }
           }
         }
       }
+
+      // Pago primero, repartidor después: todo lo que no es efectivo nace en
+      // `awaiting_payment`, invisible para drivers (ningún filtro de
+      // disponibles/incoming lo incluye) y sin ventana de concurso. Solo al
+      // confirmarse el cobro se libera a concurso/asignación
+      // (releaseAwaitingPayment). El efectivo no se gatea: no hay nada que
+      // esperar y su flujo nunca tuvo este problema.
+      //
+      // weekly_invoice es pospago del comercio: también gatea (el cobro real
+      // es el corte semanal). Solo vale para pedidos del panel del comercio:
+      // invitados/clientes jamás pueden usar saldo del comercio.
+      const VALID_PAYMENT_METHODS = [
+        'cash',
+        'card',
+        'sinpe',
+        'crypto',
+        'credit',
+        'weekly',
+        'weekly_invoice',
+        'onvopay_card',
+        'onvopay_sinpe',
+      ] as const;
+      if (
+        data.paymentMethod != null &&
+        !(VALID_PAYMENT_METHODS as readonly string[]).includes(data.paymentMethod)
+      ) {
+        throw new BadRequestException(`paymentMethod inválido: ${data.paymentMethod}`);
+      }
+      if (
+        (data.paymentMethod === 'weekly_invoice' || data.paymentMethod === 'weekly') &&
+        (data as any)?.origin === 'client_app'
+      ) {
+        throw new BadRequestException('La facturación semanal es solo para pedidos del comercio');
+      }
+      const gatedForPayment = data.paymentMethod !== 'cash';
+      // Concurso con vencimiento: el pedido a concurso nace con ventana para
+      // que el sweeper lo marque no_driver si nadie lo toma. Antes nacía sin
+      // contestEndsAt y quedaba en pending para siempre, invisible y sin aviso.
+      // (Asignación directa y programados no concursan: sin ventana. Los
+      // gateados tampoco: la ventana arranca al liberarse, no al crearse.)
+      const isContest = !gatedForPayment && !directDriver && orderType !== 'scheduled';
+      let contestStartedAt: Date | null = null;
+      let contestEndsAt: Date | null = null;
+      if (isContest) {
+        const window = await this.buildContestWindow();
+        contestStartedAt = window.contestStartedAt;
+        contestEndsAt = window.contestEndsAt;
+      }
+
+      try {
+        order = await this.prisma.order.create({
+          data: {
+            merchantId: merchantProfile.id,
+            ...(idempotencyKey ? { idempotencyKey } : {}),
+            status: gatedForPayment
+              ? 'awaiting_payment'
+              : directDriver
+                ? 'assigned'
+                : orderType === 'scheduled'
+                  ? 'driver_proposals'
+                  : 'pending',
+            ...(isContest ? { contestStartedAt, contestEndsAt } : {}),
+            orderType,
+            isTest,
+            // Traslado entre sedes: la destino que lo recibe.
+            ...(data.transferToMerchantId
+              ? { transferToMerchantId: String(data.transferToMerchantId) }
+              : {}),
+            scheduledDate,
+            scheduledTime: data.scheduledTime,
+            ...(readyAt ? { readyAt } : {}),
+            pickupAddress: data.pickupAddress,
+            pickupLat: data.pickupLat,
+            pickupLng: data.pickupLng,
+            deliveryAddress: data.deliveryAddress,
+            deliveryLat: data.deliveryLat,
+            deliveryLng: data.deliveryLng,
+            distanceKm,
+            deliveryZone,
+            basePrice: tripPrice,
+            commission,
+            commissionRate,
+            driverPayout,
+            totalAmount,
+            productsTotal,
+            kind,
+            packageDescription: data.packageDescription ?? null,
+            packageSize: data.packageSize ?? null,
+            declaredValue: data.declaredValue ?? null,
+            weightKg: weightKg != null ? weightKg : null,
+            specialInstructions: data.specialInstructions,
+            // Mandados: marca + tienda + estimado (el fee se calcula después).
+            ...(data.isMandado === true
+              ? {
+                  isMandado: true,
+                  purchaseStore: data.purchaseStore ?? null,
+                  purchaseEstimate:
+                    data.purchaseEstimate != null
+                      ? Math.round(Number(data.purchaseEstimate))
+                      : null,
+                }
+              : {}),
+            customerName:
+              data.customerName != null ? String(data.customerName).trim() || null : null,
+            customerPhone:
+              data.customerPhone != null ? String(data.customerPhone).trim() || null : null,
+            ...(cashTendered != null ? { cashTendered } : {}),
+            // customerId nunca viene del dashboard: el flujo invitado lo
+            // vincula en createGuestOrder tras verificar rol customer activo.
+            // Aceptarlo aquí permitiría inyectar pedidos en la cuenta ajena.
+            // Origen: solo el flujo público (link/app cliente) marca
+            // client_app; el dashboard nace merchant_panel (default).
+            ...(data.origin === 'client_app' ? { origin: 'client_app' } : {}),
+            ...(directDriver ? { driverId: directDriver.id, assignedAt: new Date() } : {}),
+            // Atómico: los items se crean en la misma escritura. Antes era un
+            // createMany best-effort que podía dejar el pedido cobrado sin items
+            // (el driver no veía qué llevar).
+            ...(resolvedItems.length > 0
+              ? {
+                  items: {
+                    create: resolvedItems.map((item) => ({
+                      menuItemId: item.menuItemId,
+                      name: item.name,
+                      price: item.price,
+                      quantity: item.quantity,
+                      notes: item.notes || undefined,
+                      selectedVariants: item.selectedVariants,
+                      kioskName: item.kioskName || undefined,
+                    })),
+                  },
+                }
+              : {}),
+          },
+          // Nunca la fila completa: creditBalance es interno del comercio.
+          include: {
+            merchant: { select: MERCHANT_PUBLIC_SELECT },
+          },
+        });
+      } catch (e: any) {
+        // Carrera: dos taps con la misma key llegaron a la vez y ambos
+        // pasaron el findUnique. El segundo choca con el índice único: se
+        // devuelve el primero en vez de un 500.
+        if (
+          idempotencyKey &&
+          (e?.code === 'P2002' ||
+            String(e?.message ?? '').includes('orders_merchant_idempotency_uk') ||
+            String(e?.message ?? '').includes('idempotency'))
+        ) {
+          const delegate = this.prisma.order as any;
+          if (delegate?.findFirst) {
+            const raced = await delegate.findFirst({
+              where: {
+                merchantId: merchantProfile.id,
+                idempotencyKey,
+              },
+              // Nunca la fila completa: creditBalance es interno del comercio.
+              include: { merchant: { select: MERCHANT_PUBLIC_SELECT } },
+            });
+            if (raced) {
+              this.logger.warn(`Idempotency race: devolviendo pedido ${raced.id} existente`);
+              // El pedido lo creó el otro intento (que ya descontó su stock):
+              // devolver lo tomado acá para no descontar dos veces.
+              await restoreStock();
+              return raced;
+            }
+          }
+        }
+        throw e;
+      }
+
+      // Efectivo: dejar fila Payment desde el nacimiento para que comercio y
+      // driver vean método y monto a cobrar (el checkout cash no llama a
+      // /payments). Best-effort: jamás traba el pedido.
+      if (data.paymentMethod === 'cash') {
+        await this.ensureCashPayment(order.id, Number(order.totalAmount));
+      }
+
+      // Anuncios (socket + push) al comercio y a drivers. Los pedidos gateados
+      // por pago NO se anuncian al nacer: se anuncian al liberarse
+      // (releaseAwaitingPayment) para que ningún repartidor los vea sin pago.
+      if (!gatedForPayment) {
+        this.announceOrderCreated(order, {
+          merchantId,
+          merchantProfile,
+          directDriver,
+          deliveryZone,
+        });
+      }
+
+      return order;
+    } catch (e) {
+      // Si el pedido no nació, devolver el stock tomado en este intento.
+      // (Con pedido creado, el descuento es legítimo y no se toca.)
+      if (!order) await restoreStock();
       throw e;
     }
-
-    // Efectivo: dejar fila Payment desde el nacimiento para que comercio y
-    // driver vean método y monto a cobrar (el checkout cash no llama a
-    // /payments). Best-effort: jamás traba el pedido.
-    if (data.paymentMethod === 'cash') {
-      await this.ensureCashPayment(order.id, Number(order.totalAmount));
-    }
-
-    // Anuncios (socket + push) al comercio y a drivers. Los pedidos gateados
-    // por pago NO se anuncian al nacer: se anuncian al liberarse
-    // (releaseAwaitingPayment) para que ningún repartidor los vea sin pago.
-    if (!gatedForPayment) {
-      this.announceOrderCreated(order, { merchantId, merchantProfile, directDriver, deliveryZone });
-    }
-
-    return order;
   }
 
   /**
@@ -3109,9 +3158,6 @@ export class OrdersService {
       throw new NotFoundException('Repartidor no encontrado');
     }
 
-    // Tope de simultáneos: con 10 activos no se le puede asignar otro.
-    await this.assertDriverCapacity(driverId);
-
     // Only active drivers can be assigned: the merchant sees everyone in the
     // directory, but a driver who is offline cannot be chosen — matching what
     // the UI offers.
@@ -3159,27 +3205,29 @@ export class OrdersService {
     const isScheduled = target?.orderType === 'scheduled';
 
     // Atomic claim: only one winner even under concurrency
-    const claimed = await this.prisma.order.updateMany({
-      where: {
-        id: orderId,
-        status: { in: ['pending', 'driver_proposals'] },
-        driverId: null,
-      },
-      data: isScheduled
-        ? {
-            driverId,
-            status: 'assigned',
-            assignedAt: new Date(),
-          }
-        : {
-            driverId,
-            status: 'pending_acceptance',
-            assignedAt: new Date(),
-            acceptanceExpiresAt: new Date(Date.now() + acceptanceMinutes * 60_000),
-            contestStartedAt: null,
-            contestEndsAt: null,
-          },
-    });
+    const claimed = await this.claimWithCapacity(driverId, (tx) =>
+      tx.order.updateMany({
+        where: {
+          id: orderId,
+          status: { in: ['pending', 'driver_proposals'] },
+          driverId: null,
+        },
+        data: isScheduled
+          ? {
+              driverId,
+              status: 'assigned',
+              assignedAt: new Date(),
+            }
+          : {
+              driverId,
+              status: 'pending_acceptance',
+              assignedAt: new Date(),
+              acceptanceExpiresAt: new Date(Date.now() + acceptanceMinutes * 60_000),
+              contestStartedAt: null,
+              contestEndsAt: null,
+            },
+      }),
+    );
 
     if (claimed.count === 0) {
       const existing: any = await this.prisma.order.findUnique({
@@ -3339,8 +3387,7 @@ export class OrdersService {
       await this.assertTestDriverByUserId((next as any).userId);
     }
 
-    // Tope de simultáneos: con 10 activos no se le puede pasar otro.
-    await this.assertDriverCapacity(newDriverId);
+    // El tope de simultáneos se chequea con lock dentro del claim (abajo).
 
     let acceptanceMinutes = 5;
     try {
@@ -3354,24 +3401,26 @@ export class OrdersService {
     const oldDriverId = order.driverId as string;
     const oldDriverUserId = order.driver?.userId as string | undefined;
 
-    const claimed = await this.prisma.order.updateMany({
-      where: { id: orderId, driverId: oldDriverId, status: order.status },
-      data: isScheduled
-        ? {
-            driverId: newDriverId,
-            status: 'assigned',
-            assignedAt: new Date(),
-            acceptanceExpiresAt: null,
-          }
-        : {
-            driverId: newDriverId,
-            status: 'pending_acceptance',
-            assignedAt: new Date(),
-            acceptanceExpiresAt: new Date(Date.now() + acceptanceMinutes * 60_000),
-            contestStartedAt: null,
-            contestEndsAt: null,
-          },
-    });
+    const claimed = await this.claimWithCapacity(newDriverId, (tx) =>
+      tx.order.updateMany({
+        where: { id: orderId, driverId: oldDriverId, status: order.status },
+        data: isScheduled
+          ? {
+              driverId: newDriverId,
+              status: 'assigned',
+              assignedAt: new Date(),
+              acceptanceExpiresAt: null,
+            }
+          : {
+              driverId: newDriverId,
+              status: 'pending_acceptance',
+              assignedAt: new Date(),
+              acceptanceExpiresAt: new Date(Date.now() + acceptanceMinutes * 60_000),
+              contestStartedAt: null,
+              contestEndsAt: null,
+            },
+      }),
+    );
     if (claimed.count === 0) {
       throw new ConflictException(
         'El pedido cambió mientras lo reasignabas. Recargá e intentá de nuevo.',
@@ -3719,25 +3768,26 @@ export class OrdersService {
       );
     }
 
-    // Tope de simultáneos: con 10 activos no puede agarrar otro.
-    await this.assertDriverCapacity(driverProfile.id);
+    // El tope de simultáneos se chequea con lock dentro del claim (abajo).
 
     // Atomic claim: only pending orders with no driver can be taken
-    const claimed = await this.prisma.order.updateMany({
-      where: {
-        id: orderId,
-        status: 'pending',
-        driverId: null,
-        OR: [{ contestEndsAt: null }, { contestEndsAt: { gte: new Date() } }],
-      },
-      data: {
-        driverId: driverProfile.id,
-        status: 'assigned',
-        assignedAt: new Date(),
-        contestStartedAt: null,
-        contestEndsAt: null,
-      },
-    });
+    const claimed = await this.claimWithCapacity(driverProfile.id, (tx) =>
+      tx.order.updateMany({
+        where: {
+          id: orderId,
+          status: 'pending',
+          driverId: null,
+          OR: [{ contestEndsAt: null }, { contestEndsAt: { gte: new Date() } }],
+        },
+        data: {
+          driverId: driverProfile.id,
+          status: 'assigned',
+          assignedAt: new Date(),
+          contestStartedAt: null,
+          contestEndsAt: null,
+        },
+      }),
+    );
 
     if (claimed.count === 0) {
       const existing: any = await this.prisma.order.findUnique({

@@ -64,6 +64,8 @@ describe('Assignment contest (Task 6): 10 criterios', () => {
       },
       notification: { create: jest.fn().mockResolvedValue({}) },
       $transaction: jest.fn((fn: any) => fn(prisma)),
+      // claimWithCapacity: lock de aviso dentro de la tx.
+      $executeRaw: jest.fn().mockResolvedValue([]),
     };
 
     jest.clearAllMocks();

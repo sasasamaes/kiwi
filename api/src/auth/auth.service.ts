@@ -450,7 +450,9 @@ export class AuthService {
     };
 
     const accessToken = this.jwtService.sign(payload, {
-      expiresIn: this.configService.get<string>('JWT_ACCESS_EXPIRES_IN', '7d') as any,
+      // Seguro por defecto: 15m. Un fallback largo acá convierte un olvido
+      // de env en ventanas de robo de una semana.
+      expiresIn: this.configService.get<string>('JWT_ACCESS_EXPIRES_IN', '15m') as any,
     });
 
     const refreshValue = randomBytes(48).toString('hex');
@@ -466,7 +468,7 @@ export class AuthService {
     return {
       accessToken,
       refreshToken: refreshValue,
-      expiresIn: this.configService.get<string>('JWT_ACCESS_EXPIRES_IN', '7d'),
+      expiresIn: this.configService.get<string>('JWT_ACCESS_EXPIRES_IN', '15m'),
     };
   }
 

@@ -29,7 +29,7 @@ import { DEV_FALLBACK_SECRET } from './dev-fallback-secret';
         return {
           secret: secret ?? DEV_FALLBACK_SECRET,
           signOptions: {
-            expiresIn: configService.get<string>('JWT_EXPIRES_IN', '7d'),
+            expiresIn: configService.get<string>('JWT_EXPIRES_IN', '15m'),
           },
         };
       },

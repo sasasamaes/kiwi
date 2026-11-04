@@ -88,6 +88,8 @@ describe('Orders Integration: Full Lifecycle', () => {
       },
       // updateStatus corre en transacción interactiva (claim + refund).
       $transaction: jest.fn((fn: any) => fn(prisma)),
+      // claimWithCapacity: lock de aviso dentro de la tx.
+      $executeRaw: jest.fn().mockResolvedValue([]),
       orderItem: {
         create: jest.fn(),
         createMany: jest.fn().mockResolvedValue({ count: 0 }),
