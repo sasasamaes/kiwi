@@ -506,4 +506,49 @@ export class MerchantsService {
       },
     });
   }
+
+  /** Veto: el comercio no quiere a este repartidor en sus pedidos. */
+  async addVetoedDriver(
+    merchantId: string,
+    driverId: string,
+    reason?: string,
+    createdByUserId?: string,
+  ) {
+    const driver = await this.prisma.driverProfile.findUnique({ where: { id: driverId } });
+    if (!driver) throw new NotFoundException('Repartidor no encontrado');
+    try {
+      return await this.prisma.merchantDriverVeto.create({
+        data: {
+          merchantId,
+          driverId,
+          reason: reason?.trim() || null,
+          createdByUserId: createdByUserId ?? null,
+        },
+        include: { driver: true },
+      });
+    } catch (e: any) {
+      // Ya vetado: idempotente, devolver el existente.
+      if (e?.code === 'P2002') {
+        return this.prisma.merchantDriverVeto.findUnique({
+          where: { merchantId_driverId: { merchantId, driverId } },
+          include: { driver: true },
+        });
+      }
+      throw e;
+    }
+  }
+
+  async removeVetoedDriver(merchantId: string, driverId: string) {
+    return this.prisma.merchantDriverVeto.deleteMany({
+      where: { merchantId, driverId },
+    });
+  }
+
+  async getVetoedDrivers(merchantId: string) {
+    return this.prisma.merchantDriverVeto.findMany({
+      where: { merchantId },
+      include: { driver: true },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
 }

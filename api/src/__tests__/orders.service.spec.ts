@@ -80,6 +80,11 @@ describe('OrdersService', () => {
       orderItem: {
         create: jest.fn(),
       },
+      merchantDriverVeto: {
+        findMany: jest.fn().mockResolvedValue([]),
+        findUnique: jest.fn().mockResolvedValue(null),
+        findFirst: jest.fn().mockResolvedValue(null),
+      },
       // updateStatus corre en transacción interactiva (claim + refund).
       $transaction: jest.fn((fn: any) => fn(prisma)),
       // claimWithCapacity: lock de aviso dentro de la tx.

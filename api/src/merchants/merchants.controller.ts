@@ -185,6 +185,72 @@ export class MerchantsController {
     return this.merchantsService.removeFavoriteDriver(merchant.id, driverId);
   }
 
+  @Get('me/vetoed-drivers')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('merchant')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Mis repartidores vetados (no reciben mis pedidos)' })
+  async getMyVetoed(@CurrentUser() user: any) {
+    const merchant = await this.merchantsService.findByUserId(user.sub);
+    return this.merchantsService.getVetoedDrivers(merchant.id);
+  }
+
+  @Post('me/vetoed-drivers/:driverId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('merchant')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Vetar repartidor en mis pedidos' })
+  async addVeto(
+    @CurrentUser() user: any,
+    @Param('driverId') driverId: string,
+    @Body() body: { reason?: string },
+  ) {
+    const merchant = await this.merchantsService.findByUserId(user.sub);
+    return this.merchantsService.addVetoedDriver(merchant.id, driverId, body?.reason, user.sub);
+  }
+
+  @Delete('me/vetoed-drivers/:driverId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('merchant')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Quitar veto a repartidor en mis pedidos' })
+  async removeVeto(@CurrentUser() user: any, @Param('driverId') driverId: string) {
+    const merchant = await this.merchantsService.findByUserId(user.sub);
+    return this.merchantsService.removeVetoedDriver(merchant.id, driverId);
+  }
+
+  @Get(':id/vetoed-drivers')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Admin: repartidores vetados de un comercio' })
+  async getVetoedByAdmin(@Param('id') id: string) {
+    return this.merchantsService.getVetoedDrivers(id);
+  }
+
+  @Post(':id/vetoed-drivers/:driverId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Admin: vetar repartidor en un comercio' })
+  async addVetoByAdmin(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Param('driverId') driverId: string,
+    @Body() body: { reason?: string },
+  ) {
+    return this.merchantsService.addVetoedDriver(id, driverId, body?.reason, user?.sub);
+  }
+
+  @Delete(':id/vetoed-drivers/:driverId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Admin: quitar veto a repartidor en un comercio' })
+  async removeVetoByAdmin(@Param('id') id: string, @Param('driverId') driverId: string) {
+    return this.merchantsService.removeVetoedDriver(id, driverId);
+  }
+
   @Get(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')

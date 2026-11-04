@@ -728,6 +728,24 @@ export const admin1Es = {
     notifyBtn: 'Avisar al llegar',
     empty: 'Nadie en lista de espera todavía. Aparecen acá los registros y pedidos fuera de zona.',
   },
+  avetoes: {
+    title: 'Repartidores vetados',
+    subtitle:
+      'Un comercio veta a un repartidor: no recibe sus pedidos (pero sigue recibiendo de los demás).',
+    merchant: 'Comercio',
+    pickMerchant: 'Elegí un comercio…',
+    driver: 'Repartidor',
+    pickDriver: 'Elegí un repartidor…',
+    reason: 'Motivo (opcional)',
+    reasonPh: 'Ej: el comercio pidió no trabajar con él',
+    add: 'Vetar',
+    remove: 'Quitar veto',
+    empty: 'Este comercio no veta a nadie: todos reciben sus pedidos.',
+    errLoad: 'No se pudieron cargar los vetos',
+    errSave: 'No se pudo guardar el veto',
+    errPick: 'Elegí comercio y repartidor',
+    vetoedOn: 'Vetado el {{date}}',
+  },
 };
 
 export const admin1En = {
@@ -1451,5 +1469,22 @@ export const admin1En = {
     loading: 'Loading…',
     notifyBtn: 'Notify on arrival',
     empty: 'Nobody on the waitlist yet. Signups and out-of-zone orders show up here.',
+  },
+  avetoes: {
+    title: 'Vetoed drivers',
+    subtitle: 'A merchant vetoes a driver: they skip their orders (but still get others).',
+    merchant: 'Merchant',
+    pickMerchant: 'Pick a merchant…',
+    driver: 'Driver',
+    pickDriver: 'Pick a driver…',
+    reason: 'Reason (optional)',
+    reasonPh: 'E.g. merchant asked not to work with them',
+    add: 'Veto',
+    remove: 'Remove veto',
+    empty: 'This merchant vetoes nobody: everyone gets their orders.',
+    errLoad: 'Could not load vetoes',
+    errSave: 'Could not save the veto',
+    errPick: 'Pick a merchant and a driver',
+    vetoedOn: 'Vetoed on {{date}}',
   },
 };

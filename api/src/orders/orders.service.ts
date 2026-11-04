@@ -157,6 +157,29 @@ export class OrdersService {
   }
 
   /**
+   * Veto por comercio: driverIds que no reciben los pedidos de este comercio
+   * (ni alertas, ni vitrina, ni asignación). Vacío si no hay vetoes.
+   */
+  private async getVetoedDriverIds(merchantId?: string | null): Promise<Set<string>> {
+    if (!merchantId) return new Set();
+    const rows = await this.prisma.merchantDriverVeto.findMany({
+      where: { merchantId },
+      select: { driverId: true },
+    });
+    return new Set(rows.map((r) => r.driverId));
+  }
+
+  /** Revienta si el comercio vetó a este repartidor en sus pedidos. */
+  private async assertNotVetoed(merchantId: string, driverId: string) {
+    const veto = await this.prisma.merchantDriverVeto.findUnique({
+      where: { merchantId_driverId: { merchantId, driverId } },
+    });
+    if (veto) {
+      throw new BadRequestException('Este comercio no trabaja con tu cuenta de repartidor.');
+    }
+  }
+
+  /**
    * Contacto para la lista de espera (best-effort): email/tel del pedido o,
    * si es cliente logueado, de su cuenta. Nunca revienta el flujo.
    */
@@ -1889,6 +1912,7 @@ export class OrdersService {
   async alertNearbyDrivers(
     order: {
       id: string;
+      merchantId?: any;
       pickupLat: any;
       pickupLng: any;
       pickupAddress: string;
@@ -1914,14 +1938,18 @@ export class OrdersService {
       const pickupLat = order.pickupLat != null ? Number(order.pickupLat) : null;
       const pickupLng = order.pickupLng != null ? Number(order.pickupLng) : null;
 
+      // Veto por comercio: estos drivers no se enteran de este pedido.
+      const vetoed = await this.getVetoedDriverIds((order as any).merchantId);
+
       if (pickupLat != null && pickupLng != null) {
         const { candidates, radiusUsedKm, staleSkipped } = await this.proximity.findNearbyDrivers(
           pickupLat,
           pickupLng,
         );
 
-        if (candidates && candidates.length > 0) {
-          for (const c of candidates) {
+        const visible = (candidates ?? []).filter((c) => !vetoed.has(c.driverId));
+        if (visible.length > 0) {
+          for (const c of visible) {
             this.eventsGateway.sendToUser(c.userId, event, {
               ...payload,
               distanceToPickupKm: Math.round(c.distanceKm * 10) / 10,
@@ -1944,8 +1972,9 @@ export class OrdersService {
             ).catch(() => undefined);
           }
           this.logger.log(
-            `order ${order.id}: targeted alert → ${candidates.length} driver(s) within ${radiusUsedKm}km` +
-              (staleSkipped > 0 ? ` (${staleSkipped} skipped by stale location)` : ''),
+            `order ${order.id}: targeted alert → ${visible.length} driver(s) within ${radiusUsedKm}km` +
+              (staleSkipped > 0 ? ` (${staleSkipped} skipped by stale location)` : '') +
+              (vetoed.size > 0 ? ` (${vetoed.size} vetoed by merchant)` : ''),
           );
           return;
         }
@@ -1955,6 +1984,38 @@ export class OrdersService {
       }
 
       // Fail-open: sin coords del pickup o sin candidatos.
+      // Con vetoes no hay broadcast ciego (llegaría al vetado): fan-out
+      // por usuario solo a no vetados. Sin vetoes, todo igual que antes.
+      if (vetoed.size > 0) {
+        const fleet = await this.prisma.driverProfile.findMany({
+          where: { status: 'available' },
+          select: { id: true, userId: true },
+        });
+        const visibleFleet = fleet.filter((d) => !vetoed.has(d.id));
+        for (const d of visibleFleet) {
+          this.eventsGateway.sendToUser(d.userId, event, payload);
+          const target = {
+            id: order.id,
+            pickupAddress: order.pickupAddress,
+            deliveryAddress: order.deliveryAddress,
+            totalAmount: order.totalAmount,
+            driverPayout: (order as any).driverPayout,
+            distanceKm: order.distanceKm,
+            scheduledTime: (order as any).scheduledTime ?? null,
+            merchantName: (order as any).merchant?.businessName ?? null,
+            deliveryZone: (order as any).deliveryZone ?? null,
+          };
+          void (
+            scheduled
+              ? this.notificationsService.notifyDriverScheduledOrderTargeted(d.userId, target)
+              : this.notificationsService.notifyDriverNewOrderTargeted(d.userId, target)
+          ).catch(() => undefined);
+        }
+        this.logger.log(
+          `order ${order.id}: vetoed fan-out → ${visibleFleet.length} driver(s) (${vetoed.size} vetoed by merchant)`,
+        );
+        return;
+      }
       this.eventsGateway.sendToRole('driver', event, payload);
       const topicOrder = {
         id: order.id,
@@ -3187,6 +3248,13 @@ export class OrdersService {
       if (!owned) {
         throw new ForbiddenException('No tienes acceso a este pedido');
       }
+      // Veto: este comercio no trabaja con ese repartidor.
+      const veto = await this.prisma.merchantDriverVeto.findFirst({
+        where: { driverId, merchant: { userId: merchantUserId } },
+      });
+      if (veto) {
+        throw new BadRequestException('Este comercio vetó a ese repartidor en sus pedidos.');
+      }
     }
 
     const target = await this.prisma.order.findUnique({
@@ -3387,6 +3455,9 @@ export class OrdersService {
       await this.assertTestDriverByUserId((next as any).userId);
     }
 
+    // Veto: este comercio no trabaja con ese repartidor.
+    await this.assertNotVetoed((order as any).merchantId, newDriverId);
+
     // El tope de simultáneos se chequea con lock dentro del claim (abajo).
 
     let acceptanceMinutes = 5;
@@ -3493,6 +3564,23 @@ export class OrdersService {
       const allowed = await this.getTestDriverUserIds();
       if (!allowed.has(opts.driverUserId)) testFilter = { isTest: false };
     }
+    // Veto por comercio: ocultar los pedidos de comercios que vetaron a este driver.
+    let vetoFilter: Record<string, unknown> = {};
+    if (opts?.driverUserId) {
+      const dp = await this.prisma.driverProfile.findUnique({
+        where: { userId: opts.driverUserId },
+        select: { id: true },
+      });
+      if (dp) {
+        const vetoes = await this.prisma.merchantDriverVeto.findMany({
+          where: { driverId: dp.id },
+          select: { merchantId: true },
+        });
+        if (vetoes.length > 0) {
+          vetoFilter = { merchantId: { notIn: vetoes.map((v) => v.merchantId) } };
+        }
+      }
+    }
     const orders = await this.prisma.order.findMany({
       where: scheduledOnly
         ? {
@@ -3500,11 +3588,13 @@ export class OrdersService {
             orderType: 'scheduled',
             driverId: null,
             ...testFilter,
+            ...vetoFilter,
           }
         : {
             status: 'pending',
             driverId: null,
             ...testFilter,
+            ...vetoFilter,
           },
       include: {
         merchant: { select: MERCHANT_PUBLIC_SELECT },
@@ -3560,6 +3650,9 @@ export class OrdersService {
     if ((order as any).isTest === true) {
       await this.assertTestDriverByUserId(driverProfile.userId);
     }
+
+    // Veto del comercio: ni siquiera propone en sus pedidos.
+    await this.assertNotVetoed((order as any).merchantId, driverProfile.id);
 
     const existingProposal = await this.prisma.driverProposal.findFirst({
       where: { orderId, driverId: driverProfile.id },
@@ -3732,6 +3825,9 @@ export class OrdersService {
     if ((order as any).isTest === true) {
       await this.assertTestDriverByUserId(driverProfile.userId);
     }
+
+    // Veto del comercio: este repartidor no toma sus pedidos.
+    await this.assertNotVetoed((order as any).merchantId, driverProfile.id);
 
     // Idempotente: si YA lo tomó este mismo driver (doble tap, popup
     // viejo, reintento), devolverlo en vez de error. Sin esto el tester

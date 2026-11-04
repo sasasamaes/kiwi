@@ -94,6 +94,11 @@ describe('Orders Integration: Full Lifecycle', () => {
         create: jest.fn(),
         createMany: jest.fn().mockResolvedValue({ count: 0 }),
       },
+      merchantDriverVeto: {
+        findMany: jest.fn().mockResolvedValue([]),
+        findUnique: jest.fn().mockResolvedValue(null),
+        findFirst: jest.fn().mockResolvedValue(null),
+      },
       driverProposal: {
         create: jest.fn(),
         findUnique: jest.fn(),
@@ -222,6 +227,9 @@ describe('Orders Integration: Full Lifecycle', () => {
       expect(result.driverPayout).toBe(1275);
 
       // Socket.io should notify available drivers
+      // El dispatch es fire-and-forget: dar un tick para que los awaits
+      // internos (veto + proximidad) completen antes de asertar.
+      await new Promise((r) => setImmediate(r));
       expect(mockEventsGateway.sendToRole).toHaveBeenCalledWith(
         'driver',
         'order:new',
@@ -423,6 +431,9 @@ describe('Orders Integration: Full Lifecycle', () => {
 
       expect(result.status).toBe('driver_proposals');
       expect(result.orderType).toBe('scheduled');
+
+      // Dispatch fire-and-forget: flush para que veto + proximidad completen.
+      await new Promise((r) => setImmediate(r));
 
       // Drivers ARE alerted so they propose — but with the scheduled event
       // (proposal flow), never order:new (direct accept into Disponibles).

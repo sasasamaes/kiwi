@@ -63,6 +63,11 @@ describe('Assignment contest (Task 6): 10 criterios', () => {
         createMany: jest.fn().mockResolvedValue({ count: 0 }),
       },
       notification: { create: jest.fn().mockResolvedValue({}) },
+      merchantDriverVeto: {
+        findMany: jest.fn().mockResolvedValue([]),
+        findUnique: jest.fn().mockResolvedValue(null),
+        findFirst: jest.fn().mockResolvedValue(null),
+      },
       $transaction: jest.fn((fn: any) => fn(prisma)),
       // claimWithCapacity: lock de aviso dentro de la tx.
       $executeRaw: jest.fn().mockResolvedValue([]),

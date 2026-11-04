@@ -354,6 +354,7 @@ model MerchantProfile {
   menuItems       MenuItem[]
   kiosks          MerchantKiosk[]
   favoriteDrivers FavoriteDriver[]
+  vetoedDrivers MerchantDriverVeto[]
   followers       MerchantFollow[]
   ratings         Rating[]
   creditLedger    CreditTransaction[]
@@ -707,6 +708,7 @@ model DriverProfile {
   orders          Order[]
   proposals       DriverProposal[]
   favoriteDrivers FavoriteDriver[]
+  vetoedByMerchants MerchantDriverVeto[]
   ratings         Rating[]
   incentives      DriverIncentive[]
   withdrawals     Withdrawal[]
@@ -1087,6 +1089,25 @@ model FavoriteDriver {
 
   @@unique([merchantId, driverId])
   @@map("favorite_drivers")
+}
+
+// Repartidores vetados por comercio: no reciben sus pedidos (ni alertas,
+// ni vitrina, ni asignación) pero siguen recibiendo de los demás comercios.
+// Lo gestionan el admin y el propio comercio.
+model MerchantDriverVeto {
+  id        String   @id @default(uuid())
+  merchantId String  @map("merchant_id")
+  driverId   String  @map("driver_id")
+  reason     String?
+  createdByUserId String? @map("created_by_user_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Relations
+  merchant MerchantProfile @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  driver   DriverProfile   @relation(fields: [driverId], references: [id], onDelete: Cascade)
+
+  @@unique([merchantId, driverId])
+  @@map("merchant_driver_vetoes")
 }
 
 // Driver incentives

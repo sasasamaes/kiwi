@@ -1250,6 +1250,42 @@ class ApiClient {
     });
   }
 
+  /** Repartidores vetados por mi comercio (no reciben mis pedidos). */
+  async getVetoedDrivers() {
+    return this.request<any>('/merchants/me/vetoed-drivers');
+  }
+
+  async addVetoedDriver(driverId: string, reason?: string) {
+    return this.request<any>(`/merchants/me/vetoed-drivers/${driverId}`, {
+      method: 'POST',
+      body: { reason },
+    });
+  }
+
+  async removeVetoedDriver(driverId: string) {
+    return this.request<any>(`/merchants/me/vetoed-drivers/${driverId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  /** Admin: vetoes de un comercio. */
+  async getVetoedDriversByMerchant(merchantId: string) {
+    return this.request<any>(`/merchants/${merchantId}/vetoed-drivers`);
+  }
+
+  async addVetoedDriverByMerchant(merchantId: string, driverId: string, reason?: string) {
+    return this.request<any>(`/merchants/${merchantId}/vetoed-drivers/${driverId}`, {
+      method: 'POST',
+      body: { reason },
+    });
+  }
+
+  async removeVetoedDriverByMerchant(merchantId: string, driverId: string) {
+    return this.request<any>(`/merchants/${merchantId}/vetoed-drivers/${driverId}`, {
+      method: 'DELETE',
+    });
+  }
+
   // ============================================
   // 🛵 DRIVERS
   // ============================================

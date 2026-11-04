@@ -24,6 +24,7 @@ import {
   X,
   Mail,
   Bell,
+  Ban,
 } from 'lucide-react';
 import {
   api,
@@ -996,6 +997,18 @@ export default function AdminDashboard() {
                 <Wallet className="h-7 w-7" />
               </span>
               <span className="text-sm font-medium">Retiros</span>
+            </motion.button>
+          </Link>
+          <Link href="/admin/vetoes">
+            <motion.button
+              className="w-full p-4 rounded-xl bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"
+              whileHover={{ y: -2 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <span className="mb-2 flex justify-center">
+                <Ban className="h-7 w-7" />
+              </span>
+              <span className="text-sm font-medium">Vetos</span>
             </motion.button>
           </Link>
         </div>

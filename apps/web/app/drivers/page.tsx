@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Star, Package, Search, MessageCircle, X, Send, Trophy, Phone } from 'lucide-react';
+import { Star, Package, Search, MessageCircle, X, Send, Trophy, Phone, Ban } from 'lucide-react';
 import {
   AnimatedButton,
   ScrollReveal,
@@ -104,13 +104,15 @@ const orderStatusKey = (status: string) => {
 export default function DriversPage() {
   const { t } = useTranslations();
   const { isConnected, on } = useSocket();
-  const [tab, setTab] = useState<'available' | 'favorites' | 'contest'>('available');
+  const [tab, setTab] = useState<'available' | 'favorites' | 'vetoed' | 'contest'>('available');
   const [statusFilter, setStatusFilter] = useState<'all' | 'available'>('all');
   const [filter, setFilter] = useState<VehicleType | 'all'>('all');
   const [showFilters, setShowFilters] = useState(false);
   const [search, setSearch] = useState('');
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [favIds, setFavIds] = useState<Set<string>>(new Set());
+  const [vetoIds, setVetoIds] = useState<Set<string>>(new Set());
+  const [vetoedDrivers, setVetoedDrivers] = useState<Driver[]>([]);
   const [openOrders, setOpenOrders] = useState<OpenOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -134,14 +136,18 @@ export default function DriversPage() {
     setLoading(true);
     setError(null);
     try {
-      const [availRaw, favRaw, ordersRaw] = await Promise.all([
+      const [availRaw, favRaw, vetoRaw, ordersRaw] = await Promise.all([
         api.getAvailableDrivers().catch(() => []),
         api.getFavoriteDrivers().catch(() => []),
+        api.getVetoedDrivers().catch(() => []),
         api.getMyOrders().catch(() => []),
       ]);
       setDrivers(toDriverList(availRaw));
       const favs = toDriverList(favRaw);
       setFavIds(new Set(favs.map((d) => d.id)));
+      const vetoed = toDriverList(vetoRaw);
+      setVetoIds(new Set(vetoed.map((d) => d.id)));
+      setVetoedDrivers(vetoed);
       const orders: OpenOrder[] = Array.isArray(ordersRaw) ? ordersRaw : [];
       setOpenOrders(orders.filter((o) => OPEN_STATUSES.includes(o.status)));
     } catch {
@@ -302,7 +308,39 @@ export default function DriversPage() {
     }
   };
 
-  const baseList = tab === 'favorites' ? drivers.filter((d) => favIds.has(d.id)) : drivers;
+  const toggleVeto = async (driver: Driver) => {
+    setActionError(null);
+    const isVetoed = vetoIds.has(driver.id);
+    setVetoIds((prev) => {
+      const next = new Set(prev);
+      if (isVetoed) next.delete(driver.id);
+      else next.add(driver.id);
+      return next;
+    });
+    setVetoedDrivers((prev) =>
+      isVetoed ? prev.filter((d) => d.id !== driver.id) : [...prev, driver],
+    );
+    try {
+      if (isVetoed) await api.removeVetoedDriver(driver.id);
+      else await api.addVetoedDriver(driver.id);
+    } catch {
+      setVetoIds((prev) => {
+        const next = new Set(prev);
+        if (isVetoed) next.add(driver.id);
+        else next.delete(driver.id);
+        return next;
+      });
+      loadAll();
+      setActionError(t('webshop2.driversweb.errVeto'));
+    }
+  };
+
+  const baseList =
+    tab === 'favorites'
+      ? drivers.filter((d) => favIds.has(d.id))
+      : tab === 'vetoed'
+        ? vetoedDrivers
+        : drivers;
   const filteredDrivers = baseList
     .filter((d) => statusFilter === 'all' || d.status === 'available')
     .filter((d) => {
@@ -384,6 +422,10 @@ export default function DriversPage() {
               {
                 id: 'favorites',
                 label: t('webshop2.driversweb.tabFavorites', { count: favIds.size }),
+              },
+              {
+                id: 'vetoed',
+                label: t('webshop2.driversweb.tabVetoed', { count: vetoIds.size }),
               },
               {
                 id: 'contest',
@@ -515,6 +557,7 @@ export default function DriversPage() {
               <div className="space-y-4">
                 {filteredDrivers.map((driver, driverIndex) => {
                   const isFav = favIds.has(driver.id);
+                  const isVetoed = vetoIds.has(driver.id);
                   const sharedOrder = openOrders.find(
                     (o) => o.driver?.id === driver.id || o.driverId === driver.id,
                   );
@@ -551,6 +594,7 @@ export default function DriversPage() {
                                 <VehicleBadge type={driver.vehicleType as VehicleType} size="sm" />
                               )}
                               {isFav && <Star className="h-4 w-4 fill-gold-500 text-gold-500" />}
+                              {isVetoed && <Ban className="h-4 w-4 text-red-500" />}
                             </div>
                             <div className="flex items-center gap-4 mt-1 text-sm text-surface-500">
                               <span>
@@ -590,6 +634,24 @@ export default function DriversPage() {
                                 <Star
                                   className={`h-5 w-5 ${isFav ? 'fill-gold-500 text-gold-500' : ''}`}
                                 />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleVeto(driver);
+                                }}
+                                title={
+                                  isVetoed
+                                    ? t('webshop2.driversweb.vetoRemove')
+                                    : t('webshop2.driversweb.vetoAdd')
+                                }
+                                className={`flex h-11 w-11 items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50 active:scale-95 ${
+                                  isVetoed
+                                    ? 'text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30'
+                                    : 'text-surface-500 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-700 hover:text-red-500'
+                                }`}
+                              >
+                                <Ban className="h-5 w-5" />
                               </button>
                               {sharedOrder && (
                                 <button
@@ -640,7 +702,9 @@ export default function DriversPage() {
                 <p className="mt-4 font-medium text-surface-600 dark:text-surface-300">
                   {tab === 'favorites' && search === '' && filter === 'all'
                     ? t('webshop2.driversweb.emptyFav')
-                    : t('webshop2.driversweb.emptyFilter')}
+                    : tab === 'vetoed' && search === '' && filter === 'all'
+                      ? t('webshop2.driversweb.emptyVetoed')
+                      : t('webshop2.driversweb.emptyFilter')}
                 </p>
                 <p className="text-sm text-surface-500 dark:text-surface-400">
                   {t('webshop2.driversweb.emptyHint')}

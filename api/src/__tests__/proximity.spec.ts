@@ -173,6 +173,11 @@ describe('OrdersService targeting de order:new', () => {
       },
       menuItem: { findMany: jest.fn().mockResolvedValue([]) },
       orderItem: { createMany: jest.fn().mockResolvedValue({}) },
+      merchantDriverVeto: {
+        findMany: jest.fn().mockResolvedValue([]),
+        findUnique: jest.fn().mockResolvedValue(null),
+        findFirst: jest.fn().mockResolvedValue(null),
+      },
     };
     gateway = { sendToRole: jest.fn(), sendToUser: jest.fn() };
     notifications = {
@@ -232,6 +237,9 @@ describe('OrdersService targeting de order:new', () => {
       paymentMethod: 'cash',
     });
 
+    // Dispatch fire-and-forget: flush para que veto + proximidad completen.
+    await new Promise((r) => setImmediate(r));
+
     // El comercio también recibe el pedido nuevo (socket 1:1) además de los drivers.
     expect(gateway.sendToUser).toHaveBeenCalledWith(
       'm1',
@@ -271,6 +279,9 @@ describe('OrdersService targeting de order:new', () => {
       paymentMethod: 'cash',
     });
 
+    // Dispatch fire-and-forget: flush para que veto + proximidad completen.
+    await new Promise((r) => setImmediate(r));
+
     expect(gateway.sendToRole).toHaveBeenCalledWith(
       'driver',
       'order:new',
@@ -297,6 +308,9 @@ describe('OrdersService targeting de order:new', () => {
 
     await service.create('m1', { pickupAddress: 'x', deliveryAddress: 'y', paymentMethod: 'cash' });
 
+    // Dispatch fire-and-forget: flush para que veto + proximidad completen.
+    await new Promise((r) => setImmediate(r));
+
     expect(proximity.findNearbyDrivers).not.toHaveBeenCalled();
     expect(gateway.sendToRole).toHaveBeenCalled();
   });
@@ -311,6 +325,9 @@ describe('OrdersService targeting de order:new', () => {
       pickupLng: -85.4,
       paymentMethod: 'cash',
     });
+
+    // Dispatch fire-and-forget: flush para que veto + proximidad completen.
+    await new Promise((r) => setImmediate(r));
 
     expect(gateway.sendToRole).toHaveBeenCalledWith(
       'driver',
