@@ -1,7 +1,15 @@
 import { useState } from 'react';
 import { Alert, Pressable, RefreshControl, ScrollView, Text, TextInput, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Screen, Button, tokens } from '@kiwi/mobile-ui';
+import {
+  Screen,
+  Button,
+  Card,
+  GradientHeader,
+  SegmentedTabs,
+  Stat,
+  EmptyState,
+} from '@kiwi/mobile-ui';
 import { useTranslation } from '@kiwi/i18n';
 import { earningsApi } from '../../src/api/earnings';
 import { http } from '../../src/api/client';
@@ -9,14 +17,6 @@ import { http } from '../../src/api/client';
 const api = earningsApi(http);
 const PERIODS = ['today', 'yesterday', 'week', 'month', 'all'] as const;
 const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
-
-const inputStyle = {
-  backgroundColor: tokens.color.surface,
-  color: tokens.color.ink,
-  borderRadius: tokens.radius.md,
-  padding: 12,
-  marginBottom: 8,
-} as const;
 
 export default function Earnings() {
   const { t, translate } = useTranslation();
@@ -103,262 +103,233 @@ export default function Earnings() {
 
   return (
     <Screen>
-      <Text style={{ color: tokens.color.ink, fontSize: 20, fontWeight: '700' }}>
+      <Text className="mb-4 font-display text-lg font-semibold text-surface-800 dark:text-surface-100">
         {t.earnings.title}
       </Text>
-      <View style={{ flexDirection: 'row', gap: 6, marginTop: 12 }}>
-        {PERIODS.map((p) => (
-          <Pressable
-            key={p}
-            onPress={() => setPeriod(p)}
-            style={{
-              flex: 1,
-              borderRadius: tokens.radius.md,
-              paddingVertical: 8,
-              alignItems: 'center',
-              backgroundColor: period === p ? tokens.color.kiwi : tokens.color.surface,
-            }}
-          >
-            <Text
-              style={{
-                color: period === p ? '#fff' : tokens.color.ink,
-                fontWeight: '600',
-                fontSize: 12,
-              }}
-            >
-              {p === 'yesterday'
-                ? t.earnings.yesterday
-                : t.analytics[p as 'today' | 'week' | 'month']}
-              {p === 'all' ? '∞' : ''}
+
+      {/* Total par PWA */}
+      <GradientHeader>
+        <Text className="text-sm font-medium text-white/80">
+          {period === 'custom' && range ? `${range.from} – ${range.to}` : t.earnings.totalEarnings}
+        </Text>
+        <Text className="mt-1 text-4xl font-bold text-white">
+          ₡{Number(e.totalEarnings ?? 0).toLocaleString()}
+        </Text>
+        <Text className="mt-4 text-sm text-white/80">
+          {e.totalTrips ?? 0} {t.driver.totalTrips.toLowerCase()}
+        </Text>
+      </GradientHeader>
+
+      <View className="mt-4">
+        <SegmentedTabs
+          value={period === 'custom' ? 'week' : period}
+          onChange={(p) => setPeriod(p)}
+          options={[
+            { id: 'today', label: t.earnings.today },
+            { id: 'yesterday', label: t.earnings.yesterday },
+            { id: 'week', label: t.analytics.week },
+            { id: 'month', label: t.analytics.month },
+            { id: 'all', label: t.driverRanking.all },
+          ]}
+        />
+      </View>
+
+      {/* Rango libre */}
+      <Card>
+        <View className="flex-row items-end gap-2">
+          <View className="flex-1">
+            <Text className="mb-1 text-xs font-medium text-surface-500 dark:text-surface-400">
+              {t.earnings.from}
             </Text>
-          </Pressable>
-        ))}
-      </View>
-      <View style={{ flexDirection: 'row', gap: 6, marginTop: 6 }}>
-        <TextInput
-          placeholder={t.earnings.from}
-          placeholderTextColor={tokens.color.muted}
-          value={from}
-          onChangeText={(v) => setFrom(v.replace(/[^0-9-]/g, '').slice(0, 10))}
-          keyboardType="numbers-and-punctuation"
-          style={[inputStyle, { flex: 1, marginBottom: 0 }]}
-        />
-        <TextInput
-          placeholder={t.earnings.to}
-          placeholderTextColor={tokens.color.muted}
-          value={to}
-          onChangeText={(v) => setTo(v.replace(/[^0-9-]/g, '').slice(0, 10))}
-          keyboardType="numbers-and-punctuation"
-          style={[inputStyle, { flex: 1, marginBottom: 0 }]}
-        />
-        <Pressable
-          onPress={() => {
-            if (!ISO_DAY.test(from.trim())) {
-              Alert.alert(t.earnings.invalidRange);
-              return;
-            }
-            setRange({ from: from.trim(), to: ISO_DAY.test(to.trim()) ? to.trim() : from.trim() });
-            setPeriod('custom');
-          }}
-          style={{
-            borderRadius: tokens.radius.md,
-            paddingVertical: 8,
-            paddingHorizontal: 14,
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: period === 'custom' ? tokens.color.kiwi : tokens.color.surface,
-          }}
-        >
-          <Text
-            style={{
-              color: period === 'custom' ? '#fff' : tokens.color.ink,
-              fontWeight: '600',
-              fontSize: 12,
+            <TextInput
+              placeholder="AAAA-MM-DD"
+              placeholderTextColor="#94a3b8"
+              value={from}
+              onChangeText={(v) => setFrom(v.replace(/[^0-9-]/g, '').slice(0, 10))}
+              keyboardType="numbers-and-punctuation"
+              className="rounded-lg bg-surface-100 px-3 py-2.5 text-sm text-surface-800 dark:bg-surface-700 dark:text-surface-100"
+            />
+          </View>
+          <View className="flex-1">
+            <Text className="mb-1 text-xs font-medium text-surface-500 dark:text-surface-400">
+              {t.earnings.to}
+            </Text>
+            <TextInput
+              placeholder="AAAA-MM-DD"
+              placeholderTextColor="#94a3b8"
+              value={to}
+              onChangeText={(v) => setTo(v.replace(/[^0-9-]/g, '').slice(0, 10))}
+              keyboardType="numbers-and-punctuation"
+              className="rounded-lg bg-surface-100 px-3 py-2.5 text-sm text-surface-800 dark:bg-surface-700 dark:text-surface-100"
+            />
+          </View>
+          <Pressable
+            onPress={() => {
+              if (!ISO_DAY.test(from.trim())) {
+                Alert.alert(t.earnings.invalidRange);
+                return;
+              }
+              setRange({
+                from: from.trim(),
+                to: ISO_DAY.test(to.trim()) ? to.trim() : from.trim(),
+              });
+              setPeriod('custom');
             }}
+            className={`rounded-lg px-4 py-2.5 ${period === 'custom' ? 'bg-kiwi-700' : 'bg-surface-400 dark:bg-surface-600'}`}
           >
-            {t.earnings.custom}
-          </Text>
-        </Pressable>
-      </View>
+            <Text className="text-sm font-semibold text-white">{t.earnings.apply}</Text>
+          </Pressable>
+        </View>
+      </Card>
 
       <ScrollView
         style={{ flex: 1, marginTop: 12 }}
         contentContainerStyle={{ paddingBottom: 24 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refetchAll} />}
       >
-        <View
-          style={{
-            backgroundColor: tokens.color.surface,
-            borderRadius: tokens.radius.lg,
-            padding: tokens.space[4],
-          }}
-        >
-          <Text style={{ color: tokens.color.muted, fontSize: 12 }}>
-            {t.earnings.totalEarnings}
-          </Text>
-          <Text style={{ color: tokens.color.ink, fontSize: 28, fontWeight: '800' }}>
-            ₡{Number(e.totalEarnings ?? 0).toLocaleString()}
-          </Text>
-          <Text style={{ color: tokens.color.muted, marginTop: 4 }}>
-            {e.totalTrips ?? 0} {t.driver.totalTrips.toLowerCase()}
-          </Text>
+        {/* Stats par PWA */}
+        <View className="mb-4 flex-row gap-3">
+          <View className="flex-1">
+            <Stat value={String(e.totalTrips ?? 0)} label={t.driver.totalTrips} />
+          </View>
+          <View className="flex-1">
+            <Stat
+              value={`₡${Number(e.averagePerTrip ?? (e.totalTrips ? Math.round(Number(e.totalEarnings ?? 0) / Number(e.totalTrips)) : 0)).toLocaleString()}`}
+              label={t.earnings.averagePerDelivery}
+              accent="kiwi"
+            />
+          </View>
         </View>
 
-        <Text
-          style={{ color: tokens.color.ink, fontWeight: '700', marginTop: 16, marginBottom: 8 }}
-        >
-          {t.withdraw.title}
-        </Text>
-        <Text style={{ color: tokens.color.muted, marginBottom: 8 }}>
-          {translate('withdraw.balance', { amount: available.toLocaleString() })}
-        </Text>
-        <TextInput
-          placeholder={t.withdraw.amount}
-          placeholderTextColor={tokens.color.muted}
-          value={amount}
-          onChangeText={(v) => setAmount(v.replace(/[^0-9]/g, ''))}
-          keyboardType="numeric"
-          style={inputStyle}
-        />
-        <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
-          {(['sinpe', 'bank_transfer'] as const).map((m) => (
-            <Pressable
-              key={m}
-              onPress={() => setMethod(m)}
-              style={{
-                flex: 1,
-                borderRadius: tokens.radius.md,
-                paddingVertical: 10,
-                alignItems: 'center',
-                backgroundColor: method === m ? tokens.color.kiwi : tokens.color.surface,
-              }}
-            >
-              <Text
-                style={{
-                  color: method === m ? '#fff' : tokens.color.ink,
-                  fontWeight: '600',
-                }}
-              >
-                {m === 'sinpe' ? t.withdraw.sinpe : t.withdraw.bank}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-        {method === 'sinpe' ? (
-          <>
-            <TextInput
-              placeholder={t.withdraw.sinpePhone}
-              placeholderTextColor={tokens.color.muted}
-              value={sinpePhone}
-              onChangeText={setSinpePhone}
-              keyboardType="phone-pad"
-              style={inputStyle}
-            />
-            <TextInput
-              placeholder={t.withdraw.sinpeName}
-              placeholderTextColor={tokens.color.muted}
-              value={sinpeName}
-              onChangeText={setSinpeName}
-              style={inputStyle}
-            />
-          </>
-        ) : (
+        <Card>
+          <Text className="mb-1 text-sm font-semibold text-surface-800 dark:text-surface-100">
+            {t.withdraw.title}
+          </Text>
+          <Text className="mb-2 text-xs text-surface-500 dark:text-surface-400">
+            {translate('withdraw.balance', { amount: available.toLocaleString() })}
+          </Text>
           <TextInput
-            placeholder={t.withdraw.accountNumber}
-            placeholderTextColor={tokens.color.muted}
-            value={accountNumber}
-            onChangeText={setAccountNumber}
-            autoCapitalize="characters"
-            style={inputStyle}
+            placeholder={t.withdraw.amount}
+            placeholderTextColor="#94a3b8"
+            value={amount}
+            onChangeText={(v) => setAmount(v.replace(/[^0-9]/g, ''))}
+            keyboardType="numeric"
+            className="mb-2 rounded-lg bg-surface-100 px-3 py-2.5 text-sm text-surface-800 dark:bg-surface-700 dark:text-surface-100"
           />
-        )}
-        <Button
-          label={request.isPending ? t.withdraw.requesting : t.withdraw.request}
-          loading={request.isPending}
-          onPress={() => request.mutate()}
-        />
+          <View className="mb-2 flex-row gap-2">
+            {(['sinpe', 'bank_transfer'] as const).map((m) => (
+              <Pressable
+                key={m}
+                onPress={() => setMethod(m)}
+                className={`flex-1 items-center rounded-lg py-2.5 ${method === m ? 'bg-kiwi-700' : 'bg-surface-100 dark:bg-surface-700'}`}
+              >
+                <Text
+                  className={`font-semibold ${method === m ? 'text-white' : 'text-surface-800 dark:text-surface-100'}`}
+                >
+                  {m === 'sinpe' ? t.withdraw.sinpe : t.withdraw.bank}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+          {method === 'sinpe' ? (
+            <>
+              <TextInput
+                placeholder={t.withdraw.sinpePhone}
+                placeholderTextColor="#94a3b8"
+                value={sinpePhone}
+                onChangeText={setSinpePhone}
+                keyboardType="phone-pad"
+                className="mb-2 rounded-lg bg-surface-100 px-3 py-2.5 text-sm text-surface-800 dark:bg-surface-700 dark:text-surface-100"
+              />
+              <TextInput
+                placeholder={t.withdraw.sinpeName}
+                placeholderTextColor="#94a3b8"
+                value={sinpeName}
+                onChangeText={setSinpeName}
+                className="mb-2 rounded-lg bg-surface-100 px-3 py-2.5 text-sm text-surface-800 dark:bg-surface-700 dark:text-surface-100"
+              />
+            </>
+          ) : (
+            <TextInput
+              placeholder={t.withdraw.accountNumber}
+              placeholderTextColor="#94a3b8"
+              value={accountNumber}
+              onChangeText={setAccountNumber}
+              autoCapitalize="characters"
+              className="mb-2 rounded-lg bg-surface-100 px-3 py-2.5 text-sm text-surface-800 dark:bg-surface-700 dark:text-surface-100"
+            />
+          )}
+          <Button
+            label={request.isPending ? t.withdraw.requesting : t.withdraw.request}
+            loading={request.isPending}
+            onPress={() => request.mutate()}
+          />
+        </Card>
 
-        <Text
-          style={{ color: tokens.color.ink, fontWeight: '700', marginTop: 16, marginBottom: 8 }}
-        >
+        <Text className="mb-2 mt-4 text-sm font-semibold text-surface-800 dark:text-surface-100">
           {t.withdraw.history}
         </Text>
         {moves.length === 0 ? (
-          <Text style={{ color: tokens.color.muted }}>{t.withdraw.empty}</Text>
+          <EmptyState title={t.withdraw.empty} />
         ) : (
           moves.map((w: any) => (
-            <View key={w.id}>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  backgroundColor: tokens.color.surface,
-                  borderRadius: tokens.radius.md,
-                  padding: 12,
-                  marginBottom: 8,
-                }}
-              >
-                <View style={{ flex: 1 }}>
-                  <Text style={{ color: tokens.color.ink, fontWeight: '700' }}>
-                    ₡{Number(w.amount ?? 0).toLocaleString()}
-                  </Text>
-                  <Text style={{ color: tokens.color.muted, fontSize: 12 }}>{w.status ?? ''}</Text>
-                </View>
-                <Pressable onPress={() => void toggleReceipt(w.id)} style={{ padding: 6 }}>
-                  <Text style={{ color: tokens.color.kiwi, fontWeight: '600' }}>
+            <View key={w.id} className="mb-2">
+              <Card>
+                <Pressable
+                  onPress={() => void toggleReceipt(w.id)}
+                  className="flex-row items-center justify-between"
+                >
+                  <View className="flex-1">
+                    <Text className="font-bold text-surface-800 dark:text-surface-100">
+                      ₡{Number(w.amount ?? 0).toLocaleString()}
+                    </Text>
+                    <Text className="text-xs text-surface-500 dark:text-surface-400">
+                      {w.status ?? ''}
+                    </Text>
+                  </View>
+                  <Text className="px-1.5 py-1 font-semibold text-kiwi-700 dark:text-kiwi-400">
                     {t.withdraw.receiptShow}
                   </Text>
-                </Pressable>
-                {w.status === 'pending' && (
-                  <Pressable onPress={() => cancel.mutate(w.id)} style={{ padding: 6 }}>
-                    <Text style={{ color: '#ef4444', fontWeight: '600' }}>{t.withdraw.cancel}</Text>
-                  </Pressable>
-                )}
-              </View>
-              {expandedId === w.id && (
-                <View
-                  style={{
-                    backgroundColor: tokens.color.surface,
-                    borderRadius: tokens.radius.md,
-                    padding: 12,
-                    marginTop: -4,
-                    marginBottom: 8,
-                  }}
-                >
-                  {receiptLoading === w.id ? (
-                    <Text style={{ color: tokens.color.muted }}>…</Text>
-                  ) : !receipts[w.id] || receipts[w.id].error ? (
-                    <Text style={{ color: tokens.color.muted }}>{t.withdraw.receiptEmpty}</Text>
-                  ) : (
-                    <View>
-                      <Text style={{ color: tokens.color.ink, fontWeight: '700', marginBottom: 4 }}>
-                        {t.withdraw.receiptTitle} ({receipts[w.id].tripCount ?? 0})
-                      </Text>
-                      {(receipts[w.id].trips ?? []).slice(0, 30).map((tr: any) => (
-                        <View
-                          key={tr.orderId}
-                          style={{
-                            flexDirection: 'row',
-                            justifyContent: 'space-between',
-                            marginBottom: 2,
-                          }}
-                        >
-                          <Text style={{ color: tokens.color.muted, flex: 1 }} numberOfLines={1}>
-                            {tr.merchant ?? tr.orderId.slice(0, 8)}
-                          </Text>
-                          <Text style={{ color: tokens.color.ink }}>
-                            ₡{Number(tr.payout ?? 0).toLocaleString()}
-                          </Text>
-                        </View>
-                      ))}
-                      <Text style={{ color: tokens.color.ink, fontWeight: '700', marginTop: 4 }}>
-                        Total: ₡{Number(receipts[w.id].tripsTotal ?? 0).toLocaleString()}
-                      </Text>
-                    </View>
+                  {w.status === 'pending' && (
+                    <Pressable onPress={() => cancel.mutate(w.id)} className="px-1.5 py-1">
+                      <Text className="font-semibold text-red-500">{t.withdraw.cancel}</Text>
+                    </Pressable>
                   )}
-                </View>
-              )}
+                </Pressable>
+                {expandedId === w.id && (
+                  <View className="mt-2 border-t border-surface-200/60 pt-2 dark:border-surface-700">
+                    {receiptLoading === w.id ? (
+                      <Text className="text-surface-500 dark:text-surface-400">…</Text>
+                    ) : !receipts[w.id] || receipts[w.id].error ? (
+                      <Text className="text-surface-500 dark:text-surface-400">
+                        {t.withdraw.receiptEmpty}
+                      </Text>
+                    ) : (
+                      <View>
+                        <Text className="mb-1 font-bold text-surface-800 dark:text-surface-100">
+                          {t.withdraw.receiptTitle} ({receipts[w.id].tripCount ?? 0})
+                        </Text>
+                        {(receipts[w.id].trips ?? []).slice(0, 30).map((tr: any) => (
+                          <View key={tr.orderId} className="mb-0.5 flex-row justify-between">
+                            <Text
+                              className="flex-1 text-surface-500 dark:text-surface-400"
+                              numberOfLines={1}
+                            >
+                              {tr.merchant ?? tr.orderId.slice(0, 8)}
+                            </Text>
+                            <Text className="text-surface-800 dark:text-surface-100">
+                              ₡{Number(tr.payout ?? 0).toLocaleString()}
+                            </Text>
+                          </View>
+                        ))}
+                        <Text className="mt-1 font-bold text-surface-800 dark:text-surface-100">
+                          Total: ₡{Number(receipts[w.id].tripsTotal ?? 0).toLocaleString()}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                )}
+              </Card>
             </View>
           ))
         )}

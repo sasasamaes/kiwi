@@ -1,9 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, AppState, FlatList, Pressable, Switch, Text, View } from 'react-native';
+import { Alert, AppState, FlatList, Pressable, Text, View } from 'react-native';
 import * as Location from 'expo-location';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import { Screen, Button, StatusBadge, tokens } from '@kiwi/mobile-ui';
+import { Bike, CircleOff } from 'lucide-react-native';
+import {
+  Screen,
+  Button,
+  StatusBadge,
+  Card,
+  GradientHeader,
+  Stat,
+  EmptyState,
+} from '@kiwi/mobile-ui';
 import { useTranslation } from '@kiwi/i18n';
 import { ordersApi } from '../../src/api/orders';
 import { driversApi } from '../../src/api/drivers';
@@ -33,7 +42,7 @@ function crNow(): { dow: number; mins: number } {
 }
 
 export default function Home() {
-  const { t, translate } = useTranslation();
+  const { t } = useTranslation();
   const router = useRouter();
   const qc = useQueryClient();
   const { online, setOnline } = useSession((s) => s);
@@ -209,18 +218,11 @@ export default function Home() {
   return (
     <Screen>
       {kycBlocked && (
-        <View
-          style={{
-            backgroundColor: '#fef2f2',
-            borderRadius: tokens.radius.md,
-            padding: tokens.space[3],
-            marginBottom: tokens.space[3],
-          }}
-        >
-          <Text style={{ fontWeight: '700', color: '#b91c1c' }}>
+        <View className="mb-4 rounded-2xl border border-red-300 bg-red-50 p-4 dark:border-red-700 dark:bg-red-900/30">
+          <Text className="text-sm font-semibold text-red-700 dark:text-red-300">
             🪪 {t.driverHome.kycBlockedTitle}
           </Text>
-          <Text style={{ color: '#b91c1c', fontSize: 12, marginTop: 4 }}>
+          <Text className="mt-1 text-xs text-red-600 dark:text-red-400">
             {kycStatus === 'rejected'
               ? t.driverHome.kycBlockedRejected
               : kycStatus === 'under_review' || kycStatus === 'submitted'
@@ -230,173 +232,108 @@ export default function Home() {
           {kycStatus !== 'under_review' && kycStatus !== 'submitted' && (
             <Pressable
               onPress={() => router.push('/(app)/kyc')}
-              style={{
-                marginTop: tokens.space[2],
-                backgroundColor: '#b91c1c',
-                borderRadius: tokens.radius.md,
-                paddingVertical: 10,
-                alignItems: 'center',
-              }}
+              className="mt-3 items-center rounded-xl bg-red-600 py-2.5"
             >
-              <Text style={{ color: '#fff', fontWeight: '700' }}>{t.driverHome.kycBlockedCta}</Text>
+              <Text className="text-sm font-bold text-white">{t.driverHome.kycBlockedCta}</Text>
             </Pressable>
           )}
         </View>
       )}
       {autoMsg && (
-        <View
-          style={{
-            backgroundColor: '#f0fdf4',
-            borderRadius: tokens.radius.md,
-            padding: tokens.space[3],
-            marginBottom: tokens.space[3],
-          }}
-        >
-          <Text style={{ color: '#15803d', fontSize: 12, fontWeight: '600' }}>{autoMsg}</Text>
+        <View className="mb-4 rounded-xl border border-kiwi-200 bg-kiwi-50 px-4 py-3 dark:border-kiwi-800 dark:bg-kiwi-900/30">
+          <Text className="text-sm text-kiwi-700 dark:text-kiwi-300">{autoMsg}</Text>
         </View>
       )}
-      <View
-        style={{
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: tokens.space[4],
-        }}
-      >
-        <Text style={{ color: tokens.color.ink, fontWeight: '700', fontSize: 18 }}>
-          {online ? t.driverHome.online : t.driverHome.offline}
-        </Text>
-        <Switch value={online} onValueChange={(v) => void toggleOnline(v)} disabled={switching} />
-      </View>
-      {weekEarnings != null && (
-        <View
-          style={{
-            backgroundColor: '#f0fdf4',
-            borderRadius: tokens.radius.md,
-            padding: tokens.space[3],
-            marginBottom: tokens.space[3],
-          }}
-        >
-          <Text style={{ color: '#15803d', fontSize: 13, fontWeight: '700' }}>
-            {translate('driverHome.weekCut', {
-              amount: Math.round(weekEarnings).toLocaleString(),
-            })}
-          </Text>
+
+      {/* Status card par PWA */}
+      <GradientHeader>
+        <View className="flex-row items-center justify-between">
+          <View className="min-w-0 flex-1">
+            <Text className="text-xl font-bold text-white">
+              {online ? t.driverHome.online : t.driverHome.paused}
+            </Text>
+            <Text className="text-sm text-white/80">
+              {online ? t.driverHome.onlineHint : t.driverHome.offlineHint}
+            </Text>
+          </View>
+          <Pressable
+            accessibilityRole="switch"
+            accessibilityState={{ checked: online }}
+            accessibilityLabel={online ? t.driverHome.pauseAria : t.driverHome.resumeAria}
+            onPress={() => void toggleOnline(!online)}
+            disabled={switching || (kycBlocked && !online)}
+            className={`h-14 w-24 rounded-full p-1 ${online ? 'bg-white' : 'bg-white/20'} ${
+              switching ? 'opacity-50' : ''
+            }`}
+          >
+            <View
+              className={`h-12 w-12 items-center justify-center rounded-full shadow-md ${
+                online ? 'bg-kiwi-700' : 'bg-surface-300'
+              } ${online ? 'self-end' : 'self-start'}`}
+            >
+              {online ? <Bike size={24} color="#fff" /> : <CircleOff size={24} color="#71717a" />}
+            </View>
+          </Pressable>
         </View>
-      )}
-      <View style={{ flexDirection: 'row', gap: 8, marginBottom: tokens.space[3] }}>
-        <Pressable
-          onPress={() => router.push('/(app)/earnings')}
-          style={{
-            flex: 1,
-            backgroundColor: tokens.color.surface,
-            borderRadius: tokens.radius.md,
-            paddingVertical: 10,
-            alignItems: 'center',
-          }}
-        >
-          <Text style={{ color: tokens.color.ink, fontWeight: '600' }}>{t.earnings.title}</Text>
-        </Pressable>
-        <Pressable
-          onPress={() => router.push('/(app)/profile')}
-          style={{
-            flex: 1,
-            backgroundColor: tokens.color.surface,
-            borderRadius: tokens.radius.md,
-            paddingVertical: 10,
-            alignItems: 'center',
-          }}
-        >
-          <Text style={{ color: tokens.color.ink, fontWeight: '600' }}>{t.profile.title}</Text>
-        </Pressable>
+        {online && (
+          <View className="mt-4">
+            <Text className="text-sm text-white/80">● {t.driverHome.receiving}</Text>
+          </View>
+        )}
+      </GradientHeader>
+
+      {/* Stats par PWA */}
+      <View className="mb-4 mt-4 flex-row gap-3">
+        <View className="flex-1">
+          <Stat
+            value={`₡${weekEarnings != null ? Math.round(weekEarnings).toLocaleString() : '—'}`}
+            label={t.driverHome.statWeekLabel}
+            accent="kiwi"
+          />
+        </View>
+        <View className="flex-1">
+          <Stat value={String(orders.length)} label={t.driverHome.statAvailable} accent="gold" />
+        </View>
       </View>
-      <View style={{ flexDirection: 'row', gap: 8, marginBottom: tokens.space[3] }}>
-        {(
-          [
-            { route: '/(app)/active', label: t.driverActive.title },
-            { route: '/(app)/history', label: t.driverHistory.title },
-            { route: '/(app)/schedule', label: t.driverHours.title },
-            { route: '/(app)/scheduled', label: t.driverScheduled.title },
-          ] as const
-        ).map((b) => (
-          <Pressable
-            key={b.route}
-            onPress={() => router.push(b.route)}
-            style={{
-              flex: 1,
-              backgroundColor: tokens.color.surface,
-              borderRadius: tokens.radius.md,
-              paddingVertical: 10,
-              alignItems: 'center',
-            }}
-          >
-            <Text style={{ color: tokens.color.ink, fontWeight: '600', fontSize: 12 }}>
-              {b.label}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-      <View style={{ flexDirection: 'row', gap: 8, marginBottom: tokens.space[3] }}>
-        {(
-          [
-            { route: '/(app)/ranking', label: t.driverRanking.title },
-            { route: '/(app)/analytics', label: t.driverStats.title },
-          ] as const
-        ).map((b) => (
-          <Pressable
-            key={b.route}
-            onPress={() => router.push(b.route)}
-            style={{
-              flex: 1,
-              backgroundColor: tokens.color.surface,
-              borderRadius: tokens.radius.md,
-              paddingVertical: 10,
-              alignItems: 'center',
-            }}
-          >
-            <Text style={{ color: tokens.color.ink, fontWeight: '600', fontSize: 12 }}>
-              {b.label}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+
       <FlatList
         data={orders}
         keyExtractor={(o) => o.id}
         renderItem={({ item }) => (
-          <View
-            style={{
-              backgroundColor: tokens.color.surface,
-              borderRadius: tokens.radius.lg,
-              padding: tokens.space[4],
-              marginBottom: tokens.space[3],
-            }}
-          >
-            <StatusBadge
-              status={item.status ?? 'pending'}
-              labels={{
-                pending: t.order.pending,
-                assigned: t.order.assigned,
-                picked_up: t.order.pickedUp,
-                delivered: t.order.delivered,
-                cancelled: t.order.cancelled,
-                no_driver: t.order.noDriver,
-              }}
-            />
-            <Text style={{ color: tokens.color.ink, marginTop: 8, fontWeight: '600' }}>
+          <Card>
+            <View className="mb-3">
+              <StatusBadge
+                status={item.status ?? 'pending'}
+                labels={{
+                  pending: t.order.pending,
+                  assigned: t.order.assigned,
+                  picked_up: t.order.pickedUp,
+                  delivered: t.order.delivered,
+                  cancelled: t.order.cancelled,
+                  no_driver: t.order.noDriver,
+                }}
+              />
+            </View>
+            <Text className="font-semibold text-surface-800 dark:text-surface-100">
               {item.isTest ? '🧪 TEST · ' : ''}
               {item.merchant?.businessName ?? item.pickupAddress}
             </Text>
-            <Text style={{ color: tokens.color.muted, fontSize: 12 }}>{item.deliveryAddress}</Text>
-            <View style={{ marginTop: tokens.space[3] }}>
+            <Text className="mt-0.5 text-xs text-surface-500 dark:text-surface-400">
+              {item.deliveryAddress}
+            </Text>
+            {item.driverPayout != null && (
+              <Text className="mt-1 text-sm font-bold text-kiwi-700 dark:text-kiwi-400">
+                ₡{Number(item.driverPayout).toLocaleString()}
+              </Text>
+            )}
+            <View className="mt-3">
               <Button label={t.driverHome.accept} onPress={() => accept(item.id)} />
             </View>
-          </View>
+          </Card>
         )}
+        ItemSeparatorComponent={() => <View className="h-3" />}
         ListEmptyComponent={
-          <Text style={{ color: tokens.color.muted }}>
-            {online ? t.driverHome.noOrders : t.driverHome.connectHint}
-          </Text>
+          <EmptyState title={online ? t.driverHome.noOrders : t.driverHome.connectHint} />
         }
       />
     </Screen>

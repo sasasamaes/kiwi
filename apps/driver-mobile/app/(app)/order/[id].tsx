@@ -2,7 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Linking, Pressable, Text, TextInput, View } from 'react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Screen, Button, StatusBadge, tokens } from '@kiwi/mobile-ui';
+import { Screen, Button, StatusBadge, Card } from '@kiwi/mobile-ui';
 import * as ImagePicker from 'expo-image-picker';
 import { useTranslation } from '@kiwi/i18n';
 import { ordersApi } from '../../../src/api/orders';
@@ -115,14 +115,7 @@ export default function ActiveOrder() {
           cancelled: t.order.cancelled,
         }}
       />
-      <Text
-        style={{
-          color: tokens.color.ink,
-          fontSize: 20,
-          fontWeight: '700',
-          marginVertical: tokens.space[4],
-        }}
-      >
+      <Text className="mb-4 mt-4 text-xl font-bold text-surface-800 dark:text-surface-100">
         {order.isTest === true ? '🧪 TEST · ' : ''}
         {translate('driverOrder.title', { id: String(id).slice(0, 8) })}
       </Text>
@@ -135,107 +128,83 @@ export default function ActiveOrder() {
           // Soporte Kiwi (fuente: packages/ui/src/business.ts).
           void Linking.openURL(`https://wa.me/50688264007?text=${encodeURIComponent(msg)}`);
         }}
-        style={{
-          backgroundColor: '#25D366',
-          borderRadius: tokens.radius.md,
-          paddingVertical: 12,
-          marginBottom: tokens.space[3],
-          alignItems: 'center',
-        }}
+        className="mb-3 items-center rounded-xl bg-[#25D366] py-3"
       >
-        <Text style={{ color: '#fff', fontWeight: '700' }}>💬 {t.profile.support}</Text>
+        <Text className="font-bold text-white">💬 {t.profile.support}</Text>
       </Pressable>
 
       {isMandado && (
-        <View
-          style={{
-            backgroundColor: tokens.color.surface,
-            borderRadius: tokens.radius.lg,
-            padding: tokens.space[4],
-            marginBottom: tokens.space[3],
-          }}
-        >
-          <Text style={{ color: tokens.color.ink, fontWeight: '700' }}>
-            {t.driverOrder.mandaTitle}
-          </Text>
-          {!!order.purchaseStore && (
-            <Text style={{ color: tokens.color.ink, marginTop: 4 }}>
-              {t.driverOrder.mandaStore}: {String(order.purchaseStore)}
+        <View className="mb-3">
+          <Card>
+            <Text className="font-bold text-surface-800 dark:text-surface-100">
+              {t.driverOrder.mandaTitle}
             </Text>
-          )}
-          {!!order.packageDescription && (
-            <Text style={{ color: tokens.color.muted, marginTop: 2 }} numberOfLines={4}>
-              {t.driverOrder.mandaList}:{' '}
-              {String(order.packageDescription).replace(/^Mandado en [^:]+:\s*/, '')}
+            {!!order.purchaseStore && (
+              <Text className="mt-1 text-surface-800 dark:text-surface-100">
+                {t.driverOrder.mandaStore}: {String(order.purchaseStore)}
+              </Text>
+            )}
+            {!!order.packageDescription && (
+              <Text className="mt-0.5 text-surface-500 dark:text-surface-400" numberOfLines={4}>
+                {t.driverOrder.mandaList}:{' '}
+                {String(order.packageDescription).replace(/^Mandado en [^:]+:\s*/, '')}
+              </Text>
+            )}
+            <Text className="mt-1 text-surface-500 dark:text-surface-400">
+              {t.driverOrder.mandaEstimate}: ₡
+              {Number(order.receiptAmount ?? order.purchaseEstimate ?? 0).toLocaleString()}
+              {' · '}
+              {t.driverOrder.mandaBonus}
             </Text>
-          )}
-          <Text style={{ color: tokens.color.muted, marginTop: 4 }}>
-            {t.driverOrder.mandaEstimate}: ₡
-            {Number(order.receiptAmount ?? order.purchaseEstimate ?? 0).toLocaleString()}
-            {' · '}
-            {t.driverOrder.mandaBonus}
-          </Text>
-          {current !== 'delivered' && current !== 'cancelled' && (
-            <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
-              <TextInput
-                value={receipt}
-                onChangeText={(v) => setReceipt(v.replace(/[^0-9]/g, ''))}
-                keyboardType="numeric"
-                placeholder={t.driverOrder.mandaReceiptPh}
-                placeholderTextColor={tokens.color.muted}
-                style={{
-                  flex: 1,
-                  backgroundColor: tokens.color.surface,
-                  color: tokens.color.ink,
-                  borderRadius: tokens.radius.md,
-                  padding: 12,
-                  borderWidth: 1,
-                  borderColor: tokens.color.border,
-                }}
-              />
-              <Button
-                label={t.driverOrder.mandaReceiptSave}
-                loading={savingReceipt}
-                onPress={() => void saveReceipt()}
-              />
-            </View>
-          )}
+            {current !== 'delivered' && current !== 'cancelled' && (
+              <View className="mt-2 flex-row gap-2">
+                <TextInput
+                  value={receipt}
+                  onChangeText={(v) => setReceipt(v.replace(/[^0-9]/g, ''))}
+                  keyboardType="numeric"
+                  placeholder={t.driverOrder.mandaReceiptPh}
+                  placeholderTextColor="#94a3b8"
+                  className="flex-1 rounded-lg border border-surface-200 bg-surface-100 px-3 py-3 text-surface-800 dark:border-surface-700 dark:bg-surface-700 dark:text-surface-100"
+                />
+                <Button
+                  label={t.driverOrder.mandaReceiptSave}
+                  loading={savingReceipt}
+                  onPress={() => void saveReceipt()}
+                />
+              </View>
+            )}
+          </Card>
         </View>
       )}
 
       {showCash && (
-        <View
-          style={{
-            backgroundColor: tokens.color.surface,
-            borderRadius: tokens.radius.lg,
-            padding: tokens.space[4],
-            marginBottom: tokens.space[3],
-          }}
-        >
-          <Text style={{ color: tokens.color.ink, fontWeight: '700' }}>
-            {translate('driverOrder.cashTitle', { amount: collectable.toLocaleString() })}
-          </Text>
-          {!isClientOrder && (
-            <Text style={{ color: tokens.color.muted, marginTop: 2 }}>
-              {t.driverOrder.cashTripNote}
+        <View className="mb-3">
+          <Card>
+            <Text className="font-bold text-surface-800 dark:text-surface-100">
+              {translate('driverOrder.cashTitle', { amount: collectable.toLocaleString() })}
             </Text>
-          )}
-          {tendered != null ? (
-            <Text style={{ color: tokens.color.ink, marginTop: 4 }}>
-              {translate('driverOrder.cashChange', {
-                tendered: tendered.toLocaleString(),
-                change: Math.max(0, tendered - collectable).toLocaleString(),
-              })}
-            </Text>
-          ) : (
-            <Text style={{ color: tokens.color.muted, marginTop: 4 }}>
-              {t.driverOrder.cashNoTender}
-            </Text>
-          )}
+            {!isClientOrder && (
+              <Text className="mt-0.5 text-surface-500 dark:text-surface-400">
+                {t.driverOrder.cashTripNote}
+              </Text>
+            )}
+            {tendered != null ? (
+              <Text className="mt-1 text-surface-800 dark:text-surface-100">
+                {translate('driverOrder.cashChange', {
+                  tendered: tendered.toLocaleString(),
+                  change: Math.max(0, tendered - collectable).toLocaleString(),
+                })}
+              </Text>
+            ) : (
+              <Text className="mt-1 text-surface-500 dark:text-surface-400">
+                {t.driverOrder.cashNoTender}
+              </Text>
+            )}
+          </Card>
         </View>
       )}
 
-      <View style={{ marginTop: 'auto' }}>
+      <View className="mt-auto">
         <Button
           label={
             current === 'in_transit_to_delivery'

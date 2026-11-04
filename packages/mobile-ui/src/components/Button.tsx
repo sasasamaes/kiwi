@@ -1,5 +1,4 @@
 import { ActivityIndicator, Pressable, Text } from 'react-native';
-import { tokens } from '../theme';
 
 type Variant = 'primary' | 'secondary' | 'danger';
 export function Button(props: {
@@ -10,32 +9,26 @@ export function Button(props: {
   disabled?: boolean;
 }) {
   const { label, onPress, variant = 'primary', loading = false, disabled = false } = props;
+  const blocked = loading || disabled;
   const bg =
     variant === 'primary'
-      ? tokens.color.kiwi
+      ? 'bg-kiwi-700'
       : variant === 'danger'
-        ? tokens.color.danger
-        : tokens.color.surface;
-  const fg = variant === 'secondary' ? tokens.color.ink : '#04140a';
-  const blocked = loading || disabled;
+        ? 'bg-red-600'
+        : 'bg-surface-100 dark:bg-surface-700';
+  const fg = variant === 'secondary' ? 'text-surface-800 dark:text-surface-100' : 'text-white';
   return (
     <Pressable
       accessibilityRole="button"
       onPress={() => {
         if (!blocked) onPress();
       }}
-      style={{
-        backgroundColor: bg,
-        borderRadius: tokens.radius.lg,
-        paddingVertical: 14,
-        opacity: blocked ? 0.5 : 1,
-        alignItems: 'center',
-      }}
+      className={`items-center rounded-xl py-3.5 ${bg} ${blocked ? 'opacity-50' : ''}`}
     >
       {loading ? (
-        <ActivityIndicator color={fg} />
+        <ActivityIndicator color={variant === 'secondary' ? '#52525b' : '#fff'} />
       ) : (
-        <Text style={{ color: fg, fontWeight: '700' }}>{label}</Text>
+        <Text className={`font-bold ${fg}`}>{label}</Text>
       )}
     </Pressable>
   );
