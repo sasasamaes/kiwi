@@ -1,5 +1,11 @@
 // Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
-import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  BadRequestException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { FieldCipher } from '../security/field-cipher';
 import { DiditProvider } from './didit.provider';
@@ -424,6 +430,18 @@ export class KYCService {
   }
 
   /**
+   * Un fallo de Didit (key inválida, API caída, workflow borrado) NO es un
+   * 500 genérico: se loguea la causa real en el servidor y al cliente le
+   * llega un 503 reintentable en vez de "Internal server error".
+   */
+  private diditUnavailable(action: string, error: unknown): never {
+    this.logger.error(`Didit ${action} falló: ${String((error as any)?.message ?? error)}`);
+    throw new ServiceUnavailableException(
+      'Verificación automática no disponible en este momento. Intentá de nuevo en unos minutos.',
+    );
+  }
+
+  /**
    * Crea (o reusa por vendor_data, según Didit) una sesión y devuelve la URL
    * hospedada. Nunca expone la API key: solo viajan url + session_id.
    */
@@ -447,14 +465,19 @@ export class KYCService {
     const [firstName, ...rest] = String(fullName ?? '')
       .trim()
       .split(/\s+/);
-    const session = await this.didit.createSession({
-      vendorData: userId,
-      language: 'es',
-      email: user.email ?? undefined,
-      phone: user.phone ?? undefined,
-      firstName: firstName || undefined,
-      lastName: rest.length > 0 ? rest.join(' ') : undefined,
-    });
+    let session;
+    try {
+      session = await this.didit.createSession({
+        vendorData: userId,
+        language: 'es',
+        email: user.email ?? undefined,
+        phone: user.phone ?? undefined,
+        firstName: firstName || undefined,
+        lastName: rest.length > 0 ? rest.join(' ') : undefined,
+      });
+    } catch (e) {
+      this.diditUnavailable('createSession', e);
+    }
 
     const row = existing
       ? await this.prisma.kYCVerification.update({
@@ -489,7 +512,12 @@ export class KYCService {
     if (!verification?.diditSessionId) {
       throw new BadRequestException('No hay sesión Didit para actualizar');
     }
-    const decision = await this.didit.getDecision(verification.diditSessionId);
+    let decision;
+    try {
+      decision = await this.didit.getDecision(verification.diditSessionId);
+    } catch (e) {
+      this.diditUnavailable('getDecision', e);
+    }
     return this.applyDiditDecision(verification.diditSessionId, decision?.status, decision);
   }
 
