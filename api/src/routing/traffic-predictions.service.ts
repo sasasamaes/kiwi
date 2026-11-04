@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { startOfTodayCR } from '../common/costa-rica-time';
 
 export interface TrafficPrediction {
   timestamp: Date;
@@ -207,9 +208,9 @@ export class TrafficPredictionsService {
     const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
     for (let i = 0; i < days; i++) {
-      const targetDate = new Date();
-      targetDate.setDate(targetDate.getDate() + i);
-      targetDate.setHours(0, 0, 0, 0);
+      // Día anclado a medianoche CR: las 24 iteraciones son horas ticas.
+      const dayStart = new Date(startOfTodayCR().getTime() + i * 86400_000);
+      const targetDate = dayStart;
 
       // Get hourly forecast for this day
       const hourlyForecast: HourlyForecast[] = [];
@@ -217,8 +218,7 @@ export class TrafficPredictionsService {
       const levels: string[] = [];
 
       for (let hour = 0; hour < 24; hour++) {
-        const targetTime = new Date(targetDate);
-        targetTime.setHours(hour);
+        const targetTime = new Date(dayStart.getTime() + hour * 3600_000);
 
         const prediction = await this.getPrediction(lat, lng, targetTime);
 

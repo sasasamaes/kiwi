@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Francisco Javier Campos Diaz. Todos los derechos reservados.
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { startOfTodayCR, CR_OFFSET_MS } from '../common/costa-rica-time';
 
 const KINDS = ['cuota', 'aporte', 'extra'] as const;
 const EXPENSE_KINDS = [
@@ -11,14 +12,6 @@ const EXPENSE_KINDS = [
   'marchamo',
   'otro',
 ] as const;
-
-/** Inicio del día en CR (UTC-6 fijo, como la planilla). */
-function startOfDayCR(d: Date): Date {
-  const d2 = new Date(d);
-  d2.setUTCHours(6, 0, 0, 0);
-  if (d2 > d) d2.setUTCDate(d2.getUTCDate() - 1);
-  return d2;
-}
 
 /**
  * Deudas del negocio (ej. la moto a mensualidades) y sus pagos: cuotas,
@@ -49,7 +42,15 @@ export class DebtsService {
       balance <= 0
         ? new Date().toISOString()
         : monthly > 0
-          ? new Date(new Date().getFullYear(), new Date().getMonth() + monthsLeft, 1).toISOString()
+          ? // Día 1 del mes de liquidación, 00:00 CR (= 06:00 UTC).
+            new Date(
+              Date.UTC(
+                new Date(Date.now() + CR_OFFSET_MS).getUTCFullYear(),
+                new Date(Date.now() + CR_OFFSET_MS).getUTCMonth() + monthsLeft,
+                1,
+                6,
+              ),
+            ).toISOString()
           : null;
     const byDriver: Record<string, { driverId: string; name: string; total: number }> = {};
     const byKind: Record<string, number> = { cuota: 0, aporte: 0, extra: 0 };
@@ -308,7 +309,7 @@ export class DebtsService {
     let fuelWeek = 0;
     let fuelMonth = 0;
     const now = new Date();
-    const dayStart = startOfDayCR(now);
+    const dayStart = startOfTodayCR(now);
     const weekStart = new Date(dayStart);
     weekStart.setUTCDate(weekStart.getUTCDate() - 6);
     const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 6, 0, 0, 0));

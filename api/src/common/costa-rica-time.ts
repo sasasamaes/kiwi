@@ -74,3 +74,39 @@ export function crTimeHHMM(date: Date = new Date()): string {
   const cr = new Date(date.getTime() + CR_OFFSET_MS);
   return `${String(cr.getUTCHours()).padStart(2, '0')}:${String(cr.getUTCMinutes()).padStart(2, '0')}`;
 }
+
+/** Hora 0–23 en muro CR (para comparar contra horas ya calculadas en CR). */
+export function crHour(date: Date = new Date()): number {
+  return new Date(date.getTime() + CR_OFFSET_MS).getUTCHours();
+}
+
+const ISO_DAY = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+/** Valida YYYY-MM-DD calendario (sin rollover silencioso) o null. */
+function parseISODateParts(raw: unknown): { y: number; m: number; d: number } | null {
+  if (typeof raw !== 'string') return null;
+  const m = ISO_DAY.exec(raw.trim());
+  if (!m) return null;
+  const y = Number(m[1]);
+  const mo = Number(m[2]);
+  const d = Number(m[3]);
+  if (mo < 1 || mo > 12 || d < 1 || d > 31) return null;
+  if (d > new Date(Date.UTC(y, mo, 0)).getUTCDate()) return null;
+  return { y, m: mo, d };
+}
+
+/** 00:00 CR de ese día, como instante absoluto (06:00 UTC). */
+export function crDayStartISO(raw: unknown): Date | null {
+  const p = parseISODateParts(raw);
+  if (!p) return null;
+  const dt = new Date(Date.UTC(p.y, p.m - 1, p.d, 6));
+  return Number.isNaN(dt.getTime()) ? null : dt;
+}
+
+/** 00:00 CR del día SIGUIENTE (borde `lt` inclusivo del día). */
+export function crDayEndExclusiveISO(raw: unknown): Date | null {
+  const p = parseISODateParts(raw);
+  if (!p) return null;
+  const dt = new Date(Date.UTC(p.y, p.m - 1, p.d + 1, 6));
+  return Number.isNaN(dt.getTime()) ? null : dt;
+}

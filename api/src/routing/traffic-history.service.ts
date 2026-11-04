@@ -2,6 +2,7 @@
 import { Injectable, Logger, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TrafficService } from './traffic.service';
+import { startOfTodayCR } from '../common/costa-rica-time';
 
 export interface TrafficHistoryRecord {
   id: string;
@@ -212,8 +213,7 @@ export class TrafficHistoryService {
 
     switch (period) {
       case 'day':
-        currentStart = new Date(now);
-        currentStart.setHours(0, 0, 0, 0);
+        currentStart = startOfTodayCR(now);
         currentEnd = now;
         previousStart = new Date(currentStart);
         previousStart.setDate(previousStart.getDate() - 1);

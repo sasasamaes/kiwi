@@ -2,6 +2,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TrafficPredictionsService } from '../routing/traffic-predictions.service';
+import { crHour } from '../common/costa-rica-time';
 
 export interface TrafficNotification {
   id: string;
@@ -95,9 +96,9 @@ export class TrafficNotificationService {
         return;
       }
 
-      // Find next best time
+      // Find next best time (horas del predictor ya vienen en muro CR).
       const now = new Date();
-      const currentHour = now.getHours();
+      const currentHour = crHour(now);
       const nextBestTime = bestTimes.find((t) => t.hour > currentHour);
 
       if (!nextBestTime) {
@@ -244,8 +245,8 @@ export class TrafficNotificationService {
         // Send prediction notification
         await this.sendPredictionNotification(user.id, lat, lng);
 
-        // Send best time notification (only at 8 AM)
-        const hour = new Date().getHours();
+        // Send best time notification (solo a las 8 AM de CR, no del servidor).
+        const hour = crHour(new Date());
         if (hour === 8) {
           await this.sendBestTimeNotification(user.id, lat, lng);
         }

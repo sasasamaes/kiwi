@@ -9,6 +9,7 @@ import {
   Optional,
   Inject,
 } from '@nestjs/common';
+import { crDayStartISO, crDayEndExclusiveISO } from '../common/costa-rica-time';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventsGateway } from '../events/events.gateway';
 import { DriversService } from '../drivers/drivers.service';
@@ -108,15 +109,8 @@ function addressSimilarity(a: string, b: string): number {
  * "Hasta" perdía las últimas 6h del día tico (18:00–24:00 CR).
  */
 function parseExportDate(raw: unknown, endOfDay: boolean): Date | null {
-  if (typeof raw !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(raw)) return null;
-  const [y, m, d] = raw.split('-').map(Number);
-  // Sin rollover silencioso (mes 13, día 40): validar contra el calendario.
-  if (m < 1 || m > 12 || d < 1 || d > 31) return null;
-  const lastDay = new Date(Date.UTC(y, m, 0)).getUTCDate();
-  if (d > lastDay) return null;
-  // 00:00 CR = 06:00 UTC. Date.UTC no depende del TZ del servidor.
-  const dt = new Date(Date.UTC(y, m - 1, d + (endOfDay ? 1 : 0), 6));
-  return Number.isNaN(dt.getTime()) ? null : dt;
+  // Rango en muro CR (el servidor corre en UTC): delega al helper central.
+  return endOfDay ? crDayEndExclusiveISO(raw) : crDayStartISO(raw);
 }
 
 @Injectable()

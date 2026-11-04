@@ -8,6 +8,8 @@ import {
   startOfMonthCR,
   startOfYearCR,
   toCRDateKey,
+  crDayStartISO,
+  crDayEndExclusiveISO,
 } from '../common/costa-rica-time';
 
 @Injectable()
@@ -334,8 +336,10 @@ export class AnalyticsService {
     let end: Date = now;
 
     if (period === AnalyticsPeriod.CUSTOM && startDate && endDate) {
-      start = new Date(startDate);
-      end = new Date(endDate);
+      // Rango en muro CR: día completo de inicio a fin, ambos inclusivos.
+      start = crDayStartISO(startDate) ?? new Date(startDate);
+      const endExclusive = crDayEndExclusiveISO(endDate);
+      end = endExclusive ? new Date(endExclusive.getTime() - 1) : new Date(endDate);
     } else {
       switch (period) {
         case AnalyticsPeriod.TODAY:
