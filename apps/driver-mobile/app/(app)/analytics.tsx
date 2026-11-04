@@ -1,22 +1,13 @@
 import { useCallback, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { RefreshControl, ScrollView, Text, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
-import { Screen, tokens } from '@kiwi/mobile-ui';
+import { Screen, SegmentedTabs, Stat } from '@kiwi/mobile-ui';
 import { useTranslation } from '@kiwi/i18n';
 import { driversApi } from '../../src/api/drivers';
 import { http } from '../../src/api/client';
 
 const api = driversApi(http);
 const PERIODS = ['today', 'week', 'month', 'all'] as const;
-
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6 }}>
-      <Text style={{ color: tokens.color.muted }}>{label}</Text>
-      <Text style={{ color: tokens.color.ink, fontWeight: '600' }}>{value}</Text>
-    </View>
-  );
-}
 
 export default function Analytics() {
   const { t } = useTranslation();
@@ -40,66 +31,61 @@ export default function Analytics() {
   );
 
   const o = data?.overview ?? {};
-  const label: Record<string, string> = {
-    today: t.driverStats.today,
-    week: t.driverStats.week,
-    month: t.driverStats.month,
-    all: t.driverStats.all,
-  };
 
   return (
     <Screen>
-      <Text style={{ color: tokens.color.ink, fontWeight: '700', fontSize: 18, marginBottom: 12 }}>
+      <Text className="mb-3 text-lg font-bold text-surface-800 dark:text-surface-100">
         {t.driverStats.title}
       </Text>
-      <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
-        {PERIODS.map((p) => (
-          <Pressable
-            key={p}
-            onPress={() => setPeriod(p)}
-            style={{
-              flex: 1,
-              backgroundColor: period === p ? tokens.color.kiwi : tokens.color.surface,
-              borderRadius: tokens.radius.md,
-              paddingVertical: 10,
-              alignItems: 'center',
-            }}
-          >
-            <Text
-              style={{
-                color: period === p ? '#fff' : tokens.color.ink,
-                fontWeight: '600',
-                fontSize: 12,
-              }}
-            >
-              {label[p]}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-      <ScrollView
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={load} />}
-        style={{
-          backgroundColor: tokens.color.surface,
-          borderRadius: tokens.radius.lg,
-          padding: tokens.space[4],
-        }}
-      >
-        <Row label={t.driverStats.deliveries} value={String(o.totalDeliveries ?? 0)} />
-        <Row
-          label={t.driverStats.earnings}
-          value={`₡${Math.round(Number(o.totalEarnings ?? 0)).toLocaleString()}`}
-        />
-        <Row
-          label={t.driverStats.avgPerDelivery}
-          value={`₡${Math.round(Number(o.averageEarningPerDelivery ?? 0)).toLocaleString()}`}
-        />
-        <Row label={t.driverStats.rating} value={String(o.averageRating ?? '—')} />
-        <Row
-          label={t.driverStats.completion}
-          value={`${Math.round(Number(o.completionRate ?? 0))}%`}
-        />
-        <Row label={t.driverStats.hours} value={String(o.activeHours ?? 0)} />
+      <SegmentedTabs
+        value={period}
+        onChange={setPeriod}
+        options={[
+          { id: 'today', label: t.driverStats.today },
+          { id: 'week', label: t.driverStats.week },
+          { id: 'month', label: t.driverStats.month },
+          { id: 'all', label: t.driverStats.all },
+        ]}
+      />
+      <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={load} />}>
+        <View className="flex-row gap-3">
+          <View className="flex-1">
+            <Stat value={String(o.totalDeliveries ?? 0)} label={t.driverStats.deliveries} />
+          </View>
+          <View className="flex-1">
+            <Stat
+              value={`₡${Math.round(Number(o.totalEarnings ?? 0)).toLocaleString()}`}
+              label={t.driverStats.earnings}
+              accent="kiwi"
+            />
+          </View>
+        </View>
+        <View className="mt-3 flex-row gap-3">
+          <View className="flex-1">
+            <Stat
+              value={`₡${Math.round(Number(o.averageEarningPerDelivery ?? 0)).toLocaleString()}`}
+              label={t.driverStats.avgPerDelivery}
+            />
+          </View>
+          <View className="flex-1">
+            <Stat
+              value={String(o.averageRating ?? '—')}
+              label={t.driverStats.rating}
+              accent="gold"
+            />
+          </View>
+        </View>
+        <View className="mt-3 flex-row gap-3">
+          <View className="flex-1">
+            <Stat
+              value={`${Math.round(Number(o.completionRate ?? 0))}%`}
+              label={t.driverStats.completion}
+            />
+          </View>
+          <View className="flex-1">
+            <Stat value={String(o.activeHours ?? 0)} label={t.driverStats.hours} />
+          </View>
+        </View>
       </ScrollView>
     </Screen>
   );

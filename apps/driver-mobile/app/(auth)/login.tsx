@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { Pressable, TextInput, Text, View, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Screen, Button, tokens } from '@kiwi/mobile-ui';
+import { Screen, Button } from '@kiwi/mobile-ui';
 import { useTranslation } from '@kiwi/i18n';
 import { useSession } from '../../src/session/useSession';
+
+const inputCls =
+  'rounded-xl bg-white border border-surface-200 px-3.5 py-3.5 text-surface-800 dark:bg-surface-800 dark:border-surface-700 dark:text-surface-100';
 
 export default function Login() {
   const { t } = useTranslation();
@@ -14,38 +17,33 @@ export default function Login() {
   const router = useRouter();
   return (
     <Screen>
-      <View style={{ gap: tokens.space[4], marginTop: tokens.space[8] }}>
-        <Text style={{ color: tokens.color.ink, fontSize: 24, fontWeight: '700' }}>
-          {t.driverAuth.loginTitle}
-        </Text>
+      <View className="mt-8 gap-4">
+        <View>
+          <Text className="text-2xl font-bold text-surface-800 dark:text-surface-100">
+            {t.driverAuth.loginTitle}
+          </Text>
+          <Text className="mt-1 text-sm text-surface-500 dark:text-surface-400">
+            Kiwi Repartidor 🛵
+          </Text>
+        </View>
         <TextInput
           placeholder="tu@email.com"
-          placeholderTextColor={tokens.color.muted}
+          placeholderTextColor="#94a3b8"
           autoCapitalize="none"
           keyboardType="email-address"
           value={email}
           onChangeText={setEmail}
           accessibilityLabel="email"
-          style={{
-            backgroundColor: tokens.color.surface,
-            color: tokens.color.ink,
-            borderRadius: tokens.radius.md,
-            padding: 14,
-          }}
+          className={inputCls}
         />
         <TextInput
           placeholder="••••••••"
-          placeholderTextColor={tokens.color.muted}
+          placeholderTextColor="#94a3b8"
           secureTextEntry
           value={password}
           onChangeText={setPassword}
           accessibilityLabel="password"
-          style={{
-            backgroundColor: tokens.color.surface,
-            color: tokens.color.ink,
-            borderRadius: tokens.radius.md,
-            padding: 14,
-          }}
+          className={inputCls}
         />
         <Button
           label={t.auth.login}
@@ -62,8 +60,8 @@ export default function Login() {
             }
           }}
         />
-        <Pressable onPress={() => router.push('/(auth)/register')} style={{ marginTop: 4 }}>
-          <Text style={{ color: tokens.color.kiwi, textAlign: 'center', fontWeight: '600' }}>
+        <Pressable onPress={() => router.push('/(auth)/register')} className="mt-1">
+          <Text className="text-center font-semibold text-kiwi-700 dark:text-kiwi-400">
             {t.driverRegister.noAccount}
           </Text>
         </Pressable>

@@ -1,18 +1,14 @@
 import { useState } from 'react';
 import { Alert, Pressable, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Screen, Button, tokens } from '@kiwi/mobile-ui';
+import { Screen, Button, SegmentedTabs } from '@kiwi/mobile-ui';
 import { useTranslation } from '@kiwi/i18n';
 import { useSession } from '../../src/session/useSession';
 
 const VEHICLES = ['motorcycle', 'bicycle', 'car'] as const;
 
-const inputStyle = {
-  backgroundColor: tokens.color.surface,
-  color: tokens.color.ink,
-  borderRadius: tokens.radius.md,
-  padding: 14,
-} as const;
+const inputCls =
+  'rounded-xl bg-white border border-surface-200 px-3.5 py-3.5 text-surface-800 dark:bg-surface-800 dark:border-surface-700 dark:text-surface-100';
 
 export default function Register() {
   const { t } = useTranslation();
@@ -30,62 +26,48 @@ export default function Register() {
 
   return (
     <Screen>
-      <View style={{ gap: tokens.space[3], marginTop: tokens.space[8] }}>
-        <Text style={{ color: tokens.color.ink, fontSize: 24, fontWeight: '700' }}>
+      <View className="mt-8 gap-3">
+        <Text className="text-2xl font-bold text-surface-800 dark:text-surface-100">
           {t.driverRegister.title}
         </Text>
         <TextInput
           placeholder={t.driverRegister.name}
-          placeholderTextColor={tokens.color.muted}
+          placeholderTextColor="#94a3b8"
           value={fullName}
           onChangeText={setFullName}
-          style={inputStyle}
+          className={inputCls}
         />
         <TextInput
           placeholder={t.driverRegister.email}
-          placeholderTextColor={tokens.color.muted}
+          placeholderTextColor="#94a3b8"
           autoCapitalize="none"
           keyboardType="email-address"
           value={email}
           onChangeText={setEmail}
-          style={inputStyle}
+          className={inputCls}
         />
         <TextInput
           placeholder={t.driverRegister.password}
-          placeholderTextColor={tokens.color.muted}
+          placeholderTextColor="#94a3b8"
           secureTextEntry
           value={password}
           onChangeText={setPassword}
-          style={inputStyle}
+          className={inputCls}
         />
         <TextInput
           placeholder={t.driverRegister.phone}
-          placeholderTextColor={tokens.color.muted}
+          placeholderTextColor="#94a3b8"
           keyboardType="phone-pad"
           value={phone}
           onChangeText={setPhone}
-          style={inputStyle}
+          className={inputCls}
         />
-        <Text style={{ color: tokens.color.muted }}>{t.driverRegister.vehicle}</Text>
-        <View style={{ flexDirection: 'row', gap: 8 }}>
-          {VEHICLES.map((v) => (
-            <Pressable
-              key={v}
-              onPress={() => setVehicle(v)}
-              style={{
-                flex: 1,
-                borderRadius: tokens.radius.md,
-                paddingVertical: 10,
-                alignItems: 'center',
-                backgroundColor: vehicle === v ? tokens.color.kiwi : tokens.color.surface,
-              }}
-            >
-              <Text style={{ color: vehicle === v ? '#fff' : tokens.color.ink, fontWeight: '600' }}>
-                {vehicleLabel(v)}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
+        <Text className="text-surface-500 dark:text-surface-400">{t.driverRegister.vehicle}</Text>
+        <SegmentedTabs
+          value={vehicle}
+          onChange={setVehicle}
+          options={VEHICLES.map((v) => ({ id: v, label: vehicleLabel(v) }))}
+        />
         <Button
           label={busy ? t.driverRegister.registering : t.driverRegister.register}
           loading={busy}
@@ -108,7 +90,7 @@ export default function Register() {
           }}
         />
         <Pressable onPress={() => router.replace('/(auth)/login')}>
-          <Text style={{ color: tokens.color.kiwi, textAlign: 'center', fontWeight: '600' }}>
+          <Text className="text-center font-semibold text-kiwi-700 dark:text-kiwi-400">
             {t.driverRegister.haveAccount}
           </Text>
         </Pressable>

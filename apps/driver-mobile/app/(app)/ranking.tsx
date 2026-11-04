@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
-import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
+import { FlatList, RefreshControl, Text, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
-import { Screen, tokens } from '@kiwi/mobile-ui';
+import { Screen, SegmentedTabs, Card, EmptyState } from '@kiwi/mobile-ui';
 import { useTranslation } from '@kiwi/i18n';
 import { driversApi } from '../../src/api/drivers';
 import { http } from '../../src/api/client';
@@ -39,69 +39,44 @@ export default function Ranking() {
 
   return (
     <Screen>
-      <Text style={{ color: tokens.color.ink, fontWeight: '700', fontSize: 18, marginBottom: 12 }}>
+      <Text className="mb-3 text-lg font-bold text-surface-800 dark:text-surface-100">
         {t.driverRanking.title}
       </Text>
-      <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
-        {PERIODS.map((p) => (
-          <Pressable
-            key={p}
-            onPress={() => setPeriod(p)}
-            style={{
-              flex: 1,
-              backgroundColor: period === p ? tokens.color.kiwi : tokens.color.surface,
-              borderRadius: tokens.radius.md,
-              paddingVertical: 10,
-              alignItems: 'center',
-            }}
-          >
-            <Text style={{ color: period === p ? '#fff' : tokens.color.ink, fontWeight: '600' }}>
-              {p === 'week'
-                ? t.driverRanking.week
-                : p === 'month'
-                  ? t.driverRanking.month
-                  : t.driverRanking.all}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+      <SegmentedTabs
+        value={period}
+        onChange={setPeriod}
+        options={[
+          { id: 'week', label: t.driverRanking.week },
+          { id: 'month', label: t.driverRanking.month },
+          { id: 'all', label: t.driverRanking.all },
+        ]}
+      />
       <FlatList
         data={rows}
         keyExtractor={(o, i) => o.driverId ?? String(i)}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={load} />}
         renderItem={({ item, index }) => (
-          <View
-            style={{
-              backgroundColor: tokens.color.surface,
-              borderRadius: tokens.radius.lg,
-              padding: tokens.space[4],
-              marginBottom: tokens.space[3],
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 12,
-            }}
-          >
-            <Text style={{ color: tokens.color.ink, fontWeight: '700', fontSize: 18, width: 28 }}>
-              {index + 1}
-            </Text>
-            <View style={{ flex: 1 }}>
-              <Text style={{ color: tokens.color.ink, fontWeight: '600' }}>{item.name}</Text>
-              <Text style={{ color: tokens.color.muted, fontSize: 12 }}>
-                {translate('driverRanking.trips', { n: item.trips })}
+          <Card>
+            <View className="flex-row items-center gap-3">
+              <Text className="w-7 text-lg font-bold text-surface-800 dark:text-surface-100">
+                {index + 1}
+              </Text>
+              <View className="flex-1">
+                <Text className="font-semibold text-surface-800 dark:text-surface-100">
+                  {item.name}
+                </Text>
+                <Text className="text-xs text-surface-500 dark:text-surface-400">
+                  {translate('driverRanking.trips', { n: item.trips })}
+                </Text>
+              </View>
+              <Text className="font-bold text-kiwi-700 dark:text-kiwi-400">
+                {fmtTime(Number(item.avgSeconds ?? 0))}
               </Text>
             </View>
-            <Text style={{ color: tokens.color.ink, fontWeight: '700' }}>
-              {fmtTime(Number(item.avgSeconds ?? 0))}
-            </Text>
-          </View>
+          </Card>
         )}
-        ListEmptyComponent={
-          !refreshing ? (
-            <View style={{ alignItems: 'center', marginTop: 32 }}>
-              <Text style={{ color: tokens.color.muted }}>{t.driverRanking.empty}</Text>
-            </View>
-          ) : null
-        }
+        ItemSeparatorComponent={() => <View className="h-3" />}
+        ListEmptyComponent={!refreshing ? <EmptyState title={t.driverRanking.empty} /> : null}
       />
     </Screen>
   );

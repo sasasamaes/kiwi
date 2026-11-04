@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
-import { Screen, Button, tokens } from '@kiwi/mobile-ui';
+import { Screen, Button, Card } from '@kiwi/mobile-ui';
 import { useTranslation } from '@kiwi/i18n';
 import { driversApi } from '../../src/api/drivers';
 import { http } from '../../src/api/client';
@@ -146,39 +146,32 @@ export default function Schedule() {
 
   return (
     <Screen>
-      <Text style={{ color: tokens.color.ink, fontWeight: '700', fontSize: 18, marginBottom: 4 }}>
+      <Text className="mb-1 text-lg font-bold text-surface-800 dark:text-surface-100">
         {t.driverHours.title}
       </Text>
-      <Text style={{ color: tokens.color.muted, fontSize: 12, marginBottom: 12 }}>
+      <Text className="mb-3 text-xs text-surface-500 dark:text-surface-400">
         {t.driverHours.hint}
       </Text>
-      <View style={{ flexDirection: 'row', gap: 6, marginBottom: 12 }}>
+      <View className="mb-3 flex-row gap-1.5">
         {days.map((d, i) => (
           <Pressable
             key={d}
             onPress={() => setSelectedDay(i)}
-            style={{
-              flex: 1,
-              backgroundColor: selectedDay === i ? tokens.color.kiwi : tokens.color.surface,
-              borderRadius: tokens.radius.md,
-              paddingVertical: 10,
-              alignItems: 'center',
-            }}
+            className={`flex-1 items-center rounded-lg py-2.5 ${
+              selectedDay === i ? 'bg-kiwi-700' : 'bg-white dark:bg-surface-800'
+            }`}
           >
             <Text
-              style={{
-                color: selectedDay === i ? '#fff' : tokens.color.ink,
-                fontWeight: '600',
-                fontSize: 12,
-              }}
+              className={`text-xs font-semibold ${
+                selectedDay === i ? 'text-white' : 'text-surface-800 dark:text-surface-100'
+              }`}
             >
-              {' '}
               {d}
             </Text>
           </Pressable>
         ))}
       </View>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
+      <View className="mb-4 flex-row flex-wrap gap-2">
         {HOURS.map((h) => {
           const slot = `${String(h).padStart(2, '0')}:00`;
           const on = slots.includes(slot);
@@ -187,66 +180,40 @@ export default function Schedule() {
             <Pressable
               key={h}
               onPress={() => toggle(h)}
-              style={{
-                width: '31%',
-                backgroundColor: on ? tokens.color.kiwi : tokens.color.surface,
-                borderRadius: tokens.radius.md,
-                paddingVertical: 12,
-                alignItems: 'center',
-              }}
+              className={`items-center rounded-lg py-3 ${
+                on ? 'bg-kiwi-700' : 'bg-white dark:bg-surface-800'
+              }`}
+              style={{ width: '31%' }}
             >
-              <Text style={{ color: on ? '#fff' : tokens.color.ink, fontWeight: '600' }}>
+              <Text
+                className={`font-semibold ${on ? 'text-white' : 'text-surface-800 dark:text-surface-100'}`}
+              >
                 {label}
               </Text>
             </Pressable>
           );
         })}
       </View>
-      <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
-        <Pressable
-          onPress={selectAllDay}
-          style={{
-            flex: 1,
-            backgroundColor: tokens.color.surface,
-            borderRadius: tokens.radius.md,
-            paddingVertical: 10,
-            alignItems: 'center',
-          }}
-        >
-          <Text style={{ color: tokens.color.ink, fontWeight: '600', fontSize: 13 }}>
-            {t.driverHours.selectAll}
-          </Text>
-        </Pressable>
-        <Pressable
-          onPress={clearDay}
-          style={{
-            flex: 1,
-            backgroundColor: tokens.color.surface,
-            borderRadius: tokens.radius.md,
-            paddingVertical: 10,
-            alignItems: 'center',
-          }}
-        >
-          <Text style={{ color: '#ef4444', fontWeight: '600', fontSize: 13 }}>
-            {t.driverHours.clear}
-          </Text>
-        </Pressable>
+      <View className="mb-2 flex-row gap-2">
+        <View className="flex-1">
+          <Button label={t.driverHours.selectAll} variant="secondary" onPress={selectAllDay} />
+        </View>
+        <View className="flex-1">
+          <Button label={t.driverHours.clear} variant="secondary" onPress={clearDay} />
+        </View>
       </View>
-      <View
-        style={{
-          backgroundColor: tokens.color.surface,
-          borderRadius: tokens.radius.md,
-          padding: tokens.space[3],
-          marginBottom: 12,
-        }}
-      >
-        <Text style={{ color: tokens.color.muted, fontSize: 12 }}>💡 {t.driverHours.tip}</Text>
+      <View className="mb-3">
+        <Card>
+          <Text className="text-xs text-surface-500 dark:text-surface-400">
+            💡 {t.driverHours.tip}
+          </Text>
+        </Card>
       </View>
       <Button
         label={saving ? t.driverHours.saving : saved ? t.driverHours.saved : t.driverHours.save}
         onPress={() => void save()}
       />
-      <View style={{ height: 24 }} />
+      <View className="h-6" />
     </Screen>
   );
 }

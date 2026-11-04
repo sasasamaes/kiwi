@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, AppState, FlatList, Pressable, Text, View } from 'react-native';
 import * as Location from 'expo-location';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { Bike, CircleOff } from 'lucide-react-native';
 import {
@@ -44,7 +44,6 @@ function crNow(): { dow: number; mins: number } {
 export default function Home() {
   const { t } = useTranslation();
   const router = useRouter();
-  const qc = useQueryClient();
   const { online, setOnline } = useSession((s) => s);
   const [orders, setOrders] = useState<any[]>([]);
   const [kycStatus, setKycStatus] = useState<string | null>(null);

@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { Screen, StatusBadge, tokens } from '@kiwi/mobile-ui';
+import { Screen, StatusBadge, Card, EmptyState } from '@kiwi/mobile-ui';
 import { useTranslation } from '@kiwi/i18n';
 import { driversApi } from '../../src/api/drivers';
 import { http } from '../../src/api/client';
@@ -40,7 +40,7 @@ export default function Active() {
 
   return (
     <Screen>
-      <Text style={{ color: tokens.color.ink, fontWeight: '700', fontSize: 18, marginBottom: 12 }}>
+      <Text className="mb-3 text-lg font-bold text-surface-800 dark:text-surface-100">
         {t.driverActive.title}
       </Text>
       <FlatList
@@ -48,41 +48,35 @@ export default function Active() {
         keyExtractor={(o) => String(o.id)}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={load} />}
         renderItem={({ item }) => (
-          <Pressable
-            onPress={() => router.push(`/(app)/order/${item.id}`)}
-            style={{
-              backgroundColor: tokens.color.surface,
-              borderRadius: tokens.radius.lg,
-              padding: tokens.space[4],
-              marginBottom: tokens.space[3],
-            }}
-          >
-            <StatusBadge
-              status={item.status ?? 'assigned'}
-              labels={{
-                pending: t.order.pending,
-                assigned: t.order.assigned,
-                pickedUp: t.order.pickedUp,
-                delivered: t.order.delivered,
-                cancelled: t.order.cancelled,
-                noDriver: t.order.noDriver,
-              }}
-            />
-            <Text style={{ color: tokens.color.ink, marginTop: 8, fontWeight: '600' }}>
-              {item.isTest ? '🧪 TEST · ' : ''}
-              {item.merchantName ?? item.pickupAddress}
-            </Text>
-            <Text style={{ color: tokens.color.muted, fontSize: 12 }}>{item.deliveryAddress}</Text>
+          <Pressable onPress={() => router.push(`/(app)/order/${item.id}`)}>
+            <Card>
+              <View className="mb-2">
+                <StatusBadge
+                  status={item.status ?? 'assigned'}
+                  labels={{
+                    pending: t.order.pending,
+                    assigned: t.order.assigned,
+                    pickedUp: t.order.pickedUp,
+                    delivered: t.order.delivered,
+                    cancelled: t.order.cancelled,
+                    noDriver: t.order.noDriver,
+                  }}
+                />
+              </View>
+              <Text className="mt-1 font-semibold text-surface-800 dark:text-surface-100">
+                {item.isTest ? '🧪 TEST · ' : ''}
+                {item.merchantName ?? item.pickupAddress}
+              </Text>
+              <Text className="text-xs text-surface-500 dark:text-surface-400">
+                {item.deliveryAddress}
+              </Text>
+            </Card>
           </Pressable>
         )}
+        ItemSeparatorComponent={() => <View className="h-3" />}
         ListEmptyComponent={
           !refreshing ? (
-            <View style={{ alignItems: 'center', marginTop: 32 }}>
-              <Text style={{ color: tokens.color.muted }}>{t.driverActive.empty}</Text>
-              <Text style={{ color: tokens.color.muted, fontSize: 12 }}>
-                {t.driverActive.emptyHint}
-              </Text>
-            </View>
+            <EmptyState title={t.driverActive.empty} hint={t.driverActive.emptyHint} />
           ) : null
         }
       />

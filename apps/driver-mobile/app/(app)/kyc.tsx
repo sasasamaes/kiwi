@@ -1,6 +1,6 @@
 import { Alert, Linking, Text, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Screen, Button, tokens } from '@kiwi/mobile-ui';
+import { Screen, Button, Card, EmptyState } from '@kiwi/mobile-ui';
 import { useTranslation } from '@kiwi/i18n';
 import { kycApi } from '../../src/api/kyc';
 import { http } from '../../src/api/client';
@@ -56,29 +56,24 @@ export default function Kyc() {
 
   return (
     <Screen>
-      <Text style={{ color: tokens.color.ink, fontSize: 20, fontWeight: '700' }}>
+      <Text className="text-xl font-bold text-surface-800 dark:text-surface-100">
         {t.kyc.title}
       </Text>
-      <Text style={{ color: tokens.color.muted, marginTop: 4 }}>{t.kyc.subtitle}</Text>
+      <Text className="mt-1 text-sm text-surface-500 dark:text-surface-400">{t.kyc.subtitle}</Text>
 
-      <View
-        style={{
-          backgroundColor: tokens.color.surface,
-          borderRadius: tokens.radius.lg,
-          padding: tokens.space[4],
-          marginTop: 12,
-        }}
-      >
-        {isError ? (
-          <Text style={{ color: tokens.color.muted }}>{t.kyc.loadFailed}</Text>
-        ) : (
-          <Text style={{ color: tokens.color.ink, fontSize: 16, fontWeight: '700' }}>
-            {t.kyc.status}: {t.kyc[key]}
-          </Text>
-        )}
+      <View className="mt-3">
+        <Card>
+          {isError ? (
+            <EmptyState title={t.kyc.loadFailed} />
+          ) : (
+            <Text className="text-base font-bold text-surface-800 dark:text-surface-100">
+              {t.kyc.status}: {t.kyc[key]}
+            </Text>
+          )}
+        </Card>
       </View>
 
-      <View style={{ marginTop: 12, gap: 8 }}>
+      <View className="mt-3 gap-2">
         {!done && (
           <Button
             label={t.kyc.verifyNow}

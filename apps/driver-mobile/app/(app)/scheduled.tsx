@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
-import { Alert, FlatList, Pressable, RefreshControl, Text, TextInput, View } from 'react-native';
+import { Alert, FlatList, RefreshControl, Text, TextInput, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
-import { Screen, Button, tokens } from '@kiwi/mobile-ui';
+import { Screen, Button, Card, EmptyState } from '@kiwi/mobile-ui';
 import { useTranslation } from '@kiwi/i18n';
 import { ordersApi } from '../../src/api/orders';
 import { http } from '../../src/api/client';
@@ -58,7 +58,7 @@ export default function Scheduled() {
 
   return (
     <Screen>
-      <Text style={{ color: tokens.color.ink, fontWeight: '700', fontSize: 18, marginBottom: 12 }}>
+      <Text className="mb-3 text-lg font-bold text-surface-800 dark:text-surface-100">
         {t.driverScheduled.title}
       </Text>
       <FlatList
@@ -66,49 +66,32 @@ export default function Scheduled() {
         keyExtractor={(o) => String(o.id)}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={load} />}
         renderItem={({ item }) => (
-          <View
-            style={{
-              backgroundColor: tokens.color.surface,
-              borderRadius: tokens.radius.lg,
-              padding: tokens.space[4],
-              marginBottom: tokens.space[3],
-            }}
-          >
-            <Text style={{ color: tokens.color.ink, fontWeight: '600' }}>
+          <Card>
+            <Text className="font-semibold text-surface-800 dark:text-surface-100">
               {item.merchant?.businessName ?? item.pickupAddress}
             </Text>
-            <Text style={{ color: tokens.color.muted, fontSize: 12 }}>{item.deliveryAddress}</Text>
-            <Text style={{ color: tokens.color.muted, fontSize: 12 }}>
+            <Text className="text-xs text-surface-500 dark:text-surface-400">
+              {item.deliveryAddress}
+            </Text>
+            <Text className="text-xs text-surface-500 dark:text-surface-400">
               {item.scheduledDate ? new Date(item.scheduledDate).toLocaleDateString() : ''}{' '}
               {item.scheduledTime ?? ''}
             </Text>
             {proposingId === String(item.id) ? (
-              <View style={{ marginTop: 8 }}>
+              <View className="mt-2">
                 <TextInput
                   value={arrival}
                   onChangeText={setArrival}
                   placeholder={t.driverScheduled.arrivalPh}
-                  placeholderTextColor={tokens.color.muted}
-                  style={{
-                    backgroundColor: tokens.color.surface,
-                    color: tokens.color.ink,
-                    borderRadius: tokens.radius.md,
-                    padding: 10,
-                    marginBottom: 8,
-                  }}
+                  placeholderTextColor="#94a3b8"
+                  className="mb-2 rounded-lg bg-surface-100 px-3 py-2.5 text-sm text-surface-800 dark:bg-surface-700 dark:text-surface-100"
                 />
                 <TextInput
                   value={message}
                   onChangeText={setMessage}
                   placeholder={t.driverScheduled.messagePh}
-                  placeholderTextColor={tokens.color.muted}
-                  style={{
-                    backgroundColor: tokens.color.surface,
-                    color: tokens.color.ink,
-                    borderRadius: tokens.radius.md,
-                    padding: 10,
-                    marginBottom: 8,
-                  }}
+                  placeholderTextColor="#94a3b8"
+                  className="mb-2 rounded-lg bg-surface-100 px-3 py-2.5 text-sm text-surface-800 dark:bg-surface-700 dark:text-surface-100"
                 />
                 <Button
                   label={sending ? '…' : t.driverScheduled.propose}
@@ -116,34 +99,21 @@ export default function Scheduled() {
                 />
               </View>
             ) : (
-              <Pressable
-                onPress={() => {
-                  setProposingId(String(item.id));
-                  setArrival('');
-                  setMessage('');
-                }}
-                style={{
-                  marginTop: 8,
-                  backgroundColor: tokens.color.kiwi,
-                  borderRadius: tokens.radius.md,
-                  paddingVertical: 10,
-                  alignItems: 'center',
-                }}
-              >
-                <Text style={{ color: '#fff', fontWeight: '700' }}>
-                  {t.driverScheduled.propose}
-                </Text>
-              </Pressable>
+              <View className="mt-2">
+                <Button
+                  label={t.driverScheduled.propose}
+                  onPress={() => {
+                    setProposingId(String(item.id));
+                    setArrival('');
+                    setMessage('');
+                  }}
+                />
+              </View>
             )}
-          </View>
+          </Card>
         )}
-        ListEmptyComponent={
-          !refreshing ? (
-            <View style={{ alignItems: 'center', marginTop: 32 }}>
-              <Text style={{ color: tokens.color.muted }}>{t.driverScheduled.empty}</Text>
-            </View>
-          ) : null
-        }
+        ItemSeparatorComponent={() => <View className="h-3" />}
+        ListEmptyComponent={!refreshing ? <EmptyState title={t.driverScheduled.empty} /> : null}
       />
     </Screen>
   );
