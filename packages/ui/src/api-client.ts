@@ -1480,8 +1480,11 @@ class ApiClient {
     });
   }
 
-  async getDriverEarnings(period: string = 'all') {
-    return this.request<any>(`/drivers/me/earnings?period=${period}`);
+  async getDriverEarnings(period: string = 'all', from?: string, to?: string) {
+    const q = new URLSearchParams({ period });
+    if (from) q.append('from', from);
+    if (to) q.append('to', to);
+    return this.request<any>(`/drivers/me/earnings?${q.toString()}`);
   }
 
   /** Ranking interno de repartidores por velocidad de entrega. */

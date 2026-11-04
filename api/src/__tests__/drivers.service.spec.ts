@@ -345,4 +345,35 @@ describe('DriversService', () => {
       );
     });
   });
+
+  describe('getEarnings', () => {
+    beforeEach(() => {
+      prisma.driverProfile.findUnique.mockResolvedValue({ id: 'dp-1', userId: 'u-1' });
+      prisma.order.findMany.mockResolvedValue([]);
+    });
+
+    it('yesterday filtra el día tico completo (gte ayer 00:00, lt hoy 00:00)', async () => {
+      await service.getEarnings('u-1', 'yesterday');
+      const where = prisma.order.findMany.mock.calls[0][0].where;
+      const { gte, lt } = where.deliveredAt;
+      // Ventana exacta de 24h y el tope es medianoche CR (= 06:00 UTC).
+      expect(lt.getTime() - gte.getTime()).toBe(24 * 3600 * 1000);
+      expect(lt.getUTCHours()).toBe(6);
+    });
+
+    it('custom usa from/to inclusivos en muro CR', async () => {
+      await service.getEarnings('u-1', 'custom', '2026-11-02', '2026-11-03');
+      const where = prisma.order.findMany.mock.calls[0][0].where;
+      expect(where.deliveredAt).toEqual({
+        gte: new Date(Date.UTC(2026, 10, 2, 6)),
+        lt: new Date(Date.UTC(2026, 10, 4, 6)),
+      });
+    });
+
+    it('custom sin to rechaza (rango completo obligatorio)', async () => {
+      await expect(service.getEarnings('u-1', 'custom', '2026-11-02')).rejects.toThrow(
+        'Rango de fechas inválido',
+      );
+    });
+  });
 });

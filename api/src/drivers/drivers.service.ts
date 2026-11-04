@@ -10,7 +10,13 @@ import { FeatureFlagsService } from '../feature-flags/feature-flags';
 import { SettingsService } from '../settings/settings.service';
 import { MANUAL_GRACE_MS, isInSchedule } from './schedule-window';
 import { isKycRequired } from '../feature-flags/feature-flags';
-import { startOfTodayCR, startOfMonthCR, toCRDateKey } from '../common/costa-rica-time';
+import {
+  startOfTodayCR,
+  startOfMonthCR,
+  toCRDateKey,
+  crDayStartISO,
+  crDayEndExclusiveISO,
+} from '../common/costa-rica-time';
 
 const VALID_DRIVER_STATUSES = ['offline', 'available', 'busy'] as const;
 
@@ -376,7 +382,7 @@ export class DriversService {
     throw new ForbiddenException('No tienes acceso a la ubicación de este repartidor');
   }
 
-  async getEarnings(userId: string, period: string = 'all') {
+  async getEarnings(userId: string, period: string = 'all', from?: string, to?: string) {
     const driver = await this.prisma.driverProfile.findUnique({
       where: { userId },
     });
@@ -385,13 +391,19 @@ export class DriversService {
       throw new NotFoundException('Perfil de repartidor no encontrado');
     }
 
-    // Calculate date range based on period
+    // Calculate date range based on period (todo en muro CR, ver costa-rica-time).
     const now = new Date();
+    const todayStart = startOfTodayCR(now);
     let startDate: Date | undefined;
+    let endDate: Date | undefined;
 
     switch (period) {
       case 'today':
-        startDate = startOfTodayCR(now);
+        startDate = todayStart;
+        break;
+      case 'yesterday':
+        endDate = todayStart;
+        startDate = new Date(todayStart.getTime() - 24 * 60 * 60 * 1000);
         break;
       case 'week':
         startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -399,6 +411,15 @@ export class DriversService {
       case 'month':
         startDate = startOfMonthCR(now, 0);
         break;
+      case 'custom': {
+        const s = crDayStartISO(from);
+        const e = crDayEndExclusiveISO(to);
+        if (!s || !e || s >= e)
+          throw new BadRequestException('Rango de fechas inválido (from/to YYYY-MM-DD)');
+        startDate = s;
+        endDate = e;
+        break;
+      }
       default:
         startDate = undefined;
     }
@@ -410,8 +431,11 @@ export class DriversService {
       isTest: false,
     };
 
-    if (startDate) {
-      where.deliveredAt = { gte: startDate };
+    if (startDate || endDate) {
+      where.deliveredAt = {
+        ...(startDate ? { gte: startDate } : {}),
+        ...(endDate ? { lt: endDate } : {}),
+      };
     }
 
     // Get completed orders (merchant included for real names)

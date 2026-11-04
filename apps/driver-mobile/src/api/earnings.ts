@@ -3,8 +3,15 @@ import type { Http } from '@kiwi/mobile-core';
 export function earningsApi(http: Http) {
   return {
     // Ganancias del repartidor (`GET /drivers/me/earnings?period=`).
-    earnings: (period = 'all') =>
-      http.get<any>(`/drivers/me/earnings?period=${encodeURIComponent(period)}`),
+    // Con period=custom se agregan from/to (YYYY-MM-DD, inclusivos en CR).
+    earnings: (period = 'all', from?: string, to?: string) => {
+      const q = new URLSearchParams({ period });
+      if (period === 'custom') {
+        if (from) q.set('from', from);
+        if (to) q.set('to', to);
+      }
+      return http.get<any>(`/drivers/me/earnings?${q.toString()}`);
+    },
     // Saldo disponible para retiro (`GET /withdrawals/balance`).
     balance: () => http.get<any>('/withdrawals/balance'),
     // Historial de retiros (`GET /withdrawals/my`).

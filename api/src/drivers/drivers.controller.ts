@@ -156,9 +156,24 @@ export class DriversController {
   @Roles('driver')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get driver earnings' })
-  @ApiQuery({ name: 'period', required: false, enum: ['today', 'week', 'month', 'all'] })
-  async getEarnings(@CurrentUser() user: any, @Query('period') period?: string) {
-    return this.driversService.getEarnings(user.sub, period || 'all');
+  @ApiQuery({
+    name: 'period',
+    required: false,
+    enum: ['today', 'yesterday', 'week', 'month', 'all', 'custom'],
+  })
+  @ApiQuery({ name: 'from', required: false, description: 'YYYY-MM-DD (solo period=custom)' })
+  @ApiQuery({
+    name: 'to',
+    required: false,
+    description: 'YYYY-MM-DD inclusivo (solo period=custom)',
+  })
+  async getEarnings(
+    @CurrentUser() user: any,
+    @Query('period') period?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    return this.driversService.getEarnings(user.sub, period || 'all', from, to);
   }
 
   @Get('me/orders')

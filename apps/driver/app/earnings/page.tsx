@@ -14,6 +14,7 @@ import {
   Truck,
   Car,
   Clock,
+  History,
   Inbox,
   AlertTriangle,
   ClipboardList,
@@ -47,6 +48,7 @@ interface EarningsData {
 
 const PERIODS = [
   { id: 'today', labelKey: 'periodToday', icon: Calendar },
+  { id: 'yesterday', labelKey: 'periodYesterday', icon: History },
   { id: 'week', labelKey: 'periodWeek', icon: CalendarDays },
   { id: 'month', labelKey: 'periodMonth', icon: Calendar },
   { id: 'all', labelKey: 'periodAll', icon: InfinityIcon },
@@ -65,13 +67,17 @@ export default function EarningsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState('week');
+  const [customFrom, setCustomFrom] = useState('');
+  const [customTo, setCustomTo] = useState('');
+  const [appliedRange, setAppliedRange] = useState<{ from: string; to: string } | null>(null);
+  const [customError, setCustomError] = useState<string | null>(null);
 
   const fetchEarnings = useCallback(
-    async (period: string) => {
+    async (period: string, from?: string, to?: string) => {
       try {
         setLoading(true);
         setError(null);
-        const data = await api.getDriverEarnings(period);
+        const data = await api.getDriverEarnings(period, from, to);
         setEarnings(data);
       } catch (err) {
         console.error('Failed to fetch earnings:', err);
@@ -84,8 +90,19 @@ export default function EarningsPage() {
   );
 
   useEffect(() => {
-    fetchEarnings(selectedPeriod);
-  }, [selectedPeriod, fetchEarnings]);
+    if (selectedPeriod === 'custom' && !appliedRange) return;
+    fetchEarnings(selectedPeriod, appliedRange?.from, appliedRange?.to);
+  }, [selectedPeriod, appliedRange, fetchEarnings]);
+
+  const applyCustomRange = () => {
+    if (!customFrom || !customTo || customFrom > customTo) {
+      setCustomError(t('wdrvwork.earnings.customInvalid'));
+      return;
+    }
+    setCustomError(null);
+    setAppliedRange({ from: customFrom, to: customTo });
+    setSelectedPeriod('custom');
+  };
 
   const formatCurrency = (amount: number) => {
     return `₡${amount.toLocaleString()}`;
@@ -104,6 +121,16 @@ export default function EarningsPage() {
     return date.toLocaleTimeString('es-CR', {
       hour: '2-digit',
       minute: '2-digit',
+    });
+  };
+
+  // YYYY-MM-DD de <input type="date"> como mediodía CR (evita el baile de día por TZ).
+  const formatInputDate = (d: string) => {
+    const parsed = new Date(`${d}T12:00:00-06:00`);
+    if (isNaN(parsed.getTime())) return d;
+    return parsed.toLocaleDateString('es-CR', {
+      day: 'numeric',
+      month: 'short',
     });
   };
 
@@ -181,7 +208,7 @@ export default function EarningsPage() {
             </h2>
             <p className="text-surface-500 dark:text-surface-400 mb-6">{error}</p>
             <motion.button
-              onClick={() => fetchEarnings(selectedPeriod)}
+              onClick={() => fetchEarnings(selectedPeriod, appliedRange?.from, appliedRange?.to)}
               className="px-6 py-3 rounded-xl bg-kiwi-gradient text-white font-semibold shadow-kiwi-lg"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -238,6 +265,11 @@ export default function EarningsPage() {
           <div className="relative">
             <p className="text-white/80 text-sm font-medium">
               {(() => {
+                if (selectedPeriod === 'custom' && appliedRange) {
+                  return t('wdrvwork.earnings.totalFor', {
+                    period: `${formatInputDate(appliedRange.from)} – ${formatInputDate(appliedRange.to)}`,
+                  });
+                }
                 const found = PERIODS.find((p) => p.id === selectedPeriod);
                 return found
                   ? t('wdrvwork.earnings.totalFor', {
@@ -286,7 +318,10 @@ export default function EarningsPage() {
             return (
               <motion.button
                 key={period.id}
-                onClick={() => setSelectedPeriod(period.id)}
+                onClick={() => {
+                  setSelectedPeriod(period.id);
+                  setCustomError(null);
+                }}
                 className={`flex-1 rounded-lg py-2.5 text-sm font-medium transition-all ${
                   selectedPeriod === period.id
                     ? 'bg-white dark:bg-surface-700 text-surface-800 dark:text-surface-100 shadow-soft'
@@ -303,6 +338,63 @@ export default function EarningsPage() {
               </motion.button>
             );
           })}
+        </motion.div>
+
+        {/* Custom Range */}
+        <motion.div
+          className="mb-6 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+        >
+          <div className="grid grid-cols-[1fr_1fr_auto] items-end gap-2">
+            <div>
+              <label
+                htmlFor="earnings-from"
+                className="mb-1 block text-xs font-medium text-surface-500 dark:text-surface-400"
+              >
+                {t('wdrvwork.earnings.customFrom')}
+              </label>
+              <input
+                id="earnings-from"
+                type="date"
+                value={customFrom}
+                max={customTo || undefined}
+                onChange={(e) => setCustomFrom(e.target.value)}
+                className="w-full rounded-lg bg-surface-100 dark:bg-surface-700 px-2 py-2.5 text-sm text-surface-800 dark:text-surface-100"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="earnings-to"
+                className="mb-1 block text-xs font-medium text-surface-500 dark:text-surface-400"
+              >
+                {t('wdrvwork.earnings.customTo')}
+              </label>
+              <input
+                id="earnings-to"
+                type="date"
+                value={customTo}
+                min={customFrom || undefined}
+                onChange={(e) => setCustomTo(e.target.value)}
+                className="w-full rounded-lg bg-surface-100 dark:bg-surface-700 px-2 py-2.5 text-sm text-surface-800 dark:text-surface-100"
+              />
+            </div>
+            <motion.button
+              onClick={applyCustomRange}
+              className={`rounded-lg px-4 py-2.5 text-sm font-semibold text-white shadow-soft ${
+                selectedPeriod === 'custom'
+                  ? 'bg-kiwi-gradient'
+                  : 'bg-surface-400 dark:bg-surface-600'
+              }`}
+              whileTap={{ scale: 0.95 }}
+            >
+              {t('wdrvwork.earnings.customApply')}
+            </motion.button>
+          </div>
+          {customError && (
+            <p className="mt-2 text-xs text-red-500 dark:text-red-400">{customError}</p>
+          )}
         </motion.div>
 
         {/* Stats Grid */}
@@ -332,28 +424,6 @@ export default function EarningsPage() {
             </p>
             <p className="mt-1 text-2xl font-bold text-surface-800 dark:text-surface-100">
               {formatCurrency(earnings?.averagePerTrip || 0)}
-            </p>
-          </motion.div>
-          <motion.div
-            className="rounded-xl bg-white dark:bg-surface-800 border border-surface-200/60 dark:border-white/[0.06] shadow-soft dark:shadow-dark p-4"
-            whileHover={{ y: -2 }}
-          >
-            <p className="text-sm text-surface-500 dark:text-surface-400">
-              {t('wdrvwork.earnings.statHours')}
-            </p>
-            <p className="mt-1 text-2xl font-bold text-surface-800 dark:text-surface-100">
-              {earnings?.totalHours?.toFixed(1) || '0'}h
-            </p>
-          </motion.div>
-          <motion.div
-            className="rounded-xl bg-kiwi-50 dark:bg-kiwi-900/30 p-4 shadow-soft dark:shadow-dark border border-kiwi-200 dark:border-kiwi-800"
-            whileHover={{ y: -2 }}
-          >
-            <p className="text-sm text-kiwi-700 dark:text-kiwi-400">
-              {t('wdrvwork.earnings.statPerHour')}
-            </p>
-            <p className="mt-1 text-2xl font-bold text-kiwi-700 dark:text-kiwi-300">
-              {formatCurrency(earnings?.earningsPerHour || 0)}
             </p>
           </motion.div>
         </motion.div>

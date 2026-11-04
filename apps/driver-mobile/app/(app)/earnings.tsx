@@ -7,7 +7,8 @@ import { earningsApi } from '../../src/api/earnings';
 import { http } from '../../src/api/client';
 
 const api = earningsApi(http);
-const PERIODS = ['today', 'week', 'month', 'all'] as const;
+const PERIODS = ['today', 'yesterday', 'week', 'month', 'all'] as const;
+const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
 
 const inputStyle = {
   backgroundColor: tokens.color.surface,
@@ -20,7 +21,10 @@ const inputStyle = {
 export default function Earnings() {
   const { t, translate } = useTranslation();
   const qc = useQueryClient();
-  const [period, setPeriod] = useState<(typeof PERIODS)[number]>('week');
+  const [period, setPeriod] = useState<(typeof PERIODS)[number] | 'custom'>('week');
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
+  const [range, setRange] = useState<{ from: string; to: string } | null>(null);
   const [amount, setAmount] = useState('');
   const [method, setMethod] = useState<'sinpe' | 'bank_transfer'>('sinpe');
   const [sinpePhone, setSinpePhone] = useState('');
@@ -31,8 +35,13 @@ export default function Earnings() {
   const [receiptLoading, setReceiptLoading] = useState<string | null>(null);
 
   const earn = useQuery({
-    queryKey: ['earnings', period],
-    queryFn: () => api.earnings(period),
+    queryKey: ['earnings', period, range?.from ?? '', range?.to ?? ''],
+    queryFn: () =>
+      api.earnings(
+        period,
+        period === 'custom' ? range?.from : undefined,
+        period === 'custom' ? range?.to : undefined,
+      ),
   });
   const bal = useQuery({ queryKey: ['withdraw', 'balance'], queryFn: () => api.balance() });
   const hist = useQuery({ queryKey: ['withdraw', 'mine'], queryFn: () => api.myWithdrawals() });
@@ -117,11 +126,59 @@ export default function Earnings() {
                 fontSize: 12,
               }}
             >
-              {t.analytics[p as 'today' | 'week' | 'month']}
+              {p === 'yesterday'
+                ? t.earnings.yesterday
+                : t.analytics[p as 'today' | 'week' | 'month']}
               {p === 'all' ? '∞' : ''}
             </Text>
           </Pressable>
         ))}
+      </View>
+      <View style={{ flexDirection: 'row', gap: 6, marginTop: 6 }}>
+        <TextInput
+          placeholder={t.earnings.from}
+          placeholderTextColor={tokens.color.muted}
+          value={from}
+          onChangeText={(v) => setFrom(v.replace(/[^0-9-]/g, '').slice(0, 10))}
+          keyboardType="numbers-and-punctuation"
+          style={[inputStyle, { flex: 1, marginBottom: 0 }]}
+        />
+        <TextInput
+          placeholder={t.earnings.to}
+          placeholderTextColor={tokens.color.muted}
+          value={to}
+          onChangeText={(v) => setTo(v.replace(/[^0-9-]/g, '').slice(0, 10))}
+          keyboardType="numbers-and-punctuation"
+          style={[inputStyle, { flex: 1, marginBottom: 0 }]}
+        />
+        <Pressable
+          onPress={() => {
+            if (!ISO_DAY.test(from.trim())) {
+              Alert.alert(t.earnings.invalidRange);
+              return;
+            }
+            setRange({ from: from.trim(), to: ISO_DAY.test(to.trim()) ? to.trim() : from.trim() });
+            setPeriod('custom');
+          }}
+          style={{
+            borderRadius: tokens.radius.md,
+            paddingVertical: 8,
+            paddingHorizontal: 14,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: period === 'custom' ? tokens.color.kiwi : tokens.color.surface,
+          }}
+        >
+          <Text
+            style={{
+              color: period === 'custom' ? '#fff' : tokens.color.ink,
+              fontWeight: '600',
+              fontSize: 12,
+            }}
+          >
+            {t.earnings.custom}
+          </Text>
+        </Pressable>
       </View>
 
       <ScrollView

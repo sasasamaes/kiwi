@@ -293,5 +293,30 @@ describe('Drivers Integration: Profile, Earnings & Schedules', () => {
         expect(result.totalEarnings).toBe(1500);
       }
     });
+    it('Should support yesterday and custom ranges (CR wall)', async () => {
+      prisma.driverProfile.findUnique.mockResolvedValue({
+        id: DRIVER_PROFILE_ID,
+        userId: DRIVER_USER_ID,
+      });
+      prisma.order.findMany.mockResolvedValue([]);
+
+      await service.getEarnings(DRIVER_USER_ID, 'yesterday');
+      const yWhere = prisma.order.findMany.mock.calls[0][0].where;
+      expect(yWhere.deliveredAt.gte).toBeInstanceOf(Date);
+      expect(yWhere.deliveredAt.lt).toBeInstanceOf(Date);
+      expect(yWhere.deliveredAt.lt.getTime() - yWhere.deliveredAt.gte.getTime()).toBe(
+        24 * 60 * 60 * 1000,
+      );
+
+      await service.getEarnings(DRIVER_USER_ID, 'custom', '2026-01-05', '2026-01-11');
+      const cWhere = prisma.order.findMany.mock.calls[1][0].where;
+      expect(cWhere.deliveredAt.gte).toEqual(new Date(Date.UTC(2026, 0, 5, 6)));
+      expect(cWhere.deliveredAt.lt).toEqual(new Date(Date.UTC(2026, 0, 12, 6)));
+
+      await expect(
+        service.getEarnings(DRIVER_USER_ID, 'custom', '2026-01-11', '2026-01-05'),
+      ).rejects.toThrow();
+      await expect(service.getEarnings(DRIVER_USER_ID, 'custom')).rejects.toThrow();
+    });
   });
 });

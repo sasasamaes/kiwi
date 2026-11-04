@@ -7,6 +7,13 @@ test('earnings GETs /drivers/me/earnings with period', async () => {
   expect(fake.get).toHaveBeenCalledWith('/drivers/me/earnings?period=week');
 });
 
+test('earnings custom agrega from/to', async () => {
+  await earningsApi(fake).earnings('custom', '2026-11-02', '2026-11-03');
+  expect(fake.get).toHaveBeenCalledWith(
+    '/drivers/me/earnings?period=custom&from=2026-11-02&to=2026-11-03',
+  );
+});
+
 test('balance GETs /withdrawals/balance', async () => {
   await earningsApi(fake).balance();
   expect(fake.get).toHaveBeenCalledWith('/withdrawals/balance');
