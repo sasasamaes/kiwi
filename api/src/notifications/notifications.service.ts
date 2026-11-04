@@ -380,6 +380,32 @@ export class NotificationsService {
     return data;
   }
 
+  /**
+   * Mensaje para apps NATIVAS (iOS/Android): con bloque `notification` el
+   * sistema muestra banner y suena aunque la app esté cerrada. El data-only
+   * solo sirve para web (lo muestra el SW): en nativo sin handler no se
+   * renderiza nada — por eso "no llegaba nada" en los teléfos.
+   */
+  private toNativeMessage(
+    token: string,
+    notification: PushNotification,
+    data: Record<string, string>,
+  ) {
+    return {
+      token,
+      notification: { title: notification.title, body: notification.body },
+      data,
+      android: {
+        priority: 'high' as const,
+        notification: { channelId: 'kiwi-default', sound: 'default' },
+      },
+      apns: {
+        headers: { 'apns-priority': '10' },
+        payload: { aps: { sound: 'default', badge: 1 } },
+      },
+    };
+  }
+
   /** Push real 1:1 a todos los tokens registrados del usuario. */
   private async sendPushToTokens(userId: string, notification: PushNotification) {
     if (!this.fcmAdmin) return;
@@ -387,26 +413,37 @@ export class NotificationsService {
     try {
       const tokens = await this.prisma.deviceToken.findMany({
         where: { userId },
-        select: { token: true },
+        select: { token: true, platform: true },
       });
       // Defensa: filas repetidas del mismo token (reintentos de registro)
       // mandarían el mismo pedido N veces al mismo celu.
-      const unique = [...new Set(tokens.map((t) => t.token))];
+      const seen = new Set<string>();
+      const unique = tokens.filter((t) => {
+        if (seen.has(t.token)) return false;
+        seen.add(t.token);
+        return true;
+      });
       if (unique.length === 0) return;
 
       const data = this.toDataPayload(notification);
       const expired: string[] = [];
-      for (const token of unique) {
+      for (const { token, platform } of unique) {
         try {
-          await this.fcmAdmin.send({
-            token,
-            data,
-            webpush: {
-              fcmOptions: {
-                link: notification.data?.orderId ? `/tracking/${notification.data.orderId}` : '/',
-              },
-            },
-          });
+          await this.fcmAdmin.send(
+            platform === 'web'
+              ? {
+                  token,
+                  data,
+                  webpush: {
+                    fcmOptions: {
+                      link: notification.data?.orderId
+                        ? `/tracking/${notification.data.orderId}`
+                        : '/',
+                    },
+                  },
+                }
+              : this.toNativeMessage(token, notification, data),
+          );
         } catch (error: any) {
           const code = error?.errorInfo?.code ?? error?.code ?? '';
           if (

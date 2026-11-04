@@ -126,4 +126,27 @@ describe('NotificationsService: driver push silencioso salvo entrega', () => {
     expect(h.inboxPushes24h).toEqual({ 'push:order_status': 4 });
     expect(JSON.stringify(h)).not.toMatch(/8888|@|\.com/);
   });
+
+  it('token nativo (android/ios) lleva bloque notification + sonido', async () => {
+    (service as any).fcmAdmin.send.mockClear();
+    prisma.deviceToken.findMany.mockResolvedValue([{ token: 'tok-a', platform: 'android' }]);
+    await service.sendToUser('u1', { title: 't', body: 'b' });
+    const msg = (service as any).fcmAdmin.send.mock.calls[0][0];
+    expect(msg.token).toBe('tok-a');
+    expect(msg.notification).toEqual({ title: 't', body: 'b' });
+    expect(msg.android?.notification?.channelId).toBe('kiwi-default');
+    expect(msg.android?.notification?.sound).toBe('default');
+    expect(msg.apns?.payload?.aps?.sound).toBe('default');
+    expect(msg.data?.title).toBe('t');
+  });
+
+  it('token web sigue data-only (el SW muestra el banner, sin duplicar)', async () => {
+    (service as any).fcmAdmin.send.mockClear();
+    prisma.deviceToken.findMany.mockResolvedValue([{ token: 'tok-w', platform: 'web' }]);
+    await service.sendToUser('u1', { title: 't', body: 'b', data: { orderId: 'o1' } });
+    const msg = (service as any).fcmAdmin.send.mock.calls[0][0];
+    expect(msg.notification).toBeUndefined();
+    expect(msg.data?.title).toBe('t');
+    expect(msg.webpush?.fcmOptions?.link).toBe('/tracking/o1');
+  });
 });
