@@ -6,6 +6,7 @@ export { StatusBadge } from './components/StatusBadge';
 export { QtyStepper } from './components/QtyStepper';
 export { Price } from './components/Price';
 export { Card } from './components/Card';
+export { DailyBars } from './components/DailyBars';
 export { GradientHeader } from './components/GradientHeader';
 export { SegmentedTabs } from './components/SegmentedTabs';
 export { Stat } from './components/Stat';

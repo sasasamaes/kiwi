@@ -9,6 +9,7 @@ import {
   SegmentedTabs,
   Stat,
   EmptyState,
+  DailyBars,
 } from '@kiwi/mobile-ui';
 import { useTranslation } from '@kiwi/i18n';
 import { earningsApi } from '../../src/api/earnings';
@@ -200,6 +201,26 @@ export default function Earnings() {
             />
           </View>
         </View>
+
+        {/* Mini gráfica diaria (últimos 7, par PWA) */}
+        {Array.isArray(e.daily) && e.daily.length > 0 && (
+          <View className="mb-4">
+            <Card>
+              <Text className="mb-3 text-sm font-semibold text-surface-600 dark:text-surface-400">
+                📊 {t.driverStats.deliveries}
+              </Text>
+              <DailyBars
+                daily={e.daily.slice(-7)}
+                formatDay={(d: string) => {
+                  const p = new Date(`${d}T12:00:00-06:00`);
+                  return isNaN(+p)
+                    ? d.slice(5)
+                    : p.toLocaleDateString('es-CR', { day: 'numeric', month: 'short' });
+                }}
+              />
+            </Card>
+          </View>
+        )}
 
         <Card>
           <Text className="mb-1 text-sm font-semibold text-surface-800 dark:text-surface-100">
