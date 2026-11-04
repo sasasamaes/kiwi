@@ -75,9 +75,9 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   }
 
   async onModuleInit() {
-    // El pooler (Supabase, modo sesión, 15 clientes) se llena en deploys con
-    // 2 instancias vivas + migrate: en vez de morir al primer EMAXCONNSESSION,
-    // se reintenta con backoff mientras se liberan las sesiones colgadas.
+    // El pool directo contra Render PG (límite DB_POOL_LIMIT) se llena en
+    // deploys con 2 instancias vivas + migrate: en vez de morir al primer
+    // timeout, se reintenta con backoff mientras se liberan las conexiones.
     const attempts = Math.max(1, Number(process.env.DB_CONNECT_ATTEMPTS ?? 6) || 6);
     const baseDelayMs = Math.max(0, Number(process.env.DB_CONNECT_DELAY_MS ?? 2000) || 2000);
     let lastError: unknown = null;

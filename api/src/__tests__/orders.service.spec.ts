@@ -1004,6 +1004,31 @@ describe('OrdersService', () => {
       );
     });
 
+    it('listForAdmin ancla el rango de fechas a hora CR (no al TZ del servidor)', async () => {
+      prisma.order.count.mockResolvedValue(0);
+      prisma.order.findMany.mockResolvedValue([]);
+      prisma.order.aggregate.mockResolvedValue({
+        _count: { id: 0 },
+        _sum: { totalAmount: 0, commission: 0 },
+      });
+      prisma.order.groupBy = jest.fn().mockResolvedValue([]);
+
+      // Caso real: pedido creado 2 nov 06:59 p. m. CR (= 3 nov 00:59 UTC).
+      // Con Hasta=02/11 debe entrar: el corte es 3 nov 00:00 CR = 06:00 UTC.
+      await service.listForAdmin({ from: '2026-10-26', to: '2026-11-02' });
+
+      expect(prisma.order.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            createdAt: {
+              gte: new Date(Date.UTC(2026, 9, 26, 6)),
+              lt: new Date(Date.UTC(2026, 10, 3, 6)),
+            },
+          }),
+        }),
+      );
+    });
+
     it('should return available orders for drivers', async () => {
       prisma.order.findMany.mockResolvedValue([
         { id: 'order-1', status: 'pending', totalAmount: 5000 },

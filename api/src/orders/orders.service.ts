@@ -102,14 +102,20 @@ function addressSimilarity(a: string, b: string): number {
 /**
  * Fecha YYYY-MM-DD del filtro de exportación → Date. `endOfDay` devuelve el
  * inicio del día SIGUIENTE (para `lt`). Inválidos → null (se ignoran).
+ *
+ * Anclado a hora de Costa Rica (UTC-6 fijo, sin horario de verano): el
+ * servidor corre en UTC (Render) y con medianoche local del servidor el
+ * "Hasta" perdía las últimas 6h del día tico (18:00–24:00 CR).
  */
 function parseExportDate(raw: unknown, endOfDay: boolean): Date | null {
   if (typeof raw !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(raw)) return null;
   const [y, m, d] = raw.split('-').map(Number);
   // Sin rollover silencioso (mes 13, día 40): validar contra el calendario.
   if (m < 1 || m > 12 || d < 1 || d > 31) return null;
-  if (d > new Date(y, m, 0).getDate()) return null;
-  const dt = new Date(y, m - 1, d + (endOfDay ? 1 : 0));
+  const lastDay = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  if (d > lastDay) return null;
+  // 00:00 CR = 06:00 UTC. Date.UTC no depende del TZ del servidor.
+  const dt = new Date(Date.UTC(y, m - 1, d + (endOfDay ? 1 : 0), 6));
   return Number.isNaN(dt.getTime()) ? null : dt;
 }
 
@@ -2286,7 +2292,7 @@ export class OrdersService {
     if (opts.merchantId) where.merchantId = opts.merchantId;
     if (opts.test === 'only') where.isTest = true;
     if (opts.test === 'exclude') where.isTest = false;
-    // Rango de fechas (YYYY-MM-DD, día completo en hora local del servidor).
+    // Rango de fechas (YYYY-MM-DD, día completo en hora de Costa Rica).
     // Inválidos se ignoran para no romper el listado.
     const from = parseExportDate(opts.from, false);
     const to = parseExportDate(opts.to, true);

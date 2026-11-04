@@ -20,7 +20,9 @@ describe('buildDatabaseUrl', () => {
 
   it('cadena vacía pasa tal cual; sin argumento usa DATABASE_URL del env', () => {
     expect(buildDatabaseUrl('')).toBe('');
-    // El setup de jest define DATABASE_URL local: cae al env y lo tunea.
+    // Hermético: no depende del .env local (que Prisma carga al importar)
+    // ni del runner de CI (sin DATABASE_URL).
+    process.env.DATABASE_URL = BASE;
     const fromEnv = new URL(buildDatabaseUrl(undefined));
     expect(fromEnv.searchParams.get('connection_limit')).toBe('10');
   });
