@@ -69,14 +69,16 @@ body {
    queda para cards, píldoras y overlays, que no scrollean y no fallan. */
 .pt-safe.sticky,
 .pb-safe.fixed[class*='backdrop-blur'],
-header.sticky[class*='backdrop-blur'] {
+header.sticky[class*='backdrop-blur'],
+header.sticky.glass-strong {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   background-color: #fff;
 }
 .dark .pt-safe.sticky,
 .dark .pb-safe.fixed[class*='backdrop-blur'],
-.dark header.sticky[class*='backdrop-blur'] {
+.dark header.sticky[class*='backdrop-blur'],
+.dark header.sticky.glass-strong {
   background-color: #101c33;
 }
 

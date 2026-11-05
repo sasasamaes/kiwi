@@ -17,6 +17,7 @@ import {
   ThemeToggle,
   useTranslations,
   LanguageSwitcherCompact,
+  useDeliveryZones,
   useAuth,
   useSocket,
   useNotifications,
@@ -112,6 +113,7 @@ export default function Home() {
   const [newOrderAlert, setNewOrderAlert] = useState<any>(null);
   const [acceptingOrder, setAcceptingOrder] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'delivery' | 'trip' | 'freight'>('all');
+  const deliveryZones = useDeliveryZones();
   const [pageError, setPageError] = useState<string | null>(null);
   const { addNotification } = useNotifications();
   // Push web: avisa pedidos nuevos con la app cerrada o en segundo plano.
@@ -856,12 +858,12 @@ export default function Home() {
                   </span>
                 </div>
 
-                <div className="flex gap-2">
+                <div className="grid grid-cols-4 gap-2">
                   {tabs.map((tab) => (
                     <motion.button
                       key={tab.id}
                       aria-pressed={activeTab === tab.id}
-                      className={`flex-1 rounded-xl py-2 px-3 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 ${
+                      className={`flex w-full flex-col items-center gap-1 rounded-xl py-2 px-1 text-[11px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 ${
                         activeTab === tab.id
                           ? 'bg-white text-kiwi-800'
                           : 'bg-white/20 text-white/85 [@media(hover:hover)]:hover:bg-white/30 [@media(hover:hover)]:hover:text-white'
@@ -871,7 +873,8 @@ export default function Home() {
                       }
                       whileTap={{ scale: 0.95 }}
                     >
-                      <tab.icon className="h-4 w-4" /> {tab.label}
+                      <tab.icon className="h-4 w-4 shrink-0" />
+                      <span className="w-full truncate text-center leading-tight">{tab.label}</span>
                     </motion.button>
                   ))}
                 </div>
@@ -1172,11 +1175,18 @@ export default function Home() {
                             {order.deliveryAddress}
                           </p>
                           <p className="text-xs text-surface-500 dark:text-surface-400">
-                            {(order as any).deliveryZone
-                              ? String((order as any).deliveryZone)
-                              : order.distanceKm
+                            {(() => {
+                              // deliveryZone guarda el id (UUID), no la etiqueta:
+                              // resolver a nombre y jamás mostrar el id crudo.
+                              const zid = String((order as any).deliveryZone ?? '').trim();
+                              const label = zid
+                                ? deliveryZones.find((z) => z.id === zid || z.label === zid)?.label
+                                : null;
+                              if (label) return label;
+                              return order.distanceKm
                                 ? t('wdrvauth.home.distKm', { dist: order.distanceKm })
-                                : t('wdrvauth.home.destFallback')}
+                                : t('wdrvauth.home.destFallback');
+                            })()}
                           </p>
                         </div>
                       </div>
