@@ -123,6 +123,9 @@ export default function AdminOrders() {
   const [showManual, setShowManual] = useState(false);
   const [manualBusy, setManualBusy] = useState(false);
   const [manualError, setManualError] = useState<string | null>(null);
+  // Corte de Kiwi para el desglose del precio (el backend cobra lo real;
+  // esto es espejo). Se carga al abrir el modal manual.
+  const [manualPct, setManualPct] = useState(15);
   // Pedido = atado a un comercio. Mandado = compra+entrega, con o sin
   // comercio (sin comercio cae al Mostrador KiWi, sin tocar crédito).
   const [manualKind, setManualKind] = useState<'pedido' | 'mandado'>('pedido');
@@ -809,7 +812,14 @@ export default function AdminOrders() {
 
       <button
         type="button"
-        onClick={() => setShowManual(true)}
+        onClick={() => {
+          setManualError(null);
+          api
+            .getDriverCommissionPct()
+            .then((p) => setManualPct(p))
+            .catch(() => setManualPct(15));
+          setShowManual(true);
+        }}
         className="inline-flex items-center gap-2 rounded-xl bg-kiwi-700 px-4 py-2.5 text-sm font-semibold text-white"
       >
         + Crear pedido manual
@@ -1749,6 +1759,18 @@ export default function AdminOrders() {
                   onChange={(e) => setManualForm((f) => ({ ...f, basePrice: e.target.value }))}
                   className="mt-1 w-full rounded-xl border border-surface-200 px-3 py-2 dark:bg-surface-900"
                 />
+                {Number(manualForm.basePrice) > 0 && (
+                  <span className="mt-1 block text-xs text-surface-500">
+                    Repartidor: ₡
+                    {Math.round(
+                      Number(manualForm.basePrice) * (1 - manualPct / 100),
+                    ).toLocaleString('es-CR')}{' '}
+                    · Kiwi ({manualPct}%): ₡
+                    {Math.round(Number(manualForm.basePrice) * (manualPct / 100)).toLocaleString(
+                      'es-CR',
+                    )}
+                  </span>
+                )}
               </label>
               <label className="block">
                 <span className="text-xs font-semibold text-surface-600">Estado final</span>

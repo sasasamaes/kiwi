@@ -1612,6 +1612,20 @@ export class OrdersService {
       throw new BadRequestException('basePrice debe ser un número positivo');
     }
 
+    // Corte de Kiwi igual que en pedidos normales: el "precio del viaje" se
+    // reparte (repartidor: viaje − corte; Kiwi: corte). La tasa es la del
+    // admin (/admin/settings); el servidor la pone, nunca el formulario.
+    let pct = 15;
+    try {
+      const v = await this.settingsService.getDriverCommissionPct();
+      if (Number.isFinite(Number(v)) && Number(v) > 0) pct = Number(v);
+    } catch {
+      // default 15: el pedido manual jamás sale sin corte por un settings caído
+    }
+    const rate = pct / 100;
+    const tripFee = Math.round(price * rate);
+    const driverPayout = price - tripFee;
+
     const status = ['pending', 'assigned', 'delivered'].includes(String(data.status))
       ? String(data.status)
       : 'delivered';
@@ -1638,9 +1652,9 @@ export class OrdersService {
         deliveryAddress: String(data.deliveryAddress ?? '').trim() || '—',
         deliveryZone: data.deliveryZone ? String(data.deliveryZone) : null,
         basePrice: price,
-        commission: 0,
-        commissionRate: 0.15,
-        driverPayout: price,
+        commission: tripFee,
+        commissionRate: rate,
+        driverPayout,
         totalAmount: price,
         productsTotal: 0,
         kind: 'freight',

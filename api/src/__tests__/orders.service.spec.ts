@@ -2490,14 +2490,15 @@ describe('OrdersService', () => {
           data: expect.objectContaining({ businessName: 'Mostrador KiWi' }),
         }),
       );
-      // Payout completo al repartidor y sin movimiento de crédito
-      // (solo registro cash; el balance del comercio no se toca).
+      // Corte de Kiwi igual que en pedidos normales (15% standard):
+      // el repartidor recibe viaje − corte, Kiwi registra el corte.
       expect(prisma.order.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
             merchantId: 'm-house',
-            driverPayout: 1500,
-            commission: 0,
+            driverPayout: 1275,
+            commission: 225,
+            commissionRate: 0.15,
           }),
         }),
       );
@@ -2529,6 +2530,32 @@ describe('OrdersService', () => {
       expect(prisma.merchantProfile.create).not.toHaveBeenCalled();
       expect(prisma.order.create).toHaveBeenCalledWith(
         expect.objectContaining({ data: expect.objectContaining({ merchantId: 'm-house' }) }),
+      );
+    });
+
+    it('pedido manual aplica el corte de Kiwi según la tasa del admin', async () => {
+      settingsStub.getDriverCommissionPct.mockResolvedValue(20);
+      prisma.merchantProfile.findUnique.mockResolvedValue({ id: 'm-1', userId: 'u-1' });
+      await service.createManualOrder(
+        {
+          merchantId: 'm-1',
+          pickupAddress: 'Comercio',
+          deliveryAddress: 'Casa',
+          basePrice: 1000,
+          status: 'delivered',
+        },
+        'admin-1',
+      );
+      // 20% de 1000 = 200 de corte; repartidor 800; total nominal intacto.
+      expect(prisma.order.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            driverPayout: 800,
+            commission: 200,
+            commissionRate: 0.2,
+            totalAmount: 1000,
+          }),
+        }),
       );
     });
   });
