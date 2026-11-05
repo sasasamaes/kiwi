@@ -37,6 +37,11 @@ model User {
   // se guarda en mayúsculas para contar usos por código en el admin.
   referredByCode String? @map("referred_by_code")
 
+  // Plataforma primaria de push (ios | android | web). La marca la última
+  // app que registró token: los push 1:1 van solo ahí y no duplican en el
+  // mismo celu con PWA + nativa instaladas. Null = a todas (legacy).
+  primaryPushPlatform String? @map("primary_push_platform")
+
   // Relations
   merchantProfile     MerchantProfile?
   driverProfile       DriverProfile?

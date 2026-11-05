@@ -425,9 +425,27 @@ export class NotificationsService {
       });
       if (unique.length === 0) return;
 
+      // Plataforma primaria: si el usuario tiene tokens ahí, avisar SOLO
+      // ahí (PWA + nativa con el mismo nombre duplicaban el banner).
+      // Sin primaria o sin tokens en ella: a todas como antes.
+      let targets = unique;
+      try {
+        const user = await this.prisma.user.findUnique({
+          where: { id: userId },
+          select: { primaryPushPlatform: true },
+        });
+        const primary = (user as any)?.primaryPushPlatform as string | null;
+        if (primary) {
+          const inPrimary = unique.filter((t) => t.platform === primary);
+          if (inPrimary.length > 0) targets = inPrimary;
+        }
+      } catch {
+        // best-effort: ante cualquier duda, avisar a todas
+      }
+
       const data = this.toDataPayload(notification);
       const expired: string[] = [];
-      for (const { token, platform } of unique) {
+      for (const { token, platform } of targets) {
         try {
           await this.fcmAdmin.send(
             platform === 'web'
@@ -1048,6 +1066,18 @@ export class NotificationsService {
       });
     } catch {
       // best-effort: nunca bloquea el registro
+    }
+
+    // Plataforma primaria: la última app que registró gana. Los push 1:1
+    // van solo a sus tokens y no duplican en el mismo celu con PWA +
+    // nativa instaladas (mismo nombre, doble banner).
+    try {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { primaryPushPlatform: platform },
+      });
+    } catch {
+      // best-effort: sin primaria se avisa a todas como antes
     }
 
     // Asegura preferencias por defecto y suscripción FCM para este token.

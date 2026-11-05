@@ -639,6 +639,64 @@ export default function AdminOrders() {
     }
   }, [exporting, expFrom, expTo, expMerchant, merchants, t, fetchExportOrders]);
 
+  // Factura Excel con datos del cliente (nombre + teléfono): mismos filtros
+  // y fórmulas que Factura Excel, más columna Teléfono tras Cliente.
+  const exportInvoiceCustomersXlsx = useCallback(async () => {
+    if (exporting) return;
+    setExporting(true);
+    setExportError(null);
+    setExportDone(null);
+    try {
+      const all = await fetchExportOrders();
+      const rows = all.filter((o) => o.status === 'delivered' && !(o as AdminOrder).isTest);
+      if (rows.length === 0) {
+        setExportError(t('webadmin1.aorders.exportEmpty'));
+        return;
+      }
+      const bizName =
+        merchants.find((m) => m.id === expMerchant)?.businessName ??
+        t('webadmin1.aorders.exportMerchantAll');
+      const bytes = await buildInvoiceWorkbook({
+        titleRows: [
+          [t('webadmin1.aorders.exportMerchant'), bizName],
+          [t('webadmin1.aorders.exportTitle'), `${expFrom || '…'} → ${expTo || '…'}`],
+        ],
+        rows: rows.map((o) => {
+          const dt = new Date(o.createdAt);
+          return {
+            date: dt.toLocaleDateString('es-CR'),
+            merchant: o.merchant?.businessName ?? '',
+            customer: (o as AdminOrder).customerName ?? '',
+            customerPhone: (o as AdminOrder).customerPhone ?? '',
+            total: Math.round(Number(o.totalAmount ?? 0) || 0),
+          };
+        }),
+        withPhone: true,
+      });
+      const blob = new Blob([bytes as any], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const safe = bizName
+        .normalize('NFD')
+        .replace(/[̀-ͯ]/g, '')
+        .replace(/[^a-zA-Z0-9]+/g, '-')
+        .toLowerCase();
+      a.download = `factura-clientes-${safe || 'comercio'}-${expFrom || 'inicio'}-${expTo || 'hoy'}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      setExportDone(t('webadmin1.aorders.exportDone', { count: rows.length }));
+    } catch {
+      setExportError(t('webadmin1.aorders.exportError'));
+    } finally {
+      setExporting(false);
+    }
+  }, [exporting, expFrom, expTo, expMerchant, merchants, t, fetchExportOrders]);
+
   // Compartir el corte por WhatsApp / share nativo (texto resumen + detalle).
   // Igual que el PDF: se paga el driverPayout tal cual, sin IVA ni comisión visible.
   const shareDriverCut = useCallback(async () => {
@@ -1116,6 +1174,15 @@ export default function AdminOrders() {
           >
             <Download className="h-4 w-4" />
             {t('webadmin1.aorders.exportInvoiceXlsxCta')}
+          </button>
+          <button
+            type="button"
+            onClick={() => void exportInvoiceCustomersXlsx()}
+            disabled={exporting}
+            className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-60"
+          >
+            <Download className="h-4 w-4" />
+            {t('webadmin1.aorders.exportInvoiceCustomersXlsxCta')}
           </button>
           <button
             type="button"

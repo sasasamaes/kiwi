@@ -20,6 +20,10 @@ describe('NotificationsService: driver push silencioso salvo entrega', () => {
       },
       driverProfile: { findMany: jest.fn().mockResolvedValue([]) },
       topicPreference: { count: jest.fn().mockResolvedValue(0) },
+      user: {
+        findUnique: jest.fn().mockResolvedValue(null),
+        update: jest.fn().mockResolvedValue({}),
+      },
       order: {
         count: jest.fn().mockResolvedValue(0),
         findUnique: jest.fn().mockResolvedValue(null),
@@ -148,5 +152,48 @@ describe('NotificationsService: driver push silencioso salvo entrega', () => {
     expect(msg.notification).toBeUndefined();
     expect(msg.data?.title).toBe('t');
     expect(msg.webpush?.fcmOptions?.link).toBe('/tracking/o1');
+  });
+
+  it('register marca la plataforma primaria (última app abierta gana)', async () => {
+    prisma.deviceToken.upsert = jest.fn().mockResolvedValue({});
+    prisma.deviceToken.deleteMany = jest.fn().mockResolvedValue({});
+    await service.registerDeviceToken('u1', 'tok-x', 'ios');
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: 'u1' },
+      data: { primaryPushPlatform: 'ios' },
+    });
+  });
+
+  it('con primaria ios y tokens ios+web, solo suena el ios', async () => {
+    (service as any).fcmAdmin.send.mockClear();
+    prisma.deviceToken.findMany.mockResolvedValue([
+      { token: 'tok-ios', platform: 'ios' },
+      { token: 'tok-web', platform: 'web' },
+    ]);
+    prisma.user.findUnique.mockResolvedValue({ primaryPushPlatform: 'ios' });
+    await service.sendToUser('u1', { title: 't', body: 'b' });
+    const sent = (service as any).fcmAdmin.send.mock.calls.map((c: any[]) => c[0].token);
+    expect(sent).toEqual(['tok-ios']);
+  });
+
+  it('sin primaria suena en todas (comportamiento legacy)', async () => {
+    (service as any).fcmAdmin.send.mockClear();
+    prisma.deviceToken.findMany.mockResolvedValue([
+      { token: 'tok-ios', platform: 'ios' },
+      { token: 'tok-web', platform: 'web' },
+    ]);
+    prisma.user.findUnique.mockResolvedValue({ primaryPushPlatform: null });
+    await service.sendToUser('u1', { title: 't', body: 'b' });
+    const sent = (service as any).fcmAdmin.send.mock.calls.map((c: any[]) => c[0].token);
+    expect(sent).toEqual(expect.arrayContaining(['tok-ios', 'tok-web']));
+  });
+
+  it('primaria sin tokens hace fallback a todas', async () => {
+    (service as any).fcmAdmin.send.mockClear();
+    prisma.deviceToken.findMany.mockResolvedValue([{ token: 'tok-web', platform: 'web' }]);
+    prisma.user.findUnique.mockResolvedValue({ primaryPushPlatform: 'ios' });
+    await service.sendToUser('u1', { title: 't', body: 'b' });
+    const sent = (service as any).fcmAdmin.send.mock.calls.map((c: any[]) => c[0].token);
+    expect(sent).toEqual(['tok-web']);
   });
 });

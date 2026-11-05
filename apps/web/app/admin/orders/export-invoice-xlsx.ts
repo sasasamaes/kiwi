@@ -12,12 +12,15 @@ export interface InvoiceXlsxRow {
   date: string;
   merchant: string;
   customer: string;
+  customerPhone?: string;
   total: number;
 }
 
 export interface InvoiceXlsxInput {
   titleRows: Array<[string, string]>;
   rows: InvoiceXlsxRow[];
+  /** Agrega columna "Teléfono" tras Cliente (factura con datos del cliente). */
+  withPhone?: boolean;
 }
 
 const colLetter = (n: number): string => {
@@ -40,51 +43,86 @@ export async function buildInvoiceWorkbook(input: InvoiceXlsxInput): Promise<Buf
     row.getCell(1).font = { bold: true };
   }
   ws.addRow([]);
-  const header = ws.addRow([
-    'N°',
-    'Fecha',
-    'Comercio',
-    'Cliente',
-    'Total (₡)',
-    'Base gravada (₡)',
-    'IVA 13% (₡)',
-    'Total a pagar (₡)',
-  ]);
+  const header = ws.addRow(
+    input.withPhone
+      ? [
+          'N°',
+          'Fecha',
+          'Comercio',
+          'Cliente',
+          'Teléfono',
+          'Total (₡)',
+          'Base gravada (₡)',
+          'IVA 13% (₡)',
+          'Total a pagar (₡)',
+        ]
+      : [
+          'N°',
+          'Fecha',
+          'Comercio',
+          'Cliente',
+          'Total (₡)',
+          'Base gravada (₡)',
+          'IVA 13% (₡)',
+          'Total a pagar (₡)',
+        ],
+  );
   header.font = { bold: true };
   const firstDataRow = ws.rowCount + 1;
 
-  // E:H = Total, F = Base (= Total), G = IVA (13% de la base), H = Total a pagar (Base + IVA).
-  const T = colLetter(5);
-  const B = colLetter(6);
-  const V = colLetter(7);
-  const N = colLetter(8);
+  // Sin teléfono — E:H = Total, F = Base (= Total), G = IVA (13% de la base),
+  // H = Total a pagar (Base + IVA). Con teléfono todo se corre una columna
+  // (F:I = Total, G = Base, H = IVA, I = Total a pagar).
+  const shift = input.withPhone ? 1 : 0;
+  const T = colLetter(5 + shift);
+  const B = colLetter(6 + shift);
+  const V = colLetter(7 + shift);
+  const N = colLetter(8 + shift);
 
   input.rows.forEach((o, i) => {
     const r = firstDataRow + i;
-    const row = ws.addRow([
-      i + 1,
-      o.date,
-      o.merchant,
-      o.customer,
-      Math.round(Number(o.total) || 0),
-      { formula: `${T}${r}` },
-      { formula: `ROUND(${T}${r}*0.13,0)` },
-      { formula: `${B}${r}+${V}${r}` },
-    ]);
+    const row = ws.addRow(
+      input.withPhone
+        ? [
+            i + 1,
+            o.date,
+            o.merchant,
+            o.customer,
+            o.customerPhone ?? '',
+            Math.round(Number(o.total) || 0),
+            { formula: `${T}${r}` },
+            { formula: `ROUND(${T}${r}*0.13,0)` },
+            { formula: `${B}${r}+${V}${r}` },
+          ]
+        : [
+            i + 1,
+            o.date,
+            o.merchant,
+            o.customer,
+            Math.round(Number(o.total) || 0),
+            { formula: `${T}${r}` },
+            { formula: `ROUND(${T}${r}*0.13,0)` },
+            { formula: `${B}${r}+${V}${r}` },
+          ],
+    );
     row.eachCell((c) => {
       c.numFmt = '#,##0';
     });
   });
 
   const lastDataRow = firstDataRow + input.rows.length - 1;
-  const totalRow = ws.addRow(['TOTAL', '', '', '', '', '', '', '']);
+  const totalRow = ws.addRow(
+    input.withPhone
+      ? ['TOTAL', '', '', '', '', '', '', '', '']
+      : ['TOTAL', '', '', '', '', '', '', ''],
+  );
   const tr = totalRow.number;
   (
     [
-      [5, `SUM(${T}${firstDataRow}:${T}${lastDataRow})`],
-      [6, `SUM(${B}${firstDataRow}:${B}${lastDataRow})`],
-      [7, `SUM(${V}${firstDataRow}:${V}${lastDataRow})`],
-      [8, `SUM(${N}${firstDataRow}:${N}${lastDataRow})`],
+      [5 + shift, `SUM(${T}${firstDataRow}:${T}${lastDataRow})`],
+      [6 + shift, `SUM(${B}${firstDataRow}:${B}${lastDataRow})`],
+      [7 + shift, `SUM(${V}${firstDataRow}:${V}${lastDataRow})`],
+      [8 + shift, `SUM(${N}${firstDataRow}:${N}${lastDataRow})`],
     ] as Array<[number, string]>
   ).forEach(([c, formula]) => {
     const cell = ws.getRow(tr).getCell(c);

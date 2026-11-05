@@ -67,4 +67,34 @@ describe('buildInvoiceWorkbook', () => {
       });
     });
   });
+
+  it('withPhone: columna Teléfono tras Cliente y fórmulas corridas', async () => {
+    const buf = await buildInvoiceWorkbook({
+      ...base,
+      withPhone: true,
+      rows: [
+        {
+          date: '02/11/2026',
+          merchant: 'Soda',
+          customer: 'Ana',
+          customerPhone: '8888-1234',
+          total: 1500,
+        },
+      ],
+    });
+    const ws = await load(buf);
+    // Encabezados: Teléfono E, Total F, Base G, IVA H, Total a pagar I.
+    expect(ws.getCell('D4').value).toBe('Cliente');
+    expect(ws.getCell('E4').value).toBe('Teléfono');
+    expect(ws.getCell('F4').value).toBe('Total (₡)');
+    expect(ws.getCell('I4').value).toBe('Total a pagar (₡)');
+    // Fila 5: teléfono plano, Total F5=1500, Base G5=F5, IVA H5, Neto I5=G5+H5.
+    expect(ws.getCell('E5').value).toBe('8888-1234');
+    expect(ws.getCell('F5').value).toBe(1500);
+    expect((ws.getCell('G5').value as any).formula).toBe('F5');
+    expect((ws.getCell('H5').value as any).formula).toBe('ROUND(F5*0.13,0)');
+    expect((ws.getCell('I5').value as any).formula).toBe('G5+H5');
+    const totalNeto = ws.getCell('I6').value as any;
+    expect(totalNeto.formula).toBe('SUM(I5:I5)');
+  });
 });
